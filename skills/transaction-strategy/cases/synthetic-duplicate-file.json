@@ -1,0 +1,53 @@
+{
+ "case": "synthetic-duplicate-file",
+ "kind": "synthetic_adversarial",
+ "description": "Two Command opportunities at the same address and side, plus one Transact record for it. The reconciliation must refuse to pair (ambiguous); all three appear as unmatched files and the Command duplicates carry a duplicate_record contradiction for Caleb.",
+ "fixture": {
+  "persons": [
+   [
+    7,
+    "Buyer Fixture"
+   ]
+  ],
+  "opportunity": {
+   "id": 205,
+   "address": "405 Fixture Lane",
+   "type": "Buyer",
+   "phase": "Active",
+   "stage": "Showing",
+   "close_days": 20,
+   "contacts": "Buyer Fixture"
+  },
+  "opportunity2": {
+   "id": 206,
+   "address": "405 Fixture Lane",
+   "type": "Buyer",
+   "phase": "Active",
+   "stage": "Showing",
+   "close_days": 20,
+   "contacts": "Buyer Fixture"
+  },
+  "transact": {
+   "record_key": "t205",
+   "address": "405 Fixture Lane",
+   "type": "Purchase",
+   "lifecycle": "active",
+   "status": "Open",
+   "missing": 0
+  }
+ },
+ "expect": {
+  "files": 3,
+  "ambiguous_reconciliation": 1,
+  "alignments": [
+   "unmatched",
+   "unmatched",
+   "unmatched"
+  ],
+  "risk_kinds_include": [
+   "duplicate_record"
+  ],
+  "first_risk_class": "contradiction",
+  "next_action_authority": "caleb_only"
+ }
+}

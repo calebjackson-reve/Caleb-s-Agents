@@ -1,0 +1,4 @@
+{"case": "synthetic-silent-lender", "kind": "synthetic_adversarial", "description": "A lender on the file has been silent for six days with the recorded close nine days out. The file must flag the silent party as high severity and prepare a check-in for approval.",
+ "fixture": {"persons": [[7, "Buyer Fixture"], [9, "Lender Fixture"]], "events": [[9, "in", -6]], "opportunity": {"id": 202, "address": "402 Fixture Lane", "type": "Buyer", "phase": "Under Contract", "stage": "Financing", "close_days": 9, "contacts": "Buyer Fixture, Lender Fixture"},
+             "transact": {"record_key": "t202", "address": "402 Fixture Lane", "type": "Purchase", "lifecycle": "pending", "status": "Open", "missing": 0}},
+ "expect": {"risk_kinds_include": ["silent_party"], "silent_severity": "high", "next_action_authority": "prepares", "party_class": "inference"}}

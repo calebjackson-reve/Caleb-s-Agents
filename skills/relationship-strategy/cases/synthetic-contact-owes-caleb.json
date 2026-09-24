@@ -1,0 +1,161 @@
+{
+ "case": "synthetic-contact-owes-caleb",
+ "kind": "synthetic_adversarial",
+ "description": "The contact promised to send the survey four days ago; Caleb wrote last. The loop is owned by the contact: a party dependency AIRE handles by waiting, and no message is proposed.",
+ "fixture": {
+  "persons": [
+   [
+    10,
+    "Owes Fixture",
+    0
+   ]
+  ],
+  "messages": [
+   [
+    10,
+    "out",
+    120
+   ],
+   [
+    10,
+    "in",
+    115
+   ],
+   [
+    10,
+    "out",
+    110
+   ],
+   [
+    10,
+    "in",
+    105
+   ],
+   [
+    10,
+    "out",
+    100
+   ],
+   [
+    10,
+    "in",
+    95
+   ],
+   [
+    10,
+    "out",
+    90
+   ],
+   [
+    10,
+    "in",
+    85
+   ],
+   [
+    10,
+    "out",
+    80
+   ],
+   [
+    10,
+    "in",
+    75
+   ],
+   [
+    10,
+    "out",
+    70
+   ],
+   [
+    10,
+    "in",
+    65
+   ],
+   [
+    10,
+    "out",
+    60
+   ],
+   [
+    10,
+    "in",
+    55
+   ],
+   [
+    10,
+    "out",
+    50
+   ],
+   [
+    10,
+    "in",
+    45
+   ],
+   [
+    10,
+    "out",
+    40
+   ],
+   [
+    10,
+    "in",
+    35
+   ],
+   [
+    10,
+    "out",
+    30
+   ],
+   [
+    10,
+    "in",
+    25
+   ],
+   [
+    10,
+    "out",
+    20
+   ],
+   [
+    10,
+    "in",
+    15
+   ],
+   [
+    10,
+    "out",
+    10
+   ],
+   [
+    10,
+    "in",
+    5
+   ],
+   [
+    10,
+    "out",
+    4
+   ]
+  ],
+  "promise": null,
+  "context": [
+   10,
+   "survey",
+   "",
+   "contact",
+   [],
+   [
+    "send the survey"
+   ]
+  ]
+ },
+ "expect": {
+  "candidate": true,
+  "next_move": "wait",
+  "authority": "acts_alone",
+  "loop_kinds_include": [
+   "promise_by_them"
+  ],
+  "owed_step_authority": "acts_alone"
+ }
+}

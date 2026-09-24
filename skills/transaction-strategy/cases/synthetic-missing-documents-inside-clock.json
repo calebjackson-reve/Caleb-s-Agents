@@ -1,0 +1,4 @@
+{"case": "synthetic-missing-documents-inside-clock", "kind": "synthetic_adversarial", "description": "Transact reports three missing checklist items with the recorded close five days out.",
+ "fixture": {"persons": [[7, "Buyer Fixture"]], "opportunity": {"id": 203, "address": "403 Fixture Lane", "type": "Listing", "phase": "Under Contract", "stage": "Closing", "close_days": 5, "contacts": "Buyer Fixture"},
+             "transact": {"record_key": "t203", "address": "403 Fixture Lane", "type": "Listing", "lifecycle": "pending", "status": "Open", "missing": 3}},
+ "expect": {"risk_kinds_include": ["missing_documents_inside_clock"], "documents_missing": 3, "next_action_authority": "prepares"}}

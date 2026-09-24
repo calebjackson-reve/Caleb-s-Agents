@@ -1,0 +1,173 @@
+{
+ "case": "synthetic-unanswered-plus-promise",
+ "kind": "synthetic_adversarial",
+ "description": "Steady client, unanswered inbound one day old, open promise by Caleb three days old with an unresolved thread Caleb owns. Escalates to the premium seat; next move is the reply.",
+ "fixture": {
+  "persons": [
+   [
+    7,
+    "Client Fixture",
+    0
+   ]
+  ],
+  "messages": [
+   [
+    7,
+    "out",
+    150
+   ],
+   [
+    7,
+    "in",
+    144
+   ],
+   [
+    7,
+    "out",
+    138
+   ],
+   [
+    7,
+    "in",
+    132
+   ],
+   [
+    7,
+    "out",
+    126
+   ],
+   [
+    7,
+    "in",
+    120
+   ],
+   [
+    7,
+    "out",
+    114
+   ],
+   [
+    7,
+    "in",
+    108
+   ],
+   [
+    7,
+    "out",
+    102
+   ],
+   [
+    7,
+    "in",
+    96
+   ],
+   [
+    7,
+    "out",
+    90
+   ],
+   [
+    7,
+    "in",
+    84
+   ],
+   [
+    7,
+    "out",
+    78
+   ],
+   [
+    7,
+    "in",
+    72
+   ],
+   [
+    7,
+    "out",
+    66
+   ],
+   [
+    7,
+    "in",
+    60
+   ],
+   [
+    7,
+    "out",
+    54
+   ],
+   [
+    7,
+    "in",
+    48
+   ],
+   [
+    7,
+    "out",
+    42
+   ],
+   [
+    7,
+    "in",
+    36
+   ],
+   [
+    7,
+    "out",
+    30
+   ],
+   [
+    7,
+    "in",
+    24
+   ],
+   [
+    7,
+    "out",
+    18
+   ],
+   [
+    7,
+    "in",
+    12
+   ],
+   [
+    7,
+    "out",
+    6
+   ],
+   [
+    7,
+    "in",
+    1
+   ]
+  ],
+  "promise": [
+   7,
+   "I'll send comps tonight",
+   3
+  ],
+  "context": [
+   7,
+   "comps",
+   "they asked for comps",
+   "caleb",
+   [
+    "send comps"
+   ],
+   []
+  ]
+ },
+ "expect": {
+  "candidate": true,
+  "next_move": "reply",
+  "authority": "prepares",
+  "loop_kinds_include": [
+   "unanswered_inbound",
+   "promise_by_caleb",
+   "unresolved_thread"
+  ],
+  "escalates": true,
+  "predicate": "event_observed"
+ }
+}

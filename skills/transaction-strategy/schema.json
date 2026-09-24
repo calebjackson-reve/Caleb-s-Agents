@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "transaction-strategy output",
+  "type": "object",
+  "required": ["file_key", "outcome", "verified_state", "dependencies", "critical_path", "risks", "recovery_options", "prepared_work", "next_action", "caleb_decisions", "assumptions", "replanning_triggers", "uncertainty"],
+  "additionalProperties": false,
+  "properties": {
+    "file_key": {"type": "string", "minLength": 1},
+    "outcome": {"type": "string", "minLength": 5},
+    "verified_state": {"type": "string", "minLength": 5},
+    "dependencies": {"type": "array", "items": {"type": "object", "required": ["step", "depends_on"], "additionalProperties": false,
+      "properties": {"step": {"type": "string"}, "depends_on": {"type": "string"}}}},
+    "critical_path": {"type": "array", "items": {"type": "string"}},
+    "risks": {"type": "array", "items": {"type": "object", "required": ["kind", "why", "detection_signal", "evidence"], "additionalProperties": false,
+      "properties": {"kind": {"type": "string"}, "why": {"type": "string"}, "detection_signal": {"type": "string"}, "evidence": {"type": "array", "items": {"type": "string"}, "minItems": 1}}}},
+    "recovery_options": {"type": "array", "items": {"type": "object", "required": ["for_risk", "option"], "additionalProperties": false,
+      "properties": {"for_risk": {"type": "string"}, "option": {"type": "string"}, "requires": {"type": "string"}}}},
+    "prepared_work": {"type": "array", "items": {"type": "object", "required": ["what", "party_role", "licensee_review"], "additionalProperties": false,
+      "properties": {"what": {"type": "string"}, "party_role": {"type": "string"}, "licensee_review": {"type": "boolean"}}}},
+    "next_action": {"type": "object", "required": ["text", "owner"], "additionalProperties": false,
+      "properties": {"text": {"type": "string"}, "owner": {"enum": ["aire", "caleb"]}}},
+    "caleb_decisions": {"type": "array", "items": {"type": "string"}},
+    "assumptions": {"type": "array", "items": {"type": "object", "required": ["statement", "falsified_by"], "additionalProperties": false,
+      "properties": {"statement": {"type": "string"}, "falsified_by": {"type": "string"}, "evidence": {"type": "array", "items": {"type": "string"}}}}},
+    "replanning_triggers": {"type": "array", "items": {"type": "string"}},
+    "uncertainty": {"type": "array", "items": {"type": "string"}}
+  }
+}

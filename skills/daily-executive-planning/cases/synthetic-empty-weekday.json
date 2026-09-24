@@ -1,0 +1,19 @@
+{
+ "case": "synthetic-empty-weekday",
+ "kind": "synthetic_adversarial",
+ "description": "A weekday whose calendar snapshot has zero events. The plan must say the calendar cannot be trusted rather than treating the day as free.",
+ "expect": {
+  "calendar_state": "suspicious_empty",
+  "no_calendar_assumption": true
+ },
+ "day": "2026-09-02",
+ "fixture": {
+  "persons": [
+   [
+    7,
+    "Client Fixture"
+   ]
+  ],
+  "calendar_events": []
+ }
+}

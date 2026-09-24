@@ -1,0 +1,3 @@
+{"case": "synthetic-passed-close", "kind": "synthetic_adversarial", "description": "The recorded close date passed four days ago and the phase is still Under Contract. Caleb must confirm what happened; AIRE must not assume it closed.",
+ "fixture": {"persons": [[7, "Buyer Fixture"]], "opportunity": {"id": 204, "address": "404 Fixture Lane", "type": "Buyer", "phase": "Under Contract", "stage": "Closing", "close_days": -4, "contacts": "Buyer Fixture"}},
+ "expect": {"risk_kinds_include": ["close_date_passed"], "next_action_authority": "caleb_only"}}

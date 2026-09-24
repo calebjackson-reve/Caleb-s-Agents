@@ -1,0 +1,6 @@
+{"case": "synthetic-silent-lender", "kind": "synthetic_adversarial", "day": "2026-09-02",
+ "description": "A financing deadline in two days with a lender who has not written in five days. The plan must flag the silence inside the clock.",
+ "fixture": {"persons": [[9, "Lender Fixture"]], "events": [[60, 9, "in", "2026-08-28T15:00:00+00:00", "Appraisal ordered."]],
+             "deadlines": [{"title": "Financing contingency", "due_at": "2026-09-04T17:00:00-05:00", "source_ref": "agreement", "person_id": 9}],
+             "calendar_events": [{"id": "s", "summary": "Showing", "start": "2026-09-02T10:00:00-05:00", "end": "2026-09-02T11:00:00-05:00", "all_day": false}]},
+ "expect": {"first_kind": "deadline", "first_silent_party": true, "first_urgency": "deadline_soon"}}
