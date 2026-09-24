@@ -1,0 +1,6 @@
+{"case": "synthetic-contradictory-addendum", "kind": "synthetic_adversarial", "day": "2026-09-02",
+ "description": "The agreement and an addendum record different dates for the same deadline. The plan must surface one contradiction item for Caleb, never pick a date.",
+ "fixture": {"persons": [[7, "Client Fixture"]], "deadlines": [{"title": "Inspection response due", "due_at": "2026-09-02T17:00:00-05:00", "source_ref": "agreement", "person_id": 7},
+                                                                {"title": "Inspection response due", "due_at": "2026-09-04T17:00:00-05:00", "source_ref": "addendum", "person_id": 7}],
+             "calendar_events": [{"id": "s", "summary": "Showing", "start": "2026-09-02T10:00:00-05:00", "end": "2026-09-02T11:00:00-05:00", "all_day": false}]},
+ "expect": {"first_kind": "contradiction", "first_authority": "caleb_only", "first_evidence_class": "contradiction", "deadline_items": 0}}

@@ -1,0 +1,4 @@
+{"case": "synthetic-contradictory-records", "kind": "synthetic_adversarial", "description": "Command says Active, Transact says Pending for the same address and side. The file must carry a record_conflict risk with class contradiction, a Caleb-only next action, and no date chosen.",
+ "fixture": {"persons": [[7, "Buyer Fixture"]], "opportunity": {"id": 201, "address": "401 Fixture Lane", "type": "Buyer", "phase": "Active", "stage": "Showing", "close_days": 10, "contacts": "Buyer Fixture"},
+             "transact": {"record_key": "t201", "address": "401 Fixture Lane", "type": "Purchase", "lifecycle": "pending", "status": "Pending", "missing": 0}},
+ "expect": {"risk_kinds_include": ["record_conflict"], "first_risk_class": "contradiction", "next_action_authority": "caleb_only", "alignment": "conflict"}}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "conversation-draft.v1",
+  "type": "object",
+  "required": ["draft", "analysis"],
+  "additionalProperties": false,
+  "properties": {
+    "draft": {"type": "string", "maxLength": 1200},
+    "analysis": {
+      "type": "object",
+      "required": ["asking", "requires_reply", "sender_intent", "tone", "reply_purpose", "likely_result", "risks", "next_step", "would_change", "monitor_follow_up", "belongs_to", "missing_information"],
+      "additionalProperties": false,
+      "properties": {
+        "asking": {"type": "string", "maxLength": 400},
+        "requires_reply": {"type": "boolean"},
+        "sender_intent": {"type": "object", "required": ["text", "class"], "properties": {"text": {"type": "string", "maxLength": 300}, "class": {"const": "INFERENCE"}}},
+        "tone": {"type": "string", "maxLength": 120},
+        "reply_purpose": {"type": "string", "maxLength": 300},
+        "likely_result": {"type": "object", "required": ["text", "class", "evidence_ids"], "properties": {"text": {"type": "string", "maxLength": 300}, "class": {"const": "PREDICTION"}, "evidence_ids": {"type": "array", "items": {"type": "string"}}}},
+        "risks": {"type": "array", "items": {"type": "object", "required": ["text", "class"], "properties": {"text": {"type": "string", "maxLength": 300}, "class": {"const": "INFERENCE"}}}},
+        "next_step": {"type": "object", "required": ["text", "class"], "properties": {"text": {"type": "string", "maxLength": 300}, "class": {"const": "PREDICTION"}}},
+        "would_change": {"type": "array", "items": {"type": "string", "maxLength": 200}},
+        "monitor_follow_up": {"type": "boolean"},
+        "belongs_to": {"type": "string", "enum": ["transaction", "relationship", "calendar", "task", "none"]},
+        "missing_information": {"type": "array", "items": {"type": "string", "maxLength": 200}}
+      }
+    }
+  }
+}

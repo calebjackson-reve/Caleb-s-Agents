@@ -1,0 +1,23 @@
+{
+ "case": "historical-2026-08-27",
+ "kind": "historical_reconstruction",
+ "day": "2026-08-27",
+ "description": "The shipped ranker (brain.day_plan in as-of mode) rebuilt from evidence as of 07:00 that morning and graded against what Caleb actually did that day. Counts only.",
+ "method": "scripts/reconstruct_day.py on a fresh production copy, 2026-09-01",
+ "result": {
+  "candidates": 76,
+  "top": 10,
+  "acted_on_top": 3,
+  "acted_rate": 0.3,
+  "people_written_to": 40,
+  "covered_by_candidates": 19,
+  "coverage_rate": 0.47,
+  "by_urgency": {
+   "client_reply": 29,
+   "promise_overdue": 44,
+   "opportunity": 3
+  },
+  "calendar": "cannot_know",
+  "ranker": "brain.day_plan (as_of mode)"
+ }
+}

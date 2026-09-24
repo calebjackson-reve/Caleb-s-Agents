@@ -1,0 +1,105 @@
+{
+ "case": "synthetic-household-member",
+ "kind": "synthetic_adversarial",
+ "description": "A household member with a long thread and an open promise. Boundaries win: next move is none, Caleb-only, and the person never qualifies as a candidate.",
+ "fixture": {
+  "persons": [
+   [
+    9,
+    "Home Fixture",
+    1
+   ]
+  ],
+  "messages": [
+   [
+    9,
+    "out",
+    60
+   ],
+   [
+    9,
+    "out",
+    56
+   ],
+   [
+    9,
+    "out",
+    52
+   ],
+   [
+    9,
+    "out",
+    48
+   ],
+   [
+    9,
+    "out",
+    44
+   ],
+   [
+    9,
+    "out",
+    40
+   ],
+   [
+    9,
+    "out",
+    36
+   ],
+   [
+    9,
+    "out",
+    32
+   ],
+   [
+    9,
+    "out",
+    28
+   ],
+   [
+    9,
+    "out",
+    24
+   ],
+   [
+    9,
+    "out",
+    20
+   ],
+   [
+    9,
+    "out",
+    16
+   ],
+   [
+    9,
+    "out",
+    12
+   ],
+   [
+    9,
+    "out",
+    8
+   ],
+   [
+    9,
+    "out",
+    4
+   ]
+  ],
+  "promise": [
+   9,
+   "I'll grab milk",
+   2
+  ],
+  "suppression": null
+ },
+ "expect": {
+  "candidate": false,
+  "next_move": "none",
+  "authority": "caleb_only",
+  "reason_kinds_include": [
+   "household"
+  ]
+ }
+}

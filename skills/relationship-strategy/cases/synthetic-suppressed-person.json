@@ -1,0 +1,46 @@
+{
+ "case": "synthetic-suppressed-person",
+ "kind": "synthetic_adversarial",
+ "description": "A person who asked for space (manual suppression, no end date) with an unanswered inbound. The suppression overrides the reply.",
+ "fixture": {
+  "persons": [
+   [
+    11,
+    "Space Fixture",
+    0
+   ]
+  ],
+  "messages": [
+   [
+    11,
+    "in",
+    1
+   ],
+   [
+    11,
+    "out",
+    9
+   ],
+   [
+    11,
+    "in",
+    15
+   ]
+  ],
+  "promise": null,
+  "suppression": [
+   11,
+   "manual",
+   null,
+   "asked for space"
+  ]
+ },
+ "expect": {
+  "candidate": false,
+  "next_move": "none",
+  "authority": "caleb_only",
+  "reason_kinds_include": [
+   "suppression:manual"
+  ]
+ }
+}
