@@ -1,0 +1,22 @@
+source,period,metric_definition,observed_value,evidence_label,access_limitation,proposed_followup
+Search Console,latest 28d (2026-09-08..10-05),impressions/clicks/CTR/avg position by query and page,UNKNOWN,unknown,no property access from this session,Confirm property exists; grant aire@ owner; export 16 months once available
+Search Console,n/a,indexing coverage; sitemap status; manual actions,UNKNOWN,unknown,same,URL Inspection on 12 key URLs after access
+GA4 / LP analytics,latest 28d,sessions; engaged sessions; landing pages; conversions,UNKNOWN,unknown,no GA4 or LP backend access; Metricool website connector empty,Read LP Tracking IDs page; confirm GA4 property owner
+GBP (Metricool),2026-09-08..10-05,reach search + maps; website/call/direction clicks,0 returned for every metric,observed (connector),profile was unverified for part of window; zero likely means no data,Re-pull after 2026-11-05 (first full 28 days post-verification)
+GBP (Metricool),2026-08-11..09-07,same,0 returned,observed (connector),same,same
+GBP (Metricool),2026-07-08..07-30 (old profile name),reach search,49 impressions over 18 data days,observed (connector),pre-rename profile; tiny sample,Use as pre-intervention reference only
+GBP (Metricool),2026-07-08..07-30,reach maps,15,observed (connector),same,same
+GBP (Metricool),2026-07-08..07-30,website clicks,2,observed (connector),same,same
+GBP (Metricool),2026-07-08..10-05,reach distribution,Search 76.6% / Maps 23.4%,observed (connector),small base,
+GBP (Google email),2026-10-06 00:18 CT,rating and review count,5.0 with 1 review,observed (Google notification),public page not fetched,Confirm on live profile
+GBP (Google email),2026-10-06,hours; phone,not set (Google prompts 'Add hours' and 'Add phone number'),observed (Google notification),,Draft fields in 09-change-drafts
+GBP (Metricool),12 months,photos,8 photos (5 on 2026-03-10; 3 on 2026-08-04),observed (connector),,
+GBP (Metricool),12 months,posts,0,observed (connector),,First-month posting plan drafted
+GBP intervention date,2026-10-06 00:05 CT,verification completed (Google support email case 6-2250000041763),verified and live,observed,,Before/after comparisons must start 2026-10-06
+LP CRM,launch..2026-10-05,qualified inquiries attributed to site,UNKNOWN (CRM not accessible); 1 Property Value Request email on 2026-09-22 that appears to be an internal test submission,observed (Gmail) + inferred,no CRM access,Export aggregate counts by source and intent from LP CRM
+Google organic (WebSearch tool),2026-10-06,owned-domain appearances across 42 benchmark queries,0 of 42 (including 5 branded),observed (tool index; not Google),not a Google SERP; no location set,Repeat on real Google with location set on the Mac
+Google organic (WebSearch tool),2026-10-06,'site:calebjackson.org',0 results returned,observed (tool),tool may not honor the operator; incomplete evidence,URL Inspection in Search Console
+AI answers (WebSearch-backed Claude run),2026-10-06,Caleb mention rate across 12 nonbranded prompts,0/12,observed,single surface; see 06-ai-visibility,Run same library on ChatGPT/Gemini/Perplexity/Copilot/AI Mode from the Mac
+AI answers (branded control),2026-10-06,correct current brokerage returned,0/2 (returned Reve REALTORS from theadvocate.com; one run surfaced an unrelated 'Action Jackson Group'),observed,same,Fix third-party affiliation data; see citations drafts
+Instagram (Metricool),2026-09-08..10-05,followers (last); gained; lost; views,2445; +68; -18; 49142 views,observed (connector),social only; not search,
+Website launch date,2026,go-live date of calebjackson.org,UNKNOWN (LP website review call 2026-08-03; AI SEO digests by 2026-09-29),inferred,no launch email found,Read LP site settings
