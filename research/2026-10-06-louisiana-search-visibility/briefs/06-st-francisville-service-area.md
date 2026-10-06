@@ -1,0 +1,12 @@
+# Brief 06: St. Francisville and West Feliciana (service-area page)
+- Target intent: recommendation and market; K19, K20, K16; prompts P02, P11.
+- Proposed URL / title / H1: `/st-francisville-real-estate` · "St. Francisville and West Feliciana Real Estate | Caleb Jackson" · "Buying and selling in St. Francisville and West Feliciana".
+- Reader's question: who serves this area and how does a small market price?
+- Evidence-led answer: why medians swing (few sales; show the monthly count), how to price a listing here (comps over a wider window, condition and acreage adjustments), property types (historic in town, acreage, Tunica Hills), what buyers check (septic, wells, flood, access).
+- Caleb's contribution: first-hand coverage statements only where true; replace or correct the AI-drafted "sample size" blog post with this page or link to it after fact-check.
+- Sources and cadence: GBRAR for West Feliciana, parish assessor; update monthly summary line.
+- Sections: The market in numbers (with sample sizes) · Selling here · Buying here · Acreage and rural checks · Towns and areas · FAQ.
+- FAQs: How long do homes take to sell here? Is there a flood zone in town? How does acreage change financing?
+- Visuals: one chart of monthly closed sales (counts) for 12 months.
+- Internal links: Home Search St. Francisville, Net sheet, Flood explainer, acreage guide.
+- Next action: consult request.

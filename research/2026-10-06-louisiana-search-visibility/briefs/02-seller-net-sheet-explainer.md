@@ -1,0 +1,12 @@
+# Brief 02: What a Louisiana Seller Actually Nets
+- Target intent: seller consideration; K09, K10, K11; AI prompt P06.
+- Proposed URL / title / H1: `/louisiana-seller-net-proceeds` · "What a Louisiana Seller Actually Nets | Costs Explained" · "What you actually net when you sell in Louisiana".
+- Reader's question: what comes out of my sale price before I get a check?
+- Evidence-led answer: line items (payoff, commissions per the listing agreement, notary and title charges, prorated property taxes, HOA, concessions, liens), Louisiana specifics (civil-law closing with a notary; no state real estate transfer tax outside Orleans), a worked example at a $300,000 price with every assumption stated, and a note that commission is negotiable and set by agreement.
+- Caleb's contribution: the live net sheet tool; a "what surprised my sellers" list (permissioned, generic).
+- Sources and cadence: Louisiana statutes and LREC forms for closing roles; title company fee ranges with date; update twice a year.
+- Sections: The formula · Each line item · Louisiana differences · Worked example · Run your own numbers (tool) · FAQ.
+- FAQs: Does Louisiana have a transfer tax? Who pays the notary? Are commissions fixed? What if I owe more than it is worth?
+- Visuals: one table of the worked example.
+- Internal links: `/sell-zachary`, Home Valuation, About.
+- Next action: run the net sheet; request a pricing read.

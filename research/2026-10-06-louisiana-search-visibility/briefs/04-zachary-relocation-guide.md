@@ -1,0 +1,13 @@
+# Brief 04: Zachary relocation guide (first-hand)
+- Target intent: relocation awareness; K35, K36, K43; prompts P10, P21.
+- Proposed URL / title / H1: `/moving-to-zachary` · "Moving to Zachary, LA: What to Know Before You Buy" · "Moving to Zachary".
+- Reader's question: is Zachary right for us, what does it cost, how long is the commute, and how do schools and flood zones work?
+- Evidence-led answer: location and commute facts with routes and typical times (state them as ranges with the source), housing price bands by subdivision (GBRAR, dated), property tax and homestead basics (assessor), flood designations by area (FEMA), schools: link to the Zachary Community School District's official attendance information without ranking or quality claims, parks and daily life.
+- Caleb's contribution: first-hand notes on subdivisions and what buyers overlook; what to check on a Zachary showing.
+- Sources and cadence: city, district, assessor, FEMA, GBRAR; update quarterly.
+- Sections: Where Zachary sits · What homes cost · Taxes and insurance · Flood zones · Schools (official sources) · Daily life · Buying process · FAQ.
+- FAQs: How far is the airport? Is there public transit? What is the median price right now?
+- Visuals: map; one price-band table.
+- Internal links: True Payment Calculator, Flood explainer, Neighborhood Match Quiz, Home Search Zachary.
+- Next action: "Plan a Zachary showing day" (buyer consult).
+- Guardrail: no steering; no protected-class language; no "safe" claims.

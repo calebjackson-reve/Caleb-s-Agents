@@ -1,0 +1,24 @@
+run_id,prompt_id,platform_product_mode,timestamp_ct,fresh_session,geography_assumed,caleb_mentioned,owned_url_cited,third_party_caleb_source,competitors_cited,result_summary,outcome
+R01,P01,Claude Code WebSearch-backed answer (Fable 5.1); proxy for Claude web search; NOT ChatGPT/Gemini/Perplexity/Copilot,2026-10-06 11:35,n/a (stateless tool call),none set (US index),no,no,none,"realestatewitch.com; homelight.com; beneworleans.com",Generic agent-selection advice; metrics to compare; no local agents named,successful negative
+R02,P02,same,2026-10-06 11:35,n/a,none,no,no,none,redfin.com only,No agents named; tool suggested checking Redfin/Zillow,successful negative
+R03,P03,same,2026-10-06 11:35,n/a,none,no,no,none,redfin.com,Price comparison from Redfin; generic professional types,successful negative
+R04,P04,same,2026-10-06 11:35,n/a,none,no,no,none,"neighborsfcu.org; census.gov",Cost components and median figures; no agent tools cited,successful negative
+R05,P05,same,2026-10-06 11:35,n/a,none,no,no,none,"protectmyzip.com; askdoss.com; buildability.us",Zone X explanation; 2016 flood context; no local agent,successful negative
+R06,P06,same,2026-10-06 11:35,n/a,none,no,no,none,"homelight.com; listwithclever.com; statecalc.com; askdoss.com",Net proceeds components; no Louisiana agent tool cited,successful negative
+R07,P07,same,2026-10-06 11:35,n/a,none,no,no,none,"homelight.com; fastexpert.com",Generic comparison advice; aggregators,successful negative
+R08,P08,same,2026-10-06 11:35,n/a,none,no,no,none,Joy Russell (225batonrouge.com); motelpro.com content farm,One agent named from a magazine piece,successful negative
+R09,P09,same,2026-10-06 11:35,n/a,none,no,no,none,"Cynthia Smith; Daryl May; Tara Smith; Tomeka Williams",Four land agents named from portal listings,successful negative
+R10,P10,same,2026-10-06 11:35,n/a,none,no,no,none,"Burns & Co; Michelle LaFleur; Relocation Center",Suburb list plus two named relocation sources,successful negative
+R11,P11,same,2026-10-06 11:35,n/a,none,no,no,none,"redfin.com; zillow.com",Small-market pricing caution; price-cut example,successful negative
+R12,P12,same,2026-10-06 11:35,n/a,none,no,no,none,"redfin.com; compass.com; DNR False River reports",Flood risk and checks; DNR annual report cited,successful negative
+R13,P13,same (branded control),2026-10-06 11:35,n/a,none,yes,no,homes.theadvocate.com/agents/25835/caleb-jackson.html,n/a,Stated Reve REALTORS as brokerage (stale); phone (225) 747-0303; no KW First Choice; no calebjackson.org,successful negative for owned citation; incorrect affiliation surfaced
+R14,P14,same (branded control),2026-10-06 11:35,n/a,none,no (different entity),no,none,reviews.birdeye.com 'The Action Jackson Group' (unrelated),Entity confusion with an unrelated 'Action Jackson Group' with 21 reviews,successful negative; confusion risk logged
+R15,P01,same (repeat),2026-10-06 11:50,n/a,none,no,no,none,"realestatewitch.com; homelight.com",Same sources; question list variant,successful negative (consistent)
+R16,P02,same (repeat),2026-10-06 11:50,n/a,none,no,no,none,redfin.com,Same; suggested GBRAR,successful negative (consistent)
+R17,P08,same (repeat),2026-10-06 11:50,n/a,none,no,no,none,Joy Russell,Same,successful negative (consistent)
+R18,P09,same (repeat),2026-10-06 11:50,n/a,none,no,no,none,"Cynthia Smith; Tara Smith; Daryl May; Tomeka Williams",Same four names,successful negative (consistent)
+X01,P01-P14,ChatGPT Search (chatgpt.com),2026-10-06,n/a,n/a,n/a,n/a,n/a,n/a,Host blocked by environment network policy; no account access from this session,inaccessible platform
+X02,P01-P14,Google AI Overviews / AI Mode (google.com),2026-10-06,n/a,n/a,n/a,n/a,n/a,n/a,Host blocked; AI feature trigger not observable,inaccessible platform
+X03,P01-P14,Gemini app (gemini.google.com),2026-10-06,n/a,n/a,n/a,n/a,n/a,n/a,Host blocked,inaccessible platform
+X04,P01-P14,Perplexity (perplexity.ai),2026-10-06,n/a,n/a,n/a,n/a,n/a,n/a,Host blocked,inaccessible platform
+X05,P01-P14,Microsoft Copilot / Bing (copilot.microsoft.com; bing.com),2026-10-06,n/a,n/a,n/a,n/a,n/a,n/a,Host blocked,inaccessible platform
