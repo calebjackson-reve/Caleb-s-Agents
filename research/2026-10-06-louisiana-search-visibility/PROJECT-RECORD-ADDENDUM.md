@@ -20,3 +20,6 @@ Note: the original record lives on the Mac and was not reachable from this cloud
 
 ## Decisions requested (see 10-source-register-coverage-approvals.md)
 D1 GBP identity model; D2 LP automation posture; D3 second-pass access path.
+
+## Decision log
+- 2026-10-06 (Caleb, direct): clients are not met at 17111 Commerce Centre Drive, Prairieville. GBP should sit in the area he represents most, Zachary and St. Francisville. Recorded as D1 direction. Implementation path and the one remaining question (anchor city) are in `drafts/gbp-field-drafts.md`. Supersedes the "confirm clients are met at the office" placeholder in the canonical facts.

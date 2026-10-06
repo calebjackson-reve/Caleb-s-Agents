@@ -37,7 +37,7 @@ Measurable targets cannot be set yet because the organic and GBP baselines are u
 
 ## Three unresolved decisions (yours)
 
-1. **GBP identity model.** Keep the brokerage-prefixed name at the Prairieville office, or change to a practitioner-only name and decide whether the pin should anchor in Prairieville (Ascension) when the priority markets are 35 to 50 miles north. Changing the name or address right after verification can trigger re-verification. Details and the LREC advertising tradeoff are in `03-lp-site-gbp-audit.md`.
+1. **GBP identity model (decided in part on 2026-10-06).** Caleb does not meet clients at the Prairieville office and wants the profile anchored in Zachary / St. Francisville. Service areas do not move the pin; only a re-verified hidden base address does. Plan: hide the address and add service areas now, then move the anchor and rename to "Caleb Jackson, REALTOR" in one re-verification. Still needed: which city the base address is in. Details in `drafts/gbp-field-drafts.md` and `03-lp-site-gbp-audit.md`.
 2. **Luxury Presence automation posture.** Keep AI SEO Specialist and AI Blog Specialist fully automatic, set them to review-before-publish, or pause them while manual metadata and content work runs. Until decided, every metadata draft in `09-change-drafts.md` is at risk of being overwritten.
 3. **Measurement access path.** Grant this environment network access to the site and Google hosts, or run the second pass on the Mac. Also confirm who owns the GA4 property Luxury Presence may already have set, and whether Caleb wants his own.
 

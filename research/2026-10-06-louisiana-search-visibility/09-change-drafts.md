@@ -5,7 +5,7 @@ Facts awaiting confirmation are marked **[CONFIRM]**. Ready drafts are marked **
 ## Canonical business facts (for every profile)
 - Name: Caleb Jackson, REALTOR® **[CONFIRM licensed name matches LREC record]**
 - Brokerage: Keller Williams First Choice (portal listings show "Keller Williams Realty-First Choice") **[CONFIRM exact licensed brokerage name and sponsoring broker's name and phone for LREC advertising]**
-- Office address: 17111 Commerce Centre Drive, Prairieville, LA 70769 (as shown on GBP) **[CONFIRM clients are met here; otherwise hide address]**
+- Office address: 17111 Commerce Centre Drive, Prairieville, LA 70769 is the brokerage office. Caleb confirmed 2026-10-06 he does not meet clients there. GBP address must be hidden; anchor to be moved to his base in the Zachary / St. Francisville area (see `drafts/gbp-field-drafts.md`, D1 record). Website and schema keep the brokerage office as the Organization address only.
 - Phone: (225) 747-0303 (bio draft and portal) **[CONFIRM this is the public business line]**
 - Website: https://calebjackson.org/
 - Service areas: Baton Rouge, Zachary, St. Francisville, New Roads, East Feliciana Parish, West Feliciana Parish; secondary: East Baton Rouge, Pointe Coupee, Ascension **[CONFIRM current coverage; do not list parishes without current service]**
@@ -13,8 +13,8 @@ Facts awaiting confirmation are marked **[CONFIRM]**. Ready drafts are marked **
 - Positioning line (ready): "Action Jackson. When it's time to move, we move."
 
 ## GBP field drafts (ready except marked)
-- Business name option 1 (practitioner-only, aligns with Google's multi-practitioner guidance): `Caleb Jackson, REALTOR` **[DECISION D1]**
-- Business name option 2 (keep current): `Keller Williams First Choice -Caleb Jackson`. Risk: guideline conflict at a multi-agent office.
+- Business name: `Caleb Jackson, REALTOR` (practitioner profile not at a shared office; D1 direction from Caleb 2026-10-06). Apply together with the anchor address change so only one re-verification occurs.
+- Address: hide (service-area business). Anchor address to be Caleb's base in the Zachary / north EBR / St. Francisville area **[CONFIRM which city]**.
 - Phone: (225) 747-0303 **[CONFIRM]**
 - Hours: Monday to Friday 8:00 AM to 6:00 PM; Saturday 9:00 AM to 2:00 PM; Sunday closed **[CONFIRM; or "open with no main hours" if by appointment]**
 - Website: `https://calebjackson.org/?utm_source=google&utm_medium=organic&utm_campaign=gbp`

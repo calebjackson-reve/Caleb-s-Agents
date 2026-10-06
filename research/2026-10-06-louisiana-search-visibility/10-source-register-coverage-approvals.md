@@ -30,7 +30,7 @@ This is a documented partial result, not a full-coverage claim.
 
 | # | Decision or approval | Exact proposal | Cost | Risk | Needed by |
 |---|---|---|---|---|---|
-| D1 | GBP identity model | Option 1: rename to "Caleb Jackson, REALTOR", keep brokerage in description; confirm whether clients are met at 17111 Commerce Centre Dr; if not, hide address and set service areas. Option 2: keep current name and address. | $0 | re-verification; temporary visibility dip | day 7 |
+| D1 | GBP identity model | DECIDED 2026-10-06 by Caleb: clients are not met at the Prairieville office; profile should sit in Zachary / St. Francisville. Plan: Step 1 hide address and add service areas now; Step 2 move the hidden anchor to Caleb's base address and rename to "Caleb Jackson, REALTOR" in one re-verification. Remaining question: which city the anchor address is in. | $0 | re-verification; temporary Maps dip during Step 2 | Step 1 day 7; Step 2 when Caleb can do verification |
 | D2 | LP automation posture | Ask LP to set AI SEO Specialist to review-before-apply or pause for 60 days; set AI Blog Specialist to draft-only; fact-check the two False River and St. Francisville posts. | $0 | less automated output | day 7 |
 | D3 | Second-pass access | Either add calebjackson.org, *.luxurypresence.com, google.com, support.google.com, developers.google.com, lrec.gov and competitor domains to this environment's allowed domains, or run the second pass on the Mac. | $0 | none | day 7 |
 | A1 | Apply GBP fields (phone, hours, website+UTM, description, services, service areas, products, Q&A) | per `drafts/gbp-field-drafts.md` after [CONFIRM] items | $0 | low | day 7 |
