@@ -6,6 +6,8 @@ Numbers in every bio: 81 closed deals (77 MLS sides plus 4 off-market, per Caleb
 
 Status key: [ ] not started · [x] saved · [~] saved with a change (note it)
 
+Progress 2026-10-07: Zillow, Google, Instagram, Facebook and YouTube saved from the Mac Remote Control session. LinkedIn open. Hand-finish list at the bottom.
+
 ---
 
 ## 1. Zillow (zillow.com/profile/CalebCBR, Edit profile)
@@ -19,7 +21,7 @@ Saved 2026-10-07 from the Mac Remote Control session and checked live. Foreclosu
 | Brokerage | Keller Williams First Choice (remove RÊVE) | [x] |
 | Office address | 17111 Commerce Centre Drive, Prairieville, LA 70769 | [x] |
 | Phone | (225) 747-0303 | [x] |
-| Email | aire@calebjackson.org (replace the old brokerage email) | [~] contact email set; login email still caleb.jackson@reverealtors.com, Zillow blocks scripted clicks on Edit email address, change it by hand or grant Terminal Accessibility |
+| Email | aire@calebjackson.org (replace the old brokerage email) | [~] contact email set; login email still caleb.jackson@reverealtors.com and aire@ not yet added as an extra email, both buttons ignore scripted clicks, do by hand |
 | Website | https://calebjackson.org | [x] |
 | Service areas | Zachary, Baton Rouge, St. Francisville, Central, Baker, Slaughter, Greenwell Springs, Denham Springs, Port Allen, New Roads, Prairieville, Jackson, Clinton | [x] |
 | Specialties | Buyer's agent, Listing agent, First-time buyers, Relocation, Investment and multifamily (remove Foreclosure) | [x] |
@@ -49,11 +51,11 @@ Source: today's ROAM MLS exports in Downloads. Zillow does not take an MLS numbe
 
 | # | Address | City | MLS # | Close date | Price | Side | Added |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | | | | | | | [ ] |
+| 1 to 6 | batch 1, 2022 closings (Grenada Dr, Fly Creek Rd, S Fairview Ave, Legion Rd, Olivia Dr, Cypress St) | | | | | | rejected |
 
-(18 rows to fill)
+Result 2026-10-07: Zillow rejected all six in batch 1 because it could not match them to the MLS Agent ID on the profile. Those sales were recorded under a different agent ID (likely the RÊVE-era MLS login). Fix by hand: Zillow profile, Settings, MLS Agent IDs, add every ID you have ever been assigned, then Zillow imports the sales itself. Batches 2 and 3 were not attempted.
 
-**Reviews:** from the profile page, Request a review, copy the direct link into the guided review page at calebjackson.org/review.
+**Reviews:** direct link, captured 2026-10-07: https://zillow.com/reviews/write/?s=X1-ZUru0sfamo3g95_93ahq (goes into the guided review page at calebjackson.org/review).
 
 ---
 
@@ -61,14 +63,14 @@ Source: today's ROAM MLS exports in Downloads. Zillow does not take an MLS numbe
 
 | Field | Set it to | Done |
 | --- | --- | --- |
-| Business name | Caleb Jackson, REALTOR | [ ] |
-| Primary category | Real estate agent | [ ] |
-| Phone | (225) 747-0303 | [ ] |
-| Website | https://calebjackson.org | [ ] |
-| Service areas | Same list as Zillow above | [ ] |
-| Review link | Copy from the Ask for reviews button into the guided review page | [ ] |
+| Business name | Caleb Jackson, REALTOR | [~] kept as "Keller Williams First Choice -Caleb Jackson", Caleb's call 2026-10-07 |
+| Primary category | Real estate agent | [~] edit submitted, Google review up to 7 days |
+| Phone | (225) 747-0303 | [~] submitted, pending Google review |
+| Website | https://calebjackson.org | [x] |
+| Service areas | Same list as Zillow above | [~] 18 areas submitted, pending Google review |
+| Review link | https://g.page/r/CRGu6xK7PX7tEBM/review | [x] |
 
-**Description (525 of 750 characters):**
+**Description (525 of 750 characters), saved live 2026-10-07:**
 
 ```
 Caleb Jackson, REALTOR with Keller Williams First Choice, serving Zachary, Baton Rouge, St. Francisville and the Felicianas. They call me Action Jackson because your call gets returned today. Since 2022: 81 closed deals and $25.1M in sales, 27 of them in the last 12 months, with 15 closings in Zachary alone. Buyers, sellers, first-time buyers and investment property, including a 30-unit multifamily sale. Priced straight, marketed hard, negotiated through to close. Faith first, family always. Call or text (225) 747-0303.
@@ -80,13 +82,13 @@ Caleb Jackson, REALTOR with Keller Williams First Choice, serving Zachary, Baton
 
 | Field | Set it to | Done |
 | --- | --- | --- |
-| Name | Caleb Jackson, REALTOR | [ ] |
-| Username | calebjacksonla (retire @calebjackson_24 everywhere it still appears, including the brand package) | [ ] |
-| Category | Real Estate Agent | [ ] |
-| Link | https://calebjackson.org | [ ] |
-| Contact | (225) 747-0303, aire@calebjackson.org | [ ] |
+| Name | Caleb Jackson, REALTOR | [x] |
+| Username | calebjacksonla (retire @calebjackson_24 everywhere it still appears, including the brand package) | [x] |
+| Category | Real Estate Agent | [x] |
+| Link | https://calebjackson.org | [x] |
+| Contact | (225) 747-0303, aire@calebjackson.org | [x] |
 
-**Bio (143 of 150 characters):**
+**Bio (143 of 150 characters), saved 2026-10-07:**
 
 ```
 Action Jackson. REALTOR, Keller Williams First Choice. Zachary, Baton Rouge, the Felicianas. 81 closings, $25M since 2022. Call returned today.
@@ -98,15 +100,15 @@ Action Jackson. REALTOR, Keller Williams First Choice. Zachary, Baton Rouge, the
 
 | Field | Set it to | Done |
 | --- | --- | --- |
-| Page name | Caleb Jackson, REALTOR | [ ] |
-| Category | Real Estate Agent | [ ] |
-| Phone | (225) 747-0303 | [ ] |
-| Email | aire@calebjackson.org | [ ] |
-| Website | https://calebjackson.org | [ ] |
-| Service area | Zachary, Baton Rouge, St. Francisville and surrounding | [ ] |
-| Office address | 17111 Commerce Centre Drive, Prairieville, LA 70769 | [ ] |
+| Page name | Caleb Jackson, REALTOR | [ ] blocked: the Name link in page settings loops to a blank page, rename by hand |
+| Category | Real Estate Agent | [x] |
+| Phone | (225) 747-0303 | [x] |
+| Email | aire@calebjackson.org | [x] |
+| Website | https://calebjackson.org | [x] |
+| Service area | Zachary, Baton Rouge, St. Francisville and surrounding | [x] |
+| Office address | 17111 Commerce Centre Drive, Prairieville, LA 70769 | [x] |
 
-**Intro (95 of 101 characters):**
+**Intro (95 of 101 characters), saved 2026-10-07:**
 
 ```
 Action Jackson. REALTOR, KW First Choice. Zachary + Baton Rouge. Your call gets returned today.
@@ -120,11 +122,11 @@ Action Jackson. REALTOR, KW First Choice. Zachary + Baton Rouge. Your call gets 
 
 | Field | Set it to | Done |
 | --- | --- | --- |
-| Channel name | Caleb Jackson, REALTOR | [ ] |
-| Links | https://calebjackson.org, instagram.com/calebjacksonla | [ ] |
-| Contact email | aire@calebjackson.org | [ ] |
+| Channel name | Caleb Jackson, REALTOR | [x] |
+| Links | https://calebjackson.org, instagram.com/calebjacksonla | [x] |
+| Contact email | aire@calebjackson.org | [x] |
 
-**Description (533 of 1,000 characters):**
+**Description (533 of 1,000 characters), saved and checked after reload 2026-10-07:**
 
 ```
 Real estate north of Baton Rouge, told straight. I'm Caleb Jackson, REALTOR with Keller Williams First Choice. They call me Action Jackson because your call gets returned today. Here you'll find listing tours, Zachary market updates, and one lesson from a real transaction each week: why a house needed a price cut, how concessions changed a deal, what to check before you buy in Copper Mill. 81 closed deals and $25.1M since 2022. Zachary, Baton Rouge, St. Francisville, the Felicianas. Call or text (225) 747-0303. calebjackson.org
@@ -133,6 +135,8 @@ Real estate north of Baton Rouge, told straight. I'm Caleb Jackson, REALTOR with
 ---
 
 ## 6. LinkedIn
+
+Not started as of 2026-10-07 16:16 UTC. The Mac session stopped to ask about a "no I didn't" reply. Current About already contains the referral line.
 
 | Field | Set it to | Done |
 | --- | --- | --- |
@@ -152,3 +156,12 @@ REALTOR, Keller Williams First Choice | Zachary and Baton Rouge | 81 closed deal
 ---
 
 When the numbers change, change them in the Client Review System doc first, then re-paste here. Zillow and Google get updated the same day the review page goes live.
+
+---
+
+## Hand-finish list (needs your own clicks)
+
+1. Zillow: add every MLS Agent ID you have held under Settings, so the 18 missing sales import. Then change the login email and add aire@calebjackson.org as an extra email.
+2. Facebook: rename the page to Caleb Jackson, REALTOR. Report the spam recommendation if it reappears (the Reviews tab showed none).
+3. LinkedIn: headline, position, location, website, contact, About, per section 6.
+4. Google: nothing to click. Phone, service areas and category are in Google's review queue, up to 7 days.
