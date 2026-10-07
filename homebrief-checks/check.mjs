@@ -56,6 +56,8 @@ while (queue.length) {
     page.on('request', r => requests.push(r.url()));
     let ok = true;
     try { await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 }); } catch (e) { ok = false; consoleErrors.push('load failed: ' + e.message); }
+    // Walk the page the way a visitor would, so lazy images load and scroll-triggered content reveals before capture.
+    if (ok) { await page.evaluate(async () => { const h = document.documentElement.scrollHeight; for (let y = 0; y < h; y += 500) { window.scrollTo(0, y); await new Promise(r => setTimeout(r, 60)); } window.scrollTo(0, 0); await new Promise(r => setTimeout(r, 400)); }); }
     const text = ok ? await page.evaluate(() => document.body.innerText) : '';
     const data = ok ? await page.evaluate((PHONE) => {
       const els = [...document.querySelectorAll('body *')];
@@ -64,7 +66,7 @@ while (queue.length) {
         const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden') continue;
         for (const k of ['color', 'backgroundColor', 'borderTopColor']) colors.add(cs[k]);
         const r = el.getBoundingClientRect();
-        if (el.matches('a,button,[role=button],input,select,textarea') && r.width && r.height && (r.width < 44 || r.height < 44)) small.push(el.tagName + ':' + (el.innerText || el.getAttribute('aria-label') || '').trim().slice(0, 30));
+        if (el.matches('a,button,[role=button],input,select,textarea') && !el.closest('svg') && r.width && r.height && (r.width < 44 || r.height < 44)) small.push(el.tagName + ':' + (el.innerText || el.getAttribute('aria-label') || '').trim().slice(0, 30));
         if (el.childElementCount === 0 && (el.innerText || '').trim().length > 20 && parseFloat(cs.fontSize) < 17 && !el.closest('footer,small,figcaption,.hint')) tiny.push(el.tagName + ':' + el.innerText.trim().slice(0, 30));
       }
       const links = [...document.querySelectorAll('a[href]')].map(a => a.getAttribute('href'));
@@ -72,7 +74,7 @@ while (queue.length) {
       const internal = links.filter(h => h && !/^(https?:|mailto:|tel:|sms:|#|javascript:)/.test(h)).map(h => new URL(h, location.href).href.split('#')[0]);
       const media = [...document.querySelectorAll('img,video')].map(m => ({ tag: m.tagName, ok: m.tagName === 'IMG' ? (m.complete && m.naturalWidth > 0) : (m.readyState >= 1 || !!m.poster), muted: m.muted, autoplay: m.autoplay }));
       const emailFields = document.querySelectorAll('input[type=email]').length;
-      return { colors: [...colors], small, tiny, sms, tel, internal, media, emailFields, phoneOk: [...sms, ...tel].every(h => h.replace(/\D/g, '').endsWith(PHONE)) };
+      return { colors: [...colors], small, tiny, sms, tel, internal, media, emailFields, phoneOk: [...sms, ...tel].every(h => h.split('?')[0].replace(/\D/g, '').endsWith(PHONE)) };
     }, PHONE) : { colors: [], small: [], tiny: [], sms: [], tel: [], internal: [], media: [], emailFields: 0, phoneOk: false };
     if (width === 1440 && reduced === 'no-preference') data.internal.forEach(u => u.startsWith(base) && !seen.has(u) && queue.push(u));
     const hexes = data.colors.map(rgbToHex).filter(Boolean);

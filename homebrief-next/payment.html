@@ -1,0 +1,80 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>What would I pay a month? | Caleb Jackson</title><meta name="description" content="A Louisiana mortgage payment tool that shows the answer first. Slide price, down payment and rate; add taxes, homeowners and flood insurance.">
+<link rel="preload" as="font" href="assets/InstrumentSerif-Regular.ttf" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="theme.css">
+</head><body data-page="payment">
+<div class="preview-bar">Preview build · not published · tools run in your browser · nothing sends unless you tap send</div>
+<div class="progress" aria-hidden="true"></div>
+<header class="site-header"><div class="wrap">
+  <a class="wordmark" href="index.html">caleb jackson<span class="dot">.</span></a>
+  <nav class="nav" aria-label="Main"><a href="payment.html" aria-current=page>Buy</a><a href="net-sheet.html">Sell</a><a href="flood.html">Flood</a><a href="tools.html">Tools</a><a href="owners-brief.html">Owner's brief</a><a href="about.html">About</a></nav>
+  <div class="header-actions">
+    <a class="call-link" href="tel:+12257470303">Call</a>
+    <a class="text-caleb" href="sms:+12257470303" aria-label="Text Caleb at 225 747 0303">Text Caleb</a>
+    <button class="menu-btn" data-menu-open aria-expanded="false" aria-controls="menu">Menu</button>
+  </div>
+</div></header>
+<div class="menu" id="menu" data-menu hidden>
+  <header><a class="wordmark" href="index.html">caleb jackson<span class="dot">.</span></a><button class="menu-btn" data-menu-close>Close</button></header>
+  <nav aria-label="All pages"><a href="payment.html">Buy<span>.</span></a><a href="net-sheet.html">Sell<span>.</span></a><a href="flood.html">Flood<span>.</span></a><a href="tools.html">Tools<span>.</span></a><a href="owners-brief.html">Owner's brief<span>.</span></a><a href="about.html">About<span>.</span></a><a href="golf.html">Golf and water<span>.</span></a><a href="lessons.html">Field notes<span>.</span></a><a href="contact.html">Contact<span>.</span></a></nav>
+  <footer>Caleb Jackson, REALTOR · Keller Williams First Choice · <a href="tel:+12257470303">(225) 747-0303</a></footer>
+</div>
+<main id="main"><section class="section" style="padding-top:calc(72px + var(--section))"><div class="wrap ">
+  <div><p class="eyebrow reveal">Buying · answer first</p><h1 class="kinetic" style="font-size:clamp(40px,6.5vw,88px)">What would I pay a month<span class="period" tabindex="0">?</span></h1><p class="lead reveal" style="margin-top:22px">Slide the price, the down payment and the rate. The number updates as you move. Add Louisiana's taxes and insurance when you know them.</p></div>
+</div></section>
+<section class="section" style="padding-top:0"><div class="wrap grid-2 wide-right" data-explain-scope>
+  <div>
+    <div class="toggle" data-explain-toggle role="group" aria-label="How to explain this"><button type="button" data-mode="plain" aria-pressed="true">Plain</button><button type="button" data-mode="new" aria-pressed="false">I'm new to this</button></div>
+    <div data-explain="plain" style="margin-top:22px;display:grid;gap:14px">
+      <p>Principal and interest is the loan. Taxes, homeowners insurance, flood insurance and any HOA sit on top, and in Louisiana the insurance line is the one that surprises people.</p>
+      <p>The rate here is an example. Your lender's quote is the real one. Twenty percent down avoids mortgage insurance on a conventional loan; FHA allows 3.5 percent and VA or USDA can be zero where you qualify.</p>
+      <p class="small">The link in your address bar carries these inputs. Copy it and the result comes back exactly, on any phone, with no account.</p>
+    </div>
+    <div data-explain="new" hidden style="margin-top:22px;display:grid;gap:14px">
+      <p><b>The home price</b> is what you'd pay for the house. <b>Down payment</b> is the part you pay in cash up front; the rest is the loan. <b>The rate</b> is what the bank charges each year to lend you the rest.</p>
+      <p>The big number is what you'd send the bank each month for the loan alone. Real life adds property tax, homeowners insurance, and in much of Louisiana, flood insurance. Open the costs section and the number grows to include them.</p>
+      <p><b>What to do with it:</b> if the big number is more than about a third of what you take home each month, slide the price down until it isn't. That is the house to go look at.</p>
+    </div>
+  </div>
+  <form class="tool card" data-calc="payment" data-sms-scope novalidate>
+  <div data-answer class="answer" aria-live="polite"><span class="n">$1,517</span><small>a month, principal and interest only on $300,000 with 20% down at 6.5% for 30 years</small></div>
+  <div class="field"><label for="f-price">Home price<output></output></label><input id="f-price" type="range" name="price" min="75000" max="1000000" step="5000" value="300000" data-format="money"></div>
+  <div class="field"><label for="f-down">Down payment<output></output></label><input id="f-down" type="range" name="down" min="0" max="50" step="0.5" value="20" data-format="pct"><span class="hint">3% conventional, 3.5% FHA, 0% VA or USDA where it applies.</span></div>
+  <div class="field"><label for="f-rate">Interest rate<output></output></label><input id="f-rate" type="range" name="rate" min="2" max="10" step="0.125" value="6.5" data-format="pct"><span class="hint">Use the rate your lender quoted. This one is an example, not today&#x27;s rate.</span></div>
+  <div class="field"><label>Loan term</label><div class="chips" data-chips="term"><button type="button" class="chip" data-value="15" aria-pressed="false">15 years</button><button type="button" class="chip" data-value="20" aria-pressed="false">20 years</button><button type="button" class="chip" data-value="30" aria-pressed="true">30 years</button></div><input type="hidden" name="term" value="30"></div>
+  <details class="more"><summary>Add the Louisiana costs you know</summary><div class="tool" style="margin-top:14px">
+  <div class="field"><label for="f-taxes">Property taxes a year<output></output></label><input id="f-taxes" type="range" name="taxes" min="0" max="12000" step="100" value="0" data-format="money"><span class="hint">East Baton Rouge: the homestead exemption covers the first $75,000 of value on parish taxes.</span></div>
+  <div class="field"><label for="f-ins">Homeowners insurance a year<output></output></label><input id="f-ins" type="range" name="ins" min="0" max="12000" step="100" value="0" data-format="money"><span class="hint">Louisiana averages are high right now. A FORTIFIED roof earns a mandatory discount from January 1, 2027.</span></div>
+  <div class="field"><label for="f-flood">Flood insurance a year<output></output></label><input id="f-flood" type="range" name="flood" min="0" max="6000" step="50" value="0" data-format="money"><span class="hint">Zone X often runs a few hundred dollars. AE depends on the elevation certificate.</span></div>
+  <div class="field"><label for="f-hoa">HOA dues a month<output></output></label><input id="f-hoa" type="range" name="hoa" min="0" max="400" step="5" value="0" data-format="money"></div>
+  <div class="field"><label for="f-pmi">Mortgage insurance a month<output></output></label><input id="f-pmi" type="range" name="pmi" min="0" max="400" step="5" value="0" data-format="money"><span class="hint">Usually applies under 20 percent down on a conventional loan.</span></div>
+</div></details>
+  <dl class="lines" data-lines></dl>
+  <p class="note" data-note></p>
+  <div class="actions"><a class="btn" data-sms-result href="sms:+12257470303">Text me this result <span class="arrow">↗</span></a><button type="button" class="mic" data-mic aria-pressed="false">🎙 Say it instead</button></div>
+  <p class="small" data-mic-status></p>
+</form>
+</div></section></main>
+<footer class="site-footer"><div class="wrap">
+  <div class="grid">
+    <div>
+      <a class="wordmark" href="index.html">caleb jackson<span class="dot">.</span></a>
+      <p class="numbers" style="margin-top:18px">81 deals. $25.1M sold.<br><span>Every one by referral.</span></p>
+      <p class="small" style="color:rgba(251,248,243,.75);margin-top:14px">Caleb Jackson, REALTOR®<br>Keller Williams First Choice<br>17111 Commerce Centre Drive, Prairieville, LA 70769</p>
+      <p style="margin-top:14px"><a href="sms:+12257470303">Text</a> · <a href="tel:+12257470303">(225) 747-0303</a> · <a href="mailto:aire@calebjackson.org">aire@calebjackson.org</a> · <a href="https://instagram.com/calebjacksonla" rel="noopener">@calebjacksonla</a></p>
+    </div>
+    <nav aria-label="Tools"><b>Tools</b><a href="payment.html">What would I pay a month?</a><a href="net-sheet.html">What would I walk away with?</a><a href="flood.html">What flood zone is this?</a><a href="showing-plan.html">The Saturday plan</a><a href="owners-brief.html">The owner's brief</a></nav>
+    <nav aria-label="Caleb"><b>Caleb</b><a href="about.html">The map is the resume</a><a href="golf.html">Golf and water</a><a href="lessons.html">Field notes</a><a href="contact.html">Contact</a></nav>
+  </div>
+  <p class="legal">Equal Housing Opportunity · REALTOR® · Keller Williams First Choice. Numbers are user-confirmed from the MLS, not independently audited. Tools give estimates from your inputs and public data; property condition, flood status, insurance and financing need confirmation from the right professional. Nothing on this site sends a message unless you tap send.</p>
+</div></footer>
+<button class="jarvis-fab" data-jarvis-open aria-haspopup="dialog" aria-label="Ask about any address"><span class="pulse" aria-hidden="true"></span>Ask<span class="label"> about any address</span></button>
+<section class="jarvis" data-jarvis role="dialog" aria-label="Ask Caleb's site" aria-hidden="true">
+  <header><b>Caleb, straight<span class="dot">.</span></b><button class="menu-btn" data-jarvis-close>Close</button></header>
+  <div class="log" aria-live="polite"></div>
+  <div class="starters"><button class="chip">What flood zone is 4000 McHugh Rd, Zachary?</button><button class="chip">Who is Caleb?</button><button class="chip">How much is insurance?</button></div>
+  <form><label class="sr-only" for="jarvis-q">Your question</label><input id="jarvis-q" type="text" placeholder="Ask about an address, Caleb, or this site" autocomplete="off"><button class="btn" type="submit">Ask</button></form>
+</section>
+<div class="egg" aria-hidden="true"><img src="assets/home-background-poster.jpg" alt=""><p>When it's time to move,<br>we move<span class="dot">.</span></p></div>
+<script src="js/calc-core.js"></script><script src="js/water.js"></script><script src="js/calc-ui.js"></script><script src="js/flood.js"></script><script src="js/map.js"></script><script src="js/jarvis.js"></script><script src="js/motion.js"></script>
+</body></html>

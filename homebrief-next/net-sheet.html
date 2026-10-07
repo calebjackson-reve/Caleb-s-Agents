@@ -1,0 +1,76 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>What would I walk away with? | Caleb Jackson</title><meta name="description" content="A Louisiana seller net sheet that answers first. Sale price minus payoff minus the costs you add. Commission is never assumed.">
+<link rel="preload" as="font" href="assets/InstrumentSerif-Regular.ttf" type="font/ttf" crossorigin>
+<link rel="stylesheet" href="theme.css">
+</head><body data-page="net-sheet">
+<div class="preview-bar">Preview build · not published · tools run in your browser · nothing sends unless you tap send</div>
+<div class="progress" aria-hidden="true"></div>
+<header class="site-header"><div class="wrap">
+  <a class="wordmark" href="index.html">caleb jackson<span class="dot">.</span></a>
+  <nav class="nav" aria-label="Main"><a href="payment.html">Buy</a><a href="net-sheet.html" aria-current=page>Sell</a><a href="flood.html">Flood</a><a href="tools.html">Tools</a><a href="owners-brief.html">Owner's brief</a><a href="about.html">About</a></nav>
+  <div class="header-actions">
+    <a class="call-link" href="tel:+12257470303">Call</a>
+    <a class="text-caleb" href="sms:+12257470303" aria-label="Text Caleb at 225 747 0303">Text Caleb</a>
+    <button class="menu-btn" data-menu-open aria-expanded="false" aria-controls="menu">Menu</button>
+  </div>
+</div></header>
+<div class="menu" id="menu" data-menu hidden>
+  <header><a class="wordmark" href="index.html">caleb jackson<span class="dot">.</span></a><button class="menu-btn" data-menu-close>Close</button></header>
+  <nav aria-label="All pages"><a href="payment.html">Buy<span>.</span></a><a href="net-sheet.html">Sell<span>.</span></a><a href="flood.html">Flood<span>.</span></a><a href="tools.html">Tools<span>.</span></a><a href="owners-brief.html">Owner's brief<span>.</span></a><a href="about.html">About<span>.</span></a><a href="golf.html">Golf and water<span>.</span></a><a href="lessons.html">Field notes<span>.</span></a><a href="contact.html">Contact<span>.</span></a></nav>
+  <footer>Caleb Jackson, REALTOR · Keller Williams First Choice · <a href="tel:+12257470303">(225) 747-0303</a></footer>
+</div>
+<main id="main"><section class="section" style="padding-top:calc(72px + var(--section))"><div class="wrap ">
+  <div><p class="eyebrow reveal">Selling · answer first</p><h1 class="kinetic" style="font-size:clamp(40px,6.5vw,88px)">What would I walk away with<span class="period" tabindex="0">?</span></h1><p class="lead reveal" style="margin-top:22px">A possible sale price, minus your payoff, minus the costs you choose to add. Nothing is assumed, including commission.</p></div>
+</div></section>
+<section class="section" style="padding-top:0"><div class="wrap grid-2 wide-right" data-explain-scope>
+  <div>
+    <div class="toggle" data-explain-toggle role="group" aria-label="How to explain this"><button type="button" data-mode="plain" aria-pressed="true">Plain</button><button type="button" data-mode="new" aria-pressed="false">I'm new to this</button></div>
+    <div data-explain="plain" style="margin-top:22px;display:grid;gap:14px">
+      <p>Price is one number. Net is the one you live with. Start with a realistic price, subtract the payoff from your last statement, then add the selling costs you know. Commission is whatever you and Caleb agree on; the tool does not assume one.</p>
+      <p>Compare three prices the way Caleb does on a listing appointment: the number you want, the number the comps support, and the number that sells in two weeks. The net on each is the real conversation.</p>
+    </div>
+    <div data-explain="new" hidden style="margin-top:22px;display:grid;gap:14px">
+      <p><b>Sale price</b> is what a buyer pays. <b>Payoff</b> is what you still owe the bank. The difference is the starting point, and then selling costs come out of it: the agents' commission, title fees, anything you agree to fix or pay for the buyer.</p>
+      <p>The big number is what you'd likely walk out of closing with. It is an estimate until the title company sends the real sheet, but it is usually close.</p>
+    </div>
+  </div>
+  <form class="tool card" data-calc="net" data-sms-scope novalidate>
+  <div data-answer class="answer" aria-live="polite"><span class="n">$100,000</span><small>estimated to you at closing on a $300,000 sale, after a $200,000 payoff</small></div>
+  <div class="field"><label for="f-sale">Possible sale price<output></output></label><input id="f-sale" type="range" name="sale" min="75000" max="1000000" step="5000" value="300000" data-format="money"></div>
+  <div class="field"><label for="f-payoff">Mortgage and lien payoff<output></output></label><input id="f-payoff" type="range" name="payoff" min="0" max="800000" step="5000" value="200000" data-format="money"><span class="hint">Use the payoff on your last statement, not the balance.</span></div>
+  <details class="more"><summary>Add the selling costs you know</summary><div class="tool" style="margin-top:14px">
+  <div class="field"><label for="f-comm">Commission, total<output></output></label><input id="f-comm" type="range" name="comm" min="0" max="8" step="0.25" value="0" data-format="pct"><span class="hint">Whatever you and Caleb agree to. Nothing is assumed.</span></div>
+  <div class="field"><label for="f-title">Seller title and closing fees<output></output></label><input id="f-title" type="range" name="title" min="0" max="6000" step="100" value="0" data-format="money"><span class="hint">The title company issues the real figure. Ask early.</span></div>
+  <div class="field"><label for="f-other">Other seller costs<output></output></label><input id="f-other" type="range" name="other" min="0" max="10000" step="100" value="0" data-format="money"><span class="hint">Termite letter, home warranty, HOA transfer, prorated taxes.</span></div>
+  <div class="field"><label for="f-conc">Concessions to the buyer<output></output></label><input id="f-conc" type="range" name="conc" min="0" max="20000" step="250" value="0" data-format="money"><span class="hint">Closing-cost help is common on Louisiana FHA and rural loans.</span></div>
+  <div class="field"><label for="f-repairs">Repairs you agree to pay for<output></output></label><input id="f-repairs" type="range" name="repairs" min="0" max="20000" step="250" value="0" data-format="money"></div>
+</div></details>
+  <dl class="lines" data-lines></dl>
+  <p class="note" data-note></p>
+  <div class="actions"><a class="btn" data-sms-result href="sms:+12257470303">Text me this result <span class="arrow">↗</span></a><button type="button" class="mic" data-mic aria-pressed="false">🎙 Say it instead</button></div>
+  <p class="small" data-mic-status></p>
+</form>
+</div></section></main>
+<footer class="site-footer"><div class="wrap">
+  <div class="grid">
+    <div>
+      <a class="wordmark" href="index.html">caleb jackson<span class="dot">.</span></a>
+      <p class="numbers" style="margin-top:18px">81 deals. $25.1M sold.<br><span>Every one by referral.</span></p>
+      <p class="small" style="color:rgba(251,248,243,.75);margin-top:14px">Caleb Jackson, REALTOR®<br>Keller Williams First Choice<br>17111 Commerce Centre Drive, Prairieville, LA 70769</p>
+      <p style="margin-top:14px"><a href="sms:+12257470303">Text</a> · <a href="tel:+12257470303">(225) 747-0303</a> · <a href="mailto:aire@calebjackson.org">aire@calebjackson.org</a> · <a href="https://instagram.com/calebjacksonla" rel="noopener">@calebjacksonla</a></p>
+    </div>
+    <nav aria-label="Tools"><b>Tools</b><a href="payment.html">What would I pay a month?</a><a href="net-sheet.html">What would I walk away with?</a><a href="flood.html">What flood zone is this?</a><a href="showing-plan.html">The Saturday plan</a><a href="owners-brief.html">The owner's brief</a></nav>
+    <nav aria-label="Caleb"><b>Caleb</b><a href="about.html">The map is the resume</a><a href="golf.html">Golf and water</a><a href="lessons.html">Field notes</a><a href="contact.html">Contact</a></nav>
+  </div>
+  <p class="legal">Equal Housing Opportunity · REALTOR® · Keller Williams First Choice. Numbers are user-confirmed from the MLS, not independently audited. Tools give estimates from your inputs and public data; property condition, flood status, insurance and financing need confirmation from the right professional. Nothing on this site sends a message unless you tap send.</p>
+</div></footer>
+<button class="jarvis-fab" data-jarvis-open aria-haspopup="dialog" aria-label="Ask about any address"><span class="pulse" aria-hidden="true"></span>Ask<span class="label"> about any address</span></button>
+<section class="jarvis" data-jarvis role="dialog" aria-label="Ask Caleb's site" aria-hidden="true">
+  <header><b>Caleb, straight<span class="dot">.</span></b><button class="menu-btn" data-jarvis-close>Close</button></header>
+  <div class="log" aria-live="polite"></div>
+  <div class="starters"><button class="chip">What flood zone is 4000 McHugh Rd, Zachary?</button><button class="chip">Who is Caleb?</button><button class="chip">How much is insurance?</button></div>
+  <form><label class="sr-only" for="jarvis-q">Your question</label><input id="jarvis-q" type="text" placeholder="Ask about an address, Caleb, or this site" autocomplete="off"><button class="btn" type="submit">Ask</button></form>
+</section>
+<div class="egg" aria-hidden="true"><img src="assets/home-background-poster.jpg" alt=""><p>When it's time to move,<br>we move<span class="dot">.</span></p></div>
+<script src="js/calc-core.js"></script><script src="js/water.js"></script><script src="js/calc-ui.js"></script><script src="js/flood.js"></script><script src="js/map.js"></script><script src="js/jarvis.js"></script><script src="js/motion.js"></script>
+</body></html>

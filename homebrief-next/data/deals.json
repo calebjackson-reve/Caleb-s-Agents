@@ -1,0 +1,584 @@
+{
+ "as_of": "2026-10-07",
+ "source": "ROAM MLS closed-sale exports, listing and buyer side, deduplicated by MLS number",
+ "count": 72,
+ "off_market_not_shown": 4,
+ "deals": [
+  {
+   "street": "6765 Corporate Boulevard",
+   "city": "Baton Rouge",
+   "neighborhood": "Reserve At Cedar Lodge",
+   "year": 2026,
+   "price": 169900,
+   "side": "both"
+  },
+  {
+   "street": "336 Seyburn Dr",
+   "city": "Baton Rouge",
+   "neighborhood": "Mirabeau Gardens",
+   "year": 2026,
+   "price": 247000,
+   "side": "buyer"
+  },
+  {
+   "street": "11231 Suncrest Ct",
+   "city": "Baton Rouge",
+   "neighborhood": "Comite Hills West",
+   "year": 2026,
+   "price": 325000,
+   "side": "buyer"
+  },
+  {
+   "street": "2129 Hillstone Dr",
+   "city": "Baton Rouge",
+   "neighborhood": "Fairhill At Bluebonnet Hi",
+   "year": 2026,
+   "price": 356000,
+   "side": "buyer"
+  },
+  {
+   "street": "5834 Guice Dr",
+   "city": "Baton Rouge",
+   "neighborhood": "Oak Haven",
+   "year": 2026,
+   "price": 160000,
+   "side": "listing"
+  },
+  {
+   "street": "13902 Ouachita Ave",
+   "city": "Baton Rouge",
+   "neighborhood": "Jackson Park",
+   "year": 2026,
+   "price": 224000,
+   "side": "listing"
+  },
+  {
+   "street": "30787 Dunn Rd",
+   "city": "Denham Springs",
+   "neighborhood": "Summerfield",
+   "year": 2026,
+   "price": 280000,
+   "side": "listing"
+  },
+  {
+   "street": "11313 Triche Rd",
+   "city": "Gonzales",
+   "neighborhood": "Kathryndale",
+   "year": 2026,
+   "price": 201000,
+   "side": "buyer"
+  },
+  {
+   "street": "16436 Spanish Ct",
+   "city": "Greenwell Springs",
+   "neighborhood": "Bridlewood",
+   "year": 2026,
+   "price": 280000,
+   "side": "buyer"
+  },
+  {
+   "street": "Tract V-4 Jim Price Rd",
+   "city": "Greenwell Springs",
+   "neighborhood": "Rural Tract (No Subd)",
+   "year": 2026,
+   "price": 90000,
+   "side": "listing"
+  },
+  {
+   "street": "1709 W University Ave",
+   "city": "Lafayette",
+   "neighborhood": "West End Hgts",
+   "year": 2026,
+   "price": 243000,
+   "side": "listing"
+  },
+  {
+   "street": "28274 Lake Bruin Dr",
+   "city": "Livingston",
+   "neighborhood": "Lakeside Estates",
+   "year": 2026,
+   "price": 242000,
+   "side": "listing"
+  },
+  {
+   "street": "109 Morningside St",
+   "city": "New Roads",
+   "neighborhood": "Morningside",
+   "year": 2026,
+   "price": 215000,
+   "side": "listing"
+  },
+  {
+   "street": "1910 Lansdowne Dr",
+   "city": "Port Allen",
+   "neighborhood": "Lynndale",
+   "year": 2026,
+   "price": 190000,
+   "side": "both"
+  },
+  {
+   "street": "554 Avenue F",
+   "city": "Port Allen",
+   "neighborhood": "Oaks The",
+   "year": 2026,
+   "price": 295000,
+   "side": "buyer"
+  },
+  {
+   "street": "17122 Carpenters Chapel Rd",
+   "city": "Prairieville",
+   "neighborhood": "Greenland Acres",
+   "year": 2026,
+   "price": 221000,
+   "side": "buyer"
+  },
+  {
+   "street": "18173 River Birch Dr",
+   "city": "Prairieville",
+   "neighborhood": "Manchac Commons",
+   "year": 2026,
+   "price": 275800,
+   "side": "buyer"
+  },
+  {
+   "street": "1333 Holly Dr",
+   "city": "Slaughter",
+   "neighborhood": "Ashcliff Acres",
+   "year": 2026,
+   "price": 370000,
+   "side": "buyer"
+  },
+  {
+   "street": "Lot 644A Fairlane Rd",
+   "city": "St Francisville",
+   "neighborhood": "Rosemound Campsites",
+   "year": 2026,
+   "price": 87500,
+   "side": "buyer"
+  },
+  {
+   "street": "10006 Trails End Rd",
+   "city": "St Francisville",
+   "neighborhood": "Dogwood Trails",
+   "year": 2026,
+   "price": 283500,
+   "side": "both"
+  },
+  {
+   "street": "4945 Kennedy Dr",
+   "city": "Zachary",
+   "neighborhood": "Woodview Subd",
+   "year": 2026,
+   "price": 185000,
+   "side": "buyer"
+  },
+  {
+   "street": "4353 Pasture Clear Ct",
+   "city": "Zachary",
+   "neighborhood": "Ravenwood",
+   "year": 2026,
+   "price": 210000,
+   "side": "buyer"
+  },
+  {
+   "street": "4615 41St St",
+   "city": "Zachary",
+   "neighborhood": "West End",
+   "year": 2026,
+   "price": 197500,
+   "side": "listing"
+  },
+  {
+   "street": "1928 E Eagle St",
+   "city": "Zachary",
+   "neighborhood": "Marita Terrace",
+   "year": 2026,
+   "price": 252000,
+   "side": "listing"
+  },
+  {
+   "street": "945 Heather Dr",
+   "city": "Baton Rouge",
+   "neighborhood": "Sherwood Forest West",
+   "year": 2025,
+   "price": 287500,
+   "side": "buyer"
+  },
+  {
+   "street": "1750 Live Oak Dr",
+   "city": "Brusly",
+   "neighborhood": "Live Oak",
+   "year": 2025,
+   "price": 480000,
+   "side": "listing"
+  },
+  {
+   "street": "23110 Lee Price Rd",
+   "city": "Clinton",
+   "neighborhood": "Rural Tract (No Subd)",
+   "year": 2025,
+   "price": 145000,
+   "side": "buyer"
+  },
+  {
+   "street": "756 Lynn Dr",
+   "city": "Denham Springs",
+   "neighborhood": "Rhett Place",
+   "year": 2025,
+   "price": 205000,
+   "side": "buyer"
+  },
+  {
+   "street": "7287 Mosspoint Ln",
+   "city": "Denham Springs",
+   "neighborhood": "Glenwood Estates",
+   "year": 2025,
+   "price": 226000,
+   "side": "buyer"
+  },
+  {
+   "street": "1906 Lansdown Drive",
+   "city": "Port Allen",
+   "neighborhood": "Lynndale",
+   "year": 2025,
+   "price": 650000,
+   "side": "listing"
+  },
+  {
+   "street": "5386 Rosedown Ct",
+   "city": "St Francisville",
+   "neighborhood": "Rosedown Plantation",
+   "year": 2025,
+   "price": 3000000,
+   "side": "both"
+  },
+  {
+   "street": "3348 Cedar St",
+   "city": "Zachary",
+   "neighborhood": "Cypress Park",
+   "year": 2025,
+   "price": 190000,
+   "side": "buyer"
+  },
+  {
+   "street": "2179 S Turnberry Ave",
+   "city": "Zachary",
+   "neighborhood": "Quarter at Copper Mill, The",
+   "year": 2025,
+   "price": 352000,
+   "side": "buyer"
+  },
+  {
+   "street": "8595 Ormand Dr",
+   "city": "Zachary",
+   "neighborhood": "Richland Subd",
+   "year": 2025,
+   "price": 438000,
+   "side": "listing"
+  },
+  {
+   "street": "23421 Sunnyside Ln",
+   "city": "Zachary",
+   "neighborhood": "Sunnyside Estates",
+   "year": 2025,
+   "price": 560000,
+   "side": "listing"
+  },
+  {
+   "street": "6878 Yorkdale Ave",
+   "city": "Baton Rouge",
+   "neighborhood": "Yorkdale",
+   "year": 2024,
+   "price": 175000,
+   "side": "listing"
+  },
+  {
+   "street": "25205 La Hwy 16",
+   "city": "Denham Springs",
+   "neighborhood": "Live Oak Acres",
+   "year": 2024,
+   "price": 184500,
+   "side": "buyer"
+  },
+  {
+   "street": "6820 Sewell St",
+   "city": "Fordoche",
+   "neighborhood": "Simmons",
+   "year": 2024,
+   "price": 216000,
+   "side": "buyer"
+  },
+  {
+   "street": "310 Janis St",
+   "city": "New Roads",
+   "neighborhood": "City Of New Roads",
+   "year": 2024,
+   "price": 250000,
+   "side": "listing"
+  },
+  {
+   "street": "1107 Midway Rd",
+   "city": "Slaughter",
+   "neighborhood": "Rural Tract (No Subd)",
+   "year": 2024,
+   "price": 450000,
+   "side": "buyer"
+  },
+  {
+   "street": "10006 Trails End",
+   "city": "St Francisville",
+   "neighborhood": "Dogwood Trails",
+   "year": 2024,
+   "price": 258000,
+   "side": "buyer"
+  },
+  {
+   "street": "4000 Mchugh Rd",
+   "city": "Zachary",
+   "neighborhood": "Cottages At Blue Heron Lakes The",
+   "year": 2024,
+   "price": 165000,
+   "side": "buyer"
+  },
+  {
+   "street": "3521 Cherry St",
+   "city": "Zachary",
+   "neighborhood": "Oak Park",
+   "year": 2024,
+   "price": 197000,
+   "side": "buyer"
+  },
+  {
+   "street": "2217 Marie St",
+   "city": "Zachary",
+   "neighborhood": "Marita Terrace",
+   "year": 2024,
+   "price": 306000,
+   "side": "buyer"
+  },
+  {
+   "street": "7284 Marshall Bond Dr",
+   "city": "Zachary",
+   "neighborhood": "Marshall Bond Estates",
+   "year": 2024,
+   "price": 235000,
+   "side": "listing"
+  },
+  {
+   "street": "7141 Point Avery Dr",
+   "city": "Baton Rouge",
+   "neighborhood": "Lagniappe Square",
+   "year": 2023,
+   "price": 198500,
+   "side": "buyer"
+  },
+  {
+   "street": "570 Caddo St",
+   "city": "Baton Rouge",
+   "neighborhood": "Capital Heights",
+   "year": 2023,
+   "price": 217500,
+   "side": "buyer"
+  },
+  {
+   "street": "12644 E Robin Hood Dr",
+   "city": "Baton Rouge",
+   "neighborhood": "Sherwood Forest",
+   "year": 2023,
+   "price": 279000,
+   "side": "listing"
+  },
+  {
+   "street": "9123 Monhegan Ave",
+   "city": "Central",
+   "neighborhood": "Monhegan",
+   "year": 2023,
+   "price": 189900,
+   "side": "listing"
+  },
+  {
+   "street": "2044 Falconcrest St",
+   "city": "Denham Springs",
+   "neighborhood": "Falconcrest",
+   "year": 2023,
+   "price": 215000,
+   "side": "buyer"
+  },
+  {
+   "street": "Tract V-4 Jim Price Rd",
+   "city": "Greenwell Springs",
+   "neighborhood": "Rural Tract (No Subd)",
+   "year": 2023,
+   "price": 85000,
+   "side": "buyer"
+  },
+  {
+   "street": "17113 Bentons Ferry Ave",
+   "city": "Greenwell Springs",
+   "neighborhood": "Burlington Lakes",
+   "year": 2023,
+   "price": 295000,
+   "side": "buyer"
+  },
+  {
+   "street": "1412 Chestnut St",
+   "city": "Jackson",
+   "neighborhood": "Town Of Jackson",
+   "year": 2023,
+   "price": 58000,
+   "side": "buyer"
+  },
+  {
+   "street": "17047 Shearwater Trace",
+   "city": "Prairieville",
+   "neighborhood": "Jamestown Crossing",
+   "year": 2023,
+   "price": 297680,
+   "side": "buyer"
+  },
+  {
+   "street": "4660 & 4680 Lane Ave",
+   "city": "Zachary",
+   "neighborhood": "Kennedy Place",
+   "year": 2023,
+   "price": 200000,
+   "side": "buyer"
+  },
+  {
+   "street": "4222 Union Dr",
+   "city": "Addis",
+   "neighborhood": "Sugar Mill Plantation",
+   "year": 2022,
+   "price": 321000,
+   "side": "buyer"
+  },
+  {
+   "street": "4211 Olivia Drive",
+   "city": "Addis",
+   "neighborhood": "Sugar Mill Plantation",
+   "year": 2022,
+   "price": 238000,
+   "side": "listing"
+  },
+  {
+   "street": "3520 Groom Rd",
+   "city": "Baker",
+   "neighborhood": "Baker Lots & Acres",
+   "year": 2022,
+   "price": 156000,
+   "side": "buyer"
+  },
+  {
+   "street": "2219 Cedarcrest Ave",
+   "city": "Baton Rouge",
+   "neighborhood": "Cedarcrest",
+   "year": 2022,
+   "price": 131000,
+   "side": "buyer"
+  },
+  {
+   "street": "8441 & 8439 Frank Ave",
+   "city": "Baton Rouge",
+   "neighborhood": "Comite Estates",
+   "year": 2022,
+   "price": 165000,
+   "side": "listing"
+  },
+  {
+   "street": "13472 S Fairview Ave",
+   "city": "Baton Rouge",
+   "neighborhood": "Fairwood Estates",
+   "year": 2022,
+   "price": 240000,
+   "side": "listing"
+  },
+  {
+   "street": "39122 Prairie South Dr",
+   "city": "Gonzales",
+   "neighborhood": "Prairie Village Acres",
+   "year": 2022,
+   "price": 187000,
+   "side": "listing"
+  },
+  {
+   "street": "3010 Bourbon",
+   "city": "Jackson",
+   "neighborhood": "Town Of Jackson",
+   "year": 2022,
+   "price": 152000,
+   "side": "buyer"
+  },
+  {
+   "street": "109 Morningside St",
+   "city": "New Roads",
+   "neighborhood": "Morningside",
+   "year": 2022,
+   "price": 186000,
+   "side": "buyer"
+  },
+  {
+   "street": "39612 Fly Creek Road",
+   "city": "Ponchatoula",
+   "neighborhood": "Fairhope",
+   "year": 2022,
+   "price": 342690,
+   "side": "buyer"
+  },
+  {
+   "street": "26959 Graves Dr",
+   "city": "Slaughter",
+   "neighborhood": "Hillside Farms",
+   "year": 2022,
+   "price": 166000,
+   "side": "both"
+  },
+  {
+   "street": "5708 Cypress St",
+   "city": "St Francisville",
+   "neighborhood": "Audubon Hills",
+   "year": 2022,
+   "price": 183500,
+   "side": "listing"
+  },
+  {
+   "street": "6720 Legion Rd",
+   "city": "St Gabriel",
+   "neighborhood": "St Gabriel Legion Homesites",
+   "year": 2022,
+   "price": 180000,
+   "side": "listing"
+  },
+  {
+   "street": "3610 Grenada Dr",
+   "city": "St Gabriel",
+   "neighborhood": "St Gabriel Legion Homesites",
+   "year": 2022,
+   "price": 220000,
+   "side": "listing"
+  },
+  {
+   "street": "28270 Luke Ln",
+   "city": "Walker",
+   "neighborhood": "Suburban Acres",
+   "year": 2022,
+   "price": 285000,
+   "side": "listing"
+  },
+  {
+   "street": "4330 Spring Hollow Ct",
+   "city": "Zachary",
+   "neighborhood": "Ravenwood",
+   "year": 2022,
+   "price": 244900,
+   "side": "buyer"
+  },
+  {
+   "street": "1300 Meadow Grove Ave",
+   "city": "Zachary",
+   "neighborhood": "Copper Mill",
+   "year": 2022,
+   "price": 312000,
+   "side": "buyer"
+  }
+ ]
+}
