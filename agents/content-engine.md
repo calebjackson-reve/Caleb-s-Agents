@@ -20,7 +20,7 @@
 
 **Steps.**
 1. Read the brand rules. Read this week's clip list and Caleb's one-line notes per clip.
-2. For each clip, write the caption in Caleb's voice: hook line, one real number or place, one supporting line from the fixed set at most once per week, brokerage name, no emoji stacks. Hashtags: five local, none generic.
+2. For each clip, write the caption in Caleb's voice: hook line, one real number or place (the standing receipts are in the brand rules: 90+ families, $24.5M, four years, every client by referral, never a paid lead), one supporting line from the fixed set at most once per week, brokerage name, no emoji stacks. Hashtags: five local, none generic.
 3. Write the GBP post version (under 1,500 characters, one call to action) for Receipts and Place.
 4. Write the 300-word dated written version for each Answer and name the page it belongs on.
 5. Create every post in Metricool with sendScheduledPostForReview, placed in the windows above. Never publish directly.

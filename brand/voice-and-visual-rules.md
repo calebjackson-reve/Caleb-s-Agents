@@ -31,6 +31,45 @@ Supporting lines, use exactly one at a time:
 - When it's time to move, we move.
 - Your call gets returned today. Not tomorrow. Today.
 - The dream is the easy part.
+- Never paid for a lead. Not once. (Added October 7, 2026 at Caleb's request. Every client has come from sphere, past clients or referrals.)
+
+## The receipts
+
+Reported by Caleb on October 7, 2026. Keep the MLS production report on file so the volume figure can be backed up if a client, broker or the Louisiana Real Estate Commission asks.
+
+| Receipt | Value | How to say it |
+|---|---|---|
+| Years selling | 4 | "Four years in" |
+| Total volume | $24.5 million | "$24.5M sold" |
+| Families served | More than 90 | "90+ families" |
+| Source of business | 100 percent sphere, past clients and referrals | "Every single client came from a referral, a past client or my sphere. I have never paid for a lead." |
+
+Use at most two receipts per asset. The referral-only line is the headline differentiator and leads the About page, the LinkedIn about section and the first Receipts post.
+
+## Approved bio copy (pending Caleb's final approval before publishing)
+
+Short, for site hero and social bios:
+
+> Baton Rouge born. Faith first, family always. When it's time to move, we move, and that's why they call me Action Jackson. Four years, 90+ families and $24.5M sold across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas with Keller Williams First Choice, every one of them by referral. Your call gets returned the same day. Every time.
+
+Instagram bio, 150 character limit:
+
+> REALTOR, Keller Williams First Choice
+> Baton Rouge to the Felicianas
+> 90+ families. $24.5M sold. All by referral.
+> Call returned today.
+
+Long, for the About page and LinkedIn:
+
+> They call me Action Jackson, and it isn't marketing. It's how I work. Your call gets returned today. Not tomorrow. Today.
+>
+> I was born and raised right here, and I've built my business across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas. Four years and more than 90 families later, with $24.5 million sold, the number I'm proudest of isn't on a billboard. Every single client I've ever worked with came from my sphere, a past client or a referral. I have never paid for a lead. Not once.
+>
+> This market moves fast when it's run right. Priced straight, marketed hard, negotiated harder. "Listed Tuesday, under contract Friday" isn't a slogan around here. Some weeks it's just a Tuesday.
+>
+> Faith first, family always. When you're ready to make a move, I'm already moving.
+>
+> Caleb Jackson, REALTOR, Keller Williams First Choice. (225) 747-0303. calebjackson.org. @calebjacksonla
 
 ## Voice
 
@@ -44,7 +83,7 @@ Supporting lines, use exactly one at a time:
 ## Facts that must be true before publishing
 
 - Every statistic is sourced and dated in the asset or its caption.
-- Bracketed bio numbers (years, families, volume, repeat and referral share) are filled with true values or omitted.
+- Bio numbers are the receipts above. No other production figures appear anywhere without Caleb supplying them.
 - Addresses and client names appear only with permission.
 - Fair housing language throughout. No steering by protected class in neighborhood content.
 

@@ -33,7 +33,7 @@ Fill these in from your own numbers. The plan's automations are chosen to move t
 | Appointments set per week | [ ] | Conversation quality, booking link, follow-up cadence |
 | Signed agreements per month | [ ] | Appointment prep, authority content, reviews |
 | Closings per month and average commission | [ ] | Everything above |
-| Share of closings from repeat and referral | [ ] | Database nurture, review engine, home anniversary touches |
+| Share of closings from repeat and referral | 100 percent, reported by Caleb October 7. Every client to date came from sphere, past clients or referrals, and he has never paid for a lead. | Database nurture, review engine, home anniversary touches |
 
 Rule of thumb, inferred: a solo agent who holds 10 real conversations a day sets roughly 3 to 5 appointments a week. Your own ratios replace this guess after 30 days of tracking.
 
@@ -47,7 +47,7 @@ Nothing else in this plan can be measured until these are done. Each is a checkb
 4. **Run the AI baseline.** Twenty fixed questions, listed at the end of this file. Record date, platform, answer, cited URLs, competitors named, whether Caleb is mentioned and whether calebjackson.org is cited. Repeat monthly.
 5. **Apply the two brand decisions above.** Set @calebjacksonla and 37325 Market Place Drive on every profile, the site and the email signature. Correct the Google Maps address in the Google Business Profile.
 6. **Connect LinkedIn in Metricool.** Decided October 7. Caleb does this in Metricool's connections screen with his LinkedIn login (it needs his authorization, so an agent cannot do it). Once connected, the content engine pulls LinkedIn best-time data and adds the Market Receipt and Answers pillars there.
-7. **Fill the brackets in the bio.** Years licensed, families served or volume, and the repeat and referral share. The brand is "receipts over adjectives" and the receipts are still blank.
+7. **Bio receipts, done October 7.** Four years selling, $24.5M volume, more than 90 families, 100 percent referral and sphere business, never a paid lead. The approved copy is in `brand/voice-and-visual-rules.md` and goes live on the site, LinkedIn and the social bios once Caleb gives final approval. Keep the MLS production report on file to back the volume figure.
 
 ## Phase 1: brand consistency and the content engine (weeks 2 to 4)
 
@@ -72,7 +72,7 @@ Inferred design. The weekly rhythm is one 90-minute recording block on Monday th
 
 | Pillar | Weekly count | Why it earns views | Where it lands |
 |---|---|---|---|
-| Receipts | 1 | Listed Tuesday, under contract Friday. Real addresses with permission, real days on market, real numbers. This is the brand. | Instagram reel, Facebook, GBP post, YouTube short |
+| Receipts | 1 | Listed Tuesday, under contract Friday. Real addresses with permission, real days on market, real numbers. This is the brand. The standing receipt is 90+ families, $24.5M, four years, every one by referral, never a paid lead. | Instagram reel, Facebook, GBP post, YouTube short |
 | Answers | 2 | 60-second answers to the 20 baseline questions. Flood insurance cost, what a Zachary home costs now, how to price in St. Francisville. These are the same questions AI tools get asked. | Reel, short, Facebook, and a 300-word written version on the matching service page or blog |
 | Place | 1 | A neighborhood from the brand package's eight target areas with one dated fact. Builds the local-expert pages LP already supports. | Reel, Facebook, blog, GBP post |
 | Market receipt | 1 per month | Monthly numbers for East Baton Rouge, Zachary, West Feliciana and Pointe Coupee with the source named. This is what AI answers and local press cite. | /market-report page, email to database, Facebook, LinkedIn if added |
@@ -104,7 +104,7 @@ One review is the gap. Inferred build: after every closing, and after every show
 - **Monthly home value offer** to the database and to followers in the eight target neighborhoods. Soft ask, dated numbers.
 - **Local partner content.** One short per month with a flood insurance agent, a lender or an inspector. They share it to their audience, which is the cheapest reach you can buy.
 - **LinkedIn, decided yes.** Caleb connects it in Metricool during Phase 0. Relocation buyers, corporate transferees and the Baton Rouge professional class live there, and the Market Receipt and Answers pillars land well. Profile headline and about section get the brand voice and the Keller Williams First Choice affiliation.
-- **Retargeting, only after the scoreboard works.** Once GA4 and the pixel are confirmed, a small Facebook and Instagram retargeting budget aimed at site visitors with the Receipts pillar. Spend requires your explicit approval and starts under 300 dollars a month.
+- **Paid retargeting is off by default.** Caleb's headline differentiator is that he has never paid for a lead, and that claim is worth more than a small ad budget. Retargeting stays out of the plan unless Caleb decides the claim can live alongside brand ads that promote content rather than capture leads. That is his call, not an automation's.
 
 ### Database nurture, your highest-margin channel
 
