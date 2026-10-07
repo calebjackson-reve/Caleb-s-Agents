@@ -81,7 +81,7 @@ Your call gets returned today. Not tomorrow. Today.
 
 ## First Receipts post (Instagram and Facebook), ready for the Metricool review queue
 
-Pair with one of the seven environmental headshots from the brand package. Ivory ground, ink type, one ember accent if a graphic is used. Not yet scheduled.
+Paired with the square seated headshot (Drive file ISIMG-725849.JPG). Saved in Metricool as two drafts on October 7, 2026: Facebook for Wednesday October 8 at 10 am and Instagram the same day at 7 pm. Drafts do not publish. Caleb switches each to scheduled in the planner.
 
 90+ families. $24.5 million sold. Four years.
 

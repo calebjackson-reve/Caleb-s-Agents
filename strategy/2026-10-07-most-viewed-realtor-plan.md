@@ -78,7 +78,7 @@ Inferred design. The weekly rhythm is one 90-minute recording block on Monday th
 | Market receipt | 1 per month | Monthly numbers for East Baton Rouge, Zachary, West Feliciana and Pointe Coupee with the source named. This is what AI answers and local press cite. | /market-report page, email to database, Facebook, LinkedIn if added |
 | Person | 1 | Faith, family, the job. Milestone beats only. | Instagram, Facebook |
 
-Scheduling uses the Metricool review queue so nothing posts without your approval. Observed best windows from Metricool's last 30 days: Instagram peaks around 7 pm Sunday through Wednesday with a secondary window at 3 to 4 pm on weekdays. Facebook peaks 10 am to noon Monday through Wednesday and is weak on weekends. The content agent schedules into these windows by default.
+Scheduling uses Metricool drafts so nothing posts without your approval. Observed October 7: Metricool's built-in review queue needs a team-management plan your subscription does not include, so drafts are the gate. You open each draft in the planner and switch it to scheduled. The first two Receipts drafts went in on October 7 for Wednesday October 8, Facebook at 10 am and Instagram at 7 pm. Observed best windows from Metricool's last 30 days: Instagram peaks around 7 pm Sunday through Wednesday with a secondary window at 3 to 4 pm on weekdays. Facebook peaks 10 am to noon Monday through Wednesday and is weak on weekends. The content agent schedules into these windows by default.
 
 Written versions matter as much as the video. Google says standard SEO applies to AI Overviews and AI Mode, so each Answer video also becomes a short dated section on the matching page. That is how one recording feeds Search, Maps, social and AI answers at once.
 
@@ -135,7 +135,7 @@ Each agent has a spec file in `agents/` in this repo. They run with your existin
 | 1 | Lead response | Every new inbound lead within minutes | You send, until trusted | First response time under 5 minutes |
 | 2 | Database nurture | Past clients and sphere monthly | You approve each send | Conversations per week from database |
 | 3 | Review engine | Everyone searching Maps | You send each request | Reviews per month |
-| 4 | Content engine | Social, GBP, search and AI answers weekly | Metricool review queue | Posts shipped per week, reach, replies |
+| 4 | Content engine | Social, GBP, search and AI answers weekly | Metricool drafts | Posts shipped per week, reach, replies |
 | 5 | Daily brief | You, so nothing slips | None, read only | Brief delivered by 7:00 every weekday |
 | 6 | Market receipt | Database, press, AI answers monthly | You approve the page and the email | Market report page clicks, email replies |
 | 7 | Listing launch | Neighbors and buyers for every listing | You approve the package | Days to first showing, views per listing |

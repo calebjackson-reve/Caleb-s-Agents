@@ -23,9 +23,9 @@
 2. For each clip, write the caption in Caleb's voice: hook line, one real number or place (the standing receipts are in the brand rules: 90+ families, $24.5M, four years, every client by referral, never a paid lead), one supporting line from the fixed set at most once per week, brokerage name, no emoji stacks. Hashtags: five local, none generic.
 3. Write the GBP post version (under 1,500 characters, one call to action) for Receipts and Place.
 4. Write the 300-word dated written version for each Answer and name the page it belongs on.
-5. Create every post in Metricool with sendScheduledPostForReview, placed in the windows above. Never publish directly.
+5. Create every post in Metricool as a draft (draft: true), placed in the windows above. Never publish directly. Observed October 7, 2026: Metricool's review and approval flow returned 403 because Caleb's subscription has no team management, so drafts are the approval gate. Caleb opens each draft in the planner and switches it to scheduled.
 6. Deliver a one-screen summary to Caleb: what, when, where, and the two written sections to approve for the site.
 
-**Approval gate.** Metricool review queue for every post. Caleb approves website text before it is entered in Luxury Presence.
+**Approval gate.** Metricool drafts for every post, since the review queue needs a team-management plan Caleb does not have. Caleb approves website text before it is entered in Luxury Presence.
 
 **KPI.** Posts shipped per week against plan. Reach and replies per pillar. Which pillar produces conversations.
