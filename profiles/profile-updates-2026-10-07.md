@@ -6,7 +6,7 @@ Numbers in every bio: 81 closed deals (77 MLS sides plus 4 off-market, per Caleb
 
 Status key: [ ] not started · [x] saved · [~] saved with a change (note it)
 
-Progress 2026-10-07: Zillow, Google, Instagram, Facebook and YouTube saved from the Mac Remote Control session. LinkedIn open. Hand-finish list at the bottom.
+Progress 2026-10-07: all six profiles saved from the Mac Remote Control session, finished 18:36 UTC. Hand-finish list at the bottom.
 
 ---
 
@@ -136,22 +136,28 @@ Real estate north of Baton Rouge, told straight. I'm Caleb Jackson, REALTOR with
 
 ## 6. LinkedIn
 
-Not started as of 2026-10-07 16:16 UTC. The Mac session stopped to ask about a "no I didn't" reply. Current About already contains the referral line.
+Saved and checked 2026-10-07. Note for next time: paste into the About editor with one line break between paragraphs, or LinkedIn doubles them.
 
 | Field | Set it to | Done |
 | --- | --- | --- |
-| Current position | REALTOR, Keller Williams First Choice, 2026 to present (end the RÊVE position) | [ ] |
-| Location | Zachary, Louisiana | [ ] |
-| Website | https://calebjackson.org | [ ] |
-| Contact | (225) 747-0303, aire@calebjackson.org | [ ] |
+| Current position | REALTOR, Keller Williams First Choice, Jul 2026 to present | [x] |
+| Location | Prairieville, Louisiana (already set, left as is) | [~] |
+| Website | https://calebjackson.org | [ ] not confirmed in the session report |
+| Contact | (225) 747-0303, aire@calebjackson.org | [ ] not confirmed in the session report |
 
-**Headline (148 of 220 characters):**
+**Headline, saved 2026-10-07 with the referral line added (longer than the draft below, still under 220):**
+
+```
+REALTOR, Keller Williams First Choice | Baton Rouge, Zachary, St. Francisville and the Felicianas | 81 closed deals, $25.1M since 2022 | Every client by referral. Never paid for a lead.
+```
+
+**Headline draft (148 of 220 characters), superseded:**
 
 ```
 REALTOR, Keller Williams First Choice | Zachary and Baton Rouge | 81 closed deals, $25.1M since 2022 | Action Jackson: your call gets returned today
 ```
 
-**About:** paste the Zillow About text from section 1.
+**About:** the existing five-paragraph About kept, with the production sentence changed to "Since 2022 that's 81 closed deals and $25.1 million sold, and the number I'm proudest of isn't on a billboard." Referral line and "I have never paid for a lead. Not once." stay. [x]
 
 ---
 
@@ -163,5 +169,5 @@ When the numbers change, change them in the Client Review System doc first, then
 
 1. Zillow: add every MLS Agent ID you have held under Settings, so the 18 missing sales import. Then change the login email and add aire@calebjackson.org as an extra email.
 2. Facebook: rename the page to Caleb Jackson, REALTOR. Report the spam recommendation if it reappears (the Reviews tab showed none).
-3. LinkedIn: headline, position, location, website, contact, About, per section 6.
+3. LinkedIn: confirm the website and contact fields show calebjackson.org, (225) 747-0303 and aire@calebjackson.org. Everything else is saved.
 4. Google: nothing to click. Phone, service areas and category are in Google's review queue, up to 7 days.
