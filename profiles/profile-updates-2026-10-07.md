@@ -2,7 +2,7 @@
 
 Source: Client Review System doc, "Profile bios, ready to paste" section, pulled 2026-10-07.
 Order: Zillow, Google Business Profile, Instagram, Facebook, YouTube, LinkedIn.
-Numbers in every bio: 77 closed sides, $24.1M since 2022, 27 sides in the last 12 months, 15 closings in Zachary.
+Numbers in every bio: 81 closed deals (77 MLS sides plus 4 off-market, per Caleb 2026-10-07), $25.1M since 2022, 27 sides in the last 12 months, 15 closings in Zachary.
 
 Status key: [ ] not started · [x] saved · [~] saved with a change (note it)
 
@@ -20,9 +20,9 @@ Status key: [ ] not started · [x] saved · [~] saved with a change (note it)
 | Email | aire@calebjackson.org (replace the old brokerage email) | [ ] |
 | Website | https://calebjackson.org | [ ] |
 | Service areas | Zachary, Baton Rouge, St. Francisville, Central, Baker, Slaughter, Greenwell Springs, Denham Springs, Port Allen, New Roads, Prairieville, Jackson, Clinton | [ ] |
-| Specialties | Buyer's agent, Listing agent, First-time buyers, Relocation, Investment and multifamily | [ ] |
+| Specialties | Buyer's agent, Listing agent, First-time buyers, Relocation, Investment and multifamily (remove Foreclosure) | [ ] |
 | Experience | Since 2022 | [ ] |
-| Headshot | One of the seven 2026 environmental portraits from the brand package | [ ] |
+| Headshot | ~/fable-atelier/shared-assets/headshot-caleb.jpg (1025x1025), not the 240px CMA copy | [ ] |
 | Instagram handle | calebjacksonla | [ ] |
 
 **About (901 characters, Zillow allows plenty):**
@@ -30,7 +30,7 @@ Status key: [ ] not started · [x] saved · [~] saved with a change (note it)
 ```
 They call me Action Jackson, and it isn't marketing. It's how I work. Your call gets returned today. Not tomorrow. Today.
 
-I'm Baton Rouge born and I've built my business north of the city: Zachary, Baton Rouge, St. Francisville, Central, Slaughter, Greenwell Springs, New Roads and the Felicianas. Since 2022 that's 77 closed sides and $24.1 million in sales, 27 of them in the last 12 months, including a 32-unit apartment sale in St. Francisville. Zachary is home base, with 15 closings across Copper Mill, Ravenwood, Marita Terrace and ten other neighborhoods.
+I'm Baton Rouge born and I've built my business north of the city: Zachary, Baton Rouge, St. Francisville, Central, Slaughter, Greenwell Springs, New Roads and the Felicianas. Since 2022 that's 81 closed deals and $25.1 million in sales, 27 of them in the last 12 months, including a 32-unit apartment sale in St. Francisville. Zachary is home base, with 15 closings across Copper Mill, Ravenwood, Marita Terrace and ten other neighborhoods.
 
 Priced straight, marketed hard, negotiated through to close. You'll always know where your deal stands, because I'll have already texted you.
 
@@ -69,7 +69,7 @@ The per-transaction spreadsheet was shared in an earlier chat and is not in Driv
 **Description (525 of 750 characters):**
 
 ```
-Caleb Jackson, REALTOR with Keller Williams First Choice, serving Zachary, Baton Rouge, St. Francisville and the Felicianas. They call me Action Jackson because your call gets returned today. Since 2022: 77 closed sides and $24.1M in sales, 27 of them in the last 12 months, with 15 closings in Zachary alone. Buyers, sellers, first-time buyers and investment property, including a 32-unit multifamily sale. Priced straight, marketed hard, negotiated through to close. Faith first, family always. Call or text (225) 747-0303.
+Caleb Jackson, REALTOR with Keller Williams First Choice, serving Zachary, Baton Rouge, St. Francisville and the Felicianas. They call me Action Jackson because your call gets returned today. Since 2022: 81 closed deals and $25.1M in sales, 27 of them in the last 12 months, with 15 closings in Zachary alone. Buyers, sellers, first-time buyers and investment property, including a 32-unit multifamily sale. Priced straight, marketed hard, negotiated through to close. Faith first, family always. Call or text (225) 747-0303.
 ```
 
 ---
@@ -87,7 +87,7 @@ Caleb Jackson, REALTOR with Keller Williams First Choice, serving Zachary, Baton
 **Bio (143 of 150 characters):**
 
 ```
-Action Jackson. REALTOR, Keller Williams First Choice. Zachary, Baton Rouge, the Felicianas. 77 closings, $24M since 2022. Call returned today.
+Action Jackson. REALTOR, Keller Williams First Choice. Zachary, Baton Rouge, the Felicianas. 81 closings, $25M since 2022. Call returned today.
 ```
 
 ---
@@ -125,7 +125,7 @@ Action Jackson. REALTOR, KW First Choice. Zachary + Baton Rouge. Your call gets 
 **Description (533 of 1,000 characters):**
 
 ```
-Real estate north of Baton Rouge, told straight. I'm Caleb Jackson, REALTOR with Keller Williams First Choice. They call me Action Jackson because your call gets returned today. Here you'll find listing tours, Zachary market updates, and one lesson from a real transaction each week: why a house needed a price cut, how concessions changed a deal, what to check before you buy in Copper Mill. 77 closed sides and $24.1M since 2022. Zachary, Baton Rouge, St. Francisville, the Felicianas. Call or text (225) 747-0303. calebjackson.org
+Real estate north of Baton Rouge, told straight. I'm Caleb Jackson, REALTOR with Keller Williams First Choice. They call me Action Jackson because your call gets returned today. Here you'll find listing tours, Zachary market updates, and one lesson from a real transaction each week: why a house needed a price cut, how concessions changed a deal, what to check before you buy in Copper Mill. 81 closed deals and $25.1M since 2022. Zachary, Baton Rouge, St. Francisville, the Felicianas. Call or text (225) 747-0303. calebjackson.org
 ```
 
 ---
@@ -142,7 +142,7 @@ Real estate north of Baton Rouge, told straight. I'm Caleb Jackson, REALTOR with
 **Headline (148 of 220 characters):**
 
 ```
-REALTOR, Keller Williams First Choice | Zachary and Baton Rouge | 77 closed sides, $24.1M since 2022 | Action Jackson: your call gets returned today
+REALTOR, Keller Williams First Choice | Zachary and Baton Rouge | 81 closed deals, $25.1M since 2022 | Action Jackson: your call gets returned today
 ```
 
 **About:** paste the Zillow About text from section 1.
