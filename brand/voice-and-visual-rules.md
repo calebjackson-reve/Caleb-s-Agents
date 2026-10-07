@@ -46,7 +46,7 @@ Reported by Caleb on October 7, 2026. Keep the MLS production report on file so 
 
 Use at most two receipts per asset. The referral-only line is the headline differentiator and leads the About page, the LinkedIn about section and the first Receipts post.
 
-## Approved bio copy (pending Caleb's final approval before publishing)
+## Approved bio copy (approved by Caleb October 7, 2026, see `profile-copy-kit.md` for every surface)
 
 Short, for site hero and social bios:
 
