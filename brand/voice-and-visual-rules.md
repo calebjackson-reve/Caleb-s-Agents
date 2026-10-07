@@ -35,13 +35,13 @@ Supporting lines, use exactly one at a time:
 
 ## The receipts
 
-Reported by Caleb on October 7, 2026. Keep the MLS production report on file so the volume figure can be backed up if a client, broker or the Louisiana Real Estate Commission asks.
+Confirmed by Caleb on October 7, 2026 against the ROAM MLS export pulled that day. The earlier figures from memory (90+ families, $24.5M) are retired. Keep the MLS production report on file so the volume figure can be backed up if a client, broker or the Louisiana Real Estate Commission asks.
 
 | Receipt | Value | How to say it |
 |---|---|---|
-| Years selling | 4 | "Four years in" |
-| Total volume | $24.5 million | "$24.5M sold" |
-| Families served | More than 90 | "90+ families" |
+| Years selling | Since 2022 | "Since 2022" |
+| Total volume | $25.1 million since 2022 (MLS export plus off-market, confirmed by Caleb October 7) | "$25.1M since 2022" |
+| Closed deals | 81 (77 MLS sides plus 4 off-market), 27 in the last 12 months, 15 in Zachary | "81 closed deals" |
 | Source of business | 100 percent sphere, past clients and referrals | "Every single client came from a referral, a past client or my sphere. I have never paid for a lead." |
 
 Use at most two receipts per asset. The referral-only line is the headline differentiator and leads the About page, the LinkedIn about section and the first Receipts post.

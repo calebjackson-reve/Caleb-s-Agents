@@ -18,7 +18,7 @@ For the visual review of the Codex full-site preview (built October 6 to 7, 2026
 - [ ] "Keller Williams First Choice" legible on every page. Never inside the personal mark. No Rêve name, color, font or language anywhere, including image alt text and metadata.
 - [ ] Footer shows 37325 Market Place Drive, (225) 747-0303, calebjackson.org and @calebjacksonla. No Commerce Centre Drive. No @calebjackson_24.
 - [ ] Voice: first person, short lines, real numbers and places. No "unparalleled service," no emoji stacks, no em dashes, no semicolons.
-- [ ] Receipts appear where the page argues for Caleb: four years, $24.5M, 90+ families, every client by referral, never a paid lead. At most two receipts per page. The exact approved wording is in `brand/profile-copy-kit.md`.
+- [ ] Receipts appear where the page argues for Caleb: 81 closed deals, $25.1M since 2022, every client by referral, never a paid lead. At most two receipts per page. The exact approved wording is in `brand/profile-copy-kit.md`.
 
 ## Facts
 
