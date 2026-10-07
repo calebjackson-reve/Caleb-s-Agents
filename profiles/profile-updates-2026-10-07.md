@@ -32,7 +32,7 @@ Saved 2026-10-07 from the Mac Remote Control session and checked live. Foreclosu
 ```
 They call me Action Jackson, and it isn't marketing. It's how I work. Your call gets returned today. Not tomorrow. Today.
 
-I'm Baton Rouge born and I've built my business north of the city: Zachary, Baton Rouge, St. Francisville, Central, Slaughter, Greenwell Springs, New Roads and the Felicianas. Since 2022 that's 81 closed deals and $25.1 million in sales, 27 of them in the last 12 months, including a 32-unit apartment sale in St. Francisville. Zachary is home base, with 15 closings across Copper Mill, Ravenwood, Marita Terrace and ten other neighborhoods.
+I'm Baton Rouge born and I've built my business north of the city: Zachary, Baton Rouge, St. Francisville, Central, Slaughter, Greenwell Springs, New Roads and the Felicianas. Since 2022 that's 81 closed deals and $25.1 million in sales, 27 of them in the last 12 months, including a 30-unit apartment sale in St. Francisville. Zachary is home base, with 15 closings across Copper Mill, Ravenwood, Marita Terrace and ten other neighborhoods.
 
 Priced straight, marketed hard, negotiated through to close. You'll always know where your deal stands, because I'll have already texted you.
 
@@ -71,7 +71,7 @@ Source: today's ROAM MLS exports in Downloads. Zillow does not take an MLS numbe
 **Description (525 of 750 characters):**
 
 ```
-Caleb Jackson, REALTOR with Keller Williams First Choice, serving Zachary, Baton Rouge, St. Francisville and the Felicianas. They call me Action Jackson because your call gets returned today. Since 2022: 81 closed deals and $25.1M in sales, 27 of them in the last 12 months, with 15 closings in Zachary alone. Buyers, sellers, first-time buyers and investment property, including a 32-unit multifamily sale. Priced straight, marketed hard, negotiated through to close. Faith first, family always. Call or text (225) 747-0303.
+Caleb Jackson, REALTOR with Keller Williams First Choice, serving Zachary, Baton Rouge, St. Francisville and the Felicianas. They call me Action Jackson because your call gets returned today. Since 2022: 81 closed deals and $25.1M in sales, 27 of them in the last 12 months, with 15 closings in Zachary alone. Buyers, sellers, first-time buyers and investment property, including a 30-unit multifamily sale. Priced straight, marketed hard, negotiated through to close. Faith first, family always. Call or text (225) 747-0303.
 ```
 
 ---
