@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Widget demo</title>
+<link rel="icon" href="data:,">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#FBF8F3;color:#14100E;font:400 17px/1.5 Hauora,system-ui,-apple-system,Segoe UI,sans-serif}
+  main{max-width:720px;margin:0 auto;padding:80px 24px}
+  h1{font:400 56px/1.05 "Instrument Serif",Georgia,serif;margin:0 0 16px}
+  h1 i{font-style:normal;color:#E87757}
+  p{max-width:560px;color:#14100E}
+  .k{font:600 11px/1 Hauora,system-ui,sans-serif;letter-spacing:.28em;text-transform:uppercase;color:#8D857B;margin-bottom:24px}
+</style>
+</head>
+<body>
+<main>
+  <div class="k">Keller Williams First Choice</div>
+  <h1>Action Jackson<i>.</i></h1>
+  <p>Stand-in for a calebjackson.org page. The chat bubble in the corner is the real widget, talking to the Worker at the endpoint in the script tag below.</p>
+</main>
+<script src="widget.js" data-endpoint="http://localhost:8787" defer></script>
+</body>
+</html>
