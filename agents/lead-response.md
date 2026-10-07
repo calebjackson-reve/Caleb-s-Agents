@@ -7,8 +7,8 @@
 **Tools.** Gmail, Google Calendar (free slots inside 10:30 to 4:00), KW Command, Metricool (social messages), brand rules.
 
 **Steps.**
-1. Log the lead: name, source, channel, timestamp, what they asked, property or area if any.
-2. Draft the first reply. Rules: first person, under 60 words, answer the actual question, offer two concrete times from the calendar, include the booking link, sign as Caleb. No pitch.
+1. Log the lead: name, source, channel, timestamp, what they asked, property or area if any. KW Command logging goes through the `kw-command-import` CSV staging pattern until an API path is confirmed. Caleb uploads the batch.
+2. Draft the first reply through the `conversation-drafting` contract (bounded context, Caleb's voice profile, nothing invented). Rules: first person, under 60 words, answer the actual question, offer two concrete times from the calendar, include the booking link, sign as Caleb. No pitch. Use `conversation-actions` to pull out any appointment, deadline or document the lead's message asks for.
 3. Push the draft to Caleb for send. If Caleb has removed the gate for that channel, send and log the send time.
 4. Schedule the cadence in KW Command: day 1 call reminder, day 3 value text with the latest market receipt, day 7 call reminder, day 14 breakup text. Draft each text when due.
 5. On any reply from the lead, stop the cadence and notify Caleb with the thread.

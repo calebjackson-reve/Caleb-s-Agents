@@ -7,7 +7,7 @@
 **Tools.** Google Business Profile (direct review link from the profile), Gmail, KW Command, Metricool (GBP connection), brand rules.
 
 **Steps.**
-1. On closing: draft a personal text and email to the client with the direct Google review link. Mention one true specific from their transaction. Under 60 words.
+1. On closing: draft a personal text and email to the client with the guided review page from pull request 6 (`review-helper/index.html`), which carries the direct Google review link. Mention one true specific from their transaction. Under 60 words.
 2. Monthly: list past clients never asked. Draft the same request for up to ten per month, warmest first.
 3. On new review: draft a reply within the brand voice. Thank by first name, repeat one specific, no marketing language. Hand to Caleb.
 4. With the client's permission, turn five-star reviews into a Receipts post for the content engine.

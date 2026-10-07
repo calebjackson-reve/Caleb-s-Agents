@@ -7,7 +7,7 @@
 **Tools.** Database (KW Command contacts. The Google Drive folder "AIRE Contact Distribution 2026-08-28" is the observed export to reconcile against it), Gmail drafts, Google Calendar, brand rules, the current market receipt.
 
 **Steps.**
-1. Each morning, pull contacts with a home anniversary or birthday in the next 24 hours. Draft a two-line personal text for each. Hand to the daily brief.
+1. Each morning, pull contacts with a home anniversary or birthday in the next 24 hours, plus anyone `relationship-strategy` flags as due a touch or owed an answer, and any open promise `promise-drafting` has a draft for. Draft a two-line personal text for each. Hand to the daily brief.
 2. First business day of the month: take the published market receipt and draft the database email. Subject under 45 characters. Body under 150 words. One number, one place, one offer to talk. Save as a Gmail draft for Caleb.
 3. Quarterly: for every past client, draft a "what your home is worth now" note with a dated local number and an offer of a free valuation. Save as drafts.
 4. Log every touch and every reply in KW Command as a conversation.
