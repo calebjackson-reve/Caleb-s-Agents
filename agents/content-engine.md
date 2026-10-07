@@ -13,9 +13,10 @@
 | Answers | 2 | Reel, short, Facebook, plus a 300-word dated section on the matching service page or blog |
 | Place | 1 | Reel, Facebook, blog, GBP post |
 | Person | 1 | Instagram, Facebook |
+| LinkedIn versions | 2 | The Market Receipt and one Answer per week, rewritten for LinkedIn: no hashtag stack, first line carries the number, professional and relocation angle |
 | Market receipt | 1 per month | Handled by the market-receipt agent |
 
-**Scheduling windows, observed from Metricool's last 30 days.** Instagram: 7 pm Sunday through Wednesday, secondary 3 to 4 pm weekdays. Facebook: 10 am to noon Monday through Wednesday. Re-pull the best-time data monthly and adjust.
+**Scheduling windows, observed from Metricool's last 30 days.** Instagram: 7 pm Sunday through Wednesday, secondary 3 to 4 pm weekdays. Facebook: 10 am to noon Monday through Wednesday. LinkedIn: pull best-time data after Caleb connects it (decided October 7, 2026), and use Tuesday to Thursday mornings until then. Re-pull the best-time data monthly and adjust.
 
 **Steps.**
 1. Read the brand rules. Read this week's clip list and Caleb's one-line notes per clip.

@@ -4,13 +4,13 @@
 
 **Trigger.** New lead from any source: Luxury Presence form, Google Business Profile message, Instagram DM, Facebook lead or message, email, phone missed call.
 
-**Tools.** Gmail, Google Calendar (free slots inside 10:30 to 4:00), lead table, Metricool (social messages), brand rules.
+**Tools.** Gmail, Google Calendar (free slots inside 10:30 to 4:00), KW Command, Metricool (social messages), brand rules.
 
 **Steps.**
 1. Log the lead: name, source, channel, timestamp, what they asked, property or area if any.
 2. Draft the first reply. Rules: first person, under 60 words, answer the actual question, offer two concrete times from the calendar, include the booking link, sign as Caleb. No pitch.
 3. Push the draft to Caleb for send. If Caleb has removed the gate for that channel, send and log the send time.
-4. Schedule the cadence in the lead table: day 1 call reminder, day 3 value text with the latest market receipt, day 7 call reminder, day 14 breakup text. Draft each text when due.
+4. Schedule the cadence in KW Command: day 1 call reminder, day 3 value text with the latest market receipt, day 7 call reminder, day 14 breakup text. Draft each text when due.
 5. On any reply from the lead, stop the cadence and notify Caleb with the thread.
 6. On appointment booked, mark the lead and notify the daily brief.
 

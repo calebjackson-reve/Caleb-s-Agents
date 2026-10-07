@@ -1,6 +1,6 @@
 # Agents
 
-Each file is a self-contained spec: purpose, inputs, tools, steps, output, approval gate and KPI. They are written to be pasted into a Claude project or run as scheduled Claude Code sessions. All agents read `../brand/voice-and-visual-rules.md` first and none of them publishes, sends, spends or changes an account without Caleb's approval.
+Each file is a self-contained spec: purpose, inputs, tools, steps, output, approval gate and KPI. They are written to be pasted into a Claude project or run as scheduled Claude Code sessions. All agents read `../brand/voice-and-visual-rules.md` first, log leads and touches in KW Command, and none of them publishes, sends, spends or changes an account without Caleb's approval.
 
 | Agent | Cadence | Approval gate |
 |---|---|---|

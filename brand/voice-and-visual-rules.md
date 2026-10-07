@@ -53,7 +53,9 @@ Supporting lines, use exactly one at a time:
 - Name on all public profiles: Caleb Jackson, REALTOR, Keller Williams First Choice.
 - Phone: (225) 747-0303.
 - Website: calebjackson.org.
-- Instagram handle: decide between @calebjackson_24 (brand package) and calebjacksonla (connected in Metricool). Use one everywhere.
-- Office address: decide between 37325 Market Place Drive (site and LP) and 17111 Commerce Centre Drive (Google Maps). Use the licensed address everywhere.
+- Instagram handle: @calebjacksonla everywhere. Decided by Caleb on October 7, 2026. The @calebjackson_24 handle in the July brand package is retired. Update the brand package bio line, the site, email signature and every social bio to match.
+- Office address: 37325 Market Place Drive everywhere. Decided by Caleb on October 7, 2026. Google Maps currently shows 17111 Commerce Centre Drive and must be corrected in the Google Business Profile during Phase 0.
+- Lead source of truth: KW Command. Every lead, touch and outcome is logged there. Decided by Caleb on October 7, 2026.
+- LinkedIn: connect to Metricool and include it in the content engine. Decided by Caleb on October 7, 2026.
 - Service areas: Baton Rouge, Zachary, St. Francisville, New Roads, the Felicianas.
 - Target neighborhoods: Country Club of Louisiana, University Club Plantation, Bocage, Santa Maria, Garden District and Historic Baton Rouge, Zachary, St. Francisville, New Roads and False River.

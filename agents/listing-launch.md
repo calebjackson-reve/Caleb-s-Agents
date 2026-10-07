@@ -4,7 +4,7 @@
 
 **Trigger.** New listing agreement signed. Status changes: coming soon, live, under contract, sold.
 
-**Tools.** Drive (photos and video), Metricool, Luxury Presence, lead table, brand rules.
+**Tools.** Drive (photos and video), Metricool, Luxury Presence, KW Command, brand rules.
 
 **Package per listing.**
 1. Coming soon post (Instagram, Facebook) with one line on the home and the neighborhood.

@@ -18,10 +18,10 @@ Labels used throughout: **observed** means seen in your accounts today or in the
 | AI answers | No baseline run yet. robots.txt, sitemap and llms.txt are public. | Unknown until the 20-question baseline runs. |
 | Word of mouth | Brand package says most business is repeat and referral, but the numbers are still in brackets. Lead reporting in LP is blank. | Your strongest channel has no system behind it and no measurement. |
 
-Two brand inconsistencies observed today that need a decision from you:
+Two brand inconsistencies were observed today and Caleb decided both on October 7, 2026:
 
-- The brand package lists the Instagram handle as @calebjackson_24. Metricool is connected to calebjacksonla. One handle should appear everywhere.
-- Google Maps shows 17111 Commerce Centre Drive. LP and the site footer show 37325 Market Place Drive. Pick the address that matches your brokerage license record and fix the other.
+- Instagram handle is @calebjacksonla everywhere. The @calebjackson_24 handle in the brand package is retired and the package bio line should be updated.
+- Office address is 37325 Market Place Drive everywhere. Google Maps currently shows 17111 Commerce Centre Drive and gets corrected in the Google Business Profile during Phase 0.
 
 ## The money model
 
@@ -43,10 +43,11 @@ Nothing else in this plan can be measured until these are done. Each is a checkb
 
 1. **Claim and reconcile the Google Business Profile.** Open business.google.com with the account that Metricool connected (GBP location ending 7744506514819131081). Confirm owner status. Set name to match your license and brand, confirm the single address, add phone (225) 747-0303, hours, service areas (Baton Rouge, Zachary, St. Francisville, New Roads, the Felicianas), categories (Real Estate Agent primary), website link with the UTM tag already present. Then reconnect in Luxury Presence so Establishing Trust stops reading blank. Do not create a second profile.
 2. **Get into GA4 and Search Console.** Request access to property G-PDSW2YFRNW (or confirm it is yours). Verify calebjackson.org in Search Console with the DNS or HTML method. Export the last 90 days of queries, pages, clicks and impressions. Save it as the baseline.
-3. **Decide the lead-tracking source of truth.** One place every lead lands with source, date, first response time and outcome. Options observed in your stack: Luxury Presence native CRM, or a BOB Tools table, or KW Command if you use it (unknown). Pick one. The lead-response agent writes to it.
+3. **Lead-tracking source of truth is KW Command.** Decided October 7. Every lead lands there with source, date, first response time and outcome. The lead-response agent writes to it. Unknown: whether Claude can write to KW Command directly through an API or connector. If not, the agents produce a daily CSV or a Zapier-style sync, and Caleb confirms the logging path in week one. Luxury Presence lead routing should forward every site lead into KW Command so nothing lives in two places.
 4. **Run the AI baseline.** Twenty fixed questions, listed at the end of this file. Record date, platform, answer, cited URLs, competitors named, whether Caleb is mentioned and whether calebjackson.org is cited. Repeat monthly.
-5. **Resolve the two brand inconsistencies above.** Handle and address.
-6. **Fill the brackets in the bio.** Years licensed, families served or volume, and the repeat and referral share. The brand is "receipts over adjectives" and the receipts are still blank.
+5. **Apply the two brand decisions above.** Set @calebjacksonla and 37325 Market Place Drive on every profile, the site and the email signature. Correct the Google Maps address in the Google Business Profile.
+6. **Connect LinkedIn in Metricool.** Decided October 7. Caleb does this in Metricool's connections screen with his LinkedIn login (it needs his authorization, so an agent cannot do it). Once connected, the content engine pulls LinkedIn best-time data and adds the Market Receipt and Answers pillars there.
+7. **Fill the brackets in the bio.** Years licensed, families served or volume, and the repeat and referral share. The brand is "receipts over adjectives" and the receipts are still blank.
 
 ## Phase 1: brand consistency and the content engine (weeks 2 to 4)
 
@@ -102,7 +103,7 @@ One review is the gap. Inferred build: after every closing, and after every show
 - **Weekly "ask me" story** with a question box tied to that week's Answer pillar. Every reply is a conversation to log.
 - **Monthly home value offer** to the database and to followers in the eight target neighborhoods. Soft ask, dated numbers.
 - **Local partner content.** One short per month with a flood insurance agent, a lender or an inspector. They share it to their audience, which is the cheapest reach you can buy.
-- **Add LinkedIn.** It is not connected in Metricool. Relocation buyers, corporate transferees and the Baton Rouge professional class live there, and the Market Receipt lands well.
+- **LinkedIn, decided yes.** Caleb connects it in Metricool during Phase 0. Relocation buyers, corporate transferees and the Baton Rouge professional class live there, and the Market Receipt and Answers pillars land well. Profile headline and about section get the brand voice and the Keller Williams First Choice affiliation.
 - **Retargeting, only after the scoreboard works.** Once GA4 and the pixel are confirmed, a small Facebook and Instagram retargeting budget aimed at site visitors with the Receipts pillar. Spend requires your explicit approval and starts under 300 dollars a month.
 
 ### Database nurture, your highest-margin channel
@@ -127,7 +128,7 @@ Weekly: Monday 90-minute recording block before the lead-gen block. Friday 30-mi
 
 ## The automation stack, ranked by money
 
-Each agent has a spec file in `agents/` in this repo. They run with your existing tools: Luxury Presence, Metricool, Google Business Profile, Gmail, Google Calendar, Google Drive, and the lead table you choose. No new subscription is required for any of them.
+Each agent has a spec file in `agents/` in this repo. They run with your existing tools: Luxury Presence, Metricool, Google Business Profile, Gmail, Google Calendar, Google Drive, and KW Command as the lead table. No new subscription is required for any of them.
 
 | Rank | Agent | Puts you in front of | Approval gate | First KPI |
 |---|---|---|---|---|

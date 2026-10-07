@@ -4,7 +4,7 @@
 
 **Cadence.** Monthly. First run as soon as possible to set the baseline. Read only. Sends nothing.
 
-**Tools.** Web search enabled AI platforms (at least two), a results table in the lead table system or a Google Sheet, the 20 questions in `../strategy/2026-10-07-most-viewed-realtor-plan.md`.
+**Tools.** Web search enabled AI platforms (at least two), a results table in a Google Sheet (KW Command is for leads, not test results), the 20 questions in `../strategy/2026-10-07-most-viewed-realtor-plan.md`.
 
 **Steps.**
 1. For each of the 20 questions, open a fresh conversation on each platform with web search on. Ask the question verbatim.
