@@ -63,3 +63,16 @@ Only partly, and for a one-time pass it is slower than pasting. The honest map:
 | Gmail signature | The Gmail API can set a send-as signature with an OAuth client. | Possible. Setup longer than the paste. |
 
 Recommendation: do this pass by hand with the kit. If the receipts change quarterly and Caleb wants Facebook and YouTube to update themselves, a small script with his own tokens is worth building then, and it would never commit a token to this public repo.
+
+## Live status, October 7, 1:24 pm Central (from the Mac session's own log, screenshot from Caleb)
+
+| Surface | State |
+|---|---|
+| Zillow | Agent info, 13 service areas, brokerage, website and Instagram links saved earlier in the day. Past sales still waiting on the MLS spreadsheet in Downloads. |
+| Instagram | Bio live: "REALTOR, Keller Williams First Choice / Baton Rouge to the Felicianas / 81 closings. $25.1M sold. No paid leads, just service. / Call returned today." Caleb rejected the longer Action Jackson bio for this slot. |
+| Facebook | Same bio plus phone. Email and address changes declined by Caleb. Username rename to calebjacksonla failed (the settings link loops). Still open. |
+| YouTube | Stats line swapped to the new numbers, contact email set to aire@, channel name kept. |
+| Google Business Profile | Case file updated by the Mac session. Address kept as is. |
+| LinkedIn | Not changed. Open items: headline and About numbers, location, Keller Williams start date. The Mac session is waiting on Caleb's answer to its 1, 2 or 3 question before touching it. |
+
+The copy kit in this folder stays the reference for the long About text and the site. The shorter line the Mac session used on Instagram and Facebook carries the same numbers and the no-paid-leads claim, so it is consistent.
