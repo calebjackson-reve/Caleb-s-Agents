@@ -15,7 +15,7 @@ Approved by Caleb on October 7, 2026. Numbers aligned at 14:58 Central to the ML
 | YouTube channel description | 1,000 | 450 | Not applied |
 | Email signature | none | 195 | Not applied |
 
-Also set on every profile: name "Caleb Jackson", business "Keller Williams First Choice", phone (225) 747-0303, website calebjackson.org, address 37325 Market Place Drive, handle @calebjacksonla.
+Also set on every profile: name "Caleb Jackson", business "Keller Williams First Choice", phone (225) 747-0303, website calebjackson.org, address 17111 Commerce Centre Drive, Prairieville, LA 70769, handle @calebjacksonla.
 
 ## Site hero and short about
 
@@ -75,7 +75,7 @@ Caleb Jackson
 REALTOR, Keller Williams First Choice
 ACTION JACKSON
 (225) 747-0303 | calebjackson.org | @calebjacksonla
-37325 Market Place Drive
+17111 Commerce Centre Drive, Prairieville, LA 70769
 Your call gets returned today. Not tomorrow. Today.
 ```
 

@@ -27,7 +27,7 @@ The covers are generated from `gen.html` with Chromium, so a change to the recei
 | Handle | @calebjacksonla |
 | Phone | (225) 747-0303 |
 | Website | https://calebjackson.org/?utm_source=[platform]&utm_medium=social&utm_campaign=profile |
-| Address, where shown | 37325 Market Place Drive (brokerage). The Google profile keeps its current address as is. |
+| Address, where shown | 17111 Commerce Centre Drive, Prairieville, LA 70769, exactly as registered on the Google Business Profile (Caleb, October 7, correcting an earlier note). |
 | Service area line | Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas |
 | Never | Rêve, @calebjackson_24, Commerce Centre Drive, any old brokerage logo |
 
