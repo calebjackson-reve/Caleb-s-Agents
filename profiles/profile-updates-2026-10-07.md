@@ -8,22 +8,24 @@ Status key: [ ] not started · [x] saved · [~] saved with a change (note it)
 
 ---
 
-## 1. Zillow (zillow.com/profile, Edit profile)
+## 1. Zillow (zillow.com/profile/CalebCBR, Edit profile)
+
+Saved 2026-10-07 from the Mac Remote Control session and checked live. Foreclosure removed from specialties.
 
 | Field | Set it to | Done |
 | --- | --- | --- |
-| Name | Caleb Jackson | [ ] |
-| Title | REALTOR | [ ] |
-| Brokerage | Keller Williams First Choice (remove RÊVE) | [ ] |
-| Office address | 17111 Commerce Centre Drive, Prairieville, LA 70769 | [ ] |
-| Phone | (225) 747-0303 | [ ] |
-| Email | aire@calebjackson.org (replace the old brokerage email) | [ ] |
-| Website | https://calebjackson.org | [ ] |
-| Service areas | Zachary, Baton Rouge, St. Francisville, Central, Baker, Slaughter, Greenwell Springs, Denham Springs, Port Allen, New Roads, Prairieville, Jackson, Clinton | [ ] |
-| Specialties | Buyer's agent, Listing agent, First-time buyers, Relocation, Investment and multifamily (remove Foreclosure) | [ ] |
-| Experience | Since 2022 | [ ] |
-| Headshot | ~/fable-atelier/shared-assets/headshot-caleb.jpg (1025x1025), not the 240px CMA copy | [ ] |
-| Instagram handle | calebjacksonla | [ ] |
+| Name | Caleb Jackson | [x] |
+| Title | REALTOR | [x] |
+| Brokerage | Keller Williams First Choice (remove RÊVE) | [x] |
+| Office address | 17111 Commerce Centre Drive, Prairieville, LA 70769 | [x] |
+| Phone | (225) 747-0303 | [x] |
+| Email | aire@calebjackson.org (replace the old brokerage email) | [~] contact email set; login email still caleb.jackson@reverealtors.com, Zillow blocks scripted clicks on Edit email address, change it by hand or grant Terminal Accessibility |
+| Website | https://calebjackson.org | [x] |
+| Service areas | Zachary, Baton Rouge, St. Francisville, Central, Baker, Slaughter, Greenwell Springs, Denham Springs, Port Allen, New Roads, Prairieville, Jackson, Clinton | [x] |
+| Specialties | Buyer's agent, Listing agent, First-time buyers, Relocation, Investment and multifamily (remove Foreclosure) | [x] |
+| Experience | Since 2022 | [x] |
+| Headshot | ~/fable-atelier/shared-assets/headshot-caleb.jpg (1025x1025), cropped | [x] |
+| Instagram handle | calebjacksonla | [x] |
 
 **About (901 characters, Zillow allows plenty):**
 
@@ -43,7 +45,7 @@ Caleb Jackson, REALTOR, Keller Williams First Choice. (225) 747-0303. aire@caleb
 
 Zillow shows 54 of 72 transactions, so 18 are missing. Zillow verifies against MLS records, so each add needs the MLS number, close date, sale price and your side (buyer or listing) from the ROAM export.
 
-The per-transaction spreadsheet was shared in an earlier chat and is not in Drive, Gmail or this repo. Once it is shared again, this table gets filled in:
+Source: today's ROAM MLS exports in Downloads. Zillow does not take an MLS number; it matches the public-record sale by address and date. Claiming the existing record sets your side without a duplicate but keeps the price undisclosed (Louisiana non-disclosure). Entering by hand shows the price but can sit next to the public-record copy.
 
 | # | Address | City | MLS # | Close date | Price | Side | Added |
 | --- | --- | --- | --- | --- | --- | --- | --- |
