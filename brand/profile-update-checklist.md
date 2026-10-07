@@ -38,7 +38,7 @@ The covers are generated from `gen.html` with Chromium, so a change to the recei
 3. **LinkedIn.** Photo: `avatar-1024.jpg`. Banner: `cover-linkedin-1584x396.png`. Headline: the 196-character LinkedIn headline. About: the long bio. Current position: REALTOR at Keller Williams First Choice, Prairieville, with the brokerage as the company. Custom URL: linkedin.com/in/calebjacksonla if available. Website with utm_source=linkedin.
 4. **YouTube.** Picture: `avatar-tight-1024.jpg`. Banner: `cover-youtube-2560x1440.png`. Channel name: Caleb Jackson. Handle: @calebjacksonla if available. Description: the 450-character YouTube description. Links: website with utm_source=youtube, Instagram, Facebook.
 5. **Google Business Profile.** Logo: `avatar-1024.jpg`. Cover: `cover-google-business-1024x576.png`. Description: the 617-character description from the copy kit, plus the sponsoring broker's name and phone. Phone, hours, services, service areas per the Phase 0 sheet. Address stays as it is.
-6. **Luxury Presence.** Hero and About page copy from the kit. Headshot on the About page from the current set. Footer: brokerage name, Market Place Drive, phone, @calebjacksonla.
+6. **Luxury Presence.** Hero and About page copy from the kit. Headshot on the About page from the current set. Footer: brokerage name, 17111 Commerce Centre Drive, Prairieville, LA 70769, phone, @calebjacksonla.
 7. **Email signature.** The plain-text signature from the copy kit. In Gmail: Settings, See all settings, Signature.
 8. **Zoom, KW Command profile, Zillow, Realtor.com, Homes.com, theadvocate.com agent page.** Same photo, same title, same phone. The Advocate page still says Rêve per the October 6 research and needs a correction request.
 
