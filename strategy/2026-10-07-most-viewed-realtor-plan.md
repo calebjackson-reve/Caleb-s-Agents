@@ -81,7 +81,7 @@ The July 2026 brand package is current (Keller Williams First Choice era) and is
 
 **Seller page rewrite, in progress.** Observed from Caleb's October 7 note: a /sell page rewrite drafted on October 6 adds the market-statistics and buyer-psychology approach, clearer pricing copy and seller questions, and keeps the existing contact and net-sheet paths. Metadata and link checks passed. It is not live, and the visual check is still owed before publishing. The preview and the exact edits are on Caleb's Mac (Codex outputs folder dated 2026-10-06), not in this repo. Next step: drop `seller-page-preview.html` and `seller-page-edits.md` into `strategy/sell-page/` here or into Drive so the content engine can reuse its copy, then do the visual check and publish within the approval scope. This page is the first one the Answers pillar should feed.
 
-Apply this to every surface in one pass: GBP profile photo and cover, Facebook page, Instagram bio and highlights covers, YouTube banner and channel description, email signature, Luxury Presence homepage hero, Zoom background, listing sign riders. One afternoon of work, then it never drifts because the agents enforce it.
+The photo and cover set for every surface is in `brand/profile-assets/` and the order of work is `brand/profile-update-checklist.md` (built October 7). Apply this to every surface in one pass: GBP profile photo and cover, Facebook page, Instagram bio and highlights covers, YouTube banner and channel description, email signature, Luxury Presence homepage hero, Zoom background, listing sign riders. One afternoon of work, then it never drifts because the agents enforce it.
 
 ### Content engine: one session feeds five scoreboards
 
