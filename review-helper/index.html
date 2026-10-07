@@ -179,12 +179,13 @@
 </main>
 
 <script>
-  // Review destinations. Each client gets a link like ?name=Sarah or ?to=zillow&name=Sarah
-  // Google: the cid link opens Caleb's verified listing with its Write a review button.
-  // Swap in the short share link from the Business Profile dashboard (Ask for reviews) when handy.
+  // Review destinations. Each client gets a link like ?name=Sarah&goal=sell&place=Zachary&as=we
+  // Google: paste the short share link from the Business Profile dashboard (Ask for reviews, looks like
+  // https://g.page/r/XXXX/review) over the url below and the button opens Google's review box directly.
+  // Until then the cid link opens Caleb's verified listing with its Write a review button.
   var LINKS = {
-    google:      { url: "https://www.google.com/maps/place/?cid=17113183507740077585", label: "Post it on Google",
-                   note: "Google opens Caleb's listing. Tap Write a review, pick your stars and paste what you wrote." },
+    google:      { url: "https://www.google.com/maps/place/?cid=17113183507740077585", label: "Copy and post it on Google",
+                   note: "Tapping the button copies your review and opens Google. Pick your stars, paste, and post." },
     zillow:      { url: "REPLACE_WITH_ZILLOW_REVIEW_LINK", label: "Post it on Zillow",
                    note: "Zillow asks for four quick ratings and then a text box. Paste what you wrote there. Zillow checks reviews by hand, so it may take a few days to show." },
     ratemyagent: { url: "REPLACE_WITH_RATEMYAGENT_REVIEW_LINK", label: "Post it on RateMyAgent",
@@ -197,19 +198,38 @@
   var name = (params.get("name") || "").replace(/[^A-Za-z' -]/g, "").slice(0, 30);
   if (name) document.getElementById("title").textContent = "Thanks, " + name + ". Two minutes, your words.";
 
+  // Prefill the facts Caleb already knows. Opinions always come from the client.
+  var GOALS = { first: "buy our first home", buy: "buy a home", sell: "sell our house", both: "sell one house and buy another",
+                invest: "buy an investment property", land: "buy land", relocate: "relocate" };
+  var goalKey = (params.get("goal") || "").toLowerCase();
+  if (GOALS[goalKey]) document.getElementById("goal").value = GOALS[goalKey];
+  var placeParam = (params.get("place") || "").replace(/[^A-Za-z0-9.' -]/g, "").slice(0, 40);
+  if (placeParam) document.getElementById("place").value = placeParam;
+
   var go = document.getElementById("go");
   go.href = LINKS[to].url;
   go.textContent = LINKS[to].label;
   document.getElementById("platformNote").textContent = LINKS[to].note;
 
   var pron = "We";
+  function setPron(v) {
+    pron = v;
+    document.querySelectorAll("[data-pron]").forEach(function (x) { x.setAttribute("aria-pressed", x.dataset.pron === v ? "true" : "false"); });
+  }
   document.querySelectorAll("[data-pron]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      document.querySelectorAll("[data-pron]").forEach(function (x) { x.setAttribute("aria-pressed", "false"); });
-      b.setAttribute("aria-pressed", "true");
-      pron = b.dataset.pron;
-    });
+    b.addEventListener("click", function () { setPron(b.dataset.pron); });
   });
+  var asParam = (params.get("as") || "").toLowerCase();
+  if (asParam === "i") setPron("I");
+  if (asParam === "we") setPron("We");
+  if (GOALS[goalKey] || placeParam) {
+    var firstCard = document.querySelector(".steps .card");
+    var done = document.createElement("p");
+    done.className = "hint";
+    done.style.marginTop = "10px";
+    done.textContent = "Caleb filled this one in. Change it if it's off.";
+    firstCard.appendChild(done);
+  }
 
   function toggleChips(container, max) {
     container.querySelectorAll(".chip").forEach(function (c) {
@@ -284,13 +304,23 @@
   document.getElementById("compose").addEventListener("click", compose);
   document.getElementById("draft").addEventListener("input", updateCount);
 
-  document.getElementById("copy").addEventListener("click", function () {
+  function copyDraft(then) {
     var box = document.getElementById("draft");
     var status = document.getElementById("status");
-    function done() { status.textContent = "Copied. Now tap the button below and paste."; }
+    function done() { status.textContent = "Copied. Paste it into the review box."; if (then) then(); }
+    function fallback() { try { box.select(); document.execCommand("copy"); } catch (e) {} done(); }
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(box.value).then(done, function () { box.select(); document.execCommand("copy"); done(); });
-    } else { box.select(); document.execCommand("copy"); done(); }
+      navigator.clipboard.writeText(box.value).then(done, fallback);
+    } else { fallback(); }
+  }
+  document.getElementById("copy").addEventListener("click", function () { copyDraft(null); });
+  // One tap: copy the finished review, then open Google's review page in a new tab.
+  // Google only accepts a review typed and submitted by the signed-in reviewer, so the last step is theirs.
+  go.addEventListener("click", function (ev) {
+    var box = document.getElementById("draft");
+    if (!box.value.trim()) return; // nothing to copy yet, just follow the link
+    ev.preventDefault();
+    copyDraft(function () { window.open(go.href, "_blank", "noopener"); });
   });
 </script>
 </body>
