@@ -50,20 +50,20 @@ Use at most two receipts per asset. The referral-only line is the headline diffe
 
 Short, for site hero and social bios:
 
-> Baton Rouge born. Faith first, family always. When it's time to move, we move, and that's why they call me Action Jackson. Four years, 90+ families and $24.5M sold across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas with Keller Williams First Choice, every one of them by referral. Your call gets returned the same day. Every time.
+> Baton Rouge born. Faith first, family always. When it's time to move, we move, and that's why they call me Action Jackson. Since 2022 that's 81 closed deals and $25.1M in sales across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas with Keller Williams First Choice, every one of them by referral. Your call gets returned the same day. Every time.
 
 Instagram bio, 150 character limit:
 
 > REALTOR, Keller Williams First Choice
 > Baton Rouge to the Felicianas
-> 90+ families. $24.5M sold. All by referral.
+> 81 closed deals. $25.1M since 2022. All by referral.
 > Call returned today.
 
 Long, for the About page and LinkedIn:
 
 > They call me Action Jackson, and it isn't marketing. It's how I work. Your call gets returned today. Not tomorrow. Today.
 >
-> I was born and raised right here, and I've built my business across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas. Four years and more than 90 families later, with $24.5 million sold, the number I'm proudest of isn't on a billboard. Every single client I've ever worked with came from my sphere, a past client or a referral. I have never paid for a lead. Not once.
+> I was born and raised right here, and I've built my business across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas. Since 2022 that's 81 closed deals and $25.1 million in sales, 27 of them in the last 12 months, and the number I'm proudest of isn't on a billboard. Every single client I've ever worked with came from my sphere, a past client or a referral. I have never paid for a lead. Not once.
 >
 > This market moves fast when it's run right. Priced straight, marketed hard, negotiated harder. "Listed Tuesday, under contract Friday" isn't a slogan around here. Some weeks it's just a Tuesday.
 >
