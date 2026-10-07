@@ -167,7 +167,7 @@ When the numbers change, change them in the Client Review System doc first, then
 
 ## Hand-finish list (needs your own clicks)
 
-1. Zillow: add every MLS Agent ID you have held under Settings, so the 18 missing sales import. Then change the login email and add aire@calebjackson.org as an extra email.
+1. Zillow, Settings, MLS Agent IDs. The profile currently lists one ROAM id, 995709547. Caleb's license number is 995709847 (one digit different), so first check whether the Zillow entry is a typo and correct it. Then add b24140 under ROAM if the export's agent ID column shows the sales under that id. Zillow re-imports sales on its own once the ids match. Then change the login email and add aire@calebjackson.org as an extra email.
 2. Facebook: rename the page to Caleb Jackson, REALTOR. Report the spam recommendation if it reappears (the Reviews tab showed none).
 3. LinkedIn: confirm the website and contact fields show calebjackson.org, (225) 747-0303 and aire@calebjackson.org. Everything else is saved.
 4. Google: nothing to click. Phone, service areas and category are in Google's review queue, up to 7 days.
