@@ -53,7 +53,7 @@ Source: today's ROAM MLS exports in Downloads. Zillow does not take an MLS numbe
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 to 6 | batch 1, 2022 closings (Grenada Dr, Fly Creek Rd, S Fairview Ave, Legion Rd, Olivia Dr, Cypress St) | | | | | | rejected |
 
-Result 2026-10-07: Zillow rejected all six in batch 1 because it could not match them to the MLS Agent ID on the profile. Those sales were recorded under a different agent ID (likely the RÊVE-era MLS login). Fix by hand: Zillow profile, Settings, MLS Agent IDs, add every ID you have ever been assigned, then Zillow imports the sales itself. Batches 2 and 3 were not attempted.
+Result 2026-10-07: Zillow rejected all six in batch 1 because it could not match them using MLS data. The agent id on the profile was confirmed correct by Caleb, so the sales are likely filed under a different agent or office id, or are missing from Zillow's feed. Batches 2 and 3 were not attempted. Next: compare the agent id cells in the exports, then contact Zillow support.
 
 **Reviews:** direct link, captured 2026-10-07: https://zillow.com/reviews/write/?s=X1-ZUru0sfamo3g95_93ahq (goes into the guided review page at calebjackson.org/review).
 
@@ -167,7 +167,7 @@ When the numbers change, change them in the Client Review System doc first, then
 
 ## Hand-finish list (needs your own clicks)
 
-1. Zillow, Settings, MLS Agent IDs. The profile currently lists one ROAM id, 995709547. Caleb's license number is 995709847 (one digit different), so first check whether the Zillow entry is a typo and correct it. Then add b24140 under ROAM if the export's agent ID column shows the sales under that id. Zillow re-imports sales on its own once the ids match. Then change the login email and add aire@calebjackson.org as an extra email.
+1. Zillow, Settings, MLS Agent IDs: Caleb confirmed on 2026-10-08 that the ROAM id already on the profile is correct. Do not change it. The 18 missing sales still do not match, so the cause is something else: most likely those sales were recorded under a different agent or office id, or are not in Zillow's feed for that id. Next step: read the agent id cells on those 18 rows in the ROAM exports, then ask Zillow support to re-sync them. Then change the login email and add aire@calebjackson.org as an extra email.
 2. Facebook: rename the page to Caleb Jackson, REALTOR. Report the spam recommendation if it reappears (the Reviews tab showed none).
 3. LinkedIn: confirm the website and contact fields show calebjackson.org, (225) 747-0303 and aire@calebjackson.org. Everything else is saved.
 4. Google: nothing to click. Phone, service areas and category are in Google's review queue, up to 7 days.
