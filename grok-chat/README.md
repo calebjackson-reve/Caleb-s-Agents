@@ -5,7 +5,7 @@ A chat bubble on calebjackson.org that answers visitors in Caleb's assistant voi
 | Part | What it is | Where it runs |
 |---|---|---|
 | `worker/` | Cloudflare Worker. Holds the xAI key, allows only calebjackson.org, rate limits by IP, streams replies, saves leads. | Cloudflare, free tier covers it |
-| `widget/widget.js` | The bubble and chat panel. One script tag. Ivory and ink, one ember accent, Keller Williams First Choice in the header. | Luxury Presence custom code |
+| `worker/public/widget.js` | The bubble and chat panel. One script tag. Ivory and ink, one ember accent, Keller Williams First Choice in the header. Served by the Worker itself, so nothing else to host. | Same Worker |
 | `test/` | Mock xAI server and a headless-browser demo, so the whole thing can be checked without spending a token. | Your machine |
 
 Proof it works is in `proof/` (screenshots from the local run on 2026-10-07).
@@ -18,33 +18,29 @@ Does not: discuss who lives in a neighborhood or school "quality" by population 
 
 Cost: Grok 4.1 Fast non-reasoning at roughly $0.20 per million input tokens and $0.50 per million output. A typical visitor conversation is a few thousand tokens, so a thousand conversations is a few dollars. Rate limit is 40 messages per IP per hour.
 
-## Deploy, about 20 minutes
+## Deploy, about 15 minutes
 
-1. **xAI key.** console.x.ai, create an API key. Keep it in a password manager, never in this repo.
-2. **Cloudflare.** Free account at dash.cloudflare.com. Then on your Mac:
+You need two accounts and one key. I cannot create these for you.
+
+1. **xAI key.** console.x.ai, create an API key. Keep it in a password manager. Never paste it into a chat or a file in this repo.
+2. **Cloudflare account.** Free, at dash.cloudflare.com.
+3. **Run one command** on your Mac, from the repo folder:
    ```
-   cd grok-chat/worker
-   npm install
-   npx wrangler login
-   npx wrangler kv namespace create RATE
-   npx wrangler kv namespace create LEADS
+   bash grok-chat/deploy.sh
    ```
-   Paste the two ids it prints into `wrangler.toml` where it says REPLACE_WITH.
-3. **Secrets.**
-   ```
-   npx wrangler secret put XAI_API_KEY        # paste the xAI key
-   npx wrangler secret put LEAD_WEBHOOK_URL   # optional, see Leads below
-   ```
-4. **Deploy.** `npx wrangler deploy` prints a URL like `https://calebjackson-chat.<account>.workers.dev`. Open `<that url>/health` and you should see `{"ok":true,...}`.
-5. **Model check, optional.** `curl https://api.x.ai/v1/models -H "Authorization: Bearer $XAI_API_KEY"` lists live model ids. The default is `grok-4-1-fast-non-reasoning`. Change `GROK_MODEL` in `wrangler.toml` and redeploy to switch.
-6. **Put the widget on the site.** Host `widget/widget.js` somewhere public. Simplest: upload it in Luxury Presence's file manager, or drop it in this repo and serve it from GitHub Pages. Then in Luxury Presence, Settings, Custom Code (header or footer scripts), add:
+   It installs, opens the Cloudflare login in your browser once, creates the two storage spaces and writes their ids into `wrangler.toml`, asks for the xAI key (hidden as you paste, goes straight to Cloudflare), deploys, and then tests itself: health check, the widget file, and one real question to Grok. It ends by printing the exact line to paste into Luxury Presence.
+4. **Put the line on the site.** Luxury Presence, Settings, Custom Code, footer scripts:
    ```html
-   <script src="https://calebjackson.org/chat/widget.js" data-endpoint="https://calebjackson-chat.<account>.workers.dev" defer></script>
+   <script src="https://calebjackson-chat.<account>.workers.dev/widget.js" defer></script>
    ```
-   Replace both URLs with yours. Save, load the public site, click "Ask Caleb", send a message.
-7. **Test with a fake lead first.** Say "I'm Test, 225-555-0100" and confirm it lands (next section) before telling anyone the bot is live.
+   The deploy script prints it with your real address filled in.
+5. **Test with a fake lead first.** Load calebjackson.org, click "Ask Caleb", say "I'm Test, 225-555-0100", and confirm it lands (next section) before anyone else sees it.
 
-If Luxury Presence will not take a custom script on your plan, their support can add it, or the widget can be loaded through Google Tag Manager, which the site already has.
+If you would rather do it by hand, the script is short and readable. Model check: `curl https://api.x.ai/v1/models -H "Authorization: Bearer $XAI_API_KEY"` lists live model ids. The default is `grok-4-1-fast-non-reasoning`. Change `GROK_MODEL` in `wrangler.toml` and run `npx wrangler deploy` in `grok-chat/worker` to switch.
+
+If Luxury Presence will not take a custom script on your plan, their support can add it, or the line can load through Google Tag Manager, which the site already has.
+
+Status as of 2026-10-08: the script was dry-run against a stand-in for Cloudflare's command line and the Worker was tested locally. It has not touched a real Cloudflare account, so if a step prints something unexpected, the message tells you which one.
 
 ## Leads
 
@@ -60,14 +56,14 @@ To get them to your phone the moment they land, set `LEAD_WEBHOOK_URL` to a Zapi
 
 ## Change the voice or the rules
 
-`worker/src/prompt.js` is the whole personality. Edit, then `npx wrangler deploy`. The widget greeting is the `data-greeting` attribute on the script tag.
+`worker/src/prompt.js` is the whole personality. Edit, then `bash grok-chat/deploy.sh` again (it skips what already exists). The widget greeting is the `data-greeting` attribute on the script tag.
 
 ## Run it locally without a key
 
 ```
 cd grok-chat
 node test/mock-xai.mjs &                                   # fake xAI on :9999
-(cd widget && python3 -m http.server 8080) &               # demo page on :8080
+(cd widget && python3 -m http.server 8080) &               # demo page on :8080, loads the widget from the Worker
 (cd worker && npx wrangler dev --port 8787 \
    --var XAI_API_KEY:test-key \
    --var XAI_BASE_URL:http://localhost:9999/v1 \

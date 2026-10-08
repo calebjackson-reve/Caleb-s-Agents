@@ -1,9 +1,11 @@
-/* calebjackson.org chat widget. One script tag, no dependencies.
-   <script src="https://calebjackson.org/chat/widget.js" data-endpoint="https://calebjackson-chat.<account>.workers.dev" defer></script>
+/* calebjackson.org chat widget. One script tag, no dependencies, served by the Worker.
+   <script src="https://calebjackson-chat.<account>.workers.dev/widget.js" defer></script>
    Styles follow brand/voice-and-visual-rules.md: ivory ground, ink text, one ember accent. */
 (function () {
   var script = document.currentScript;
+  // The Worker serves this file, so by default the chat API lives at the same origin as the script.
   var ENDPOINT = (script && script.getAttribute('data-endpoint')) || '';
+  if (!ENDPOINT && script && script.src) { try { ENDPOINT = new URL(script.src).origin; } catch (e) {} }
   var GREETING = (script && script.getAttribute('data-greeting')) ||
     "Hey, I'm Caleb's assistant. Buying, selling or just curious about the Baton Rouge area? Ask me anything and I'll get Caleb to text you back today.";
   if (!ENDPOINT) { console.warn('[cj-chat] data-endpoint missing'); return; }

@@ -2,6 +2,10 @@ name = "calebjackson-chat"
 main = "src/index.js"
 compatibility_date = "2026-09-01"
 
+# widget.js is served from here, so there is nothing else to host.
+[assets]
+directory = "./public"
+
 # Visitors' messages per IP per hour live here. Leads live in LEADS.
 # Create both once: npx wrangler kv namespace create RATE ; npx wrangler kv namespace create LEADS
 # then paste the ids below.
