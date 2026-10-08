@@ -1,0 +1,6 @@
+# profile-sync secrets and receipts never enter the repo
+scripts/profile-sync/*.json
+scripts/profile-sync/*token*
+scripts/profile-sync/receipts/
+client_secret*.json
+*.token
