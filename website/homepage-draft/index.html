@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caleb Jackson, REALTOR</title>
+<meta name="description" content="Caleb Jackson helps buyers and sellers in Louisiana make clear decisions about their next move. Keller Williams First Choice.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Draft homepage. Bracketed copy marked .todo needs real content before launch. */
+  :root {
+    --bg: #f6f3ee;
+    --surface: #ffffff;
+    --ink: #1d1b18;
+    --muted: #5f5a52;
+    --line: #ddd6cb;
+    --accent: #2f4a3a;
+    --accent-ink: #ffffff;
+    --todo-bg: #fff4c2;
+    --todo-ink: #6b5200;
+    --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+    --sans: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --max: 1120px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151412; --surface: #1e1c19; --ink: #f1ece4; --muted: #b3ab9f;
+      --line: #36322c; --accent: #8fb79d; --accent-ink: #10150f;
+      --todo-bg: #3b3210; --todo-ink: #f3dc8a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151412; --surface: #1e1c19; --ink: #f1ece4; --muted: #b3ab9f;
+    --line: #36322c; --accent: #8fb79d; --accent-ink: #10150f;
+    --todo-bg: #3b3210; --todo-ink: #f3dc8a;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: 17px; line-height: 1.6;
+  }
+  img { max-width: 100%; display: block; }
+  a { color: inherit; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
+  @media (min-width: 720px) { .wrap { padding: 0 32px; } }
+
+  .todo {
+    background: var(--todo-bg); color: var(--todo-ink);
+    border-radius: 4px; padding: 0 4px; font-style: normal;
+  }
+
+  /* Header */
+  header.site {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+  }
+  header.site .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 16px; }
+  .brand { text-decoration: none; line-height: 1.15; }
+  .brand strong { font-family: var(--serif); font-weight: 400; font-size: 24px; display: block; }
+  .brand span { font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+  nav.primary { display: none; gap: 24px; font-size: 15px; }
+  nav.primary a { text-decoration: none; color: var(--muted); }
+  nav.primary a:hover { color: var(--ink); }
+  @media (min-width: 860px) { nav.primary { display: flex; } }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 0 22px; border-radius: 999px;
+    font-weight: 700; font-size: 16px; text-decoration: none;
+    border: 1px solid var(--accent); white-space: nowrap;
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-ghost { color: var(--ink); border-color: var(--line); }
+  .btn-sm { min-height: 40px; padding: 0 16px; font-size: 15px; }
+
+  /* Hero */
+  .hero { padding: 40px 0 56px; }
+  .hero .wrap { display: grid; gap: 32px; }
+  @media (min-width: 900px) {
+    .hero { padding: 72px 0 96px; }
+    .hero .wrap { grid-template-columns: 1fr 1fr; align-items: center; gap: 56px; }
+  }
+  .eyebrow { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 16px; }
+  h1, h2, h3 { font-family: var(--serif); font-weight: 400; line-height: 1.05; margin: 0; }
+  h1 { font-size: clamp(44px, 9vw, 84px); letter-spacing: -.01em; }
+  h2 { font-size: clamp(34px, 6vw, 56px); }
+  h3 { font-size: 28px; line-height: 1.15; }
+  .lede { font-size: 19px; color: var(--muted); max-width: 34em; margin: 20px 0 28px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+  .photo {
+    position: relative; border-radius: 6px; overflow: hidden;
+    aspect-ratio: 4 / 5; background:
+      linear-gradient(180deg, #c9d3cf 0%, #a9b8a6 55%, #6f7d63 100%);
+  }
+  .photo.wide { aspect-ratio: 16 / 10; }
+  .photo .placeholder {
+    position: absolute; inset: auto 12px 12px 12px;
+    background: rgba(255,255,255,.9); color: #3a3630;
+    font-size: 13px; padding: 8px 12px; border-radius: 4px;
+  }
+
+  section { padding: 64px 0; border-top: 1px solid var(--line); }
+  @media (min-width: 900px) { section { padding: 96px 0; } }
+  .section-head { max-width: 40em; margin-bottom: 40px; }
+  .section-head p { color: var(--muted); margin: 16px 0 0; }
+
+  /* Proof */
+  .proof { display: grid; gap: 32px; }
+  @media (min-width: 900px) { .proof { grid-template-columns: 1fr 1.4fr; gap: 64px; align-items: start; } }
+  .facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 20px; }
+  .facts li { border-left: 2px solid var(--accent); padding-left: 16px; }
+  .facts b { display: block; font-size: 15px; }
+  .facts span { color: var(--muted); font-size: 15px; }
+  blockquote { margin: 0; }
+  blockquote p { font-family: var(--serif); font-size: clamp(26px, 4vw, 36px); line-height: 1.2; margin: 0 0 20px; }
+  blockquote footer { color: var(--muted); font-size: 15px; }
+
+  /* Property story */
+  .story { display: grid; gap: 32px; }
+  @media (min-width: 900px) { .story { grid-template-columns: 1.3fr 1fr; gap: 56px; align-items: center; } }
+  .story .name-over {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: clamp(48px, 10vw, 120px); color: rgba(255,255,255,.88);
+    letter-spacing: -.01em; pointer-events: none;
+  }
+  .text-link { font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+
+  /* How I work */
+  .steps { display: grid; gap: 16px; counter-reset: step; }
+  @media (min-width: 900px) { .steps { grid-template-columns: repeat(3, 1fr); gap: 24px; } }
+  .step { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 28px; }
+  .step::before {
+    counter-increment: step; content: "0" counter(step);
+    display: block; font-size: 13px; letter-spacing: .12em; color: var(--muted); margin-bottom: 16px;
+  }
+  .step p { color: var(--muted); margin: 12px 0 0; font-size: 16px; }
+
+  /* Paths */
+  .paths { display: grid; gap: 16px; }
+  @media (min-width: 760px) { .paths { grid-template-columns: 1fr 1fr; gap: 24px; } }
+  .path { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 32px; display: flex; flex-direction: column; gap: 16px; }
+  .path ul { margin: 0; padding-left: 20px; color: var(--muted); font-size: 16px; }
+  .path .btn { align-self: flex-start; margin-top: auto; }
+
+  /* Close */
+  .close { text-align: center; }
+  .close .lede { margin-left: auto; margin-right: auto; }
+  .close .actions { justify-content: center; }
+
+  footer.site { border-top: 1px solid var(--line); padding: 40px 0 96px; font-size: 14px; color: var(--muted); }
+  footer.site .wrap { display: grid; gap: 8px; }
+  @media (min-width: 720px) { footer.site { padding-bottom: 40px; } }
+
+  /* Persistent mobile action */
+  .mobile-cta {
+    position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 20;
+    display: flex;
+  }
+  .mobile-cta .btn { flex: 1; box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+  @media (min-width: 720px) { .mobile-cta { display: none; } }
+
+  /* One restrained motion: sections settle in once. Off for reduced motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { opacity: 0; transform: translateY(12px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.in { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <strong>Caleb Jackson</strong>
+      <span>REALTOR · Keller Williams First Choice</span>
+    </a>
+    <nav class="primary" aria-label="Primary">
+      <a href="#work">How I work</a>
+      <a href="#buying">Buying</a>
+      <a href="#selling">Selling</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="sms:+10000000000">Text Caleb</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- 1. Opening: creative anchor + plain service sentence + immediate action -->
+  <div class="hero">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow"><em class="todo">[City / parish]</em>, Louisiana real estate</p>
+        <h1>A home deserves a point of view.</h1>
+        <p class="lede">
+          I help buyers and sellers in <em class="todo">[service area]</em> make clear decisions
+          about where to live, what a home is worth and how to present it well.
+        </p>
+        <div class="actions">
+          <a class="btn btn-primary" href="sms:+10000000000">Text Caleb</a>
+          <a class="btn btn-ghost" href="#work">See how I work</a>
+        </div>
+      </div>
+      <div class="photo" role="img" aria-label="Placeholder for a real Louisiana photograph">
+        <div class="placeholder">Real Louisiana photograph goes here. Your own work, not generated.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Proof near the opening -->
+  <section aria-labelledby="proof-h" class="reveal">
+    <div class="wrap proof">
+      <div>
+        <h2 id="proof-h" class="section-head">Why people work with me</h2>
+        <ul class="facts">
+          <li><b><em class="todo">[Years]</em> in Louisiana real estate</b><span>Licensed with Keller Williams First Choice</span></li>
+          <li><b><em class="todo">[Homes helped / volume]</em></b><span>Only verifiable numbers belong here</span></li>
+          <li><b><em class="todo">[Neighborhoods you know best]</em></b><span>Where you actually do most of your work</span></li>
+        </ul>
+      </div>
+      <blockquote>
+        <p><em class="todo">[A real client review, quoted exactly with their permission.]</em></p>
+        <footer><em class="todo">[Client first name, last initial]</em> · <em class="todo">[Bought or sold, area, year]</em></footer>
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- 3. One selected property story. The house-and-name composition lives here and on its own page. -->
+  <section aria-labelledby="story-h" class="reveal">
+    <div class="wrap story">
+      <div class="photo wide" role="img" aria-label="Placeholder for the house-and-name composition">
+        <div class="name-over" aria-hidden="true">Caleb</div>
+        <div class="placeholder">Signature house-and-name image. Links to the full property story.</div>
+      </div>
+      <div>
+        <p class="eyebrow">Selected work</p>
+        <h2 id="story-h">Before a buyer sees it, decide how it should be seen.</h2>
+        <p class="lede"><em class="todo">[Two sentences on this listing: what the house needed, what you decided and what happened.]</em></p>
+        <a class="text-link" href="#story">Read the full story</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Concrete examples of how you work -->
+  <section id="work" aria-labelledby="work-h" class="reveal">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="work-h">How I work</h2>
+        <p>Every move starts with a clear plan and a straight answer.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <h3>Read the house honestly</h3>
+          <p>What it does well, what a buyer will question and what is worth fixing before it goes live.</p>
+        </div>
+        <div class="step">
+          <h3>Decide how it should be seen</h3>
+          <p>Photography, order of rooms and the first sentence of the listing, chosen on purpose.</p>
+        </div>
+        <div class="step">
+          <h3>Stay close through closing</h3>
+          <p>You hear from me directly, with plain options at every decision.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Clear buying and selling paths -->
+  <section aria-labelledby="paths-h" class="reveal">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="paths-h">Where are you starting?</h2>
+      </div>
+      <div class="paths">
+        <div class="path" id="buying">
+          <h3>Buying a home</h3>
+          <ul>
+            <li>Compare homes side by side before you tour</li>
+            <li>Know what a fair offer looks like</li>
+            <li>Understand the neighborhood, not just the listing</li>
+          </ul>
+          <a class="btn btn-ghost" href="#buyer-compare">Start buying</a>
+        </div>
+        <div class="path" id="selling">
+          <h3>Selling a home</h3>
+          <ul>
+            <li>A realistic price conversation first</li>
+            <li>A preparation plan you can actually finish</li>
+            <li>Marketing built around how the home should be seen</li>
+          </ul>
+          <a class="btn btn-ghost" href="#seller-plan">Start selling</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Local knowledge + direct conversation close -->
+  <section id="contact" aria-labelledby="close-h" class="reveal close">
+    <div class="wrap">
+      <p class="eyebrow">Local, and easy to reach</p>
+      <h2 id="close-h">Tell me what you’re thinking about.</h2>
+      <p class="lede">
+        A text is the fastest way to reach me. I know <em class="todo">[areas]</em> well
+        and I’ll tell you what I actually think.
+      </p>
+      <div class="actions">
+        <a class="btn btn-primary" href="sms:+10000000000">Text Caleb</a>
+        <a class="btn btn-ghost" href="mailto:hello@example.com">Email instead</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div>Caleb Jackson, REALTOR · Keller Williams First Choice · <em class="todo">[Office address and phone]</em></div>
+    <div>Licensed in Louisiana <em class="todo">[license #]</em> · Each office is independently owned and operated · Equal Housing Opportunity</div>
+  </div>
+</footer>
+
+<div class="mobile-cta"><a class="btn btn-primary" href="sms:+10000000000">Text Caleb</a></div>
+
+<script>
+  (function () {
+    var els = document.querySelectorAll('.reveal');
+    if (!('IntersectionObserver' in window)) { els.forEach(function (e) { e.classList.add('in'); }); return; }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -10% 0px' });
+    els.forEach(function (e) { io.observe(e); });
+  })();
+</script>
+</body>
+</html>
