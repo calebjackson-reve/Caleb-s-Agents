@@ -1,0 +1,37 @@
+[
+  {
+    "id": "basil",
+    "name": "Basil Lane",
+    "address": "90108 Basil Ln",
+    "city": "St. Francisville, LA 70775",
+    "price": 1750000,
+    "beds": 4,
+    "area": 4900,
+    "mls": "2026009718",
+    "image": "basil-front.png",
+    "status": "Featured property · confirm availability",
+    "coordinates": null,
+    "source": "https://calebjackson.org/properties/90108-basil-ln-st-francisville-la-us-70775-2026009718"
+  },
+  {
+    "id": "turnberry",
+    "name": "Turnberry",
+    "address": "2179 S Turnberry Ave",
+    "city": "Zachary, LA 70791",
+    "price": 344900,
+    "beds": 3,
+    "area": 2043,
+    "mls": "2026014919",
+    "image": "turnberry-03.jpg",
+    "status": "Reported for sale · October 8, 2026",
+    "coordinates": [
+      -91.183723,
+      30.639731
+    ],
+    "source": "https://calebjackson.org/properties/2179-s-turnberry-ave-zachary-la-us-70791-2026014919",
+    "community": "Copper Mill",
+    "subdivision": "The Quarter at Copper Mill",
+    "golfView": true,
+    "golfNote": "Course view from the balcony, per Caleb’s listing. Golf frontage not confirmed."
+  }
+]

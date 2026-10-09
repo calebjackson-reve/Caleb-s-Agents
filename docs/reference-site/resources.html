@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Free planning resources | Caleb Jackson</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="tools.css" />
+  <script>
+      // Hide the headline until wind.js splits it, only when motion is welcome. Fails safe after 2.5 s.
+      (function () {
+        var d = document.documentElement;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        d.classList.add('wind');
+        setTimeout(function () { if (!window.__fx) d.classList.remove('wind'); }, 2500);
+      })();
+    </script>
+  </head>
+  <body class="resources-page">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-head">
+      <div class="wrap">
+        <a class="mark" href="../index.html" aria-label="Caleb Jackson, home"><b>Caleb Jackson</b><span>Keller Williams First Choice</span></a>
+        <nav class="site-nav" aria-label="Primary"><a href="campaign.html">Featured</a><a href="golf.html">Golf</a><a href="compare.html">Buy</a><a href="sell.html">Sell</a></nav>
+        <a class="head-cta" href="sms:+12257470303">Text Caleb</a>
+      </div>
+    </header>
+    <main id="main">
+      <section class="resource-heading">
+        <p>Free planning · No sign-up</p>
+        <h1>Two different moves. <br />Two useful plans.</h1>
+        <p>See the monthly cost and cash needed to buy, or what a sale could leave for your next move.</p>
+        <div class="tool-tabs" aria-label="Choose your planning path">
+          <button data-tool="buyer" aria-pressed="true">I’m buying</button
+          ><button data-tool="seller" aria-pressed="false">I’m selling</button>
+        </div>
+      </section>
+      <p class="resource-jump"><a href="#inputs">Change the assumptions ↓</a></p>
+      <section class="tool-layout">
+        <div id="planning-result" class="result-panel" aria-live="polite" aria-atomic="true">
+          <p id="example-label" class="result-label"></p>
+          <h2 id="result-title"></h2>
+          <p id="result" class="result-number"></p>
+          <p id="breakdown" class="result-details"></p>
+          <div id="second-result"></div>
+          <div id="scenario-check"></div>
+          <p id="result-caution" class="fine"></p>
+          <button class="button" id="save-scenario">Save my plan</button>
+          <p class="fine">
+            No email required. Figures are planning estimates, not quotes, a valuation or a loan approval.
+          </p>
+        </div>
+        <div class="tool-inputs" id="inputs">
+          <h2 id="inputs-title"></h2>
+          <p>Start with a clearly labeled example, or enter your own.</p>
+          <div class="presets">
+            <button data-preset="250000">$250k example</button
+            ><button data-preset="350000">$350k example</button
+            ><button data-preset="500000">$500k example</button><button id="custom">Start blank</button>
+          </div>
+          <div id="fields"></div>
+          <p class="fine">Selling? <a href="sell.html#numbers">Compare two sale scenarios side by side</a>.</p>
+          <button class="plain-button reset" id="reset">Reset this path to blank</button>
+          <p class="fine">
+            Switching paths keeps your entries until you leave or reload this page. Nothing is sent or stored.
+          </p>
+          <p>
+            <a href="https://www.consumerfinance.gov/owning-a-home/closing-disclosure/"
+              >Where to find actual loan and closing figures</a
+            >
+          </p>
+        </div>
+      </section>
+      <section class="page-wrap next-actions">
+        <h2 id="next-title"></h2>
+        <ol id="next-steps"></ol>
+        <a class="button" href="compare.html">Compare two to four homes side by side</a
+            ><a href="campaign.html#visit-plan">Build a showing checklist</a
+        ><a href="sms:+12257470303">Text Caleb about your plan</a>
+      </section>
+      <section class="showing-plan" id="showing">
+        <p>A sample you can use today</p>
+        <h2>Your showing game plan.</h2>
+        <ol>
+          <li>
+            <strong>Before you go:</strong> pick your three must-haves, monthly comfort range and one reason
+            you would walk away.
+          </li>
+          <li>
+            <strong>At the home:</strong> check how the rooms connect, storage, light, noise and everyday
+            access. Record questions rather than guessing at defects.
+          </li>
+          <li>
+            <strong>Before an offer:</strong> request disclosures, maintenance records and
+            transaction-specific insurance, tax and flood information. Decide which inspections you need with
+            qualified professionals.
+          </li>
+          <li>
+            <strong>Afterward:</strong> write one strength, one tradeoff and the one unanswered question that
+            matters most.
+          </li>
+        </ol>
+        <p>No contact information is needed to use this plan.</p>
+        <button class="button" id="download-plan">Save the game plan ↓</button>
+        <p><a href="sms:+12257470303">Text Caleb about a showing</a> · <a href="tel:+12257470303">Call</a></p>
+      </section>
+      <section class="page-wrap">
+        <h2>Moving to Louisiana?</h2>
+        <p>
+          Start with your workplace or regular destination, maximum comfortable travel time, housing budget
+          and moving date. Compare specific addresses against those needs. Then verify insurance, taxes and
+          flood information before deciding.
+        </p>
+        <a href="explore.html">Explore the featured homes ↗</a>
+        <p class="fine">
+          No automated area rankings, commute predictions or AI advice are connected in this revision.
+        </p>
+      </section>
+      <a class="mobile-resultbar" id="mobile-result" href="#planning-result">View result ↑</a>
+    </main>
+    <footer class="site-foot">
+      <div class="wrap">
+        <div>Caleb Jackson, REALTOR · Keller Williams First Choice · Louisiana license 995709847</div>
+        <div>Each office is independently owned and operated · Equal Housing Opportunity</div>
+        <div class="foot-links"><a href="sms:+12257470303">Text Caleb</a><a href="tel:+12257470303">Call (225) 747-0303</a><a href="about.html">About</a><a href="explore.html">Explore the map</a><a href="golf.html">Golf communities</a><a href="resources.html">Planning resources</a><a href="sources.html">Sources and limits</a></div>
+      </div>
+    </footer>
+    <script src="common.js" defer></script>
+    <script src="wind.js" defer></script>
+    <script src="brief.js" defer></script>
+    <script src="resources-math.js" defer></script>
+    <script src="resources.js" defer></script>
+  </body>
+</html>
