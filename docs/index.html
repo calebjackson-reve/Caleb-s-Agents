@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Caleb Jackson, REALTOR</title>
+<meta name="description" content="Caleb Jackson helps buyers and sellers across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas. Keller Williams First Choice.">
+<meta name="theme-color" content="#10110d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="reference-site/assets/web/basil-patio-1600.webp" imagesrcset="reference-site/assets/web/basil-patio-800.webp 800w, reference-site/assets/web/basil-patio-1600.webp 1600w" imagesizes="(max-aspect-ratio: 16/9) 178vh, 100vw">
+<script>
+  // Hide the headline until the wind script splits it, only when motion is welcome. Fails safe after 2.5 s.
+  (function () {
+    var d = document.documentElement;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    d.classList.add('wind');
+    setTimeout(function () { if (!window.__fx) d.classList.remove('wind'); }, 2500);
+  })();
+</script>
+<style>
+  /* Metric-matched stand-in so headlines keep their line breaks while Instrument Serif loads */
+  @font-face {
+    font-family: "Instrument Fallback";
+    src: local("Times New Roman"), local("TimesNewRomanPSMT"), local("Liberation Serif"), local("LiberationSerif"), local("Times");
+    size-adjust: 82%; ascent-override: 121%; descent-override: 38%; line-gap-override: 0%;
+  }
+  @font-face {
+    font-family: "Instrument Fallback"; font-style: italic;
+    src: local("Times New Roman Italic"), local("TimesNewRomanPS-ItalicMT"), local("Liberation Serif Italic"), local("LiberationSerif-Italic"), local("Times Italic");
+    size-adjust: 87%; ascent-override: 114%; descent-override: 36%; line-gap-override: 0%;
+  }
+  :root {
+    --night: #10110d;
+    --night-2: #1a1b16;
+    --paper: #f3eee4;
+    --paper-2: #e9e2d4;
+    --field: #f8f4ec;
+    --ink: #1c1a15;
+    --ink-soft: #5b5548;
+    --cream: #f6f1e7;
+    --cream-soft: rgba(246, 241, 231, .74);
+    --timber: #b98a5a;
+    --line-light: rgba(28, 26, 21, .14);
+    --line-dark: rgba(246, 241, 231, .16);
+    --serif: "Instrument Serif", "Instrument Fallback", serif;
+    --sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --gutter: 16px;
+    --max: 1240px;
+    --ease: cubic-bezier(.2, .7, .1, 1);
+    --dock: 0px;
+  }
+  @media (min-width: 760px) { :root { --gutter: 40px; } }
+  @media (max-width: 759px) { :root { --dock: calc(84px + env(safe-area-inset-bottom)); } }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 17px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { display: block; max-width: 100%; }
+  a { color: inherit; }
+  h1, h2, h3 { font-family: var(--serif); font-weight: 400; margin: 0; letter-spacing: -.012em; }
+  h2, h3 { text-wrap: balance; }
+  em { font-style: italic; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; margin: 0 0 18px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  [id] { scroll-margin-top: 84px; }
+
+  .skip { position: absolute; left: 16px; top: -60px; z-index: 50; background: var(--cream); color: var(--ink); padding: 10px 14px; border-radius: 6px; }
+  .skip:focus { top: 12px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 50px; padding: 0 26px; border-radius: 999px;
+    font: 600 15px/1 var(--sans); letter-spacing: .01em; text-decoration: none;
+    border: 1px solid transparent; white-space: nowrap;
+    transition: background-color .25s ease, color .25s ease, border-color .25s ease;
+  }
+  .btn-light { background: var(--cream); color: var(--ink); }
+  .btn-light:hover { background: #fff; }
+  .btn-ghost-light { color: var(--cream); border-color: rgba(246, 241, 231, .55); }
+  .btn-ghost-light:hover { background: rgba(246, 241, 231, .12); border-color: var(--cream); }
+  .btn-sm { min-height: 40px; padding: 0 18px; font-size: 14px; }
+
+  /* Header: sits over the hero, turns solid once you scroll past it (only when JS runs) */
+  .site-head {
+    position: absolute; inset: 0 0 auto 0; z-index: 30; color: var(--cream);
+    transition: background-color .3s ease, color .3s ease, box-shadow .3s ease;
+  }
+  .js .site-head { position: fixed; }
+  .js .site-head.solid { background: rgba(243, 238, 228, .94); color: var(--ink); box-shadow: 0 1px 0 var(--line-light); backdrop-filter: blur(10px); }
+  .site-head .wrap { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 72px; }
+  .mark { text-decoration: none; display: flex; flex-direction: column; line-height: 1.05; }
+  .mark b { font: 400 26px/1 var(--serif); letter-spacing: -.01em; }
+  .mark span { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; opacity: .78; margin-top: 4px; }
+  .site-nav { display: none; align-items: center; gap: 30px; font-size: 14px; font-weight: 500; }
+  .site-nav a { text-decoration: none; opacity: .86; }
+  .site-nav a:hover { opacity: 1; }
+  @media (min-width: 900px) { .site-nav { display: flex; } }
+  .site-head .btn { background: var(--cream); color: var(--ink); }
+  .js .site-head.solid .btn { background: var(--ink); color: var(--cream); }
+  .head-call { display: none; }
+  @media (max-width: 759px) { .head-text { display: none; } .head-call { display: inline-flex; } }
+
+  /* Hero */
+  .hero {
+    position: relative; min-height: 600px; height: 100vh; height: 100svh; max-height: 1080px;
+    color: var(--cream); background: var(--night); overflow: hidden; isolation: isolate;
+  }
+  .hero-media, .hero-scene, .hero-scene picture { position: absolute; inset: 0; }
+  .hero-media { z-index: -2; }
+  .hero-scene picture { display: block; }
+  .hero-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 52% 50%; }
+  .hero::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; opacity: var(--shade, 1);
+    background:
+      linear-gradient(to bottom, rgba(10, 11, 8, .5) 0%, rgba(10, 11, 8, 0) 22%),
+      linear-gradient(to top, rgba(10, 11, 8, .9) 0%, rgba(10, 11, 8, .62) 32%, rgba(10, 11, 8, .12) 60%, rgba(10, 11, 8, 0) 72%);
+  }
+  .hero .wrap {
+    position: relative; height: 100%; display: flex; flex-direction: column; justify-content: flex-end;
+    padding-bottom: calc(40px + var(--dock));
+  }
+  .hero .eyebrow { color: var(--cream-soft); }
+  .hero h1 { font-size: clamp(50px, 6.6vw, 108px); line-height: .96; max-width: 6.1em; }
+  .hero h1 .w { display: inline-block; white-space: nowrap; }
+  .hero h1 .ch { display: inline-block; will-change: transform, opacity; }
+  .hero .lede { font-size: clamp(17px, 1.5vw, 20px); line-height: 1.55; color: var(--cream-soft); max-width: 36em; margin: 22px 0 30px; }
+  .hero .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .hero-caption {
+    display: none; position: absolute; right: var(--gutter); bottom: 44px;
+    font-size: 12px; letter-spacing: .06em; color: var(--cream-soft); text-align: right; line-height: 1.5;
+  }
+  @media (max-width: 759px) {
+    .hero .actions { display: none; }
+    .hero .lede { margin-bottom: 0; }
+    .hero .wrap { padding-bottom: calc(78px + var(--dock)); }
+  }
+  @media (min-width: 900px) {
+    .hero .wrap { padding-bottom: 64px; }
+    .hero-caption { display: block; }
+    .hero::after {
+      background:
+        linear-gradient(to bottom, rgba(10, 11, 8, .5) 0%, rgba(10, 11, 8, 0) 22%),
+        linear-gradient(to right, rgba(10, 11, 8, .62) 0%, rgba(10, 11, 8, .3) 40%, rgba(10, 11, 8, 0) 62%),
+        linear-gradient(to top, rgba(10, 11, 8, .8) 0%, rgba(10, 11, 8, .4) 28%, rgba(10, 11, 8, 0) 55%);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-scene { animation: settle 2.6s var(--ease) both; }
+    @keyframes settle { from { transform: scale(1.06); } to { transform: none; } }
+  }
+
+  /* Scroll cue: a light travels down the line, inviting the next scroll */
+  .scroll-cue {
+    position: absolute; left: 50%; bottom: 24px; z-index: 2; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    color: var(--cream-soft); text-decoration: none; font: 600 11px/1 var(--sans); letter-spacing: .22em; text-transform: uppercase;
+  }
+  .scroll-cue i { position: relative; display: block; width: 1px; height: 46px; background: rgba(246, 241, 231, .24); overflow: hidden; }
+  .scroll-cue i::after {
+    content: ""; position: absolute; left: 0; top: -18px; width: 1px; height: 18px; background: var(--cream);
+    animation: cue 2.2s cubic-bezier(.6, 0, .3, 1) infinite;
+  }
+  @keyframes cue { to { transform: translateY(64px); } }
+  @media (max-width: 759px) {
+    .scroll-cue { bottom: calc(var(--dock) + 14px); gap: 8px; }
+    .scroll-cue i { height: 30px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .scroll-cue i::after { animation: none; top: 0; } }
+
+  /* ---------- Opening: wind-carried words over a photo that comes into focus ---------- */
+  .wind:not(.fx-ready) .hero h1 { opacity: 0; }
+  .wind .hero .eyebrow, .wind .hero .lede, .wind .hero .actions, .wind .scroll-cue { opacity: 0; }
+  .fx-blur { display: none; }
+  .wind .fx-blur {
+    display: block; position: absolute; inset: 0; --f: -10;
+    background: url(img/basil-patio-blur.jpg) 52% 50% / cover no-repeat;
+    -webkit-mask-image: linear-gradient(90deg, transparent calc(var(--f) * 1% - 35%), #000 calc(var(--f) * 1%));
+    mask-image: linear-gradient(90deg, transparent calc(var(--f) * 1% - 35%), #000 calc(var(--f) * 1%));
+  }
+
+  /* Intro */
+  .intro { padding: 88px 0; }
+  .intro .wrap { display: grid; gap: 44px; }
+  @media (min-width: 900px) {
+    .intro { padding: 140px 0; }
+    .intro .wrap { grid-template-columns: 5fr 7fr; gap: 88px; align-items: center; }
+  }
+  .portrait { position: relative; border-radius: 4px; overflow: hidden; aspect-ratio: 4 / 5; background: var(--paper-2); }
+  .portrait img { width: 100%; height: 100%; object-fit: cover; object-position: 54% 40%; }
+  .intro .eyebrow { color: var(--ink-soft); }
+  .intro h2 { font-size: clamp(40px, 5vw, 68px); line-height: 1.02; max-width: 6.2em; }
+  .intro p { color: var(--ink-soft); font-size: 18px; max-width: 34em; margin: 22px 0 0; }
+  .figures { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin: 48px 0 0; padding: 0; list-style: none; }
+  .figures li { border-top: 1px solid var(--line-light); padding-top: 18px; }
+  .figures b { display: block; font: 400 clamp(52px, 6vw, 84px)/1 var(--serif); letter-spacing: -.02em; }
+  .figures span { display: block; margin-top: 10px; font-size: 14px; color: var(--ink-soft); }
+  .places { margin-top: 28px; font-size: 14px; color: var(--ink-soft); }
+  /* Phones: the portrait runs edge to edge and the introduction slides up over it like a card */
+  @media (max-width: 759px) {
+    .intro { padding: 0 0 72px; }
+    .intro .wrap { gap: 0; padding: 0; }
+    .portrait { border-radius: 0; aspect-ratio: 4 / 5; }
+    .portrait img { object-position: 56% 30%; }
+    .intro-copy { position: relative; margin-top: -72px; background: var(--paper); border-radius: 22px 22px 0 0; padding: 30px var(--gutter) 0; }
+    .figures { gap: 18px; margin-top: 34px; }
+  }
+
+  /* Featured property: name behind the roofline */
+  .featured { background: var(--paper); padding-bottom: 96px; }
+  .roofline {
+    position: relative; overflow: hidden; aspect-ratio: 4 / 5; background: #6f9fd6;
+    container-type: size;
+  }
+  @media (min-width: 700px) { .roofline { aspect-ratio: 16 / 9; } }
+  .roofline img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; }
+  .roofline .fg { z-index: 2; }
+  .roofline .name {
+    position: absolute; z-index: 1; left: 0; right: 0; top: 0;
+    margin: 0; text-align: center; color: #fff; pointer-events: none;
+    font: 400 34cqw/1 var(--serif); letter-spacing: -.03em;
+    transform: translateY(8cqh);
+    text-shadow: 0 4px 40px rgba(25, 55, 105, .28);
+  }
+  @supports not (container-type: size) {
+    .roofline .name { font-size: 34vw; transform: translateY(10vw); }
+  }
+  @media (min-width: 700px) {
+    .roofline .name { font-size: 40cqh; transform: translateY(2cqh); }
+  }
+  .roofline .name .ni, .roofline .name .ch { display: inline-block; will-change: transform, opacity; }
+  .roofline .name .ni { transform-origin: 50% 80%; }
+  .featured-copy { display: grid; gap: 28px; padding-top: 48px; }
+  @media (min-width: 900px) { .featured-copy { grid-template-columns: 6fr 5fr; gap: 88px; padding-top: 72px; align-items: end; } }
+  .featured .eyebrow { color: var(--ink-soft); }
+  .featured h2 { font-size: clamp(38px, 4.6vw, 64px); line-height: 1.02; }
+  .featured p { color: var(--ink-soft); font-size: 18px; margin: 0 0 24px; }
+  .arrow-link { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 4px; }
+  .arrow-link span { transition: transform .25s var(--ease); }
+  .arrow-link:hover span { transform: translateX(4px); }
+  /* Phones: swipe through the real photographs of the house */
+  .strip { display: none; }
+  @media (max-width: 899px) {
+    .strip {
+      display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 var(--gutter);
+      padding: 0 var(--gutter) 6px; margin: 4px 0 26px; list-style: none; scrollbar-width: none;
+    }
+    .strip::-webkit-scrollbar { display: none; }
+    .strip li { flex: 0 0 82%; scroll-snap-align: start; margin: 0; }
+    .strip img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; }
+    .strip span { display: block; margin-top: 8px; font-size: 13px; color: var(--ink-soft); }
+  }
+
+  /* How I work */
+  .work { background: var(--night); color: var(--cream); padding: 88px 0; }
+  .work .wrap { display: grid; gap: 48px; }
+  @media (min-width: 900px) {
+    .work { padding: 140px 0; }
+    .work .wrap { grid-template-columns: 5fr 6fr; gap: 96px; align-items: center; }
+  }
+  .work figure { margin: 0; }
+  .work figure img { width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; object-position: 50% 55%; border-radius: 4px; }
+  @media (min-width: 900px) { .work figure img { aspect-ratio: 4 / 5; } }
+  .work figcaption { margin-top: 12px; font-size: 12px; letter-spacing: .06em; color: var(--cream-soft); }
+  .work .eyebrow { color: var(--timber); }
+  .work h2 { font-size: clamp(40px, 5vw, 68px); line-height: 1.02; }
+  .steps { list-style: none; margin: 40px 0 0; padding: 0; }
+  .steps li { border-top: 1px solid var(--line-dark); padding: 26px 0; display: grid; gap: 8px; }
+  .steps li:last-child { border-bottom: 1px solid var(--line-dark); }
+  @media (min-width: 900px) { .steps li { grid-template-columns: 15ch 1fr; gap: 32px; } }
+  .steps h3 { font-size: 28px; line-height: 1.1; }
+  .steps p { margin: 0; color: var(--cream-soft); font-size: 16px; }
+
+  /* Paths, each with a real photograph, on a slightly deeper band */
+  .paths { padding: 88px 0; background: var(--paper-2); }
+  @media (min-width: 900px) { .paths { padding: 140px 0; } }
+  .paths .eyebrow { color: var(--ink-soft); }
+  .paths h2 { font-size: clamp(40px, 5vw, 68px); line-height: 1.02; margin-bottom: 44px; }
+  .path-grid { display: grid; gap: 16px; }
+  @media (min-width: 800px) { .path-grid { grid-template-columns: 1fr 1fr; gap: 24px; } }
+  .path {
+    display: flex; flex-direction: column; background: var(--field); border-radius: 10px; overflow: hidden;
+    text-decoration: none; transition: background-color .3s ease, color .3s ease;
+    box-shadow: 0 1px 0 rgba(28, 26, 21, .06), 0 10px 30px rgba(28, 26, 21, .06);
+  }
+  .path figure { margin: 0; overflow: hidden; }
+  .path figure img { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; transition: transform .8s var(--ease); }
+  .path .body { display: flex; flex-direction: column; gap: 12px; padding: 26px 28px 30px; flex: 1; }
+  .path small { font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--timber); }
+  .path h3 { font-size: clamp(30px, 3.2vw, 44px); line-height: 1.05; max-width: 12em; }
+  .path p { margin: 0; color: var(--ink-soft); max-width: 30em; }
+  .path .go { margin-top: auto; padding-top: 8px; font-weight: 600; display: inline-flex; gap: 10px; align-items: center; }
+  .path .go span { transition: transform .25s var(--ease); }
+  .path:hover { background: var(--ink); color: var(--cream); }
+  .path:hover p { color: var(--cream-soft); }
+  .path:hover figure img { transform: scale(1.03); }
+  .path:hover .go span { transform: translateX(5px); }
+  .path:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+  /* Close */
+  .close { background: var(--night-2); color: var(--cream); padding: 104px 0; text-align: center; }
+  @media (min-width: 900px) { .close { padding: 150px 0; } }
+  .close .eyebrow { color: var(--timber); }
+  .close h2 { font-size: clamp(44px, 6.4vw, 92px); line-height: 1; max-width: 7em; margin: 0 auto; }
+  .close p { color: var(--cream-soft); max-width: 32em; margin: 22px auto 34px; font-size: 18px; }
+  .close .actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+  @media (max-width: 759px) { .close .actions .btn { flex: 1 1 100%; } }
+
+  .site-foot { background: var(--night); color: var(--cream-soft); font-size: 13px; padding: 36px 0 calc(36px + var(--dock)); }
+  .site-foot .wrap { display: grid; gap: 6px; }
+  .site-foot a { color: var(--cream); }
+  .foot-links { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; }
+
+  /* Phones: Buy, Sell and Text Caleb are always one tap away */
+  .dock { display: none; }
+  @media (max-width: 759px) {
+    .dock {
+      position: fixed; z-index: 60; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
+      transform: translateZ(0); transition: none; animation: none; -webkit-tap-highlight-color: transparent;
+      display: grid; grid-template-columns: 1fr 1fr 1.35fr; gap: 6px; padding: 6px;
+      background: rgba(16, 17, 13, .9); border-radius: 999px; backdrop-filter: blur(12px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, .28);
+    }
+    .dock a {
+      display: flex; align-items: center; justify-content: center; min-height: 50px; border-radius: 999px;
+      color: var(--cream); text-decoration: none; font: 600 15px/1 var(--sans); touch-action: manipulation;
+    }
+    .dock a:active { background: rgba(246, 241, 231, .12); }
+    .dock a.primary:active { background: #fff; }
+    .dock a.primary { background: var(--cream); color: var(--ink); }
+  }
+
+  /* Sections settle in once, only when JS is running and motion is welcome */
+  @media (prefers-reduced-motion: no-preference) {
+    .js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .9s var(--ease), transform .9s var(--ease); }
+    .js .reveal.in { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="mark" href="#main" aria-label="Caleb Jackson, home">
+      <b>Caleb Jackson</b>
+      <span>Keller Williams First Choice</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="#featured">Featured</a>
+      <a href="reference-site/golf.html">Golf</a>
+      <a href="reference-site/compare.html">Buy</a>
+      <a href="reference-site/sell.html">Sell</a>
+    </nav>
+    <a class="btn btn-sm head-text" href="sms:+12257470303">Text Caleb</a>
+    <a class="btn btn-sm head-call" href="tel:+12257470303">Call</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-media">
+      <div class="hero-scene">
+        <picture>
+          <source type="image/webp" srcset="reference-site/assets/web/basil-patio-800.webp 800w, reference-site/assets/web/basil-patio-1600.webp 1600w" sizes="(max-aspect-ratio: 16/9) 178vh, 100vw">
+          <img src="reference-site/assets/web/basil-patio-1600.jpg" width="1600" height="900"
+               alt="A covered timber porch with a porch swing and outdoor seating, looking out over a pond and open pasture."
+               fetchpriority="high">
+        </picture>
+        <div class="fx-blur" aria-hidden="true"></div>
+      </div>
+    </div>
+    <div class="wrap">
+      <p class="eyebrow">REALTOR · Baton Rouge and the Felicianas</p>
+      <h1 id="hero-title"><span class="w">A</span> <span class="w">home</span> <span class="w">deserves</span> <span class="w">a</span> <em><span class="w">point</span> <span class="w">of</span> <span class="w">view.</span></em></h1>
+      <p class="lede">I help buyers and sellers across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas see a home clearly and decide well.</p>
+      <div class="actions" id="hero-actions">
+        <a class="btn btn-light" href="sms:+12257470303">Text Caleb</a>
+        <a class="btn btn-ghost-light" href="#paths">Buying or selling?</a>
+      </div>
+    </div>
+    <p class="hero-caption">Covered porch over the pond<br>Basil Lane, St. Francisville</p>
+    <a class="scroll-cue" href="#intro"><span>Scroll</span><i aria-hidden="true"></i></a>
+  </section>
+
+  <section class="intro" id="intro" aria-labelledby="intro-title">
+    <div class="wrap">
+      <div class="portrait reveal">
+        <img src="reference-site/assets/web/caleb-960.jpg" width="960" height="960" loading="lazy"
+             alt="Caleb Jackson smiling at a table in a warm, wood-paneled room.">
+      </div>
+      <div class="intro-copy reveal">
+        <p class="eyebrow">Who you’ll work with</p>
+        <h2 id="intro-title">You’ll work with me directly.</h2>
+        <p>I’m Caleb Jackson, a REALTOR with Keller Williams First Choice. I care about how a home is seen, what it’s really worth and how each decision feels for the people making it. You get straight answers and a plan you can follow.</p>
+        <ul class="figures">
+          <li><b>81</b><span>Closed sales since 2022</span></li>
+          <li><b>$25.1M</b><span>In closed sales since 2022</span></li>
+        </ul>
+        <p class="places">Baton Rouge · Zachary · St. Francisville · New Roads · the Felicianas</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="featured" id="featured" aria-labelledby="featured-title">
+    <div class="roofline" role="img" aria-label="The front of Basil Lane, a white brick home with a deep front porch, with the name Caleb set in the sky behind the roofline.">
+      <img src="reference-site/assets/web/basil-front-1600.jpg" width="1600" height="900" loading="lazy" alt="">
+      <p class="name" aria-hidden="true">Caleb</p>
+      <img class="fg" src="img/basil-front-house.webp" width="1600" height="900" loading="lazy" alt="">
+    </div>
+    <div class="wrap featured-copy reveal">
+      <div>
+        <p class="eyebrow">Featured · St. Francisville</p>
+        <h2 id="featured-title">Before a buyer sees it, decide how it should be <em>seen.</em></h2>
+      </div>
+      <div>
+        <p>Basil Lane is a white brick home in St. Francisville with a deep front porch, heavy timber posts and a covered deck out back over the pond. Every photograph here is the real house.</p>
+        <a class="arrow-link" href="reference-site/campaign.html">Take a closer look <span aria-hidden="true">→</span></a>
+      </div>
+    </div>
+    <ul class="strip" aria-label="Photographs of Basil Lane">
+      <li><img src="reference-site/assets/web/basil-front-900.jpg" width="900" height="506" loading="lazy" alt="The front of Basil Lane in full daylight."><span>Front elevation</span></li>
+      <li><img src="reference-site/assets/web/basil-porch-800.jpg" width="800" height="450" loading="lazy" alt="Arched double front doors on the brick front porch."><span>Front porch</span></li>
+      <li><img src="reference-site/assets/web/basil-patio-800.jpg" width="800" height="450" loading="lazy" alt="Covered deck with a porch swing over the pond."><span>Covered deck over the pond</span></li>
+    </ul>
+  </section>
+
+  <section class="work" id="work" aria-labelledby="work-title">
+    <div class="wrap">
+      <figure class="reveal">
+        <img src="reference-site/assets/web/basil-porch-1600.jpg" width="1600" height="900" loading="lazy"
+             alt="Arched double front doors with wreaths, framed by timber posts, blue shutters and potted ferns on a brick porch.">
+        <figcaption>Front porch, Basil Lane</figcaption>
+      </figure>
+      <div class="reveal">
+        <p class="eyebrow">How I work</p>
+        <h2 id="work-title">Every move starts with a clear plan.</h2>
+        <ol class="steps">
+          <li><h3>Read the house honestly</h3><p>What it does well, what a buyer will question and what is worth fixing before it goes live.</p></li>
+          <li><h3>Decide how it’s seen</h3><p>Photography, the order of rooms and the first line of the listing, chosen on purpose.</p></li>
+          <li><h3>Stay close to the end</h3><p>You hear from me directly, with plain options at every decision through closing.</p></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="paths" id="paths" aria-labelledby="paths-title">
+    <div class="wrap">
+      <p class="eyebrow">Two ways to start</p>
+      <h2 id="paths-title">Where are you starting?</h2>
+      <div class="path-grid">
+        <a class="path reveal" href="reference-site/compare.html">
+          <figure><img src="reference-site/assets/web/turnberry-03-800.jpg" width="800" height="533" loading="lazy" alt=""></figure>
+          <div class="body">
+            <small>Buying</small>
+            <h3>Compare homes by what they’d really cost.</h3>
+            <p>Put homes side by side with your loan applied to each one, so the monthly number is clear before you tour.</p>
+            <span class="go">Open the comparison <span aria-hidden="true">→</span></span>
+          </div>
+        </a>
+        <a class="path reveal" href="reference-site/sell.html">
+          <figure><img src="reference-site/assets/web/basil-front-900.jpg" width="900" height="506" loading="lazy" alt=""></figure>
+          <div class="body">
+            <small>Selling</small>
+            <h3>Know where you stand before you list.</h3>
+            <p>Test two sale scenarios side by side and see what each could leave you before anything goes live.</p>
+            <span class="go">Start a selling plan <span aria-hidden="true">→</span></span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="close" id="contact" aria-labelledby="close-title">
+    <div class="wrap reveal">
+      <p class="eyebrow">Local and easy to reach</p>
+      <h2 id="close-title">Tell me what you’re thinking about.</h2>
+      <p>A text is the fastest way to reach me. I’ll tell you what I actually think.</p>
+      <div class="actions">
+        <a class="btn btn-light" href="sms:+12257470303">Text Caleb</a>
+        <a class="btn btn-ghost-light" href="tel:+12257470303">Call (225) 747-0303</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div>Caleb Jackson, REALTOR · Keller Williams First Choice · Louisiana license 995709847</div>
+    <div>Each office is independently owned and operated · Equal Housing Opportunity</div>
+    <div class="foot-links"><a href="sms:+12257470303">Text Caleb</a><a href="tel:+12257470303">Call (225) 747-0303</a><a href="reference-site/about.html">About</a><a href="reference-site/explore.html">Explore the map</a><a href="reference-site/golf.html">Golf communities</a><a href="reference-site/resources.html">Planning resources</a><a href="reference-site/sources.html">Sources and limits</a></div>
+  </div>
+</footer>
+
+<nav class="dock" aria-label="Quick actions">
+  <a href="reference-site/compare.html">Buy</a>
+  <a href="reference-site/sell.html">Sell</a>
+  <a class="primary" href="sms:+12257470303">Text Caleb</a>
+</nav>
+
+<script>
+  (function () {
+    if (!('IntersectionObserver' in window)) return;
+    document.documentElement.classList.add('js');
+
+    var head = document.querySelector('.site-head');
+    new IntersectionObserver(function (e) {
+      head.classList.toggle('solid', !e[0].isIntersecting);
+    }, { rootMargin: '-72px 0px 0px 0px' }).observe(document.querySelector('.hero'));
+
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+  })();
+</script>
+<script src="fx.js" defer></script>
+<script src="name.js" defer></script>
+</body>
+</html>
