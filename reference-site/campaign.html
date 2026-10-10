@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Basil Lane, a closer look | Caleb Jackson</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="tools.css" />
+  <script>
+      // Hide the headline until wind.js splits it, only when motion is welcome. Fails safe after 2.5 s.
+      (function () {
+        var d = document.documentElement;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        d.classList.add('wind');
+        setTimeout(function () { if (!window.__fx) d.classList.remove('wind'); }, 2500);
+      })();
+    </script>
+  </head>
+  <body class="">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-head">
+      <div class="wrap">
+        <a class="mark" href="../index.html" aria-label="Caleb Jackson, home"><b>Caleb Jackson</b><span>Keller Williams First Choice</span></a>
+        <nav class="site-nav" aria-label="Primary"><a href="campaign.html" aria-current="page">Featured</a><a href="golf.html">Golf</a><a href="compare.html">Buy</a><a href="sell.html">Sell</a></nav>
+        <a class="head-cta" href="sms:+12257470303">Text Caleb</a>
+      </div>
+    </header>
+    <main id="main">
+      <section class="property-hero">
+        <div class="property-title">
+          <p class="kicker">Featured property · St. Francisville</p>
+          <h1>Basil Lane. <br /><em>A closer look.</em></h1>
+          <p class="address">90108 Basil Ln · St. Francisville, LA 70775</p>
+          <div class="property-actions">
+            <a class="button" href="#visit-plan">Build my showing plan ↓</a>
+            <a class="plain-button" href="compare.html?add=basil">Compare the monthly cost</a>
+          </div>
+        </div>
+        <div class="focus-pull"><picture><source type="image/webp" srcset="assets/web/basil-front-900.webp 900w, assets/web/basil-front-1600.webp 1600w" sizes="(max-aspect-ratio: 16/9) 178vh, 100vw" /><img src="assets/web/basil-front-1600.jpg" srcset="assets/web/basil-front-900.jpg 900w, assets/web/basil-front-1600.jpg 1600w" sizes="100vw" width="1672" height="941" class="campaign-cover" fetchpriority="high" alt="Basil Lane front elevation and broad covered porch" /></picture><div class="fx-blur" aria-hidden="true" style="background-image:url(assets/web/basil-front-blur.jpg)"></div></div>
+      </section>
+      <section class="page-wrap facts">
+        <div>
+          <p>Listed price</p>
+          <strong>$1,750,000</strong>
+        </div>
+        <div>
+          <p>Bedrooms</p>
+          <strong>4</strong>
+        </div>
+        <div>
+          <p>Living area</p>
+          <strong>4,900 sq ft</strong>
+        </div>
+        <div>
+          <p>Availability</p>
+          <strong>Confirm with Caleb</strong>
+        </div>
+        <p class="fine">
+          Manual listing snapshot · October 8, 2026 · MLS 2026009718. Public status sources conflict.
+          <a href="sources.html">Read the source notes</a>.
+        </p>
+        <p class="facts-next"><a class="button" href="compare.html?add=basil">What would it cost you each month? Compare ↗</a></p>
+      </section>
+      <figure class="photo-band">
+        <picture><source type="image/webp" srcset="assets/web/basil-patio-800.webp 800w, assets/web/basil-patio-1600.webp 1600w" sizes="100vw" /><img src="assets/web/basil-patio-1600.jpg" srcset="assets/web/basil-patio-800.jpg 800w, assets/web/basil-patio-1600.jpg 1600w" sizes="100vw" width="1600" height="900" loading="lazy" alt="Covered timber deck with a porch swing and seating, looking over the pond." /></picture>
+        <figcaption>Covered deck over the pond</figcaption>
+      </figure>
+      <section class="page-wrap visit-planner" id="visit-plan">
+        <div>
+          <p>Leave with something useful</p>
+          <h2>What would make <br />this home work for you?</h2>
+          <p>Choose the questions that matter. Your checklist is ready to save. No email or sign-up.</p>
+          <label for="visit-home">Home to discuss</label
+          ><select id="visit-home">
+            <option>Basil Lane</option>
+            <option>Turnberry</option>
+          </select>
+          <fieldset>
+            <legend>My showing priorities</legend>
+            <label
+              ><input
+                type="checkbox"
+                value="Ask for current availability, price and seller disclosures."
+                checked
+              />
+              Availability &amp; disclosures</label
+            ><label
+              ><input
+                type="checkbox"
+                value="Request address-specific home and flood insurance quotes, plus verified tax information."
+                checked
+              />
+              Monthly ownership costs</label
+            ><label
+              ><input type="checkbox" value="Ask for roof age, maintenance records and recent repairs." />
+              Roof &amp; maintenance</label
+            ><label
+              ><input
+                type="checkbox"
+                value="Walk through storage, room connections and the spaces I would use every day."
+              />
+              Everyday fit</label
+            ><label
+              ><input
+                type="checkbox"
+                value="Confirm my desired closing date and any property-specific restrictions."
+              />
+              Timing &amp; restrictions</label
+            >
+          </fieldset>
+        </div>
+        <div class="visit-output">
+          <p>Your plan</p>
+          <h3 id="visit-title">Basil Lane</h3>
+          <ul id="visit-questions" aria-live="polite"></ul>
+          <button class="button" id="save-visit">Save this checklist</button>
+          <p>
+            <a id="text-visit" href="sms:+12257470303">Text Caleb about this home</a> ·
+            <a href="tel:+12257470303">Call</a>
+          </p>
+          <p class="fine">
+            Saving creates a file on your device. Text opens your messaging app, and you choose whether to send.
+          </p>
+          <a href="compare.html?add=basil">Compare its true monthly cost ↗</a>
+        </div>
+      </section>
+      <section class="editorial-row page-wrap">
+        <picture><source type="image/webp" srcset="assets/web/basil-porch-800.webp 800w, assets/web/basil-porch-1600.webp 1600w" sizes="(max-width: 700px) 100vw, 50vw" /><img src="assets/web/basil-porch-1600.jpg" srcset="assets/web/basil-porch-800.jpg 800w, assets/web/basil-porch-1600.jpg 1600w" sizes="(max-width: 700px) 100vw, 50vw" width="1920" height="1080" loading="lazy" alt="Arched double front doors on the brick front porch at Basil Lane." /></picture>
+        <div>
+          <p>Look past the first impression</p>
+          <h2>Bring better questions.</h2>
+          <p>
+            A photograph can show a porch. A showing should help you understand how the home works for your
+            life.
+          </p>
+          <ul>
+            <li>Which spaces would you use every day?</li>
+            <li>What maintenance records and disclosures are available?</li>
+            <li>What insurance, flood and ownership costs need address-specific confirmation?</li>
+          </ul>
+          <a class="button" href="resources.html#showing">See a sample showing game plan ↗</a>
+        </div>
+      </section>
+      <section class="secondary-property page-wrap" id="turnberry">
+        <div>
+          <p>02 / Zachary</p>
+          <h2>Another point of view. <br />Turnberry.</h2>
+          <p>2179 S Turnberry Ave · Zachary, LA 70791</p>
+          <p>In The Quarter at Copper Mill, with a balcony view of the golf course. <a href="community.html?c=copper-mill">Explore Copper Mill →</a></p>
+          <p>$344,900 · 3 bedrooms · 2,043 living sq ft</p>
+          <p class="fine">
+            Reported for sale October 8, 2026 · MLS 2026014919. Confirm current price and availability.
+          </p>
+          <p><a class="button" href="compare.html?add=turnberry">Compare its true monthly cost ↗</a></p>
+          <p><a href="explore.html#turnberry">Locate on the map</a></p>
+        </div>
+        <picture><source type="image/webp" srcset="assets/web/turnberry-03-800.webp 800w, assets/web/turnberry-03-1600.webp 1600w" sizes="(max-width: 700px) 100vw, 50vw" /><img src="assets/web/turnberry-03-1600.jpg" srcset="assets/web/turnberry-03-800.jpg 800w, assets/web/turnberry-03-1600.jpg 1600w" sizes="(max-width: 700px) 100vw, 50vw" width="3072" height="2048" loading="lazy" alt="Turnberry two-story home with front balcony" /></picture>
+      </section>
+      <div class="photo-pair page-wrap">
+        <picture><source type="image/webp" srcset="assets/web/turnberry-05-700.webp 700w, assets/web/turnberry-05-1200.webp 1200w" sizes="(max-width: 700px) 100vw, 50vw" /><img src="assets/web/turnberry-05-1200.jpg" srcset="assets/web/turnberry-05-700.jpg 700w, assets/web/turnberry-05-1200.jpg 1200w" sizes="(max-width: 700px) 100vw, 50vw" width="3072" height="2051" loading="lazy" alt="Turnberry living room" /></picture><picture><source type="image/webp" srcset="assets/web/turnberry-12-700.webp 700w, assets/web/turnberry-12-1200.webp 1200w" sizes="(max-width: 700px) 100vw, 50vw" /><img src="assets/web/turnberry-12-1200.jpg" srcset="assets/web/turnberry-12-700.jpg 700w, assets/web/turnberry-12-1200.jpg 1200w" sizes="(max-width: 700px) 100vw, 50vw" width="3072" height="2048" loading="lazy" alt="Turnberry primary bathroom" /></picture>
+      </div>
+      <section class="cta-band">
+        <h2>Make the next step a useful one.</h2>
+        <p>Ask about a specific home, request disclosures or talk through your priorities.</p>
+        <div class="cta-actions"><a class="button" href="sms:+12257470303">Text Caleb ↗</a><a href="tel:+12257470303">Call</a></div>
+      </section>
+    </main>
+    <footer class="site-foot">
+      <div class="wrap">
+        <div>Caleb Jackson, REALTOR · Keller Williams First Choice · Louisiana license 995709847</div>
+        <div>Each office is independently owned and operated · Equal Housing Opportunity</div>
+        <div class="foot-links"><a href="sms:+12257470303">Text Caleb</a><a href="tel:+12257470303">Call (225) 747-0303</a><a href="about.html">About</a><a href="explore.html">Explore the map</a><a href="golf.html">Golf communities</a><a href="resources.html">Planning resources</a><a href="sources.html">Sources and limits</a></div>
+      </div>
+    </footer>
+    <script src="common.js" defer></script>
+    <script src="wind.js" defer></script>
+    <script src="brief.js" defer></script>
+    <script src="campaign.js" defer></script>
+  </body>
+</html>

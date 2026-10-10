@@ -1,0 +1,4 @@
+Natural Earth 1:50m admin-1 geographic data, Louisiana feature.
+Public domain: https://www.naturalearthdata.com/about/terms-of-use/
+Source: https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_50m_admin_1_states_provinces.geojson
+Accessed October 8, 2026. Visual extrusion is decorative and does not represent terrain.

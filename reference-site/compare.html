@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Compare what homes would really cost | Caleb Jackson</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="tools.css" />
+  <script>
+      // Hide the headline until wind.js splits it, only when motion is welcome. Fails safe after 2.5 s.
+      (function () {
+        var d = document.documentElement;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        d.classList.add('wind');
+        setTimeout(function () { if (!window.__fx) d.classList.remove('wind'); }, 2500);
+      })();
+    </script>
+  </head>
+  <body class="compare-page" data-mode="buyer">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-head">
+      <div class="wrap">
+        <a class="mark" href="../index.html" aria-label="Caleb Jackson, home"><b>Caleb Jackson</b><span>Keller Williams First Choice</span></a>
+        <nav class="site-nav" aria-label="Primary"><a href="campaign.html">Featured</a><a href="golf.html">Golf</a><a href="compare.html" aria-current="page">Buy</a><a href="sell.html">Sell</a></nav>
+        <a class="head-cta" href="sms:+12257470303">Text Caleb</a>
+      </div>
+    </header>
+    <main id="main">
+      <section class="compare-head">
+        <p class="kicker">Free · No sign-up · Your numbers stay on this device</p>
+        <h1>Compare homes by what <br />they would really cost.</h1>
+        <p class="lead">
+          Put two to four homes side by side: the monthly cost, the cash to close, and which numbers are
+          still guesses. Built for Louisiana, where insurance alone averages about
+          <a href="#sources">18% of a typical monthly mortgage payment</a>.
+        </p>
+        <div class="path-switch" role="group" aria-label="Who is using this comparison">
+          <button type="button" data-path="buyer" aria-pressed="true">
+            <strong>I’m comparing homes</strong><span>For your own search</span>
+          </button>
+          <button type="button" data-path="agent" aria-pressed="false">
+            <strong>I’m an agent</strong><span>Preparing a comparison for a client</span>
+          </button>
+        </div>
+        <p class="fine path-note" id="path-note"></p>
+      </section>
+
+      <section class="compare-agent" id="agent-panel" aria-labelledby="agent-title" hidden>
+        <h2 id="agent-title">Prepared by and for</h2>
+        <p class="fine">
+          Appears on the printed or saved comparison. Louisiana advertising rules generally require your
+          sponsoring broker’s name and phone number on materials you hand out. Confirm with your broker.
+        </p>
+        <div class="agent-grid">
+          <label>Your name<input data-agent="agentName" autocomplete="name" /></label>
+          <label>Brokerage<input data-agent="brokerage" autocomplete="organization" /></label>
+          <label>Brokerage phone<input data-agent="brokeragePhone" inputmode="tel" autocomplete="tel" /></label>
+          <label>Client first name (optional)<input data-agent="client" /></label>
+        </div>
+      </section>
+
+      <section class="compare-loan" aria-labelledby="loan-title">
+        <div class="section-label">
+          <span>1</span>
+          <h2 id="loan-title">Your loan, applied to every home</h2>
+        </div>
+        <p class="fine">
+          The same terms for each home, so the comparison shows the difference the homes make. Replace the
+          illustrative values with your lender’s numbers.
+        </p>
+        <div class="loan-grid" id="loan-fields"></div>
+      </section>
+
+      <section class="compare-homes" aria-labelledby="homes-title">
+        <div class="section-label">
+          <span>2</span>
+          <h2 id="homes-title">The homes</h2>
+        </div>
+        <p class="fine">
+          Leave a cost blank if you don’t know it yet. Blank costs are counted as missing, never as confirmed
+          zeros. Mark where each number came from.
+        </p>
+        <div class="home-columns" id="homes"></div>
+        <div class="home-actions">
+          <button type="button" class="plain-button" id="add-home">+ Add a home</button>
+          <span class="ha-label">Or start from</span>
+          <button type="button" class="chip" data-listing="turnberry">Turnberry · Zachary</button>
+          <button type="button" class="chip" data-listing="basil">Basil Lane · St. Francisville</button>
+          <button type="button" class="chip" id="load-example">An illustrative example</button>
+        </div>
+      </section>
+
+      <section id="print-sheet" class="print-only"></section>
+
+      <section class="compare-results" aria-labelledby="results-title">
+        <div class="section-label">
+          <span>3</span>
+          <h2 id="results-title">Side by side</h2>
+        </div>
+        <p class="swing" id="swing" aria-live="polite"></p>
+        <div class="result-columns" id="results"></div>
+        <div class="result-actions">
+          <button type="button" class="button" id="print">Save as PDF or print</button>
+          <button type="button" class="plain-button" id="share">Copy a share link</button>
+          <button type="button" class="plain-button" id="csv">Download for a spreadsheet</button>
+          <a class="plain-button" id="text-caleb" href="sms:+12257470303">Text Caleb about these homes</a>
+          <button type="button" class="plain-button quiet" id="clear">Start over</button>
+        </div>
+        <p class="fine" id="action-status" role="status"></p>
+        <div class="next-steps" aria-labelledby="ns-compare">
+          <p class="ns-h" id="ns-compare">What next</p>
+          <div class="ns-grid">
+            <button type="button" class="act primary" id="compare-save">Save this comparison to my brief</button>
+            <a class="act" href="explore.html">See golf, areas and homes on the map</a>
+            <a class="act" href="sell.html">Selling first? See what your sale could leave you</a>
+          </div>
+        </div>
+        <p class="fine">
+          The share link holds your numbers inside the link itself. Anyone you send it to can read them.
+          Nothing is uploaded or stored on a server, and this page collects no contact information.
+        </p>
+      </section>
+
+      <section class="compare-notes page-wrap" id="sources" aria-labelledby="sources-title">
+        <h2 id="sources-title">How the numbers work</h2>
+        <div class="notes-grid">
+          <div>
+            <h3>What is calculated</h3>
+            <ul>
+              <li>
+                <strong>Loan payment:</strong> a fixed-rate amortizing payment on price minus down payment.
+              </li>
+              <li>
+                <strong>Mortgage insurance:</strong> only when the down payment is under 20%, at the yearly
+                rate you enter. Your lender sets the real figure.
+              </li>
+              <li><strong>Taxes and insurance:</strong> your yearly amounts divided by 12.</li>
+              <li>
+                <strong>Upkeep reserve:</strong> a yearly percentage of the price you choose, set aside for
+                repairs. It is a planning allowance, not an estimate of this home’s condition.
+              </li>
+              <li><strong>Cash to close:</strong> down payment + closing costs − credits.</li>
+              <li>
+                <strong>Biggest difference:</strong> the cost line that accounts for most of the monthly gap
+                between the lowest and highest home.
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3>Louisiana specifics</h3>
+            <ul>
+              <li>
+                Residential property is assessed at 10% of market value. A homestead exemption removes up to
+                $7,500 of assessed value ($75,000 of market value) from most, but not all, millages. Your
+                parish assessor publishes millage rates. Rule as quoted in
+                <a href="https://www.legis.la.gov/Legis/ViewDocument.aspx?d=1444433">HB 440 (2026), legis.la.gov</a>.
+                Bills to raise the exemption died in committee in April 2026.
+              </li>
+              <li>
+                A seller’s current tax bill can change after a sale, and the seller’s homestead exemption does
+                not carry over to you until you file your own. Louisiana taxes are billed late in the year
+                and due December 31 for that same year, so your closing statement shows how the year’s tax
+                is split.
+              </li>
+              <li>
+                Look up the flood zone for an address on
+                <a href="https://msc.fema.gov/portal/search">FEMA’s Flood Map Service Center</a>. The zone
+                is not a premium; get a flood quote for the address.
+              </li>
+              <li>
+                Insurance share of payment: Realtor.com data from mid-August 2025, as reported by
+                <a href="https://louisianaradionetwork.com/?p=31317">Louisiana Radio Network</a>, put
+                Louisiana highest of any state at 18.2%. A statewide average, not a figure for any home.
+              </li>
+              <li>
+                Your lender’s
+                <a href="https://www.consumerfinance.gov/owning-a-home/loan-estimate/">Loan Estimate</a>
+                is the document to use for closing costs and cash to close.
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3>What this does not do</h3>
+            <ul>
+              <li>It does not value homes, predict prices or rank neighborhoods.</li>
+              <li>It does not fetch live listings, taxes or insurance quotes.</li>
+              <li>It does not tell you which home to buy. It shows what each one would cost you.</li>
+              <li>It excludes utilities, commuting and any cost you did not enter.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+      <a class="compare-dock" id="dock" href="#results-title" hidden></a>
+    </main>
+    <footer class="site-foot">
+      <div class="wrap">
+        <div>Caleb Jackson, REALTOR · Keller Williams First Choice · Louisiana license 995709847</div>
+        <div>Each office is independently owned and operated · Equal Housing Opportunity</div>
+        <div class="foot-links"><a href="sms:+12257470303">Text Caleb</a><a href="tel:+12257470303">Call (225) 747-0303</a><a href="about.html">About</a><a href="explore.html">Explore the map</a><a href="golf.html">Golf communities</a><a href="resources.html">Planning resources</a><a href="sources.html">Sources and limits</a><a href="compare.html?mode=agent">For agents: build a client cost sheet</a></div>
+      </div>
+    </footer>
+    <script src="common.js" defer></script>
+    <script src="wind.js" defer></script>
+    <script src="compare-math.js" defer></script>
+    <script src="data/map-data.js" defer></script>
+    <script src="compare.js" defer></script>
+    <script src="brief.js" defer></script>
+  </body>
+</html>
