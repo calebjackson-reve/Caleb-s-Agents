@@ -11,8 +11,15 @@ Repo conventions (report format, approval gate, voice) live in [`CLAUDE.md`](CLA
 | [`teardown-tuesday`](skills/teardown-tuesday/SKILL.md) | Weekly review: pulls Metricool results, tears down the best and worst post, drafts two hooks for next week. Drafts only. |
 | [`teardown`](skills/teardown/SKILL.md) | Reverse engineers a reel, listing presentation, page, sequence or software feature into a Blueprint, Proof and Unknowns report, then drafts two original versions for my business. |
 
+## Programs
+
+| Program | What it is |
+|---|---|
+| [AI Workshops](programs/ai-workshops/PROGRAM.md) | Teaching real estate agents, title companies and local businesses to use AI. Draft. |
+
 ## Lessons
 
 | Lesson | Source | Files |
 |---|---|---|
 | Reverse Engineer Everything | [YouTube video on the REA tool](https://www.youtube.com/watch?v=dAzs_rU6080) | [Lesson plan](lessons/reverse-engineer-everything/LESSON.md) · [Viewable page](lessons/reverse-engineer-everything/lesson.html) |
+| The Floor Is Rising | Video on why AI automation won't last forever | [Lesson plan](lessons/the-floor-is-rising/LESSON.md) |
