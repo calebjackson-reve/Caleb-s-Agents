@@ -50,7 +50,7 @@ Teardown Tuesday (the weekly review skill) runs on the numbers once it is schedu
 
 ### Weeks 1 and 2: Get ready (no launch yet)
 - Ask KW First Choice about outside business rules and using the brokerage name in teaching.
-- Pick the Skool group name and set it up from `skool-setup.md`. Skool charges creators a monthly fee, so check the current price and approve it first.
+- Pick the Skool group name and set it up from `skool-setup.md`. Skool's Hobby plan is $9/month with a 10% fee on paid memberships (checked 2026-10-12, see `skool-research.md`). Approve before signing up.
 - Set up the YouTube channel: name, photo, banner, one-line description.
 - Film Lessons 1, 2 and 3 so you launch with a library.
 - Draft your one-on-one offer: what it covers and your price.
@@ -100,4 +100,5 @@ These targets are estimates. Adjust after day 30 using real numbers.
 
 - `skool-setup.md`: group name options, about text, sections, welcome post, rules
 - `lessons/`: 10 beginner lessons, each with a teaching plan and a word-for-word script
+- `skool-research.md`: live Skool market scan, pricing and name conflicts
 - `invites.md`: launch post and personal invite drafts

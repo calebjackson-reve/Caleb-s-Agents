@@ -8,6 +8,10 @@ Draft for Caleb's approval.
 2. Think Clear, Sell Smart
 3. The Clear Agent
 
+## URL
+
+`skool.com/aire` and `skool.com/ai-for-agents` are already taken (see `skool-research.md`). Try `skool.com/caleb-jackson` or `skool.com/ai-for-agents-caleb`.
+
 ## Group description
 
 > Learn AI from zero, built for real estate agents. Short lessons, real examples, and the psychology of why clients decide what they decide. No tech background needed. Hosted by Caleb Jackson, a REALTOR in Louisiana.
