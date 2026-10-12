@@ -6,7 +6,7 @@ Owner: Caleb Jackson. Executed October 12, 2026, approximately 6:00–6:20 PM Ce
 
 | Surface | Before | Change | Verified status |
 |---|---|---|---|
-| Luxury Presence agent / public About | License 995709547 | License **995709847** | Live HTML and browser show corrected number. MLS ID B24140 and sync configuration untouched. |
+| Luxury Presence agent / public About | License 995709547 | License **995709847** (this step was a mistake based on the earlier audit value; reversed to 995709547 by 23:46 UTC, see license-reconciliation.md) | Live HTML now shows 995709547. MLS ID B24140 and sync configuration untouched. |
 | Public About | Legacy LinkedIn /in/caleb-jackson-22b627270/ | **https://www.linkedin.com/in/calebjacksonla/** | Live anchors verified; legacy URL absent. |
 | Public About | No agent YouTube link | **https://www.youtube.com/@calebjacksonla** | Live anchors verified. |
 | Global Footer and Side Menu | Facebook, Instagram, Zillow only | Added current LinkedIn and YouTube | Saved in Luxury Presence; contact page renders the new links. Homepage and About shared components still cached at last check. |

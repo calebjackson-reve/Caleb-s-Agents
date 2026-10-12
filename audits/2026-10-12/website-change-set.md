@@ -12,21 +12,21 @@ Caleb applies these in the Luxury Presence dashboard (or emails support@luxurypr
 
 | # | Element | Now (observed) | Change to |
 |---|---|---|---|
-| A1 | Contact block, "License Number" | #995709547 | #995709847 |
+| A1 | Contact block, "License Number" | #995709547 | No change. 995709547 is the correct Louisiana license per the LREC registry (SALE.995709547-ACT). The earlier instruction to use 995709847 was wrong and is withdrawn. |
 | A2 | Social icons, LinkedIn (appears twice: desktop and mobile blocks) | https://www.linkedin.com/in/caleb-jackson-22b627270/ | https://www.linkedin.com/in/calebjacksonla/ |
 | A3 | Social icons | Facebook, Instagram, LinkedIn | add YouTube https://www.youtube.com/@calebjacksonla and TikTok https://www.tiktok.com/@calebjacksonla |
 | A4 | Meta description | "Meet Caleb Jackson, a Baton Rouge-area REALTOR serving Zachary, St. Francisville, and New Roads." | "Meet Caleb Jackson, REALTOR with Keller Williams First Choice, serving St. Francisville, Baton Rouge, Zachary, New Roads and the Felicianas." |
 | A5 | Bio paragraph "Born and raised in Baton Rouge, I've built my business across Zachary, St. Francisville, New Roads, and the Felicianas." | as quoted | "Born and raised in Baton Rouge, I've built my business across St. Francisville, Baton Rouge, Zachary, New Roads and the Felicianas." (same sentence appears on /testimonials, /neighborhoods pages and the home page "It Isn't Marketing" block; it is one shared block in LP, change it once) |
 | A6 | Production proof | none on page | add one line under the bio: "81 closed deals and $25.1M in volume since 2022, as of October 2026." |
 
-Where the agent ID 995709547 must stay: any LP IDX/MLS integration field, Zillow sync. Only the visible "License Number" label changes.
+The license number and the MLS/Zillow agent ID are the same number, 995709547. Luxury Presence MLS ID B24140 stays untouched.
 
 ## B. Global footer and contact overlay (every page)
 
 | # | Element | Now | Change to |
 |---|---|---|---|
 | B1 | Social icons | Facebook (caleb.jackson.142), Instagram, Zillow | keep those, add YouTube, LinkedIn (/in/calebjacksonla/), TikTok |
-| B2 | Brokerage line | "Keller Williams First Choice" appears on 5 pages, not in the footer | add "Caleb Jackson, REALTOR · Keller Williams First Choice · Licensed in Louisiana #995709847" to the footer |
+| B2 | Brokerage line | "Keller Williams First Choice" appears on 5 pages, not in the footer | add "Caleb Jackson, REALTOR · Keller Williams First Choice · Licensed in Louisiana #995709547" to the footer |
 
 ## C. Home page
 
@@ -79,7 +79,7 @@ Where the agent ID 995709547 must stay: any LP IDX/MLS integration field, Zillow
     {"@type": "City", "name": "Prairieville, LA"}
   ],
   "memberOf": {"@type": "Organization", "name": "Keller Williams First Choice"},
-  "identifier": {"@type": "PropertyValue", "propertyID": "Louisiana Real Estate License", "value": "995709847"},
+  "identifier": {"@type": "PropertyValue", "propertyID": "Louisiana Real Estate License", "value": "995709547"},
   "sameAs": [
     "https://www.instagram.com/calebjacksonla/",
     "https://www.linkedin.com/in/calebjacksonla/",
@@ -97,7 +97,7 @@ Replace the image path with the real portrait URL before sending. Do not add agg
 ## Email to Luxury Presence (one case per topic, as they requested)
 
 Case 1 subject: "About page: license number and LinkedIn link"
-> Please change the About page License Number from #995709547 to #995709847, and change both LinkedIn social links on the About page from https://www.linkedin.com/in/caleb-jackson-22b627270/ to https://www.linkedin.com/in/calebjacksonla/. Please leave any MLS or IDX agent ID fields as they are.
+> Please leave the About page License Number as #995709547. Please change both LinkedIn social links on the About page from https://www.linkedin.com/in/caleb-jackson-22b627270/ to https://www.linkedin.com/in/calebjacksonla/. Please leave any MLS or IDX agent ID fields as they are.
 
 Case 2 subject: "Add YouTube, LinkedIn and TikTok to social icons site-wide"
 > Please add these to the social icons in the footer, contact overlay and About page: YouTube https://www.youtube.com/@calebjacksonla, LinkedIn https://www.linkedin.com/in/calebjacksonla/, TikTok https://www.tiktok.com/@calebjacksonla.

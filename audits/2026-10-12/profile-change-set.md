@@ -43,7 +43,7 @@ Every change below needs Caleb's go-ahead before it is applied. Values come from
 ## Zillow (zillow.com/profile/CalebCBR, Caleb applies in Zillow Premier Agent settings)
 
 - Contact email: aire@calebjackson.org (replaces former brokerage email). Keep the caleb@crystalbonin.com association intact in account settings so past transaction attribution is not lost.
-- Agent ID / license field: keep 995709547 in the MLS integration field. Louisiana license 995709847 in the license field only if Zillow shows a separate license field.
+- License and agent ID are both 995709547 (full LREC format SALE.995709547-ACT). Keep the MLS integration field as is.
 - Past sales: Zillow shows 54; Caleb's record is 81 since 2022 plus earlier. Ask Zillow support to attach unmatched MLS sales under agent ID 995709547. Caleb needs a list of MLS numbers to send; I can prepare the request text once he exports them.
 - Reviews: zero. Zillow reviews require the client to be invited from Zillow. Same honest process as Google; stagger so the same client is not asked for both the same week.
 
@@ -62,7 +62,7 @@ Every change below needs Caleb's go-ahead before it is applied. Values come from
 ## Homes.com, Realtor.com, MLSBox, Findglocal, Apple Maps, Bing Places
 
 Automated fetches are blocked (403). Caleb or a browser session checks each:
-- Homes.com czq5kmg: brokerage, phone (225) 747-0303, email aire@, license 995709847 if a license field exists. Keep 67 sales / $19.2M history as Homes.com reports it.
+- Homes.com czq5kmg: brokerage, phone (225) 747-0303, email aire@, license 995709547 if a license field exists. Keep 67 sales / $19.2M history as Homes.com reports it.
 - Realtor.com: two profiles surfaced in the audit. Claim the Prairieville one, request removal of the other through Realtor.com agent support with the license number.
 - MLSBox / Findglocal: these scrape MLS. Correct the source (MLS roster: brokerage, office address, email) and they follow. Caleb asks the Keller Williams First Choice office admin to confirm the MLS roster shows 17111 Commerce Centre Drive and aire@calebjackson.org.
 - Apple Maps: search "Keller Williams First Choice Caleb Jackson" in Apple Maps on an iPhone. If no card, register at https://register.apple.com/placesonmaps (free). If a card exists with the old address, claim it and correct.

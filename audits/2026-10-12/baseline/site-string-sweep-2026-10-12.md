@@ -5,8 +5,8 @@ All 39 non-property URLs from the sitemap returned HTTP 200 to a desktop Chrome 
 | String | Pages | Where |
 |---|---|---|
 | 37325 Market Pl (old office address) | 0 | Gone. The only raw hits were on /neighborhoods/santa-maria: "37325" is a fragment inside a listing-card ID and "Market Pl" is the Yelp business name "Clean Creations - Highland Park Market Place". Neither is the old office address. |
-| 995709547 (agent ID shown as "License Number") | 1 | /about |
-| 995709847 (confirmed Louisiana license) | 0 | nowhere yet |
+| 995709547 (Caleb's actual Louisiana license, also his MLS/Zillow agent ID) | 1 | /about, correct |
+| 995709847 | 0 | nowhere. Correctly so: the LREC registry shows this number belongs to another licensee. The audit's Oct 8 "confirmed license" value was wrong. |
 | linkedin.com/in/caleb-jackson-22b627270 (stale LinkedIn) | 1 | /about, twice (desktop and mobile social blocks) |
 | linkedin.com/in/calebjacksonla (current LinkedIn) | 0 | nowhere |
 | caleb-jackson-67113b341 (third LinkedIn) | 0 | nowhere |

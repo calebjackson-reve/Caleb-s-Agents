@@ -28,7 +28,7 @@ The rows above retain the original audit observations. The following supersede t
 
 | Surface | Observed after execution | Status |
 |---|---|---|
-| /about visible license (A1) | 995709847 | Done, fresh public HTML + browser |
+| /about visible license (A1) | 995709847 at 23:18 UTC (wrong number, later reversed) then 995709547 at 23:46 UTC | Done. Correct number 995709547 is live; see 23:54 UTC rows below |
 | /about LinkedIn (A2) | /in/calebjacksonla/, legacy absent | Done, fresh public anchors |
 | /about YouTube | /@calebjacksonla | Done, fresh public anchors |
 | LP global Footer + Side Menu | LinkedIn / YouTube added and saved | Saved; public contact renders links; homepage/About shared components still cached |
@@ -38,3 +38,18 @@ The rows above retain the original audit observations. The following supersede t
 | Gemini neutral seller-agent prompts, one per city | Caleb absent in both answers | Baseline only |
 
 Branded Google browser results disagree with the provider snapshot: actual browser showed website first for the St. Francisville name query. Signed-in/device locality limits are preserved. No universal absent-branded-search claim. Original `all 200 / no block` only establishes successful tested fetches; it does not prove every AI crawler can access/index/cite the site. Missing-review cause remains unknown; a performance gap alone is not proof of suspension or review loss. Other proposal rows remain unexecuted.
+
+## Claude re-check of live pages, October 12, 2026, 23:54 UTC (observed)
+
+Fresh curl of each page, desktop Chrome user agent, counting occurrences in HTML.
+
+| Page | HTTP | 995709547 | 995709847 | linkedin.com/in/calebjacksonla | old LinkedIn 22b627270 | youtube.com/@calebjacksonla | tiktok |
+|---|---|---|---|---|---|---|---|
+| /about | 200 | 1 | 0 | 4 | 0 | 4 | 0 |
+| /neighborhoods/st-francisville | 200 | 1 | 0 | 2 | 0 | 2 | 0 |
+| /neighborhoods/baton-rouge (new) | 200 | 1 | 0 | 2 | 0 | 2 | 0 |
+| /blog/what-the-ai-data-center-could-mean-for-st-francisville (new) | 200 | 2 | 0 | 2 | 0 | 2 | 0 |
+| /contact | 200 | 0 | 0 | 2 | 0 | 2 | 0 |
+| / | 200 | 0 | 0 | 2 | 0 | 2 | 0 |
+
+Result: A1 resolved with the correct number, A2 and A3 done, B1 done for LinkedIn and YouTube on every page including home (the earlier "still cached" note is cleared). TikTok link still absent everywhere (optional, Caleb decides). Registry evidence (execution-evidence/license-correct-official.txt) shows Caleb J. Jackson, Salesperson, Active, SALE.995709547-ACT, issued 01/12/2022, expires 12/31/2027, supervisor Louisiana First Choice Realty, LLC.

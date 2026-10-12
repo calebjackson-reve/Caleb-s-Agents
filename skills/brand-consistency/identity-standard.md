@@ -13,7 +13,7 @@ Single source of truth for every public surface. Last confirmed by Caleb on Octo
 | Public email | aire@calebjackson.org | Caleb, Oct 12 |
 | Website | https://calebjackson.org/ | live |
 | Louisiana license | 995709547 | Official LREC public lookup, Oct 12; SALE.995709547-ACT Active expires Dec 31, 2027 |
-| Agent / MLS / Zillow ID (not a license) | 995709547 | Caleb, Oct 8 |
+| Agent / MLS / Zillow ID | 995709547, the same number as the license | Caleb, Oct 8; LREC, Oct 12 |
 | Priority markets | St. Francisville, Baton Rouge | Caleb, Oct 12 |
 | Supporting markets | Zachary, New Roads, the Felicianas, Prairieville | Caleb |
 | Instagram | https://www.instagram.com/calebjacksonla/ | verified |
@@ -31,6 +31,6 @@ Single source of truth for every public surface. Last confirmed by Caleb on Octo
 | LinkedIn wording | keeps its separately approved referral wording | Caleb |
 | Never use | Rêve branding, fonts, colors or language; Crystal Bonin Realty as current; caleb@crystalbonin.com as public contact; 37325 Market Pl Dr | Caleb |
 
-Stale identifiers to watch for: linkedin.com/in/caleb-jackson-22b627270, linkedin.com/in/caleb-jackson-67113b341, instagram.com/calebjackson_24, "Every client by referral", "Reve REALTORS".
+Stale identifiers to watch for: 995709847 (another licensee's number, never Caleb's), linkedin.com/in/caleb-jackson-22b627270, linkedin.com/in/caleb-jackson-67113b341, instagram.com/calebjackson_24, "Every client by referral", "Reve REALTORS".
 
 October12 correction: earlier995709847 was supplied but belongs to another licensee in LREC. It is not Caleb's license. Supersedes earlier claimed one-digit distinction. Currentpublicemail aire@calebjackson.org explicitly confirmed.
