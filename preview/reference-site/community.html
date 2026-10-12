@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Golf community | Caleb Jackson</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="tools.css" />
+  <script>
+      // Hide the headline until wind.js splits it, only when motion is welcome. Fails safe after 2.5 s.
+      (function () {
+        var d = document.documentElement;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        d.classList.add('wind');
+        setTimeout(function () { if (!window.__fx) d.classList.remove('wind'); }, 2500);
+      })();
+    </script>
+  </head>
+  <body class="community-page">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-head">
+      <div class="wrap">
+        <a class="mark" href="../index.html" aria-label="Caleb Jackson, home"><b>Caleb Jackson</b><span>Keller Williams First Choice</span></a>
+        <nav class="site-nav" aria-label="Primary"><a href="campaign.html">Featured</a><a href="golf.html">Golf</a><a href="compare.html">Buy</a><a href="sell.html">Sell</a></nav>
+        <a class="head-cta" href="sms:+12257470303">Text Caleb</a>
+      </div>
+    </header>
+    <main id="main" class="cp">
+      <h1 class="cp-loading">Golf community</h1>
+      <div id="cp-root"></div>
+    </main>
+    <footer class="site-foot">
+      <div class="wrap">
+        <div>Caleb Jackson, REALTOR · Keller Williams First Choice · Louisiana license 995709847</div>
+        <div>Each office is independently owned and operated · Equal Housing Opportunity</div>
+        <div class="foot-links"><a href="sms:+12257470303">Text Caleb</a><a href="tel:+12257470303">Call (225) 747-0303</a><a href="about.html">About</a><a href="explore.html">Explore the map</a><a href="golf.html">Golf communities</a><a href="resources.html">Planning resources</a><a href="sources.html">Sources and limits</a></div>
+      </div>
+    </footer>
+    <script src="data/map-data.js" defer></script>
+    <script src="data/golf-data.js" defer></script>
+    <script src="data/la-outline.js" defer></script>
+    <script src="common.js" defer></script>
+    <script src="brief.js" defer></script>
+    <script src="community.js" defer></script>
+    <script src="wind.js" defer></script>
+  </body>
+</html>

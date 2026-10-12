@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Preview · Search homes · Caleb Jackson, REALTOR</title>
+<meta name="description" content="Search Caleb Jackson's listings across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas on a real map with FEMA flood zones, golf courses and the communities around them.">
+<meta name="theme-color" content="#f3eee4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link rel="stylesheet" href="site.css">
+<style>
+  :root { --top: calc(var(--bar-h) + var(--bar-top) * 2); }
+  html, body { height: 100%; }
+  body { overflow: hidden; background: var(--paper); }
+  .bar { color: var(--ink); background: rgba(243, 238, 228, .9); border-color: rgba(28, 26, 21, .12); }
+  .bar .btn { background: var(--ink); color: var(--cream); }
+
+  /* ---------- App frame: map left, list right ---------- */
+  .app { position: fixed; inset: var(--top) 0 0 0; display: grid; grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); }
+  @media (min-width: 900px) { .app { grid-template-columns: 52fr 48fr; } }
+  .mapcol { position: relative; background: #e6e1d6; }
+  #map { position: absolute; inset: 0; }
+  .listcol { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; background: var(--paper); border-left: 1px solid var(--line-light); }
+
+  /* Toolbar */
+  .tools { padding: 10px var(--gutter) 8px; display: grid; gap: 8px; background: var(--paper); border-bottom: 1px solid var(--line-light); z-index: 5; }
+  @media (min-width: 900px) { .tools { padding: 14px 24px 10px; } }
+  .where { position: relative; display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 4px 6px 4px 12px; border-radius: 12px; background: var(--field); border: 1px solid var(--line-light); }
+  .where:focus-within { border-color: var(--ink); }
+  .where svg { flex: 0 0 auto; opacity: .55; }
+  .where .place-chip { display: none; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; border-radius: 999px; background: var(--ink); color: var(--cream); font: 600 13px/1 var(--sans); white-space: nowrap; }
+  .where .place-chip.on { display: inline-flex; }
+  .where .place-chip button { border: 0; background: rgba(246, 241, 231, .18); color: inherit; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; font-size: 14px; line-height: 1; }
+  .where input { flex: 1; min-width: 60px; border: 0; background: transparent; font: 500 15px/1 var(--sans); padding: 10px 0; outline: none; color: var(--ink); }
+  .suggest { position: absolute; left: -1px; right: -1px; top: calc(100% + 6px); z-index: 30; background: var(--field); border: 1px solid var(--line-light); border-radius: 12px; box-shadow: 0 20px 50px rgba(28, 26, 21, .16); max-height: 50vh; overflow: auto; padding: 6px; }
+  .suggest[hidden] { display: none; }
+  .suggest h4 { margin: 10px 10px 4px; font: 600 11px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft); }
+  .suggest button { display: flex; width: 100%; align-items: center; gap: 10px; text-align: left; border: 0; background: none; padding: 9px 10px; border-radius: 8px; font: 500 14px/1.3 var(--sans); cursor: pointer; }
+  .suggest button:hover, .suggest button[aria-selected="true"] { background: var(--paper-2); }
+  .suggest button small { color: var(--ink-soft); font-size: 12px; margin-left: auto; white-space: nowrap; }
+  .tools-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tools-row .chip-filters { gap: 6px; }
+  .tools-row .chip .n { background: var(--timber); color: var(--night); border-radius: 999px; min-width: 18px; height: 18px; display: inline-grid; place-items: center; font-size: 11px; padding: 0 5px; }
+  .sort { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); }
+  .sort select { border: 1px solid var(--line-light); background: var(--field); border-radius: 999px; padding: 8px 12px; font: 600 13px var(--sans); color: var(--ink); }
+  .summary { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 10px var(--gutter) 0; font-size: 14px; }
+  @media (min-width: 900px) { .summary { padding: 12px 24px 0; } }
+  .summary b { font: 400 22px/1 var(--serif); }
+  .summary .snap { color: var(--ink-soft); font-size: 12px; }
+  .summary .mls { margin-left: auto; font-size: 13px; font-weight: 600; }
+  .bounds { display: none; align-items: center; gap: 8px; padding: 8px var(--gutter) 0; font-size: 13px; color: var(--ink-soft); }
+  .bounds.on { display: flex; }
+  @media (min-width: 900px) { .bounds { padding-left: 24px; } }
+  .bounds button { border: 0; background: none; text-decoration: underline; cursor: pointer; font: 600 13px var(--sans); color: var(--ink); padding: 0; }
+
+  /* Results */
+  .results { flex: 1; overflow: auto; padding: 12px var(--gutter) calc(24px + var(--dock)); -webkit-overflow-scrolling: touch; }
+  @media (min-width: 900px) { .results { padding: 14px 24px 40px; } }
+  .cards { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }
+  @media (min-width: 1200px) { .cards { grid-template-columns: 1fr 1fr; } }
+  .card { position: relative; background: var(--field); border-radius: 14px; overflow: hidden; border: 1px solid var(--line-light); transition: transform .3s var(--ease), box-shadow .3s ease, border-color .2s ease; }
+  .card:hover, .card.hot { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(28, 26, 21, .14); border-color: rgba(28, 26, 21, .3); }
+  .card.sel { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink) inset; }
+  .card .ph { position: relative; aspect-ratio: 4 / 3; background: var(--paper-2); }
+  .card .ph img { width: 100%; height: 100%; object-fit: cover; }
+  .card .ph .tag { position: absolute; left: 10px; top: 10px; background: rgba(246, 241, 231, .92); }
+  .card .ph .tag-sale { background: #e4efe3; } .card .ph .tag-sold { background: #efe4d6; }
+  .card .open { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 14px 16px 6px; cursor: pointer; }
+  .card .price { font: 600 20px/1.1 var(--sans); letter-spacing: -.01em; }
+  .card .price.quiet { font-weight: 500; color: var(--ink-soft); font-size: 16px; }
+  .card .spec { display: flex; flex-wrap: wrap; gap: 4px 0; margin: 8px 0 4px; font-size: 13px; color: var(--ink-soft); }
+  .card .spec span + span::before { content: ""; display: inline-block; width: 1px; height: 12px; background: var(--line-light); margin: 0 9px -1px; }
+  .card .addr { font-size: 14px; }
+  .card .addr small { color: var(--ink-soft); }
+  .card .acts { display: flex; align-items: center; gap: 6px; padding: 6px 10px 12px 16px; }
+  .card .acts label { display: inline-flex; align-items: center; gap: 6px; font: 600 12px var(--sans); color: var(--ink-soft); cursor: pointer; }
+  .card .acts a { margin-left: auto; }
+  .skel { height: 300px; border-radius: 14px; background: linear-gradient(90deg, var(--paper-2), var(--field), var(--paper-2)); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+  .empty { text-align: center; padding: 48px 20px; }
+  .empty h3 { font-size: 30px; margin-bottom: 8px; }
+  .empty p { color: var(--ink-soft); max-width: 32em; margin: 0 auto 18px; }
+  .empty .links { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .bad { background: #fbeee6; border: 1px solid #e6c7b4; color: #6b3a1f; padding: 12px 14px; border-radius: 10px; font-size: 14px; margin-bottom: 12px; }
+
+  /* Filters panel (inside the list column, map stays usable) */
+  .filters { position: absolute; inset: 0; z-index: 20; background: var(--paper); display: none; flex-direction: column; }
+  .filters.open { display: flex; }
+  .filters header { display: flex; align-items: center; justify-content: space-between; padding: 14px var(--gutter); border-bottom: 1px solid var(--line-light); }
+  @media (min-width: 900px) { .filters header { padding: 14px 24px; } }
+  .filters header h2 { font-size: 26px; }
+  .filters header button { border: 0; background: none; font: 600 14px var(--sans); cursor: pointer; text-decoration: underline; }
+  .filters .body { flex: 1; overflow: auto; padding: 8px var(--gutter) 24px; }
+  @media (min-width: 900px) { .filters .body { padding: 8px 24px 24px; } }
+  .f { padding: 16px 0; border-bottom: 1px solid var(--line-light); }
+  .f h3 { font: 600 13px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; margin: 0 0 12px; color: var(--ink-soft); }
+  .f .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .f .range { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; max-width: 360px; }
+  .f input[type="number"], .f select { width: 100%; border: 1px solid var(--line-light); background: var(--field); border-radius: 10px; padding: 10px 12px; font: 500 15px var(--sans); color: var(--ink); }
+  .f .help { margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); max-width: 44em; }
+  .f label.ck { display: inline-flex; align-items: center; gap: 8px; font: 500 14px var(--sans); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line-light); background: var(--field); cursor: pointer; }
+  .f label.ck:has(input:checked) { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+  .filters footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px var(--gutter) calc(12px + var(--dock)); border-top: 1px solid var(--line-light); background: var(--paper); }
+  @media (min-width: 900px) { .filters footer { padding: 14px 24px; } }
+  .filters footer .reset { border: 0; background: none; text-decoration: underline; font: 600 14px var(--sans); cursor: pointer; }
+
+  /* ---------- Map chrome ---------- */
+  .leaflet-container { font-family: var(--sans); background: #e6e1d6; }
+  .leaflet-control-attribution { font-size: 10px; background: rgba(243, 238, 228, .8); }
+  .leaflet-top.leaflet-left { top: 12px; left: 12px; }
+  .leaflet-bar { border: 0; box-shadow: 0 6px 20px rgba(28, 26, 21, .16); border-radius: 10px; overflow: hidden; }
+  .leaflet-bar a { background: var(--field); color: var(--ink); border-color: var(--line-light); }
+  .map-ui { position: absolute; z-index: 800; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+  .map-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-light); background: rgba(248, 244, 236, .96); font: 600 13px var(--sans); cursor: pointer; box-shadow: 0 6px 20px rgba(28, 26, 21, .14); }
+  .map-btn[aria-expanded="true"] { background: var(--ink); color: var(--cream); }
+  .layers { width: 272px; background: rgba(248, 244, 236, .98); border: 1px solid var(--line-light); border-radius: 14px; padding: 12px 14px; box-shadow: 0 14px 40px rgba(28, 26, 21, .18); font-size: 14px; }
+  .layers[hidden] { display: none; }
+  .layers h3 { font: 600 12px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; margin: 4px 0 10px; color: var(--ink-soft); }
+  .layers p.help { margin: 0 0 10px; font-size: 12px; color: var(--ink-soft); }
+  .sw { display: flex; align-items: center; gap: 10px; padding: 8px 0; cursor: pointer; }
+  .sw + .sw { border-top: 1px solid var(--line-light); }
+  .sw input { appearance: none; width: 38px; height: 22px; border-radius: 999px; background: var(--paper-2); position: relative; margin: 0; cursor: pointer; flex: 0 0 auto; transition: background-color .2s ease; }
+  .sw input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .2s var(--ease); }
+  .sw input:checked { background: var(--ink); }
+  .sw input:checked::after { transform: translateX(16px); }
+  .sw input:focus-visible { outline: 2px solid var(--timber); outline-offset: 2px; }
+  .sw .k { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto; }
+  .sw b { font-weight: 600; display: block; }
+  .sw small { display: block; color: var(--ink-soft); font-size: 12px; line-height: 1.3; }
+  .legend { position: absolute; z-index: 800; left: 12px; bottom: 26px; background: rgba(248, 244, 236, .96); border: 1px solid var(--line-light); border-radius: 12px; padding: 10px 12px; font-size: 12px; max-width: 290px; box-shadow: 0 8px 24px rgba(28, 26, 21, .12); }
+  .legend[hidden] { display: none; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+  .legend p { margin: 6px 0 0; color: var(--ink-soft); }
+  .count-badge { position: absolute; z-index: 800; left: 12px; top: 12px; background: var(--ink); color: var(--cream); border-radius: 999px; padding: 8px 12px; font: 600 13px var(--sans); display: none; }
+
+  /* Pins */
+  .pin { background: var(--field); color: var(--ink); border: 1px solid rgba(28, 26, 21, .35); border-radius: 999px; padding: 5px 9px; font: 700 12px/1 var(--sans); white-space: nowrap; box-shadow: 0 4px 12px rgba(28, 26, 21, .2); transform: translate(-50%, -50%); position: relative; transition: transform .15s var(--ease), background-color .15s ease, color .15s ease; }
+  .pin::after { content: ""; position: absolute; left: 50%; bottom: -5px; width: 8px; height: 8px; background: inherit; border-right: 1px solid rgba(28, 26, 21, .35); border-bottom: 1px solid rgba(28, 26, 21, .35); transform: translateX(-50%) rotate(45deg); }
+  .pin.hot, .pin.sel { background: var(--ink); color: var(--cream); transform: translate(-50%, -50%) scale(1.08); z-index: 2; }
+  .pin.lease { background: #e3ebf0; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--sold); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); transform: translate(-50%, -50%); }
+  .dot.hot, .dot.sel { background: var(--ink); transform: translate(-50%, -50%) scale(1.3); }
+  .gpin { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--moss); color: #fff; font: 700 12px var(--sans); border: 2px solid #fff; box-shadow: 0 3px 10px rgba(0, 0, 0, .3); transform: translate(-50%, -50%); }
+  .gpin.private { background: #6b4f3a; }
+  .gpin.community { width: 30px; height: 30px; background: var(--timber-ink); }
+  .leaflet-marker-icon:focus-visible { outline: 2px solid var(--timber); outline-offset: 2px; }
+  .leaflet-popup-content-wrapper { border-radius: 12px; font-family: var(--sans); }
+  .leaflet-popup-content { margin: 12px 14px; font-size: 13px; line-height: 1.45; }
+  .leaflet-popup-content b { font-size: 14px; }
+
+  /* ---------- Detail sheet ---------- */
+  .sheet { position: absolute; z-index: 40; inset: 0; background: var(--paper); display: flex; flex-direction: column; transform: translateX(100%); visibility: hidden; transition: transform .4s var(--ease), visibility 0s .4s; }
+  .sheet.open { transform: none; visibility: visible; transition: transform .4s var(--ease), visibility 0s; }
+  .sheet .top { display: flex; align-items: center; justify-content: space-between; padding: 10px var(--gutter); border-bottom: 1px solid var(--line-light); }
+  @media (min-width: 900px) { .sheet, .cmp { left: 52%; } .sheet .top { padding: 12px 24px; } }
+  .sheet .top button { border: 0; background: none; display: inline-flex; align-items: center; gap: 8px; font: 600 14px var(--sans); cursor: pointer; padding: 8px 0; }
+  .sheet .scroll { flex: 1; overflow: auto; padding: 0 0 calc(24px + var(--dock)); }
+  .sheet .photo { aspect-ratio: 16 / 10; background: var(--paper-2); }
+  .sheet .photo img { width: 100%; height: 100%; object-fit: cover; }
+  .sheet .body { padding: 18px var(--gutter); }
+  @media (min-width: 900px) { .sheet .body { padding: 22px 24px; } }
+  .sheet h2 { font-size: clamp(30px, 3.2vw, 42px); line-height: 1.05; margin-top: 8px; }
+  .sheet .sub { color: var(--ink-soft); margin: 6px 0 0; }
+  .sheet .big { font: 600 26px/1 var(--sans); margin: 14px 0 0; }
+  .sheet .spec { display: flex; flex-wrap: wrap; gap: 6px 0; margin: 12px 0 0; font-size: 14px; color: var(--ink-soft); }
+  .sheet .spec span + span::before { content: ""; display: inline-block; width: 1px; height: 12px; background: var(--line-light); margin: 0 10px -1px; }
+  .sheet .cta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 8px; }
+  .panel { margin-top: 18px; padding: 14px 16px; border-radius: 12px; background: var(--field); border: 1px solid var(--line-light); font-size: 14px; }
+  .panel h3 { font: 600 12px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 8px; }
+  .panel .big-line { font: 400 24px/1.1 var(--serif); }
+  .panel p { margin: 6px 0 0; }
+  .panel .src { font-size: 12px; color: var(--ink-soft); margin-top: 8px; }
+  .panel.flood { border-left: 4px solid var(--flood); }
+  .panel.golf { border-left: 4px solid var(--moss); }
+  .desc { margin-top: 18px; font-size: 15px; color: var(--ink-soft); white-space: pre-line; }
+  .snapnote { margin-top: 16px; font-size: 12px; color: var(--ink-soft); }
+
+  /* ---------- Compare tray ---------- */
+  .tray { position: absolute; z-index: 45; left: 12px; right: 12px; bottom: calc(12px + var(--dock)); display: none; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; background: var(--ink); color: var(--cream); border-radius: 999px; box-shadow: 0 12px 30px rgba(0, 0, 0, .3); font: 600 13px var(--sans); }
+  .tray.on { display: flex; }
+  .app:has(.filters.open) .tray, .sheet.open ~ .tray, .cmp.open ~ .tray, body.panel-open .tray { display: none !important; }
+  @media (min-width: 900px) { .tray { left: calc(52% + 24px); right: 24px; bottom: 16px; } }
+  .tray .names { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; opacity: .9; }
+  .tray .btn { min-height: 38px; }
+  .tray .x { border: 0; background: none; color: inherit; cursor: pointer; font: 600 13px var(--sans); text-decoration: underline; }
+  .cmp { position: absolute; z-index: 46; inset: 0; background: var(--paper); display: none; flex-direction: column; }
+  .cmp.open { display: flex; }
+  .cmp .scroll { flex: 1; overflow: auto; padding: 0 var(--gutter) calc(24px + var(--dock)); }
+  @media (min-width: 900px) { .cmp .scroll { padding: 0 24px 24px; } }
+  .cmp table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px; }
+  .cmp th, .cmp td { text-align: left; vertical-align: top; padding: 10px 8px; border-top: 1px solid var(--line-light); }
+  .cmp th { font: 600 12px/1.3 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); width: 7em; }
+  .cmp td img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; }
+  .cmp .differs { color: var(--timber-ink); font-weight: 600; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+
+  /* ---------- Phone: list by default, map behind, one pill to switch ---------- */
+  @media (max-width: 899px) {
+    .mapcol { position: fixed; inset: var(--top) 0 0 0; z-index: 1; }
+    .listcol { position: fixed; inset: var(--top) 0 0 0; z-index: 2; border: 0; transition: transform .35s var(--ease); }
+    .mode-map .listcol { transform: translateY(100%); }
+    .mode-map .count-badge { display: block; }
+    .tray { z-index: 6; } .cmp { z-index: 7; }
+    .map-ui { top: auto; bottom: calc(var(--dock) + 14px); right: 12px; }
+    .layers { width: min(300px, calc(100vw - 24px)); }
+    .legend { bottom: auto; top: 52px; left: 12px; max-width: min(270px, calc(100vw - 24px)); font-size: 11px; padding: 8px 10px; }
+    .layers:not([hidden]) ~ * .legend, .map-ui:has(.layers:not([hidden])) ~ .legend { display: none; }
+    .leaflet-control-zoom { display: none; }
+    .tools { padding-top: 8px; }
+    .sort { margin-left: 0; }
+    .sheet { z-index: 5; transform: translateY(100%); border-radius: 18px 18px 0 0; top: 8%; box-shadow: 0 -20px 60px rgba(0, 0, 0, .25); }
+    .sheet.open { transform: none; }
+    .sheet .top { padding: 10px 14px; }
+    .dock { grid-template-columns: 1fr 1fr 1.35fr; }
+    .dock a.mode::before { content: "Map"; }
+    .mode-map .dock a.mode::before { content: "List"; }
+    .leaflet-control-attribution { bottom: calc(var(--dock) + 2px) !important; }
+  }
+  @media (min-width: 900px) { .dock { display: none !important; } }
+  @media (prefers-reduced-motion: reduce) { .sheet, .listcol, .card, .pin, .dot { transition: none; } }
+
+  .preview-flag { position: fixed; z-index: 95; left: 50%; bottom: calc(var(--dock) + 10px); transform: translateX(-50%); background: #b98a5a; color: #10110d; font: 600 12px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.25); pointer-events: none; white-space: nowrap; }
+  @media (max-width: 899px) { .preview-flag { bottom: auto; top: calc(var(--bar-h) + var(--bar-top) + 8px); } }
+</style>
+</head>
+<body>
+<div class="preview-flag" aria-hidden="true">Preview · not the live site</div>
+<a class="skip" href="#results">Skip to results</a>
+
+<header class="bar">
+  <a class="mark" href="index.html" aria-label="Caleb Jackson, home"><b>Caleb Jackson</b><span>Keller Williams First Choice</span></a>
+  <nav aria-label="Primary">
+    <a href="search.html" aria-current="page">Search</a>
+    <a href="reference-site/sell.html">Sell</a>
+    <a href="reference-site/explore.html">Communities</a>
+    <a href="reference-site/golf.html">Golf</a>
+    <a href="reference-site/about.html">About</a>
+  </nav>
+  <a class="btn text-only" href="sms:+12257470303">Text Caleb</a>
+  <a class="btn call-only" href="tel:+12257470303">Call</a>
+</header>
+
+<main class="app" id="app">
+  <div class="mapcol">
+    <div id="map" role="region" aria-label="Map of homes. Use the list for a keyboard-friendly view."></div>
+    <div class="count-badge" id="count-badge">…</div>
+    <div class="map-ui">
+      <button class="map-btn" id="layers-btn" type="button" aria-expanded="false" aria-controls="layers">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5z"/><path d="m3 13 9 5 9-5"/></svg>
+        Map layers
+      </button>
+      <div class="layers" id="layers" hidden>
+        <h3>Add to the map</h3>
+        <p class="help">These add information. They don't change which homes are listed.</p>
+        <label class="sw"><input type="checkbox" id="ly-flood"><span class="k" style="background:var(--flood)"></span><span><b>FEMA flood zones</b><small>Live from FEMA's National Flood Hazard Layer. Zoom in to street level to see them.</small></span></label>
+        <label class="sw"><input type="checkbox" id="ly-golf" checked><span class="k" style="background:var(--moss)"></span><span><b>Golf courses</b><small>Verified open, with a point only where a source gives one.</small></span></label>
+        <label class="sw"><input type="checkbox" id="ly-comm" checked><span class="k" style="background:var(--timber-ink)"></span><span><b>Golf communities</b><small>Copper Mill, Santa Maria and Pelican Point, researched with sources.</small></span></label>
+        <label class="sw"><input type="checkbox" id="ly-sold"><span class="k" style="background:var(--sold)"></span><span><b>Homes Caleb sold</b><small>Closed sales from his listing pages. No prices are published.</small></span></label>
+      </div>
+    </div>
+    <div class="legend" id="legend" hidden>
+      <div><i style="background:#9fe9f5"></i>1% annual chance flood hazard (special flood hazard area)</div>
+      <div><i style="background:repeating-linear-gradient(45deg,#f6a6a6 0 3px,#fff 3px 6px)"></i>Regulatory floodway</div>
+      <div><i style="background:#f5d19a"></i>0.2% annual chance flood hazard</div>
+      <p id="legend-note">FEMA National Flood Hazard Layer, drawn live in FEMA's own colors. Zones inform a conversation. They are not an insurance determination or an elevation certificate.</p>
+    </div>
+  </div>
+
+  <div class="listcol" id="listcol">
+    <div class="tools">
+      <div class="where">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span class="place-chip" id="place-chip"><span id="place-name"></span><button type="button" id="place-clear" aria-label="Clear place">×</button></span>
+        <input type="search" id="q" placeholder="City, community, golf course or zip" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="suggest" aria-autocomplete="list" enterkeyhint="search">
+        <div class="suggest" id="suggest" role="listbox" hidden></div>
+      </div>
+      <div class="tools-row">
+        <button class="chip chip-filters" id="filters-btn" type="button" aria-expanded="false" aria-controls="filters">Filters <span class="n" id="filters-n" hidden>0</span></button>
+        <button class="chip" id="chip-sale" type="button" aria-pressed="true">For sale</button>
+        <button class="chip" id="chip-golf" type="button" aria-pressed="false">Near golf</button>
+        <div class="sort"><label for="sort">Sort</label><select id="sort"><option value="rec">Recommended</option><option value="price-asc">Price, low to high</option><option value="price-desc">Price, high to low</option><option value="new">Newest</option><option value="size">Largest</option></select></div>
+      </div>
+    </div>
+    <div class="summary"><b id="count">…</b><span id="count-label">homes</span><span class="snap" id="snap">Caleb's own listings · snapshot</span><a class="mls" id="mls-link" href="https://calebjackson.org/home-search/listings">Search every MLS listing →</a></div>
+    <div class="bounds" id="bounds"><span>Showing homes in the map view.</span><button type="button" id="bounds-clear">Clear map boundary</button></div>
+
+    <div class="results" id="results" tabindex="-1">
+      <ul class="cards" id="cards" aria-live="polite"><li class="skel"></li><li class="skel"></li><li class="skel"></li></ul>
+    </div>
+
+    <section class="filters" id="filters" aria-label="Filters">
+      <header><h2>Filters</h2><button type="button" id="filters-close">Close</button></header>
+      <div class="body">
+        <div class="f"><h3>Status</h3><div class="row">
+          <label class="ck"><input type="checkbox" name="status" value="For Sale" checked> For sale</label>
+          <label class="ck"><input type="checkbox" name="status" value="Sold"> Sold by Caleb</label>
+          <label class="ck"><input type="checkbox" name="status" value="Leased"> Leased</label>
+        </div><p class="help">Sold homes show where Caleb has closed. His site doesn't publish sold prices, so none are shown here.</p></div>
+        <div class="f"><h3>Price</h3><div class="range"><input type="number" id="f-min" placeholder="No min" min="0" step="10000" inputmode="numeric" aria-label="Minimum price"><span>to</span><input type="number" id="f-max" placeholder="No max" min="0" step="10000" inputmode="numeric" aria-label="Maximum price"></div></div>
+        <div class="f"><h3>Beds and baths</h3><div class="range" style="max-width:300px"><select id="f-beds" aria-label="Minimum bedrooms"><option value="0">Any beds</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+</option><option value="5">5+</option></select><span></span><select id="f-baths" aria-label="Minimum bathrooms"><option value="0">Any baths</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+</option></select></div></div>
+        <div class="f"><h3>Living area</h3><div class="range" style="max-width:300px"><input type="number" id="f-sqft" placeholder="Min sq ft" min="0" step="100" inputmode="numeric" aria-label="Minimum square feet"><span></span><span></span></div></div>
+        <div class="f"><h3>Property type</h3><div class="row">
+          <label class="ck"><input type="checkbox" name="type" value="SingleFamilyResidence" checked> House</label>
+          <label class="ck"><input type="checkbox" name="type" value="Apartment" checked> Condo or apartment</label>
+          <label class="ck"><input type="checkbox" name="type" value="Product" checked> Land or lot</label>
+        </div></div>
+        <div class="f"><h3>Golf</h3><div class="row">
+          <label class="ck"><input type="checkbox" id="f-golf"> Within 3 miles of a verified course</label>
+        </div><p class="help">Straight-line distance to a course with a sourced location. "Near a course" is not the same as living in a golf community or on the course. Turnberry in Copper Mill has a course view, not confirmed frontage.</p></div>
+      </div>
+      <footer><button type="button" class="reset" id="f-reset">Reset</button><button type="button" class="btn btn-dark" id="f-see">See homes</button></footer>
+    </section>
+
+  </div>
+    <section class="sheet" id="sheet" aria-label="Home details" aria-hidden="true">
+    <div class="top"><button type="button" id="sheet-back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back to results</button><span class="tag" id="sheet-tag"></span></div>
+    <div class="scroll" id="sheet-scroll"></div>
+  </section>
+
+  <div class="tray" id="tray"><span class="names" id="tray-names"></span><button type="button" class="x" id="tray-clear">Clear</button><button type="button" class="btn btn-light" id="tray-open">Compare</button></div>
+  <section class="cmp" id="cmp" aria-label="Compare homes">
+    <div class="top" style="display:flex;align-items:center;justify-content:space-between;padding:12px var(--gutter);border-bottom:1px solid var(--line-light)"><button type="button" id="cmp-back" style="border:0;background:none;font:600 14px var(--sans);cursor:pointer">← Back to results</button><a class="btn btn-dark btn-xs" id="cmp-text" href="sms:+12257470303">Text these to Caleb</a></div>
+    <div class="scroll" id="cmp-scroll"></div>
+  </section>
+</main>
+
+<nav class="dock" aria-label="Quick actions">
+  <a href="#map" class="mode" id="dock-mode" role="button"></a>
+  <a href="#filters" id="dock-filters" role="button">Filters</a>
+  <a class="primary" href="sms:+12257470303">Text Caleb</a>
+</nav>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="reference-site/data/map-data.js"></script>
+<script src="reference-site/data/golf-data.js"></script>
+<script src="feed-config.js"></script>
+<script src="site.js" defer></script>
+<script src="search.js" defer></script>
+</body>
+</html>
