@@ -1,0 +1,68 @@
+// Shared behaviour: the floating bar changes tone over light sections, sections settle in once,
+// and anything scroll-driven registers with one clock. With reduced motion only the bar tone runs.
+(function () {
+  var root = document.documentElement;
+  root.classList.add('js');
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.CJ = window.CJ || {};
+  window.CJ.reduce = reduce;
+
+  // ---- Bar tone: dark glass over photos, paper over light sections ----
+  var bar = document.querySelector('.bar');
+  if (bar && 'IntersectionObserver' in window) {
+    var probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;top:0;left:0;right:0;height:' + (parseInt(getComputedStyle(root).getPropertyValue('--bar-h')) + 32) + 'px;pointer-events:none;visibility:hidden';
+    document.body.appendChild(probe);
+    function tone() {
+      var top = probe.getBoundingClientRect().bottom, dark = false;
+      document.querySelectorAll('[data-bar="dark"]').forEach(function (el) {
+        var r = el.getBoundingClientRect();
+        if (r.top < top && r.bottom > top * 0.5) dark = true;
+      });
+      bar.classList.toggle('on-paper', !dark);
+    }
+    tone(); window.CJ.tone = tone;
+    addEventListener('scroll', tone, { passive: true });
+    addEventListener('resize', tone);
+  }
+
+  // Phone menu reuses the current page's navigation, so links have one source.
+  if (bar && bar.querySelector('nav')) {
+    var menu = document.createElement('details'); menu.className = 'mobile-menu';
+    var summary = document.createElement('summary'); summary.textContent = 'Menu';
+    menu.appendChild(summary);
+    var links = bar.querySelector('nav').cloneNode(true);
+    links.setAttribute('aria-label', 'Mobile primary');
+    var contact = document.createElement('a'); contact.href = 'contact.html'; contact.textContent = 'Contact';
+    if (!links.querySelector('a[href="contact.html"]')) links.appendChild(contact);
+    menu.appendChild(links); bar.appendChild(menu);
+    menu.addEventListener('keydown', function (e) { if (e.key === 'Escape') { menu.open = false; summary.focus(); } });
+    document.addEventListener('click', function (e) { if (!menu.contains(e.target)) menu.open = false; });
+  }
+
+  // ---- Reveal once ----
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('.reveal, .reveal-lines').forEach(function (el) { io.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal, .reveal-lines').forEach(function (el) { el.classList.add('in'); });
+  }
+
+  // ---- One scroll clock for pages that want it ----
+  var jobs = [], running = false;
+  function tick() {
+    running = false;
+    var y = window.scrollY, vh = innerHeight;
+    for (var i = 0; i < jobs.length; i++) jobs[i](y, vh);
+  }
+  function ask() { if (!running) { running = true; requestAnimationFrame(tick); } }
+  window.CJ.onScroll = function (fn) { jobs.push(fn); ask(); };
+  addEventListener('scroll', ask, { passive: true });
+  addEventListener('resize', ask);
+  window.CJ.clamp = function (v, a, b) { return v < a ? a : v > b ? b : v; };
+  window.CJ.ease = function (p) { return 1 - Math.pow(1 - p, 3); };
+})();
