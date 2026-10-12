@@ -10,6 +10,8 @@ Usage:
 """
 import argparse
 import csv
+import math
+from collections import Counter
 import statistics
 import sys
 from datetime import date, datetime, timedelta
@@ -28,8 +30,8 @@ COLUMN_ALIASES = {
     "baths": ["baths", "bathrooms", "bathroomstotal", "bathstotal"],
     "year_built": ["year built", "yearbuilt"],
 }
-SOLD_WORDS = {"sold", "closed", "recently_sold"}
-ACTIVE_WORDS = {"active", "for_sale", "coming soon", "active under contract"}
+SOLD_WORDS = {"sold", "closed", "recently sold"}
+ACTIVE_WORDS = {"active", "for sale"}
 MIN_COMPS = 3
 
 
@@ -54,7 +56,7 @@ def to_num(v):
     s = str(v).replace("$", "").replace(",", "").strip()
     try:
         n = float(s)
-        return n if n > 0 else None
+        return n if math.isfinite(n) and n > 0 else None
     except ValueError:
         return None
 
@@ -94,7 +96,7 @@ def load(path):
 
 def ppsf(r):
     if r["kind"] == "sold":
-        price = r["sold_price"] or r["list_price"]
+        price = r["sold_price"]
     else:
         price = r["list_price"]
     return price / r["sqft"] if price and r["sqft"] else None
@@ -114,14 +116,39 @@ def find_comps(target, sold, size_band):
     return [], None
 
 
-def analyze(rows, months=6, size_band=0.25, today=None):
+def exclusion_reasons(r, months=6, today=None):
+    """Reject incomplete evidence identically in scoring, summaries and diagnostics."""
     today = today or date.today()
     cutoff = today - timedelta(days=int(months * 30.4))
-    sold = [r for r in rows if r["kind"] == "sold" and ppsf(r) and r["sqft"]
-            and (r["close_date"] is None or r["close_date"] >= cutoff)]
+    reasons = []
+    if r.get("kind") not in ("sold", "active"):
+        reasons.append("unsupported_status")
+    if not (r.get("address") or "").strip():
+        reasons.append("missing_address")
+    if not r.get("neighborhood") and not r.get("zip"):
+        reasons.append("missing_location")
+    if not r.get("sqft"):
+        reasons.append("missing_or_invalid_sqft")
+    if r.get("kind") == "sold":
+        if not r.get("sold_price"):
+            reasons.append("missing_or_invalid_sold_price")
+        closed = r.get("close_date")
+        if closed is None:
+            reasons.append("missing_or_invalid_close_date")
+        elif not cutoff <= closed <= today:
+            reasons.append("close_date_out_of_window")
+    elif r.get("kind") == "active" and not r.get("list_price"):
+        reasons.append("missing_or_invalid_list_price")
+    return reasons
+
+
+def analyze(rows, months=6, size_band=0.25, today=None):
+    today = today or date.today()
+    sold = [r for r in rows if r["kind"] == "sold"
+            and not exclusion_reasons(r, months, today)]
     results = []
     for a in rows:
-        if a["kind"] != "active" or not ppsf(a):
+        if a["kind"] != "active" or exclusion_reasons(a, months, today):
             continue
         comps, level = find_comps(a, sold, size_band)
         if not comps:
@@ -153,14 +180,13 @@ def analyze(rows, months=6, size_band=0.25, today=None):
 
 def neighborhood_summary(rows, months=6, today=None):
     today = today or date.today()
-    cutoff = today - timedelta(days=int(months * 30.4))
     groups = {}
     for r in rows:
-        if r["kind"] == "sold" and ppsf(r) and (r["close_date"] is None or r["close_date"] >= cutoff):
+        if r["kind"] == "sold" and not exclusion_reasons(r, months, today):
             groups.setdefault(r["neighborhood"] or r["zip"] or "Unknown", []).append(r)
     out = []
     for name, g in groups.items():
-        prices = [x["sold_price"] or x["list_price"] for x in g]
+        prices = [x["sold_price"] for x in g]
         out.append({"neighborhood": name, "sales": len(g),
                     "median_sold": round(statistics.median(prices)),
                     "median_ppsf": round(statistics.median(ppsf(x) for x in g), 2)})
@@ -179,9 +205,26 @@ def main(argv=None):
     a = p.parse_args(argv)
     today = to_date(a.today) if a.today else None
 
+    if a.today and today is None:
+        p.error("--today must be a valid date (YYYY-MM-DD)")
+    if not math.isfinite(a.months) or not 0 < a.months <= 120:
+        p.error("--months must be positive and at most 120")
+    if not math.isfinite(a.size_band) or a.size_band < 0:
+        p.error("--size-band must be finite and nonnegative")
+    if not math.isfinite(a.min_discount) or a.top < 1:
+        p.error("--min-discount must be finite and --top positive")
+
     rows = load(a.csv)
+    rejected = Counter(reason for r in rows for reason in exclusion_reasons(r, a.months, today))
+    print(f"Input check: {len(rows)} rows; "
+          f"{sum(bool(exclusion_reasons(r, a.months, today)) for r in rows)} excluded")
+    for reason, count in sorted(rejected.items()):
+        print(f"  {reason}: {count}")
     results, n_sold = analyze(rows, a.months, a.size_band, today)
     results = [r for r in results if r["discount_pct"] >= a.min_discount]
+
+    if n_sold < MIN_COMPS:
+        print("INSUFFICIENT_SOLD_EVIDENCE: at least 3 complete recent sales are required.")
 
     print(f"\nNeighborhoods (sold in last {a.months:g} months)")
     for n in neighborhood_summary(rows, a.months, today):
@@ -194,9 +237,13 @@ def main(argv=None):
               f"{r['discount_pct']:>6.1f}% ${r['gap_dollars']:>9,}  {r['confidence']} ({r['comp_count']})")
     print("\nA big discount can mean condition, flood zone or lot issues. Verify before calling it a deal.")
 
-    if a.out and results:
+    if a.out:
         with open(a.out, "w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=list(results[0].keys()))
+            fields = list(results[0]) if results else [
+                "address", "neighborhood", "zip", "list_price", "sqft", "list_ppsf",
+                "comp_median_ppsf", "discount_pct", "est_value", "gap_dollars",
+                "comp_count", "comp_basis", "dom", "confidence"]
+            w = csv.DictWriter(f, fieldnames=fields)
             w.writeheader()
             w.writerows(results)
         print(f"Wrote {len(results)} rows to {a.out}")
