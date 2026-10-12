@@ -1,0 +1,40 @@
+[
+  {
+    "url": "https://calebjackson.org/",
+    "utc": "2026-10-12T23:18:25.844549+00:00",
+    "status": 200,
+    "correct_license": false,
+    "legacy_linkedin": false,
+    "links": [],
+    "cache_control": "max-age=600, stale-while-revalidate=1200, public",
+    "age": "429"
+  },
+  {
+    "url": "https://calebjackson.org/about",
+    "utc": "2026-10-12T23:18:26.060639+00:00",
+    "status": 200,
+    "correct_license": true,
+    "legacy_linkedin": false,
+    "links": [
+      "https://www.linkedin.com/in/calebjacksonla/",
+      "https://www.youtube.com/@calebjacksonla",
+      "https://www.linkedin.com/in/calebjacksonla/",
+      "https://www.youtube.com/@calebjacksonla"
+    ],
+    "cache_control": "max-age=600, stale-while-revalidate=1200, public",
+    "age": "429"
+  },
+  {
+    "url": "https://calebjackson.org/contact",
+    "utc": "2026-10-12T23:18:26.263839+00:00",
+    "status": 200,
+    "correct_license": false,
+    "legacy_linkedin": false,
+    "links": [
+      "https://www.linkedin.com/in/calebjacksonla/",
+      "https://www.youtube.com/@calebjacksonla"
+    ],
+    "cache_control": "max-age=600, stale-while-revalidate=1200, public",
+    "age": "327"
+  }
+]

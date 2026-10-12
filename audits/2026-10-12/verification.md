@@ -19,3 +19,20 @@ Each row is an observed live check. Items wait here as "pending Caleb" until he 
 | 2026-10-12 | The Advocate agent page 25835 | brokerage | live page: Keller Williams Realty-First Choice; search snippets: Reve REALTORS | open, request refresh |
 | 2026-10-12 | Zillow, Homes.com, Realtor.com | automated fetch | 403 / blocked | needs browser check by Caleb |
 | 2026-10-12 | Google Maps CID page | automated fetch | no body returned | needs browser check by Caleb |
+
+## Codex execution — October 12, 2026, 23:18 UTC onward
+
+The rows above retain the original audit observations. The following supersede the earlier pending states only for the named changes. Caleb directly authorized license/profile-link corrections and city checks; later authorized commits. See `visibility-execution.md` and `execution-evidence/` for full proof and limitations.
+
+| Surface | Observed after execution | Status |
+|---|---|---|
+| /about visible license (A1) | 995709847 | Done, fresh public HTML + browser |
+| /about LinkedIn (A2) | /in/calebjacksonla/, legacy absent | Done, fresh public anchors |
+| /about YouTube | /@calebjacksonla | Done, fresh public anchors |
+| LP global Footer + Side Menu | LinkedIn / YouTube added and saved | Saved; public contact renders links; homepage/About shared components still cached |
+| Facebook caleb.jackson.142 Instagram link | calebjacksonla replaces calebjackson_24 | Done, refreshed public profile |
+| Existing GBP social profiles | LinkedIn / YouTube submitted | Google pending review; public acceptance unverified |
+| Google St. Francisville / Baton Rouge general realtor queries | No owned domain in 15 organic rows or three-entry local packs per city | Baseline only |
+| Gemini neutral seller-agent prompts, one per city | Caleb absent in both answers | Baseline only |
+
+Branded Google browser results disagree with the provider snapshot: actual browser showed website first for the St. Francisville name query. Signed-in/device locality limits are preserved. No universal absent-branded-search claim. Original `all 200 / no block` only establishes successful tested fetches; it does not prove every AI crawler can access/index/cite the site. Missing-review cause remains unknown; a performance gap alone is not proof of suspension or review loss. Other proposal rows remain unexecuted.
