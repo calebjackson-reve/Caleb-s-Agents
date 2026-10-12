@@ -2,6 +2,25 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-12, late night: the video editor
+
+**Done**
+- `programs/ai-for-agents/editor/`: two scripts. `style_probe.py` measures how a reference video is cut. `skool_cut.py` edits a raw face take and screen recording to those numbers: it cuts pauses and false starts, punches in at jump cuts, zooms the screen where it's changing, adds keyword pills or captions, sets loudness to -14 LUFS and checks its own output. How to run it is in `editor/README.md`.
+- First real measurement of Nate Herk (confirmed, from the file): his 2026-10-11 video, which Codex downloaded on Caleb's Mac. 9.6 cuts a minute, median shot 4.8 s, half face and half screen or graphics, face first appears at 0:15, almost no punch-ins, no pause over 1 second, keyword pills instead of captions. Teardown in `editor/README.md`.
+- Nick Saraev: speech only (his captions were on the Mac, no video file). 237 words a minute, pause median 0.8 s.
+- Tested on a fake raw take built from 20 s of Nate's talking head plus a recorded bio prompt. Both false starts were dropped, and all three targets were met (12.6 cuts a minute, 4.47 s median shot, longest silence 1.08 s). The test file uses Nate's footage, so it stays out of the repo and is never posted.
+
+**Historical, now corrected**
+- The shot board's "formula" was inference from posts. The measured numbers replace it where they differ. The biggest difference: Nate opens on a motion graphic, not his face.
+
+**Needs Caleb**
+- Keep face first (the Day 1 kit) or open on a graphic like Nate? Claude's pick is face first.
+- Run the cutter on the real Day 1 takes after filming.
+- Ok to measure 2 more Nate videos and 2 Nick videos on the Mac with yt-dlp?
+
+**Next for Claude**
+- Measure more reference videos, then send the cut to Studio as a timeline so it can be changed by voice.
+
 ## 2026-10-12, late night: Day 1 film kit
 
 **Done**
