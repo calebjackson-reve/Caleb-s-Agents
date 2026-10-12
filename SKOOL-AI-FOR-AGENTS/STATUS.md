@@ -2,6 +2,28 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-12, night: Day 1 film kit
+
+**Done**
+- `day-1-film-kit.html`: one page to film Day 1 from. Room, light, camera, audio and screen checklists, a run of show with every line to say and the timestamp it lands on, the shot list, the Fair Housing check, the Skool lesson text and an after-filming list. Rendered in Chromium at desktop and phone width, light and dark, no errors, no sideways scroll, checkboxes and copy buttons work.
+- Face first, screen by 0:18. The script had the screen at about 0:50, so the curse-of-knowledge line moved after the weak prompt.
+- Spoken lines trimmed to about 260 words. With typing and reading results aloud that lands near 4 to 4:30 (inference, not timed).
+- Free download `programs/ai-for-agents/downloads/day-1-bio-builder.pdf` (one letter page) and the `.html` it's made from. Lives only in the Skool Classroom.
+
+**Fair Housing**
+- Changed the script's example "families moving up" to "move-up buyers." Familial status is protected and a bio is advertising.
+- Added "Describe what I do, not who should live where." to the prompt.
+- Plain-language read by Claude, not legal advice. KW First Choice compliance has the final word.
+
+**Needs Caleb**
+- Approve or rewrite the trimmed lines and the lesson text.
+- Film Day 1 from the kit, watch it on your phone, say what felt off.
+- Before Day 1 goes live, pin your own before and after bio in the challenge feed. The video promises it.
+- Leave KW First Choice out of the typed bio until the brokerage answers.
+
+**Next for Claude**
+- Fold Caleb's notes from the Day 1 test into the kit, then build the same kit for Days 0 and 2 to 7.
+
 ## 2026-10-12, evening: Skool group is live
 
 **Confirmed by Caleb**
