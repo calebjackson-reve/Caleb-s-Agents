@@ -39,7 +39,13 @@
   --dock: 0px;
   --bar-h: 60px;
   --bar-top: 12px;
+  --strip: 0px;
 }
+/* Preview strip: a clear band above everything, never over content */
+.preview-strip { display: none; position: fixed; z-index: 96; left: 0; right: 0; top: 0; height: var(--strip); background: #b98a5a; color: #10110d; font: 600 11px/22px var(--sans); letter-spacing: .12em; text-transform: uppercase; text-align: center; }
+.is-preview { --strip: 22px; }
+.is-preview .preview-strip { display: block; }
+.is-preview .bar { top: calc(var(--bar-top) + var(--strip)); }
 @media (min-width: 760px) { :root { --gutter: 40px; --bar-top: 16px; } }
 @media (max-width: 759px) { :root { --dock: calc(76px + env(safe-area-inset-bottom)); } }
 

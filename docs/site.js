@@ -10,19 +10,18 @@
   // ---- Bar tone: dark glass over photos, paper over light sections ----
   var bar = document.querySelector('.bar');
   if (bar && 'IntersectionObserver' in window) {
-    var darks = document.querySelectorAll('[data-bar="dark"]');
     var probe = document.createElement('div');
     probe.style.cssText = 'position:fixed;top:0;left:0;right:0;height:' + (parseInt(getComputedStyle(root).getPropertyValue('--bar-h')) + 32) + 'px;pointer-events:none;visibility:hidden';
     document.body.appendChild(probe);
     function tone() {
       var top = probe.getBoundingClientRect().bottom, dark = false;
-      darks.forEach(function (el) {
+      document.querySelectorAll('[data-bar="dark"]').forEach(function (el) {
         var r = el.getBoundingClientRect();
         if (r.top < top && r.bottom > top * 0.5) dark = true;
       });
       bar.classList.toggle('on-paper', !dark);
     }
-    tone();
+    tone(); window.CJ.tone = tone;
     addEventListener('scroll', tone, { passive: true });
     addEventListener('resize', tone);
   }
