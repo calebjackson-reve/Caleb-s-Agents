@@ -1,0 +1,357 @@
+<title>Day 1 Film Kit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one call sheet for one shoot. Prep checklist, then a run of show you read top to bottom, then the download. Same tokens as the Challenge Shot Board. */
+:root{
+  --bg:#f6f4ef; --paper:#ffffff; --ink:#1b2230; --ink2:#5a6270; --line:#d9d4c8;
+  --accent:#e0541c; --accent-ink:#ffffff; --warn:#a33a12; --warn-bg:#fbe9e1;
+  --cam:#1f5f8b; --screen:#2e8b6e; --graphic:#b5861b; --broll:#7a5ca6;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif; --body:"Source Sans 3",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15181e;--paper:#1d2129;--ink:#eceae3;--ink2:#a2a7b0;--line:#343a45;--accent:#f0683a;--accent-ink:#15181e;--warn:#f39a76;--warn-bg:#3a241c;--cam:#5ea4d8;--screen:#4fc29a;--graphic:#e0b14a;--broll:#b399de;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15181e;--paper:#1d2129;--ink:#eceae3;--ink2:#a2a7b0;--line:#343a45;--accent:#f0683a;--accent-ink:#15181e;--warn:#f39a76;--warn-bg:#3a241c;--cam:#5ea4d8;--screen:#4fc29a;--graphic:#e0b14a;--broll:#b399de;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;padding-inline:16px;padding-block:0 60px;margin:0}
+.wrap{max-width:980px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.05}
+h1{font-size:clamp(42px,8vw,76px);font-weight:700}
+h2{font-size:clamp(28px,4vw,38px);font-weight:700}
+h3{font-size:22px;font-weight:700}
+.eyebrow,.k{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+.eyebrow{color:var(--accent)}
+.k{color:var(--ink2);font-size:11px;display:block;margin-bottom:4px}
+header{padding-block:40px 24px;border-bottom:3px solid var(--ink)}
+header p{max-width:62ch;margin:12px 0 0;font-size:19px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px 24px;margin-top:22px}
+.facts div{min-width:0}
+.facts b{font-family:var(--display);font-size:24px;display:block;line-height:1.1}
+section{padding-block:36px 4px}
+.lead{max-width:64ch;color:var(--ink2);margin:8px 0 18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.box{background:var(--paper);border:1px solid var(--line);padding:16px 18px;min-width:0}
+.box h3{margin-bottom:8px}
+ul.check{list-style:none;margin:0;padding:0}
+ul.check li{display:flex;gap:10px;align-items:flex-start;padding:5px 0;border-bottom:1px dashed var(--line)}
+ul.check li:last-child{border-bottom:0}
+ul.check input{margin-top:5px;width:18px;height:18px;accent-color:var(--accent);flex:none}
+ul.check label{cursor:pointer}
+ul.check input:checked + label{color:var(--ink2);text-decoration:line-through}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--mono);font-size:12px;margin:0 0 14px}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.bar{display:flex;height:22px;border:1px solid var(--line);overflow:hidden;margin-bottom:4px}
+.bar span{display:block;height:100%;background:var(--c)}
+.ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink2);margin-bottom:18px}
+.run{display:grid;gap:0;border-top:1px solid var(--line)}
+.beat{display:grid;grid-template-columns:96px 1fr;gap:6px 18px;padding:14px 0;border-bottom:1px solid var(--line)}
+.beat .t{font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.beat .t b{display:block;font-size:15px}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--c);padding:1px 6px;border-radius:2px;margin-top:4px}
+:root[data-theme="dark"] .tag{color:#15181e}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tag{color:#15181e}}
+.beat .say{font-size:19px;max-width:62ch;margin:0}
+.beat .say + .say{margin-top:8px}
+.beat .do{font-family:var(--mono);font-size:13px;color:var(--ink2);margin:8px 0 0;max-width:70ch}
+.beat .do b{color:var(--ink)}
+.clip{display:inline-block;font-family:var(--mono);font-size:11px;background:var(--accent);color:var(--accent-ink);padding:1px 6px;border-radius:2px;margin-left:6px;vertical-align:2px}
+.prompt{position:relative;background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--screen);padding:14px 16px 14px;margin:10px 0 0;font-family:var(--mono);font-size:14px;line-height:1.55;white-space:pre-wrap;word-break:break-word;max-width:72ch}
+.copy{font-family:var(--mono);font-size:12px;background:var(--ink);color:var(--bg);border:0;padding:6px 10px;cursor:pointer;margin-top:8px}
+.copy:focus-visible,ul.check input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.fh{background:var(--warn-bg);border:1px solid var(--warn);padding:16px 18px}
+.fh h3{color:var(--warn)}
+.fh ul,.box ul.plain{margin:6px 0 0;padding-left:20px}
+.fh li,.box ul.plain li{margin:5px 0}
+.note{border:1px dashed var(--line);padding:12px 16px;font-size:15px;color:var(--ink2);margin-top:16px;max-width:72ch}
+.post{background:var(--paper);border:1px solid var(--line);padding:16px 18px;max-width:72ch;white-space:pre-wrap;font-size:16px}
+a{color:var(--accent)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);font-size:14px;color:var(--ink2)}
+@media (max-width:760px){
+  .grid2{grid-template-columns:1fr}
+  .beat{grid-template-columns:1fr}
+  .beat .t b{display:inline;margin-right:8px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">AI for Agents · 7 Days to Your First AI Assistant · Film kit</div>
+  <h1>Day 1: Your First Real Conversation</h1>
+  <p>Everything you need to film Day 1 in one sitting. Set up with the checklist, then read the run of show top to bottom. This is the test film. Cut it, watch it on your phone, then plan batch day.</p>
+  <div class="facts">
+    <div><span class="k">Target length</span><b>4:30</b>3 to 6 min allowed</div>
+    <div><span class="k">Screen by</span><b>0:18</b>face first, then the app</div>
+    <div><span class="k">They build</span><b>Their bio, rewritten</b>with the six pieces</div>
+    <div><span class="k">They post as</span><b>Day 1: my bio</b>before and after</div>
+    <div><span class="k">Free download</span><b>Day 1 Bio Builder</b>Skool Classroom only</div>
+  </div>
+</header>
+
+<section>
+  <h2>Before you roll</h2>
+  <p class="lead">About 30 minutes, once. Tick as you go. The ticks stay on this device only.</p>
+  <div class="grid2">
+    <div class="box">
+      <h3>Background and room</h3>
+      <ul class="check">
+        <li><input type="checkbox" id="bg1"><label for="bg1">Same spot you'll use for every video. A real room with 6+ feet of depth behind you.</label></li>
+        <li><input type="checkbox" id="bg2"><label for="bg2">One shelf, lamp or plant in frame. Nothing you'd have to tidy every time.</label></li>
+        <li><input type="checkbox" id="bg3"><label for="bg3">No client paperwork, no screens with client info, no KW signage until the brokerage says yes.</label></li>
+        <li><input type="checkbox" id="bg4"><label for="bg4">Nothing from Rêve anywhere in frame. Old signs, mugs, folders, shirts.</label></li>
+        <li><input type="checkbox" id="bg5"><label for="bg5">Solid shirt, no small stripes or logos. Wear the one you'll use on batch day.</label></li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Light and camera</h3>
+      <ul class="check">
+        <li><input type="checkbox" id="cm1"><label for="cm1">Window to one side at about 45 degrees. Never a window behind you.</label></li>
+        <li><input type="checkbox" id="cm2"><label for="cm2">iPhone rear camera, 4K at 30fps, tripod at eye level, 5 to 6 feet away.</label></li>
+        <li><input type="checkbox" id="cm3"><label for="cm3">Head and shoulders. Eyes on the top third line, a little room above your head.</label></li>
+        <li><input type="checkbox" id="cm4"><label for="cm4">Tap and hold on your face to lock focus and exposure.</label></li>
+        <li><input type="checkbox" id="cm5"><label for="cm5">Phone on Do Not Disturb. Storage has 10+ GB free.</label></li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Audio (the part that matters most)</h3>
+      <ul class="check">
+        <li><input type="checkbox" id="au1"><label for="au1">Clip-on mic on your shirt, about a hand's width below your chin. No clip-on yet? Wired earbuds mic beats the built-in mic for this test. Buy nothing without a yes.</label></li>
+        <li><input type="checkbox" id="au2"><label for="au2">Turn off the AC, fans and anything humming. Close the door. A rug or curtains cut echo.</label></li>
+        <li><input type="checkbox" id="au3"><label for="au3">Record a 60-second test. Play it on your phone with the sound up. Fix it now, not in the edit.</label></li>
+        <li><input type="checkbox" id="au4"><label for="au4">Record 10 seconds of silence in the room. CapCut uses it to clean up noise.</label></li>
+        <li><input type="checkbox" id="au5"><label for="au5">Clap once on camera at the start of every take. That's how you line up audio later.</label></li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Screen</h3>
+      <ul class="check">
+        <li><input type="checkbox" id="sc1"><label for="sc1">Close every tab, email, Messages and notification. Turn on Do Not Disturb on the Mac.</label></li>
+        <li><input type="checkbox" id="sc2"><label for="sc2">Open claude.ai in a fresh chat. Browser zoom at 125%.</label></li>
+        <li><input type="checkbox" id="sc3"><label for="sc3">Sidebar closed or empty. No old chat titles with client names showing.</label></li>
+        <li><input type="checkbox" id="sc4"><label for="sc4">Shift, Command, 5. Record entire screen. Under Options, pick your clip-on mic if it connects to the Mac. If not, keep the phone recording audio and clap.</label></li>
+        <li><input type="checkbox" id="sc5"><label for="sc5">Write your real bio details on a sticky note before you start (below). Typing them cold looks slow.</label></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Run of show</h2>
+  <p class="lead">Read one line, look up, say it to one person. Three takes max per line, keep the last good one. Lines are trimmed from the Day 1 script to fit 4:30. Say them your way.</p>
+  <div class="legend">
+    <span style="--c:var(--cam)">On camera</span><span style="--c:var(--screen)">Screen</span><span style="--c:var(--graphic)">Text card</span><span style="--c:var(--broll)">B-roll</span><span><b class="clip">CLIP</b> short-form cut</span>
+  </div>
+  <div class="bar" role="img" aria-label="Time bar: 15 seconds on camera, 3 seconds B-roll, 32 seconds screen, 25 seconds on camera, 10 seconds text card, 80 seconds screen, 15 seconds split screen, 30 seconds screen, 25 seconds on camera, 35 seconds on camera">
+    <span style="--c:var(--cam);flex:15"></span><span style="--c:var(--broll);flex:3"></span><span style="--c:var(--screen);flex:32"></span><span style="--c:var(--cam);flex:25"></span><span style="--c:var(--graphic);flex:10"></span><span style="--c:var(--screen);flex:80"></span><span style="--c:var(--graphic);flex:15"></span><span style="--c:var(--screen);flex:30"></span><span style="--c:var(--cam);flex:60"></span>
+  </div>
+  <div class="ticks"><span>0:00</span><span>1:00</span><span>2:00</span><span>3:00</span><span>4:00</span><span>4:30</span></div>
+
+  <div class="run">
+    <div class="beat">
+      <div class="t"><b>0:00</b><span class="tag" style="--c:var(--cam)">Camera wide</span></div>
+      <div>
+        <p class="say">Most agents type "write my bio" into AI, get something that sounds like a robot wrote it, and quit.</p>
+        <p class="say">The problem isn't the AI. It knows nothing about you. Today we fix that in about ten minutes.</p>
+        <p class="do"><b>Text on screen from frame one:</b> DAY 1. No logo, no intro, no music. First word is the hook.</p>
+      </div>
+    </div>
+    <div class="beat">
+      <div class="t"><b>0:15</b><span class="tag" style="--c:var(--broll)">B-roll</span></div>
+      <div>
+        <p class="say">Open claude.ai or ChatGPT. Either one's fine. The free version works for this whole challenge.</p>
+        <p class="do"><b>Shoot:</b> your phone opening the app, 3 seconds. Voice runs over it.</p>
+      </div>
+    </div>
+    <div class="beat">
+      <div class="t"><b>0:18</b><span class="tag" style="--c:var(--screen)">Screen</span></div>
+      <div>
+        <p class="say">First, the way most people do it.</p>
+        <div class="prompt" id="p-weak">Write my real estate agent bio.</div>
+        <p class="say" style="margin-top:10px">See it? Dedicated. Passionate. Your dream home. That could be anybody.</p>
+        <p class="do"><b>Edit:</b> zoom 150% on the result and underline the three generic words as you read them.</p>
+      </div>
+    </div>
+    <div class="beat">
+      <div class="t"><b>0:50</b><span class="tag" style="--c:var(--cam)">Camera 115%</span></div>
+      <div>
+        <p class="say">Here's why. <span class="clip">CLIP 1</span></p>
+        <p class="say">There's a name for it. The curse of knowledge. When you know something well, you forget the other person doesn't. So talk to it like a brand new assistant on their first day. Tell it everything.</p>
+        <p class="do"><b>Edit:</b> punch in to 115% here. This is the first short clip, about 20 seconds.</p>
+      </div>
+    </div>
+    <div class="beat">
+      <div class="t"><b>1:15</b><span class="tag" style="--c:var(--graphic)">Text card</span></div>
+      <div>
+        <p class="say">I use six pieces every time. Who I am. What I need. Who it's for. The details. How it should sound. How long.</p>
+        <p class="do"><b>Card, hold 3 seconds:</b> Who · What · For who · Details · Sound · Length</p>
+      </div>
+    </div>
+    <div class="beat">
+      <div class="t"><b>1:25</b><span class="tag" style="--c:var(--screen)">Screen 175%</span></div>
+      <div>
+        <p class="say">Type this. Fill in your own.</p>
+        <div class="prompt" id="p-six">I'm a real estate agent in [your city and area]. I've been licensed since [year]. Write a short bio for my [Facebook / Instagram / website]. It's for [the kind of clients you mostly help, like first-time buyers, move-up buyers or people selling a home they've owned for years]. Here's what makes me different: [2 or 3 real things, like a past career, where you grew up, how you work]. Make it sound warm and plain, like I'm talking. No words like dedicated, passionate or dream home. Describe what I do, not who should live where. Keep it under 80 words.</div>
+        <button class="copy" data-for="p-six" type="button">Copy prompt</button>
+        <p class="do"><b>Type it live with your own details.</b> Leave the brokerage name out until KW First Choice answers. Speed typing up 4x in the edit. Talk over each blank as you fill it.</p>
+      </div>
+    </div>
+    <div class="beat">
+      <div class="t"><b>2:45</b><span class="tag" style="--c:var(--graphic)">Split screen</span></div>
+      <div>
+        <p class="say">Night and day. That sounds like a person.</p>
+        <p class="do"><b>Edit:</b> weak result left, strong result right, labeled BEFORE and AFTER, 3 seconds. Screenshot both now. They become your pinned post.</p>
+      </div>
+    </div>
+    <div class="beat">
+      <div class="t"><b>3:00</b><span class="tag" style="--c:var(--screen)">Screen</span></div>
+      <div>
+        <p class="say">Now the part most people miss. It's a conversation. If something's off, just tell it.</p>
+        <div class="prompt" id="p-edit">Shorter. And lead with where I grew up.</div>
+        <p class="say" style="margin-top:10px">See how it changes? You're the editor. It's the assistant.</p>
+      </div>
+    </div>
+    <div class="beat">
+      <div class="t"><b>3:30</b><span class="tag" style="--c:var(--cam)">Camera wide</span></div>
+      <div>
+        <p class="say">One rule for the whole challenge. <span class="clip">CLIP 2</span></p>
+        <p class="say">Check everything before you use it. AI will sometimes make up details. It doesn't know it's wrong. You do.</p>
+      </div>
+    </div>
+    <div class="beat">
+      <div class="t"><b>3:55</b><span class="tag" style="--c:var(--cam)">Camera wide</span></div>
+      <div>
+        <p class="say">Your build today. Write your bio with the six pieces. Edit it until it sounds like you. Then post your before and after in the group as Day 1, my bio. Mine's pinned at the top so you can see it first.</p>
+        <p class="say">The prompt's free in the Classroom. Just copy it. Tomorrow we write follow-up texts people actually answer.</p>
+        <p class="do"><b>End card:</b> "Day 1: my bio" and "Day 2 is waiting in the Classroom." Cut 3 seconds after your last word.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Shot list</h2>
+  <p class="lead">On-camera first while your energy is high. Screen second. B-roll last.</p>
+  <div class="grid2">
+    <div class="box">
+      <h3>Camera</h3>
+      <ul class="check">
+        <li><input type="checkbox" id="sh1"><label for="sh1">Open, 0:00 to 0:15. Wide.</label></li>
+        <li><input type="checkbox" id="sh2"><label for="sh2">Curse of knowledge, 0:50. Same frame, punched in later.</label></li>
+        <li><input type="checkbox" id="sh3"><label for="sh3">Check everything rule, 3:30. Wide.</label></li>
+        <li><input type="checkbox" id="sh4"><label for="sh4">Build and close, 3:55. Wide.</label></li>
+      </ul>
+    </div>
+    <div class="box">
+      <h3>Screen and B-roll</h3>
+      <ul class="check">
+        <li><input type="checkbox" id="sh5"><label for="sh5">Weak prompt and its result, read aloud.</label></li>
+        <li><input type="checkbox" id="sh6"><label for="sh6">Six-piece prompt typed live with your details, result read aloud.</label></li>
+        <li><input type="checkbox" id="sh7"><label for="sh7">"Shorter. And lead with where I grew up." and the new result.</label></li>
+        <li><input type="checkbox" id="sh8"><label for="sh8">Screenshots of the before and after bios.</label></li>
+        <li><input type="checkbox" id="sh9"><label for="sh9">B-roll: phone opening the app, 3 seconds. Two takes.</label></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Fair Housing and safety check</h2>
+  <p class="lead">Checked by Claude against the Day 1 script on 2026-10-12. This is a plain-language read, not legal advice. KW First Choice compliance has the final word.</p>
+  <div class="fh">
+    <h3>What changed and why</h3>
+    <ul>
+      <li><b>Changed:</b> the script's example "families moving up" is now "move-up buyers." Familial status is a protected class under the federal Fair Housing Act, and a bio is advertising. Describe the service, not who should live where.</li>
+      <li><b>Added</b> to the prompt: "Describe what I do, not who should live where." It steers the AI away from phrases like "perfect for young families" or "great neighborhood for retirees."</li>
+      <li><b>Before you film:</b> read your own result out loud. If it describes a person by race, color, religion, sex, disability, family status or national origin, or calls an area right for a type of person, cut that line.</li>
+      <li><b>On screen:</b> no client names, numbers, addresses or chats. Only your own public bio details.</li>
+      <li><b>Brokerage:</b> keep KW First Choice out of the typed bio and the frame until you have their okay.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>The free download</h2>
+  <p class="lead">"Day 1 Bio Builder." One printable page that lives only in the Skool Classroom. The video says "the prompt's free in the Classroom," never a link anywhere else.</p>
+  <div class="grid2">
+    <div class="box">
+      <h3>What's on it</h3>
+      <ul class="plain">
+        <li>The six pieces, one line each</li>
+        <li>The fill-in prompt, word for word</li>
+        <li>Three edit lines to make it sound like you</li>
+        <li>The check-everything rule and the Fair Housing bio check</li>
+        <li>How to post Day 1 in the group</li>
+      </ul>
+      <p class="do" style="font-family:var(--mono);font-size:13px;color:var(--ink2)">File in the repo: <b>programs/ai-for-agents/downloads/day-1-bio-builder.pdf</b> (and the .html it's made from).</p>
+    </div>
+    <div class="box">
+      <h3>Where it goes in Skool</h3>
+      <ul class="check">
+        <li><input type="checkbox" id="dl1"><label for="dl1">Classroom, "7 Days to Your First AI Assistant," Day 1 module.</label></li>
+        <li><input type="checkbox" id="dl2"><label for="dl2">Video at the top. Six-piece prompt pasted in the text below it so they can copy it.</label></li>
+        <li><input type="checkbox" id="dl3"><label for="dl3">Attach the PDF to the module as a resource.</label></li>
+        <li><input type="checkbox" id="dl4"><label for="dl4">Pin your own before and after in the 7-Day Challenge feed before Day 1 goes live. The video promises it.</label></li>
+      </ul>
+    </div>
+  </div>
+  <h3 style="margin-top:22px">Lesson text to paste under the video</h3>
+  <p class="lead" style="margin-bottom:10px">Draft for your approval. Nothing goes live until you post it.</p>
+  <div class="post" id="p-post">Day 1: Your First Real Conversation
+
+Most agents try AI once, get a bio that sounds like a robot, and quit. Today you fix that with six pieces: who you are, what you need, who it's for, the details, how it should sound, and how long.
+
+Copy the prompt below, fill in the brackets with your real details, and run it in claude.ai or ChatGPT. The free version works.
+
+I'm a real estate agent in [your city and area]. I've been licensed since [year]. Write a short bio for my [Facebook / Instagram / website]. It's for [the kind of clients you mostly help, like first-time buyers, move-up buyers or people selling a home they've owned for years]. Here's what makes me different: [2 or 3 real things, like a past career, where you grew up, how you work]. Make it sound warm and plain, like I'm talking. No words like dedicated, passionate or dream home. Describe what I do, not who should live where. Keep it under 80 words.
+
+Then tell it what to change. "Shorter." "Lead with where I grew up." You're the editor.
+
+Your build: post your before and after in the 7-Day Challenge feed as "Day 1: my bio." Mine is pinned at the top.
+
+Check everything before you use it. AI sometimes makes up details.
+
+The Day 1 Bio Builder is attached below if you want it on paper.</div>
+  <button class="copy" data-for="p-post" type="button">Copy lesson text</button>
+</section>
+
+<section>
+  <h2>After you film</h2>
+  <div class="box">
+    <ul class="check">
+      <li><input type="checkbox" id="af1"><label for="af1">Cut in CapCut using the edit steps in PRODUCTION.md. Target 4:30, never over 6:00. Cut the second example, never the hook.</label></li>
+      <li><input type="checkbox" id="af2"><label for="af2">Captions on. Proofread every word, especially your city and names.</label></li>
+      <li><input type="checkbox" id="af3"><label for="af3">Normalize audio to about -14 LUFS. No music under the prompt parts.</label></li>
+      <li><input type="checkbox" id="af4"><label for="af4">Watch it on your phone, sound up, start to finish. Note anything that drags.</label></li>
+      <li><input type="checkbox" id="af5"><label for="af5">Export the two clips in 9:16 for later. Don't post them yet.</label></li>
+      <li><input type="checkbox" id="af6"><label for="af6">Tell Claude what felt off. Then decide if batch day is this week or next.</label></li>
+    </ul>
+  </div>
+  <p class="note">Recheck the claude.ai and ChatGPT screens the morning you film. Menus move. If the free version asks for a sign-in or shows a limit, say so on camera. That's real and it helps beginners.</p>
+</section>
+
+<footer>
+  Built from <code>programs/ai-for-agents/challenge/day-1-first-real-conversation.md</code>, the Challenge Shot Board and <code>PRODUCTION.md</code>. Draft for Caleb's approval. Claude drafts, Caleb posts.
+</footer>
+</div>
+
+<script>
+(function(){
+  var KEY='day1kit-checks';
+  var saved={};
+  try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  document.querySelectorAll('ul.check input').forEach(function(b){
+    if(saved[b.id])b.checked=true;
+    b.addEventListener('change',function(){
+      saved[b.id]=b.checked;
+      try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){}
+    });
+  });
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var el=document.getElementById(btn.dataset.for);
+      var text=el.innerText;
+      var done=function(){btn.textContent='Copied';setTimeout(function(){btn.textContent=btn.dataset.for==='p-post'?'Copy lesson text':'Copy prompt'},1600)};
+      var fallback=function(){var r=document.createRange();r.selectNodeContents(el);var s=getSelection();s.removeAllRanges();s.addRange(r);btn.textContent='Selected, press Copy'};
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fallback)}else{fallback()}
+    });
+  });
+})();
+</script>

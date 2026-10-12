@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Day 1 Bio Builder</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* One printable letter page. Free Skool download for Day 1. Print-first, light only. */
+:root{--ink:#1b2230;--ink2:#5a6270;--line:#d9d4c8;--accent:#e0541c;--screen:#2e8b6e;--paper:#ffffff;--tint:#f6f4ef;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;--body:"Source Sans 3",Arial,sans-serif;--mono:"JetBrains Mono",Menlo,monospace}
+@page{size:letter;margin:0.5in}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:11.5pt;line-height:1.35}
+.page{max-width:7.5in;margin:0 auto;padding-inline:16px}
+.eyebrow{font-family:var(--mono);font-size:8.5pt;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-size:34pt;line-height:1;margin:4px 0 6px}
+h2{font-family:var(--display);font-size:15pt;margin:12px 0 5px;line-height:1.1}
+.sub{color:var(--ink2);margin:0 0 6px}
+.six{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 14px;margin:0;padding:0;list-style:none}
+.six li{border-top:2px solid var(--ink);padding-top:4px;font-size:11pt}
+.six b{font-family:var(--display);font-size:14pt;display:block}
+.prompt{font-family:var(--mono);font-size:9.8pt;line-height:1.5;background:var(--tint);border-left:4px solid var(--screen);padding:10px 12px;margin:0}
+.prompt .f{background:#fff1c9;padding:0 2px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+ul{margin:4px 0 0;padding-left:18px}
+li{margin:3px 0}
+.edit{font-family:var(--mono);font-size:9.8pt}
+.rule{border:2px solid var(--ink);padding:8px 12px;margin-top:14px;font-size:12pt}
+.rule b{font-family:var(--display);font-size:15pt}
+.fh{border:1px solid var(--accent);padding:8px 12px;font-size:10.5pt}
+@media print{.page{padding-inline:0}}
+footer{margin-top:10px;font-size:9pt;color:var(--ink2);border-top:1px solid var(--line);padding-top:6px}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="eyebrow">AI for Agents with Caleb Jackson · 7 Days to Your First AI Assistant · Day 1</div>
+  <h1>Day 1 Bio Builder</h1>
+  <p class="sub">AI writes a generic bio when it knows nothing about you. Tell it everything, like a brand new assistant on their first day.</p>
+
+  <h2>The six pieces</h2>
+  <ul class="six">
+    <li><b>Who</b>who you are and where you work</li>
+    <li><b>What</b>what you need written</li>
+    <li><b>For who</b>the clients you help</li>
+    <li><b>Details</b>2 or 3 real things only you have</li>
+    <li><b>Sound</b>how it should sound</li>
+    <li><b>Length</b>how long</li>
+  </ul>
+
+  <h2>The prompt. Fill in the highlighted parts.</h2>
+  <p class="prompt">I'm a real estate agent in <span class="f">[your city and area]</span>. I've been licensed since <span class="f">[year]</span>. Write a short bio for my <span class="f">[Facebook / Instagram / website]</span>. It's for <span class="f">[the kind of clients you mostly help, like first-time buyers, move-up buyers or people selling a home they've owned for years]</span>. Here's what makes me different: <span class="f">[2 or 3 real things, like a past career, where you grew up, how you work]</span>. Make it sound warm and plain, like I'm talking. No words like dedicated, passionate or dream home. Describe what I do, not who should live where. Keep it under 80 words.</p>
+
+  <div class="cols">
+    <div>
+      <h2>Then edit it like a conversation</h2>
+      <ul class="edit">
+        <li>Shorter. And lead with where I grew up.</li>
+        <li>Make it sound more like this text I sent a friend: [paste a text of yours, no client info]</li>
+        <li>Give me 3 versions. One for Instagram, one for my website, one for my email signature.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Post your build</h2>
+      <ul>
+        <li>Post your before and after in the 7-Day Challenge feed.</li>
+        <li>Title it <b>Day 1: my bio</b></li>
+        <li>Then open Day 2 in the Classroom.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="rule"><b>One rule for all 7 days.</b> Check everything before you use it. AI sometimes makes up details. It doesn't know it's wrong. You do.</div>
+
+  <h2>Fair Housing check for your bio</h2>
+  <div class="fh">Your bio is advertising. Describe the service you give, not the people who should live somewhere. Cut any line that describes a person or an area by race, color, religion, sex, disability, family status or national origin, like "perfect for young families." Leave your brokerage name off until your broker's policy says it's fine. Never paste client names, numbers or details into AI.</div>
+
+  <footer>Free for members of AI for Agents with Caleb Jackson on Skool. Plain-language guidance, not legal advice. Follow your brokerage's policies.</footer>
+</div>
+</body>
+</html>
