@@ -10,11 +10,11 @@ python3 tools/deal_finder/deal_finder.py your_export.csv --months 6 --min-discou
 
 Works with an MLS CSV export today and a ROAM Flex / IDX feed or Zillow test pull later. Columns are matched loosely (Subdivision or Neighborhood, Close Price or Sold Price, LivingArea or SqFt, and so on).
 
-Needs: address, status (Active / Sold), square feet, list price for actives, sold price for solds. Close date and subdivision make it much better.
+Needs: address, status (Active / Sold), square feet, list price for actives, sold price for solds. Sold rows also require a valid close date inside the selected window and either subdivision or ZIP. Blank addresses, invalid or nonpositive numbers, and unsupported statuses are excluded. Only Active / For Sale rows are scored; coming soon and under-contract rows are excluded.
 
 ## How it scores
 
-1. Takes sold homes from the last N months (default 6).
+1. Takes sold homes from the last N months (default 6, approximately 30.4 days per month), through the analysis date. Missing, invalid, future and older close dates are excluded. Asking price is never used as sold price.
 2. For each active, finds comps in the same subdivision within 25% of its size. Falls back to all sizes, then the ZIP, if there are fewer than 3.
 3. Compares the active's list $/sqft to the comps' median sold $/sqft.
 4. Shows % under comps, estimated value, dollar gap and a confidence level.
@@ -23,3 +23,11 @@ Needs: address, status (Active / Sold), square feet, list price for actives, sol
 
 - $/sqft ignores condition, lot size, pool, flood zone and updates. Treat results as a shortlist to verify, not a valuation.
 - `sample/zachary_sample.csv` is synthetic test data, not real listings.
+
+## Input quality and MLS route
+
+The console lists excluded-row counts by reason before scoring. Reasons overlap when a row has several missing fields. With fewer than three valid sold rows, it reports `INSUFFICIENT_SOLD_EVIDENCE`; this means insufficient evidence, not that no deals exist. `--out` always replaces the output, even when there are zero results, to prevent stale candidates.
+
+MLS exports are Caleb's preferred source. The reusable route is [mls-deal-finder](../../.claude/skills/mls-deal-finder/SKILL.md). It requires dated exports and verified field mapping, preserves actual close price separately from asking price, and does not automate ROAM navigation until Caleb supplies his walkthrough. The walkthrough requirements are in [MLS intake](MLS-INTAKE.md).
+
+Run `bash tools/deal_finder/verify.sh` for the deterministic regression gate. No additional packages required.
