@@ -2,6 +2,20 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-12, evening: Skool group is live
+
+**Confirmed by Caleb**
+- The group exists at https://www.skool.com/ai-for-agents-caleb-jackson-2010. Skool blocks this server, so Claude could not load the page. URL and name are Caleb's word.
+- That closes open decision 1 (web address).
+
+**Needs Caleb**
+- Which plan the group is on and whether billing is active.
+- Fill the group from `programs/ai-for-agents/skool-setup.md`: about text, sections, rules, welcome post, join questions, auto welcome DM. Claude can draft each one as paste-ready text.
+
+**Next for Claude**
+- Draft the paste-ready about text and join questions for this exact URL.
+- Then the script trim and the Day 1 teleprompter page.
+
 ## 2026-10-12, afternoon: project hub and shot board
 
 **Done**

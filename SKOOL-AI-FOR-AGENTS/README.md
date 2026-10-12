@@ -4,7 +4,7 @@
 
 Positioning: *Use AI so you think better, not just faster.*
 
-Status as of 2026-10-12: research done, foundation and scripts drafted, nothing filmed, nothing signed up for, nothing paid. Full log in [`STATUS.md`](STATUS.md).
+Status as of 2026-10-12: Skool group created by Caleb at https://www.skool.com/ai-for-agents-caleb-jackson-2010. Research done, foundation and scripts drafted, nothing filmed yet. Full log in [`STATUS.md`](STATUS.md).
 
 ## Start here
 
@@ -63,11 +63,11 @@ Lengths are the trimmed targets from the shot board. The scripts in `challenge/`
 
 ## Decisions still open (Caleb's call)
 
-1. **Skool web address.** `skool.com/aire` and `skool.com/ai-for-agents` are both taken. Display name can still be "AI for Agents with Caleb Jackson." Need a URL, for example `skool.com/caleb-jackson`.
+1. ~~Skool web address.~~ **Decided 2026-10-12 by Caleb:** https://www.skool.com/ai-for-agents-caleb-jackson-2010 (confirmed by Caleb, not loaded from this server, Skool blocks it). Display name "AI for Agents with Caleb Jackson."
 2. **Trademark check on AIRE.** A DFW agent runs "AI for Real Estate | AIRE" on Skool, same topic, started June 2026.
 3. **Brokerage name.** Ask KW First Choice before using the name on camera or in the group.
 4. **Core values and scripts.** They are Claude's read of Caleb's voice. Approve or rewrite before filming.
-5. **Skool sign-up.** Hobby plan, $9 a month plus 10% of any paid memberships. Not signed up yet.
+5. **Skool plan.** Group exists. Which plan it's on and whether billing is active: not confirmed, ask Caleb.
 
 ## Guardrails
 
