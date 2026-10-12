@@ -184,10 +184,10 @@ For each video, record the blueprint it used, hook A or B, 7-day value metrics, 
 Not built yet unless marked done.
 
 1. **Done in this repo:** `skills/teardown/SKILL.md`. A Claude skill that runs the reverse engineering loop on any video, page, presentation, email sequence or software feature, and reports in the Blueprint, Proof, Unknowns format.
-2. **Proposed:** Make Blueprint, Proof, Unknowns the standard output format for every research or analysis agent in this repo.
-3. **Proposed:** A weekly "teardown Tuesday" routine that pulls last week's Metricool numbers, takes apart your top and bottom posts, and drafts next week's two hooks for your review. It would only create drafts and never post.
+2. **Done:** `CLAUDE.md` makes Blueprint, Proof, Unknowns the standard output format for every research or analysis agent in this repo.
+3. **Done (skill), schedule pending:** `skills/teardown-tuesday/SKILL.md`. A weekly "teardown Tuesday" routine that pulls last week's Metricool numbers, takes apart your top and bottom posts, and drafts next week's two hooks for your review. It would only create drafts and never post.
 4. **Proposed:** Turn the Session 4 workflow into an AIRE workflow or a Claude skill once you've written it.
-5. **Proposed:** A stack audit sheet in Google Sheets, pre-filled with the Core, Rebuildable and Redundant columns, for you to fill in.
+5. **Done:** "Tool Stack Audit" Google Sheet in Caleb's Drive with Core, Rebuildable and Redundant columns, ready to fill in.
 
 ---
 

@@ -2,10 +2,13 @@
 
 This repository has all the agents and skills I have created in Claude.
 
+Repo conventions (report format, approval gate, voice) live in [`CLAUDE.md`](CLAUDE.md).
+
 ## Skills
 
 | Skill | What it does |
 |---|---|
+| [`teardown-tuesday`](skills/teardown-tuesday/SKILL.md) | Weekly review: pulls Metricool results, tears down the best and worst post, drafts two hooks for next week. Drafts only. |
 | [`teardown`](skills/teardown/SKILL.md) | Reverse engineers a reel, listing presentation, page, sequence or software feature into a Blueprint, Proof and Unknowns report, then drafts two original versions for my business. |
 
 ## Lessons
