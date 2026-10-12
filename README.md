@@ -11,6 +11,12 @@ Repo conventions (report format, approval gate, voice) live in [`CLAUDE.md`](CLA
 | [`teardown-tuesday`](skills/teardown-tuesday/SKILL.md) | Weekly review: pulls Metricool results, tears down the best and worst post, drafts two hooks for next week. Drafts only. |
 | [`teardown`](skills/teardown/SKILL.md) | Reverse engineers a reel, listing presentation, page, sequence or software feature into a Blueprint, Proof and Unknowns report, then drafts two original versions for my business. |
 
+## Projects
+
+| Project | What it is |
+|---|---|
+| [**SKOOL AI FOR AGENTS**](SKOOL-AI-FOR-AGENTS/README.md) | Project hub for the free Skool community: status log, shot board for every video, and links to the plan, scripts and research. Start here for anything Skool. |
+
 ## Programs
 
 | Program | What it is |
