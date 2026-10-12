@@ -1,0 +1,16 @@
+{
+  "extraKnownMarketplaces": {
+    "superpowers-dev": { "source": { "source": "github", "repo": "obra/superpowers" } },
+    "gsd-core": { "source": { "source": "github", "repo": "open-gsd/gsd-core" } },
+    "context-mode": { "source": { "source": "github", "repo": "mksglu/context-mode" } },
+    "thedotmack": { "source": { "source": "github", "repo": "thedotmack/claude-mem" } },
+    "anthropic-agent-skills": { "source": { "source": "github", "repo": "anthropics/skills" } }
+  },
+  "enabledPlugins": {
+    "superpowers@superpowers-dev": true,
+    "gsd-core@gsd-core": true,
+    "context-mode@context-mode": true,
+    "example-skills@anthropic-agent-skills": true,
+    "claude-mem@thedotmack": false
+  }
+}
