@@ -101,4 +101,5 @@ These targets are estimates. Adjust after day 30 using real numbers.
 - `skool-setup.md`: group name options, about text, sections, welcome post, rules
 - `lessons/`: 10 beginner lessons, each with a teaching plan and a word-for-word script
 - `skool-research.md`: live Skool market scan, pricing and name conflicts
+- `skool-teardown-ais-chase.md`: how AI Automation Society and Chase AI grew, and what to copy
 - `invites.md`: launch post and personal invite drafts
