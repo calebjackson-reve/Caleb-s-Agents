@@ -1,0 +1,57 @@
+Address,Subdivision,Zip,Status,List Price,Sold Price,SqFt,Close Date,DOM
+101 Sample Ln,Copper Mill,70791,Sold,,405585,2063,2026-08-15,
+102 Sample Ln,Copper Mill,70791,Sold,,260541,1498,2026-09-15,
+103 Sample Ln,Copper Mill,70791,Sold,,288982,1592,2026-05-15,
+104 Sample Ln,Copper Mill,70791,Sold,,433192,2439,2026-05-15,
+105 Sample Ln,Copper Mill,70791,Sold,,418431,2288,2026-06-15,
+106 Sample Ln,Copper Mill,70791,Sold,,295321,1585,2026-05-15,
+107 Sample Ln,Copper Mill,70791,Sold,,448306,2558,2026-06-15,
+108 Sample Ln,Copper Mill,70791,Sold,,509773,2593,2026-09-15,
+109 Sample Ln,Copper Mill,70791,Sold,,473860,2599,2026-06-15,
+110 Sample Ln,Copper Mill,70791,Sold,,278769,1495,2026-06-15,
+111 Sample Ln,Copper Mill,70791,Active,344416,,1993,,74
+112 Sample Ln,Copper Mill,70791,Active,298331,,1641,,76
+113 Sample Ln,Copper Mill,70791,Active,272759,,1770,,78
+114 Sample Ln,Copper Mill,70791,Active,303362,,1784,,75
+115 Sample Ln,Rollins Place,70791,Sold,,246683,1528,2026-09-15,
+116 Sample Ln,Rollins Place,70791,Sold,,291214,1821,2026-09-15,
+117 Sample Ln,Rollins Place,70791,Sold,,378128,2275,2026-08-15,
+118 Sample Ln,Rollins Place,70791,Sold,,440492,2599,2026-07-15,
+119 Sample Ln,Rollins Place,70791,Sold,,310736,2013,2026-06-15,
+120 Sample Ln,Rollins Place,70791,Sold,,286053,1899,2026-07-15,
+121 Sample Ln,Rollins Place,70791,Sold,,395729,2475,2026-07-15,
+122 Sample Ln,Rollins Place,70791,Sold,,360024,2319,2026-05-15,
+123 Sample Ln,Rollins Place,70791,Sold,,262999,1641,2026-06-15,
+124 Sample Ln,Rollins Place,70791,Sold,,319629,2100,2026-08-15,
+125 Sample Ln,Rollins Place,70791,Active,294207,,2263,,90
+126 Sample Ln,Rollins Place,70791,Active,260414,,1558,,78
+127 Sample Ln,Rollins Place,70791,Active,296936,,2042,,49
+128 Sample Ln,Rollins Place,70791,Active,381138,,2417,,63
+129 Sample Ln,Fennwood,70791,Sold,,225862,1540,2026-07-15,
+130 Sample Ln,Fennwood,70791,Sold,,340953,2370,2026-05-15,
+131 Sample Ln,Fennwood,70791,Sold,,220265,1524,2026-07-15,
+132 Sample Ln,Fennwood,70791,Sold,,386584,2583,2026-08-15,
+133 Sample Ln,Fennwood,70791,Sold,,285895,1982,2026-07-15,
+134 Sample Ln,Fennwood,70791,Sold,,214929,1446,2026-07-15,
+135 Sample Ln,Fennwood,70791,Sold,,247951,1744,2026-08-15,
+136 Sample Ln,Fennwood,70791,Sold,,204405,1520,2026-07-15,
+137 Sample Ln,Fennwood,70791,Sold,,240734,1664,2026-08-15,
+138 Sample Ln,Fennwood,70791,Sold,,325973,2200,2026-08-15,
+139 Sample Ln,Fennwood,70791,Active,186944,,1565,,56
+140 Sample Ln,Fennwood,70791,Active,314229,,2525,,22
+141 Sample Ln,Fennwood,70791,Active,343762,,2281,,40
+142 Sample Ln,Fennwood,70791,Active,351436,,2250,,92
+143 Sample Ln,Beaver Creek,70791,Sold,,475320,2179,2026-06-15,
+144 Sample Ln,Beaver Creek,70791,Sold,,307065,1569,2026-06-15,
+145 Sample Ln,Beaver Creek,70791,Sold,,358500,1877,2026-09-15,
+146 Sample Ln,Beaver Creek,70791,Sold,,351392,1773,2026-05-15,
+147 Sample Ln,Beaver Creek,70791,Sold,,344140,1698,2026-07-15,
+148 Sample Ln,Beaver Creek,70791,Sold,,511273,2559,2026-06-15,
+149 Sample Ln,Beaver Creek,70791,Sold,,534997,2455,2026-05-15,
+150 Sample Ln,Beaver Creek,70791,Sold,,505450,2335,2026-09-15,
+151 Sample Ln,Beaver Creek,70791,Sold,,445170,2203,2026-08-15,
+152 Sample Ln,Beaver Creek,70791,Sold,,329605,1612,2026-08-15,
+153 Sample Ln,Beaver Creek,70791,Active,269522,,1527,,31
+154 Sample Ln,Beaver Creek,70791,Active,402038,,2302,,48
+155 Sample Ln,Beaver Creek,70791,Active,257269,,1507,,77
+156 Sample Ln,Beaver Creek,70791,Active,340437,,1709,,51
