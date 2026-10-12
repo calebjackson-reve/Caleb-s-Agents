@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="is-preview">
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
@@ -13,41 +13,51 @@
 <link rel="preload" as="image" href="reference-site/assets/web/basil-patio-1600.webp">
 <link rel="stylesheet" href="site.css">
 <style>
-  /* ---------- Opening ---------- */
-  .hero {
-    position: relative; min-height: 620px; height: 100vh; height: 100svh; max-height: 1100px;
-    color: var(--cream); background: var(--night); overflow: hidden; isolation: isolate;
-  }
-  .hero-media { position: absolute; inset: 0; z-index: -2; }
+  /* ---------- Opening and the places it leads to: one pinned stage ---------- */
+  .story { position: relative; background: var(--paper); }
+  .js.motion .story { height: 240vh; }
+  @media (min-width: 900px) { .js.motion .story { height: 280vh; } }
+  .stage { position: relative; }
+  .js.motion .stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
+
+  .hero { position: relative; min-height: 620px; height: 100vh; height: 100svh; max-height: 1100px; color: var(--cream); background: var(--night); overflow: hidden; }
+  .js.motion .hero { position: absolute; inset: 0; min-height: 0; max-height: none; overflow: visible; }
+  .hero-media { position: absolute; inset: 0; z-index: 1; overflow: hidden; background: var(--night); }
+  .js.motion .hero-media { border-radius: 0; will-change: left, top, width, height; }
   .hero-scene { position: absolute; inset: -6% 0 0 0; }
   .hero-scene img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 52% 50%; }
   .hero-blur { display: none; position: absolute; inset: 0; --f: -10; background: url(img/basil-patio-blur.jpg) 52% 50% / cover no-repeat;
     -webkit-mask-image: linear-gradient(100deg, transparent calc(var(--f) * 1% - 30%), #000 calc(var(--f) * 1%));
     mask-image: linear-gradient(100deg, transparent calc(var(--f) * 1% - 30%), #000 calc(var(--f) * 1%)); }
   .motion .hero-blur { display: block; }
-  .hero::after {
-    content: ""; position: absolute; inset: 0; z-index: -1;
-    background:
-      linear-gradient(to bottom, rgba(10, 11, 8, .55) 0%, rgba(10, 11, 8, 0) 26%),
-      linear-gradient(to top, rgba(10, 11, 8, .92) 0%, rgba(10, 11, 8, .66) 30%, rgba(10, 11, 8, .14) 60%, rgba(10, 11, 8, 0) 74%);
-  }
+  .hero-shade { position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to bottom, rgba(10, 11, 8, .55) 0%, rgba(10, 11, 8, 0) 26%),
+      linear-gradient(to top, rgba(10, 11, 8, .92) 0%, rgba(10, 11, 8, .66) 30%, rgba(10, 11, 8, .14) 60%, rgba(10, 11, 8, 0) 74%); }
   @media (min-width: 900px) {
-    .hero::after {
-      background:
-        linear-gradient(to bottom, rgba(10, 11, 8, .5) 0%, rgba(10, 11, 8, 0) 24%),
-        linear-gradient(to right, rgba(10, 11, 8, .66) 0%, rgba(10, 11, 8, .34) 42%, rgba(10, 11, 8, 0) 66%),
-        linear-gradient(to top, rgba(10, 11, 8, .82) 0%, rgba(10, 11, 8, .42) 30%, rgba(10, 11, 8, 0) 58%);
-    }
+    .hero-shade { background: linear-gradient(to bottom, rgba(10, 11, 8, .5) 0%, rgba(10, 11, 8, 0) 24%),
+      linear-gradient(to right, rgba(10, 11, 8, .66) 0%, rgba(10, 11, 8, .34) 42%, rgba(10, 11, 8, 0) 66%),
+      linear-gradient(to top, rgba(10, 11, 8, .82) 0%, rgba(10, 11, 8, .42) 30%, rgba(10, 11, 8, 0) 58%); }
   }
-  .hero .wrap { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: calc(28px + var(--dock)); }
-  @media (min-width: 900px) { .hero .wrap { padding-bottom: 56px; } }
+  /* Architectural frame: a drawn inset line with corner ticks, like a plan sheet */
+  .frame { position: absolute; inset: 14px; z-index: 2; pointer-events: none; border: 1px solid rgba(246, 241, 231, .22); }
+  .frame i { position: absolute; width: 18px; height: 18px; border: 0 solid var(--cream); opacity: .7; }
+  .frame i:nth-child(1) { left: -1px; top: -1px; border-width: 1px 0 0 1px; }
+  .frame i:nth-child(2) { right: -1px; top: -1px; border-width: 1px 1px 0 0; }
+  .frame i:nth-child(3) { left: -1px; bottom: -1px; border-width: 0 0 1px 1px; }
+  .frame i:nth-child(4) { right: -1px; bottom: -1px; border-width: 0 1px 1px 0; }
+  .frame b { position: absolute; left: 50%; top: -1px; transform: translate(-50%, -50%); background: var(--night); color: var(--cream-soft); font: 600 10px/1 var(--sans); letter-spacing: .22em; text-transform: uppercase; padding: 4px 10px; }
+  @media (max-width: 759px) { .frame { inset: 10px; } .frame b { display: none; } }
+  .hero-copy { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: calc(28px + var(--dock)); }
+  @media (min-width: 900px) { .hero-copy { padding-bottom: 56px; } }
   .hero .eyebrow { color: var(--cream-soft); margin-bottom: 14px; }
   .hero h1 { font-size: clamp(50px, 7.2vw, 118px); line-height: .94; max-width: 7.2em; }
   .hero h1 .line { display: block; overflow: hidden; }
   .hero h1 .line > span { display: block; }
-  .hero h1 .dim { color: var(--cream-soft); }
   .hero .lede { font-size: clamp(16px, 1.45vw, 20px); line-height: 1.5; color: var(--cream-soft); max-width: 34em; margin: 18px 0 26px; }
-  @media (max-width: 759px) { .hero .lede { margin-bottom: 18px; max-width: 24em; } .hero h1 { max-width: none; } }
+  .lede-short { display: none; }
+  @media (max-width: 759px) { .hero .lede { margin: 12px 0 16px; max-width: 22em; } .hero h1 { max-width: none; font-size: clamp(46px, 13.5vw, 60px); } .lede-long { display: none; } .lede-short { display: block; } }
+  .hero-caption { position: absolute; z-index: 3; right: 30px; bottom: 30px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--cream-soft); display: none; text-align: right; line-height: 1.6; }
+  @media (min-width: 900px) { .hero-caption { display: block; } }
 
   /* Search module, present from the first frame */
   .finder { display: grid; gap: 10px; max-width: 760px; }
@@ -55,27 +65,19 @@
   .finder-tabs button { border: 0; background: rgba(246, 241, 231, .12); color: var(--cream); border-radius: 999px 999px 0 0; padding: 10px 18px; font: 600 13px/1 var(--sans); cursor: pointer; }
   .finder-tabs button[aria-selected="true"] { background: var(--cream); color: var(--ink); }
   .finder-row { display: flex; align-items: stretch; background: var(--cream); color: var(--ink); border-radius: 14px; padding: 6px; gap: 6px; box-shadow: 0 20px 50px rgba(0, 0, 0, .25); }
-  .finder-row[hidden] { display: none; }
   .finder-row label { flex: 1; display: flex; align-items: center; gap: 10px; padding: 0 10px; min-width: 0; }
   .finder-row svg { flex: 0 0 auto; opacity: .6; }
   .finder-row input { flex: 1; min-width: 0; border: 0; background: transparent; font: 500 16px/1 var(--sans); color: var(--ink); padding: 12px 0; outline: none; }
   .finder-row input::placeholder { color: var(--ink-soft); }
   .finder-row .btn { min-height: 48px; }
-  .finder-hint { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--cream-soft); }
+  .finder-hint { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--cream-soft); margin: 0; }
   .finder-hint a { color: var(--cream); text-decoration: none; border-bottom: 1px solid rgba(246, 241, 231, .4); }
   .finder-hint a:hover { border-bottom-color: var(--cream); }
   .finder-sell { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--cream); color: var(--ink); border-radius: 14px; padding: 12px 12px 12px 18px; }
   .finder-sell p { margin: 0; flex: 1 1 20em; font-size: 15px; color: var(--ink-soft); }
-  @media (max-width: 759px) { .finder-row .btn span { display: none; } .finder-row .btn { padding: 0 16px; } }
+  @media (max-width: 759px) { .finder-row .btn span { display: none; } .finder-row .btn { padding: 0 16px; } .finder-row input { font-size: 15px; } .finder-hint { display: none; } }
 
-  .scroll-cue { position: absolute; right: var(--gutter); bottom: 28px; z-index: 2; display: none; align-items: center; gap: 10px; color: var(--cream-soft); text-decoration: none; font: 600 11px/1 var(--sans); letter-spacing: .22em; text-transform: uppercase; }
-  .scroll-cue i { position: relative; display: block; width: 46px; height: 1px; background: rgba(246, 241, 231, .24); overflow: hidden; }
-  .scroll-cue i::after { content: ""; position: absolute; top: 0; left: -18px; width: 18px; height: 1px; background: var(--cream); animation: cue 2.2s cubic-bezier(.6, 0, .3, 1) infinite; }
-  @keyframes cue { to { transform: translateX(64px); } }
-  @media (min-width: 900px) { .scroll-cue { display: flex; } }
-  @media (prefers-reduced-motion: reduce) { .scroll-cue i::after { animation: none; left: 0; } }
-
-  /* Opening timeline: everything is in place by 1.5 s, the bar and search never wait */
+  /* Opening timeline: in place by 1.5 s; the bar and the search never wait */
   @media (prefers-reduced-motion: no-preference) {
     .motion .hero-scene { animation: settle 2.8s var(--ease-out) both; }
     @keyframes settle { from { transform: scale(1.08); } }
@@ -85,33 +87,41 @@
     .motion .hero .eyebrow { animation: fade .7s ease both .15s; }
     .motion .hero .lede { animation: fade .8s ease both .7s; }
     .motion .finder { animation: lift .9s var(--ease-out) both .55s; }
-    .motion .scroll-cue { animation: fade 1s ease both 1.6s; }
+    .motion .frame { animation: fade 1.4s ease both .9s; }
+    .motion .hero-caption { animation: fade 1s ease both 1.4s; }
     @keyframes fade { from { opacity: 0; } }
     @keyframes lift { from { opacity: 0; transform: translateY(14px); } }
   }
 
-  /* ---------- Statement: one question, then the places arrive ---------- */
-  .places { position: relative; background: var(--paper); }
-  .js.motion .places { height: 180vh; }
-  @media (min-width: 760px) { .js.motion .places { height: 230vh; } }
-  .places-panel { position: relative; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 96px 0; }
-  .js.motion .places-panel { position: sticky; top: 0; height: 100vh; padding: 0; overflow: hidden; }
-  .places-head { text-align: center; transform-origin: 50% 50%; will-change: transform; }
-  .places-head .eyebrow { color: var(--ink-soft); }
-  .places-head h2 { font-size: clamp(44px, 6vw, 96px); line-height: .98; margin: 0 auto; max-width: 9em; }
-  .places-head p { color: var(--ink-soft); max-width: 36em; margin: 18px auto 0; font-size: 17px; }
-  .area-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 36px 0 0; padding: 0; list-style: none; }
-  @media (min-width: 760px) { .area-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 44px; } }
-  .area { display: flex; flex-direction: column; justify-content: space-between; min-height: 150px; padding: 18px; border-radius: 14px; text-decoration: none;
-    background: var(--night); color: var(--cream); will-change: transform; transition: background-color .3s ease; }
-  @media (min-width: 760px) { .area { min-height: 190px; padding: 22px; } }
-  .area:hover { background: var(--night-2); }
-  .area b { font: 400 clamp(24px, 2.6vw, 38px)/1.02 var(--serif); letter-spacing: -.01em; }
-  .area small { display: block; font-size: 13px; color: var(--cream-soft); margin-top: 8px; }
-  .area .count { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--timber); font-weight: 600; }
-  .area.tone-2 { background: var(--moss); } .area.tone-2:hover { background: #35503a; }
-  .area.tone-3 { background: var(--pond); } .area.tone-3:hover { background: #244f5a; }
-  .area.tone-4 { background: var(--timber-ink); } .area.tone-4:hover { background: #7a4e2a; }
+  /* The places: the porch photo shrinks into its place among them */
+  .places { position: relative; background: var(--paper); color: var(--ink); padding: 72px 0 56px; }
+  .js.motion .places { position: absolute; inset: 0; z-index: 0; padding: 0; display: flex; align-items: center; opacity: 0; }
+  .js.motion .places .wrap { width: 100%; }
+  .places-head { max-width: 36em; }
+  .places-head .eyebrow { color: var(--ink-soft); margin-bottom: 10px; }
+  .places-head h2 { font-size: clamp(34px, 4.6vw, 64px); line-height: 1; }
+  .places-head p { color: var(--ink-soft); margin: 10px 0 0; font-size: 15px; max-width: 34em; }
+  @media (min-width: 900px) { .places-head { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; max-width: none; } .places-head h2 { grid-row: span 2; } .places-head .eyebrow { grid-column: 2; margin: 0; } .places-head p { grid-column: 2; margin: 0; font-size: 16px; } }
+  .area-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 22px 0 0; padding: 0; list-style: none; }
+  @media (min-width: 900px) { .area-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 30px; } }
+  .tile { position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; background: var(--night); color: var(--cream); text-decoration: none; isolation: isolate; }
+  @media (min-width: 900px) { .tile { aspect-ratio: 3 / 2; } }
+  .tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .9s var(--ease); }
+  .tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(10, 11, 8, .78) 0%, rgba(10, 11, 8, .25) 50%, rgba(10, 11, 8, 0) 75%); }
+  .tile .t { position: absolute; z-index: 1; left: 14px; right: 14px; bottom: 12px; }
+  @media (min-width: 900px) { .tile .t { left: 18px; right: 18px; bottom: 16px; } }
+  .tile b { display: block; font: 400 clamp(20px, 2.1vw, 30px)/1.02 var(--serif); letter-spacing: -.01em; text-wrap: balance; }
+  .tile small { display: block; margin-top: 5px; font: 600 11px/1.3 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--timber); }
+  .tile:hover img { transform: scale(1.04); }
+  .tile:focus-visible { outline: 3px solid var(--timber); outline-offset: 2px; }
+  .tile.slot img { opacity: 0; }
+  .tile.slot.handed img, .no-motion .tile.slot img { opacity: 1; }
+  .js.motion .tile:not(.slot) { opacity: 0; transform: translateY(40px); }
+  .js.motion .places-head > * { opacity: 0; transform: translateY(28px); }
+  .places-more { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin: 18px 0 0; font-size: 14px; color: var(--ink-soft); }
+  .places-more a { color: var(--ink); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--line-light); }
+  .places-more a:hover { border-bottom-color: var(--ink); }
+  .js.motion .places-more { opacity: 0; }
 
   /* ---------- Featured: the name behind the roofline ---------- */
   .featured { background: var(--paper); padding: 0 0 96px; }
@@ -137,7 +147,7 @@
   @media (min-width: 900px) { .work { padding: 140px 0; } }
   .work .wrap { display: grid; gap: 40px; }
   @media (min-width: 900px) { .work .wrap { grid-template-columns: 5fr 7fr; gap: 96px; align-items: start; } }
-  .work-pin { position: sticky; top: calc(var(--bar-h) + var(--bar-top) + 40px); }
+  @media (min-width: 900px) { .work-pin { position: sticky; top: calc(var(--bar-h) + var(--bar-top) + 40px); } }
   .work .eyebrow { color: var(--timber); }
   .work h2 { font-size: clamp(40px, 5vw, 68px); line-height: 1.02; max-width: 8em; }
   .work-num { display: none; font: 400 clamp(120px, 18vw, 260px)/1 var(--serif); letter-spacing: -.04em; color: rgba(246, 241, 231, .14); margin-top: 24px; position: relative; height: 1em; }
@@ -205,13 +215,10 @@
   .close p { color: var(--cream-soft); max-width: 32em; margin: 22px auto 34px; font-size: 18px; }
   .close .actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
   @media (max-width: 759px) { .close .actions .btn { flex: 1 1 100%; } }
-
-  .preview-flag { position: fixed; z-index: 95; left: 50%; bottom: calc(var(--dock) + 10px); transform: translateX(-50%); background: #b98a5a; color: #10110d; font: 600 12px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.25); pointer-events: none; white-space: nowrap; }
-  @media (max-width: 899px) { .preview-flag { bottom: auto; top: calc(var(--bar-h) + var(--bar-top) + 8px); } }
 </style>
 </head>
 <body>
-<div class="preview-flag" aria-hidden="true">Preview · not the live site</div>
+<div class="preview-strip" aria-label="Preview">Preview · not the live site · listings are a dated snapshot</div>
 <a class="skip" href="#main">Skip to content</a>
 
 <header class="bar" id="bar">
@@ -229,64 +236,69 @@
 
 <main id="main">
 
-  <section class="hero" data-bar="dark" aria-labelledby="hero-title">
-    <div class="hero-media">
-      <div class="hero-scene">
-        <picture>
-          <source type="image/webp" srcset="reference-site/assets/web/basil-patio-800.webp 800w, reference-site/assets/web/basil-patio-1600.webp 1600w" sizes="(max-aspect-ratio: 16/9) 178vh, 100vw">
-          <img src="reference-site/assets/web/basil-patio-1600.jpg" width="1600" height="900" fetchpriority="high"
-               alt="A covered timber porch with a porch swing, looking out over a pond and open pasture in St. Francisville.">
-        </picture>
-        <div class="hero-blur" aria-hidden="true"></div>
+  <section class="story" id="story" aria-label="Opening">
+    <div class="stage" id="stage">
+      <div class="hero" data-bar="dark" aria-labelledby="hero-title">
+        <div class="hero-media" id="hero-media">
+          <div class="hero-scene">
+            <picture>
+              <source type="image/webp" srcset="reference-site/assets/web/basil-patio-800.webp 800w, reference-site/assets/web/basil-patio-1600.webp 1600w" sizes="(max-aspect-ratio: 16/9) 178vh, 100vw">
+              <img src="reference-site/assets/web/basil-patio-1600.jpg" width="1600" height="900" fetchpriority="high"
+                   alt="A covered timber porch with a porch swing, looking out over a pond and open pasture in St. Francisville.">
+            </picture>
+            <div class="hero-blur" aria-hidden="true"></div>
+          </div>
+          <div class="hero-shade" aria-hidden="true"></div>
+        </div>
+        <div class="frame" id="frame" aria-hidden="true"><i></i><i></i><i></i><i></i><b>Basil Lane · St. Francisville</b></div>
+        <div class="hero-copy wrap" id="hero-copy">
+          <p class="eyebrow">REALTOR · Baton Rouge and the Felicianas</p>
+          <h1 id="hero-title"><span class="line"><span>A home deserves</span></span><span class="line"><span><em>a point of view.</em></span></span></h1>
+          <p class="lede lede-long">I help buyers and sellers across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas see a home clearly and decide well.</p>
+          <p class="lede lede-short">Buyers and sellers, Baton Rouge to the Felicianas. Straight answers, returned today.</p>
+          <div class="finder" id="finder">
+            <div class="finder-tabs" role="tablist" aria-label="What are you doing?">
+              <button type="button" role="tab" id="tab-buy" aria-selected="true" aria-controls="finder-buy">Buying</button>
+              <button type="button" role="tab" id="tab-sell" aria-selected="false" aria-controls="finder-sell">Selling</button>
+            </div>
+            <form class="finder-row" id="finder-buy" role="tabpanel" aria-labelledby="tab-buy" action="search.html" method="get">
+              <label>
+                <span class="sr">Where do you want to live?</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                <input type="search" name="q" placeholder="Where do you want to live?" autocomplete="off" list="place-list" enterkeyhint="search">
+              </label>
+              <button class="btn btn-dark" type="submit"><span>Search homes</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
+            </form>
+            <datalist id="place-list">
+              <option value="Baton Rouge"><option value="Zachary"><option value="St. Francisville"><option value="New Roads"><option value="Prairieville"><option value="Denham Springs"><option value="Port Allen"><option value="Clinton"><option value="Greenwell Springs"><option value="Gonzales">
+            </datalist>
+            <div class="finder-sell" id="finder-sell" role="tabpanel" aria-labelledby="tab-sell" hidden>
+              <p>Thinking about selling? Start with an honest read of your house and the number you'd actually walk away with.</p>
+              <a class="btn btn-dark" href="reference-site/sell.html">Start a pricing conversation</a>
+            </div>
+            <p class="finder-hint"><span>Or jump to</span> <a href="search.html?golf=1">homes near golf</a> <a href="search.html?region=felicianas">the Felicianas</a> <a href="search.html?region=zachary">Zachary</a> <a href="search.html?status=sold">where I've sold</a></p>
+          </div>
+        </div>
+        <p class="hero-caption">Covered deck over the pond<br>Basil Lane, St. Francisville</p>
       </div>
-    </div>
-    <div class="wrap">
-      <p class="eyebrow">REALTOR · Baton Rouge and the Felicianas</p>
-      <h1 id="hero-title"><span class="line"><span>A home deserves</span></span><span class="line"><span><em>a point of view.</em></span></span></h1>
-      <p class="lede">I help buyers and sellers across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas see a home clearly and decide well.</p>
 
-      <div class="finder" id="finder">
-        <div class="finder-tabs" role="tablist" aria-label="What are you doing?">
-          <button type="button" role="tab" id="tab-buy" aria-selected="true" aria-controls="finder-buy">Buying</button>
-          <button type="button" role="tab" id="tab-sell" aria-selected="false" aria-controls="finder-sell">Selling</button>
+      <div class="places" id="places" aria-labelledby="places-title">
+        <div class="wrap">
+          <div class="places-head" id="places-head">
+            <h2 id="places-title">Where do you want to live?</h2>
+            <p class="eyebrow">Start with a place</p>
+            <p>Every one of these is somewhere I've closed homes. Pick one and the search opens there, with the map, the flood zones, the golf courses and the communities around it.</p>
+          </div>
+          <ul class="area-grid" id="area-grid">
+            <li><a class="tile slot" id="slot" href="search.html?region=felicianas" data-count="St Francisville|Clinton|Slaughter|Jackson"><picture><source type="image/webp" srcset="reference-site/assets/web/basil-patio-800.webp"><img src="reference-site/assets/web/basil-patio-800.jpg" width="800" height="450" alt="" loading="lazy"></picture><span class="t"><b>St. Francisville &amp; the Felicianas</b><small></small></span></a></li>
+            <li><a class="tile" href="search.html?region=zachary" data-count="Zachary"><img src="img/area-zachary-600.webp" srcset="img/area-zachary-600.webp 600w, img/area-zachary-1100.webp 1100w" sizes="(min-width: 900px) 30vw, 48vw" width="600" height="400" alt="" loading="lazy"><span class="t"><b>Zachary</b><small></small></span></a></li>
+            <li><a class="tile" href="search.html?region=baton-rouge" data-count="Baton Rouge|Central|Greenwell Springs"><img src="img/area-baton-rouge-600.webp" srcset="img/area-baton-rouge-600.webp 600w, img/area-baton-rouge-1100.webp 1100w" sizes="(min-width: 900px) 30vw, 48vw" width="600" height="400" alt="" loading="lazy"><span class="t"><b>Baton Rouge</b><small></small></span></a></li>
+            <li><a class="tile" href="search.html?region=new-roads" data-count="New Roads"><img src="img/area-new-roads-600.webp" srcset="img/area-new-roads-600.webp 600w, img/area-new-roads-1100.webp 1100w" sizes="(min-width: 900px) 30vw, 48vw" width="600" height="400" alt="" loading="lazy"><span class="t"><b>New Roads &amp; False River</b><small></small></span></a></li>
+            <li><a class="tile" href="search.html?region=ascension" data-count="Prairieville|Gonzales"><img src="img/area-ascension-600.webp" srcset="img/area-ascension-600.webp 600w, img/area-ascension-1100.webp 1100w" sizes="(min-width: 900px) 30vw, 48vw" width="600" height="400" alt="" loading="lazy"><span class="t"><b>Prairieville &amp; Ascension</b><small></small></span></a></li>
+            <li><a class="tile" href="search.html?region=west" data-count="Denham Springs|Livingston|Port Allen|Brusly"><img src="img/area-west-600.webp" srcset="img/area-west-600.webp 600w, img/area-west-1100.webp 1100w" sizes="(min-width: 900px) 30vw, 48vw" width="600" height="400" alt="" loading="lazy"><span class="t"><b>Denham Springs &amp; the west bank</b><small></small></span></a></li>
+          </ul>
+          <p class="places-more" id="places-more"><span>Or explore by what matters:</span> <a href="search.html?golf=1">near a golf course</a> <a href="search.html?layer=flood,golf,comm">with flood zones on the map</a> <a href="search.html?status=sold&layer=golf,comm,sold">where I've sold</a></p>
         </div>
-        <form class="finder-row" id="finder-buy" role="tabpanel" aria-labelledby="tab-buy" action="search.html" method="get">
-          <label>
-            <span class="sr">Where do you want to live?</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
-            <input type="search" name="q" placeholder="Where do you want to live? Zachary, St. Francisville, a zip…" autocomplete="off" list="place-list" enterkeyhint="search">
-          </label>
-          <button class="btn btn-dark" type="submit"><span>Search homes</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"/></svg></button>
-        </form>
-        <datalist id="place-list">
-          <option value="Baton Rouge"><option value="Zachary"><option value="St. Francisville"><option value="New Roads"><option value="Prairieville"><option value="Denham Springs"><option value="Port Allen"><option value="Clinton"><option value="Greenwell Springs"><option value="Gonzales">
-        </datalist>
-        <div class="finder-sell" id="finder-sell" role="tabpanel" aria-labelledby="tab-sell" hidden>
-          <p>Thinking about selling? Start with an honest read of your house and the number you'd actually walk away with.</p>
-          <a class="btn btn-dark" href="reference-site/sell.html">Start a pricing conversation</a>
-        </div>
-        <p class="finder-hint"><span>Or jump to</span> <a href="search.html?layer=golf">homes near golf</a> <a href="search.html?place=St.%20Francisville">St. Francisville</a> <a href="search.html?place=Zachary">Zachary</a> <a href="search.html?status=sold">where I've sold</a></p>
-      </div>
-    </div>
-    <a class="scroll-cue" href="#places"><span>Scroll</span><i aria-hidden="true"></i></a>
-  </section>
-
-  <section class="places" id="places" aria-labelledby="places-title">
-    <div class="places-panel">
-      <div class="wrap">
-        <div class="places-head" id="places-head">
-          <p class="eyebrow">Start with a place</p>
-          <h2 id="places-title">Where do you want to live?</h2>
-          <p>Every area below is somewhere I've closed homes. Pick one and the search opens there, with the map, the communities and the golf courses around it.</p>
-        </div>
-        <ul class="area-grid" id="area-grid">
-          <li><a class="area" href="search.html?place=Baton%20Rouge" data-area="Baton Rouge" data-from="-1,1"><b>Baton Rouge</b><span><small>Garden District to Central, the parish and its edges.</small><span class="count" data-count="Baton Rouge"></span></span></a></li>
-          <li><a class="area tone-2" href="search.html?place=Zachary" data-area="Zachary" data-from="0,1.2"><b>Zachary</b><span><small>Copper Mill, the lake lots and the quiet streets off 19.</small><span class="count" data-count="Zachary"></span></span></a></li>
-          <li><a class="area tone-3" href="search.html?place=St.%20Francisville" data-area="St Francisville|Clinton|Slaughter" data-from="1,1"><b>St. Francisville &amp; the Felicianas</b><span><small>Hills, oaks, acreage and the river parishes' prettiest town.</small><span class="count" data-count="St Francisville|Clinton|Slaughter"></span></span></a></li>
-          <li><a class="area tone-4" href="search.html?place=New%20Roads" data-area="New Roads" data-from="-1.2,0"><b>New Roads &amp; False River</b><span><small>Waterfront living an hour from the city.</small><span class="count" data-count="New Roads"></span></span></a></li>
-          <li><a class="area" href="search.html?place=Prairieville" data-area="Prairieville|Gonzales" data-from="0,-1.2"><b>Prairieville &amp; Ascension</b><span><small>Growing fast, with Pelican Point's golf community close by.</small><span class="count" data-count="Prairieville|Gonzales"></span></span></a></li>
-          <li><a class="area tone-2" href="search.html?place=Denham%20Springs" data-area="Denham Springs|Livingston|Port Allen|Brusly" data-from="1.2,0"><b>Denham Springs &amp; the west bank</b><span><small>Livingston Parish, Port Allen and Brusly.</small><span class="count" data-count="Denham Springs|Livingston|Port Allen|Brusly"></span></span></a></li>
-        </ul>
       </div>
     </div>
   </section>
@@ -389,8 +401,8 @@
 
 <footer class="site-foot">
   <div class="wrap">
-    <div>Caleb Jackson, REALTOR · Keller Williams First Choice · 17111 Commerce Centre Drive, Prairieville, LA 70769</div>
-    <div>Louisiana license on file with LREC · Each office is independently owned and operated · Equal Housing Opportunity</div>
+    <div>Caleb Jackson, REALTOR · Keller Williams First Choice · 17111 Commerce Centre Dr, Suite A, Prairieville, LA 70769</div>
+    <div>Louisiana license 995709847 · Office (225) 744-0044 · Each office is independently owned and operated · Equal Housing Opportunity</div>
     <div class="foot-links"><a href="sms:+12257470303">Text Caleb</a><a href="tel:+12257470303">Call (225) 747-0303</a><a href="search.html">Search</a><a href="reference-site/sell.html">Sell</a><a href="reference-site/golf.html">Golf communities</a><a href="reference-site/about.html">About</a><a href="reference-site/sources.html">Sources and limits</a></div>
     <p class="foot-note">Listings shown on this site are Caleb's own, captured as a dated snapshot. For every listing in the MLS, use the <a href="https://calebjackson.org/home-search">full home search on calebjackson.org</a>.</p>
   </div>

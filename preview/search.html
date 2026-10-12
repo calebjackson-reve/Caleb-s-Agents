@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="is-preview">
 <head>
 <meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
@@ -222,13 +222,10 @@
   }
   @media (min-width: 900px) { .dock { display: none !important; } }
   @media (prefers-reduced-motion: reduce) { .sheet, .listcol, .card, .pin, .dot { transition: none; } }
-
-  .preview-flag { position: fixed; z-index: 95; left: 50%; bottom: calc(var(--dock) + 10px); transform: translateX(-50%); background: #b98a5a; color: #10110d; font: 600 12px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; padding: 8px 14px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.25); pointer-events: none; white-space: nowrap; }
-  @media (max-width: 899px) { .preview-flag { bottom: auto; top: calc(var(--bar-h) + var(--bar-top) + 8px); } }
 </style>
 </head>
 <body>
-<div class="preview-flag" aria-hidden="true">Preview · not the live site</div>
+<div class="preview-strip" aria-label="Preview">Preview · not the live site · listings are a dated snapshot</div>
 <a class="skip" href="#results">Skip to results</a>
 
 <header class="bar">

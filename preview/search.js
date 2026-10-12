@@ -30,6 +30,15 @@
     'Clinton': [30.8657, -91.0157], 'Slaughter': [30.7185, -91.1407], 'Greenwell Springs': [30.5488, -90.9868], 'Brusly': [30.3938, -91.2515],
     'Livingston': [30.5021, -90.7479], 'Lafayette': [30.2241, -92.0198], 'Central': [30.5544, -91.0368], 'Jackson': [30.8374, -91.2165]
   };
+  // Grouped places from the landing page: one chip, several towns
+  var REGIONS = {
+    'felicianas': { label: 'St. Francisville & the Felicianas', cities: ['St Francisville', 'Clinton', 'Slaughter', 'Jackson'], ll: [30.8, -91.25], zoom: 10 },
+    'ascension': { label: 'Prairieville & Ascension', cities: ['Prairieville', 'Gonzales'], ll: [30.27, -90.95], zoom: 11 },
+    'west': { label: 'Denham Springs & the west bank', cities: ['Denham Springs', 'Livingston', 'Port Allen', 'Brusly'], ll: [30.45, -91.05], zoom: 10 },
+    'new-roads': { label: 'New Roads & False River', cities: ['New Roads'], ll: [30.70, -91.44], zoom: 12 },
+    'baton-rouge': { label: 'Baton Rouge', cities: ['Baton Rouge', 'Central', 'Greenwell Springs'], ll: [30.47, -91.12], zoom: 11 },
+    'zachary': { label: 'Zachary', cities: ['Zachary'], ll: [30.6485, -91.1565], zoom: 12 }
+  };
   var ALIAS = { 'St. Francisville': 'St Francisville', 'Saint Francisville': 'St Francisville', 'the Felicianas': 'St Francisville', 'Felicianas': 'St Francisville' };
   var courses = ((window.MAP_DATA || {})['data/map-places.json'] || {}).courses || [];
   var communities = (window.GOLF_DATA || {}).communities || [];
@@ -175,6 +184,7 @@
     if (state.place) {
       var p = state.place;
       if (p.kind === 'city' && cityKey(l.city) !== p.key) return false;
+      if (p.kind === 'region' && p.cities.indexOf(cityKey(l.city)) < 0) return false;
       if (p.kind === 'zip' && l.zip !== p.key) return false;
       if ((p.kind === 'course' || p.kind === 'community') && miles(l.ll, p.ll) > 10) return false;
     }
@@ -246,7 +256,8 @@
   }
   function mlsHref() {
     var base = 'https://calebjackson.org/home-search/listings';
-    return state.place && state.place.kind === 'city' ? base + '?city=' + encodeURIComponent(state.place.label.replace('St ', 'St. ')) : base;
+    var c = state.place && (state.place.kind === 'city' ? state.place.label : state.place.kind === 'region' ? state.place.cities[0] : null);
+    return c ? base + '?city=' + encodeURIComponent(c.replace(/^St /, 'St. ')) : base;
   }
   function byId(id) { for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i]; return null; }
 
@@ -358,6 +369,7 @@
   function placeIndex() {
     var items = [];
     Object.keys(CITY).forEach(function (c) { var n = all.filter(function (l) { return cityKey(l.city) === c; }).length; items.push({ kind: 'city', key: c, label: c === 'St Francisville' ? 'St. Francisville' : c, ll: CITY[c], sub: n ? n + (n === 1 ? ' home' : ' homes') : 'Louisiana' }); });
+    Object.keys(REGIONS).forEach(function (k) { var r = REGIONS[k], n = all.filter(function (l) { return r.cities.indexOf(cityKey(l.city)) >= 0; }).length; items.push({ kind: 'region', key: k, label: r.label, ll: r.ll, zoom: r.zoom, cities: r.cities, sub: n ? n + (n === 1 ? ' home' : ' homes') + ' across ' + r.cities.length + (r.cities.length === 1 ? ' town' : ' towns') : 'Area' }); });
     var zips = {}; all.forEach(function (l) { if (l.zip) zips[l.zip] = (zips[l.zip] || 0) + 1; });
     Object.keys(zips).forEach(function (z) { var l = all.filter(function (x) { return x.zip === z; })[0]; items.push({ kind: 'zip', key: z, label: z, ll: l.ll, sub: l.city + ' · ' + zips[z] + (zips[z] === 1 ? ' home' : ' homes') }); });
     communities.forEach(function (c) { if (c.course && c.course.coordinates) items.push({ kind: 'community', key: c.id, label: c.name, ll: [c.course.coordinates[1], c.course.coordinates[0]], sub: 'Golf community · ' + c.place }); });
@@ -369,8 +381,8 @@
     var box = $('#suggest'), inp = $('#q');
     q = (q || '').trim().toLowerCase();
     var hits = index.filter(function (p) { return !q || p.label.toLowerCase().indexOf(q) >= 0 || (ALIAS[p.label] || '').toLowerCase().indexOf(q) >= 0 || p.sub.toLowerCase().indexOf(q) >= 0; });
-    if (!q) hits = hits.filter(function (p) { return p.kind === 'city' && /home/.test(p.sub); });
-    var groups = { city: 'Places', zip: 'Zip codes', community: 'Golf communities', course: 'Golf courses' }, html = '', any = false;
+    if (!q) hits = hits.filter(function (p) { return (p.kind === 'city' || p.kind === 'region') && /home/.test(p.sub); });
+    var groups = { region: 'Areas', city: 'Places', zip: 'Zip codes', community: 'Golf communities', course: 'Golf courses' }, html = '', any = false;
     Object.keys(groups).forEach(function (k) {
       var g = hits.filter(function (p) { return p.kind === k; }).slice(0, 6); if (!g.length) return; any = true;
       html += '<h4>' + groups[k] + '</h4>' + g.map(function (p) { return '<button type="button" role="option" data-kind="' + p.kind + '" data-key="' + esc(p.key) + '">' + esc(p.label) + '<small>' + esc(p.sub) + '</small></button>'; }).join('');
@@ -383,7 +395,7 @@
     state.place = p; state.bounds = false;
     $('#place-chip').classList.toggle('on', !!p); $('#place-name').textContent = p ? p.label : '';
     $('#q').value = ''; $('#q').placeholder = p ? 'Add another place…' : 'City, community, golf course or zip';
-    if (p && p.ll) { programmatic = true; map.flyTo(p.ll, p.kind === 'city' ? 12 : 13, { animate: !reduce, duration: .9 }); }
+    if (p && p.ll) { programmatic = true; map.flyTo(p.ll, p.zoom || (p.kind === 'city' ? 12 : 13), { animate: !reduce, duration: .9 }); }
     if (!quiet) render();
   }
   function resolveQuery(q) {
@@ -397,7 +409,7 @@
   function writeUrl() {
     var p = new URLSearchParams();
     if (state.source === 'simplyrets') p.set('source', 'demo');
-    if (state.place) p.set('place', state.place.label);
+    if (state.place) p.set(state.place.kind === 'region' ? 'region' : 'place', state.place.kind === 'region' ? state.place.key : state.place.label);
     if (state.status.join() !== 'For Sale') p.set('status', state.status.join(',').toLowerCase().replace(/ /g, ''));
     if (state.min != null) p.set('min', state.min); if (state.max != null) p.set('max', state.max);
     if (state.beds) p.set('beds', state.beds); if (state.baths) p.set('baths', state.baths); if (state.sqft) p.set('sqft', state.sqft);
@@ -414,7 +426,7 @@
     if (p.get('golf')) state.golf = true; if (p.get('sort')) state.sort = p.get('sort');
     if (p.get('layer') != null) { var ly = p.get('layer').split(','); state.layers = { flood: ly.indexOf('flood') >= 0, golf: ly.indexOf('golf') >= 0, comm: ly.indexOf('comm') >= 0, sold: ly.indexOf('sold') >= 0 }; }
     if (p.get('cmp')) state.cmp = p.get('cmp').split(',');
-    return { place: p.get('place') || p.get('q'), home: p.get('home') };
+    return { place: p.get('place') || p.get('q'), region: p.get('region'), home: p.get('home') };
   }
   function syncFilterUi() {
     $$('input[name="status"]').forEach(function (i) { i.checked = state.status.indexOf(i.value) >= 0; });
@@ -513,7 +525,7 @@
   load().then(function (rows) {
     all = rows; index = placeIndex(); addMarkers(); addGolf();
     if (state.source === 'simplyrets' && all.length) { programmatic = true; map.fitBounds(L.latLngBounds(all.map(function (l) { return l.ll; })).pad(0.1), { animate: false }); }
-    var p = q0.place && resolveQuery(q0.place);
+    var p = q0.region ? index.filter(function (x) { return x.kind === 'region' && x.key === q0.region; })[0] : (q0.place && resolveQuery(q0.place));
     if (p) setPlace(p, true); else if (q0.place) $('#q').value = q0.place;
     render();
     if (q0.home) { var h = all.filter(function (l) { return l.mls === q0.home; })[0]; if (h) { programmatic = true; map.setView(h.ll, 14, { animate: false }); select(h.id, true); } }
