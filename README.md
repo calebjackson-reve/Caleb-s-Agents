@@ -15,7 +15,7 @@ Repo conventions (report format, approval gate, voice) live in [`CLAUDE.md`](CLA
 
 | Program | What it is |
 |---|---|
-| [AI Workshops](programs/ai-workshops/PROGRAM.md) | Teaching real estate agents, title companies and local businesses to use AI. Draft. |
+| [AI for Agents](programs/ai-for-agents/PLAN.md) | 90-day launch to 100 free Skool members: plan, Skool setup, 10 beginner lessons with scripts, invite drafts. |
 
 ## Lessons
 
@@ -23,3 +23,7 @@ Repo conventions (report format, approval gate, voice) live in [`CLAUDE.md`](CLA
 |---|---|---|
 | Reverse Engineer Everything | [YouTube video on the REA tool](https://www.youtube.com/watch?v=dAzs_rU6080) | [Lesson plan](lessons/reverse-engineer-everything/LESSON.md) · [Viewable page](lessons/reverse-engineer-everything/lesson.html) |
 | The Floor Is Rising | Video on why AI automation won't last forever | [Lesson plan](lessons/the-floor-is-rising/LESSON.md) |
+
+## Setup
+
+Run `scripts/setup-local.sh` once on your computer. After that, type `aire` to start Claude with Chrome and Remote Control.
