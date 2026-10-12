@@ -1,0 +1,51 @@
+{
+ "name": "skool-house-style",
+ "version": 1,
+ "about": "The numbers skool_cut.py edits to. Each value says where it came from: measured (from a reference file), decided (Caleb or the film kit) or inference (Claude's call, change it freely).",
+ "output": {
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "loudness_lufs": -14,
+  "_source": "decided: PRODUCTION.md export and audio steps"
+ },
+ "pauses": {
+  "merge_gap_s": 0.35,
+  "pad_before_s": 0.08,
+  "pad_after_s": 0.14,
+  "_source": "measured: Nate Herk 2026-10-11, no gap between word starts over 1.0 s, pause median 0.68 s start to start. Nick Saraev 2026-05-11 course, pause median 0.8 s. Pads are inference so word endings don't clip."
+ },
+ "retakes": {
+  "match_words": 3,
+  "look_ahead_phrases": 3,
+  "phrase_gap_s": 0.6,
+  "_source": "decided: PRODUCTION.md says keep the last good take. Matching rule is inference."
+ },
+ "face": {
+  "punch_scale": 1.18,
+  "min_shot_s": 2.5,
+  "max_shot_s": 8.0,
+  "eye_line": 0.36,
+  "_source": "measured: Nate face shots median 6.0 s, face width 17 to 21% of frame. decided: PRODUCTION.md punch-in to 115%. inference: 118% so the change reads on a phone, alternate on jump cuts to hide them."
+ },
+ "screen": {
+  "zoom_min": 1.0,
+  "zoom_max": 2.0,
+  "zoom_floor": 1.25,
+  "chunk_s": 5.0,
+  "activity_pad": 0.18,
+  "_source": "measured: Nate non-face runs median 5.5 s, overall shot median 4.8 s. decided: PRODUCTION.md screen zoom 150 to 200% on the prompt box."
+ },
+ "text": {
+  "mode": "keywords",
+  "pill_hold_s": 2.2,
+  "caption_words": 4,
+  "_source": "measured by eye on the Nate contact sheet: no running captions, short keyword labels in a pill near the bottom (CLI . COMMAND LINE TOOL, Google cloud project). decided: PRODUCTION.md wants captions for long videos too, so mode full is one flag away."
+ },
+ "targets": {
+  "cuts_per_min": [7, 13],
+  "shot_median_s": [3.5, 6.5],
+  "longest_gap_s": 1.2,
+  "_source": "measured: Nate 9.6 cuts a minute, shot median 4.77 s, p90 11.9 s. Ranges are inference. The cutter checks its own output against these."
+ }
+}

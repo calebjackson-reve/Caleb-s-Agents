@@ -17,6 +17,7 @@ Status as of 2026-10-12: Skool group created by Caleb at https://www.skool.com/a
 | Read the goal, mission and 7 core values | [`../programs/ai-for-agents/FOUNDATION.md`](../programs/ai-for-agents/FOUNDATION.md) |
 | Read the 90-day plan and scorecard | [`../programs/ai-for-agents/PLAN.md`](../programs/ai-for-agents/PLAN.md) |
 | Film and edit | [`../programs/ai-for-agents/PRODUCTION.md`](../programs/ai-for-agents/PRODUCTION.md) |
+| Cut a raw take automatically, and see Nate Herk's measured style | [`../programs/ai-for-agents/editor/`](../programs/ai-for-agents/editor/README.md) |
 | The 7-day challenge scripts | [`../programs/ai-for-agents/challenge/`](../programs/ai-for-agents/challenge/README.md) |
 | The 10 weekly lessons | [`../programs/ai-for-agents/lessons/`](../programs/ai-for-agents/lessons/) |
 | Skool setup, name and about text | [`../programs/ai-for-agents/skool-setup.md`](../programs/ai-for-agents/skool-setup.md) |
@@ -79,4 +80,4 @@ Claude drafts. Caleb posts, sends, schedules, publishes and pays. Fair Housing o
 - Skool pricing, group counts and name conflicts: pulled live from skool.com on 2026-10-12, see `skool-research.md`.
 - AI Automation Society and Chase AI member counts: their Skool about pages, 2026-10-12, see `skool-teardown-ais-chase.md`.
 - Caleb's audience sizes: Metricool, Jul 14 to Oct 12, 2026, see `PLAN.md`.
-- Nate Herk and Nick Saraev filming style: inference from their video posts and group pages. Their footage was not watched. Verify before batch day.
+- Nate Herk editing style: measured from his 2026-10-11 video on 2026-10-12, see `editor/README.md`. Nick Saraev: speech pace only, from his captions. His footage still hasn't been measured.

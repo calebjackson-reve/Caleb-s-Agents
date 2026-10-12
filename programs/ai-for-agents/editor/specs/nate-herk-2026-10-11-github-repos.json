@@ -1,0 +1,616 @@
+{
+ "name": "nate-herk-2026-10-11-github-repos",
+ "source": "video.mp4",
+ "method": "style_probe.py: ffmpeg scene>0.30 cuts, Haar face labels at 2 fps, caption word timing, ebur128",
+ "measured": {
+  "duration_s": 636.3,
+  "cuts": {
+   "count": 102,
+   "per_min": 9.6,
+   "per_min_first_30s": 8.0,
+   "shot_median_s": 4.77,
+   "shot_p90_s": 11.87,
+   "longest_shot_s": 23.7
+  },
+  "picture": {
+   "face_share": 0.49,
+   "pip_share": 0.006,
+   "other_share": 0.504,
+   "face_run_median_s": 6.0,
+   "other_run_median_s": 5.5,
+   "first_face_s": 15.0,
+   "first_non_face_s": 0.0,
+   "face_width_median": 0.191,
+   "face_width_p10_p90": [
+    0.169,
+    0.209
+   ]
+  },
+  "jump_cuts": {
+   "count": 2,
+   "per_min_of_face": 0.39
+  },
+  "punch_ins": {
+   "count": 4,
+   "per_min_of_face": 0.77,
+   "median_ratio": 1.51
+  },
+  "speech": {
+   "words": 2633,
+   "wpm": 248.5,
+   "pauses_per_min": 9.2,
+   "pause_median_s": 0.68,
+   "pause_p90_s": 0.8,
+   "longest_gap_s": 1.0,
+   "first_word_s": 0.0,
+   "talk_ratio": 0.999
+  },
+  "loudness": {
+   "integrated_lufs": -19.4,
+   "true_peak_dbfs": 0.2
+  }
+ },
+ "timeline": {
+  "cuts": [
+   5.17,
+   15.03,
+   24.43,
+   26.9,
+   30.77,
+   33.63,
+   38.13,
+   41.73,
+   48.63,
+   52.07,
+   53.3,
+   56.33,
+   68.1,
+   79.73,
+   85.3,
+   88.63,
+   93.4,
+   96.17,
+   102.23,
+   104.13,
+   105.87,
+   115.57,
+   117.7,
+   119.67,
+   123.77,
+   127.13,
+   128.17,
+   128.97,
+   131.2,
+   134.2,
+   136.17,
+   140.73,
+   145.6,
+   169.33,
+   175.57,
+   181.83,
+   187.9,
+   192.77,
+   195.3,
+   197.77,
+   201.43,
+   205.5,
+   211.4,
+   221.03,
+   222.1,
+   225.6,
+   244.73,
+   247.8,
+   248.8,
+   260.7,
+   267.17,
+   271.93,
+   276.6,
+   293.43,
+   299.3,
+   307.63,
+   311.8,
+   317.43,
+   323.67,
+   328.17,
+   332.2,
+   344.47,
+   349.13,
+   365.57,
+   369.53,
+   373.3,
+   375.97,
+   377.2,
+   379.5,
+   382.9,
+   387.23,
+   393.07,
+   404.57,
+   415.0,
+   418.43,
+   427.97,
+   442.37,
+   446.33,
+   453.57,
+   461.23,
+   466.7,
+   474.33,
+   479.53,
+   482.9,
+   489.47,
+   495.9,
+   506.1,
+   517.47,
+   520.83,
+   523.5,
+   526.63,
+   534.5,
+   536.7,
+   539.4,
+   544.87,
+   548.4,
+   563.63,
+   581.27,
+   587.07,
+   596.53,
+   608.47,
+   627.27
+  ],
+  "jump_cuts": [
+   40.83,
+   144.13
+  ],
+  "segments": [
+   {
+    "label": "other",
+    "start": 0.0,
+    "end": 5.0
+   },
+   {
+    "label": "pip",
+    "start": 5.0,
+    "end": 7.0
+   },
+   {
+    "label": "other",
+    "start": 7.0,
+    "end": 15.0
+   },
+   {
+    "label": "face",
+    "start": 15.0,
+    "end": 19.0
+   },
+   {
+    "label": "other",
+    "start": 19.0,
+    "end": 24.5
+   },
+   {
+    "label": "face",
+    "start": 24.5,
+    "end": 27.0
+   },
+   {
+    "label": "other",
+    "start": 27.0,
+    "end": 31.0
+   },
+   {
+    "label": "face",
+    "start": 31.0,
+    "end": 33.5
+   },
+   {
+    "label": "other",
+    "start": 33.5,
+    "end": 38.0
+   },
+   {
+    "label": "face",
+    "start": 38.0,
+    "end": 48.5
+   },
+   {
+    "label": "other",
+    "start": 48.5,
+    "end": 53.5
+   },
+   {
+    "label": "face",
+    "start": 53.5,
+    "end": 56.5
+   },
+   {
+    "label": "other",
+    "start": 56.5,
+    "end": 68.0
+   },
+   {
+    "label": "face",
+    "start": 68.0,
+    "end": 79.5
+   },
+   {
+    "label": "other",
+    "start": 79.5,
+    "end": 85.5
+   },
+   {
+    "label": "face",
+    "start": 85.5,
+    "end": 88.5
+   },
+   {
+    "label": "other",
+    "start": 88.5,
+    "end": 93.5
+   },
+   {
+    "label": "face",
+    "start": 93.5,
+    "end": 96.0
+   },
+   {
+    "label": "other",
+    "start": 96.0,
+    "end": 106.0
+   },
+   {
+    "label": "face",
+    "start": 106.0,
+    "end": 115.5
+   },
+   {
+    "label": "other",
+    "start": 115.5,
+    "end": 119.5
+   },
+   {
+    "label": "face",
+    "start": 119.5,
+    "end": 124.0
+   },
+   {
+    "label": "other",
+    "start": 124.0,
+    "end": 128.5
+   },
+   {
+    "label": "face",
+    "start": 128.5,
+    "end": 131.0
+   },
+   {
+    "label": "other",
+    "start": 131.0,
+    "end": 140.5
+   },
+   {
+    "label": "face",
+    "start": 140.5,
+    "end": 145.5
+   },
+   {
+    "label": "other",
+    "start": 145.5,
+    "end": 169.5
+   },
+   {
+    "label": "face",
+    "start": 169.5,
+    "end": 175.5
+   },
+   {
+    "label": "other",
+    "start": 175.5,
+    "end": 182.0
+   },
+   {
+    "label": "face",
+    "start": 182.0,
+    "end": 188.0
+   },
+   {
+    "label": "other",
+    "start": 188.0,
+    "end": 198.0
+   },
+   {
+    "label": "face",
+    "start": 198.0,
+    "end": 201.5
+   },
+   {
+    "label": "other",
+    "start": 201.5,
+    "end": 205.5
+   },
+   {
+    "label": "face",
+    "start": 205.5,
+    "end": 211.5
+   },
+   {
+    "label": "other",
+    "start": 211.5,
+    "end": 225.5
+   },
+   {
+    "label": "face",
+    "start": 225.5,
+    "end": 244.5
+   },
+   {
+    "label": "other",
+    "start": 244.5,
+    "end": 249.0
+   },
+   {
+    "label": "face",
+    "start": 249.0,
+    "end": 260.5
+   },
+   {
+    "label": "other",
+    "start": 260.5,
+    "end": 272.0
+   },
+   {
+    "label": "face",
+    "start": 272.0,
+    "end": 276.5
+   },
+   {
+    "label": "other",
+    "start": 276.5,
+    "end": 293.5
+   },
+   {
+    "label": "face",
+    "start": 293.5,
+    "end": 299.5
+   },
+   {
+    "label": "other",
+    "start": 299.5,
+    "end": 307.5
+   },
+   {
+    "label": "face",
+    "start": 307.5,
+    "end": 312.0
+   },
+   {
+    "label": "other",
+    "start": 312.0,
+    "end": 317.5
+   },
+   {
+    "label": "face",
+    "start": 317.5,
+    "end": 323.5
+   },
+   {
+    "label": "other",
+    "start": 323.5,
+    "end": 332.0
+   },
+   {
+    "label": "face",
+    "start": 332.0,
+    "end": 344.5
+   },
+   {
+    "label": "other",
+    "start": 344.5,
+    "end": 349.0
+   },
+   {
+    "label": "face",
+    "start": 349.0,
+    "end": 366.0
+   },
+   {
+    "label": "other",
+    "start": 366.0,
+    "end": 369.5
+   },
+   {
+    "label": "face",
+    "start": 369.5,
+    "end": 373.5
+   },
+   {
+    "label": "other",
+    "start": 373.5,
+    "end": 379.5
+   },
+   {
+    "label": "face",
+    "start": 379.5,
+    "end": 383.0
+   },
+   {
+    "label": "other",
+    "start": 383.0,
+    "end": 387.0
+   },
+   {
+    "label": "face",
+    "start": 387.0,
+    "end": 393.0
+   },
+   {
+    "label": "other",
+    "start": 393.0,
+    "end": 404.5
+   },
+   {
+    "label": "face",
+    "start": 404.5,
+    "end": 415.0
+   },
+   {
+    "label": "other",
+    "start": 415.0,
+    "end": 432.5
+   },
+   {
+    "label": "face",
+    "start": 432.5,
+    "end": 435.0
+   },
+   {
+    "label": "other",
+    "start": 435.0,
+    "end": 437.0
+   },
+   {
+    "label": "face",
+    "start": 437.0,
+    "end": 446.5
+   },
+   {
+    "label": "other",
+    "start": 446.5,
+    "end": 453.5
+   },
+   {
+    "label": "face",
+    "start": 453.5,
+    "end": 461.0
+   },
+   {
+    "label": "other",
+    "start": 461.0,
+    "end": 466.5
+   },
+   {
+    "label": "face",
+    "start": 466.5,
+    "end": 475.0
+   },
+   {
+    "label": "pip",
+    "start": 475.0,
+    "end": 477.0
+   },
+   {
+    "label": "other",
+    "start": 477.0,
+    "end": 479.5
+   },
+   {
+    "label": "face",
+    "start": 479.5,
+    "end": 483.0
+   },
+   {
+    "label": "other",
+    "start": 483.0,
+    "end": 489.5
+   },
+   {
+    "label": "face",
+    "start": 489.5,
+    "end": 497.0
+   },
+   {
+    "label": "other",
+    "start": 497.0,
+    "end": 506.0
+   },
+   {
+    "label": "face",
+    "start": 506.0,
+    "end": 517.5
+   },
+   {
+    "label": "other",
+    "start": 517.5,
+    "end": 521.0
+   },
+   {
+    "label": "face",
+    "start": 521.0,
+    "end": 523.5
+   },
+   {
+    "label": "other",
+    "start": 523.5,
+    "end": 526.5
+   },
+   {
+    "label": "face",
+    "start": 526.5,
+    "end": 534.5
+   },
+   {
+    "label": "other",
+    "start": 534.5,
+    "end": 539.5
+   },
+   {
+    "label": "face",
+    "start": 539.5,
+    "end": 547.5
+   },
+   {
+    "label": "other",
+    "start": 547.5,
+    "end": 563.5
+   },
+   {
+    "label": "face",
+    "start": 563.5,
+    "end": 581.5
+   },
+   {
+    "label": "other",
+    "start": 581.5,
+    "end": 587.0
+   },
+   {
+    "label": "face",
+    "start": 587.0,
+    "end": 596.5
+   },
+   {
+    "label": "other",
+    "start": 596.5,
+    "end": 608.5
+   },
+   {
+    "label": "face",
+    "start": 608.5,
+    "end": 636.0
+   }
+  ],
+  "punch_ins": [
+   {
+    "t": 41.73,
+    "from": 0.12,
+    "to": 0.192,
+    "dir": "in"
+   },
+   {
+    "t": 442.37,
+    "from": 0.139,
+    "to": 0.181,
+    "dir": "in"
+   },
+   {
+    "t": 495.9,
+    "from": 0.198,
+    "to": 0.108,
+    "dir": "out"
+   },
+   {
+    "t": 544.87,
+    "from": 0.175,
+    "to": 0.123,
+    "dir": "out"
+   }
+  ]
+ }
+}
