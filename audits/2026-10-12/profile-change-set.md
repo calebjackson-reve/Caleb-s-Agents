@@ -1,3 +1,5 @@
+> October12 authoritative correction: Official LREC verifies Caleb J. Jackson SALE.995709547-ACT, Active, expiration12/31/2027. Earlier supplied995709847 belongs to another licensee. Prior license-versus-MLS-ID diagnosis is retracted; use995709547 for public license and preserve existing MLS ID. New execution receipt records current results.
+
 # Profile change set (per platform, exact values)
 
 Every change below needs Caleb's go-ahead before it is applied. Values come from skills/brand-consistency/identity-standard.md. "Status" is what I could confirm on October 12 without a browser.
