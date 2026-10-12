@@ -2,7 +2,7 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
-## 2026-10-12, night: Day 1 film kit
+## 2026-10-12, late night: Day 1 film kit
 
 **Done**
 - `day-1-film-kit.html`: one page to film Day 1 from. Room, light, camera, audio and screen checklists, a run of show with every line to say and the timestamp it lands on, the shot list, the Fair Housing check, the Skool lesson text and an after-filming list. Rendered in Chromium at desktop and phone width, light and dark, no errors, no sideways scroll, checkboxes and copy buttons work.
@@ -23,6 +23,18 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 
 **Next for Claude**
 - Fold Caleb's notes from the Day 1 test into the kit, then build the same kit for Days 0 and 2 to 7.
+
+## 2026-10-12, night: Skool plan and privacy
+
+**Confirmed by Caleb**
+- The group is on the Hobby plan. Per the morning research, Hobby costs $9 a month plus 10% of paid memberships (historical, from skool.com research, not rechecked).
+- The group is public.
+
+**Inference**
+- Membership is free to join. That matches the project goal of 100 free members, but Caleb has not checked the price setting yet.
+
+**Needs Caleb**
+- Confirm the group's price setting says free.
 
 ## 2026-10-12, evening: Skool group is live
 
