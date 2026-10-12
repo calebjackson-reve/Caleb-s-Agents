@@ -15,7 +15,7 @@ Repo conventions (report format, approval gate, voice) live in [`CLAUDE.md`](CLA
 
 | Program | What it is |
 |---|---|
-| [AI for Agents](programs/ai-for-agents/PLAN.md) | 90-day launch to 100 free Skool members: plan, Skool setup, 10 beginner lessons with scripts, invite drafts. |
+| [AI for Agents](programs/ai-for-agents/PLAN.md) | 90-day launch to 100 free Skool members: foundation and values, production playbook, 7-day challenge with scripts, 10 beginner lessons, Skool research and invite drafts. |
 
 ## Lessons
 

@@ -98,6 +98,10 @@ These targets are estimates. Adjust after day 30 using real numbers.
 
 ## Files in this program
 
+- `FOUNDATION.md`: goal, mission, core values and the flywheel. Start here.
+- `PRODUCTION.md`: when to film, what to film, setup, step-by-step editing and upload checklists
+- `challenge/`: the 7-day challenge, Skool layout, launch post and 8 full video scripts
+
 - `skool-setup.md`: group name options, about text, sections, welcome post, rules
 - `lessons/`: 10 beginner lessons, each with a teaching plan and a word-for-word script
 - `skool-research.md`: live Skool market scan, pricing and name conflicts
