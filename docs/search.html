@@ -156,7 +156,7 @@
   .sheet { position: absolute; z-index: 40; inset: 0; background: var(--paper); display: flex; flex-direction: column; transform: translateX(100%); visibility: hidden; transition: transform .4s var(--ease), visibility 0s .4s; }
   .sheet.open { transform: none; visibility: visible; transition: transform .4s var(--ease), visibility 0s; }
   .sheet .top { display: flex; align-items: center; justify-content: space-between; padding: 10px var(--gutter); border-bottom: 1px solid var(--line-light); }
-  @media (min-width: 900px) { .sheet .top { padding: 12px 24px; } }
+  @media (min-width: 900px) { .sheet, .cmp { left: 52%; } .sheet .top { padding: 12px 24px; } }
   .sheet .top button { border: 0; background: none; display: inline-flex; align-items: center; gap: 8px; font: 600 14px var(--sans); cursor: pointer; padding: 8px 0; }
   .sheet .scroll { flex: 1; overflow: auto; padding: 0 0 calc(24px + var(--dock)); }
   .sheet .photo { aspect-ratio: 16 / 10; background: var(--paper-2); }
@@ -182,8 +182,8 @@
   /* ---------- Compare tray ---------- */
   .tray { position: absolute; z-index: 45; left: 12px; right: 12px; bottom: calc(12px + var(--dock)); display: none; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; background: var(--ink); color: var(--cream); border-radius: 999px; box-shadow: 0 12px 30px rgba(0, 0, 0, .3); font: 600 13px var(--sans); }
   .tray.on { display: flex; }
-  .filters.open ~ .tray, .sheet.open ~ .tray, .cmp.open ~ .tray { display: none; }
-  @media (min-width: 900px) { .tray { left: 24px; right: 24px; bottom: 16px; } }
+  .app:has(.filters.open) .tray, .sheet.open ~ .tray, .cmp.open ~ .tray, body.panel-open .tray { display: none !important; }
+  @media (min-width: 900px) { .tray { left: calc(52% + 24px); right: 24px; bottom: 16px; } }
   .tray .names { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; opacity: .9; }
   .tray .btn { min-height: 38px; }
   .tray .x { border: 0; background: none; color: inherit; cursor: pointer; font: 600 13px var(--sans); text-decoration: underline; }
@@ -203,6 +203,7 @@
     .listcol { position: fixed; inset: var(--top) 0 0 0; z-index: 2; border: 0; transition: transform .35s var(--ease); }
     .mode-map .listcol { transform: translateY(100%); }
     .mode-map .count-badge { display: block; }
+    .tray { z-index: 6; } .cmp { z-index: 7; }
     .map-ui { top: auto; bottom: calc(var(--dock) + 14px); right: 12px; }
     .layers { width: min(300px, calc(100vw - 24px)); }
     .legend { bottom: auto; top: 52px; left: 12px; max-width: min(270px, calc(100vw - 24px)); font-size: 11px; padding: 8px 10px; }
@@ -210,7 +211,7 @@
     .leaflet-control-zoom { display: none; }
     .tools { padding-top: 8px; }
     .sort { margin-left: 0; }
-    .sheet { transform: translateY(100%); border-radius: 18px 18px 0 0; top: 8%; box-shadow: 0 -20px 60px rgba(0, 0, 0, .25); }
+    .sheet { z-index: 5; transform: translateY(100%); border-radius: 18px 18px 0 0; top: 8%; box-shadow: 0 -20px 60px rgba(0, 0, 0, .25); }
     .sheet.open { transform: none; }
     .sheet .top { padding: 10px 14px; }
     .dock { grid-template-columns: 1fr 1fr 1.35fr; }
@@ -257,9 +258,10 @@
       </div>
     </div>
     <div class="legend" id="legend" hidden>
-      <div><i style="background:rgba(43,108,176,.55)"></i>Special flood hazard area (1% annual chance)</div>
-      <div><i style="background:rgba(230,150,60,.5)"></i>Moderate risk (0.2% annual chance)</div>
-      <p id="legend-note">FEMA NFHL, drawn live. Zones inform a conversation; they are not an insurance determination or an elevation certificate.</p>
+      <div><i style="background:#9fe9f5"></i>1% annual chance flood hazard (special flood hazard area)</div>
+      <div><i style="background:repeating-linear-gradient(45deg,#f6a6a6 0 3px,#fff 3px 6px)"></i>Regulatory floodway</div>
+      <div><i style="background:#f5d19a"></i>0.2% annual chance flood hazard</div>
+      <p id="legend-note">FEMA National Flood Hazard Layer, drawn live in FEMA's own colors. Zones inform a conversation. They are not an insurance determination or an elevation certificate.</p>
     </div>
   </div>
 
@@ -308,17 +310,17 @@
       <footer><button type="button" class="reset" id="f-reset">Reset</button><button type="button" class="btn btn-dark" id="f-see">See homes</button></footer>
     </section>
 
-    <section class="sheet" id="sheet" aria-label="Home details" aria-hidden="true">
-      <div class="top"><button type="button" id="sheet-back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back to results</button><span class="tag" id="sheet-tag"></span></div>
-      <div class="scroll" id="sheet-scroll"></div>
-    </section>
-
-    <div class="tray" id="tray"><span class="names" id="tray-names"></span><button type="button" class="x" id="tray-clear">Clear</button><button type="button" class="btn btn-light" id="tray-open">Compare</button></div>
-    <section class="cmp" id="cmp" aria-label="Compare homes">
-      <div class="top" style="display:flex;align-items:center;justify-content:space-between;padding:12px var(--gutter);border-bottom:1px solid var(--line-light)"><button type="button" id="cmp-back" style="border:0;background:none;font:600 14px var(--sans);cursor:pointer">← Back to results</button><a class="btn btn-dark btn-xs" id="cmp-text" href="sms:+12257470303">Text these to Caleb</a></div>
-      <div class="scroll" id="cmp-scroll"></div>
-    </section>
   </div>
+    <section class="sheet" id="sheet" aria-label="Home details" aria-hidden="true">
+    <div class="top"><button type="button" id="sheet-back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Back to results</button><span class="tag" id="sheet-tag"></span></div>
+    <div class="scroll" id="sheet-scroll"></div>
+  </section>
+
+  <div class="tray" id="tray"><span class="names" id="tray-names"></span><button type="button" class="x" id="tray-clear">Clear</button><button type="button" class="btn btn-light" id="tray-open">Compare</button></div>
+  <section class="cmp" id="cmp" aria-label="Compare homes">
+    <div class="top" style="display:flex;align-items:center;justify-content:space-between;padding:12px var(--gutter);border-bottom:1px solid var(--line-light)"><button type="button" id="cmp-back" style="border:0;background:none;font:600 14px var(--sans);cursor:pointer">← Back to results</button><a class="btn btn-dark btn-xs" id="cmp-text" href="sms:+12257470303">Text these to Caleb</a></div>
+    <div class="scroll" id="cmp-scroll"></div>
+  </section>
 </main>
 
 <nav class="dock" aria-label="Quick actions">

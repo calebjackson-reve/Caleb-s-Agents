@@ -497,7 +497,7 @@
   }
   var userMoving = false;
   function openFilters(open) {
-    $('#filters').classList.toggle('open', open); $('#filters-btn').setAttribute('aria-expanded', String(open));
+    $('#filters').classList.toggle('open', open); document.body.classList.toggle('panel-open', open); $('#filters-btn').setAttribute('aria-expanded', String(open));
     if (open) { closeSheet(); $('#filters-close').focus(); } else $('#filters-btn').focus();
   }
   function setMode(mapMode) {
