@@ -2,6 +2,18 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-12, night: Skool plan and privacy
+
+**Confirmed by Caleb**
+- The group is on the Hobby plan. Per the morning research, Hobby costs $9 a month plus 10% of paid memberships (historical, from skool.com research, not rechecked).
+- The group is public.
+
+**Inference**
+- Membership is free to join. That matches the project goal of 100 free members, but Caleb has not checked the price setting yet.
+
+**Needs Caleb**
+- Confirm the group's price setting says free.
+
 ## 2026-10-12, evening: Skool group is live
 
 **Confirmed by Caleb**
