@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Selling your home | Caleb Jackson</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="tools.css" />
+  <script>
+      // Hide the headline until wind.js splits it, only when motion is welcome. Fails safe after 2.5 s.
+      (function () {
+        var d = document.documentElement;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        d.classList.add('wind');
+        setTimeout(function () { if (!window.__fx) d.classList.remove('wind'); }, 2500);
+      })();
+    </script>
+  </head>
+  <body class="sell-page">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-head">
+      <div class="wrap">
+        <a class="mark" href="../index.html" aria-label="Caleb Jackson, home"><b>Caleb Jackson</b><span>Keller Williams First Choice</span></a>
+        <nav class="site-nav" aria-label="Primary"><a href="campaign.html">Featured</a><a href="golf.html">Golf</a><a href="compare.html">Buy</a><a href="sell.html" aria-current="page">Sell</a></nav>
+        <a class="head-cta" href="sms:+12257470303">Text Caleb</a>
+      </div>
+    </header>
+    <main id="main">
+      <section class="sell-head">
+        <p class="kicker">Selling · Free · No sign-up</p>
+        <h1>Know where you stand <br />before you list.</h1>
+        <p class="lead">
+          Test what two sale scenarios could leave you, see one example of how I present a home,
+          and start a conversation that already has the useful details.
+        </p>
+        <nav class="journey-rail" aria-label="On this page">
+          <a href="#numbers"><span>01</span>Run your numbers</a>
+          <a href="#work"><span>02</span>See an example</a>
+          <a href="#talk"><span>03</span>Start the conversation</a>
+        </nav>
+      </section>
+
+      <section class="sell-numbers" id="numbers" aria-labelledby="numbers-title">
+        <div class="section-label">
+          <span>1</span>
+          <h2 id="numbers-title">What could a sale leave you?</h2>
+        </div>
+        <p class="fine">
+          Two scenarios side by side. Your costs apply to both, so the difference comes from price, fees and
+          credits. Values start as illustrative examples. Replace them with your own.
+        </p>
+        <div class="sell-grid">
+          <form class="sell-inputs" id="sell-form" novalidate>
+            <fieldset>
+              <legend>Your costs (both scenarios)</legend>
+              <div id="shared-fields" class="sell-fieldgrid"></div>
+            </fieldset>
+            <fieldset>
+              <legend>Property tax for this year (optional)</legend>
+              <p class="fine">
+                Louisiana taxes are billed late in the year and due December 31 for that same year, so a seller
+                usually credits the buyer for the days of the year already owned. Your title company
+                calculates the real figure.
+              </p>
+              <div id="tax-fields" class="sell-fieldgrid"></div>
+            </fieldset>
+            <fieldset>
+              <legend>The two scenarios</legend>
+              <div class="scenario-cols" id="scenario-fields"></div>
+            </fieldset>
+            <button type="button" class="plain-button quiet" id="sell-clear">Start over with blank numbers</button>
+          </form>
+          <div class="sell-results" id="sell-results">
+            <p class="swing" id="sell-swing" aria-live="polite"></p>
+            <div class="sell-cards" id="sell-cards"></div>
+            <div class="next-home" aria-labelledby="next-title">
+              <h3 id="next-title">Sell this, buy that</h3>
+              <p class="fine">See how far each scenario goes toward your next down payment.</p>
+              <div id="next-fields" class="sell-fieldgrid"></div>
+              <p class="next-result" id="next-result" aria-live="polite"></p>
+              <p><a href="compare.html">Compare homes you might buy next ↗</a></p>
+            </div>
+            <div class="target-net" aria-labelledby="target-title">
+              <h3 id="target-title">What price gets you there?</h3>
+              <p class="fine">Enter what you want to walk away with after preparation and moving. This uses the first scenario’s fees and credits and your costs above.</p>
+              <div class="c-field"><label for="target-net">Amount you want to walk away with ($)</label><input id="target-net" inputmode="decimal" autocomplete="off" placeholder="For example 120000" /><p class="field-error" id="target-net-err"></p></div>
+              <p class="target-result" id="target-result" aria-live="polite"></p>
+            </div>
+            <div class="next-steps" aria-labelledby="ns-sell">
+              <p class="ns-h" id="ns-sell">What next</p>
+              <div class="ns-grid">
+                <button type="button" class="act primary" id="sell-save">Save these scenarios to my brief</button>
+                <a class="act" href="#talk">Send Caleb a message with these numbers</a>
+                <a class="act" href="compare.html">Compare homes you might buy next</a>
+              </div>
+            </div>
+            <div class="result-actions">
+              <button type="button" class="button" id="sell-print">Save as PDF or print</button>
+              <a class="plain-button" href="#talk" id="sell-to-talk">Use these numbers in a message ↓</a>
+            </div>
+            <p class="fine" id="sell-status" role="status"></p>
+            <p class="fine">
+              Not a valuation, appraisal or tax advice. Income and capital-gains taxes, HOA transfer fees and
+              any cost you did not enter are excluded. Your numbers are saved only in this browser.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="sell-story page-wrap" id="work" aria-labelledby="work-title">
+        <div class="workflow-heading">
+          <p>2 · An example from this site</p>
+          <h2 id="work-title">One home, presented on purpose.</h2>
+          <p>Three pieces built here around Basil Lane, a real home in St. Francisville. Scroll through them.</p>
+        </div>
+        <div class="workflow-grid story-grid">
+          <div class="workflow-story">
+            <article class="workflow-card active" id="photos" tabindex="0">
+              <span>1 / The photographs</span>
+              <h3>Lead with the <br />strongest view.</h3>
+              <p>
+                The front elevation in full daylight opens the set. The front porch and the covered deck over
+                the pond follow, so the strongest views come first.
+              </p>
+            </article>
+            <article class="workflow-card" id="page" tabindex="0">
+              <span>2 / The property page</span>
+              <h3>Give it a page <br />of its own.</h3>
+              <p>
+                Facts and photography in one place, with the listing snapshot dated and the status kept
+                honest when public sources disagree.
+              </p>
+              <a href="campaign.html">Open the Basil Lane page ↗</a>
+            </article>
+            <article class="workflow-card" id="plan" tabindex="0">
+              <span>3 / The showing plan</span>
+              <h3>Send buyers in <br />with questions.</h3>
+              <p>
+                A showing checklist lets buyers choose what they need to know before they arrive, so the
+                visit starts with their real questions.
+              </p>
+              <a href="campaign.html#visit-plan">Try the checklist ↗</a>
+            </article>
+            <p class="fine">
+              Shown: the presentation built for Basil Lane on this site. It shows the approach, not a sale
+              result. What your home needs starts with a conversation about the home, the timing and the budget.
+            </p>
+          </div>
+          <div class="workflow-visual story-visual" aria-hidden="true">
+            <div class="scene" data-for="photos">
+              <picture><source type="image/webp" srcset="assets/web/basil-front-900.webp" /><img src="assets/web/basil-front-900.jpg" width="900" height="506" alt="" class="print print-a" /></picture>
+              <picture><source type="image/webp" srcset="assets/web/basil-porch-800.webp" /><img src="assets/web/basil-porch-800.jpg" width="800" height="450" alt="" class="print print-b" loading="lazy" /></picture>
+              <picture><source type="image/webp" srcset="assets/web/basil-patio-800.webp" /><img src="assets/web/basil-patio-800.jpg" width="800" height="450" alt="" class="print print-c" loading="lazy" /></picture>
+            </div>
+            <div class="scene" data-for="page">
+              <div class="browser">
+                <span class="browser-bar"><i></i><i></i><i></i></span>
+                <picture><source type="image/webp" srcset="assets/web/campaign-page-1100.webp" /><img src="assets/web/campaign-page-1100.jpg" width="1100" height="688" alt="" loading="lazy" /></picture>
+              </div>
+            </div>
+            <div class="scene" data-for="plan">
+              <div class="checklist-card">
+                <p class="scene-kicker">Your plan · Basil Lane</p>
+                <ul>
+                  <li>Ask for current availability, price and seller disclosures.</li>
+                  <li>Request address-specific home and flood insurance quotes, plus verified tax information.</li>
+                  <li>Walk through storage, room connections and the spaces I would use every day.</li>
+                </ul>
+                <span class="scene-button">Save this checklist</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sell-talk page-wrap" id="talk" aria-labelledby="talk-title">
+        <div class="section-label">
+          <span>3</span>
+          <h2 id="talk-title">Start a useful conversation.</h2>
+        </div>
+        <div class="talk-grid">
+          <form class="talk-form" id="talk-form">
+            <label for="talk-place">Address or area (optional)</label>
+            <input id="talk-place" maxlength="120" autocomplete="street-address" />
+            <fieldset class="chips">
+              <legend>When might you sell?</legend>
+              <label><input type="radio" name="timing" value="in the next 3 months" /> Within 3 months</label>
+              <label><input type="radio" name="timing" value="in 3 to 6 months" /> 3 to 6 months</label>
+              <label><input type="radio" name="timing" value="in 6 to 12 months" /> 6 to 12 months</label>
+              <label><input type="radio" name="timing" value="just exploring" checked /> Just exploring</label>
+            </fieldset>
+            <fieldset class="chips">
+              <legend>What matters most?</legend>
+              <label><input type="checkbox" value="the strongest price" /> Strongest price</label>
+              <label><input type="checkbox" value="a faster sale" /> A faster sale</label>
+              <label><input type="checkbox" value="as little preparation as possible" /> Less preparation</label>
+              <label><input type="checkbox" value="timing it with my next home" /> Timing with my next home</label>
+              <label><input type="checkbox" value="privacy" /> Privacy</label>
+            </fieldset>
+            <button type="button" class="switch-row" id="include-numbers" role="switch" aria-checked="false">
+              <span class="switch-track" aria-hidden="true"></span><span>Include my two scenarios</span>
+            </button>
+          </form>
+          <div class="talk-preview">
+            <p class="scene-kicker">Your message</p>
+            <p class="message" id="talk-message" aria-live="polite"></p>
+            <div class="result-actions">
+              <a class="button" id="talk-send" href="sms:+12257470303">Text this to Caleb ↗</a>
+              <button type="button" class="plain-button" id="talk-copy">Copy message</button>
+              <a class="plain-button" href="tel:+12257470303">Call (225) 747-0303</a>
+            </div>
+            <p class="fine" id="talk-status" role="status"></p>
+            <p class="fine">Nothing is sent from this page. Your messaging app opens and you decide.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="page-wrap questions">
+        <p>Before you list</p>
+        <h2>A few straight answers.</h2>
+        <details>
+          <summary>Is this a valuation of my home?</summary>
+          <p>
+            No. It is arithmetic on the numbers you enter. A pricing opinion needs the home itself, recent
+            comparable sales and a conversation.
+          </p>
+        </details>
+        <details>
+          <summary>What usually comes out of a sale price?</summary>
+          <p>
+            Your loan payoff, agreed compensation to brokers, title and settlement charges, any credits you
+            agree to, and prorated items such as property taxes. Your title company’s estimated settlement
+            statement is the document to check.
+          </p>
+        </details>
+        <details>
+          <summary>Are commission rates set?</summary>
+          <p>No. Compensation is negotiable and agreed in writing. The planner uses the percentage you enter.</p>
+        </details>
+        <details>
+          <summary>Should I fix things before listing?</summary>
+          <p>
+            Sometimes. Start with safety items and anything an inspector or a buyer’s lender is likely to
+            flag, and get prices before you commit. The preparation budget keeps that cost visible.
+          </p>
+        </details>
+        <details>
+          <summary>Will my home get its own page like Basil Lane?</summary>
+          <p>
+            That depends on the home, the timing and the budget. Basil Lane is one example. Ask me what I
+            would recommend for yours.
+          </p>
+        </details>
+        <details>
+          <summary>Is anything I type saved or sent?</summary>
+          <p>
+            Your numbers are saved in this browser so they survive a reload. Start over clears them. Nothing
+            is sent unless you choose to text or call.
+          </p>
+        </details>
+      </section>
+    </main>
+    <footer class="site-foot">
+      <div class="wrap">
+        <div>Caleb Jackson, REALTOR · Keller Williams First Choice · Louisiana license 995709847</div>
+        <div>Each office is independently owned and operated · Equal Housing Opportunity</div>
+        <div class="foot-links"><a href="sms:+12257470303">Text Caleb</a><a href="tel:+12257470303">Call (225) 747-0303</a><a href="about.html">About</a><a href="explore.html">Explore the map</a><a href="golf.html">Golf communities</a><a href="resources.html">Planning resources</a><a href="sources.html">Sources and limits</a></div>
+      </div>
+    </footer>
+    <script src="common.js" defer></script>
+    <script src="wind.js" defer></script>
+    <script src="workflow.js" defer></script>
+    <script src="resources-math.js" defer></script>
+    <script src="sell.js" defer></script>
+    <script src="brief.js" defer></script>
+  </body>
+</html>
