@@ -37,3 +37,24 @@ Independent syntax, selector and HTTP asset checks passed. Browser automation ti
 The progress bar now uses a direct scaleX transform on its own element, with a fixed100%layoutwidth. The render loop reads progress before writing scene styles and no longer writes --read-progress on html. The scene timeline uses scrub:0.6. The unused architecturalPNG is removed from this review branch; the original remains in local source/history.
 
 Claude’s supplied e7f1969 retest reports reduced motion, WebP requests and phone rail passed, and a root-variable A/B scroll trace attributed371→55msstyle recalculation and671→306msmain-thread time to removing the old rootwrite. Those measurements are source-reported for the prior A/B trace. They are not measurements of this new commit. Re-run the same scroll trace before claiming measured improvement. The proposed pre-rendered inverted drawing has not been applied.
+
+## Production numbers: where they come from, and one gap to close
+
+The stat row on the page reads 81 closed deals, $25.1M in volume, 27 in the last twelve months, and 0 paid leads. Those four figures are copied from Caleb's own published pages on the `claude/funny-gates-cducrq` branch (`homebrief-next/about.html`, and `build.py` where they are set as `NUMBERS = {"deals": 81, "volume": "$25.1M", "last12": 27, "zachary": 15}`). They are his stated figures, not derived here.
+
+They do not reconcile with `homebrief-next/data/deals.json`, which is the ROAM MLS closed-sale export as of 2026-10-07:
+
+| Source | Deals | Volume |
+| --- | --- | --- |
+| Published pages | 81 | $25.1M |
+| deals.json itemized | 72 (+4 off-market not shown = 76) | $20,315,870 |
+
+The gap is 5 deals and about $4.8M. That is plausible if the MLS export misses off-market or dual-side closings, but it is unverified. Reconcile before these numbers go on a public page or into the ad, since they are public claims about production. Until then they stay in the preview only.
+
+The 32-unit St. Francisville sale shown elsewhere on the page is a separate, Caleb-confirmed fact and is unaffected.
+
+## Tools on the page
+
+The two calculators are self-contained and run in the browser. Nothing is sent anywhere and no field asks for contact details. The math is reused verbatim from the verified `homebrief-next/js/calc-core.js`: the same `roundMoney`, the same `log1p`/`expm1` amortization, and the same rounded line-item totals. Both open with a worked example and label their output as the user's own assumptions, not a quote or an offer.
+
+Golf course descriptions come from `homebrief-next/golf.html`. Membership and HOA details change; the page says so in print.
