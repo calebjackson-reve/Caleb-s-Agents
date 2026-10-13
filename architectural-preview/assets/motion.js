@@ -178,3 +178,183 @@
       this.current.y = this.approach(this.current.y, this.target.y, 0.18, 0.01);
       this.hoverProgress = this.approach(this.hoverProgress, this.isInteractive ? 1 : 0, 0.15);
       this.pressProgress = this.isPressed ? this.approach(this.pressProgress, 1, 0.2) : 0;
+      this.visibilityProgress = this.approach(this.visibilityProgress, this.isVisible ? 1 : 0, 0.12);
+      this.darkProgress = this.approach(this.darkProgress, this.useDark ? 1 : 0, 0.15);
+
+      const color = this.mix(this.accentRgb, this.darkRgb, this.darkProgress);
+      const base = this.accentRgb.map((c, i) => c + (this.darkRgb[i] - c) * this.darkProgress);
+      const light = this.mix(base, [255, 255, 255], 0.3);
+      const hoverScale = (6 + this.hoverProgress * 8) / 14;
+      const pressScale = 0.5 + this.pressProgress * 0.3;
+      this.updateSquare((this.isPressed ? 1 : this.hoverProgress) * this.visibilityProgress, this.isPressed ? pressScale : hoverScale, this.isPressed ? light : 'transparent');
+
+      const moved = Math.hypot(this.current.x - px, this.current.y - py);
+      this.speed += (moved - this.speed) * 0.2;
+      if (moved > 0.05) { this.trail.push({ x: this.current.x, y: this.current.y }); if (this.trail.length > this.opts.trailLength) this.trail.shift(); }
+      const fast = this.speed > 1.5 || ps > 1.5;
+      const changed = this.current.x !== px || this.current.y !== py || this.hoverProgress !== ph || this.pressProgress !== pp || this.visibilityProgress !== pv || this.darkProgress !== pd || (fast && this.speed !== ps);
+      if (changed) {
+        const c = this.ctx;
+        c.clearRect(0, 0, this.w, this.h);
+        if (this.visibilityProgress > 0) {
+          const k = clamp((this.speed - 1.5) / 6, 0, 1);
+          if (k > 0.02) {
+            c.strokeStyle = color; c.lineWidth = 1.4; c.lineCap = 'round';
+            for (let i = 1; i < this.trail.length; i++) {
+              const t = i / this.trail.length;
+              c.globalAlpha = t * t * 0.7 * this.visibilityProgress * k;
+              c.beginPath(); c.moveTo(this.trail[i - 1].x, this.trail[i - 1].y); c.lineTo(this.trail[i].x, this.trail[i].y); c.stroke();
+            }
+          }
+          const dot = 9;
+          if ((this.isPressed || this.hoverProgress > 0.99) && !this.isHidden) {
+            c.globalAlpha = (this.isPressed ? 1 : this.hoverProgress) * this.visibilityProgress;
+            c.fillStyle = color;
+            c.fillRect(this.current.x - dot / 2, this.current.y - dot / 2, dot, dot);
+          }
+        }
+        c.globalAlpha = 1;
+        if (!fast && moved <= 0.05) this.trail = [{ x: this.current.x, y: this.current.y }];
+        this.wake();
+      }
+    }
+  }
+  MK.cursor = {
+    instance: null,
+    init(opts) {
+      if (!finePointer() || prefersReduced()) return null;
+      if (this.instance) this.instance.destroy();
+      this.instance = new CanvasCursor(opts).init();
+      return this.instance;
+    },
+  };
+
+  /* ------------------------------------------------------------------------
+     4. Ruler / crosshair + drag-select box.
+     Observed: lines and plus marker lerp toward the pointer at 0.3 each
+     frame, clamped 16px inside the wrapper; lines fade to 0 at the edges
+     (lerp 0.1); the plus grows to 1.2x and fades at the edges (lerp 0.08);
+     the coordinate readout and tooltip sit on the side of the pointer that
+     keeps them inside the box; everything fades in over 0.25s on enter and
+     the RAF loop pauses when the pointer is outside.
+     Drag-select: mousedown creates a bordered box, mousemove sizes it and
+     chooses the gradient angle by drag quadrant, overlapped .mk-select-item
+     elements get .active, mouseup removes the box.
+     ------------------------------------------------------------------------ */
+  class Ruler {
+    constructor(opts = {}) {
+      this.o = Object.assign({
+        wrapper: null, vertical: '.mk-ruler-line-v', horizontal: '.mk-ruler-line-h', plus: '.mk-ruler-plus',
+        coords: '.mk-ruler-coords', tip: '.mk-ruler-tip', hover: '.mk-ruler-hover',
+        attrX: '[data-coord="x"]', attrY: '[data-coord="y"]', pauseOutside: true, offset: 16, select: false, selectItems: '.mk-select-item',
+      }, opts);
+      this.wrapper = typeof this.o.wrapper === 'string' ? document.querySelector(this.o.wrapper) : this.o.wrapper;
+      if (!this.wrapper) return;
+      const q = (s) => $$(s, this.wrapper);
+      this.lines = { v: q(this.o.vertical), h: q(this.o.horizontal) };
+      this.plus = q(this.o.plus); this.coords = q(this.o.coords); this.tip = q(this.o.tip); this.hover = q(this.o.hover);
+      this.cur = { x: 0, y: 0 }; this.tgt = { x: 0, y: 0 };
+      this.lineAlpha = { v: 0, h: 0 }; this.plusScale = 1; this.plusFade = 0;
+      this.inside = false; this.animating = false; this.raf = null;
+      ['onEnter', 'onLeave', 'onMove', 'loop'].forEach((k) => (this[k] = this[k].bind(this)));
+    }
+    start() {
+      if (!this.wrapper) return this;
+      this.inside = this.wrapper.matches(':hover');
+      this.wrapper.addEventListener('mouseenter', this.onEnter);
+      this.wrapper.addEventListener('mouseleave', this.onLeave);
+      this.wrapper.addEventListener('mousemove', this.onMove);
+      this.setHover(true);
+      if (!this.o.pauseOutside || this.inside) this.resume();
+      if (this.o.select) this.initSelect();
+      return this;
+    }
+    stop() { this.pause(); if(this.selectCleanup)this.selectCleanup(); this.wrapper.removeEventListener('mouseenter', this.onEnter); this.wrapper.removeEventListener('mouseleave', this.onLeave); this.wrapper.removeEventListener('mousemove', this.onMove); }
+    onEnter() { this.inside = true; this.setHover(); if (this.o.pauseOutside) this.resume(); }
+    onLeave() { this.inside = false; this.setHover(); if (this.o.pauseOutside) this.pause(); }
+    onMove() { if (!this.inside) this.onEnter(); }
+    setHover(instant) { if (this.hover.length) gsap.to(this.hover, { autoAlpha: this.inside ? 1 : 0, duration: instant ? 0 : 0.25, ease: 'power2.out', overwrite: 'auto' }); }
+    resume() { if (this.animating) return; this.animating = true; this.loop(); }
+    pause() { this.animating = false; if (this.raf) cancelAnimationFrame(this.raf); this.raf = null; }
+    loop() { if (!this.animating) return; this.updateTarget(); this.draw(); this.raf = requestAnimationFrame(this.loop); }
+    updateTarget() { const r = this.wrapper.getBoundingClientRect(); this.tgt.x = pointer.x - r.left; this.tgt.y = pointer.y - r.top; }
+    draw() {
+      const W = this.wrapper.offsetWidth, H = this.wrapper.offsetHeight, off = this.o.offset;
+      const minX = off, maxX = W - off, minY = off, maxY = H - off;
+      this.cur.x = clamp(lerp(this.cur.x, this.tgt.x, 0.3), minX, maxX);
+      this.cur.y = clamp(lerp(this.cur.y, this.tgt.y, 0.3), minY, maxY);
+      const x = this.cur.x, y = this.cur.y;
+      const atEdgeX = x === minX || x === maxX, atEdgeY = y === minY || y === maxY;
+      this.lineAlpha.v = lerp(this.lineAlpha.v, atEdgeX ? 0 : 0.16, 0.1);
+      this.lineAlpha.h = lerp(this.lineAlpha.h, atEdgeY ? 0 : 0.16, 0.1);
+      this.plusScale = lerp(this.plusScale, atEdgeX || atEdgeY ? 1.2 : 1, 0.08);
+      this.plusFade = lerp(this.plusFade, atEdgeX || atEdgeY ? 1 : 0, 0.08);
+      if (this.lines.v.length) gsap.set(this.lines.v, { x, autoAlpha: this.lineAlpha.v });
+      if (this.lines.h.length) gsap.set(this.lines.h, { y, autoAlpha: this.lineAlpha.h });
+      if (this.plus.length) gsap.set(this.plus, { x, y, scale: this.plusScale, opacity: 1 - this.plusFade });
+      const gap = rem(2);
+      const place = (els) => {
+        if (!els.length) return;
+        const el = els[0], w = el.offsetWidth, h = el.offsetHeight;
+        const left = x > W / 2 ? x - w - gap : x + gap;
+        const top = y > H / 2 ? y - h - gap : y + gap;
+        gsap.set(els, { x: left, y: top });
+      };
+      place(this.coords); place(this.tip);
+      const sx = $$(this.o.attrX, this.wrapper), sy = $$(this.o.attrY, this.wrapper);
+      sx.forEach((e) => (e.textContent = this.tgt.x.toFixed(0)));
+      sy.forEach((e) => (e.textContent = this.tgt.y.toFixed(0)));
+    }
+    initSelect() {
+      const wrap = this.wrapper; let box = null, down = false, start = null;
+      const accent = cssVar('--mk-accent-rgb', '15, 92, 76');
+      const pos = (e) => { const r = wrap.getBoundingClientRect(); const p = e.touches ? e.touches[0] : e; return { x: p.clientX - r.left, y: p.clientY - r.top }; };
+      const onDown = (e) => {
+        if (prefersReduced() || !finePointer() || e.button !== 0 || e.target.closest('button,a')) return;
+        if (box) box.remove();
+        box = document.createElement('div'); box.className = 'mk-select-box';
+        start = pos(e); box.style.left = start.x + 'px'; box.style.top = start.y + 'px';
+        wrap.prepend(box); down = true;
+      };
+      const onMove = (e) => {
+        if (!down || !box) return;
+        const p = pos(e);
+        if (dist(p.x, p.y, start.x, start.y) <= 2) return;
+        const right = p.x > start.x, below = p.y > start.y;
+        const w = Math.abs(p.x - start.x), h = Math.abs(p.y - start.y);
+        const angle = right ? (below ? '315deg' : '225deg') : (below ? '45deg' : '135deg');
+        Object.assign(box.style, { width: w + 'px', height: h + 'px', left: Math.min(p.x, start.x) + 'px', top: Math.min(p.y, start.y) + 'px', background: `linear-gradient(${angle}, rgba(${accent}, 0.64) 0%, rgba(${accent}, 0) 67%)` });
+        const b = box.getBoundingClientRect();
+        $$(this.o.selectItems, wrap).forEach((it) => {
+          const r = it.getBoundingClientRect();
+          const hit = !(b.right < r.left || b.left > r.right || b.bottom < r.top || b.top > r.bottom);
+          if (hit) { it.classList.add('active'); this.tip.forEach((t) => t.classList.add('hidden')); }
+        });
+      };
+      const onUp = () => { down = false; if (box) { box.remove(); box = null; } };
+      
+      wrap.addEventListener('mousedown', onDown); wrap.addEventListener('touchstart', onDown, { passive: true });
+      wrap.addEventListener('mousemove', onMove); wrap.addEventListener('touchmove', onMove, { passive: true });
+      global.addEventListener('mouseup', onUp); global.addEventListener('blur', onUp); wrap.addEventListener('touchend', onUp);
+      this.selectCleanup=()=>{onUp();wrap.removeEventListener('mousedown',onDown);wrap.removeEventListener('touchstart',onDown);wrap.removeEventListener('mousemove',onMove);wrap.removeEventListener('touchmove',onMove);global.removeEventListener('mouseup',onUp);global.removeEventListener('blur',onUp);wrap.removeEventListener('touchend',onUp)};
+    }
+  }
+  MK.Ruler = Ruler;
+  MK.ruler = { init(opts) { return new Ruler(opts).start(); } };
+
+  /* ------------------------------------------------------------------------
+     5. Text reveals built on SplitText.
+     Observed timings:
+       words:   color keyframes [transparent, accent, final], easeEach
+                power2.in, ease power1.out, duration 1 (fast 0.8),
+                stagger 0.08 (fast 0.03). Words inside .mk-highlight end on
+                the accent instead of the body color.
+       heading: lines masked, words from yPercent 100 / autoAlpha 0 to 0 / 1,
+                duration 0.8, power2.out, stagger 0.02.
+       scrub:   per-word color from muted to ink, stagger 0.03, duration 0.5,
+                scrubbed between "center bottom+=10%" and "center top+=40%".
+     ------------------------------------------------------------------------ */
+  const split = (el, type, extra = {}) => {
+    const ST = global.SplitText;
+    return ST.create ? ST.create(el, { type, ...extra }) : new ST(el, { type, ...extra });
+  };
