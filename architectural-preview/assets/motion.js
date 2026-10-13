@@ -358,3 +358,183 @@
     const ST = global.SplitText;
     return ST.create ? ST.create(el, { type, ...extra }) : new ST(el, { type, ...extra });
   };
+  MK.text = {
+    words(el, { color, fast = false, highlight = '.mk-highlight', accent = cssVar('--mk-accent', '#0f5c4c'), ...vars } = {}) {
+      const s = split(el, 'lines, words');
+      const toColor = color || getComputedStyle(el).color;
+      const from = 'rgba(0,0,0,0)';
+      gsap.set(s.words, { color: from });
+      const tl = gsap.timeline({ paused: true, onComplete: () => s.revert(), ...vars });
+      s.words.forEach((w, i) => {
+        const end = w.closest(highlight) ? accent : toColor;
+        tl.to(w, { keyframes: { color: [from, accent, end], easeEach: 'power2.in', ease: 'power1.out' }, duration: fast ? 0.8 : 1 }, i * (fast ? 0.03 : 0.08));
+      });
+      return tl;
+    },
+    heading(el, { stagger = 0.02, duration = 0.8, ...vars } = {}) {
+      const s = split(el, 'lines, words', { mask: 'lines', linesClass: 'mk-line' });
+      gsap.set(s.words, { yPercent: 100, autoAlpha: 0 });
+      return gsap.to(s.words, { yPercent: 0, autoAlpha: 1, duration, stagger, ease: 'power2.out', paused: true, ...vars });
+    },
+    scrub(el, { from = cssVar('--mk-muted', '#b4b4b0'), to = cssVar('--mk-ink', '#282828'), start = 'center bottom+=10%', end = 'center top+=40%', stagger = 0.03 } = {}) {
+      const s = split(el, 'lines, words');
+      gsap.set(s.words, { color: from });
+      return gsap.to(s.words, { color: to, stagger, duration: 0.5, ease: 'none', scrollTrigger: { trigger: el, start, end, scrub: true } });
+    },
+  };
+
+  /* ------------------------------------------------------------------------
+     6. Declarative reveals.
+     data-reveal="fade-up | fade-down | fade-left | fade-right | fade |
+                  heading | words | image"
+     Observed: fade = opacity 0 + 32px offset -> 1, duration 1, ease power3,
+     clearProps all. image = autoAlpha 0 + scale 1.08 -> 1, duration 1.6,
+     expo.out. Sections (data-reveal-group) play one timeline with children
+     offset 0.05s each, triggered once at "top+=40% bottom".
+     ------------------------------------------------------------------------ */
+  MK.reveal = {
+    tween(el) {
+      const type = el.dataset.reveal || 'fade-up';
+      const delay = parseFloat(el.dataset.revealDelay || 0);
+      if (type === 'heading') return MK.text.heading(el, { delay });
+      if (type === 'words') return MK.text.words(el, { delay, fast: el.hasAttribute('data-fast') });
+      if (type === 'image') { gsap.set(el, { autoAlpha: 0, scale: 1.08 }); return gsap.to(el, { autoAlpha: 1, scale: 1, duration: 1.6, ease: 'expo.out', clearProps: 'all', paused: true, delay }); }
+      const offs = { 'fade-up': { y: 32 }, 'fade-down': { y: -32 }, 'fade-left': { x: 32 }, 'fade-right': { x: -32 }, fade: {} };
+      const from = { opacity: 0, ...(offs[type] || offs['fade-up']) };
+      gsap.set(el, from);
+      const to = { opacity: 1, x: 0, y: 0, duration: 1, ease: 'power3', clearProps: 'all', paused: true, delay };
+      return gsap.to(el, to);
+    },
+    init({ start = 'top+=40% bottom', groupStagger = 0.05 } = {}) {
+      if (!global.SplitText) return;
+      const handled = new Set();
+      $$('[data-reveal-group]').forEach((group) => {
+        const items = $$('[data-reveal]', group); if (!items.length) return;
+        const tl = gsap.timeline({ paused: true });
+        items.forEach((el, i) => { handled.add(el); tl.add(MK.reveal.tween(el).play(), i * groupStagger); });
+        tl.pause(0);
+        ScrollTrigger.create({ trigger: group, start: group.dataset.revealStart || start, once: true, onEnter: () => tl.play() });
+      });
+      $$('[data-reveal]').filter((el) => !handled.has(el)).forEach((el) => {
+        const tw = MK.reveal.tween(el);
+        ScrollTrigger.create({ trigger: el, start: el.dataset.revealStart || start, once: true, onEnter: () => tw.play() });
+      });
+      $$('[data-anim="fade-loop"]').forEach((el) => gsap.to(el, { opacity: 0.15, duration: 0.9, yoyo: true, repeat: -1, ease: 'sine.inOut' }));
+    },
+  };
+
+  /* ------------------------------------------------------------------------
+     7. Sticky scroll sequence.
+     Observed: outer wrapper 700dvh tall, inner "stick" is position: sticky,
+     a scrubbed timeline over the wrapper fades each frame in
+     (autoAlpha 0, y 3rem, scale 1.04 -> 1, 0, 1) then out
+     (-> 0, -3rem, 0.96); a caption card gets .active while its frame is
+     between 0 and 1 progress.
+     ------------------------------------------------------------------------ */
+  MK.sequence = {
+    init(sel = '[data-sequence]') {
+      $$(sel).forEach((wrap) => {
+        const frames = $$('[data-frame]', wrap); if (!frames.length) return;
+        const captions = $$('[data-frame-caption]', wrap);
+        const holdLast = !wrap.hasAttribute('data-sequence-exit-last');
+        wrap.style.setProperty('--mk-frames', frames.length);
+        const y = rem(3);
+        const tl = gsap.timeline({ scrollTrigger: { trigger: wrap, start: 'top top', end: 'bottom bottom', scrub: true } });
+        let active = -1;
+        const setActive = (i) => { if (i === active) return; active = i; frames.forEach((f, k) => f.classList.toggle('active', k === i)); captions.forEach((c) => c.classList.toggle('active', String(i) === c.dataset.frameCaption)); };
+        frames.forEach((f, i) => {
+          const last = i === frames.length - 1;
+          gsap.set(f, { autoAlpha: i === 0 ? 1 : 0 });
+          tl.fromTo(f, { autoAlpha: i === 0 ? 1 : 0, y: i === 0 ? 0 : y, scale: i === 0 ? 1 : 1.04 }, { autoAlpha: 1, y: 0, scale: 1, duration: 1, ease: 'none', onStart: () => setActive(i), onReverseComplete: () => setActive(i - 1) });
+          tl.to({}, { duration: 0.6 });
+          if (!(last && holdLast)) tl.to(f, { autoAlpha: 0, y: -y, scale: 0.96, duration: 1, ease: 'none' });
+        });
+        setActive(0);
+      });
+    },
+  };
+
+  /* ------------------------------------------------------------------------
+     8. Pixel-dissolve button fill.
+     Observed: a .btn-fill-bg layer sized to a 24x6 cell grid (cell =
+     max((w+2)/24, (h+2)/6)), masked by a 20-frame sprite, mask-position
+     tweened 0% -> 100% in 580ms with ease steps(19) while the label color
+     tweens in 150ms. Leaving plays the same dissolve with the bg painted in
+     the resting color (class is-fill-exiting) then clears. Touch pointers
+     are ignored; reduced motion jumps to the end state.
+     ------------------------------------------------------------------------ */
+  function pixelSprite(frames = 20, cols = 24, rows = 6, seed = 7) {
+    let s = seed; const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+    const th = []; for (let r = 0; r < rows; r++) { th[r] = []; for (let c = 0; c < cols; c++) th[r][c] = (c + rnd() * 7) / (cols + 7); }
+    let g = '';
+    for (let f = 0; f < frames; f++) {
+      const p = f / (frames - 1);
+      let full = '', half = '', quarter = '';
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const d = th[r][c] - p;
+        const rect = `M${c + f * cols} ${r}h1v1h-1z`;
+        if (d <= 0) full += rect; else if (d < 0.05) half += rect; else if (d < 0.1) quarter += rect;
+      }
+      g += `<path d="${full}"/><path d="${half}" opacity=".5"/><path d="${quarter}" opacity=".2"/>`;
+    }
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${cols * frames} ${rows}" preserveAspectRatio="none" shape-rendering="crispEdges"><g fill="#fff">${g}</g></svg>`;
+    return 'url("data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg) + '")';
+  }
+  MK.btnFill = {
+    frames: 20,
+    init(sel = '.mk-btn') {
+      const mask = pixelSprite(this.frames);
+      const reduced = prefersReduced();
+      $$(sel).forEach((btn) => {
+        if (btn.__mk) return; btn.__mk = true;
+        let bg = btn.querySelector('.mk-btn-bg');
+        if (!bg) { bg = document.createElement('span'); bg.className = 'mk-btn-bg'; btn.prepend(bg); }
+        bg.style.position = 'absolute'; bg.style.webkitMaskImage = bg.style.maskImage = mask;
+        bg.style.webkitMaskSize = bg.style.maskSize = `${this.frames * 100}% 100%`;
+        const size = () => { const { width: w, height: h } = btn.getBoundingClientRect(); if (!w || !h) return; const cell = Math.max((w + 2) / 24, (h + 2) / 6); bg.style.width = cell * 24 + 'px'; bg.style.height = cell * 6 + 'px'; };
+        size(); if (global.ResizeObserver) new ResizeObserver(size).observe(btn);
+        const resting = getComputedStyle(btn).color;
+        const active = (btn.dataset.fillColor || '').trim() || getComputedStyle(btn).getPropertyValue('--mk-btn-active-color').trim() || '#fff';
+        const run = (color) => gsap.timeline({ paused: true })
+          .to(bg, { webkitMaskPosition: '100% 0', maskPosition: '100% 0', duration: 0.58, ease: `steps(${this.frames - 1})` }, 0)
+          .to(btn, { color, duration: 0.15, ease: 'power1.out' }, 0);
+        const enter = run(active), exit = run(resting);
+        let over = false, entered = false;
+        const reset = () => { enter.pause(0); exit.pause(0); btn.classList.remove('is-fill-entered', 'is-fill-exiting', 'is-fill-active'); gsap.set(bg, { webkitMaskPosition: '0% 0', maskPosition: '0% 0' }); gsap.set(btn, { clearProps: 'color' }); entered = false; };
+        const leave = () => { if (!entered) { btn.classList.remove('is-fill-active'); return reset(); } btn.classList.add('is-fill-exiting'); btn.classList.remove('is-fill-entered'); gsap.set(bg, { webkitMaskPosition: '0% 0', maskPosition: '0% 0' }); exit.eventCallback('onComplete', () => { if (!over) reset(); }); exit.restart(); };
+        btn.addEventListener('pointerenter', (e) => {
+          if (e.pointerType === 'touch') return;
+          over = true; exit.pause(0); btn.classList.remove('is-fill-exiting', 'is-fill-entered'); btn.classList.add('is-fill-active'); entered = false;
+          gsap.set(bg, { webkitMaskPosition: '0% 0', maskPosition: '0% 0' }); gsap.set(btn, { color: resting });
+          if (prefersReduced()) { entered = true; enter.progress(1).pause(); btn.classList.add('is-fill-entered'); return; }
+          enter.eventCallback('onComplete', () => { if (over) { entered = true; btn.classList.add('is-fill-entered'); } });
+          enter.restart();
+        });
+        btn.addEventListener('pointerleave', () => { over = false; if (enter.isActive()) enter.eventCallback('onComplete', () => { entered = true; leave(); }); else leave(); });
+      });
+    },
+  };
+
+  /* ------------------------------------------------------------------------
+     9. Marquee. Observed: items cloned until they cover the viewport, CSS
+     animation with duration = itemWidth / 40 seconds (40px per second).
+     ------------------------------------------------------------------------ */
+  MK.marquee = {
+    init(sel = '[data-marquee]') {
+      $$(sel).forEach((m) => {
+        const track = m.querySelector('.mk-marquee-track') || m.firstElementChild; if (!track) return;
+        const speed = parseFloat(m.dataset.speed || 40);
+        const items = Array.from(track.children);
+        const unit = items.reduce((w, el) => w + el.getBoundingClientRect().width, 0); if (!unit) return;
+        const copies = Math.max(2, Math.ceil((global.innerWidth * 2) / unit));
+        for (let i = 1; i < copies; i++) items.forEach((el) => track.appendChild(el.cloneNode(true)));
+        const half = track.scrollWidth / 2;
+        m.style.setProperty('--mk-marquee-duration', (half / speed).toFixed(2) + 's');
+      });
+    },
+  };
+
+  /* ------------------------------------------------------------------------
+     10. Loader. Observed: progress hairline, live pointer coordinates via
+     the ruler, title words rise, then the top and bottom lines travel to
+     where the header and hero sit and the panel fades (0.4s). Repeat visits
