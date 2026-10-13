@@ -116,3 +116,19 @@ Caleb's four categories: flood zone, waterfront, golf, and rural at 5 acres or m
 **Keyword matching is loose on common words.** `keyword=The Bluffs` returned 2,400, effectively no filter, because it matches on "the". Dropping the article gives `keyword=Bluffs` → 40. Every course keyword shipped on the page was individually checked and returns a sensible count. Test any new keyword against the baseline before adding it; reject anything above about half of it.
 
 **The counts printed next to each link are a snapshot** taken October 13, 2026, labelled as such on the page. The links themselves always open live results. Re-check them when the market moves, or drop the numbers if keeping them current is a nuisance.
+
+## The cursor
+
+Rebuilt from the Heron teardown and now switched on. It was always in the motion kit; it just was not enabled here, which is why it never showed up.
+
+Three layers, matching the reference:
+
+1. **A full-screen canvas trail.** The last 34 positions, position eased 0.18 per frame, stroked at 1.4px. Alpha scales with pointer speed, so the trail only appears when you move fast and fades when you stop.
+2. **A square dot** drawn at the pointer, 9px, only while hovering something clickable or while pressed.
+3. **A crosshair that grows.** Scales from 6/14 to 1 over anything interactive. That growth is the "pop".
+
+**One deviation from Heron, and why.** Heron blends its cursor with `mix-blend-mode: difference`. On this palette that failed: a coral crosshair sat on the coral buttons and disappeared entirely. The crosshair is ink with a thin paper outline, and a `mousemove` listener adds `.on-dark` over coral and ink surfaces to flip it to paper. Verified visible on the coral buttons, the paper links, the course cards and the form inputs.
+
+**Where it steps aside.** The hero carries `data-cursor="hidden"` so its own ruler and coordinate readout own that zone, exactly as Heron does on its hero. The text caret is preserved over inputs and textareas, which Heron does not need because it has no forms.
+
+**It never starts** on touch devices, on coarse pointers, or under `prefers-reduced-motion`. The kit checks `(hover: hover) and (pointer: fine)` before creating anything, so there is no canvas and no listener on a phone. Verified on iPhone 13 and with reduced motion forced.

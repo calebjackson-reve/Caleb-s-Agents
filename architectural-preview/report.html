@@ -109,6 +109,24 @@ footer a{color:var(--ink)}
  .lane-go{border-top:1px solid var(--line);padding:20px}
  .asof{padding:16px 20px}
 }
+/* Canvas cursor, rebuilt from the Heron teardown: an eased trail, a square
+   that grows over anything clickable, and a dot on press. Desktop pointers
+   only; the kit refuses to start on touch or under reduced motion. */
+#mk-cursor-canvas{position:fixed;inset:0;z-index:2147483000;pointer-events:none}
+.mk-cursor-square{position:fixed;top:0;left:0;z-index:2147483001;width:22px;height:22px;
+ border:1px solid transparent;pointer-events:none;opacity:0;will-change:transform,opacity;
+ background:transparent!important;mix-blend-mode:normal!important}
+/* Four ticks make it read as a crosshair rather than a box, matching the rulers. */
+.mk-cursor-square:before,.mk-cursor-square:after{content:'';position:absolute;background:var(--ink);
+ box-shadow:0 0 0 1px var(--paper)}
+.mk-cursor-square:before{left:50%;top:-5px;bottom:-5px;width:1px;margin-left:-.5px}
+.mk-cursor-square:after{top:50%;left:-5px;right:-5px;height:1px;margin-top:-.5px}
+/* The ink crosshair would disappear on the coral and ink surfaces, so invert it there. */
+.mk-cursor-square.on-dark:before,.mk-cursor-square.on-dark:after{background:var(--paper);box-shadow:0 0 0 1px rgba(20,16,14,.35)}
+html.mk-has-cursor,html.mk-has-cursor a,html.mk-has-cursor button,html.mk-has-cursor summary{cursor:none}
+/* Keep the text caret where people type. */
+html.mk-has-cursor input,html.mk-has-cursor textarea,html.mk-has-cursor select{cursor:auto}
+@media(prefers-reduced-motion:reduce){#mk-cursor-canvas,.mk-cursor-square{display:none}}
 @media(prefers-reduced-motion:reduce){.meter i{transition:none}}
 </style></head>
 <body>
@@ -347,6 +365,23 @@ $("flood-form").addEventListener("submit",function(ev){
 Array.prototype.forEach.call(document.querySelectorAll("[data-ex]"),function(b){
  b.addEventListener("click",function(){$("addr").value=b.dataset.ex;$("flood-form").dispatchEvent(new Event("submit",{cancelable:true}))});
 });
+})();
+</script>
+<script src="assets/gsap.min.js"></script><script src="assets/motion.js"></script>
+<script>
+/* Same cursor as the home page. The kit refuses to start on touch or reduced motion. */
+(function(){
+ if(!window.MotionKit) return;
+ var cs=getComputedStyle(document.documentElement);
+ MotionKit.cursor.init({accent:cs.getPropertyValue('--accent').trim()||'#e87757',
+  dark:cs.getPropertyValue('--ink').trim()||'#14100e',
+  interactive:'a,button,summary,input,textarea,select,label,[role=button],.lane-go,.courses-inline a'});
+ var sq=document.querySelector('.mk-cursor-square'); if(!sq) return;
+ var DARK='.zone-badge b.risk,.ask button';
+ document.addEventListener('mousemove',function(e){
+  var t=e.target,dark=!!(t&&t.closest&&t.closest(DARK));
+  if(dark!==sq.classList.contains('on-dark')) sq.classList.toggle('on-dark',dark);
+ },{passive:true});
 })();
 </script>
 </body></html>
