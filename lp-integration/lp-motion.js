@@ -7,10 +7,9 @@
      - fade-up on cards and buttons
      - pixel-dissolve fill on LP buttons
    No smooth scroll, no custom cursor, no loader (not approved).
-   Change KIT_REF to "main" once PR 17 is merged.
    ========================================================================== */
 (function () {
-  var KIT_REF = 'claude/kind-cannon-oxugur';
+  var KIT_REF = 'main';
   var base = 'https://cdn.jsdelivr.net/gh/calebjackson-reve/Caleb-s-Agents@' + KIT_REF + '/motion-kit/';
   var scripts = [
     'https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js',
