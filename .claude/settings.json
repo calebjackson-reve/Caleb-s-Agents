@@ -1,0 +1,21 @@
+{
+  "extraKnownMarketplaces": {
+    "hyperframes": { "source": { "source": "github", "repo": "heygen-com/hyperframes" } },
+    "nateherk": { "source": { "source": "github", "repo": "nateherkai/scroll-craft" } },
+    "humanizer": { "source": { "source": "github", "repo": "blader/humanizer" } },
+    "addy-agent-skills": { "source": { "source": "github", "repo": "addyosmani/agent-skills" } },
+    "expo-plugins": { "source": { "source": "github", "repo": "expo/skills" } },
+    "supabase-agent-skills": { "source": { "source": "github", "repo": "supabase/agent-skills" } },
+    "openseo": { "source": { "source": "github", "repo": "every-app/open-seo" } }
+  },
+  "enabledPlugins": {
+    "hyperframes@hyperframes": true,
+    "nateherk-design@nateherk": true,
+    "humanizer@humanizer": true,
+    "agent-skills@addy-agent-skills": true,
+    "expo@expo-plugins": true,
+    "supabase@supabase-agent-skills": true,
+    "openseo@openseo": true,
+    "claude-security@claude-plugins-official": true
+  }
+}
