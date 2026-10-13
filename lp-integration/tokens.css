@@ -1,0 +1,92 @@
+/* ==========================================================================
+   calebjackson.org on Luxury Presence: brand tokens and template overrides
+   Canonical look (Caleb, Oct 13 2026): paper, ink and coral from the
+   architectural preview, with LP's existing type: Instrument Serif for
+   headings, Nunito for body. Load this AFTER LP's masterpiece stylesheet.
+   Selectors below were read from the live site on Oct 13 2026
+   (lp-btn, lp-h2, lp-h3, navigation__link, site-footer, solid-section).
+   ========================================================================== */
+
+:root {
+  --paper: #fbf8f3;
+  --ink: #14100e;
+  --ink-2: #3a332e;
+  --accent: #e87757;
+  --line: rgba(20, 16, 14, .24);
+  /* LP globals the template already reads */
+  --global-background-color: var(--paper);
+  --global-primary-font-family: 'Instrument Serif', serif;
+  --global-secondary-font-family: Nunito, sans-serif;
+  /* motion kit tokens */
+  --mk-paper: var(--paper);
+  --mk-ink: var(--ink);
+  --mk-ink-3: var(--ink-2);
+  --mk-accent: var(--accent);
+  --mk-accent-rgb: 232, 119, 87;
+  --mk-white: var(--paper);
+  --mk-hair: 1px;
+  --mk-font: Nunito, sans-serif;
+  --mk-mono: Nunito, sans-serif;
+}
+
+html body { background: var(--paper) !important; color: var(--ink); font-family: Nunito, sans-serif !important; }
+
+/* Headings: serif, sentence case, tight */
+html body h1, html body h2, html body h3, html body .lp-h1, html body .lp-h2, html body .lp-h3 {
+  font-family: 'Instrument Serif', serif !important; font-weight: 400 !important;
+  letter-spacing: -.015em; line-height: .98; text-transform: none !important; color: var(--ink);
+}
+/* The site's existing custom block (.cj-experience, late in <body>) forces Arial on headings
+   with !important. Caleb chose Instrument Serif on Oct 13 2026, so out-rank it here. */
+html body .cj-experience h1, html body .cj-experience h2, html body .cj-experience h3,
+html body .cj-capture h1, html body .cj-capture h2, html body .cj-capture h3 {
+  font-family: 'Instrument Serif', serif !important; font-weight: 400 !important; text-transform: none !important;
+}
+.is-font-color-light h1, .is-font-color-light h2, .is-font-color-light h3,
+.is-font-color-light .lp-h2, .is-font-color-light .lp-h3 { color: var(--paper); }
+
+/* Section surfaces: light = paper, dark = ink */
+.solid-section.is-background-color-light, .video-section.is-background-color-light { background-color: var(--paper); }
+.solid-section.is-background-color-dark, .video-section.is-background-color-dark { background-color: var(--ink); }
+
+/* Hairline rules instead of soft shadows */
+.site-footer, .site-footer__logo-bar { border-top: 1px solid var(--line); box-shadow: none; }
+
+/* Navigation */
+.navigation__link { font-family: Nunito, sans-serif; font-size: 13px !important; letter-spacing: .08em; text-transform: uppercase; }
+.navigation__link:after { background: var(--accent) !important; }
+
+/* Buttons: square, hairline, accent on hover (the motion kit adds the pixel fill) */
+html body .lp-btn, html body .btn { border-radius: 0 !important; border: 1px solid var(--ink); background: transparent; color: var(--ink);
+  font-family: Nunito, sans-serif !important; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; padding: 16px 22px; }
+.lp-btn--filled { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.lp-btn--light { border-color: var(--paper); color: var(--paper); }
+.lp-btn:hover, .btn:hover { border-color: var(--accent); }
+
+/* Accent uses */
+a { color: inherit; }
+.text-neutral { color: var(--ink-2); }
+::selection { background: var(--accent); color: var(--paper); }
+
+/* Links in body copy */
+p a { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+
+/* Reduce LP's rounded corners site-wide */
+.gallery-card, .hv-modal, .custom-form__input, input, textarea, select { border-radius: 0 !important; }
+
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+/* --------------------------------------------------------------------------
+   Motion kit pieces this site needs. Copied from motion-kit/motion.css so
+   the full kit stylesheet (which resets the base font size) is NOT loaded.
+   -------------------------------------------------------------------------- */
+.mk-btn { position: relative; overflow: hidden; isolation: isolate; --mk-btn-fill: var(--accent); --mk-btn-active-color: var(--ink); } /* ink on coral, matching the site's existing .custom-form.redesign hover rule */
+html body .mk-btn.is-fill-active { background: var(--mk-btn-fill) !important; border-color: var(--mk-btn-fill) !important; color: var(--mk-btn-active-color) !important; }
+.mk-btn .mk-btn-bg { position: absolute; top: 0; left: 0; z-index: -1; background: var(--mk-btn-fill);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: 0% 0; mask-position: 0% 0; pointer-events: none; }
+.mk-btn.is-fill-exiting .mk-btn-bg { background: var(--paper); }
+.mk-btn.is-fill-entered .mk-btn-bg { opacity: 0; }
+.mk-btn > :not(.mk-btn-bg) { position: relative; z-index: 1; }
+.lp-btn--filled.mk-btn.is-fill-exiting .mk-btn-bg { background: var(--ink); }
+[data-reveal="heading"] .mk-line { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .mk-btn .mk-btn-bg { display: none; } }
