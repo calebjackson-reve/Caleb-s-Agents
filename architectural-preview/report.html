@@ -81,6 +81,34 @@ footer a{color:var(--ink)}
  .nav a{padding:16px 14px;font-size:11px}
  .brand{font-size:15px!important}
 }
+
+.lanes{border-bottom:1px solid var(--line)}
+.lanes-head{padding:52px 28px 26px;border-bottom:1px solid var(--line)}
+.lanes-head h2{font-size:clamp(30px,4vw,58px);margin-bottom:14px}
+.lanes-head p{margin:0;max-width:580px;color:var(--ink-2)}
+.lane{display:grid;grid-template-columns:260px 1fr 190px;border-bottom:1px solid var(--line);align-items:stretch}
+.lane:last-child{border-bottom:0}
+.lane-id{padding:30px 28px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:6px;justify-content:center}
+.lane-id b{font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;line-height:1}
+.lane-id span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.lane-body{padding:30px 28px;border-right:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:12px}
+.lane-body p{margin:0;color:var(--ink-2);max-width:620px}
+.lane-go{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:30px 24px;text-transform:uppercase;font-size:11px;letter-spacing:.08em;transition:background .25s}
+.lane-go:hover{background:rgba(232,119,87,.08)}
+.lane-go span{color:var(--accent);font-size:15px}
+.courses-inline{display:flex;flex-wrap:wrap;gap:0;border-top:1px solid var(--line);margin-top:4px}
+.courses-inline a{padding:11px 16px;border:1px solid var(--line);margin:-1px 0 0 -1px;font-size:12px;display:flex;gap:10px;align-items:baseline;transition:background .25s}
+.courses-inline a:hover{background:rgba(232,119,87,.08)}
+.courses-inline a i{font-style:normal;color:var(--muted);font-size:10px;letter-spacing:.06em}
+.asof{font-size:11px;color:var(--muted);padding:18px 28px;border-bottom:1px solid var(--line)}
+@media(max-width:820px){
+ .lanes-head{padding:34px 20px 20px}
+ .lane{grid-template-columns:1fr}
+ .lane-id{border-right:0;border-bottom:1px solid var(--line);padding:22px 20px}
+ .lane-body{border-right:0;padding:22px 20px}
+ .lane-go{border-top:1px solid var(--line);padding:20px}
+ .asof{padding:16px 20px}
+}
 @media(prefers-reduced-motion:reduce){.meter i{transition:none}}
 </style></head>
 <body>
@@ -138,6 +166,41 @@ footer a{color:var(--ink)}
   </div>
 </section>
 
+<section class="lanes" id="lanes">
+<div class="lanes-head">
+<p class="eyebrow">Four ways in</p>
+<h2>The searches a portal<br>makes hard.</h2>
+<p>A national site is built to show you every house. These four are built to show you the ones that match how people around here actually buy. Each opens my live search with the filter already set.</p>
+</div>
+
+<div class="lane">
+<div class="lane-id"><span>01</span><b>Flood zone</b></div>
+<div class="lane-body"><p>Start with the address box above. It reads FEMA's layer at that exact point and tells you what the zone means before you fall for the view. No portal does this on the listing page, and in Louisiana it is the first question.</p></div>
+<a class="lane-go" href="#ask">Read an address <span>&#8599;</span></a>
+</div>
+
+<div class="lane">
+<div class="lane-id"><span>02</span><b>Waterfront</b></div>
+<div class="lane-body"><p>False River camps and full-time homes, Thompson Creek below the Bluffs, and everything the Comite touches. Check the flood zone on anything here before you get attached, because water-adjacent is exactly where that answer changes the deal.</p>
+<div class="courses-inline"><a href="https://calebjackson.org/home-search/listings?waterfront=true&keyword=False%20River">False River<i>114</i></a><a href="https://calebjackson.org/home-search/listings?waterfront=true&keyword=Thompson%20Creek">Thompson Creek<i>36</i></a><a href="https://calebjackson.org/home-search/listings?waterfront=true&min_lot_size=217800">Waterfront on acreage<i>49</i></a></div></div>
+<a class="lane-go" href="https://calebjackson.org/home-search/listings?waterfront=true">All waterfront <span>&#8599;</span></a>
+</div>
+
+<div class="lane">
+<div class="lane-id"><span>03</span><b>Golf</b></div>
+<div class="lane-body"><p>Six courses within an easy drive of Zachary. The neighborhoods around each one trade differently: Copper Mill is golf-cart streets and an HOA, Beaver Creek is acreage with mostly no HOA. Pick a course and see what is on the market around it.</p>
+<div class="courses-inline"><a href="https://calebjackson.org/home-search/listings?keyword=Copper%20Mill">Copper Mill<i>67</i></a><a href="https://calebjackson.org/home-search/listings?keyword=Beaver%20Creek">Beaver Creek<i>38</i></a><a href="https://calebjackson.org/home-search/listings?keyword=Bluffs">The Bluffs<i>40</i></a><a href="https://calebjackson.org/home-search/listings?keyword=Santa%20Maria">Santa Maria<i>10</i></a><a href="https://calebjackson.org/home-search/listings?keyword=University%20Club">University Club<i>125</i></a><a href="https://calebjackson.org/home-search/listings?keyword=Carter%20Plantation">Carter Plantation<i>42</i></a></div></div>
+<a class="lane-go" href="https://calebjackson.org/home-search/listings?keyword=golf">Anything on a course <span>&#8599;</span></a>
+</div>
+
+<div class="lane">
+<div class="lane-id"><span>04</span><b>Rural</b></div>
+<div class="lane-body"><p>Five acres or more. Room for the shop, the horses, or just distance from the nearest neighbor. This is most of what people move to the Felicianas for, and it is the search a national portal buries three menus deep.</p>
+<div class="courses-inline"><a href="https://calebjackson.org/home-search/listings?min_lot_size=217800">5+ acres<i>161</i></a><a href="https://calebjackson.org/home-search/listings?min_lot_size=435600">10+ acres<i>94</i></a><a href="https://calebjackson.org/home-search/listings?min_lot_size=217800&keyword=Zachary">5+ acres near Zachary<i>41</i></a></div></div>
+<a class="lane-go" href="https://calebjackson.org/home-search/listings?min_lot_size=217800">All 5+ acres <span>&#8599;</span></a>
+</div>
+</section>
+<p class="asof">Counts next to each link were taken on October 13, 2026 and will drift. The links always open live results on my own search, which is also where you can save one and get told when something new matches.</p>
 <p class="note">This is screening, not a flood determination. FEMA's maps are the source and they are redrawn; a surveyor's elevation certificate is what a lender and an insurer actually price from. Zone at a point can differ from the zone across a parcel.</p>
 
 <section class="panel">
@@ -202,7 +265,7 @@ function explain(z){
  if(zone==="X"&&/0\.2|SHADED|LEVEE/.test(sub))return{level:.34,risk:false,zone:"X (shaded)",plain:"Shaded Zone X is the moderate band outside the high-risk area. Lenders do not require flood insurance here, but in 2016 about half the East Baton Rouge homes that flooded were outside the high-risk zone. A policy here is usually inexpensive. Get the quote."};
  if(zone==="X"||zone==="C"||zone==="B")return{level:.2,risk:false,zone:"X",plain:"Zone X is outside the high-risk area. No lender will require flood insurance. Many Louisiana owners carry it anyway because the maps are old and the 2016 water did not read them. Ask what a policy costs; it is often a few hundred dollars a year."};
  if(zone==="D")return{level:.4,risk:false,zone:"D",plain:"Zone D means the flood risk has not been studied here. That is a reason to ask more questions, not fewer."};
- return{level:.3,risk:false,zone:zone||"unmapped",plain:"FEMA has no mapped zone at this point, which usually means the area has not been studied. Ask the parish and ask the neighbours."};
+ return{level:.3,risk:false,zone:zone||"unmapped",plain:"FEMA has no mapped zone at this point, which usually means the area has not been studied. Ask the parish and ask the neighbors."};
 }
 function cityFor(matched){
  var parts=String(matched).split(",");

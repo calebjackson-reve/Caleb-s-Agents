@@ -94,3 +94,25 @@ A second page, and the first tool here that no listing portal offers. Type any L
 **To refresh the closing figures,** re-run the city aggregation over a newer ROAM export and replace the `CITY` object in the page script. The `as of` date in the note under the figures must be changed in the same edit.
 
 **Not wired up.** Per-course flood zones are not pre-baked. That needs verified street addresses or coordinates for each course; guessing them would put wrong flood zones on a Louisiana real estate site, which is worse than omitting them.
+
+## The four lanes (report.html)
+
+Caleb's four categories: flood zone, waterfront, golf, and rural at 5 acres or more. Each lane opens his own Luxury Presence Home Search with the filter already applied, so no listing data is republished here and the live results, saved searches and leads all stay in his system.
+
+**The IDX parameters were found by probing the live search**, not guessed. Each was verified by comparing the result count against the unfiltered baseline of 2,743 on October 13, 2026:
+
+| Parameter | Effect | Verified |
+| --- | --- | --- |
+| `waterfront=true` | 402 results | yes |
+| `min_lot_size=<sq ft>` | 43,560 → 504, 217,800 → 161, 435,600 → 94 | yes |
+| `keyword=<text>` | golf → 71, Copper Mill → 67 | yes |
+| `min_price=<n>` | 400000 → 632 | yes |
+| Filters combine | waterfront + 5 acres → 49 | yes |
+
+`lotSizeMin` is an accepted alias for `min_lot_size`. **Lot size is in square feet, not acres**, so 5 acres is 217,800. Passing `5` silently returns almost everything.
+
+**Parameters that are ignored** and must not be used: `city`, `cities`, `location`, `q`, `search`, `zip`, `zip_code`, `postal_code`, `subdivision`, `keywords` (plural), `minLotSize` (camelCase), `minAcres`, `acreage`, `propertyType`. Each returned the full 2,743 baseline.
+
+**Keyword matching is loose on common words.** `keyword=The Bluffs` returned 2,400, effectively no filter, because it matches on "the". Dropping the article gives `keyword=Bluffs` → 40. Every course keyword shipped on the page was individually checked and returns a sensible count. Test any new keyword against the baseline before adding it; reject anything above about half of it.
+
+**The counts printed next to each link are a snapshot** taken October 13, 2026, labelled as such on the page. The links themselves always open live results. Re-check them when the market moves, or drop the numbers if keeping them current is a nuisance.
