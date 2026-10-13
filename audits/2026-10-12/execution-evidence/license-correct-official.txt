@@ -1,0 +1,49 @@
+- banner:
+  - link "Skip to main content":
+    - /url: "#main-content"
+  - link "Louisiana Real Estate Commission Image":
+    - /url: https://www.lrec.gov
+    - img "Louisiana Real Estate Commission Image"
+  - link "Louisiana Real Estate Commission":
+    - /url: https://www.lrec.gov
+  - list
+  - list:
+    - link "Log in":
+      - /url: /Home/Login
+- heading "Verify License Search" [level=2]
+- generic "Account Details":
+  - group "Contact":
+    - generic: Contact
+    - generic: Name
+    - generic: Caleb J. Jackson
+  - group "License":
+    - generic: License
+    - generic: Account Type
+    - generic: Salesperson
+    - generic: Status
+    - generic: Active
+    - generic: "License #"
+    - generic: SALE.995709547-ACT
+    - generic: First Issued Date
+    - generic: 01/12/2022
+    - generic: Expiration Date
+    - generic: 12/31/2027
+    - generic: Education
+    - link "View Education History":
+      - /url: /Public/LRECEducationListing/?key='LGaMSRx0aXB%2bVaQ4uDhLDA%3d%3d'
+  - group "Current Supervisor":
+    - generic: Current Supervisor
+    - link "Louisiana First Choice Realty, LLC":
+      - /url: "#void"
+    - link "View Prior Supervisor History":
+      - /url: /Public/LRECBrokerageHistory/?key='LGaMSRx0aXB%2bVaQ4uDhLDA%3d%3d'
+  - button "Close Details" [active]
+- contentinfo:
+  - heading "Louisiana Real Estate Commission" [level=3]
+  - text: 9071 Interline Avenue
+  - text: Baton Rouge, LA 70809
+  - paragraph:
+    - text: "Phone: (225) 925-1923"
+    - text: "Toll Free: (In Louisiana Only) 1-800-821-4529"
+    - text: "Fax: 225-925-4501"
+  - paragraph: © 2026 - ARL Systems, LLC.

@@ -1,0 +1,99 @@
+Browser tab: 1142917651, Title: "Google Gemini", URL: "https://gemini.google.com/app".
+0 AXWebArea Google Gemini, URL: gemini.google.com/app
+	1 container
+		3 container
+			4 button Main menu
+			5 button Open mode picker, currently 3.6 Flash
+				6 text Gemini
+				7 text 3.6 Flash
+			50 button New Chat
+			9 container xap-skip-link-target
+				10 container
+					11 heading Conversation with Gemini, Value: 1
+						12 text Conversation with Gemini
+					37 container
+						38 text Temporary Chat
+						51 container 72761bf14d010320
+							52 container
+								53 heading Value: 5, You said Search the public web. I need a real estate agent to help me sell a home in St. Francisville, Louisi…
+									54 text You said  Search the public web. I need a real estate agent to help me sell a home in St. Francisville, Louisi…
+								55 text Search the public web. I need a real estate agent to help me sell a home in St. Francisville, Louisiana. Which three agents or teams should I consider and why? Cite your sources.
+							56 button Copy prompt
+							57 button Edit
+							58 container
+								59 container
+									60 heading Gemini said, Value: 6
+										61 text Gemini said
+									62 container model-response-message-contentr_72761bf14d010320
+										63 container
+											64 text Here are three top real estate teams and agents serving  St. Francisville, Louisiana , that stand out for their track record, local market knowledge, and client reviews:
+										65 heading 1. Landry Team Real Estate (Landry Team Real Estate, LLC), Value: 3
+											66 text 1. Landry Team Real Estate (Landry Team Real Estate, LLC)
+										67 content list
+											68 container
+												69 text Why Consider Them:  High-Volume Market Dominance
+											70 container p-rc_6cb88884ae575380-23
+												71 text Track Record: Over 420 home sales recorded in Saint Francisville, with active transaction volume ranging up to $2M.
+												72 pop up button (collapsed) Description: View source details for citation from Zillow. Press Enter to open sources dialog., Secondary Actions: Expand
+											73 container
+												74 text Key Strength:  As an established local boutique firm, the Landry Team brings deep market penetration and extensive buyer/seller network reach specific to West Feliciana Parish. Their sheer volume in the area makes them an ideal candidate if you want an agency with deep exposure to active local buyers.
+										75 heading 2. Lori McCallum (McCallum & Company Real Estate), Value: 3
+											76 text 2. Lori McCallum (McCallum & Company Real Estate)
+										77 content list
+											78 container
+												79 text Why Consider Them:  Specialized Local Expertise & High Transaction Volume
+											80 container p-rc_6cb88884ae575380-24
+												81 text Track Record: Over 340+ completed sales in Saint Francisville, with recent team price ranges extending from modest single-family homes to over $1.2M.
+												82 pop up button (collapsed) Description: View source details for citation from Zillow. Press Enter to open sources dialog., Secondary Actions: Expand
+											83 container p-rc_6cb88884ae575380-25
+												84 text Key Strength:  Lori McCallum and her company specialize in the St.  Francisville market, offering hands-on expertise in regional property dynamics, land listings, and residential developments.
+												85 text  If your property requires tailored valuation and hyper-local pricing strategies, McCallum & Company is one of the premier independent brokerages in the area.
+												86 pop up button (collapsed) Description: View source details for citation from Zillow. Press Enter to open sources dialog., Secondary Actions: Expand
+										87 heading 3. Kelly O'Brien (RE/MAX Select / RE/MAX Partners), Value: 3
+											88 text 3. Kelly O'Brien (RE/MAX Select / RE/MAX Partners)
+										89 content list
+											90 container
+												91 text Why Consider Them:  Strong Single-Agent Performance & National Network
+											92 container p-rc_6cb88884ae575380-26
+												93 text Track Record:  5.0 out of 5.0 stars with dedicated sales experience in the St.  Francisville and Greater Baton Rouge markets.
+												94 pop up button (collapsed) Description: View source details for citation from REMAX. Press Enter to open sources dialog., Secondary Actions: Expand
+											95 container
+												96 text Key Strength:  For sellers who prefer direct, individual attention from a lead agent rather than a large team, Kelly O'Brien provides individual focus combined with the marketing reach and syndication tools of the RE/MAX network.
+										97 heading Key Questions to Ask When Interviewing Sellers' Agents:, Value: 3
+											98 text Key Questions to Ask When Interviewing Sellers' Agents:
+										99 content list
+											100 container
+												101 text 1 . Local Pricing Strategy:  What recent comparable sales in St. Francisville/West Feliciana Parish justify your recommended listing price?
+											102 container
+												103 text 2 . Marketing Plan:  Beyond the local MLS, how do you plan to market my home (e.g., targeted social ads, professional photography/drone footage, regional syndication)?
+											104 container
+												105 text 3 . Commission & Contract Terms:  What is your full listing fee, and what length of representation agreement do you require?
+										106 text Sources:
+										107 content list
+											108 container
+												109 text Data on sales volume, reviews, and market coverage sourced from verified directory listings on 
+												110 link Description: Zillow, Value: zillow.com/professionals/real-estate-agent-reviews/saint-francisville-la/
+												111 text , 
+												112 link Description: Realtor.com, Value: realtor.com/realestateagents/St-Francisville_LA/intent-buy/sort-ratings
+												113 text , and 
+												114 link Description: RE/MAX, Value: remax.com/usa/en/real-estate-agents/kelly-obrien-saint-francisville-la/100019932
+												115 text .
+								116 button Redo
+								117 button Share & export
+								118 button Copy
+								119 button Show more options
+					16 container
+						17 container
+							35 container
+								36 text entry area (settable) Description: Enter a prompt for Gemini, Value: 
+
+									120 text Ask Gemini
+									121 text encrypted
+							22 pop up button (collapsed) Description: Upload & tools, Secondary Actions: Expand
+							122 container
+								123 button Dictate (⌘⇧D)
+						48 text Your A I R E chats aren’t used to improve our models. Gemini is AI and can make mistakes. 
+						49 link Description: Your privacy & Gemini Opens in a new window, Value: support.google.com/gemini/answer/14620100
+		124 text Searching the web
+
+The focused UI element is 36 text entry area (settable) Description: Enter a prompt for Gemini, Value: 
