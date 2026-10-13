@@ -132,3 +132,17 @@ Three layers, matching the reference:
 **Where it steps aside.** The hero carries `data-cursor="hidden"` so its own ruler and coordinate readout own that zone, exactly as Heron does on its hero. The text caret is preserved over inputs and textareas, which Heron does not need because it has no forms.
 
 **It never starts** on touch devices, on coarse pointers, or under `prefers-reduced-motion`. The kit checks `(hover: hover) and (pointer: fine)` before creating anything, so there is no canvas and no listener on a phone. Verified on iPhone 13 and with reduced motion forced.
+
+## The fling on the golf section
+
+The second Heron pointer mechanic, decoded from the `Ex` class in its bundle and documented in `motion-kit/TEARDOWN.md`. Move the pointer across the Living section and course cards are thrown out behind you.
+
+**Why it is not a follower.** A card only spawns once the pointer has travelled 50px since the last one, so it reads as throwing things out, not trailing. Throw distance comes from pointer speed, `40 * (speed - 50) * 1.1`, capped at 330px. Travel is 0.5s `expo.out` from scale 0.8 to 1, then a 0.5s fade starting at 0.7s while the card sinks toward the bottom of the section. Twelve live at once; the oldest fades in 0.2s when a thirteenth arrives. Stand still inside the section and one drops every 650ms so it never goes dead.
+
+**The scroll part.** Heron adds Lenis's scroll velocity into the vertical component of the throw, so scrolling through the band slings the cards harder downward. This page has no smooth scroller, so the kit falls back to the native scroll delta per frame and keeps the same behaviour. Measured: nine of nine throws during a scroll-and-move carried a non-zero scroll term, peaking at the full wheel step.
+
+**What gets thrown.** Six drawn cards, one per course, each with the course number, parish and name. They are drawn, not photographed, because there is no licensed photography of these courses here and nothing on this site is invented. Swap `.fling-tile.mk-fling-src` for real images when the photography exists and the mechanic is unchanged.
+
+**Where it is bounded.** The Living section clips its own clones, so nothing spills into the sections above or below. Clones are `pointer-events: none`, so the course cards stay clickable. Verified.
+
+**It never starts** on touch, on coarse pointers, or under `prefers-reduced-motion`. In those cases zero instances are created, the six sources stay `display: none`, and the "move across the courses" hint is hidden so nothing promises an effect that will not run.
