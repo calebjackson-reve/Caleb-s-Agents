@@ -10,7 +10,7 @@ Prepared October 13, 2026 for calebjackson.org. Caleb chose: the architectural p
 | `lp-motion.js` | Loads GSAP, ScrollTrigger, SplitText and the motion kit from jsDelivr and applies heading rise, word sweep, fade-ups and the pixel button fill to LP's sections and buttons. No smooth scroll, cursor or loader. | Linked before `</body>` |
 | `snippets.html` | The exact head and footer tags to paste or send. | Site Editor custom code, or an LP support case |
 
-Both files are served from this repository through jsDelivr, so there is nothing to host. After PR 17 and PR 18 merge, change the `@branch` parts of the URLs in `snippets.html` to `@main`.
+Both files are served from this repository's main branch through jsDelivr, so there is nothing to host.
 
 ## Step 1: global brand settings (Site Editor, no code)
 
