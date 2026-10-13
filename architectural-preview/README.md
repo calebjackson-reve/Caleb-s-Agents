@@ -64,3 +64,33 @@ The 32-unit St. Francisville sale shown elsewhere on the page is a separate, Cal
 The two calculators are self-contained and run in the browser. Nothing is sent anywhere and no field asks for contact details. The math is reused verbatim from the verified `homebrief-next/js/calc-core.js`: the same `roundMoney`, the same `log1p`/`expm1` amortization, and the same rounded line-item totals. Both open with a worked example and label their output as the user's own assumptions, not a quote or an offer.
 
 Golf course descriptions come from `homebrief-next/golf.html`. Membership and HOA details change; the page says so in print.
+
+## The water and course report (report.html)
+
+A second page, and the first tool here that no listing portal offers. Type any Louisiana address and it reads FEMA's National Flood Hazard Layer at that exact point, explains the zone in plain words, and shows what Caleb has actually closed in that city alongside the golf and water near it.
+
+**Why it is built this way.** It never republishes IDX listing records. Live listings stay on the Luxury Presence Home Search, which is where saved searches and leads belong; this page links out to it. Everything shown here is either public FEMA data, Caleb's own closed sales, or his own curated local knowledge. That keeps it clear of IDX display rules while still answering the question a portal cannot.
+
+**Data sources.**
+
+| Shown | Source | Live? |
+| --- | --- | --- |
+| Flood zone and subtype | FEMA NFHL layer 28, queried at the geocoded point | yes, per lookup |
+| Address match | US Census geocoder, via JSONP because it sends no CORS header | yes, per lookup |
+| Closings, median, range | Caleb's ROAM MLS export, as of 2026-10-07, cities with 3+ closings only | baked in, re-export to refresh |
+| Golf and water nearby | Caleb's curated list from the golf page | baked in |
+
+**Zone wording is reused verbatim** from the verified `homebrief-next/js/flood.js`, including the 2016 East Baton Rouge point that about half the homes that flooded sat outside the high-risk zone. Nothing was reworded.
+
+**Known limits, all stated on the page.**
+
+- It is screening, never a flood determination. A surveyor's elevation certificate is what a lender and insurer price from.
+- A point lookup can differ from the zone across a whole parcel. When the point returns more than one zone the page says the parcel may straddle a boundary.
+- The Census geocoder misses some rural addresses. The page says to add city and ZIP and try again.
+- FEMA's endpoint drops connections intermittently, so each lookup retries once before reporting failure.
+- Only 9 cities have 3 or more closings. Any other address shows no figures rather than a thin median. Neighborhood level is too thin everywhere and is deliberately not offered.
+- St Francisville's range is skewed by a single $3,000,000 closing.
+
+**To refresh the closing figures,** re-run the city aggregation over a newer ROAM export and replace the `CITY` object in the page script. The `as of` date in the note under the figures must be changed in the same edit.
+
+**Not wired up.** Per-course flood zones are not pre-baked. That needs verified street addresses or coordinates for each course; guessing them would put wrong flood zones on a Louisiana real estate site, which is worse than omitting them.

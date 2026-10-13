@@ -44,6 +44,7 @@ html{scroll-behavior:smooth;scroll-padding-top:110px}.chapter-rail{position:fixe
 .tool-sub{font-size:12px;color:#72726f;margin:0;line-height:1.5}
 .tool-err{color:var(--accent);font-size:12px;margin:0;min-height:1.2em}
 .tool-links{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+.tool-links-3{grid-template-columns:repeat(3,1fr)}
 .tool-links a{padding:22px 28px;border-right:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:16px;text-transform:uppercase;font-size:12px;letter-spacing:.04em}
 .tool-links a:last-child{border-right:0}
 .tool-links a span{color:var(--accent)}
@@ -78,7 +79,7 @@ html{scroll-behavior:smooth;scroll-padding-top:110px}.chapter-rail{position:fixe
 .tools-head{grid-template-columns:1fr;padding:40px 20px 26px}
 .tool-grid{grid-template-columns:1fr}
 .tool{border-right:0;border-bottom:1px solid var(--line);padding:28px 20px}
-.tool-links{grid-template-columns:1fr}
+.tool-links,.tool-links-3{grid-template-columns:1fr}
 .tool-links a{border-right:0;border-bottom:1px solid var(--line);padding:20px}
 .course-list{grid-template-columns:1fr}
 .course{border-right:0}
@@ -161,7 +162,8 @@ html{scroll-behavior:smooth;scroll-padding-top:110px}.chapter-rail{position:fixe
 <p class="tool-sub" data-sub></p>
 </form>
 </div>
-<div class="tool-links">
+<div class="tool-links tool-links-3">
+<a class="textlink-plain" href="report.html"><span class="go-label">Where does the water go?<em> &nbsp;FEMA's flood layer, read at your address</em></span><span>&#8599;</span></a>
 <a class="textlink-plain" href="https://calebjackson.org/home-valuation"><span class="go-label">What is my home worth?<em> &nbsp;A real valuation, not an algorithm</em></span><span>&#8599;</span></a>
 <a class="textlink-plain" href="sms:+12257470303"><span class="go-label">Send me your numbers<em> &nbsp;I will tell you what I would do</em></span><span>&#8599;</span></a>
 </div>
@@ -183,7 +185,7 @@ html{scroll-behavior:smooth;scroll-padding-top:110px}.chapter-rail{position:fixe
 <h3>False River, Thompson Creek,<br>the Comite.</h3>
 <p>False River in New Roads is a ten-mile oxbow lake with camps and full-time homes on both sides, forty minutes from Zachary across the Audubon Bridge. Thompson Creek runs the Feliciana line below the Bluffs.</p>
 <p>The Comite is the river Zachary drains to, and the diversion canal finishing in 2028 is the biggest change to north Baton Rouge flooding in a generation.</p>
-<a class="textlink" href="sms:+12257470303">Ask about a waterfront address <span class="accent">&#8599;</span></a>
+<a class="textlink" href="report.html">Check a waterfront address <span class="accent">&#8599;</span></a>
 </div>
 <div class="water-art" aria-hidden="true">
 <svg viewBox="0 0 460 300" fill="none">
