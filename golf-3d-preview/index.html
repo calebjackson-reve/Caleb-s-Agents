@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copper Mill in 3D</title>
+<meta name="description" content="Prototype: fly Copper Mill Golf Club in photoreal 3D, click a hole, see which homes sit on it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{
+    --paper:#fbf8f3; --ink:#14100e; --ink-2:#3a332e; --accent:#e87757;
+    --line:rgba(20,16,14,.18); --panel:rgba(251,248,243,.94);
+    --fairway:#7fd27a; --water:#5aa9e6; --interior:#e8b857;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --paper:#15120f; --ink:#f3ede4; --ink-2:#cfc6b8; --line:rgba(243,237,228,.18); --panel:rgba(21,18,15,.92);
+  }}
+  :root[data-theme="dark"]{ --paper:#15120f; --ink:#f3ede4; --ink-2:#cfc6b8; --line:rgba(243,237,228,.18); --panel:rgba(21,18,15,.92); }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{background:var(--paper);color:var(--ink);font-family:Nunito,sans-serif;display:grid;grid-template-rows:auto 1fr;}
+  header{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:baseline;flex-wrap:wrap}
+  h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:28px;margin:0;line-height:1}
+  header p{margin:0;color:var(--ink-2);font-size:14px}
+  .stage{position:relative;min-height:0}
+  #map,gmp-map-3d{position:absolute;inset:0;width:100%;height:100%;background:#1b2a1e}
+  .panel{position:absolute;left:16px;top:16px;bottom:16px;width:min(340px,calc(100% - 32px));background:var(--panel);
+    backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;z-index:1000;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+  .panel h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:22px;margin:0 0 6px}
+  .panel h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:18px 0 8px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px}
+  button{font:inherit;font-weight:600;border:1px solid var(--ink);background:transparent;color:var(--ink);border-radius:999px;padding:8px 14px;cursor:pointer}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button:hover{opacity:.85}
+  .holes{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px}
+  .holes button{padding:8px 0;border-radius:8px;font-size:14px}
+  .holes button.active{background:var(--ink);color:var(--paper)}
+  .list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+  .list li{border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer}
+  .list li:hover,.list li.active{border-color:var(--accent)}
+  .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;color:#14100e}
+  .tag.Fairway{background:var(--fairway)} .tag.Water{background:var(--water)} .tag.Interior{background:var(--interior)}
+  #detail{border-top:1px solid var(--line);margin-top:14px;padding-top:12px;font-size:14px;min-height:40px;color:var(--ink-2)}
+  #detail strong{color:var(--ink)}
+  .mode{position:absolute;right:16px;top:16px;z-index:1000;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--ink-2)}
+  .keyform{margin-top:8px;display:flex;gap:6px}
+  .keyform input{flex:1;font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);min-width:0}
+  .note{font-size:12px;color:var(--ink-2);margin:8px 0 0}
+  @media (max-width:640px){
+    .panel{left:8px;right:8px;top:auto;bottom:8px;width:auto;max-height:46%}
+    .mode{top:8px;right:8px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Copper Mill in 3D</h1>
+  <p>Fly the course, pick a hole, see which homes sit on it. Prototype, Oct 2026.</p>
+</header>
+<div class="stage">
+  <div id="map"></div>
+  <div class="mode" id="modeBadge">loading</div>
+  <aside class="panel">
+    <h2 id="courseName"></h2>
+    <div id="courseAddr" style="font-size:14px;color:var(--ink-2)"></div>
+    <div class="btns" style="margin-top:12px">
+      <button class="primary" id="flyAround">Fly the course</button>
+      <button id="overview">Overview</button>
+      <button id="stop">Stop</button>
+    </div>
+    <h3>Holes <span style="font-weight:400;text-transform:none;letter-spacing:0">(approximate placement)</span></h3>
+    <div class="holes" id="holes"></div>
+    <h3>Homes on the course</h3>
+    <ul class="list" id="listings"></ul>
+    <div id="detail">Click a hole, a home, or the course outline.</div>
+    <div id="keybox"></div>
+  </aside>
+</div>
+
+<script src="course-data.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+  const D = window.COURSE_DATA;
+  const $ = s => document.querySelector(s);
+  const detail = $('#detail');
+  const badge = $('#modeBadge');
+
+  // ---- API key: ?key=... in the URL, or saved once in this browser ----
+  const params = new URLSearchParams(location.search);
+  let KEY = params.get('key') || '';
+  try { if (!KEY) KEY = localStorage.getItem('gmaps_key') || ''; if (params.get('key')) localStorage.setItem('gmaps_key', KEY); } catch(e){}
+  const force2d = params.get('mode') === '2d';
+
+  // ---- shared UI ----
+  $('#courseName').textContent = D.course.name;
+  $('#courseAddr').textContent = D.course.address;
+  const holesEl = $('#holes'), listEl = $('#listings');
+  D.holes.forEach(h => {
+    const b = document.createElement('button'); b.textContent = h.number; b.dataset.hole = h.number;
+    b.onclick = () => selectHole(h.number); holesEl.appendChild(b);
+  });
+  D.listings.forEach(l => {
+    const li = document.createElement('li'); li.dataset.id = l.id;
+    li.innerHTML = `<span class="tag ${l.lot}">${l.lot}</span><div style="margin-top:6px;font-weight:600">${l.address}</div>
+      <div style="font-size:13px;color:var(--ink-2)">${l.hole ? 'Hole ' + l.hole + ', ' + l.side : l.side}</div>`;
+    li.onclick = () => selectListing(l.id); listEl.appendChild(li);
+  });
+  function setActive(sel, key, val){ document.querySelectorAll(sel).forEach(n => n.classList.toggle('active', n.dataset[key] == val)); }
+
+  let engine = null; // {flyTo(pos,range,tilt,heading), flyAround(), stop(), overview()}
+  function selectHole(n){
+    const h = D.holes.find(x => x.number === n);
+    setActive('.holes button','hole',n); setActive('.list li','id',null);
+    const homes = D.listings.filter(l => l.hole === n);
+    detail.innerHTML = `<strong>Hole ${h.number}</strong>, ${h.par}. ${homes.length ? homes.length + ' sample home' + (homes.length>1?'s':'') + ' on this hole: ' + homes.map(x => x.address + ' (' + x.side + ')').join('; ') : 'No sample homes pinned here yet.'}<br><em>Hole position is approximate, verify with the club.</em>`;
+    engine && engine.flyTo(h.position, 420, 62, 20);
+  }
+  function selectListing(id){
+    const l = D.listings.find(x => x.id === id);
+    setActive('.list li','id',id); setActive('.holes button','hole',l.hole);
+    detail.innerHTML = `<strong>${l.address}</strong><br>${l.lot} lot. ${l.hole ? 'Sits on hole ' + l.hole + ', ' + l.side.toLowerCase() + '.' : l.side + '.'}<br>${l.note}`;
+    engine && engine.flyTo(l.position, 220, 65, -30);
+  }
+  $('#flyAround').onclick = () => engine && engine.flyAround();
+  $('#overview').onclick = () => engine && engine.overview();
+  $('#stop').onclick = () => engine && engine.stop();
+  const lotColor = lot => getComputedStyle(document.documentElement).getPropertyValue('--' + lot.toLowerCase()).trim();
+
+  // ---- Engine A: Google photorealistic 3D ----
+  async function start3D(){
+    badge.textContent = 'Photoreal 3D (Google)';
+    // Google bootstrap loader
+    (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({ key: KEY, v: "alpha" });
+    const { Map3DElement, Polygon3DInteractiveElement, Marker3DInteractiveElement, AltitudeMode } = await google.maps.importLibrary('maps3d');
+    const { PinElement } = await google.maps.importLibrary('marker');
+    const c = D.course.center;
+    const OVERVIEW = { center: { lat: c.lat, lng: c.lng, altitude: 0 }, range: 2600, tilt: 58, heading: 15 };
+    const map = new Map3DElement({ ...OVERVIEW, mode: 'SATELLITE', gestureHandling: 'GREEDY' });
+    $('#map').replaceWith(map);
+    map.addEventListener('gmp-error', e => { console.warn('3D error', e); start2D('3D map failed in this browser, showing satellite 2D.'); });
+
+    const outline = new Polygon3DInteractiveElement({ strokeColor: '#e87757', strokeWidth: 4, fillColor: '#e8775722', altitudeMode: AltitudeMode.CLAMP_TO_GROUND, drawsOccludedSegments: true });
+    const ring = D.course.outline.concat([D.course.outline[0]]);
+    outline.path = ring; outline.outerCoordinates = ring; // sample code uses .path, reference lists outerCoordinates; set both
+    outline.addEventListener('gmp-click', () => { detail.innerHTML = `<strong>${D.course.name}</strong><br>${D.course.address}. Outline traced from imagery, approximate.`; });
+    map.append(outline);
+
+    D.holes.forEach(h => {
+      const m = new Marker3DInteractiveElement({ position: { ...h.position, altitude: 18 }, altitudeMode: AltitudeMode.RELATIVE_TO_GROUND, extruded: true, label: String(h.number), title: 'Hole ' + h.number });
+      m.append(new PinElement({ background: '#14100e', borderColor: '#fbf8f3', glyphColor: '#fbf8f3', glyph: String(h.number), scale: 1.1 }));
+      m.addEventListener('gmp-click', () => selectHole(h.number)); map.append(m);
+    });
+    D.listings.forEach(l => {
+      const m = new Marker3DInteractiveElement({ position: { ...l.position, altitude: 12 }, altitudeMode: AltitudeMode.RELATIVE_TO_GROUND, extruded: true, title: l.address });
+      m.append(new PinElement({ background: lotColor(l.lot), borderColor: '#14100e', glyph: '⌂', glyphColor: '#14100e', scale: 1.2 }));
+      m.addEventListener('gmp-click', () => selectListing(l.id)); map.append(m);
+    });
+    engine = {
+      flyTo: (p, range, tilt, heading) => map.flyCameraTo({ endCamera: { center: { ...p, altitude: 0 }, range, tilt, heading }, durationMillis: 1800 }),
+      flyAround: () => map.flyCameraAround({ camera: { center: { lat: c.lat, lng: c.lng, altitude: 0 }, range: 1800, tilt: 62 }, durationMillis: 40000, repeatCount: Infinity }),
+      stop: () => map.stopCameraAnimation(),
+      overview: () => map.flyCameraTo({ endCamera: OVERVIEW, durationMillis: 1500 })
+    };
+  }
+
+  // ---- Engine B: 2D satellite (no key needed) ----
+  function start2D(reason){
+    badge.textContent = '2D satellite (Esri imagery)';
+    if (!document.getElementById('map')) { const d = document.createElement('div'); d.id = 'map'; document.querySelector('.stage').prepend(d); }
+    const c = D.course.center;
+    const map = L.map('map', { zoomControl: true }).setView([c.lat, c.lng], 15);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Imagery: Esri, Maxar, Earthstar Geographics' }).addTo(map);
+    const poly = L.polygon(D.course.outline.map(p => [p.lat, p.lng]), { color: '#e87757', weight: 3, fillOpacity: .12 }).addTo(map);
+    poly.on('click', () => { detail.innerHTML = `<strong>${D.course.name}</strong><br>${D.course.address}. Outline traced from imagery, approximate.`; });
+    const pin = (p, html, cls) => L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html, iconSize: [28, 28], iconAnchor: [14, 14] }) }).addTo(map);
+    D.holes.forEach(h => pin(h.position, `<div style="width:28px;height:28px;border-radius:50%;background:#14100e;color:#fbf8f3;border:2px solid #fbf8f3;display:grid;place-items:center;font:700 13px Nunito,sans-serif">${h.number}</div>`).on('click', () => selectHole(h.number)));
+    D.listings.forEach(l => pin(l.position, `<div style="width:26px;height:26px;border-radius:6px;background:${lotColor(l.lot)};border:2px solid #14100e;display:grid;place-items:center;font:700 15px Nunito,sans-serif;color:#14100e">⌂</div>`).on('click', () => selectListing(l.id)));
+    let spin = null;
+    engine = {
+      flyTo: (p) => map.flyTo([p.lat, p.lng], 18, { duration: 1.4 }),
+      flyAround: () => { engine.stop(); let i = 0; const pts = D.course.outline; spin = setInterval(() => { const p = pts[i++ % pts.length]; map.panTo([p.lat, p.lng], { duration: 2 }); }, 2200); map.setZoom(17); },
+      stop: () => { if (spin) clearInterval(spin); spin = null; map.stop(); },
+      overview: () => { engine.stop(); map.flyTo([c.lat, c.lng], 15, { duration: 1.2 }); }
+    };
+    const kb = $('#keybox');
+    kb.innerHTML = `<p class="note">${reason || 'No Google Maps key yet, so this is the flat satellite fallback.'} Paste a Google Maps Platform key to switch on photoreal 3D:</p>
+      <form class="keyform"><input id="keyIn" placeholder="AIza..." autocomplete="off"><button class="primary" type="submit">Go 3D</button></form>`;
+    kb.querySelector('form').onsubmit = e => { e.preventDefault(); const k = $('#keyIn').value.trim(); if (k) location.search = '?key=' + encodeURIComponent(k); };
+  }
+
+  if (KEY && !force2d) start3D().catch(err => { console.warn(err); start2D('3D could not load (check the key and that Maps JavaScript API is enabled).'); });
+  else start2D();
+})();
+</script>
+</body>
+</html>
