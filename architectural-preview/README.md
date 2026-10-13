@@ -38,18 +38,24 @@ The progress bar now uses a direct scaleX transform on its own element, with a f
 
 Claude’s supplied e7f1969 retest reports reduced motion, WebP requests and phone rail passed, and a root-variable A/B scroll trace attributed371→55msstyle recalculation and671→306msmain-thread time to removing the old rootwrite. Those measurements are source-reported for the prior A/B trace. They are not measurements of this new commit. Re-run the same scroll trace before claiming measured improvement. The proposed pre-rendered inverted drawing has not been applied.
 
-## Production numbers: where they come from, and one gap to close
+## Production numbers: reconciled October 13, 2026
 
-The stat row on the page reads 81 closed deals, $25.1M in volume, 27 in the last twelve months, and 0 paid leads. Those four figures are copied from Caleb's own published pages on the `claude/funny-gates-cducrq` branch (`homebrief-next/about.html`, and `build.py` where they are set as `NUMBERS = {"deals": 81, "volume": "$25.1M", "last12": 27, "zachary": 15}`). They are his stated figures, not derived here.
+The stat row reads 81 closed sides since 2022, $25.1M in closed volume, 27 sides closed in 2026, and 0 paid leads. Caleb identified the cause of the earlier gap: dual-agency closings. That checks out against `homebrief-next/data/deals.json` (ROAM MLS closed-sale export, as of 2026-10-07):
 
-They do not reconcile with `homebrief-next/data/deals.json`, which is the ROAM MLS closed-sale export as of 2026-10-07:
-
-| Source | Deals | Volume |
+| Step | Count | Volume |
 | --- | --- | --- |
-| Published pages | 81 | $25.1M |
-| deals.json itemized | 72 (+4 off-market not shown = 76) | $20,315,870 |
+| Itemized rows in the export | 72 | $20,315,870 |
+| Plus the second side of 5 dual-agency closings | 77 | $24,125,270 |
+| Plus 4 off-market closings not in the export | **81** | **$25.1M claimed** |
 
-The gap is 5 deals and about $4.8M. That is plausible if the MLS export misses off-market or dual-side closings, but it is unverified. Reconcile before these numbers go on a public page or into the ad, since they are public claims about production. Until then they stay in the preview only.
+The count lands on 81 exactly. The volume requires those 4 off-market closings to average about $244,000, which sits below the $282,000 average of the itemized deals and is therefore plausible. The volume is consistent, not independently verified; the 4 off-market closings carry no prices in the file.
+
+Two label corrections came out of the same check:
+
+- "Closed deals" became **"Closed sides"**. Counting a dual-agency closing twice is standard MLS practice, but calling the result "deals" overstates the transaction count. There were 76 transactions. The page now says sides and prints the basis in small type under the row.
+- "In the last twelve months" became **"Sides closed in 2026"**. The 27 figure is exactly the 2026 year-to-date side count (24 rows + 3 dual second sides). A true rolling twelve months would reach back into 2025 and be a different, larger number.
+
+If a plainer claim is wanted instead, 76 closed transactions and $20.3M of itemized volume are both defensible without any explanation. The current wording keeps Caleb's published figures and makes the basis explicit.
 
 The 32-unit St. Francisville sale shown elsewhere on the page is a separate, Caleb-confirmed fact and is unaffected.
 
