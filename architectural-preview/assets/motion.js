@@ -538,3 +538,86 @@
      10. Loader. Observed: progress hairline, live pointer coordinates via
      the ruler, title words rise, then the top and bottom lines travel to
      where the header and hero sit and the panel fades (0.4s). Repeat visits
+     in the same tab skip the long version (sessionStorage flag).
+     ------------------------------------------------------------------------ */
+  MK.loader = {
+    play({ el = '.mk-loader', onComplete, minDuration = 1.2 } = {}) {
+      const loader = typeof el === 'string' ? document.querySelector(el) : el;
+      if (!loader) { onComplete && onComplete(); return null; }
+      const quick = sessionStorage.getItem('mk-loaded') === 'true' || prefersReduced();
+      const bar = loader.querySelector('.mk-loader-progress-bar');
+      const title = loader.querySelector('.mk-loader-title');
+      const lines = $$('.mk-loader-line', loader);
+      MK.scroll.stop();
+      const tl = gsap.timeline({ onComplete: () => { loader.hidden = true; sessionStorage.setItem('mk-loaded', 'true'); MK.scroll.start(); onComplete && onComplete(); } });
+      if (quick) { tl.to(loader, { autoAlpha: 0, duration: 0.3 }); return tl; }
+      const ruler = loader.querySelector('.mk-ruler') ? new Ruler({ wrapper: loader, pauseOutside: true }).start() : null;
+      if (title) tl.add(MK.text.heading(title).play(), 0);
+      if (bar) tl.to(bar, { scaleX: 1, duration: minDuration, ease: 'power2.inOut' }, 0);
+      tl.to(loader.querySelectorAll('.mk-loader-title, .mk-loader-meta'), { opacity: 0, duration: 0.4, ease: 'power2.out' }, '>-0.1');
+      if (lines.length) tl.to(lines, { y: (i) => (i === 0 ? rem(6) : -(global.innerHeight * 0.45)), backgroundColor: cssVar('--mk-border', '#b3b3af'), duration: 0.8, ease: 'cubic-bezier(1, 0, 0.44, 1)' }, '<');
+      tl.to(loader, { autoAlpha: 0, duration: 0.4 }, '>-0.2');
+      tl.call(() => ruler && ruler.stop());
+      return tl;
+    },
+  };
+
+  /* ------------------------------------------------------------------------
+     11. Ink reveal. Observed: an SVG mask circle that follows the pointer
+     (lerp), radius 45% of the smaller side, filtered through feTurbulence
+     (0.028 0.04, 3 octaves) + feDisplacementMap (scale = min(150,
+     radius*0.7)) + blur + an alpha threshold (slope 5, intercept -2.15)
+     which gives the "ink" edge. Safari and Firefox get the plain circle.
+     Markup: <div class="mk-ink"><img src="base"><img data-ink-over src="over"></div>
+     ------------------------------------------------------------------------ */
+  MK.ink = {
+    counter: 0,
+    init(sel = '.mk-ink') {
+      const NS = 'http://www.w3.org/2000/svg';
+      const plain = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || /firefox|fxios/i.test(navigator.userAgent);
+      $$(sel).forEach((el) => {
+        const over = el.querySelector('[data-ink-over]'); if (!over) return;
+        const id = ++this.counter;
+        const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'mk-ink-svg'); svg.setAttribute('preserveAspectRatio', 'none');
+        svg.innerHTML = `<defs><filter id="mk-ink-f-${id}" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.028 0.04" numOctaves="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="100" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="6"/><feComponentTransfer><feFuncA type="linear" slope="5" intercept="-2.15"/></feComponentTransfer></filter><mask id="mk-ink-m-${id}" maskUnits="userSpaceOnUse"><circle cx="0" cy="0" r="0" fill="#fff" ${plain ? '' : `filter="url(#mk-ink-f-${id})"`}/></mask></defs><image href="${over.getAttribute('src')}" preserveAspectRatio="xMidYMid slice" mask="url(#mk-ink-m-${id})"/>`;
+        over.remove(); el.appendChild(svg);
+        const circle = svg.querySelector('circle'), image = svg.querySelector('image'), mask = svg.querySelector('mask'), disp = svg.querySelector('feDisplacementMap');
+        const vb = { w: 1000, h: 1000 }; let radius = 0; const cur = { x: 0, y: 0 }, tgt = { x: 0, y: 0 }; let raf = null, r = 0;
+        const metrics = () => { const b = el.getBoundingClientRect(); if (!b.width) return; vb.h = (b.height / b.width) * 1000; radius = Math.min(vb.w, vb.h) * 0.45; svg.setAttribute('viewBox', `0 0 ${vb.w} ${vb.h}`); ['image', 'mask'].forEach(() => 0); [image, mask].forEach((n) => { n.setAttribute('x', 0); n.setAttribute('y', 0); n.setAttribute('width', vb.w); n.setAttribute('height', vb.h); }); disp && disp.setAttribute('scale', Math.min(150, radius * 0.7)); };
+        const setTarget = (e) => { const b = el.getBoundingClientRect(); tgt.x = clamp(((e.clientX - b.left) / b.width) * vb.w, 0, vb.w); tgt.y = clamp(((e.clientY - b.top) / b.height) * vb.h, 0, vb.h); };
+        const tick = () => { cur.x = lerp(cur.x, tgt.x, 0.15); cur.y = lerp(cur.y, tgt.y, 0.15); circle.setAttribute('cx', cur.x.toFixed(1)); circle.setAttribute('cy', cur.y.toFixed(1)); circle.setAttribute('r', r.toFixed(1)); raf = (Math.abs(cur.x - tgt.x) > 0.5 || Math.abs(cur.y - tgt.y) > 0.5 || gsap.isTweening(state)) ? requestAnimationFrame(tick) : null; };
+        const state = { get r() { return r; }, set r(v) { r = v; } };
+        const wake = () => { if (!raf) raf = requestAnimationFrame(tick); };
+        metrics(); global.addEventListener('resize', metrics);
+        el.addEventListener('pointerenter', (e) => { setTarget(e); cur.x = tgt.x; cur.y = tgt.y; gsap.to(state, { r: radius, duration: 0.9, ease: 'power3.out', onUpdate: wake }); wake(); });
+        el.addEventListener('pointermove', (e) => { setTarget(e); wake(); });
+        el.addEventListener('pointerleave', () => { gsap.to(state, { r: 0, duration: 0.6, ease: 'power2.in', onUpdate: wake }); });
+      });
+    },
+  };
+
+  /* ------------------------------------------------------------------------
+     12. One-call setup.
+     ------------------------------------------------------------------------ */
+  MK.init = function (opts = {}) {
+    const o = Object.assign({ scroll: true, cursor: true, header: '.mk-header', loader: true, reveal: true, sequence: true, btnFill: true, marquee: true, ink: true, onReady: null }, opts);
+    if (global.gsap) { global.gsap.registerPlugin(global.ScrollTrigger, global.SplitText); }
+    if (o.scroll) MK.scroll.init(typeof o.scroll === 'object' ? o.scroll : {});
+    if (o.cursor) MK.cursor.init(typeof o.cursor === 'object' ? o.cursor : {});
+    if (o.header) MK.header.init(o.header);
+    const boot = () => {
+      if (o.btnFill) MK.btnFill.init();
+      if (o.marquee) MK.marquee.init();
+      if (o.ink) MK.ink.init();
+      if (o.sequence) MK.sequence.init();
+      if (o.reveal) MK.reveal.init();
+      global.ScrollTrigger && global.ScrollTrigger.refresh();
+      o.onReady && o.onReady();
+    };
+    const go = () => { if (o.loader) MK.loader.play({ onComplete: boot }); else boot(); };
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(go);
+    return MK;
+  };
+
+  global.MotionKit = MK;
+})(window);
