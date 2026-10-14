@@ -1,6 +1,6 @@
-# AI for Agents: Teaching Game Plan (draft v3)
+# AI for Agents: Teaching Game Plan (v3, approved by Caleb 2026-10-14)
 
-Status: working draft, 2026-10-14. Nothing here is approved. Order goes from basics up. Labels: **confirmed** (Caleb said it or Claude checked it), **historical** (true when last checked, recheck), **inference** (Claude's read).
+Status: outline approved by Caleb on 2026-10-14. Scripts are drafted one day at a time in `challenge-v2/` and each needs its own approval. Order goes from basics up. Labels: **confirmed** (Caleb said it or Claude checked it), **historical** (true when last checked, recheck), **inference** (Claude's read).
 
 ## Decisions so far (confirmed, Caleb, 2026-10-14)
 
@@ -57,7 +57,7 @@ Downloads (Skool only): AI Stack checklist (Day 1), rules card (Day 2), fake pra
 ### Lead hunt details and flags
 
 - Phone first method (inference, needs a live test): an iPhone app can't read your whole iMessage history, so the member picks and pastes threads.
-- Full scan method, Mac bonus (inference, needs a live test): Claude desktop on a Mac can read the local Messages history through a connector. Taught later as a bonus, with the same black out and consent rules.
+- Full scan method, Mac bonus: OpenAI launched an Apple Messages plugin for ChatGPT around 2026-08-20. It runs locally, needs Full Disk Access, can search, draft and send texts (historical, TechCrunch 2026-08-20, not tested). Reports say Mac (inference, iPhone support not mentioned). Claude also lists a "Read and Send iMessages" connector (historical, claude.com connectors page, not tested). Taught as a bonus with the same black out and consent rules, and with sending approval left on so nothing goes out without the agent reading it.
 - The people in those texts never agreed to have an AI read them. Scan the narrowest set: last 90 days, work threads only.
 - No loan amounts, account numbers, addresses tied to money, or health details go in. Project rule: no client financial data in AI.
 - Sort by relationship only. Never by race, religion, family status, disability, national origin, sex or any protected trait.

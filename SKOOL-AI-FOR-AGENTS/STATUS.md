@@ -2,6 +2,16 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-14, later: Day 0 script
+
+**Done**
+- Caleb approved the game plan outline.
+- `programs/ai-for-agents/challenge-v2/day-0-welcome.md`: Day 0 for the new challenge. 3 hook options (A recommended), full script, shot list, B-roll Claude builds, ethics check, Skool lesson text, edit notes.
+- Found that ChatGPT got an Apple Messages plugin around 2026-08-20 (historical, TechCrunch, not tested). Mac only as far as reports say. Folded into the game plan as the Mac bonus.
+
+**Needs Caleb**
+- Pick a hook and approve or rewrite the Day 0 lines.
+
 ## 2026-10-14: the teaching game plan
 
 **Done**
