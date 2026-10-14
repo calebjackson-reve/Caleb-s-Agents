@@ -1,6 +1,3 @@
 [
- {"name":"01-cover","photo":"photos/throwback.jpg","fill":"blur","headline":"THE SAUCE NEVER LEFT","subline":"MR. PAUL & MS. CYNTHIA · 50+ YEARS","text_y":0.70,"darken":0},
- {"name":"02-couple","photo":"photos/couple.jpg","focus":0.2,"headline":"STILL THAT GUY","subline":"STILL HIS FINE LADY","text_y":0.74,"darken":0.1},
- {"name":"03-group","photo":"photos/group.jpg","focus":0.2,"headline":"FOUR CLOSINGS. ONE YEAR","subline":"REPEAT BUSINESS IS LOVE","text_y":0.74,"darken":0.1},
- {"name":"04-home","photo":"photos/home.jpg","headline":"WELCOME HOME, AGAIN","subline":"CLOSING NO. 4","text_y":0.66,"darken":0.15}
+ {"name":"cover","photo":"photos/couple.jpg","focus":0.2,"headline":"THE SAUCE NEVER LEFT","subline":"MR. PAUL & MS. CYNTHIA · 50+ YEARS","text_y":0.74,"darken":0.1}
 ]

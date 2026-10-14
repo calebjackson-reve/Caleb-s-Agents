@@ -1,6 +1,6 @@
 # Mr. Paul and Ms. Cynthia carousel (Oct 14 2026)
 
-Upload order: 01-cover, 02-couple, 03-group, 04-home. Slides in `slides/`. Rendered with
+One designed cover only (`slides/cover.jpg`), then the raw photos: throwback, group, home. Caleb's call, Oct 14 2026. Rendered with
 `skills/instagram-cover-style/render.py` from `spec.json`.
 
 ## Caption
