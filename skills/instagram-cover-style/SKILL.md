@@ -15,7 +15,7 @@ then ask Caleb.
 | Element | Rule |
 |---|---|
 | Canvas | 1080 x 1350 (4:5). Photo is full bleed. Never a framed or inset photo on black. |
-| Photo treatment | Real photo, slight darken (10 to 25 percent) and a stronger dark gradient behind the text block only. Keep faces untouched and visible. |
+| Photo treatment | Photo stays bright and basically untouched. No darken by default. Only a faint band (renderer `band` 55 or less) behind the text; the drop shadow does the work. Caleb rejected a heavy gradient on Oct 14 2026. |
 | Headline | ALL CAPS, Montserrat ExtraBold (800) or Black (900). Off-white `#F3EFE6`. Centered. Two lines max, tight leading (about 0.92). Ends with a period. Soft drop shadow so it reads on any photo. |
 | Headline copy | Three to six words. A hook, not a label. Examples from the feed: "I GOT A LITTLE WORKED UP." "DON'T TAKE MY WORD." "YOU NEED THIS HOUSE." "WAIT FOR THE REVEAL." "THREE HOMES. ONE TOUR." |
 | Accent | One short coral bar centered under the headline. Color `#D95D41` (sampled from the feed). About 70 px wide, 5 px tall, 22 px below the headline. Nothing else is coral. |

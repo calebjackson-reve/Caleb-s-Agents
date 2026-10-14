@@ -91,7 +91,7 @@ def render(slide, out_path):
         canvas = blur_fill(im)
     else:
         canvas = cover_fit(im, slide.get('focus', 0.5))
-    canvas = darken(canvas, slide.get('darken', 0.12))
+    canvas = darken(canvas, slide.get('darken', 0.0))
 
     headline = slide['headline'].upper()
     if not headline.endswith(('.', '?', '!')):
@@ -113,13 +113,13 @@ def render(slide, out_path):
     limit = (H - 118 - 70) if slide.get('signature', True) else H - 80
     if bottom > limit:
         shift = bottom - limit; top -= shift; bottom -= shift
-    canvas = text_gradient(canvas, top, bottom, slide.get('band', 190))
+    canvas = text_gradient(canvas, top, bottom, slide.get('band', 55))
     d = ImageDraw.Draw(canvas, 'RGBA')
 
     y = top
     for ln in lines:
-        for off in ((0, 6), (3, 3), (-3, 3)):
-            d.text((W / 2 + off[0], y + off[1]), ln, font=hfont, fill=(0, 0, 0, 90), anchor='ma')
+        for off in ((0, 7), (4, 4), (-4, 4), (0, 3)):
+            d.text((W / 2 + off[0], y + off[1]), ln, font=hfont, fill=(0, 0, 0, 110), anchor='ma')
         d.text((W / 2, y), ln, font=hfont, fill=OFFWHITE, anchor='ma')
         y += lh
     y += 22
