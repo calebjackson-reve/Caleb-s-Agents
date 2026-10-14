@@ -2,6 +2,17 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-14: Skool group copy for the new front door
+
+**Done**
+- Drafted every piece of group copy for "7 Days to Find the Leads in Your Phone" in `programs/ai-for-agents/skool-group-copy.md`: name, short description, About page, join questions, rules, feed categories, classroom order, pinned welcome post, auto DM and settings picks.
+- Marked the old `skool-setup.md` as superseded.
+
+**Needs Caleb**
+- Approve or mark up the copy, then paste it into Skool. Nothing has been changed in Skool.
+- Film the "Hey, I'm Caleb" video first. It goes in the About page video slot.
+- Confirm the member price setting says free.
+
 ## 2026-10-12, night: Skool plan and privacy
 
 **Confirmed by Caleb**
