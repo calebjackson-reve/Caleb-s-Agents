@@ -1,3 +1,3 @@
 [
- {"name":"cover","photo":"photos/couple.jpg","focus":0.2,"headline":"THE SAUCE NEVER LEFT","subline":"MR. PAUL & MS. CYNTHIA · 50+ YEARS","text_y":0.74,"darken":0}
+ {"name":"cover","photo":"photos/couple.jpg","crop":[0.17,0.22,0.83,0.80],"focus":0.0,"headline":"MR. PAUL | IS STILL HIM","subline":"50+ YEARS WITH MS. CYNTHIA","text_y":0.70,"darken":0}
 ]

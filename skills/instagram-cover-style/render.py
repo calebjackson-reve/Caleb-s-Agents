@@ -87,6 +87,9 @@ def wrap_headline(d, text, font, max_w):
 
 def render(slide, out_path):
     im = load(slide['photo'])
+    if 'crop' in slide:  # fractions [x0, y0, x1, y1] of the source photo
+        x0, y0, x1, y1 = slide['crop']
+        im = im.crop((int(im.width * x0), int(im.height * y0), int(im.width * x1), int(im.height * y1)))
     if slide.get('fill') == 'blur':
         canvas = blur_fill(im)
     else:
@@ -99,7 +102,7 @@ def render(slide, out_path):
     size = slide.get('size', 96)
     hfont = FONT(800, size)
     d = ImageDraw.Draw(canvas)
-    lines = wrap_headline(d, headline, hfont, W - 140)
+    lines = [l.strip() for l in headline.split('|')] if '|' in headline else wrap_headline(d, headline, hfont, W - 140)
     while len(lines) > 2 and size > 60:
         size -= 6; hfont = FONT(800, size); lines = wrap_headline(d, headline, hfont, W - 140)
     lh = int(size * 0.98)

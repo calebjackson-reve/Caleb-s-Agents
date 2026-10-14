@@ -48,7 +48,9 @@ python3 skills/instagram-cover-style/render.py spec.json out_dir/
 
 - `focus` 0 to 1 picks which vertical part of a tall photo survives the 4:5 crop (0.3 keeps heads high).
 - `fill: "blur"` handles a landscape or low-res photo: it sits at the top at full width and the rest of the canvas is a blurred, darkened stretch of the same photo. Still full bleed, still on brand.
-- `text_y` moves the headline block. Keep it off faces.
+- `crop` is `[x0, y0, x1, y1]` as fractions of the source photo, for a tighter frame before the 4:5 fit. Caleb likes tight crops, waist up.
+- Put `|` in the headline to force the line break, e.g. `MR. PAUL | IS STILL HIM`. Always balance the two lines.
+- `text_y` moves the headline block. Keep it off faces. Caleb likes the headline close under the subjects, not pushed to the bottom.
 
 Always open the rendered JPGs and check: headline not over a face, bar present, subline readable,
 signature not colliding with the photo subject. Then send the files to Caleb.
