@@ -2,7 +2,7 @@
 
 **7 Days to Find the Leads in Your Phone**
 
-About 90 seconds · Face first, phone in hand · Also the Skool about video and a Facebook and Instagram clip
+About 90 seconds · Face first, phone in hand · First lesson in the Classroom. The About video (`about-video.md`) comes before it and introduces Caleb and the group.
 
 Status: draft for Caleb, 2026-10-14. Not approved. Nothing posted.
 
@@ -33,9 +33,7 @@ There's probably a deal sitting in your texts right now. You just haven't seen i
 That friend who said they might move. The past client who asked one quick question. The lender who sent you a name. All buried under four thousand other texts.
 
 **[0:12 Back to face, medium]**
-Welcome to AI for Agents. This is where agents learn to use AI so they think better, not just faster. Free, from step one.
-
-Your first 7 days, we dig those texts out. With AI. On your phone.
+You're in. Welcome. Your first 7 days, we dig those texts out. With AI. On your phone.
 
 **[0:16 B-roll: 7-day strip, each day lights up as he says it]**
 Day 1, we set up your phone. Day 2, your rules for what never goes into AI. Day 3, you practice on fake texts I give you, so your first try isn't on a real client. Day 4, the scavenger hunt. Day 5, you sort who's who. Day 6, you send three follow-ups. Day 7, you save it so it runs every week.
@@ -57,7 +55,7 @@ People who post Day 0 finish. Say it out loud.
 TEXT ON SCREEN: Day 1 is waiting in the Classroom
 Day 1 is ten minutes. I'll see you there.
 
-About 250 spoken words. Lands near 1:35 to 1:40 at a normal pace (inference, not timed). If it runs long, cut the price line first.
+About 235 spoken words. Lands near 1:30 at a normal pace (inference, not timed). If it runs long, cut the price line first.
 
 ## Shot list
 
