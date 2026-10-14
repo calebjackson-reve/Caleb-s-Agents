@@ -2,6 +2,29 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-14: the teaching game plan
+
+**Done**
+- `programs/ai-for-agents/GAME-PLAN.md`: the full teaching plan, built from Caleb's answers to 3 rounds of questions in the project thread. Free front door, then a paid build path, basics first.
+- New front door: "7 Days to Find the Leads in Your Phone." Phone first, ChatGPT. Setup, AI rules, practice on fake texts, the text message scavenger hunt, who's who, 3 follow-ups, a saved lead assistant. One psychology idea per day.
+- Paid later, with Claude: Google Sheets CRM, AI video, a Claude-built website, lead tools and automations, analytics and ads.
+- Ethics check table every script must pass: client confidentiality, truth in advertising, Fair Housing, other agents' clients, deepfakes, texting consent.
+
+**Confirmed by Caleb**
+- This replaces the old 7-day challenge. Old Day 1 bio video is shelved. ChatGPT for basics, Claude for builds. Phone first. Tell members about $20 a month. Setup and the lead hunt free.
+- Nothing taught can create an ethics violation.
+
+**Inference, needs a test**
+- An iPhone app can't read the whole iMessage history, so the free lesson is pick and paste. The Mac full scan is a bonus.
+- NAR Code article numbers are from Claude's knowledge, recheck against the current Code.
+
+**Needs Caleb**
+- Approve the outline or mark changes.
+- Ask KW First Choice about the AI and client records policy.
+
+**Next for Claude**
+- Script Days 0 to 7 in the new order, each with its ethics check. Test the phone and Mac scan methods live first.
+
 ## 2026-10-12, late night: the video editor
 
 **Done**
