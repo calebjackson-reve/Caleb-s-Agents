@@ -1,5 +1,7 @@
 # Skool Group Setup
 
+**Superseded on 2026-10-14 by `skool-group-copy.md`**, written for the new front door, 7 Days to Find the Leads in Your Phone.
+
 Draft for Caleb's approval.
 
 ## Name options
