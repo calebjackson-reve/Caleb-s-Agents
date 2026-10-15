@@ -1,0 +1,19 @@
+{
+  "source_and_http_check": "PASS",
+  "rendered_recheck": "PENDING: browser automation timed out",
+  "png_bytes": 2587632,
+  "webp_bytes": 202626,
+  "size_reduction_percent": 92.17,
+  "changes": [
+    "Reduced-motion selected-frame specificity",
+    "1440px WebP hero and lazy detail",
+    "Reserved phone navigation strip"
+  ],
+  "design_proposals_not_implemented": [
+    "Fonts",
+    "Additional reveals",
+    "Lenis",
+    "Cursor",
+    "Loader"
+  ]
+}

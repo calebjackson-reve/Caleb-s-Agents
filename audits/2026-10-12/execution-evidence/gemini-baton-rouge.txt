@@ -1,0 +1,110 @@
+Browser tab: 1142917651, Title: "Google Gemini", URL: "https://gemini.google.com/app".
+0 AXWebArea Google Gemini, URL: gemini.google.com/app
+	1 container
+		3 container
+			4 button Main menu
+			5 button Open mode picker, currently 3.6 Flash
+				6 text Gemini
+				7 text 3.6 Flash
+			152 button New Chat
+			9 container xap-skip-link-target
+				10 container
+					11 heading Conversation with Gemini, Value: 1
+						12 text Conversation with Gemini
+					139 container
+						140 text Temporary Chat
+						153 container 221d8cbe756185b7
+							154 container
+								155 heading Value: 5, You said Search the public web. I need a real estate agent to help me sell a home in Baton Rouge, Louisiana. …
+									156 text You said  Search the public web. I need a real estate agent to help me sell a home in Baton Rouge, Louisiana. …
+								157 text Search the public web. I need a real estate agent to help me sell a home in Baton Rouge, Louisiana. Which three agents or teams should I consider and why? Cite your sources.
+							158 button Copy prompt
+							159 button Edit
+							160 container
+								161 container
+									162 heading Gemini said, Value: 6
+										163 text Gemini said
+									164 container model-response-message-contentr_221d8cbe756185b7
+										165 text To sell a home in Baton Rouge, Louisiana, focus on agents and teams with proven local listing volume, high sales-to-list price ratios, and established marketing strategies in the Greater Baton Rouge area.
+										166 text Three top-performing options to evaluate include:
+										167 heading 1. The W Group Real Estate (Trey Willard), Value: 3
+											168 text 1. The W Group Real Estate (Trey Willard)
+										169 content list
+											170 container p-rc_0d4187a930eec04f-35
+												171 text Brokerage: The W Group Real Estate LLC
+												172 pop up button (collapsed) Description: View source details for citation from FastExpert. Press Enter to open sources dialog., Secondary Actions: Expand
+											173 container p-rc_0d4187a930eec04f-36
+												174 text Why Consider Them: Trey Willard and The W Group consistently rank as one of the top-producing real estate teams in Baton Rouge.
+												175 text They heavily specialize in the seller side (over 90% of listing/seller representation) and maintain a full-service team model designed to maximize listing exposure and handle high transaction volume smoothly.
+												176 pop up button (collapsed) Secondary Actions: Expand, Description: View source details for citations from The W Group Real Estate and Clever Real Estate. Press Enter to open sources dialog.
+											177 container
+												178 text Key Strength:  Aggressive digital marketing, extensive local market share, and strong negotiation track record for home sellers.
+											179 container p-rc_0d4187a930eec04f-37
+												180 text Sources: Ranked #1 Real Estate Team by  RealTrends  in Baton Rouge;
+												181 text  verified seller metrics via  ListWithClever  and  FastExpert .
+												182 pop up button (collapsed) Description: View source details for citation from The W Group Real Estate. Press Enter to open sources dialog., Secondary Actions: Expand
+										183 heading Value: 3, ID: p-rc_0d4187a930eec04f-38, 2. The Market Real Estate Co. (Laura Buck Smith) View source details for citation from Clever Real Estate. Press Enter to open sources dialog.
+											184 text 2.  The Market Real Estate Co.
+											185 text  (Laura Buck Smith)
+											186 pop up button (collapsed) Description: View source details for citation from Clever Real Estate. Press Enter to open sources dialog., Secondary Actions: Expand
+										187 content list
+											188 container
+												189 text Brokerage:  The Market Real Estate Co.
+											190 container p-rc_0d4187a930eec04f-39
+												191 text Why Consider Them:  Laura Buck Smith leads a high-volume team with a strong balance of buyer and seller representation.  Known for achieving high sale-to-list price ratios (median around 100%), her team focuses heavily on precise property valuation, staging guidance, and targeted local promotion.
+												192 pop up button (collapsed) Description: View source details for citation from Clever Real Estate. Press Enter to open sources dialog., Secondary Actions: Expand
+											193 container
+												194 text Key Strength:  Strong pricing accuracy and exceptional client rating across hundreds of local listings.
+											195 container
+												196 text Sources:  High volume rankings on  Zillow Premier Agent  directory and  ListWithClever  data summaries.
+										197 heading 3. Darren James & Associates, Value: 3
+											198 text 3. Darren James & Associates
+										199 content list
+											200 container p-rc_0d4187a930eec04f-40
+												201 text Brokerage: LPT Realty
+												202 pop up button (collapsed) Description: View source details for citation from Zillow. Press Enter to open sources dialog., Secondary Actions: Expand
+											203 container p-rc_0d4187a930eec04f-41
+												204 text Why Consider Them: Darren James has over two decades of real estate experience in the Greater Baton Rouge region.
+												205 text  His team utilizes an expansive multi-channel listing system (radio, digital media, targeted buyer matching) that appeals to sellers who want maximum visibility across East Baton Rouge Parish and surrounding areas.
+												206 pop up button (collapsed) Description: View source details for citation from FastExpert. Press Enter to open sources dialog., Secondary Actions: Expand
+											207 container
+												208 text Key Strength:  Broad media reach, deep familiarity with suburban/metro markets, and structured seller services.
+											209 container p-rc_0d4187a930eec04f-42
+												210 text Sources: Featured in seller agent listings on  Zillow ,  FastExpert , and  Realtor.com .
+												211 pop up button (collapsed) Description: View source details for citation from Realtor.com. Press Enter to open sources dialog., Secondary Actions: Expand
+										212 heading Key Questions to Ask When Interviewing Agents:, Value: 3
+											213 text Key Questions to Ask When Interviewing Agents:
+										214 content list
+											215 container
+												216 text 1 . List-to-Sale Ratio:  What percentage of your original asking prices do your listings typically close for?
+											217 container
+												218 text 2 . Days on Market (DOM):  How do your listing days on market compare to the average in my specific neighborhood?
+											219 container
+												220 text 3 . Marketing Plan:  What is your strategy beyond placing the home on the MLS (e.g., targeted social ads, professional photography, open houses)?
+											221 container
+												222 text 4 . Commission & Services:  What does your fee structure cover (e.g., staging consultation, videography, professional floor plans)?
+										223 container
+											224 text Next steps for your home sale?
+											225 button Questions to ask when interviewing agents
+												226 text Questions to ask when interviewing agents
+											227 button How to price a home in Baton Rouge
+												228 text How to price a home in Baton Rouge
+								229 button Redo
+								230 button Share & export
+								231 button Copy
+								232 button Show more options
+					16 container
+						17 container
+							137 container
+								138 text entry area (settable) Description: Enter a prompt for Gemini, Value: 
+
+									233 text Ask Gemini
+									234 text encrypted
+							22 pop up button (collapsed) Description: Upload & tools, Secondary Actions: Expand
+							235 container
+								236 button Dictate (⌘⇧D)
+						150 text Your A I R E chats aren’t used to improve our models. Gemini is AI and can make mistakes. 
+						151 link Description: Your privacy & Gemini Opens in a new window, Value: support.google.com/gemini/answer/14620100
+		237 text Searching the web
+
+The focused UI element is 138 text entry area (settable) Description: Enter a prompt for Gemini, Value: 
