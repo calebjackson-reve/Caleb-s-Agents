@@ -9,6 +9,7 @@ Scope right now: Lesson 1 only, the iMessage lesson. Don't start another lesson 
 - The plan doc "Course 1 video plan": https://claude.ai/code/artifact/4b061c69-4e90-4e0f-870d-6bea640c32cc
 
 ## 1. Hook (Gate: the hook)
+- Approval gates: hooks and outline first, then the full script, then the teleprompter. Each one waits for Caleb's yes.
 - Spend 80% of the planning on the first 3 seconds: the first words, the shot, and a "me too" line about the viewer.
 - Write the hook word for word and the rest as loose beats. He talks better than he reads.
 - Put something worth hearing every 10 to 15 seconds (a real story, a contrarian line, a why-clients-decide idea, a before and after, or a bet the viewer can test). Mark each beat with what makes it interesting.

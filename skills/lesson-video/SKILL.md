@@ -15,6 +15,13 @@ Caleb is a REALTOR with Keller Williams First Choice and the builder of AIRE. Th
 - `programs/ai-for-agents/motion/README.md`: the 13 animation scenes and the 3 looks.
 - The Course 1 breakdown, for what this video covers: https://claude.ai/code/artifact/1733aef2-fdab-4a70-b5ef-bb6d3c1619dc
 
+## Approval gates (Caleb, 2026-10-15)
+
+Each step waits for Caleb's yes before the next one starts. Extra work before a yes is wasted tokens.
+1. Hook options and a short outline. Stop and wait.
+2. The full script, only after he approves the hooks and outline. Stop and wait.
+3. The teleprompter, only after he approves the full script.
+
 ## 1. Hook
 
 - Spend 80% of the planning on the first 3 seconds: the first words, the shot, what's on screen, and a "me too" line about the viewer. Never open about Caleb.
