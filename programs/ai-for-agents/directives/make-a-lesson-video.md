@@ -11,6 +11,7 @@ Scope right now: Lesson 1 only, the iMessage lesson. Don't start another lesson 
 ## 1. Hook (Gate: the hook)
 - Spend 80% of the planning on the first 3 seconds: the first words, the shot, and a "me too" line about the viewer.
 - Write the hook word for word and the rest as loose beats. He talks better than he reads.
+- Put something worth hearing every 10 to 15 seconds (a real story, a contrarian line, a why-clients-decide idea, a before and after, or a bet the viewer can test). Mark each beat with what makes it interesting.
 - Give Caleb 3 hook options and mark the one Claude recommends. He picks.
 
 ## 2. Film

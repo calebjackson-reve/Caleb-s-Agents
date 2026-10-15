@@ -189,8 +189,11 @@ def find_mistakes(words, phrase):
         # whisper bleeps swears ("F***"), so a starred word counts as the word it hides
         got = " ".join(t if "*" in w["w"] and norm(w["w"])[:1] == t[:1] else norm(w["w"])
                        for w, t in zip(words[i: i + n], target.split()))
-        # first letter must match too, so "but that, Caleb" in a normal sentence is safe
-        if got[:1] == target[:1] and SequenceMatcher(None, target, got).ratio() >= 0.75:
+        # the first word has to sound like the swear ("fuck", "F***", or whisper's "buck"), so
+        # "but that, Caleb" in a normal sentence is safe
+        first = got.split(" ", 1)[0]
+        swear = first[:1] == target[:1] or re.search(r"uc?k$", first)
+        if swear and SequenceMatcher(None, target, got).ratio() >= 0.75:
             hits.append(i)
             i += n
         else:
@@ -215,6 +218,16 @@ def cut_mistakes(words, spec):
     drop = set()
     for i in find_mistakes(words, M["phrase"]):
         k = sentence_start(words, i - 1, spec["retakes"]["phrase_gap_s"]) if i > 0 else 0
+        # If the redo picks up partway through that sentence ("...fair housing on everything.
+        # Fuck that, Caleb. So fair housing on everything."), only cut back to where it picks up.
+        after = [norm(w["w"]) for w in words[i + n: i + n + 6] if norm(w["w"]) not in FILLERS | {"so", "and"}][:2]
+        if len(after) == 2:
+            for j in range(i - 2, k - 1, -1):
+                if [norm(words[j]["w"]), norm(words[j + 1]["w"])] == after:
+                    while j > k and norm(words[j - 1]["w"]) in FILLERS | {"so", "and"}:
+                        j -= 1
+                    k = j
+                    break
         log(f"mistake phrase at {words[i]['s']:.1f}s, cut back to {words[k]['s']:.1f}s: "
             f"\"{' '.join(w['w'] for w in words[k:i])[:70]}\"")
         drop.update(range(k, i + n))

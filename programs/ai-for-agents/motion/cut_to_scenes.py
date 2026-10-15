@@ -23,8 +23,9 @@ EDITOR = HERE.parent / "editor"
 sys.path.insert(0, str(EDITOR))
 import skool_cut as sc  # noqa: E402
 
-# Where the face sits in Caleb's desk setup (portrait iPhone, 2026-10-14 take), as a share of the frame.
-FACE = {"cx": 0.42, "cy": 0.45, "card_h": 0.80, "pip_side": 0.40}
+# Where the face sits in the take, as a share of the frame. A scene list can override any of these
+# with "face_pos". pip_side is the corner box crop as a share of the frame's shorter side.
+FACE = {"cx": 0.5, "cy": 0.45, "card_h": 1.0, "pip_side": 0.6}
 
 
 def run(cmd):
@@ -76,7 +77,13 @@ def main():
     # 1-2. cut the take scene by scene
     pieces, said = [], []
     for i, s in enumerate(data["scenes"]):
-        rs, inside = ranges_for(words, *s["src"], spec)
+        # src is one [start, end] stretch, or a list of them joined in order (best line from each take)
+        wins = s["src"] if isinstance(s["src"][0], list) else [s["src"]]
+        rs, inside = [], []
+        for w0, w1 in wins:
+            r, i_ = ranges_for(words, w0, w1, spec)
+            rs += r
+            inside += i_
         s["dur"] = round(sum(e - b for b, e in rs), 3)
         s["said"] = " ".join(w["w"] for w in inside)
         pieces += rs
@@ -86,7 +93,7 @@ def main():
     for k, (b, e) in enumerate(pieces):
         p = work / f"seg{k:03d}.mp4"
         run(["ffmpeg", "-v", "error", "-y", "-ss", f"{b:.3f}", "-i", a.take, "-t", f"{e - b:.3f}",
-             "-map", "0:v:0", "-map", "0:a:0", "-vf", "scale=1080:1920,fps=30", "-c:v", "libx264", "-preset", "fast",
+             "-map", "0:v:0", "-map", "0:a:0", "-vf", "fps=30,format=yuv420p", "-c:v", "libx264", "-preset", "fast",
              "-crf", "16", "-c:a", "pcm_s16le", "-ar", "48000", "-ac", "1", str(p)])
         lst.append(f"file '{p}'")
     (work / "segs.txt").write_text("\n".join(lst))
@@ -104,16 +111,19 @@ def main():
     # 4. face into the card / corner box, then loudness
     full = [m for m in marks["marks"] if m["face"] == "full" and m.get("box")]
     pip = [m for m in marks["marks"] if m["face"] == "pip"]
-    fw, fh = 1080, 1920
+    F = {**FACE, **data.get("face_pos", {})}
+    fw, fh, _ = sc.probe(str(face))
     box = full[0]["box"] if full else {"x": 0, "y": 0, "w": 600, "h": 840}
     bw, bh = int(round(box["w"])), int(round(box["h"]))
-    ch = int(fh * FACE["card_h"]) // 2 * 2
+    ch = min(fh, int(fh * F["card_h"])) // 2 * 2
     cw = min(fw, int(ch * bw / bh)) // 2 * 2
-    cx = max(0, min(fw - cw, int(fw * FACE["cx"] - cw / 2)))
-    cy = max(0, min(fh - ch, int(fh * FACE["cy"] - ch * 0.42)))
-    ps = int(fw * FACE["pip_side"] * 1.9) // 2 * 2
-    px = max(0, min(fw - ps, int(fw * FACE["cx"] - ps / 2)))
-    py = max(0, min(fh - ps, int(fh * FACE["cy"] - ps * 0.45)))
+    if cw == fw:
+        ch = min(fh, int(cw * bh / bw)) // 2 * 2
+    cx = max(0, min(fw - cw, int(fw * F["cx"] - cw / 2)))
+    cy = max(0, min(fh - ch, int(fh * F["cy"] - ch * 0.42)))
+    ps = int(min(fw, fh) * F["pip_side"]) // 2 * 2
+    px = max(0, min(fw - ps, int(fw * F["cx"] - ps / 2)))
+    py = max(0, min(fh - ps, int(fh * F["cy"] - ps * 0.45)))
     P = marks["pip"]
     pw = int(round(P["w"]))
     mask(work / "m_full.png", bw, bh, 40)

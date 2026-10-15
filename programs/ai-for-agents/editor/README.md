@@ -9,12 +9,12 @@ Built 2026-10-12. Draft. Nothing here posts or uploads anything.
 
 ## The mistake phrase (added 2026-10-15)
 
-If you mess up a line, say **"Fuck that, Caleb"** and then say the line again. The cutter finds the phrase in the transcript and drops it along with the sentence you said right before it. It matches loosely, so whisper spellings like "F*** that, Kaleb" still count. A normal sentence like "but that, Caleb" stays in, because the first letter has to match.
+If you mess up a line, say **"Fuck that, Caleb"** and then say the line again. The cutter finds the phrase in the transcript and drops it along with the sentence you said right before it. It matches loosely, so whisper spellings like "F*** that, Kaleb" still count. Whisper sometimes hears it as "Buck that Caleb", so a first word ending in "uck" also counts. A normal sentence like "but that, Caleb" stays in. If your redo picks up partway through the sentence, it only cuts back to where the redo starts, so the good words before it stay.
 
 After rendering, it transcribes the finished video again and reports `mistake_phrase_gone`. Tested on 2026-10-15:
-- 5 word-list cases passed.
+- 6 word-list cases passed (`tests/test_mistake_phrase.py`).
 - A synthetic voice clip came out clean, even though whisper heard the phrase as "F*** heart, Calib".
-- No real take with the phrase exists yet.
+- On the first real take (the course intro, IMG_6290), it found all 4 times Caleb said it, at 24.4, 29.2, 122.2 and 134.6 s.
 
 ## Run it on your Mac
 
