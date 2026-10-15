@@ -1,0 +1,11 @@
+{
+  "name": "caleb-s-agents",
+  "owner": { "name": "Caleb Jackson", "email": "aire@calebjackson.org" },
+  "plugins": [
+    {
+      "name": "caleb-skills",
+      "source": "./",
+      "description": "Caleb Jackson's skill library: Nick Saraev's full free course (145 skills), the $25K roadmap, and the brand consistency audit."
+    }
+  ]
+}
