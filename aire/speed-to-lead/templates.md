@@ -23,7 +23,7 @@ Caleb Jackson
 REALTOR, Keller Williams First Choice
 (225) 747-0303
 
-## Text (160 characters max, daytime only)
+## Text (160 characters max, daytime only, sent from (225) 747-0303 via Messages on the Mac)
 Hi {{firstName}}, Caleb Jackson with KW First Choice. Got your {{requestPhrase}}. Calling you in a few min to grab the address. Reply STOP to opt out.
 
 ## Test addresses, never send
