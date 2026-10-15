@@ -21,6 +21,10 @@
   "phrase_gap_s": 0.6,
   "_source": "decided: PRODUCTION.md says keep the last good take. Matching rule is inference."
  },
+ "mistake": {
+  "phrase": "fuck that caleb",
+  "_source": "decided: Caleb 2026-10-15. Say it after a bad sentence and the cutter drops that sentence and the phrase. Matching is fuzzy (inference) so whisper spellings like F*** that, Kaleb still count."
+ },
  "face": {
   "punch_scale": 1.18,
   "min_shot_s": 2.5,
@@ -43,8 +47,14 @@
   "_source": "measured by eye on the Nate contact sheet: no running captions, short keyword labels in a pill near the bottom (CLI . COMMAND LINE TOOL, Google cloud project). decided: PRODUCTION.md wants captions for long videos too, so mode full is one flag away."
  },
  "targets": {
-  "cuts_per_min": [7, 13],
-  "shot_median_s": [3.5, 6.5],
+  "cuts_per_min": [
+   7,
+   13
+  ],
+  "shot_median_s": [
+   3.5,
+   6.5
+  ],
   "longest_gap_s": 1.2,
   "_source": "measured: Nate 9.6 cuts a minute, shot median 4.77 s, p90 11.9 s. Ranges are inference. The cutter checks its own output against these."
  }

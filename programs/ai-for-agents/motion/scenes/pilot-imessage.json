@@ -1,0 +1,67 @@
+{
+ "about": "Pilot: the iMessage lesson Caleb filmed 2026-10-14 (IMG_6269.MOV), re-cut in the kit. src is the stretch of the raw take each scene plays over, in seconds. build_pilot.py trims pauses inside each stretch and writes dur. Taylor, Alex and Jamie are fictional.",
+ "look": "ivory",
+ "chrome": "AI for Agents · Lesson 1",
+ "flag": "Fictional data",
+ "scenes": [
+  { "type": "face", "face": "full", "src": [35.4, 40.6],
+    "kicker": "Your texts", "title": "Your next deal is already *in your phone.*" },
+
+  { "type": "title", "face": "pip", "src": [2.6, 10.7],
+    "kicker": "Hey, I'm", "title": "Caleb *Jackson*", "sub": "REALTOR with Keller Williams First Choice",
+    "tags": ["4.5 years in real estate", "Builds his own AI tools"] },
+
+  { "type": "flow", "face": "pip", "src": [11.1, 23.8], "step": 1.6,
+    "kicker": "What we're building", "title": "AI that runs the *daily routine*",
+    "nodes": [ { "icon": "chat", "t": "Your messages" }, { "icon": "spark", "t": "AI sorts them" }, { "icon": "check", "t": "Your *to-do*", "hi": true } ] },
+
+  { "type": "phone", "face": "none", "src": [24.5, 35.1], "tagAt": 6.2,
+    "app": "Messages", "kicker": "Lesson 1", "title": "Your *text messages*",
+    "rows": [ { "n": "Taylor", "p": "Dinner Friday? We could do the new..." }, { "n": "Alex", "p": "Water heater at the listing is done" },
+              { "n": "Jamie", "p": "We're thinking about buying or selling", "tag": "Lead", "hi": true }, { "n": "Mom", "p": "Call me when you get a sec" },
+              { "n": "Title Co.", "p": "Closing docs attached" }, { "n": "Coach Ray", "p": "Practice moved to 6" } ] },
+
+  { "type": "beforeafter", "face": "pip", "src": [41.2, 54.9], "afterAt": 2.4,
+    "kicker": "The trick", "title": "Know *who's who*. Keep the context.",
+    "beforeLabel": "No plan", "before": ["Good convos get buried", "You forget who said what", "Follow-ups slip"],
+    "afterLabel": "With a plan", "after": ["Every thread gets a label", "The exact message is saved", "One *next step* per person"] },
+
+  { "type": "cards", "face": "pip", "src": [55.0, 64.3], "stagger": 0.3,
+    "kicker": "From the ground up", "title": "Three contacts. *All fictional.*",
+    "cards": [ { "icon": "heart", "t": "Taylor", "d": "Asking about dinner" },
+               { "icon": "wrench", "t": "Alex", "d": "Repairs at a listing" },
+               { "icon": "home", "t": "Jamie", "d": "Buying or selling next spring" } ] },
+
+  { "type": "thread", "face": "none", "src": [64.9, 73.4], "gap": 0.9, "tagAt": 5.2, "tagStagger": 0.5,
+    "kicker": "Who's who", "title": "Not every text is a lead",
+    "threads": [ { "name": "Taylor", "role": "Friend", "tag": "Friend",
+                   "msgs": [ { "t": "Dinner Friday? 7 work?" }, { "t": "Yes! I'll grab a table", "me": true } ] },
+                 { "name": "Alex", "role": "Plumber", "tag": "Vendor",
+                   "msgs": [ { "t": "Water heater at the Oak St listing is done" }, { "t": "Invoice coming tonight" } ] } ] },
+
+  { "type": "thread", "face": "none", "src": [74.1, 80.6], "gap": 1.2, "tagAt": 5.2,
+    "kicker": "Then there's Jamie", "title": "This one is a *lead*",
+    "threads": [ { "name": "Jamie", "role": "Past open house guest", "tag": "Lead", "hi": true,
+                   "msgs": [ { "t": "We're thinking about buying or selling next spring." }, { "t": "Could you help us understand what we need to do first?" } ] } ] },
+
+  { "type": "record", "face": "pip", "src": [80.6, 93.7], "fieldAt": [1.8, 4.0, 5.4, 7.0, 10.6],
+    "kicker": "What we save", "title": "One record. *One next step.*",
+    "name": "Jamie", "badge": "CRM record", "badgeHi": false,
+    "fields": [ { "k": "Interest", "v": "Buying or selling" }, { "k": "Timing", "v": "Next spring" },
+                { "k": "Their words", "v": "Could you help us understand what we need to do first?", "quote": true },
+                { "k": "Source", "v": "iMessage" }, { "k": "Next step", "v": "Offer a planning call", "next": true } ] },
+
+  { "type": "prompt", "face": "pip", "src": [94.0, 100.3], "cps": 44,
+    "kicker": "AI drafts it", "title": "You *approve* it",
+    "boxLabel": "Draft reply to Jamie", "pill": "Not sent",
+    "text": "Hey Jamie! Spring is a great time to plan. Want to grab 20 minutes this week and map out your first steps?",
+    "approve": "Nothing goes out without you" },
+
+  { "type": "checklist", "face": "pip", "src": [100.8, 106.0], "checkAt": [0.9, 2.6, 3.5],
+    "kicker": "Before we build", "title": "Prototype first",
+    "items": ["Fictional data only", "Verify every tool", "Test it, then use it"] },
+
+  { "type": "face", "face": "full", "src": [106.3, 113.6], "textAt": 0.3,
+    "kicker": "By the end", "title": "A follow-up list built from *what people actually said.*" }
+ ]
+}

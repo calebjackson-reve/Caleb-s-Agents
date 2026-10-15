@@ -7,6 +7,15 @@ Two scripts that turn a raw challenge take into a cut that moves like Nate Herk'
 
 Built 2026-10-12. Draft. Nothing here posts or uploads anything.
 
+## The mistake phrase (added 2026-10-15)
+
+If you mess up a line, say **"Fuck that, Caleb"** and then say the line again. The cutter finds the phrase in the transcript and drops it along with the sentence you said right before it. It matches loosely, so whisper spellings like "F*** that, Kaleb" still count. A normal sentence like "but that, Caleb" stays in, because the first letter has to match.
+
+After rendering, it transcribes the finished video again and reports `mistake_phrase_gone`. Tested on 2026-10-15:
+- 5 word-list cases passed.
+- A synthetic voice clip came out clean, even though whisper heard the phrase as "F*** heart, Calib".
+- No real take with the phrase exists yet.
+
 ## Run it on your Mac
 
 Use the same Python that Studio uses (`~/teardown-studio/.venv`). It already has faster-whisper and the `small.en` speech model. One time, in Terminal:

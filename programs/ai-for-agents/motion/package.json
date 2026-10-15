@@ -1,0 +1,8 @@
+{
+  "name": "cj-motion-kit",
+  "private": true,
+  "type": "module",
+  "description": "Caleb Jackson motion kit: HTML + GSAP scenes rendered frame by frame with Playwright and ffmpeg",
+  "scripts": { "render": "node render.mjs" },
+  "dependencies": { "playwright": "1.56.1" }
+}
