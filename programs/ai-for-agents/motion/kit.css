@@ -166,3 +166,12 @@ body { font-family: "Inter", sans-serif; color: var(--fg); -webkit-font-smoothin
 .title { display: flex; flex-direction: column; justify-content: center; height: 100%; max-width: 1400px; }
 .title .rule { width: 180px; margin: 46px 0 34px; }
 .tags { display: flex; gap: 16px; flex-wrap: wrap; }
+
+/* talk: keyword pills over his full-frame face. The stage turns key green for the compositor. */
+.s-talk { padding: 0; }
+.talk { position: absolute; left: 110px; bottom: 110px; display: flex; flex-wrap: wrap; gap: 18px; max-width: 1300px; }
+.talk .kw { display: inline-block; padding: 20px 34px; border-radius: 999px; background: var(--ivory); color: var(--ink);
+  font: 600 44px/1 "Inter"; letter-spacing: -.01em; box-shadow: 0 0 0 3px var(--ink); }
+.talk .kw em { font-style: normal; color: var(--ember-deep, var(--ember)); }
+.talk .kw.hi { background: var(--ember); color: #fff; }
+.talk .kw.hi em { color: #fff; }

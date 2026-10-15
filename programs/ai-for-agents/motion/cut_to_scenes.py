@@ -5,7 +5,8 @@
 
 Each scene in the list says which stretch of the take it plays over ("src": [start, end]) and
 how much of your face shows ("face": "full" for the hook and last line, "pip" for the small
-corner box, "none" when the screen is busy). The script:
+corner box, "none" when the screen is busy, "talk" for a full-frame talking head with keyword
+pills, the way Nate Herk cuts). The script:
   1. finds every word (the editor's whisper step) and drops the "Fuck that, Caleb" retakes,
   2. trims the pauses inside each stretch and joins them in scene order (face.mp4),
   3. renders the animation to the exact scene lengths (render.mjs, motion.mp4),
@@ -25,7 +26,7 @@ import skool_cut as sc  # noqa: E402
 
 # Where the face sits in the take, as a share of the frame. A scene list can override any of these
 # with "face_pos". pip_side is the corner box crop as a share of the frame's shorter side.
-FACE = {"cx": 0.5, "cy": 0.45, "card_h": 1.0, "pip_side": 0.6}
+FACE = {"cx": 0.5, "cy": 0.45, "card_h": 1.0, "pip_side": 0.6, "talk_zoom": 1.0}
 
 
 def run(cmd):
@@ -111,6 +112,7 @@ def main():
     # 4. face into the card / corner box, then loudness
     full = [m for m in marks["marks"] if m["face"] == "full" and m.get("box")]
     pip = [m for m in marks["marks"] if m["face"] == "pip"]
+    talk = [m for m in marks["marks"] if m["face"] == "talk"]
     F = {**FACE, **data.get("face_pos", {})}
     fw, fh, _ = sc.probe(str(face))
     box = full[0]["box"] if full else {"x": 0, "y": 0, "w": 600, "h": 840}
@@ -124,15 +126,23 @@ def main():
     ps = int(min(fw, fh) * F["pip_side"]) // 2 * 2
     px = max(0, min(fw - ps, int(fw * F["cx"] - ps / 2)))
     py = max(0, min(fh - ps, int(fh * F["cy"] - ps * 0.45)))
+    # talk: a 16:9 window around the face, zoomed in by talk_zoom, filling the frame
+    th = int(min(fh, fw * 9 / 16) / F["talk_zoom"]) // 2 * 2
+    tw = int(th * 16 / 9) // 2 * 2
+    tx = max(0, min(fw - tw, int(fw * F["cx"] - tw / 2)))
+    ty = max(0, min(fh - th, int(fh * F["cy"] - th * 0.5)))
     P = marks["pip"]
     pw = int(round(P["w"]))
     mask(work / "m_full.png", bw, bh, 40)
     mask(work / "m_pip.png", pw, pw, 32)
     on = lambda ms, pad=0: "+".join(f"between(t,{m['start']:.3f},{m['end'] - pad:.3f})" for m in ms) or "0"
-    fc = (f"[1:v]split=2[f1][f2];"
+    fc = (f"[1:v]split=3[f1][f2][f3];[0:v]split=2[m0][m1];"
+          f"[f3]crop={tw}:{th}:{tx}:{ty},scale=1920:1080,setsar=1[tf];"
+          f"[m1]colorkey=0x00FF00:0.3:0.06,despill=type=green[mk];[tf][mk]overlay=format=auto[talk];"
+          f"[m0][talk]overlay=0:0:enable='{on(talk)}'[v0];"
           f"[f1]crop={cw}:{ch}:{cx}:{cy},scale={bw}:{bh},format=rgba[fc];[2:v]format=gray[mf];[fc][mf]alphamerge[full];"
           f"[f2]crop={ps}:{ps}:{px}:{py},scale={pw}:{pw},format=rgba[pc];[3:v]format=gray[mp];[pc][mp]alphamerge[pip];"
-          f"[0:v][full]overlay={int(round(box['x']))}:{int(round(box['y']))}:enable='{on(full, 0.3)}'[v1];"
+          f"[v0][full]overlay={int(round(box['x']))}:{int(round(box['y']))}:enable='{on(full, 0.3)}'[v1];"
           f"[v1][pip]overlay={int(round(P['x']))}:{int(round(P['y']))}:enable='{on(pip)}'[v];"
           f"[1:a]loudnorm=I={spec['output']['loudness_lufs']}:TP=-1.5:LRA=11,aresample=48000[a]")
     final = out.with_suffix(".mp4")
@@ -142,9 +152,9 @@ def main():
          "-t", f"{marks['duration']:.3f}", "-movflags", "+faststart", str(final)])
 
     dur = sc.probe(str(final))[2]
-    face_s = {k: round(sum(m["end"] - m["start"] for m in marks["marks"] if m["face"] == k), 1) for k in ("full", "pip", "none")}
+    face_s = {k: round(sum(m["end"] - m["start"] for m in marks["marks"] if m["face"] == k), 1) for k in ("full", "pip", "talk", "none")}
     report = {"out": str(final), "duration_s": round(dur, 1), "scenes": len(marks["marks"]), "face_seconds": face_s,
-              "full_face_share": round(face_s["full"] / dur, 2), "pieces_cut": len(pieces)}
+              "full_face_share": round((face_s["full"] + face_s["talk"]) / dur, 2), "pieces_cut": len(pieces)}
     print(json.dumps(report, indent=1))
 
 

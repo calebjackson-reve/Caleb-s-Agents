@@ -2,7 +2,7 @@
    renderer can seek any frame and get the same picture every time.
 
    window.KIT_DATA = { look: "ivory"|"ink"|"grid", chrome: "AI for Agents · Lesson 1",
-                       flag: "Fictional data", scenes: [ { type, dur, face: "none"|"pip"|"full", ...data } ] }
+                       flag: "Fictional data", scenes: [ { type, dur, face: "none"|"pip"|"full"|"talk", ...data } ] }
    Text fields take *word* for the one ember accent in a view. */
 (function () {
   const E = "power3.out", SOFT = "power2.inOut";
@@ -238,6 +238,17 @@
     },
   });
 
+  // talking head, full frame (Nate-style): the compositor keys out the green and puts his face under it.
+  // Only keyword pills show, popping in at "at" seconds: pills: [ { t: "Your *CRM*", at: 1.2 } ]
+  S.talk = (d) => ({
+    html: `<div class="talk">${(d.pills || []).map((p) => `<span class="kw${p.hi ? " hi" : ""}">${accent(p.t)}</span>`).join("")}</div>`,
+    anim(tl, r) {
+      r.querySelectorAll(".kw").forEach((el, k) => {
+        tl.from(el, { scale: 0.6, opacity: 0, y: 30, duration: 0.45, ease: "back.out(1.8)" }, (d.pills[k].at ?? 0.3 + k * 0.6));
+      });
+    },
+  });
+
   function build(data) {
     document.body.className = "look-" + (data.look || "ivory");
     const stage = document.querySelector(".stage");
@@ -264,6 +275,12 @@
       if (i < data.scenes.length - 1) {
         tl.to(el, { opacity: 0, y: -24, duration: 0.3, ease: "power2.in" }, end - 0.3);
         tl.set(el, { visibility: "hidden" }, end);
+      }
+      if (sc.face === "talk") {
+        const chrome = stage.querySelector(".chrome");
+        tl.set(stage, { backgroundColor: "#00FF00", backgroundImage: "none" }, start);
+        tl.set(stage, { backgroundColor: "", backgroundImage: "" }, end);
+        if (chrome) { tl.set(chrome, { autoAlpha: 0 }, start); tl.set(chrome, { autoAlpha: 1 }, end); }
       }
       if (sc.face === "pip") {
         tl.set(pip, { visibility: "visible" }, start);

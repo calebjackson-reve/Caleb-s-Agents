@@ -28,8 +28,9 @@ Open `player.html?scenes=scenes/pilot-imessage.json&t=12` (served over http) to 
 | phone | A phone screen with a list and tags popping on |
 | sort | Names dropping into friend, family, agent, client and vendor |
 | face | Headline on the left and his video in a portrait card |
+| talk | His face fills the frame with keyword pills popping in, the way Nate Herk cuts. Use with `"face": "talk"` |
 
 Looks: `ivory` (clean, closest to Nick), `ink` (dark), `grid` (ivory with dots and Jackson Display caps).
-Face modes per scene: `full`, `pip` (the 360 px corner box) or `none`.
+Face modes per scene: `full`, `pip` (the 360 px corner box), `talk` (full frame, the stage turns key green and the compositor puts his face under the pills) or `none`. `face_pos.talk_zoom` zooms the full-frame face in.
 
 Fonts are under the SIL Open Font License: Instrument Serif and Inter, plus Jackson Display (Caleb's, built on Inter).
