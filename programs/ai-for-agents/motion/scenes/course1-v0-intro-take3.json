@@ -1,0 +1,35 @@
+{
+ "about": "Course 1, video 0: the intro, cut from introvideo.mov (4K, filmed 2026-10-15 off the approved short script: hook A, what he does, the gap, the step-50 story, third grade level, never used AI). Hook take 2 and last-line take 2 were used. Ivory look, Nick style, which Caleb liked on cut 1.",
+ "look": "ivory",
+ "chrome": "AI for Agents · Course 1",
+ "face_pos": { "cx": 0.5, "cy": 0.5, "card_h": 1.0, "pip_side": 0.62 },
+ "scenes": [
+  { "type": "face", "face": "full", "src": [14.3, 21.4],
+    "kicker": "Be honest", "title": "Tried it. *Not using it.*" },
+
+  { "type": "title", "face": "pip", "src": [22.2, 31.4],
+    "kicker": "I'm", "title": "Caleb *Jackson*", "sub": "REALTOR with Keller Williams First Choice",
+    "tags": ["Sells houses", "Builds his own AI tools"] },
+
+  { "type": "title", "face": "pip", "src": [33.9, 42.3],
+    "kicker": "Here's the gap", "title": "Small business owners. *Expert-level* AI.",
+    "tags": ["Taught over our heads"] },
+
+  { "type": "chips", "face": "pip", "src": [42.4, 51.3],
+    "kicker": "Why it didn't stick", "title": "They start at *step 50*",
+    "chips": [ { "v": 50, "pre": "Step ", "lab": "Where AI gets taught" }, { "v": 1, "pre": "Step ", "lab": "Where *this course* starts", "hi": true } ] },
+
+  { "type": "title", "face": "pip", "src": [51.8, 61.8],
+    "kicker": "I learned the hard way", "title": "I lost a whole *room*", "sub": "By starting at step 50." },
+
+  { "type": "checklist", "face": "pip", "src": [62.3, 71.6], "checkAt": [2.9, 4.8, 5.9],
+    "kicker": "So this course is", "title": "Built for *every day*",
+    "items": ["A third grade level", "On your phone", "In plain English"] },
+
+  { "type": "title", "face": "pip", "src": [72.0, 77.4],
+    "kicker": "Who it's for", "title": "Never used AI? *Start here.*" },
+
+  { "type": "face", "face": "full", "src": [84.5, 88.4], "textAt": 0.3,
+    "kicker": "Your next step", "title": "Start with *lesson one.*", "sub": "It's ten minutes." }
+ ]
+}
