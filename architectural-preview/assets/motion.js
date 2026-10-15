@@ -269,7 +269,7 @@
       if (this.o.select) this.initSelect();
       return this;
     }
-    stop() { this.pause(); if(this.selectCleanup)this.selectCleanup(); this.wrapper.removeEventListener('mouseenter', this.onEnter); this.wrapper.removeEventListener('mouseleave', this.onLeave); this.wrapper.removeEventListener('mousemove', this.onMove); }
+    stop() { this.pause(); this.wrapper.removeEventListener('mouseenter', this.onEnter); this.wrapper.removeEventListener('mouseleave', this.onLeave); this.wrapper.removeEventListener('mousemove', this.onMove); }
     onEnter() { this.inside = true; this.setHover(); if (this.o.pauseOutside) this.resume(); }
     onLeave() { this.inside = false; this.setHover(); if (this.o.pauseOutside) this.pause(); }
     onMove() { if (!this.inside) this.onEnter(); }
@@ -310,7 +310,7 @@
       const accent = cssVar('--mk-accent-rgb', '15, 92, 76');
       const pos = (e) => { const r = wrap.getBoundingClientRect(); const p = e.touches ? e.touches[0] : e; return { x: p.clientX - r.left, y: p.clientY - r.top }; };
       const onDown = (e) => {
-        if (prefersReduced() || !finePointer() || e.button !== 0 || e.target.closest('button,a')) return;
+        if (e.button === 2) return;
         if (box) box.remove();
         box = document.createElement('div'); box.className = 'mk-select-box';
         start = pos(e); box.style.left = start.x + 'px'; box.style.top = start.y + 'px';
@@ -332,11 +332,11 @@
         });
       };
       const onUp = () => { down = false; if (box) { box.remove(); box = null; } };
-      
+      wrap.addEventListener('contextmenu', (e) => e.preventDefault());
       wrap.addEventListener('mousedown', onDown); wrap.addEventListener('touchstart', onDown, { passive: true });
       wrap.addEventListener('mousemove', onMove); wrap.addEventListener('touchmove', onMove, { passive: true });
-      global.addEventListener('mouseup', onUp); global.addEventListener('blur', onUp); wrap.addEventListener('touchend', onUp);
-      this.selectCleanup=()=>{onUp();wrap.removeEventListener('mousedown',onDown);wrap.removeEventListener('touchstart',onDown);wrap.removeEventListener('mousemove',onMove);wrap.removeEventListener('touchmove',onMove);global.removeEventListener('mouseup',onUp);global.removeEventListener('blur',onUp);wrap.removeEventListener('touchend',onUp)};
+      wrap.addEventListener('mouseup', onUp); wrap.addEventListener('touchend', onUp);
+      $$(this.o.selectItems, wrap).forEach((it) => it.addEventListener('click', () => it.classList.remove('active')));
     }
   }
   MK.Ruler = Ruler;
@@ -506,7 +506,7 @@
           if (e.pointerType === 'touch') return;
           over = true; exit.pause(0); btn.classList.remove('is-fill-exiting', 'is-fill-entered'); btn.classList.add('is-fill-active'); entered = false;
           gsap.set(bg, { webkitMaskPosition: '0% 0', maskPosition: '0% 0' }); gsap.set(btn, { color: resting });
-          if (prefersReduced()) { entered = true; enter.progress(1).pause(); btn.classList.add('is-fill-entered'); return; }
+          if (reduced) { entered = true; enter.progress(1).pause(); btn.classList.add('is-fill-entered'); return; }
           enter.eventCallback('onComplete', () => { if (over) { entered = true; btn.classList.add('is-fill-entered'); } });
           enter.restart();
         });
@@ -597,10 +597,161 @@
   };
 
   /* ------------------------------------------------------------------------
-     12. One-call setup.
+     12. Fling. The playful pointer effect from Heron's explore band. Clones
+     a hidden source element on pointer movement, but only once the pointer
+     has travelled past a threshold since the last clone, so it reads as
+     throwing cards out behind you rather than following you. The throw
+     distance comes from pointer speed, clamped, and the smooth scroller's
+     velocity is added into the vertical component, so scrolling through the
+     band slings the cards harder downward. Observed: threshold 50px,
+     12 live clones max, 40 * (speed - threshold) * 1.1 capped at 330px,
+     0.5s expo.out travel, fade from 0.7s, 650ms idle drip, cache lerp 0.2.
+     ------------------------------------------------------------------------ */
+  class Fling {
+    constructor(opts = {}) {
+      const o = Object.assign({ el: '[data-fling]', src: '.mk-fling-src', bounds: null, threshold: 50, maxClones: 12, speedScale: 40, speedMult: 1.1, maxThrow: 330, idleDelay: 650, useScroll: true }, opts);
+      this.o = o;
+      this.root = typeof o.el === 'string' ? document.querySelector(o.el) : o.el;
+      if (!this.root) return;
+      this.sources = $$(o.src, this.root);
+      this.sources.forEach((s) => { s.style.display = 'none'; });
+      this.bounds = (o.bounds && (typeof o.bounds === 'string' ? this.root.querySelector(o.bounds) : o.bounds)) || this.root;
+      this.srcIndex = 0;
+      this.clones = [];
+      this.z = 1;
+      this.inside = false;
+      this.mouse = { x: 0, y: 0 };
+      this.last = { x: 0, y: 0 };
+      this.cache = { x: 0, y: 0 };
+      this.idle = null;
+      this.raf = null;
+      this.lastScrollY = null;
+      this.scrollVel = 0;
+      this.onMove = this.onMove.bind(this);
+      this.onEnter = this.onEnter.bind(this);
+      this.onLeave = this.onLeave.bind(this);
+      this.render = this.render.bind(this);
+    }
+
+    init() {
+      if (!this.root || !this.sources || !this.sources.length) return null;
+      if (!finePointer() || prefersReduced()) return null;
+      if (getComputedStyle(this.root).position === 'static') this.root.style.position = 'relative';
+      this.root.addEventListener('pointerenter', this.onEnter);
+      this.root.addEventListener('pointerleave', this.onLeave);
+      this.root.addEventListener('pointermove', this.onMove, { passive: true });
+      this.raf = requestAnimationFrame(this.render);
+      return this;
+    }
+
+    onEnter(e) { this.inside = true; this.mouse = { x: e.clientX, y: e.clientY }; this.last = { x: e.clientX, y: e.clientY }; this.cache = { x: e.clientX, y: e.clientY }; }
+    onLeave() { this.inside = false; this.clearIdle(); }
+    onMove(e) { this.mouse = { x: e.clientX, y: e.clientY }; }
+    clearIdle() { if (this.idle) { clearInterval(this.idle); this.idle = null; } }
+
+    render() {
+      if (!this.inside) { this.clearIdle(); this.raf = requestAnimationFrame(this.render); return; }
+      const moved = dist(this.last.x, this.last.y, this.mouse.x, this.mouse.y);
+      this.scrollVel = this.scrollVelocity();
+      this.cache.x = lerp(this.cache.x || this.mouse.x, this.mouse.x, 0.2);
+      this.cache.y = lerp(this.cache.y || this.mouse.y, this.mouse.y, 0.2);
+      if (moved > this.o.threshold) {
+        this.throwOne();
+        this.z++;
+        this.last = { x: this.mouse.x, y: this.mouse.y };
+        this.clearIdle();
+      } else if (!this.idle && moved === 0) {
+        this.idle = setInterval(() => { this.throwOne(); this.z++; this.last = { x: this.mouse.x, y: this.mouse.y }; }, this.o.idleDelay);
+      }
+      if (this.clones.length === 0 && this.z !== 1) this.z = 1;
+      this.raf = requestAnimationFrame(this.render);
+    }
+
+    /* Heron reads Lenis's own velocity. With no smooth scroller on the page
+       we fall back to the native delta per frame so the scroll component of
+       the throw still exists. */
+    scrollVelocity() {
+      if (MK.scroll.lenis && typeof MK.scroll.lenis.velocity === 'number') return MK.scroll.lenis.velocity;
+      const y = global.scrollY;
+      const v = this.lastScrollY == null ? 0 : y - this.lastScrollY;
+      this.lastScrollY = y;
+      return v;
+    }
+
+    throwOne() {
+      const gsap = global.gsap; if (!gsap) return;
+      const src = this.sources[this.srcIndex % this.sources.length];
+      this.srcIndex++;
+      if (!src) return;
+      if (this.clones.length >= this.o.maxClones) {
+        const old = this.clones.shift();
+        gsap.to(old, { opacity: 0, duration: 0.2, onComplete: () => old.remove() });
+      }
+      const node = src.cloneNode(true);
+      node.style.display = '';
+      node.style.position = 'absolute';
+      node.style.top = '0';
+      node.style.left = '0';
+      node.style.pointerEvents = 'none';
+      node.setAttribute('aria-hidden', 'true');
+      node.classList.remove(this.o.src.replace(/^\./, ''));
+      node.classList.add('mk-fling-clone');
+      this.root.appendChild(node);
+      this.clones.push(node);
+
+      const r = this.root.getBoundingClientRect();
+      const ox = this.mouse.x - r.left;
+      const oy = this.mouse.y - r.top;
+      let dx = this.mouse.x - this.last.x;
+      let dy = this.mouse.y - this.last.y;
+      if (this.o.useScroll) dy += (this.scrollVel || 0);
+      const u = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+      const throwLen = Math.min(this.o.maxThrow, this.o.speedScale * Math.max(0, u - this.o.threshold) * this.o.speedMult);
+      const tx = ox + (dx / u) * throwLen;
+      const ty = oy + (dy / u) * throwLen;
+
+      const b = this.bounds.getBoundingClientRect();
+      const nb = node.getBoundingClientRect();
+      const drop = (b.bottom - r.top + nb.height) - ty;
+
+      gsap.timeline({ onComplete: () => { node.remove(); this.clones = this.clones.filter((c) => c !== node); } })
+        .set(node, { opacity: 1, scale: 0.8, xPercent: -50, yPercent: -50, zIndex: this.z, x: ox, y: oy, rotate: 0 })
+        .to(node, { duration: 0.5, scale: 1, x: tx, y: ty, ease: 'expo.out', opacity: 1 }, 0)
+        .to(node, { duration: 0.5, opacity: 0, ease: 'power1.in', y: ty + drop }, 0.7);
+    }
+
+    destroy() {
+      if (!this.root) return;
+      this.clearIdle();
+      this.raf && cancelAnimationFrame(this.raf);
+      this.root.removeEventListener('pointerenter', this.onEnter);
+      this.root.removeEventListener('pointerleave', this.onLeave);
+      this.root.removeEventListener('pointermove', this.onMove);
+      this.clones.forEach((c) => c.remove());
+      this.clones = [];
+    }
+  }
+
+  MK.Fling = Fling;
+  MK.fling = {
+    instances: [],
+    init(opts = {}) {
+      const sel = opts.el || '[data-fling]';
+      const made = [];
+      $$(typeof sel === 'string' ? sel : '[data-fling]').forEach((el) => {
+        const f = new Fling(Object.assign({}, opts, { el })).init();
+        if (f) { this.instances.push(f); made.push(f); }
+      });
+      return made;
+    },
+    destroy() { this.instances.forEach((f) => f.destroy()); this.instances = []; },
+  };
+
+  /* ------------------------------------------------------------------------
+     13. One-call setup.
      ------------------------------------------------------------------------ */
   MK.init = function (opts = {}) {
-    const o = Object.assign({ scroll: true, cursor: true, header: '.mk-header', loader: true, reveal: true, sequence: true, btnFill: true, marquee: true, ink: true, onReady: null }, opts);
+    const o = Object.assign({ scroll: true, cursor: true, header: '.mk-header', loader: true, reveal: true, sequence: true, btnFill: true, marquee: true, ink: true, fling: true, onReady: null }, opts);
     if (global.gsap) { global.gsap.registerPlugin(global.ScrollTrigger, global.SplitText); }
     if (o.scroll) MK.scroll.init(typeof o.scroll === 'object' ? o.scroll : {});
     if (o.cursor) MK.cursor.init(typeof o.cursor === 'object' ? o.cursor : {});
@@ -608,6 +759,7 @@
     const boot = () => {
       if (o.btnFill) MK.btnFill.init();
       if (o.marquee) MK.marquee.init();
+      if (o.fling) MK.fling.init(typeof o.fling === 'object' ? o.fling : {});
       if (o.ink) MK.ink.init();
       if (o.sequence) MK.sequence.init();
       if (o.reveal) MK.reveal.init();

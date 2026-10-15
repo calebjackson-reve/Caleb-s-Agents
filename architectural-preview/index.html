@@ -21,16 +21,228 @@ html{scroll-behavior:smooth;scroll-padding-top:110px}.chapter-rail{position:fixe
 
 @media(max-width:700px){.chapter-rail{top:calc(var(--header) + 6px);bottom:auto;left:6px;right:6px;transform:none;height:52px;justify-content:center;border-top:0;background:var(--paper)}main{padding-top:52px}.scene{top:calc(var(--header) + 52px);height:calc(100dvh - var(--header) - 52px)}html{scroll-padding-top:calc(var(--header) + 72px)}.chapter-rail a{padding:8px;min-width:40px}.scene .process-card{bottom:5%}.scene-note{bottom:6px}.motion-frame{inset:205px 5% 170px}}
 @media(max-width:700px) and (prefers-reduced-motion:reduce){.scene{top:0;height:auto}}
+
+/* --- Tools: working answers, no sign-up --- */
+.tools{border-top:1px solid var(--line)}
+.tools-head{padding:56px 28px 32px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:end}
+.eyebrow{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+.tools-head h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(32px,4vw,62px);line-height:.98;letter-spacing:-.015em;margin:0}
+.tools-head p{margin:0;max-width:430px;line-height:1.5;color:#3a332e}
+.tool-grid{display:grid;grid-template-columns:1fr 1fr}
+.tool{padding:34px 28px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:18px}
+.tool:last-child{border-right:0}
+.tool-kicker{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#72726f;margin:0}
+.tool h3{font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;line-height:1;letter-spacing:-.015em;margin:0}
+.tool-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tool-field{display:flex;flex-direction:column;gap:5px}
+.tool-field span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#72726f}
+.tool-field input{font:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:0;min-height:44px;width:100%;box-sizing:border-box}
+.tool-field input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tool-out{border-top:1px solid var(--line);padding-top:16px;margin-top:auto;display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.tool-out b{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(34px,4.4vw,56px);line-height:1;letter-spacing:-.02em;color:var(--ink)}
+.tool-out i{font-style:normal;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#72726f}
+.tool-sub{font-size:12px;color:#72726f;margin:0;line-height:1.5}
+.tool-err{color:var(--accent);font-size:12px;margin:0;min-height:1.2em}
+.tool-links{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+.tool-links-3{grid-template-columns:repeat(3,1fr)}
+.tool-links a{padding:22px 28px;border-right:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:16px;text-transform:uppercase;font-size:12px;letter-spacing:.04em}
+.tool-links a:last-child{border-right:0}
+.tool-links a span{color:var(--accent)}
+.tool-links a em{font-style:normal;color:#72726f;text-transform:none;letter-spacing:0;font-size:12px}
+/* --- Golf and water --- */
+.living{border-top:1px solid var(--line)}
+.living-head{padding:56px 28px 28px;border-bottom:1px solid var(--line)}
+.living-head h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(32px,4.4vw,66px);line-height:.98;letter-spacing:-.015em;margin:0 0 16px}
+.living-head p{margin:0;max-width:560px;line-height:1.5;color:#3a332e}
+.course-list{display:grid;grid-template-columns:repeat(3,1fr)}
+.course{padding:26px 24px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);position:relative;transition:background .3s}
+.course:nth-child(3n){border-right:0}
+.course:hover{background:rgba(232,119,87,.05)}
+.course b{display:block;font-family:'Instrument Serif',serif;font-weight:400;font-size:24px;line-height:1.05;letter-spacing:-.01em;margin-bottom:7px}
+.course i{font-style:normal;display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.course p{margin:0;font-size:13px;line-height:1.5;color:#3a332e}
+.course-num{position:absolute;top:24px;right:24px;font-size:10px;color:#b4b4b0;letter-spacing:.08em}
+.living{position:relative;overflow:hidden}
+.course-band{position:relative}
+.fling-tile.mk-fling-src{display:none}
+.fling-tile{width:184px;border:1px solid var(--ink);background:var(--paper);padding:12px 14px 13px;box-shadow:0 10px 26px rgba(20,16,14,.1)}
+.fling-tile svg{display:block;width:26px;height:26px;margin-bottom:9px}
+.fling-tile em{font-style:normal;display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+.fling-tile strong{display:block;font-family:'Instrument Serif',serif;font-weight:400;font-size:17px;line-height:1.08;letter-spacing:-.01em}
+.fling-hint{padding:0 28px 22px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#b4b4b0;border-bottom:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){.fling-hint{display:none}}
+.living-note{padding:22px 28px;font-size:12px;color:#72726f;border-bottom:1px solid var(--line)}
+.water{display:grid;grid-template-columns:1fr 1fr}
+.water-copy{padding:44px 28px;border-right:1px solid var(--line)}
+.water-copy h3{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(26px,3vw,42px);line-height:1;letter-spacing:-.015em;margin:0 0 18px}
+.water-copy p{margin:0 0 16px;line-height:1.55;color:#3a332e}
+.water-art{padding:40px 28px;display:grid;place-items:center}
+.water-art svg{width:100%;max-width:460px;height:auto}
+/* --- Production numbers --- */
+.numbers-row{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line)}
+.stat{padding:38px 24px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(36px,4.6vw,64px);line-height:1;letter-spacing:-.02em}
+.stat span{display:block;margin-top:9px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#72726f}
+@media(max-width:860px){
+.tools-head{grid-template-columns:1fr;padding:40px 20px 26px}
+.tool-grid{grid-template-columns:1fr}
+.tool{border-right:0;border-bottom:1px solid var(--line);padding:28px 20px}
+.tool-links,.tool-links-3{grid-template-columns:1fr}
+.tool-links a{border-right:0;border-bottom:1px solid var(--line);padding:20px}
+.course-list{grid-template-columns:1fr}
+.course{border-right:0}
+.living-head{padding:40px 20px 24px}
+.water{grid-template-columns:1fr}
+.water-copy{border-right:0;border-bottom:1px solid var(--line);padding:32px 20px}
+.numbers-row{grid-template-columns:1fr 1fr}
+.stat{padding:26px 18px}
+.stat:nth-child(2n){border-right:0}
+.stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+}
+@media(max-width:560px){.tool-fields{grid-template-columns:1fr}}
+
+.has-split h2,.has-split h1{transform:none!important;opacity:1!important;transition:none!important}
+.mk-line{overflow:hidden}
+.strip.is-marquee{display:block;overflow:hidden;white-space:nowrap}
+.strip.is-marquee .strip-track{display:inline-flex;will-change:transform}
+.strip.is-marquee .strip-track span{display:inline-block;padding:14px 34px;border-right:1px solid var(--line)}
+.strip.is-marquee:hover .strip-track{animation-play-state:paused}
+@keyframes strip-roll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.strip.is-marquee .strip-track{animation:none!important}}
+
+/* Chapter rail: collapse to markers so it never covers content or blocks a field.
+   Labels slide out on hover or keyboard focus. Desktop only; the phone layout
+   already puts the rail in its own strip under the header. */
+@media(min-width:861px){
+ .chapter-rail{overflow:hidden;max-width:38px;transition:max-width .35s cubic-bezier(.2,.7,.3,1)}
+ .chapter-rail:hover,.chapter-rail:focus-within{max-width:230px}
+ .chapter-rail a{white-space:nowrap;gap:14px;padding:12px 11px}
+ .chapter-rail a:before{flex:none}
+ .chapter-rail a[aria-current=true]:before{background:var(--accent);border-color:var(--accent)}
+}
+@media(min-width:861px) and (prefers-reduced-motion:reduce){
+ .chapter-rail{transition:none}
+}
+
+/* Keep right-edge content clear of the collapsed chapter rail (38px at right:20px). */
+@media(min-width:861px){
+ .tool:last-child,.course:nth-child(3n),.stat:last-child,.water-art,.tool-links a:last-child{padding-right:84px}
+ .course-num{right:84px}
+ .course:nth-child(3n) .course-num{right:84px}
+ .living-note,.tools-head{padding-right:84px}
+}
+
+/* Canvas cursor, rebuilt from the Heron teardown: an eased trail, a square
+   that grows over anything clickable, and a dot on press. Desktop pointers
+   only; the kit refuses to start on touch or under reduced motion. */
+#mk-cursor-canvas{position:fixed;inset:0;z-index:2147483000;pointer-events:none}
+.mk-cursor-square{position:fixed;top:0;left:0;z-index:2147483001;width:22px;height:22px;
+ border:1px solid transparent;pointer-events:none;opacity:0;will-change:transform,opacity;
+ background:transparent!important;mix-blend-mode:normal!important}
+/* Four ticks make it read as a crosshair rather than a box, matching the rulers. */
+.mk-cursor-square:before,.mk-cursor-square:after{content:'';position:absolute;background:var(--ink);
+ box-shadow:0 0 0 1px var(--paper)}
+.mk-cursor-square:before{left:50%;top:-5px;bottom:-5px;width:1px;margin-left:-.5px}
+.mk-cursor-square:after{top:50%;left:-5px;right:-5px;height:1px;margin-top:-.5px}
+/* The ink crosshair would disappear on the coral and ink surfaces, so invert it there. */
+.mk-cursor-square.on-dark:before,.mk-cursor-square.on-dark:after{background:var(--paper);box-shadow:0 0 0 1px rgba(20,16,14,.35)}
+html.mk-has-cursor,html.mk-has-cursor a,html.mk-has-cursor button,html.mk-has-cursor summary{cursor:none}
+/* Keep the text caret where people type. */
+html.mk-has-cursor input,html.mk-has-cursor textarea,html.mk-has-cursor select{cursor:auto}
+@media(prefers-reduced-motion:reduce){#mk-cursor-canvas,.mk-cursor-square{display:none}}
 </style><noscript><style>.mk-ruler{display:none}.motion-frame:not([data-frame="0"]){display:none}.motion-frame[data-frame="0"]{opacity:1;visibility:visible}.mode-controls,.step-controls{display:none}.unit{opacity:1;transform:none}.detail-pin{display:none}.city-art .structure{transform:none;opacity:1}.city-art .river{stroke-dashoffset:0}.journey{height:auto}.scene{position:relative;top:0;min-height:750px;height:auto}.scene-title{position:relative;top:auto;left:auto;right:auto;transform:none;opacity:1;margin:50px 25px 560px;font-size:40px}.plan{opacity:1;transform:none;top:140px;height:430px}.process-card{opacity:1}.scene-note{opacity:1}.route{stroke-dashoffset:0}</style></noscript></head><body><a class="skip" href="#main">Skip to content</a><div class="frame"><header class="nav"><a class="brand" href="#">CALEB JACKSON<span class="accent">.</span></a><a href="https://calebjackson.org/home-search/listings">Search homes</a><a class="accent" href="sms:+12257470303">Text Caleb ↗</a></header><div class="scroll-meter" aria-hidden="true"></div><nav class="chapter-rail" aria-label="Page sections"><a href="#hero" aria-label="Opening" aria-current="true">Opening</a><a href="#places" aria-label="Places">Places</a><a href="#journey" aria-label="Buy or sell">Your move</a><a href="#sold-story" aria-label="Local experience">Experience</a><a href="#questions" aria-label="Questions">Questions</a><a href="#contact" aria-label="Contact Caleb">Contact</a></nav><main id="main">
-<section class="hero" id="hero" aria-label="Interactive architectural illustration"><span class="preview">Architectural direction · Preview</span><span class="corner tl">+</span><span class="corner tr">+</span><span class="corner bl">+</span><span class="corner br">+</span><div class="drawing"><img src="assets/basil-architecture.webp" alt="Architectural ink illustration inspired by the real Basil Lane house"></div><svg class="guides" viewBox="0 0 1000 560" preserveAspectRatio="none" aria-hidden="true"><path d="M40 430H960 M150 420V110H850V420 M250 430V170 M500 80V450 M750 170V430 M150 465H850"/></svg><div class="mk-ruler" aria-hidden="true"><div class="mk-ruler-line mk-ruler-line-v"></div><div class="mk-ruler-line mk-ruler-line-h"></div><div class="mk-ruler-plus mk-ruler-hover"></div><div class="mk-ruler-coords mk-ruler-hover">X <span data-coord="x">0</span> · Y <span data-coord="y">0</span></div></div><button class="detail-pin mk-select-item pin-a" aria-label="Explore St. Francisville" aria-expanded="false" aria-controls="note-a" data-note="note-a"></button><button class="detail-pin mk-select-item pin-b" aria-label="Explore how Caleb works" aria-expanded="false" aria-controls="note-b" data-note="note-b"></button><aside class="annotation note-a" id="note-a"><button aria-label="Close St. Francisville annotation">×</button><strong>St. Francisville</strong><p>Homes. Acreage. Local perspective.</p><p><a href="https://calebjackson.org/neighborhoods/st-francisville">Explore the guide ↗</a></p></aside><aside class="annotation note-b" id="note-b"><button aria-label="Close service annotation">×</button><strong>Action Jackson</strong><p>Your call gets returned today.</p><p><a href="sms:+12257470303">Text Caleb ↗</a></p></aside><span class="hero-label">Explore the drawing · Tap a marker or drag across it</span></section>
-<section class="intro"><h1>Caleb Jackson<br>Real Estate.</h1><div class="intro-right"><p>Born and raised here.<br>Working here.<br>Reachable here.<br><br>St. Francisville.<br>Baton Rouge.<br><small>Keller Williams First Choice</small></p><a class="go" href="#places">Find your place<span>↘</span></a></div></section><div class="strip"><span>Price straight</span><span>Market hard</span><span>Stay close through closing</span></div>
+<section class="hero" id="hero" data-cursor="hidden" aria-label="Interactive architectural illustration"><span class="preview">Architectural direction · Preview</span><span class="corner tl">+</span><span class="corner tr">+</span><span class="corner bl">+</span><span class="corner br">+</span><div class="drawing"><img src="assets/basil-architecture.webp" alt="Architectural ink illustration inspired by the real Basil Lane house"></div><svg class="guides" viewBox="0 0 1000 560" preserveAspectRatio="none" aria-hidden="true"><path d="M40 430H960 M150 420V110H850V420 M250 430V170 M500 80V450 M750 170V430 M150 465H850"/></svg><div class="mk-ruler" aria-hidden="true"><div class="mk-ruler-line mk-ruler-line-v"></div><div class="mk-ruler-line mk-ruler-line-h"></div><div class="mk-ruler-plus mk-ruler-hover"></div><div class="mk-ruler-coords mk-ruler-hover">X <span data-coord="x">0</span> · Y <span data-coord="y">0</span></div></div><button class="detail-pin mk-select-item pin-a" aria-label="Explore St. Francisville" aria-expanded="false" aria-controls="note-a" data-note="note-a"></button><button class="detail-pin mk-select-item pin-b" aria-label="Explore how Caleb works" aria-expanded="false" aria-controls="note-b" data-note="note-b"></button><aside class="annotation note-a" id="note-a"><button aria-label="Close St. Francisville annotation">×</button><strong>St. Francisville</strong><p>Homes. Acreage. Local perspective.</p><p><a href="https://calebjackson.org/neighborhoods/st-francisville">Explore the guide ↗</a></p></aside><aside class="annotation note-b" id="note-b"><button aria-label="Close service annotation">×</button><strong>Action Jackson</strong><p>Your call gets returned today.</p><p><a href="sms:+12257470303">Text Caleb ↗</a></p></aside><span class="hero-label">Explore the drawing · Tap a marker or drag across it</span></section>
+<section class="intro"><h1>Caleb Jackson<br>Real Estate.</h1><div class="intro-right"><p>Born and raised here.<br>Working here.<br>Reachable here.<br><br>St. Francisville.<br>Baton Rouge.<br><small>Keller Williams First Choice</small></p><a class="go" href="#places">Find your place<span>↘</span></a></div></section><div class="strip"><span>Price straight</span><span>Market hard</span><span>Stay close through closing</span></div><section class="tools reveal-section" id="tools">
+<div class="tools-head">
+<div><p class="eyebrow">Free · no sign-up</p><h2>Answers before<br>the questions.</h2></div>
+<p>Both tools open with a worked example already on screen. Change the numbers to yours. Nothing asks for your email, and nothing leaves your browser.</p>
+</div>
+<div class="tool-grid">
+<form class="tool" id="tool-pay" novalidate>
+<p class="tool-kicker">Buying</p>
+<h3>What would I pay?</h3>
+<div class="tool-fields">
+<label class="tool-field"><span>Home price</span><input name="price" inputmode="decimal" value="300,000"></label>
+<label class="tool-field"><span>Down payment</span><input name="down" inputmode="decimal" value="60,000"></label>
+<label class="tool-field"><span>Rate %</span><input name="rate" inputmode="decimal" value="6.5"></label>
+<label class="tool-field"><span>Years</span><input name="term" inputmode="numeric" value="30"></label>
+<label class="tool-field"><span>Taxes / year</span><input name="taxes" inputmode="decimal" value="2,400"></label>
+<label class="tool-field"><span>Insurance / year</span><input name="hoi" inputmode="decimal" value="2,800"></label>
+</div>
+<p class="tool-err" data-err></p>
+<div class="tool-out"><b data-out>$0</b><i>Per month</i></div>
+<p class="tool-sub" data-sub></p>
+</form>
+<form class="tool" id="tool-net" novalidate>
+<p class="tool-kicker">Selling</p>
+<h3>What would I keep?</h3>
+<div class="tool-fields">
+<label class="tool-field"><span>Sale price</span><input name="price" inputmode="decimal" value="300,000"></label>
+<label class="tool-field"><span>Loan payoff</span><input name="payoff" inputmode="decimal" value="200,000"></label>
+<label class="tool-field"><span>Commission %</span><input name="commissionPct" inputmode="decimal" value="5"></label>
+<label class="tool-field"><span>Title fees</span><input name="title" inputmode="decimal" value="1,200"></label>
+<label class="tool-field"><span>Other costs</span><input name="other" inputmode="decimal" value="1,500"></label>
+<label class="tool-field"><span>Repairs</span><input name="repairs" inputmode="decimal" value="0"></label>
+</div>
+<p class="tool-err" data-err></p>
+<div class="tool-out"><b data-out>$0</b><i>Estimated net</i></div>
+<p class="tool-sub" data-sub></p>
+</form>
+</div>
+<div class="tool-links tool-links-3">
+<a class="textlink-plain" href="report.html"><span class="go-label">Where does the water go?<em> &nbsp;FEMA's flood layer, read at your address</em></span><span>&#8599;</span></a>
+<a class="textlink-plain" href="https://calebjackson.org/home-valuation"><span class="go-label">What is my home worth?<em> &nbsp;A real valuation, not an algorithm</em></span><span>&#8599;</span></a>
+<a class="textlink-plain" href="sms:+12257470303"><span class="go-label">Send me your numbers<em> &nbsp;I will tell you what I would do</em></span><span>&#8599;</span></a>
+</div>
+</section>
+
 <section class="statement reveal-section" id="statement"><div class="architectural-side" aria-label="The architectural illustration drawn in as you scroll"><img class="wipe-ghost" loading="lazy" decoding="async" src="assets/basil-architecture.webp" alt=""><svg class="wipe" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs><mask id="statementWipe"><path id="statementWipePath" d="M0 0 L1000 0 L1000 700 L0 700 Z" fill="#fff"/></mask></defs><image href="assets/basil-architecture.webp" width="1000" height="700" preserveAspectRatio="xMidYMid slice" mask="url(#statementWipe)"/></svg><span class="wipe-plus" style="left:12%;top:12%"></span><span class="wipe-plus" style="right:12%;top:12%"></span><span class="wipe-plus" style="left:12%;bottom:12%"></span><span class="wipe-plus" style="right:12%;bottom:12%"></span><span class="wipe-pin" style="left:48%;top:46%"></span><span class="wipe-tag" style="left:48%;top:52%">Front porch</span><span class="wipe-pin" style="left:42%;top:33%"></span><span class="wipe-tag" style="left:42%;top:39%">Twin dormers</span></div><div class="statement-copy"><h2>A home deserves a point of view.<br>So does your next move.</h2><a class="textlink" href="https://calebjackson.org/home-search/listings">Explore homes <span class="accent">↗</span></a></div></section>
 <section class="markets" id="places"><a class="market" href="https://calebjackson.org/neighborhoods/st-francisville"><div><h2>St. Francisville</h2><p>Homes, acreage and the questions worth asking.</p></div><span>↗</span></a><a class="market" href="https://calebjackson.org/neighborhoods/baton-rouge"><div><h2>Baton Rouge</h2><p>Neighborhoods, local roots and a clear next step.</p></div><span>↗</span></a></section>
 <section class="regional reveal-section"><div class="regional-copy"><h2>Local roots.<br>A wider view.</h2><p>St. Francisville and Baton Rouge lead the story. Zachary and the surrounding communities are part of it too.</p><a class="textlink" href="https://calebjackson.org/communities">Explore communities <span class="accent">↗</span></a></div><div class="city-art" id="city-art"><svg viewBox="0 0 520 480" role="group" aria-label="An original illustrated service-area diagram linking St. Francisville, Zachary and Baton Rouge"><defs><g id="architectural-home"><path class="art-wall" d="M0 35L45 55V95L0 75Z M45 55L80 35V75L45 95Z"/><path class="art-roof" d="M-10 38L26 4L91 33L45 60Z"/><path class="art-detail" d="M0 44L26 17L75 37 M12 46V77 M22 50V81 M34 56V85 M53 56V83 M64 50V77 M0 65L45 85L80 65 M23 75V58L36 64V81"/></g></defs><path class="fine" d="M15 60L505 280 M15 130L505 350 M15 200L505 420 M15 270L440 460 M50 15L490 215 M75 460L480 80 M10 410L425 30 M10 340L350 10 M10 270L265 15"/><path class="river" d="M180 10C310 55 85 130 180 190S350 210 190 300S90 400 250 470"/><g class="structure"><a href="https://calebjackson.org/neighborhoods/st-francisville" aria-label="St. Francisville guide"><use href="#architectural-home" x="145" y="55"/><rect x="145" y="163" width="9" height="9" fill="var(--accent)"/><text class="label" x="164" y="172">ST. FRANCISVILLE</text></a></g><g class="structure second"><a href="https://calebjackson.org/neighborhoods/zachary" aria-label="Zachary guide"><use href="#architectural-home" x="340" y="182"/><rect x="335" y="290" width="9" height="9" fill="var(--accent)"/><text class="label" x="355" y="298">ZACHARY</text></a></g><g class="structure third"><a href="https://calebjackson.org/neighborhoods/baton-rouge" aria-label="Baton Rouge guide"><use href="#architectural-home" x="170" y="310"/><rect x="160" y="420" width="9" height="9" fill="var(--accent)"/><text class="label" x="179" y="429">BATON ROUGE</text></a></g></svg><span class="diagram-note">Illustrated service areas · Not to scale</span></div></section>
+<section class="living reveal-section" id="living" data-fling>
+<div class="living-head">
+<p class="eyebrow">Living · golf and water</p>
+<h2>Live near where<br>you play.</h2>
+<p>Six courses within an easy drive of Zachary, and what the neighborhoods around them actually trade like. Ask me what it costs to live on any of them.</p>
+</div>
+<div class="course-band"><div class="fling-tile mk-fling-src" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M6 24V3" stroke="var(--ink)" stroke-width="1.3"/><path d="M6 4l13 3.6L6 11.2z" fill="var(--accent)" stroke="var(--accent)" stroke-width="1"/><path d="M1 24h24" stroke="var(--ink)" stroke-width="1.3"/><ellipse cx="18" cy="20.5" rx="4" ry="2" stroke="var(--line)" stroke-width="1.2"/></svg><em>[01] Zachary</em><strong>Copper Mill</strong></div><div class="fling-tile mk-fling-src" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M6 24V3" stroke="var(--ink)" stroke-width="1.3"/><path d="M6 4l13 3.6L6 11.2z" fill="var(--accent)" stroke="var(--accent)" stroke-width="1"/><path d="M1 24h24" stroke="var(--ink)" stroke-width="1.3"/><ellipse cx="18" cy="20.5" rx="4" ry="2" stroke="var(--line)" stroke-width="1.2"/></svg><em>[02] Zachary</em><strong>Beaver Creek</strong></div><div class="fling-tile mk-fling-src" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M6 24V3" stroke="var(--ink)" stroke-width="1.3"/><path d="M6 4l13 3.6L6 11.2z" fill="var(--accent)" stroke="var(--accent)" stroke-width="1"/><path d="M1 24h24" stroke="var(--ink)" stroke-width="1.3"/><ellipse cx="18" cy="20.5" rx="4" ry="2" stroke="var(--line)" stroke-width="1.2"/></svg><em>[03] St. Francisville</em><strong>The Bluffs</strong></div><div class="fling-tile mk-fling-src" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M6 24V3" stroke="var(--ink)" stroke-width="1.3"/><path d="M6 4l13 3.6L6 11.2z" fill="var(--accent)" stroke="var(--accent)" stroke-width="1"/><path d="M1 24h24" stroke="var(--ink)" stroke-width="1.3"/><ellipse cx="18" cy="20.5" rx="4" ry="2" stroke="var(--line)" stroke-width="1.2"/></svg><em>[04] Baton Rouge</em><strong>Santa Maria</strong></div><div class="fling-tile mk-fling-src" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M6 24V3" stroke="var(--ink)" stroke-width="1.3"/><path d="M6 4l13 3.6L6 11.2z" fill="var(--accent)" stroke="var(--accent)" stroke-width="1"/><path d="M1 24h24" stroke="var(--ink)" stroke-width="1.3"/><ellipse cx="18" cy="20.5" rx="4" ry="2" stroke="var(--line)" stroke-width="1.2"/></svg><em>[05] Baton Rouge</em><strong>University Club</strong></div><div class="fling-tile mk-fling-src" aria-hidden="true"><svg viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M6 24V3" stroke="var(--ink)" stroke-width="1.3"/><path d="M6 4l13 3.6L6 11.2z" fill="var(--accent)" stroke="var(--accent)" stroke-width="1"/><path d="M1 24h24" stroke="var(--ink)" stroke-width="1.3"/><ellipse cx="18" cy="20.5" rx="4" ry="2" stroke="var(--line)" stroke-width="1.2"/></svg><em>[06] Springfield</em><strong>Carter Plantation</strong></div><div class="course-list"><div class="course"><span class="course-num">[01]</span><b>Copper Mill Golf Club</b><i>Zachary · Public</i><p>The neighborhood I have closed in most often. Golf-cart streets, newer construction, HOA.</p></div><div class="course"><span class="course-num">[02]</span><b>Beaver Creek Golf Club</b><i>Zachary · Public</i><p>Parish course on the north side. Acreage and older homes nearby, no HOA in most of it.</p></div><div class="course"><span class="course-num">[03]</span><b>The Bluffs on Thompson Creek</b><i>St. Francisville · Private</i><p>Arnold Palmer design. Lake lots and the Feliciana hills, thirty minutes from Zachary on Highway 61.</p></div><div class="course"><span class="course-num">[04]</span><b>Santa Maria Golf Course</b><i>Baton Rouge · Public</i><p>Robert Trent Jones Jr. design in southeast Baton Rouge. Established family neighborhood around it.</p></div><div class="course"><span class="course-num">[05]</span><b>University Club</b><i>Baton Rouge · Private</i><p>Gated, newer luxury construction, and the long commute north if you work in Zachary.</p></div><div class="course"><span class="course-num">[06]</span><b>Carter Plantation</b><i>Springfield · Public</i><p>David Toms design across the Amite in Livingston Parish. A different parish for taxes and schools.</p></div></div>
+</div>
+<p class="fling-hint">Move across the courses &#183; six cards, thrown the way you move</p>
+<p class="living-note">Membership, hours and HOA rules change. Confirm before you drive. Price ranges come from the MLS when you ask. Nothing here is invented.</p>
+<div class="water">
+<div class="water-copy">
+<h3>False River, Thompson Creek,<br>the Comite.</h3>
+<p>False River in New Roads is a ten-mile oxbow lake with camps and full-time homes on both sides, forty minutes from Zachary across the Audubon Bridge. Thompson Creek runs the Feliciana line below the Bluffs.</p>
+<p>The Comite is the river Zachary drains to, and the diversion canal finishing in 2028 is the biggest change to north Baton Rouge flooding in a generation.</p>
+<a class="textlink" href="report.html">Check a waterfront address <span class="accent">&#8599;</span></a>
+</div>
+<div class="water-art" aria-hidden="true">
+<svg viewBox="0 0 460 300" fill="none">
+<g stroke="var(--line)" stroke-width="1"><path d="M0 60H460M0 120H460M0 180H460M0 240H460M60 0V300M160 0V300M260 0V300M360 0V300"/></g>
+<path class="water-river" d="M30 20C150 60 60 110 150 140S320 160 160 230S120 280 250 296" stroke="var(--accent)" stroke-width="2" fill="none"/>
+<g stroke="var(--ink)" stroke-width="1.4" fill="var(--paper)">
+<path d="M196 112h40v28h-40z"/><path d="M190 112l26-18 26 18"/>
+<path d="M296 186h40v28h-40z"/><path d="M290 186l26-18 26 18"/>
+<path d="M96 214h40v28h-40z"/><path d="M90 214l26-18 26 18"/>
+</g>
+<g fill="var(--accent)"><rect x="212" y="146" width="7" height="7"/><rect x="312" y="220" width="7" height="7"/><rect x="112" y="248" width="7" height="7"/></g>
+</svg>
+</div>
+</div>
+</section>
 <section class="journey" id="journey" aria-label="Scroll through Caleb's real estate process"><div class="scene" id="scene"><div class="mode-controls" role="group" aria-label="Choose your real estate process"><button type="button" data-mode="sell" aria-pressed="true">I’m selling</button><button type="button" data-mode="buy" aria-pressed="false">I’m buying</button></div><div class="step-controls" role="group" aria-label="Jump through the process"><button type="button" data-step="0" aria-pressed="true">Understand</button><button type="button" data-step="1" aria-pressed="false">Prepare</button><button type="button" data-step="2" aria-pressed="false">Close</button></div><span class="corner tl">+</span><span class="corner tr">+</span><span class="corner bl">+</span><span class="corner br">+</span><span class="kit-caption" id="kit-caption">Understand the property.</span><div class="motion-frame" data-frame="0"><div class="plan"><div class="plane"></div><svg viewBox="0 0 650 600" aria-hidden="true"><g class="fine"><path d="M60 50H590V550H60Z M45 65H605 M45 535H605 M75 35V565 M575 35V565 M60 280H590 M325 50V550"/><path d="M95 105H275V220H95Z M375 110H550V230H375Z M100 330H270V495H100Z M375 330H550V495H375Z M115 120H255V205H115Z M390 125H535V215H390Z M115 345H255V480H115Z M390 345H535V480H390Z"/><path d="M120 70V50 M210 70V50 M410 70V50 M520 70V50 M120 530V550 M210 530V550 M410 530V550 M520 530V550"/></g><g class="wall"><path d="M65 65H260 M325 65H590V255 M590 310V535H350 M285 535H65V330 M65 270V65 M65 285H250 M325 65V240 M325 330V535 M400 285H590"/></g><path class="route" d="M165 150H470V410H165V150 M470 410H575"/></svg><span class="process-tag tag1">Pricing</span><span class="process-tag tag2">Presentation</span><span class="process-tag tag3">Negotiation</span><span class="process-tag tag4">Closing</span></div></div><div class="motion-frame" data-frame="1"><svg viewBox="0 0 650 500" aria-hidden="true"><g class="fine"><path d="M50 430H610 M50 60V430 M50 330H610 M50 230H610 M50 130H610"/></g><g fill="none" stroke="var(--ink)" stroke-width="2"><path d="M110 430V260H220V430 M270 430V180H380V430 M430 430V110H540V430"/></g><g fill="var(--accent)"><rect x="120" y="280" width="90" height="140"/><rect x="280" y="200" width="90" height="220"/><rect x="440" y="130" width="90" height="290"/></g><text x="110" y="475"><tspan data-plan-label="0">CONDITION</tspan></text><text x="270" y="475"><tspan data-plan-label="1">PRESENTATION</tspan></text><text x="430" y="475"><tspan data-plan-label="2">POSITIONING</tspan></text><text x="50" y="35">A CLEAR PLAN · CONCEPTUAL, NO MARKET DATA</text></svg></div><div class="motion-frame" data-frame="2"><svg viewBox="0 0 650 500" aria-hidden="true"><g fill="none" stroke="var(--ink)" stroke-width="2"><path d="M70 260H580 M100 130H290V380H100Z M380 130H570V380H380Z M140 165H250V345H140Z M420 165H530V345H420Z"/></g><path d="M140 260H510" stroke="var(--accent)" stroke-width="4"/><g fill="var(--paper)" stroke="var(--accent)" stroke-width="3"><rect x="130" y="250" width="20" height="20"/><rect x="315" y="250" width="20" height="20"/><rect x="500" y="250" width="20" height="20"/></g><text x="100" y="425">DECISIONS</text><text x="285" y="425">COMMUNICATION</text><text x="490" y="425">CLOSING</text></svg></div><div class="process-card"><strong id="process-label">A straight read</strong><p id="process-copy">The house. The condition. The questions a buyer will ask.</p></div><span class="scene-note">An illustrated plan for the process</span></div></section>
-<section class="proof-story reveal-section" id="sold-story"><div class="proof-copy"><h2>Real experience.<br>Right here.</h2><p>I sold a 32-unit property in St. Francisville. That experience is part of the local perspective I bring to a conversation about your next move.</p><a class="textlink" href="sms:+12257470303">Talk through your property <span class="accent">↗</span></a></div><div class="unit-art" aria-label="Conceptual illustration of 32 units, representing Caleb’s completed St. Francisville sale"><small>St. Francisville · Completed sale · Conceptual illustration</small><div class="unit-grid" aria-hidden="true"><span class="unit" style="--i:0"></span><span class="unit" style="--i:1"></span><span class="unit" style="--i:2"></span><span class="unit" style="--i:3"></span><span class="unit" style="--i:4"></span><span class="unit" style="--i:5"></span><span class="unit" style="--i:6"></span><span class="unit" style="--i:7"></span><span class="unit" style="--i:8"></span><span class="unit" style="--i:9"></span><span class="unit" style="--i:10"></span><span class="unit" style="--i:11"></span><span class="unit" style="--i:12"></span><span class="unit" style="--i:13"></span><span class="unit" style="--i:14"></span><span class="unit" style="--i:15"></span><span class="unit" style="--i:16"></span><span class="unit" style="--i:17"></span><span class="unit" style="--i:18"></span><span class="unit" style="--i:19"></span><span class="unit" style="--i:20"></span><span class="unit" style="--i:21"></span><span class="unit" style="--i:22"></span><span class="unit" style="--i:23"></span><span class="unit" style="--i:24"></span><span class="unit" style="--i:25"></span><span class="unit" style="--i:26"></span><span class="unit" style="--i:27"></span><span class="unit" style="--i:28"></span><span class="unit" style="--i:29"></span><span class="unit" style="--i:30"></span><span class="unit" style="--i:31"></span></div><strong>32 units.</strong></div></section><section class="properties reveal-section" id="property"><div class="property-title"><h2>Look closer.<br>See more.</h2><p>Basil Lane in St. Francisville. Explore the real photography and current property details on the live listing.</p><a class="textlink" href="https://calebjackson.org/properties/90108-basil-ln-st-francisville-la-us-70775-2026009718">View Basil Lane <span class="accent">↗</span></a></div><div class="property-media"><img src="assets/basil-porch.webp" alt="The real timber porch at Basil Lane"></div></section><section class="stories reveal-section"><h2>What could come next<br>for St. Francisville?</h2><a class="textlink" href="https://calebjackson.org/blog/what-the-ai-data-center-could-mean-for-st-francisville">Read my outlook <span class="accent">↗</span></a></section><section class="faq reveal-section" id="questions"><div class="faq-heading"><h2>A few questions.<br>A clear start.</h2></div><div class="faq-list"><details><summary>Where do you work?</summary><p>St. Francisville and Baton Rouge are the focus. I also work in Zachary and the surrounding communities. My brokerage office is in Prairieville.</p></details><details><summary>How do we start selling?</summary><p>We start with a conversation about the property, your timing and your goals. Then we look at condition, presentation and pricing together.</p></details><details><summary>Can you help me buy?</summary><p>Yes. Tell me the places you’re considering and what matters in your next home. We can talk through the search and the questions to ask before an offer.</p></details><details><summary>Where can I see current listings?</summary><p><a href="https://calebjackson.org/home-search/listings">Open the live property search</a> for current listings and property details.</p></details></div></section><section class="contact reveal-section" id="contact"><h2>Tell me what<br>you’re thinking.</h2><a class="textlink" href="sms:+12257470303">Text Caleb <span class="accent">↗</span></a></section></main>
+<section class="proof-story reveal-section" id="sold-story"><div class="proof-copy"><h2>Real experience.<br>Right here.</h2><p>I sold a 32-unit property in St. Francisville. That experience is part of the local perspective I bring to a conversation about your next move.</p><a class="textlink" href="sms:+12257470303">Talk through your property <span class="accent">↗</span></a></div><div class="unit-art" aria-label="Conceptual illustration of 32 units, representing Caleb’s completed St. Francisville sale"><small>St. Francisville · Completed sale · Conceptual illustration</small><div class="unit-grid" aria-hidden="true"><span class="unit" style="--i:0"></span><span class="unit" style="--i:1"></span><span class="unit" style="--i:2"></span><span class="unit" style="--i:3"></span><span class="unit" style="--i:4"></span><span class="unit" style="--i:5"></span><span class="unit" style="--i:6"></span><span class="unit" style="--i:7"></span><span class="unit" style="--i:8"></span><span class="unit" style="--i:9"></span><span class="unit" style="--i:10"></span><span class="unit" style="--i:11"></span><span class="unit" style="--i:12"></span><span class="unit" style="--i:13"></span><span class="unit" style="--i:14"></span><span class="unit" style="--i:15"></span><span class="unit" style="--i:16"></span><span class="unit" style="--i:17"></span><span class="unit" style="--i:18"></span><span class="unit" style="--i:19"></span><span class="unit" style="--i:20"></span><span class="unit" style="--i:21"></span><span class="unit" style="--i:22"></span><span class="unit" style="--i:23"></span><span class="unit" style="--i:24"></span><span class="unit" style="--i:25"></span><span class="unit" style="--i:26"></span><span class="unit" style="--i:27"></span><span class="unit" style="--i:28"></span><span class="unit" style="--i:29"></span><span class="unit" style="--i:30"></span><span class="unit" style="--i:31"></span></div><strong>32 units.</strong></div></section><div class="numbers-row reveal-section" id="numbers">
+<div class="stat"><b data-count="81">81</b><span>Closed sides since 2022</span></div>
+<div class="stat"><b data-count="25.1" data-prefix="$" data-suffix="M">$25.1M</b><span>In closed volume</span></div>
+<div class="stat"><b data-count="27">27</b><span>Sides closed in 2026</span></div>
+<div class="stat"><b>0</b><span>Leads ever paid for</span></div>
+</div>
+<p class="living-note">Counted by side, the way the MLS reports production: a sale where I represented both the buyer and the seller counts twice. That is 76 transactions in all. Figures as of October 2026.</p>
+
+<section class="properties reveal-section" id="property"><div class="property-title"><h2>Look closer.<br>See more.</h2><p>Basil Lane in St. Francisville. Explore the real photography and current property details on the live listing.</p><a class="textlink" href="https://calebjackson.org/properties/90108-basil-ln-st-francisville-la-us-70775-2026009718">View Basil Lane <span class="accent">↗</span></a></div><div class="property-media"><img src="assets/basil-porch.webp" alt="The real timber porch at Basil Lane"></div></section><section class="stories reveal-section"><h2>What could come next<br>for St. Francisville?</h2><a class="textlink" href="https://calebjackson.org/blog/what-the-ai-data-center-could-mean-for-st-francisville">Read my outlook <span class="accent">↗</span></a></section><section class="faq reveal-section" id="questions"><div class="faq-heading"><h2>A few questions.<br>A clear start.</h2></div><div class="faq-list"><details><summary>Where do you work?</summary><p>St. Francisville and Baton Rouge are the focus. I also work in Zachary and the surrounding communities. My brokerage office is in Prairieville.</p></details><details><summary>How do we start selling?</summary><p>We start with a conversation about the property, your timing and your goals. Then we look at condition, presentation and pricing together.</p></details><details><summary>Can you help me buy?</summary><p>Yes. Tell me the places you’re considering and what matters in your next home. We can talk through the search and the questions to ask before an offer.</p></details><details><summary>Where can I see current listings?</summary><p><a href="https://calebjackson.org/home-search/listings">Open the live property search</a> for current listings and property details.</p></details></div></section><section class="contact reveal-section" id="contact"><h2>Tell me what<br>you’re thinking.</h2><a class="textlink" href="sms:+12257470303">Text Caleb <span class="accent">↗</span></a></section></main>
 <footer><div class="footer-row"><div>Caleb Jackson, REALTOR<br>Keller Williams First Choice<br>Louisiana license 995709547</div><div>17111 Commerce Centre Drive<br>Prairieville, LA 70769<br><a href="mailto:aire@calebjackson.org">aire@calebjackson.org</a><br><a href="tel:+12257470303">(225) 747-0303</a></div></div><p>Each office is independently owned and operated. Equal Housing Opportunity.</p><div class="drawing-credit">The opening is a stylized architectural illustration. The process diagram is conceptual.</div></footer></div>
-<script src="assets/gsap.min.js"></script><script src="assets/ScrollTrigger.min.js"></script><script src="assets/motion.js"></script><script>
+<script src="assets/gsap.min.js"></script><script src="assets/ScrollTrigger.min.js"></script><script src="assets/SplitText.min.js"></script><script src="assets/motion.js"></script><script>
 const cityArt=document.getElementById('city-art');const cityObserver=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){cityArt.classList.add('revealed');cityObserver.disconnect()}})},{threshold:.2});cityObserver.observe(cityArt);
 const meter=document.querySelector('.scroll-meter');const hero=document.getElementById('hero'),journey=document.getElementById('journey'),scene=document.getElementById('scene'),reduce=matchMedia('(prefers-reduced-motion: reduce)');const pins=[...document.querySelectorAll('.detail-pin')];function openNote(pin,on){const note=document.getElementById(pin.dataset.note);if(!on)pin.classList.remove('active');note.classList.toggle('on',on);pin.setAttribute('aria-expanded',String(on));if(!on&&note.contains(document.activeElement))pin.focus()}pins.forEach(pin=>{pin.addEventListener('click',()=>openNote(pin,pin.getAttribute('aria-expanded')!=='true'));document.getElementById(pin.dataset.note).querySelector('button').addEventListener('click',()=>openNote(pin,false))});addEventListener('keydown',e=>{if(e.key==='Escape')pins.forEach(pin=>openNote(pin,false))});
 const sellSteps=[['A straight read','The house. The condition. The questions a buyer will ask.'],['A clear plan','Price straight. Present the house with purpose.'],['Stay close','Plain options at each decision. Direct communication through closing.']];const buySteps=[['Start with your priorities','Place. Budget. Timing. What matters in your next home.'],['Look beyond the photos','Walk the property. Ask the questions. Understand the options before an offer.'],['Move with a clear plan','Offer, inspections and closing. Know the next decision and keep talking.']];let mode='sell',staticStep=0;const modeButtons=[...document.querySelectorAll('[data-mode]')],stepButtons=[...document.querySelectorAll('[data-step]')];modeButtons.forEach(button=>button.addEventListener('click',()=>{mode=button.dataset.mode;document.querySelectorAll('[data-plan-label]').forEach((label,i)=>label.textContent=(mode==='buy'?['PRIORITIES','PROPERTY','OPTIONS']:['CONDITION','PRESENTATION','POSITIONING'])[i]);modeButtons.forEach(b=>b.setAttribute('aria-pressed',String(b===button)));document.querySelectorAll('.process-tag').forEach((tag,i)=>tag.textContent=(mode==='buy'?['Priorities','Search','Offer','Closing']:['Pricing','Presentation','Negotiation','Closing'])[i]);render()}));stepButtons.forEach(button=>button.addEventListener('click',()=>{const n=Number(button.dataset.step);const range=Math.max(1,journey.offsetHeight-innerHeight+64);if(reduce.matches){staticStep=n;document.getElementById('process-label').textContent=(mode==='buy'?buySteps:sellSteps)[n][0];document.getElementById('process-copy').textContent=(mode==='buy'?buySteps:sellSteps)[n][1];stepButtons.forEach(b=>b.setAttribute('aria-pressed',String(b===button)));render();return}window.scrollTo({top:journey.offsetTop-64+range*([.12,.50,.85][n]),behavior:'smooth'})}));let pending=false;function render(){const readProgress=Math.min(1,Math.max(0,scrollY/Math.max(1,document.documentElement.scrollHeight-innerHeight)));const r=journey.getBoundingClientRect(),range=Math.max(1,journey.offsetHeight-innerHeight+64),p=reduce.matches?1:Math.min(1,Math.max(0,(64-r.top)/range));scene.style.setProperty('--progress',p);scene.style.setProperty('--plan-progress',Math.min(1,p*2));scene.style.setProperty('--plan-opacity',Math.min(1,Math.max(0,(p-.16)*3)));scene.style.setProperty('--card-opacity',Math.min(1,Math.max(0,(p-.12)*5)));scene.style.setProperty('--route-progress',Math.min(1,Math.max(0,(p-.32)*1.5)));const current=reduce.matches?staticStep:Math.min(2,Math.floor(p*3)),step=(mode==='buy'?buySteps:sellSteps)[current];stepButtons.forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.step)===current)));document.getElementById('process-label').textContent=step[0];document.getElementById('process-copy').textContent=step[1];if(window.renderKitFrames)window.renderKitFrames(current,p);meter.style.transform='scaleX('+readProgress+')';pending=false}addEventListener('scroll',()=>{if(!pending){pending=true;requestAnimationFrame(render)}},{passive:true});addEventListener('resize',render);reduce.addEventListener('change',render);render();
@@ -43,4 +255,162 @@ function kitSceneMode(){if(kitTimeline){kitTimeline.scrollTrigger.kill();kitTime
 kitSceneMode();reduce.addEventListener('change',kitSceneMode);
 if(MotionKit.util.finePointer()){kitRuler=new MotionKit.Ruler({wrapper:'#hero',select:true});if(!reduce.matches)kitRuler.start();else document.querySelector('.mk-ruler').hidden=true;const pinObserver=new MutationObserver(()=>pins.forEach(pin=>{if(pin.classList.contains('active')&&pin.getAttribute('aria-expanded')!=='true')openNote(pin,true)}));pins.forEach(pin=>pinObserver.observe(pin,{attributes:true,attributeFilter:['class']}));reduce.addEventListener('change',()=>{if(reduce.matches){kitRuler.stop();document.querySelector('.mk-ruler').hidden=true}else{document.querySelector('.mk-ruler').hidden=false;kitRuler.start()}})}
 (function(){const sec=document.getElementById('statement'),path=document.getElementById('statementWipePath');if(!sec||!path||reduce.matches)return;const draw=p=>{const y=700-p*820,c=Math.min(700,y+160);path.setAttribute('d','M0 '+Math.min(700,y)+' Q500 '+c+' 1000 '+Math.min(700,y)+' L1000 700 L0 700 Z')};draw(0);gsap.timeline({scrollTrigger:{trigger:sec,start:'top 85%',end:'bottom 96%',scrub:0.4,invalidateOnRefresh:true}}).to({p:0},{p:1,ease:'none',onUpdate(){draw(this.targets()[0].p)}},0).fromTo('.wipe-plus',{scale:0,rotate:45},{scale:1,rotate:0,stagger:.08,ease:'back.out(2)'},.55).fromTo('.wipe-pin',{scale:0},{scale:1,stagger:.12,ease:'back.out(3)'},.7).fromTo('.wipe-tag',{opacity:0,y:6},{opacity:1,y:0,stagger:.12},.8)})();document.querySelectorAll('.textlink,.go').forEach(a=>a.classList.add('kit-button'));MotionKit.btnFill.init('.kit-button');
+/* Heron's explore-band fling: a card is thrown every 50px of pointer travel,
+   distance from pointer speed plus the smooth scroller's own velocity. */
+MotionKit.fling.init({el:'.living'});
+/* Heron's cursor: trail eased 0.18, 34 points, square grows over anything clickable. */
+MotionKit.cursor.init({accent:getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#e87757',
+ dark:getComputedStyle(document.documentElement).getPropertyValue('--ink').trim()||'#14100e',
+ interactive:'a,button,summary,input,textarea,select,label,[role=button],.detail-pin,.course,.market,[data-cursor]:not([data-cursor="hidden"])'});
+/* The kit paints the trail and the square; this only flips the crosshair colour
+   when the pointer is over a coral or ink surface so it never vanishes. */
+(function(){
+ var sq=document.querySelector('.mk-cursor-square'); if(!sq) return;
+ var DARK='.go,.mk-btn.is-fill-active,.mk-btn.is-fill-entered,.unit-art,.process-card,.mk-sequence-caption-head,.home-map-intro-head';
+ document.addEventListener('mousemove',function(e){
+  var t=e.target, dark=!!(t&&t.closest&&t.closest(DARK));
+  if(dark!==sq.classList.contains('on-dark')) sq.classList.toggle('on-dark',dark);
+ },{passive:true});
+})();
+/* ============ Tools: payment and net sheet ============
+   Math reused verbatim from the verified calc-core.js: same roundMoney,
+   the log1p/expm1 amortization, and the same rounded line-item totals. */
+(function(){
+ var round=function(v){return Math.round((v+Number.EPSILON)*100)/100};
+ var money=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
+ function num(raw,label){
+  var t=String(raw==null?'':raw).trim().replace(/^\$\s*/,'').replace(/\s*%$/,'');
+  if(!/^-?(?:(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d*)?|\.\d+)$/.test(t)) throw new Error(label+' must be a number.');
+  var v=Number(t.replace(/,/g,''));
+  if(!isFinite(v)) throw new Error(label+' must be a number.');
+  if(v<0) throw new Error(label+' must be 0 or more.');
+  return v;
+ }
+ function read(form,map){var o={};for(var k in map){o[k]=num(form.querySelector('[name="'+k+'"]').value,map[k])}return o}
+ function payment(v){
+  if(v.price===0) throw new Error('Home price must be greater than 0.');
+  if(v.down>v.price) throw new Error('Down payment cannot exceed the home price.');
+  if(v.rate>100) throw new Error('Rate must be between 0 and 100.');
+  if(!Number.isSafeInteger(v.term)||v.term<=0) throw new Error('Years must be a whole number above 0.');
+  var loan=round(v.price-v.down),mr=v.rate/100/12,n=v.term*12;
+  var pi=loan===0?0:mr===0?loan/n:loan*mr/-Math.expm1(-n*Math.log1p(mr));
+  var PI=round(pi),extra=round(round(v.taxes/12)+round(v.hoi/12));
+  return {loan:loan,PI:PI,extra:extra,total:round(PI+extra)};
+ }
+ function net(v){
+  if(v.price===0) throw new Error('Sale price must be greater than 0.');
+  if(v.commissionPct>100) throw new Error('Commission must be between 0 and 100.');
+  var commission=round(v.price*(v.commissionPct/100));
+  var ded=round(v.payoff+commission+round(v.title)+round(v.other)+round(v.repairs));
+  return {commission:commission,ded:ded,net:round(v.price-ded)};
+ }
+ function bind(id,fields,calc,render){
+  var form=document.getElementById(id); if(!form) return;
+  var out=form.querySelector('[data-out]'),sub=form.querySelector('[data-sub]'),err=form.querySelector('[data-err]');
+  function run(){
+   try{
+    var r=calc(read(form,fields));
+    err.textContent='';out.textContent=money.format(render(r).value);sub.textContent=render(r).note;
+   }catch(e){err.textContent=e.message;out.textContent='—';sub.textContent=''}
+  }
+  form.addEventListener('input',run); form.addEventListener('submit',function(e){e.preventDefault();run()}); run();
+ }
+ bind('tool-pay',{price:'Home price',down:'Down payment',rate:'Rate',term:'Years',taxes:'Taxes',hoi:'Insurance'},payment,
+  function(r){return {value:r.total,note:money.format(r.PI)+' principal and interest, plus '+money.format(r.extra)+' a month for taxes and insurance. Your assumptions, not a quote.'}});
+ bind('tool-net',{price:'Sale price',payoff:'Loan payoff',commissionPct:'Commission',title:'Title fees',other:'Other costs',repairs:'Repairs'},net,
+  function(r){return {value:r.net,note:money.format(r.ded)+' comes off the top, including '+money.format(r.commission)+' commission. Your assumptions, not an offer.'}});
+})();
+
+/* ============ Motion punch list ============ */
+(function(){
+ if(typeof gsap==='undefined'||typeof ScrollTrigger==='undefined') return;
+ var reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+ /* 8. Marquee the strip */
+ (function(){
+  var strip=document.querySelector('.strip'); if(!strip||reduced) return;
+  var items=Array.prototype.slice.call(strip.children);
+  if(!items.length) return;
+  var track=document.createElement('div'); track.className='strip-track';
+  items.forEach(function(el){track.appendChild(el)});
+  var unit=track.cloneNode(true);
+  strip.textContent=''; strip.appendChild(track);
+  strip.classList.add('is-marquee');
+  var one=track.scrollWidth;
+  while(track.scrollWidth<innerWidth*2){ Array.prototype.slice.call(unit.children).forEach(function(c){track.appendChild(c.cloneNode(true))}); }
+  track.style.animation='strip-roll '+Math.max(14,Math.round(track.scrollWidth/2/40))+'s linear infinite';
+ })();
+
+ if(reduced) return;
+
+ /* 1. Masked line-by-line heading rise */
+ var SPLIT=(typeof SplitText!=='undefined')?SplitText:null;
+ function riseHeading(h){
+  if(!SPLIT||h.dataset.split) return null;
+  h.dataset.split='1';
+  var sp=SPLIT.create?SPLIT.create(h,{type:'lines,words',mask:'lines',linesClass:'mk-line'}):new SPLIT(h,{type:'lines,words',linesClass:'mk-line'});
+  gsap.set(sp.words,{yPercent:110,autoAlpha:0});
+  return gsap.to(sp.words,{yPercent:0,autoAlpha:1,duration:.85,stagger:.025,ease:'power3.out',paused:true});
+ }
+ /* 2. Word-by-word color sweep on lead copy */
+ function sweep(pEl){
+  if(!SPLIT||pEl.dataset.split) return null;
+  pEl.dataset.split='1';
+  var toColor=getComputedStyle(pEl).color;
+  var sp=SPLIT.create?SPLIT.create(pEl,{type:'lines,words'}):new SPLIT(pEl,{type:'lines,words'});
+  gsap.set(sp.words,{color:'rgba(20,16,14,0)'});
+  var tl=gsap.timeline({paused:true});
+  sp.words.forEach(function(w,i){
+   tl.to(w,{keyframes:{color:['rgba(20,16,14,0)','#e87757',toColor],easeEach:'power2.in',ease:'power1.out'},duration:.9},i*.028);
+  });
+  return tl;
+ }
+ /* 3. Real ScrollTriggers for every section */
+ document.querySelectorAll('.reveal-section').forEach(function(sec){
+  var heads=sec.querySelectorAll('h1,h2'); var lead=sec.querySelector('p');
+  var tl=gsap.timeline({paused:true}); var any=false;
+  heads.forEach(function(h,i){ var t=riseHeading(h); if(t){ sec.classList.add('has-split'); tl.add(t.play(),i*.06); any=true } });
+  if(lead&&lead.textContent.trim().length>45&&lead.textContent.trim().length<420){ var sw=sweep(lead); if(sw){ tl.add(sw.play(),.18); any=true } }
+  if(!any) return;
+  tl.pause(0);
+  ScrollTrigger.create({trigger:sec,start:'top 78%',once:true,onEnter:function(){tl.play()}});
+ });
+
+ /* 5. Draw the journey diagrams in as each frame lands */
+ document.querySelectorAll('.motion-frame').forEach(function(frame){
+  var paths=frame.querySelectorAll('svg path');
+  if(!paths.length) return;
+  paths.forEach(function(path){
+   var len=0; try{len=path.getTotalLength()}catch(e){}
+   if(!len||len>12000) return;
+   path.style.strokeDasharray=len; path.style.strokeDashoffset=len;
+  });
+  frame.__draw=function(){
+   gsap.to(frame.querySelectorAll('svg path'),{strokeDashoffset:0,duration:1.1,stagger:.03,ease:'power2.out',overwrite:true});
+  };
+ });
+ ScrollTrigger.create({trigger:'#journey',start:'top 70%',once:true,onEnter:function(){
+  var f=document.querySelector('.motion-frame[data-frame="0"]'); if(f&&f.__draw) f.__draw();
+ }});
+ var seen={};
+ ScrollTrigger.create({trigger:'#journey',start:'top top',end:'bottom bottom',onUpdate:function(st){
+  var i=Math.min(2,Math.floor(st.progress*3));
+  if(seen[i]) return; seen[i]=1;
+  var f=document.querySelector('.motion-frame[data-frame="'+i+'"]'); if(f&&f.__draw) f.__draw();
+ }});
+
+ /* Count the production numbers up */
+ document.querySelectorAll('[data-count]').forEach(function(el){
+  var target=parseFloat(el.dataset.count),pre=el.dataset.prefix||'',suf=el.dataset.suffix||'';
+  var dec=(String(target).split('.')[1]||'').length;
+  var o={v:0};
+  var tw=gsap.to(o,{v:target,duration:1.5,ease:'power2.out',paused:true,onUpdate:function(){
+   el.textContent=pre+o.v.toFixed(dec)+suf;
+  }});
+  ScrollTrigger.create({trigger:el,start:'top 88%',once:true,onEnter:function(){tw.play()}});
+ });
+
+ ScrollTrigger.refresh();
+})();
+
 </script></body></html>

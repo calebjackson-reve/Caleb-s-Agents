@@ -225,6 +225,26 @@ transition uses the `--trans-percent` and `--mask-percent` variables to
 wipe a mask across and grow a vertical `--size--line`. Rebuilding this
 needs a multi-page site, so the kit documents it instead of shipping it.
 
+### Explore band: image fling
+
+Decoded from the `Ex` class in `main.js` (default target `.home-explore`).
+
+| Parameter | Value |
+| --- | --- |
+| Distance before a new clone | 50px of pointer travel since the last one |
+| Live clones | 12; the oldest fades out over 0.2s when exceeded |
+| Throw distance | `40 * max(0, speed - 50) * 1.1`, clamped to 330px |
+| Scroll contribution | the smooth scroller's velocity is added to the vertical component before the direction is normalised |
+| Travel | 0.5s, `expo.out`, scale 0.8 to 1, origin centred (`xPercent/yPercent -50`) |
+| Fade | starts at 0.7s, 0.5s long, sinking to the bottom of `.img-anim-wrap` plus the clone's own height |
+| Idle | with the pointer inside but still, a clone drops every 650ms |
+| Pointer cache | lerped 0.2 per frame |
+| Stacking | `zIndex` increments per clone and resets to 1 when none are alive |
+
+Heron throws a photo (`.img-anim`). The kit's `MK.fling` throws whatever
+element you mark as a source, cycling through them when there is more than
+one, so the same mechanic works for cards, labels or images.
+
 ## Where the numbers came from
 
 - `main.js` was decoded by evaluating its three string tables in Node and
