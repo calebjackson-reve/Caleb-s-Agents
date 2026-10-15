@@ -12,6 +12,7 @@ Status as of 2026-10-12: Skool group created by Caleb at https://www.skool.com/a
 |---|---|
 | See the whole project at a glance | this file |
 | See what's done and what's next | [`STATUS.md`](STATUS.md) |
+| See where the project sits on Nick Saraev's roadmap | [`ROADMAP-CHECK-2026-10-15.md`](ROADMAP-CHECK-2026-10-15.md) |
 | See every video, how to shoot it and the set | [`shot-board.html`](shot-board.html) (also live at https://claude.ai/artifact/NrmHbo7VeQ5MZWizskVuC9) |
 | Read the goal, mission and 7 core values | [`../programs/ai-for-agents/FOUNDATION.md`](../programs/ai-for-agents/FOUNDATION.md) |
 | Read the 90-day plan and scorecard | [`../programs/ai-for-agents/PLAN.md`](../programs/ai-for-agents/PLAN.md) |

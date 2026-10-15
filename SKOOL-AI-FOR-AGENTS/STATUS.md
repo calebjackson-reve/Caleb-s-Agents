@@ -2,6 +2,22 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-15: hub merged to main, roadmap status check
+
+**Done**
+- Merged pull request 13 into main. Resolved README and CLAUDE.md against the new skills library (Nick Saraev's 148 skills, now installed as the caleb-skills plugin).
+- Ran the project against Nick Saraev's 22-step roadmap with the `ns-25k-roadmap` skill. Result in `ROADMAP-CHECK-2026-10-15.md`. Short version: steps 1 to 6 and 11 are done, step 10 is prepared but nothing is public, step 14 (daily invites on the calendar) is missing and is the gap.
+- Mapped which new skills take over which project pieces: the video editor replaces most CapCut steps, the thumbnail generator replaces step 9 of PRODUCTION, the cold email framework rewrites the invites.
+
+**Needs Caleb**
+- Pick one challenge name: "7 Days to Your First AI Assistant" or "7 Days to Find the Leads in Your Phone."
+- Decide on the five still-open Skool pull requests (9, 12, 14, 16, 23): merge, close, or let Claude reconcile them.
+- The hub's standing decisions: display name, trademark, brokerage permission, values and scripts, free price setting.
+
+**Next for Claude**
+- Rewrite invites.md with the four-step framework and one-step ask.
+- Set up the video editor workspace for Day 0 and Day 1 once Caleb films.
+
 ## 2026-10-14: Skool group copy for the new front door
 
 **Done**
