@@ -27,6 +27,7 @@ Caleb is a REALTOR with Keller Williams First Choice and the builder of AIRE. Th
 - Give each beat about 7 to 12 seconds, so the picture changes often.
 - Put something worth hearing every 10 to 15 seconds: a real story, a contrarian line, a why-clients-decide idea, a quick before and after, or a bet the viewer can test today. A beat that only lists what's coming doesn't count. (Caleb, 2026-10-15: "we're not doing a good enough job of saying interesting things in and throughout the video.")
 - In the script table, give every beat a "What makes it interesting" column that names which kind it is. Label each one as his story (only say it if it's true as written) or inference (change it if it doesn't sound like him).
+- Don't list the lessons. Caleb's intro take (IMG_6290) spent half its time on what's coming, and he said he didn't like the material. Give the viewer something to do in the first 10 seconds, and tie anything that's coming to that one thread.
 - No market numbers unless they have a source and a date. A story or a bet beats an unsourced stat.
 - End on one action the viewer can do in 10 minutes, pointing to Skool.
 
