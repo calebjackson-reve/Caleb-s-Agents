@@ -6,6 +6,11 @@ Rules for every agent and skill in this repo.
 
 Caleb Jackson, REALTOR with Keller Williams First Choice and builder of AIRE. Rêve is historical only. Never use Rêve branding, fonts, colors or brokerage language in current work unless Caleb explicitly asks.
 
+## Where skills live
+
+- Skills live under `skills/`. Everything in `skills/nick-saraev/` (Nick Saraev's free course, 148 skills, plus the $25K roadmap) is linked into `.claude/skills/` so Claude Code auto-loads it by description match. Index: `skills/nick-saraev/README.md`. The repo is also an installable plugin, see the root README.
+- Projects (Skool, website, AIRE) each have a hub folder with a README and STATUS log. Read the STATUS before touching a project.
+
 ## Standard report format for research and analysis
 
 Every research, analysis or teardown agent reports under exactly these three headings:

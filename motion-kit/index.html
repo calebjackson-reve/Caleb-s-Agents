@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motion Kit Demo</title>
+<meta name="description" content="Demo of the motion kit rebuilt from a teardown of heronaiapp.com: smooth scroll, canvas cursor, crosshair ruler, drag select, text reveals, pixel button fill, sticky scroll sequence, marquee, ink reveal.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="motion.css">
+<style>
+  /* Demo-only layout. Everything motion-related lives in motion.css. */
+  .wrap { max-width: 144rem; margin: 0 auto; padding: 0 3.2rem; box-sizing: border-box; }
+  .mono { font-family: var(--mk-mono); font-size: 1.1rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mk-ink-3); }
+  .h1 { font-size: clamp(3.6rem, 6vw, 7.2rem); line-height: 0.98; font-weight: 700; letter-spacing: -0.02em; text-transform: uppercase; margin: 0; }
+  .h2 { font-size: clamp(2.8rem, 4vw, 4.8rem); line-height: 1; font-weight: 600; letter-spacing: -0.02em; text-transform: uppercase; margin: 0; }
+  .h3 { font-size: 2.4rem; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; text-transform: uppercase; margin: 0; }
+  .lead { font-size: 1.8rem; color: var(--mk-ink-2); max-width: 52rem; }
+  .hair { border: 0; border-top: var(--mk-hair) solid var(--mk-border); margin: 0; }
+  section { position: relative; padding: 9.6rem 0; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4.8rem; align-items: end; }
+  @media (max-width: 767px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* header */
+  .nav { display: flex; align-items: center; justify-content: space-between; border: var(--mk-hair) solid var(--mk-border); background: var(--mk-paper); padding: 1.2rem 2.4rem; }
+  .nav a { color: var(--mk-ink); text-decoration: none; }
+  .nav-links { display: flex; gap: 3.2rem; }
+  .nav-brand { font-weight: 700; letter-spacing: -0.02em; text-transform: uppercase; }
+
+  /* hero */
+  .hero { min-height: 100vh; display: grid; grid-template-rows: 1fr auto; padding: 8rem 0 0; }
+  .hero-stage { position: relative; border: var(--mk-hair) solid var(--mk-border); min-height: 56vh; user-select: none; overflow: hidden; }
+  .hero-art { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .hero-art svg { width: min(90%, 110rem); height: auto; }
+  .marker { position: absolute; width: 22rem; padding: 4.4rem 2.8rem 1.6rem 1.6rem; box-sizing: border-box; transform-origin: 0 100%; }
+  .marker.m1 { left: 20%; bottom: 30%; }
+  .marker.m2 { left: 56%; bottom: 24%; }
+  .marker .mk-select-item-detail { position: relative; color: var(--mk-white); font-family: var(--mk-mono); font-size: 1.1rem; line-height: 1.5; }
+  .hero-foot { display: grid; grid-template-columns: 1.2fr 1fr; gap: 3.2rem; padding: 3.2rem 0; align-items: center; }
+  @media (max-width: 767px) { .hero-foot { grid-template-columns: 1fr; } }
+  .hero-cta { display: flex; gap: 1.6rem; flex-wrap: wrap; align-items: center; margin-top: 2rem; }
+
+  /* intro */
+  .intro-title { font-size: clamp(2.4rem, 3.4vw, 4rem); line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; text-transform: uppercase; margin: 0 0 3.2rem; max-width: 100rem; }
+
+  /* logo marquee */
+  .logos { padding: 2.4rem 0; border-top: var(--mk-hair) solid var(--mk-border); border-bottom: var(--mk-hair) solid var(--mk-border); }
+  .logo { flex: none; padding: 0 4rem; font-family: var(--mk-mono); font-size: 1.3rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mk-ink-3); white-space: nowrap; }
+
+  /* cards */
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); border: var(--mk-hair) solid var(--mk-border); }
+  @media (max-width: 991px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+  .card { border-right: var(--mk-hair) solid var(--mk-border); min-height: 42rem; display: flex; flex-direction: column; }
+  .card:last-child { border-right: 0; }
+  .card-head { display: flex; justify-content: space-between; padding: 1.6rem 3.2rem; border-bottom: var(--mk-hair) solid var(--mk-border); }
+  .card-art { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2.4rem; }
+  .card-art svg { width: 60%; height: auto; }
+  .card-body { padding: 3.2rem; border-top: var(--mk-hair) solid var(--mk-border); color: var(--mk-ink-2); font-size: 1.4rem; }
+  .card-body .h3 { margin-bottom: 1.2rem; }
+
+  /* sequence */
+  .seq-frame-inner { width: min(70vw, 70vh); }
+  .seq-frame-inner svg { width: 100%; height: auto; }
+  .seq-title { position: absolute; top: 3.2rem; left: 3.2rem; }
+
+  /* why */
+  .why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3.2rem; margin-top: 4.8rem; }
+  @media (max-width: 767px) { .why-grid { grid-template-columns: 1fr; } }
+  .why-img { aspect-ratio: 4 / 3; border: var(--mk-hair) solid var(--mk-border); overflow: hidden; }
+  .why-img img, .why-img .mk-ink { width: 100%; height: 100%; }
+
+  /* cta */
+  .cta { border-top: var(--mk-hair) solid var(--mk-border); }
+  .cta-row { display: flex; gap: 1.6rem; flex-wrap: wrap; margin-top: 3.2rem; }
+  footer { padding: 4.8rem 0; border-top: var(--mk-hair) solid var(--mk-border); }
+  .foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2.4rem; }
+</style>
+</head>
+<body>
+
+<!-- Loader -->
+<div class="mk-loader" id="loader">
+  <div class="mk-loader-progress"><div class="mk-loader-progress-bar"></div></div>
+  <div class="mk-loader-line top"></div>
+  <div class="mk-loader-line bot"></div>
+  <div class="mk-ruler mk-ruler-hover">
+    <div class="mk-ruler-line mk-ruler-line-v"></div>
+    <div class="mk-ruler-line mk-ruler-line-h"></div>
+    <div class="mk-ruler-plus"></div>
+    <div class="mk-ruler-coords">X <span data-coord="x">0</span> &nbsp; Y <span data-coord="y">0</span></div>
+  </div>
+  <h1 class="mk-loader-title">Your next move, mapped out before you make it</h1>
+  <div class="mk-loader-meta">
+    <div>Type<br><b>Residential real estate</b></div>
+    <div>Market<br><b>Local</b></div>
+    <div>Status<br><b>Loading</b></div>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="mk-header">
+  <div class="mk-header-inner">
+    <nav class="nav">
+      <a class="nav-brand mk-underline" href="#">Caleb Jackson</a>
+      <div class="nav-links">
+        <a class="mono mk-underline" href="#intro">Approach</a>
+        <a class="mono mk-underline" href="#process">Process</a>
+        <a class="mono mk-underline" href="#why">Why</a>
+        <a class="mono mk-underline" href="#contact">Contact</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- Hero: crosshair ruler, coordinates, drag-select markers -->
+<section class="hero wrap" id="top">
+  <div class="hero-stage" id="hero-stage" data-cursor="hidden">
+    <div class="hero-art">
+      <svg viewBox="0 0 1100 420" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <g color="#282828">
+          <path d="M80 360H1020" />
+          <path d="M60 372H1040" stroke-opacity=".35" />
+          <path d="M160 360V150H420V360" />
+          <path d="M420 360V200H700V360" />
+          <path d="M700 360V120H940V360" />
+          <path d="M160 150L290 70L420 150" />
+          <path d="M700 120L820 40L940 120" />
+          <path d="M420 200H700" />
+          <rect x="200" y="200" width="60" height="80" />
+          <rect x="320" y="200" width="60" height="80" />
+          <rect x="470" y="240" width="60" height="60" />
+          <rect x="610" y="240" width="60" height="60" />
+          <rect x="740" y="180" width="60" height="80" />
+          <rect x="860" y="180" width="60" height="80" />
+          <rect x="540" y="280" width="40" height="80" />
+          <path d="M220 360V300H260V360M860 360V300H900V360" stroke-opacity=".6" />
+          <path d="M80 150H140M80 200H140M80 250H140M80 300H140" stroke-opacity=".3" />
+          <path d="M960 150H1020M960 200H1020M960 250H1020M960 300H1020" stroke-opacity=".3" />
+          <path d="M100 360V390M500 360V390M1000 360V390" stroke-opacity=".3" />
+        </g>
+      </svg>
+    </div>
+
+    <div class="marker mk-select-item m1">
+      <div class="mk-pulse" data-anim="fade-loop"></div>
+      <div class="mk-select-item-detail">[01] Kitchen<br>Updated 2023 · Quartz</div>
+    </div>
+    <div class="marker mk-select-item m2">
+      <div class="mk-pulse" data-anim="fade-loop"></div>
+      <div class="mk-select-item-detail">[02] Roof<br>Replaced 2021 · 30 yr</div>
+    </div>
+
+    <div class="mk-ruler mk-ruler-hover">
+      <div class="mk-ruler-line mk-ruler-line-v"></div>
+      <div class="mk-ruler-line mk-ruler-line-h"></div>
+      <div class="mk-ruler-plus"></div>
+      <div class="mk-ruler-coords">X <span data-coord="x">0</span> &nbsp; Y <span data-coord="y">0</span></div>
+      <div class="mk-ruler-tip">Click and drag over a marker to see the detail</div>
+    </div>
+  </div>
+
+  <div class="hero-foot" data-reveal-group>
+    <div>
+      <h1 class="h1" data-reveal="heading">A realtor who shows the work, not just the listing</h1>
+    </div>
+    <div>
+      <p class="lead" data-reveal="words" data-fast>Every home has a story in its numbers. I walk you through the <span class="mk-highlight">comps, the condition and the timing</span> so the decision is yours, made with eyes open.</p>
+      <div class="hero-cta" data-reveal="fade-up">
+        <a class="mk-btn" href="#contact">
+          <span class="mk-btn-label"><span>Start a conversation</span><span>Start a conversation</span></span>
+          <span class="mk-btn-icon"><svg viewBox="0 0 20 20" fill="none"><path d="M11.875 14.375L16.25 9.938 11.875 5.625M16.25 9.938H2.5" stroke="currentColor" stroke-width="1.5"/></svg></span>
+        </a>
+        <span class="mono">Keller Williams First Choice</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Intro: scroll-scrubbed word color -->
+<section class="wrap" id="intro">
+  <p class="mono" data-reveal="fade-up">Approach</p>
+  <h2 class="intro-title" data-scrub-text>Most agents sell you a house. I would rather help you understand the one you are about to buy, the one you are about to leave, and the market both of them sit in.</h2>
+  <div class="grid-2" data-reveal-group>
+    <p class="lead" data-reveal="words">Pricing, prep, negotiation and closing. Each step gets explained before it happens, so nothing on signing day is a surprise.</p>
+    <p class="lead" data-reveal="words">Working across the metro with buyers, sellers and people doing both at once.</p>
+  </div>
+</section>
+
+<!-- Logo marquee -->
+<div class="logos">
+  <div class="mk-marquee" data-marquee data-speed="40">
+    <div class="mk-marquee-track">
+      <span class="logo">Pricing strategy</span><span class="logo">Staging</span><span class="logo">Photography</span><span class="logo">Negotiation</span><span class="logo">Inspection review</span><span class="logo">Closing coordination</span>
+    </div>
+  </div>
+</div>
+
+<!-- Cards: hover corners, dot, art color -->
+<section class="wrap">
+  <div data-reveal-group>
+    <p class="mono" data-reveal="fade-up">Where deals go sideways</p>
+    <h2 class="h2" data-reveal="heading" style="margin-bottom:4rem">The parts nobody warns you about</h2>
+    <div class="cards" data-reveal="fade-up">
+      <div class="card mk-card">
+        <span class="mk-card-corner tl"></span><span class="mk-card-corner tr"></span><span class="mk-card-corner bl"></span><span class="mk-card-corner br"></span>
+        <div class="card-head"><span class="mono">Pricing</span><span class="mono">[01]</span></div>
+        <div class="card-art mk-card-art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 100L50 60L75 80L100 30"/><path d="M20 100H100"/></svg></div>
+        <div class="card-body"><span class="mk-card-dot" style="top:3.2rem"></span><h3 class="h3">Overpriced on day one</h3>Listings that sit lose leverage. We price to the comps and the calendar.</div>
+      </div>
+      <div class="card mk-card">
+        <span class="mk-card-corner tl"></span><span class="mk-card-corner tr"></span><span class="mk-card-corner bl"></span><span class="mk-card-corner br"></span>
+        <div class="card-head"><span class="mono">Prep</span><span class="mono">[02]</span></div>
+        <div class="card-art mk-card-art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="25" y="25" width="70" height="70"/><path d="M25 60H95M60 25V95"/></svg></div>
+        <div class="card-body"><span class="mk-card-dot" style="top:3.2rem"></span><h3 class="h3">Fixing the wrong things</h3>Spend where buyers look. Skip where they do not.</div>
+      </div>
+      <div class="card mk-card">
+        <span class="mk-card-corner tl"></span><span class="mk-card-corner tr"></span><span class="mk-card-corner bl"></span><span class="mk-card-corner br"></span>
+        <div class="card-head"><span class="mono">Inspection</span><span class="mono">[03]</span></div>
+        <div class="card-art mk-card-art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="55" cy="55" r="28"/><path d="M75 75L100 100"/></svg></div>
+        <div class="card-body"><span class="mk-card-dot" style="top:3.2rem"></span><h3 class="h3">Surprises in the report</h3>We read it together and decide what actually matters.</div>
+      </div>
+      <div class="card mk-card">
+        <span class="mk-card-corner tl"></span><span class="mk-card-corner tr"></span><span class="mk-card-corner bl"></span><span class="mk-card-corner br"></span>
+        <div class="card-head"><span class="mono">Closing</span><span class="mono">[04]</span></div>
+        <div class="card-art mk-card-art"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M30 60L52 82L92 38"/><rect x="18" y="18" width="84" height="84"/></svg></div>
+        <div class="card-body"><span class="mk-card-dot" style="top:3.2rem"></span><h3 class="h3">Timelines that slip</h3>Lender, title, appraisal. One calendar, tracked daily.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Sticky scroll sequence -->
+<section class="mk-sequence" id="process" data-sequence>
+  <div class="mk-sequence-stick">
+    <div class="seq-title"><p class="mono">Process</p><h2 class="h2">Scroll to continue</h2></div>
+
+    <div class="mk-sequence-frame" data-frame>
+      <div class="seq-frame-inner">
+        <svg viewBox="0 0 400 300" fill="none" stroke="#b3b3af" stroke-width="2"><path d="M60 40H340V260H60Z" stroke-dasharray="6 6"/><path d="M60 150H200M200 40V260"/></svg>
+      </div>
+    </div>
+    <div class="mk-sequence-frame" data-frame>
+      <div class="seq-frame-inner">
+        <svg viewBox="0 0 400 300" fill="none" stroke="#282828" stroke-width="6"><path d="M60 40H340V260H60Z"/><path d="M60 150H200M200 40V260M200 200H340"/></svg>
+      </div>
+    </div>
+    <div class="mk-sequence-frame" data-frame>
+      <div class="seq-frame-inner">
+        <svg viewBox="0 0 400 300" fill="none" stroke="#282828" stroke-width="6"><path d="M60 40H340V260H60Z"/><path d="M60 150H200M200 40V260M200 200H340"/><g stroke="var(--mk-accent)" stroke-width="2"><rect x="80" y="60" width="40" height="30"/><rect x="230" y="60" width="60" height="40"/><rect x="230" y="215" width="80" height="30"/><path d="M60 275H340" stroke-dasharray="3 5"/></g></svg>
+      </div>
+    </div>
+
+    <div class="mk-sequence-caption" data-frame-caption="0">
+      <div class="mk-sequence-caption-head">Step 1 <span>[01]</span></div>
+      <div class="mk-sequence-caption-body">We start with the shape of your situation: timeline, budget, must-haves.<small>Scroll to continue</small></div>
+    </div>
+    <div class="mk-sequence-caption" data-frame-caption="1">
+      <div class="mk-sequence-caption-head">Step 2 <span>[02]</span></div>
+      <div class="mk-sequence-caption-body">Then the plan gets walls: pricing, prep list, launch date, showing strategy.<small>Scroll to continue</small></div>
+    </div>
+    <div class="mk-sequence-caption" data-frame-caption="2">
+      <div class="mk-sequence-caption-head">Step 3 <span>[03]</span></div>
+      <div class="mk-sequence-caption-body">Finally the details: offers reviewed line by line, inspection and closing tracked daily.<small>Keep scrolling</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- Why: image reveals + ink reveal -->
+<section class="wrap" id="why">
+  <div data-reveal-group>
+    <p class="mono" data-reveal="fade-up">Why work together</p>
+    <h2 class="h2" data-reveal="heading">Built around how you actually decide</h2>
+    <div class="why-grid">
+      <div class="why-img" data-reveal="image">
+        <div class="mk-ink">
+          <img alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23f6f5f0'/%3E%3Cg fill='none' stroke='%23b3b3af' stroke-width='2'%3E%3Cpath d='M40 240H360M80 240V120L200 50L320 120V240'/%3E%3Crect x='120' y='150' width='40' height='40'/%3E%3Crect x='240' y='150' width='40' height='40'/%3E%3Crect x='180' y='180' width='40' height='60'/%3E%3C/g%3E%3C/svg%3E">
+          <img data-ink-over alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%230f5c4c'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2'%3E%3Cpath d='M40 240H360M80 240V120L200 50L320 120V240'/%3E%3Crect x='120' y='150' width='40' height='40'/%3E%3Crect x='240' y='150' width='40' height='40'/%3E%3Crect x='180' y='180' width='40' height='60'/%3E%3C/g%3E%3Ctext x='200' y='280' font-family='monospace' font-size='12' fill='white' text-anchor='middle'%3EMOVE YOUR POINTER%3C/text%3E%3C/svg%3E">
+        </div>
+      </div>
+      <div>
+        <p class="lead" data-reveal="words">Hover the drawing on the left. That liquid reveal is the same SVG mask trick the reference site uses on its product images.</p>
+        <p class="lead" data-reveal="words">Below it, the second image uses the simpler scale-and-fade reveal that fires once when the block enters the viewport.</p>
+        <div class="why-img" data-reveal="image" style="margin-top:2.4rem">
+          <img alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%23e9e8e2'/%3E%3Cg fill='none' stroke='%23282828' stroke-width='2'%3E%3Cpath d='M60 60H340V240H60Z'/%3E%3Cpath d='M60 150H340M200 60V240'/%3E%3C/g%3E%3C/svg%3E">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="wrap cta" id="contact">
+  <div data-reveal-group>
+    <p class="mono" data-reveal="fade-up">Contact</p>
+    <h2 class="h2" data-reveal="heading">Thinking about a move?</h2>
+    <p class="lead" data-reveal="words">No pressure, no script. A thirty minute call to see if it makes sense.</p>
+    <div class="cta-row" data-reveal="fade-up">
+      <a class="mk-btn" href="#top">
+        <span class="mk-btn-label"><span>Book a call</span><span>Book a call</span></span>
+        <span class="mk-btn-icon"><svg viewBox="0 0 20 20" fill="none"><path d="M11.875 14.375L16.25 9.938 11.875 5.625M16.25 9.938H2.5" stroke="currentColor" stroke-width="1.5"/></svg></span>
+      </a>
+      <a class="mk-btn" href="#top" data-fill-color="#282828" style="--mk-btn-fill: #e9e8e2">
+        <span class="mk-btn-label"><span>See listings</span><span>See listings</span></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="wrap">
+  <div class="foot" data-reveal-group>
+    <span class="mono" data-reveal="fade-up">Caleb Jackson · Keller Williams First Choice</span>
+    <span class="mono" data-reveal="fade-up">Motion kit demo · swap the tokens in motion.css</span>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/SplitText.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.5/dist/lenis.min.js"></script>
+<script src="motion.js"></script>
+<script>
+  MotionKit.init({
+    header: '.mk-header',
+    loader: true,
+    onReady: function () {
+      // Hero ruler with drag-select
+      MotionKit.ruler.init({ wrapper: '#hero-stage', select: true });
+      // Scroll-scrubbed intro text
+      document.querySelectorAll('[data-scrub-text]').forEach(function (el) { MotionKit.text.scrub(el); });
+      // Anchor links through Lenis
+      document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+          var t = document.querySelector(a.getAttribute('href')); if (!t) return;
+          e.preventDefault(); MotionKit.scroll.to(t, { offset: -80, duration: 1.2 });
+        });
+      });
+    }
+  });
+</script>
+</body>
+</html>

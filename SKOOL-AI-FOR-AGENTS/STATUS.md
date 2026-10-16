@@ -2,6 +2,28 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-15: Course 1 kit, voice file, intro script
+
+**Done**
+- `programs/ai-for-agents/motion/`: the animation kit, in Caleb's brand with ivory, ink and one ember accent.
+  - It has 13 scene types and 3 looks (Ivory, Ink, Grid). `render.mjs` renders frame by frame with Playwright and ffmpeg.
+  - `cut_to_scenes.py` cuts a face take to a scene list, then adds his face as a full card or a corner box.
+  - Caleb saw the slides on 2026-10-15 and called them "amazing."
+- `editor/skool_cut.py`: says "Fuck that, Caleb" to cut the phrase and the sentence before it, then re-transcribes the output to prove the phrase is gone.
+  - Tested on 5 word-list cases and on a synthetic voice clip. It hasn't been tried on Caleb's real voice yet.
+- `voice/caleb-lingo.md`: his words, pace (176 words a minute, measured from the 2026-10-14 take) and a never list.
+- `directives/make-a-lesson-video.md` and `skills/lesson-video/SKILL.md`: the steps for one video.
+- Course 1 breakdown, approved 2026-10-15: https://claude.ai/code/artifact/1733aef2-fdab-4a70-b5ef-bb6d3c1619dc
+- Intro script draft (video 0): https://claude.ai/code/artifact/afc7a555-acf9-402a-bb17-335b09eaf5fd
+- `skool-setup.md` is marked superseded, from Caleb's project knowledge file.
+
+**Decided (Caleb, 2026-10-15)**
+- Build one lesson at a time. The intro goes first, and AI videos move to sixth.
+- The 2026-10-14 take (IMG_6269) won't be used. Its re-cut was stopped.
+
+**Needs Caleb**
+- Pick a hook (A, B or C) and a look (Ivory, Ink or Grid), tick the facts list, then film the intro.
+
 ## 2026-10-12, late night: the video editor
 
 **Done**
@@ -42,6 +64,17 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 
 **Next for Claude**
 - Fold Caleb's notes from the Day 1 test into the kit, then build the same kit for Days 0 and 2 to 7.
+
+## 2026-10-14: Skool group copy for the new front door
+
+**Done**
+- Drafted every piece of group copy for "7 Days to Find the Leads in Your Phone" in `programs/ai-for-agents/skool-group-copy.md`: name, short description, About page, join questions, rules, feed categories, classroom order, pinned welcome post, auto DM and settings picks.
+- Marked the old `skool-setup.md` as superseded.
+
+**Needs Caleb**
+- Approve or mark up the copy, then paste it into Skool. Nothing has been changed in Skool.
+- Film the "Hey, I'm Caleb" video first. It goes in the About page video slot.
+- Confirm the member price setting says free.
 
 ## 2026-10-12, night: Skool plan and privacy
 

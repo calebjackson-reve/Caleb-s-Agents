@@ -1,0 +1,44 @@
+{
+ "about": "Course 1, video 0: the intro, cut from IMG_6301.MOV (filmed 2026-10-16, his own words). Caleb asked to use this take's real footage and words for captions, with the animations built around what he says. It opens on his gap line as a cold open, then goes back to his hello. Ivory look, captions burned in.",
+ "look": "ivory",
+ "chrome": "AI for Agents · Course 1",
+ "captions": true,
+ "caption_fix": { "Relator@3.92": "REALTOR", "Caleb@4.56": "Keller", "Woods'@4.82": "Williams", "first@5.34": "First", "choice.@5.52": "Choice." },
+ "face_pos": { "cx": 0.58, "cy": 0.55, "card_h": 1.0, "pip_side": 0.6, "talk_zoom": 1.15 },
+ "scenes": [
+  { "type": "talk", "face": "talk", "src": [25.8, 31.45],
+    "pills": [ { "t": "Tried AI", "at": 1.0 }, { "t": "Not *using* it", "at": 3.2, "hi": true } ] },
+
+  { "type": "title", "face": "pip", "src": [0.5, 10.95],
+    "kicker": "What's going on, guys", "title": "Caleb *Jackson*", "sub": "REALTOR with Keller Williams First Choice",
+    "tags": ["Sells houses", "Builds his own AI tools"] },
+
+  { "type": "cards", "face": "pip", "src": [11.8, 15.95], "stagger": 1.2,
+    "kicker": "Not only real estate", "title": "Any *small business*",
+    "cards": [ { "icon": "home", "t": "Real estate" }, { "icon": "spark", "t": "Any small business" } ] },
+
+  { "type": "flow", "face": "pip", "src": [32.6, 41.95], "step": 2.4,
+    "kicker": "Why it didn't stick", "title": "We tried it. *Then we quit.*",
+    "nodes": [ { "icon": "spark", "t": "Tried it" }, { "icon": "shield", "t": "Felt out of reach" }, { "icon": "chart", "t": "Weak results", "hi": true } ] },
+
+  { "type": "talk", "face": "talk", "src": [42.4, 44.6],
+    "pills": [ { "t": "Using it *wrong*", "at": 0.6, "hi": true } ] },
+
+  { "type": "cards", "face": "pip", "src": [45.1, 56.45], "stagger": 1.6,
+    "kicker": "So you don't have to", "title": "I paid to *figure it out*",
+    "cards": [ { "icon": "calendar", "t": "Hours of learning" }, { "icon": "doc", "t": "Courses" }, { "icon": "spark", "t": "Tokens" }, { "icon": "wrench", "t": "Figured it out myself" } ] },
+
+  { "type": "checklist", "face": "pip", "src": [57.5, 66.4], "checkAt": [2.6, 6.0],
+    "kicker": "That said", "title": "A *third grade* level",
+    "items": ["Broken down simple", "Never touched AI? This is for you"] },
+
+  { "type": "title", "face": "pip", "src": [[66.5, 68.95], [73.6, 79.25]],
+    "kicker": "Already use AI?", "title": "Even *more* for you", "sub": "You get the advanced course as soon as it comes out." },
+
+  { "type": "talk", "face": "talk", "src": [85.2, 92.45],
+    "pills": [ { "t": "What I've *learned*", "at": 3.9 }, { "t": "*Built*", "at": 4.7 }, { "t": "*Use* every day", "at": 5.8 } ] },
+
+  { "type": "face", "face": "full", "src": [93.0, 100.1], "textAt": 0.3,
+    "kicker": "Your next step", "title": "Start with *lesson one.*", "sub": "Get set up with everything you need." }
+ ]
+}

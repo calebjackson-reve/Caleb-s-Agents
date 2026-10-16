@@ -1,0 +1,59 @@
+{
+ "about": "Course 1 intro, Nate Herk-style comparison cut of IMG_6290 (2026-10-15). Same words as course1-v0-intro.json, cut the way Nate's measured video is: opens on a motion graphic, then full-frame talking head with keyword pills, switching to a graphic about every 5 seconds. Original animation only. For Caleb to compare with the Nick-style cut.",
+ "look": "ink",
+ "chrome": "AI for Agents · Course 1",
+ "face_pos": { "cx": 0.535, "cy": 0.5, "card_h": 1.0, "pip_side": 0.66, "talk_zoom": 1.12 },
+ "scenes": [
+  { "type": "title", "face": "none", "src": [4.2, 9.2],
+    "kicker": "Be honest", "title": "A dozen AI videos. *Still* not using it." },
+
+  { "type": "talk", "face": "talk", "src": [9.9, 11.0],
+    "pills": [ { "t": "Not on *you*", "at": 0.2 } ] },
+
+  { "type": "chips", "face": "none", "src": [11.5, 17.7],
+    "kicker": "Why it didn't stick", "title": "They started at *step 50*",
+    "chips": [ { "v": 50, "pre": "Step ", "lab": "Where most AI videos start" }, { "v": 1, "pre": "Step ", "lab": "Where *this course* starts", "hi": true } ] },
+
+  { "type": "talk", "face": "talk", "src": [18.9, 20.6],
+    "pills": [ { "t": "Over your *head*", "at": 0.2 } ] },
+
+  { "type": "talk", "face": "talk", "src": [58.4, 66.75],
+    "pills": [ { "t": "Caleb Jackson", "at": 0.3, "hi": true }, { "t": "REALTOR, KW First Choice", "at": 1.0 }, { "t": "Builds his own *AI tools*", "at": 4.4 } ] },
+
+  { "type": "talk", "face": "talk", "src": [67.8, 73.5],
+    "pills": [ { "t": "Lost a room at *step 50*", "at": 3.0 } ] },
+
+  { "type": "checklist", "face": "none", "src": [74.2, 78.75], "checkAt": [1.2, 2.6, 3.4],
+    "kicker": "So this course", "title": "Starts at *step one*",
+    "items": ["For real beginners", "On your phone", "In plain English"] },
+
+  { "type": "flow", "face": "none", "src": [79.3, 87.4], "step": 1.4,
+    "kicker": "The map", "title": "Find the leads *already in your phone*",
+    "nodes": [ { "icon": "phone", "t": "Set up two apps" }, { "icon": "chat", "t": "Scavenger hunt", "d": "Through your texts" }, { "icon": "user", "t": "Who's who", "d": "And the leads you forgot", "hi": true } ] },
+
+  { "type": "talk", "face": "talk", "src": [87.9, 92.8],
+    "pills": [ { "t": "Your *CRM*", "at": 1.3 }, { "t": "Your *website*", "at": 2.6 } ] },
+
+  { "type": "cards", "face": "none", "src": [93.3, 99.4], "stagger": 1.2,
+    "kicker": "Then", "title": "Tools that *work for you*",
+    "cards": [ { "icon": "spark", "t": "Lead tools", "d": "Catch people at 11 PM" }, { "icon": "chart", "t": "Numbers and ads" } ] },
+
+  { "type": "talk", "face": "talk", "src": [100.2, 105.3],
+    "pills": [ { "t": "Built it. *Use it.*", "at": 0.6 } ] },
+
+  { "type": "beforeafter", "face": "none", "src": [105.4, 111.1], "afterAt": 1.0,
+    "kicker": "The goal", "title": "Think better, *not just faster*",
+    "beforeLabel": "Most AI courses", "before": ["Go faster", "Copy a prompt", "Hope it works"],
+    "afterLabel": "This course", "after": ["Think better", "Why your clients *decide*", "Watch me, then you do it"] },
+
+  { "type": "talk", "face": "talk", "src": [124.2, 127.9],
+    "pills": [ { "t": "The *right* way", "at": 0.3 } ] },
+
+  { "type": "checklist", "face": "none", "src": [[128.2, 130.3], [135.22, 138.2]], "checkAt": [0.2, 0.6, 2.4],
+    "kicker": "Client trust", "title": "Comes *first*",
+    "items": ["AI drafts, you approve", "No client money details go in", "Fair Housing on everything"] },
+
+  { "type": "talk", "face": "talk", "src": [150.9, 155.1],
+    "pills": [ { "t": "Start with *lesson one*", "at": 0.3, "hi": true }, { "t": "10 minutes", "at": 1.6 } ] }
+ ]
+}

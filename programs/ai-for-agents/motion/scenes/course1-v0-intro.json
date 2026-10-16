@@ -1,0 +1,43 @@
+{
+ "about": "Course 1, video 0: the intro. Cut from IMG_6290.mov, filmed 2026-10-15 off the teleprompter. src is the stretch (or stretches, best line from each take) of the take each scene plays over, in seconds. Hook version 1 was used, since it was the cleanest read.",
+ "look": "ivory",
+ "chrome": "AI for Agents · Course 1",
+ "face_pos": { "cx": 0.535, "cy": 0.56, "card_h": 1.0, "pip_side": 0.66 },
+ "scenes": [
+  { "type": "face", "face": "full", "src": [4.2, 10.95],
+    "kicker": "Be honest", "title": "*Still* not using it?" },
+
+  { "type": "chips", "face": "pip", "src": [11.5, 20.6],
+    "kicker": "Why it didn't stick", "title": "They started at *step 50*",
+    "chips": [ { "v": 50, "pre": "Step ", "lab": "Where most AI videos start" }, { "v": 1, "pre": "Step ", "lab": "Where *this course* starts", "hi": true } ] },
+
+  { "type": "title", "face": "pip", "src": [58.4, 66.75],
+    "kicker": "I'm", "title": "Caleb *Jackson*", "sub": "REALTOR with Keller Williams First Choice",
+    "tags": ["4.5 years in real estate", "Builds his own AI tools"] },
+
+  { "type": "checklist", "face": "pip", "src": [67.8, 78.75], "checkAt": [5.6, 7.8, 9.4],
+    "kicker": "I lost a room at step 50", "title": "So this starts at *step one*",
+    "items": ["Step one, for real beginners", "On your phone", "In plain English"] },
+
+  { "type": "flow", "face": "none", "src": [79.3, 87.4], "step": 1.4,
+    "kicker": "The map", "title": "Find the leads *already in your phone*",
+    "nodes": [ { "icon": "phone", "t": "Set up two apps" }, { "icon": "chat", "t": "Scavenger hunt", "d": "Through your texts" }, { "icon": "user", "t": "Who's who", "d": "And the leads you forgot", "hi": true } ] },
+
+  { "type": "cards", "face": "pip", "src": [87.9, 99.4], "stagger": 0.9,
+    "kicker": "Then we build", "title": "Your own *tools*",
+    "cards": [ { "icon": "doc", "t": "Your CRM" }, { "icon": "home", "t": "Your website" },
+               { "icon": "spark", "t": "Lead tools", "d": "Catch people at 11 PM" }, { "icon": "chart", "t": "Numbers and ads" } ] },
+
+  { "type": "beforeafter", "face": "pip", "src": [100.2, 111.1], "afterAt": 4.6,
+    "kicker": "Every lesson is something I built", "title": "Think better, *not just faster*",
+    "beforeLabel": "Most AI courses", "before": ["Go faster", "Copy a prompt", "Hope it works"],
+    "afterLabel": "This course", "after": ["Think better", "Why your clients *decide*", "Watch me, then you do it"] },
+
+  { "type": "checklist", "face": "pip", "src": [[124.2, 130.3], [135.22, 138.2]], "checkAt": [2.6, 4.4, 6.9],
+    "kicker": "The right way", "title": "Client trust *comes first*",
+    "items": ["AI drafts, you approve", "No client money details go in", "Fair Housing on everything"] },
+
+  { "type": "face", "face": "full", "src": [150.9, 155.1], "textAt": 0.3,
+    "kicker": "Your next step", "title": "Start with *lesson one.*", "sub": "It's ten minutes." }
+ ]
+}

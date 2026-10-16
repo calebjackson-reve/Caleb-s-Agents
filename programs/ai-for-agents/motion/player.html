@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Motion kit player</title>
+<link rel="stylesheet" href="kit.css"><script src="vendor/gsap.min.js"></script><script src="kit.js"></script></head>
+<body><div class="stage"></div>
+<script>
+// Open in a browser with ?scenes=scenes/pilot-imessage.json&t=12 to look at one moment, or &play to watch it run.
+(async () => {
+  const q = new URLSearchParams(location.search);
+  if (!q.get("scenes")) return;
+  const data = await (await fetch(q.get("scenes"))).json();
+  if (q.get("look")) data.look = q.get("look");
+  await document.fonts.ready;
+  const k = KITBUILD(data);
+  if (q.has("play")) k.tl.play(); else k.seek(parseFloat(q.get("t") || "0"));
+})();
+</script></body></html>

@@ -11,6 +11,8 @@ What it does to each clip:
   1. Finds every word (faster-whisper on the Mac, pocketsphinx as a fallback, silence
      detection if neither is installed).
   2. Drops pauses longer than the spec allows and any line you restarted (keeps the last take).
+     Say the mistake phrase ("Fuck that, Caleb") and the sentence before it is cut too, then
+     the finished video is transcribed again to prove the phrase is gone.
   3. Face clips: alternates wide and punch-in at the jump cuts so they read as camera
      changes, and forces a change if one framing runs past max_shot_s.
   4. Screen clips: finds where the screen is changing (typing, a reply streaming in) and
@@ -176,8 +178,79 @@ def drop_retakes(ph, n, look):
     return keep
 
 
+def find_mistakes(words, phrase):
+    """Start index of every spot where the mistake phrase was said. Fuzzy, because whisper
+    writes it as "F*** that, Kaleb" or "fuck that Caleb" depending on the take."""
+    from difflib import SequenceMatcher
+    target = " ".join(norm(t) for t in phrase.split())
+    n = len(phrase.split())
+    hits, i = [], 0
+    while i + n <= len(words):
+        # whisper bleeps swears ("F***"), so a starred word counts as the word it hides
+        got = " ".join(t if "*" in w["w"] and norm(w["w"])[:1] == t[:1] else norm(w["w"])
+                       for w, t in zip(words[i: i + n], target.split()))
+        # the first word has to sound like the swear ("fuck", "F***", or whisper's "buck"), so
+        # "but that, Caleb" in a normal sentence is safe
+        first = got.split(" ", 1)[0]
+        swear = first[:1] == target[:1] or re.search(r"uc?k$", first)
+        if swear and SequenceMatcher(None, target, got).ratio() >= 0.75:
+            hits.append(i)
+            i += n
+        else:
+            i += 1
+    return hits
+
+
+def sentence_start(words, j, gap):
+    """Index of the first word of the sentence word j sits in (a full stop or a pause ends one)."""
+    while j > 0 and not (words[j - 1]["w"].rstrip().endswith((".", "?", "!")) or
+                         words[j]["s"] - words[j - 1]["e"] > gap):
+        j -= 1
+    return j
+
+
+def cut_mistakes(words, spec):
+    """Drop each mistake phrase plus the sentence said right before it."""
+    M = spec.get("mistake")
+    if not M:
+        return words
+    n = len(M["phrase"].split())
+    drop = set()
+    for i in find_mistakes(words, M["phrase"]):
+        k = sentence_start(words, i - 1, spec["retakes"]["phrase_gap_s"]) if i > 0 else 0
+        # If the redo picks up partway through that sentence ("...fair housing on everything.
+        # Fuck that, Caleb. So fair housing on everything."), only cut back to where it picks up.
+        after = [norm(w["w"]) for w in words[i + n: i + n + 6] if norm(w["w"]) not in FILLERS | {"so", "and"}][:2]
+        found = False
+        if len(after) == 2:
+            for j in range(i - 2, k - 1, -1):
+                if [norm(words[j]["w"]), norm(words[j + 1]["w"])] == after:
+                    while j > k and norm(words[j - 1]["w"]) in FILLERS | {"so", "and"}:
+                        j -= 1
+                    k, found = j, True
+                    break
+        # Or the redo reworded the start but repeats a run of 3 words ("this is going to be even more
+        # beneficial, and... Fuck that, Caleb. This will be even more beneficial"): cut back to the
+        # start of the clause that holds that run, so the good clauses before it stay.
+        redo = [norm(w["w"]) for w in words[i + n: i + n + 8]]
+        runs = {tuple(redo[a:a + 3]) for a in range(len(redo) - 2)}
+        if not found:
+            for j in range(i - 3, k - 1, -1):
+                if tuple(norm(words[x]["w"]) for x in range(j, j + 3)) in runs:
+                    while j > k and not re.search(r"[,.?!]$", words[j - 1]["w"]):
+                        j -= 1
+                    k = j
+                    break
+        log(f"mistake phrase at {words[i]['s']:.1f}s, cut back to {words[k]['s']:.1f}s: "
+            f"\"{' '.join(w['w'] for w in words[k:i])[:70]}\"")
+        drop.update(range(k, i + n))
+    return [w for j, w in enumerate(words) if j not in drop]
+
+
 def keep_ranges(words, total, spec, engine):
     P, R = spec["pauses"], spec["retakes"]
+    if engine in ("whisper", "sphinx"):
+        words = cut_mistakes(words, spec)
     words = [w for w in words if norm(w["w"]) not in FILLERS and w["e"] > w["s"]]
     if engine in ("whisper", "sphinx"):
         words = [w for p in drop_retakes(phrases(words, R["phrase_gap_s"]), R["match_words"],
@@ -432,13 +505,26 @@ def render(shots, events, spec, out, work):
     joined = work / "joined.mp4"
     run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", joined])
     run(["ffmpeg", "-v", "error", "-y", "-i", joined, "-c:v", "copy",
-         "-af", f"loudnorm=I={O['loudness_lufs']}:TP=-1.5:LRA=11", "-ar", "48000",
+         "-af", soft_level(joined, O), "-ar", "48000",
          "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out])
+
+
+def soft_level(src, out_spec):
+    """Two-pass loudnorm in linear mode: one gain change for the whole take, so his voice keeps its
+    natural rise and fall instead of being squashed, plus a gentle cut to the top end."""
+    O = out_spec
+    tone = O.get("voice_tone", "anull")
+    target = f"I={O['loudness_lufs']}:TP=-3:LRA=20"
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(src), "-af", f"{tone},loudnorm={target}:print_format=json",
+                        "-f", "null", "-"], capture_output=True, text=True)
+    m = json.loads(re.search(r"\{[^{}]*\}\s*$", r.stderr).group(0))
+    return (f"{tone},loudnorm={target}:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
+            f"measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
 
 
 # ---------- 7. check ----------
 
-def check(out, spec, work):
+def check(out, spec, work, model=None):
     sys.path.insert(0, str(HERE))
     import style_probe as sp
     total = sp.duration(out)
@@ -455,12 +541,20 @@ def check(out, spec, work):
         "longest_silence_s": round(max(silences), 2) if silences else 0.0,
         "loudness": sp.loudness(out),
     }
+    if spec.get("mistake") and model:
+        try:
+            heard = words_whisper(wav, model)
+            got["mistake_phrase_left"] = len(find_mistakes(heard, spec["mistake"]["phrase"]))
+        except Exception as exc:
+            log(f"could not re-transcribe the output to check the mistake phrase ({type(exc).__name__})")
     T = spec["targets"]
     verdict = {
         "cuts_per_min": T["cuts_per_min"][0] <= got["cuts_per_min"] <= T["cuts_per_min"][1],
         "shot_median_s": T["shot_median_s"][0] <= got["shot_median_s"] <= T["shot_median_s"][1],
         "longest_silence_s": got["longest_silence_s"] <= T["longest_gap_s"],
     }
+    if "mistake_phrase_left" in got:
+        verdict["mistake_phrase_gone"] = got["mistake_phrase_left"] == 0
     return got, verdict
 
 
@@ -503,7 +597,7 @@ def main():
     events = text_events(clip_words, all_shots, spec, keywords, mode)
     log(f"{len(all_shots)} shots, {len(events)} text events, rendering")
     render(all_shots, events, spec, out, work)
-    got, verdict = check(out, spec, work)
+    got, verdict = check(out, spec, work, a.model if a.engine in ("auto", "whisper") else None)
     edl = {"spec": spec["name"], "clips": report, "shots": all_shots,
            "text": [{k: v for k, v in e.items() if k != "png"} for e in events],
            "measured_output": got, "meets_targets": verdict}

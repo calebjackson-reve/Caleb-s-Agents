@@ -1,0 +1,131 @@
+{
+ "about": "Demo of the Motion Kit text effects ported into the video kit: heading rise with masks, a statement that lights up as Caleb says it (his IMG_6299 hook audio), and the word color sweep. Ivory look.",
+ "look": "ivory",
+ "chrome": "AI for Agents \u00b7 Course 1",
+ "caption_box": false,
+ "captions": [
+  {
+   "w": "Most",
+   "s": 3.62,
+   "e": 4.04
+  },
+  {
+   "w": "agents",
+   "s": 4.04,
+   "e": 4.46
+  },
+  {
+   "w": "I've",
+   "s": 4.46,
+   "e": 4.88
+  },
+  {
+   "w": "talked",
+   "s": 4.88,
+   "e": 5.02
+  },
+  {
+   "w": "to",
+   "s": 5.02,
+   "e": 5.34
+  },
+  {
+   "w": "have",
+   "s": 5.34,
+   "e": 5.6
+  },
+  {
+   "w": "all",
+   "s": 5.6,
+   "e": 6.0
+  },
+  {
+   "w": "used",
+   "s": 6.0,
+   "e": 6.46
+  },
+  {
+   "w": "or",
+   "s": 6.46,
+   "e": 6.74
+  },
+  {
+   "w": "tried",
+   "s": 6.74,
+   "e": 7.1
+  },
+  {
+   "w": "AI.",
+   "s": 7.1,
+   "e": 7.6
+  },
+  {
+   "w": "Almost",
+   "s": 8.18,
+   "e": 8.44
+  },
+  {
+   "w": "none",
+   "s": 8.44,
+   "e": 8.96
+  },
+  {
+   "w": "of",
+   "s": 8.96,
+   "e": 9.1
+  },
+  {
+   "w": "them",
+   "s": 9.1,
+   "e": 9.38
+  },
+  {
+   "w": "use",
+   "s": 9.38,
+   "e": 9.7
+  },
+  {
+   "w": "it",
+   "s": 9.7,
+   "e": 9.88
+  },
+  {
+   "w": "in",
+   "s": 9.88,
+   "e": 10.0
+  },
+  {
+   "w": "their",
+   "s": 10.0,
+   "e": 10.12
+  },
+  {
+   "w": "business.",
+   "s": 10.12,
+   "e": 10.52
+  }
+ ],
+ "scenes": [
+  {
+   "type": "title",
+   "text": "mask",
+   "dur": 3.5,
+   "kicker": "Be honest",
+   "title": "Tried it. *Not using it.*"
+  },
+  {
+   "type": "statement",
+   "dur": 7.4,
+   "kicker": "Here's the gap",
+   "text": "Most agents I've talked to have all used or *tried* AI. Almost none of them *use it* in their business."
+  },
+  {
+   "type": "title",
+   "text": "sweep",
+   "dur": 4.6,
+   "kicker": "Here's why",
+   "title": "Small business owners. *Expert-level* AI.",
+   "sub": "Taught over our heads."
+  }
+ ]
+}
