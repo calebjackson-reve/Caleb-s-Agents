@@ -25,4 +25,8 @@ print("PASS" if got == want else "FAIL", "|", got); ok &= got == want
 # real take 2026-10-15: redo picks up mid-sentence, whisper hears "Buck"
 src = W("AI drafts you approve, no client money details go in, fair housing on everything. Buck that Caleb. So fair housing on everything.")
 got = " ".join(w["w"] for w in sc.cut_mistakes(src, spec)); want = "AI drafts you approve, no client money details go in, So fair housing on everything."
+print("PASS" if got == want else "FAIL", "|", got); ok &= got == want
+# real take IMG_6301: the redo rewords the start but repeats "even more beneficial"
+src = W("this course is for you, but also if you're familiar with AI, this is going to be even more beneficial, and you'll even figure it out, fuck that Caleb. This will be even more beneficial for you.")
+got = " ".join(w["w"] for w in sc.cut_mistakes(src, spec)); want = "this course is for you, but also if you're familiar with AI, This will be even more beneficial for you."
 print("PASS" if got == want else "FAIL", "|", got); sys.exit(0 if (ok and got == want) else 1)

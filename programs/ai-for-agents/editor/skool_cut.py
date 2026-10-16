@@ -221,10 +221,23 @@ def cut_mistakes(words, spec):
         # If the redo picks up partway through that sentence ("...fair housing on everything.
         # Fuck that, Caleb. So fair housing on everything."), only cut back to where it picks up.
         after = [norm(w["w"]) for w in words[i + n: i + n + 6] if norm(w["w"]) not in FILLERS | {"so", "and"}][:2]
+        found = False
         if len(after) == 2:
             for j in range(i - 2, k - 1, -1):
                 if [norm(words[j]["w"]), norm(words[j + 1]["w"])] == after:
                     while j > k and norm(words[j - 1]["w"]) in FILLERS | {"so", "and"}:
+                        j -= 1
+                    k, found = j, True
+                    break
+        # Or the redo reworded the start but repeats a run of 3 words ("this is going to be even more
+        # beneficial, and... Fuck that, Caleb. This will be even more beneficial"): cut back to the
+        # start of the clause that holds that run, so the good clauses before it stay.
+        redo = [norm(w["w"]) for w in words[i + n: i + n + 8]]
+        runs = {tuple(redo[a:a + 3]) for a in range(len(redo) - 2)}
+        if not found:
+            for j in range(i - 3, k - 1, -1):
+                if tuple(norm(words[x]["w"]) for x in range(j, j + 3)) in runs:
+                    while j > k and not re.search(r"[,.?!]$", words[j - 1]["w"]):
                         j -= 1
                     k = j
                     break

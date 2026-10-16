@@ -249,6 +249,34 @@
     },
   });
 
+  // burned-in captions: his words in short lines, the word he's saying lights up
+  function captions(stage, tl, ws) {
+    const box = document.createElement("div");
+    box.className = "caps";
+    stage.appendChild(box);
+    stage.classList.add("has-caps");
+    const lines = [];
+    let cur = [];
+    ws.forEach((w, i) => {
+      cur.push(w);
+      const next = ws[i + 1];
+      if (!next || cur.length >= 5 || /[.?!,]$/.test(w.w) || next.s - w.e > 0.35) { lines.push(cur); cur = []; }
+    });
+    lines.forEach((ln, k) => {
+      const el = document.createElement("div");
+      el.className = "cap";
+      el.innerHTML = ln.map((w) => `<span>${esc(w.w)}</span>`).join(" ");
+      box.appendChild(el);
+      const end = k + 1 < lines.length ? Math.min(lines[k + 1][0].s, ln[ln.length - 1].e + 0.6) : ln[ln.length - 1].e + 0.6;
+      tl.set(el, { visibility: "visible" }, ln[0].s);
+      tl.set(el, { visibility: "hidden" }, end);
+      el.querySelectorAll("span").forEach((sp, j) => {
+        tl.set(sp, { color: "#E87757" }, ln[j].s);
+        tl.set(sp, { color: "#FBF8F3" }, ln[j].e);
+      });
+    });
+  }
+
   function build(data) {
     document.body.className = "look-" + (data.look || "ivory");
     const stage = document.querySelector(".stage");
@@ -289,6 +317,7 @@
       marks.push({ i, type: sc.type, face: sc.face || "none", start, end });
       t = end;
     });
+    if (Array.isArray(data.captions) && data.captions.length) captions(stage, tl, data.captions);
     tl.set({}, {}, t); // pad to full length
     window.KIT = { tl, duration: t, marks, seek: (s) => { tl.time(Math.min(s, t), false); },
       slot: () => { const f = document.querySelector(".scene[style*='visible'] .faceslot"); return f && f.getBoundingClientRect(); } };

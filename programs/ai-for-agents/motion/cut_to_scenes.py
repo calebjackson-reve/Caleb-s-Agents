@@ -6,7 +6,7 @@
 Each scene in the list says which stretch of the take it plays over ("src": [start, end]) and
 how much of your face shows ("face": "full" for the hook and last line, "pip" for the small
 corner box, "none" when the screen is busy, "talk" for a full-frame talking head with keyword
-pills, the way Nate Herk cuts). The script:
+pills, the way Nate Herk cuts). Add "captions": true to the scene list to burn in his words. The script:
   1. finds every word (the editor's whisper step) and drops the "Fuck that, Caleb" retakes,
   2. trims the pauses inside each stretch and joins them in scene order (face.mp4),
   3. renders the animation to the exact scene lengths (render.mjs, motion.mp4),
@@ -44,6 +44,18 @@ def ranges_for(words, a, b, spec):
         else:
             out.append([s, e])
     return out, inside
+
+
+def caption_words(words, pieces, fix):
+    """His words placed on the finished video's clock, for burned-in captions. "caption_fix" in the
+    scene list swaps whisper's misspellings, e.g. {"Kellewing's": "Keller Williams"}, or one spot only with "word@start", e.g. {"Caleb@4.56": "Keller"}."""
+    out, off = [], 0.0
+    for b, e in pieces:
+        for w in words:
+            if b - 0.02 <= w["s"] < e:
+                out.append({"w": fix.get(f"{w['w']}@{w['s']:.2f}", fix.get(w["w"], w["w"])), "s": round(off + w["s"] - b, 3), "e": round(off + min(w["e"], e) - b, 3)})
+        off += e - b
+    return out
 
 
 def mask(path, w, h, r):
@@ -103,6 +115,8 @@ def main():
 
     # 3. render the animation to those lengths
     scenes_out = out.with_suffix(".scenes.json")
+    if data.get("captions"):
+        data["captions"] = caption_words(words, pieces, data.get("caption_fix", {}))
     scenes_out.write_text(json.dumps(data, indent=1))
     motion = work / "motion.mp4"
     run(["node", str(HERE / "render.mjs"), str(scenes_out), str(motion)])

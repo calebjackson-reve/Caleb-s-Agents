@@ -175,3 +175,10 @@ body { font-family: "Inter", sans-serif; color: var(--fg); -webkit-font-smoothin
 .talk .kw em { font-style: normal; color: var(--ember-deep, var(--ember)); }
 .talk .kw.hi { background: var(--ember); color: #fff; }
 .talk .kw.hi em { color: #fff; }
+
+/* burned-in captions, clear of the corner box and above the bottom edge */
+.caps { position: absolute; left: 140px; right: 480px; bottom: 34px; height: 76px; z-index: 6; pointer-events: none; }
+.cap { position: absolute; inset: 0; margin: auto; width: max-content; max-width: 100%; height: max-content; visibility: hidden;
+  padding: 14px 26px; border-radius: 16px; background: var(--ink); color: var(--ivory); font: 600 38px/1.15 "Inter"; letter-spacing: -.01em; text-align: center; }
+.has-caps .talk { bottom: 150px; }
+.has-caps .flag { display: none; }
