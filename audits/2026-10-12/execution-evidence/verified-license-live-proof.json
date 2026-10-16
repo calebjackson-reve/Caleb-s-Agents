@@ -1,0 +1,128 @@
+[
+  {
+    "path": "/about",
+    "checked_utc": "2026-10-12T23:46:32.192842+00:00",
+    "status_line": "HTTP/2 200",
+    "incorrect_license": 0,
+    "correct_license": 1,
+    "cache_age": [
+      "455"
+    ],
+    "title": [
+      "About Caleb Jackson | Baton Rouge REALTOR"
+    ],
+    "canonical": [
+      "<link rel=\"canonical\" href=\"https://calebjackson.org/about\">"
+    ],
+    "noindex": false,
+    "faq_checks": [],
+    "passed": true
+  },
+  {
+    "path": "/neighborhoods/st-francisville",
+    "checked_utc": "2026-10-12T23:46:32.426631+00:00",
+    "status_line": "HTTP/2 200",
+    "incorrect_license": 0,
+    "correct_license": 1,
+    "cache_age": [
+      "9"
+    ],
+    "title": [
+      "Buy or Sell in St. Francisville, LA | Caleb Jackson"
+    ],
+    "canonical": [
+      "<link rel=\"canonical\" href=\"https://calebjackson.org/neighborhoods/st-francisville\">"
+    ],
+    "noindex": false,
+    "faq_checks": [
+      {
+        "question": "Does Caleb Jackson serve St. Francisville?",
+        "present": true
+      },
+      {
+        "question": "What should I check before buying acreage?",
+        "present": true
+      },
+      {
+        "question": "Can I renovate a historic home in St. Francisville?",
+        "present": true
+      },
+      {
+        "question": "How do I know what my home is worth?",
+        "present": true
+      },
+      {
+        "question": "Will the AI data center raise every home's value?",
+        "present": true
+      },
+      {
+        "question": "How do I start buying or selling here?",
+        "present": true
+      }
+    ],
+    "passed": true
+  },
+  {
+    "path": "/neighborhoods/baton-rouge",
+    "checked_utc": "2026-10-12T23:46:32.637619+00:00",
+    "status_line": "HTTP/2 200",
+    "incorrect_license": 0,
+    "correct_license": 1,
+    "cache_age": [
+      "10"
+    ],
+    "title": [
+      "Buy or Sell in Baton Rouge, LA | Caleb Jackson"
+    ],
+    "canonical": [
+      "<link rel=\"canonical\" href=\"https://calebjackson.org/neighborhoods/baton-rouge\">"
+    ],
+    "noindex": false,
+    "faq_checks": [
+      {
+        "question": "Does Caleb Jackson help Baton Rouge buyers and sellers?",
+        "present": true
+      },
+      {
+        "question": "Which Baton Rouge neighborhood should I choose?",
+        "present": true
+      },
+      {
+        "question": "How do I check a home's flood zone?",
+        "present": true
+      },
+      {
+        "question": "What should I do before selling my house?",
+        "present": true
+      },
+      {
+        "question": "Can I change the exterior of a historic home?",
+        "present": true
+      },
+      {
+        "question": "How do I buy while living outside Baton Rouge?",
+        "present": true
+      }
+    ],
+    "passed": true
+  },
+  {
+    "path": "/blog/what-the-ai-data-center-could-mean-for-st-francisville",
+    "checked_utc": "2026-10-12T23:46:32.808446+00:00",
+    "status_line": "HTTP/2 200",
+    "incorrect_license": 0,
+    "correct_license": 2,
+    "cache_age": [
+      "10"
+    ],
+    "title": [
+      "St. Francisville AI Data Center Outlook | Caleb Jackson"
+    ],
+    "canonical": [
+      "<link rel=\"canonical\" href=\"https://calebjackson.org/blog/what-the-ai-data-center-could-mean-for-st-francisville\">"
+    ],
+    "noindex": false,
+    "faq_checks": [],
+    "passed": true
+  }
+]

@@ -1,0 +1,36 @@
+{
+  "served_matches": true,
+  "independent_source_vote": "PASS",
+  "native_observed": {
+    "frames": 3,
+    "prepare_opacities": [
+      0,
+      1,
+      0
+    ],
+    "close_opacities": [
+      0,
+      0,
+      1
+    ],
+    "drag_marker_open": true,
+    "drag_marker_reopens_after_close": true,
+    "button_mask_mid": "10.5263%",
+    "button_mask_end": "100%",
+    "button_resets": true,
+    "phone_width": 390,
+    "desktop_width": 937,
+    "overflow": false,
+    "console_errors": [],
+    "buyer_labels": [
+      "PRIORITIES",
+      "PROPERTY",
+      "OPTIONS"
+    ]
+  },
+  "limitations": [
+    "Reduced-motion preference change paths source checked, not emulated in browser",
+    "No live LP installation or final aesthetic acceptance",
+    "Not a full uninterrupted performance audit"
+  ]
+}
