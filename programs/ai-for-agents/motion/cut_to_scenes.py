@@ -35,10 +35,11 @@ def run(cmd):
 
 def ranges_for(words, a, b, spec):
     P = spec["pauses"]
-    inside = [w for w in words if w["s"] >= a - 0.05 and w["e"] <= b + 0.05]
+    # a word that starts inside the stretch is kept whole, even if it runs past the end
+    inside = [w for w in words if a - 0.05 <= w["s"] < b]
     out = []
     for w in inside:
-        s, e = max(a, w["s"] - P["pad_before_s"]), min(b, w["e"] + P["pad_after_s"])
+        s, e = max(a, w["s"] - P["pad_before_s"]), max(min(b, w["e"] + P["pad_after_s"]), w["e"] + 0.04)
         if out and s - out[-1][1] <= P["merge_gap_s"]:
             out[-1][1] = max(out[-1][1], e)
         else:
