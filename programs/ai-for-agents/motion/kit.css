@@ -182,3 +182,12 @@ body { font-family: "Inter", sans-serif; color: var(--fg); -webkit-font-smoothin
   padding: 14px 26px; border-radius: 16px; background: var(--ink); color: var(--ivory); font: 600 38px/1.15 "Inter"; letter-spacing: -.01em; text-align: center; }
 .has-caps .talk { bottom: 150px; }
 .has-caps .flag { display: none; }
+
+/* Motion Kit text effects, ported for video */
+.wm { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .2em; margin-bottom: -.2em; }
+.chrome .dot { border-radius: 2px; }
+.statement { display: flex; flex-direction: column; justify-content: center; gap: 40px; height: 100%; max-width: 1500px; }
+.said { --said-muted: #D9D2C8; font-family: var(--head-font); font-weight: var(--head-weight); font-size: 92px; line-height: 1.08; letter-spacing: var(--head-track); }
+.said em { font-style: italic; color: inherit; }
+.sw .h1 em, .sw .h2 em { color: inherit; }
+.look-ink .said { --said-muted: #3A332E; }

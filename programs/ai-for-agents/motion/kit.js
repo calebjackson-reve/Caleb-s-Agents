@@ -3,7 +3,8 @@
 
    window.KIT_DATA = { look: "ivory"|"ink"|"grid", chrome: "AI for Agents · Lesson 1",
                        flag: "Fictional data", scenes: [ { type, dur, face: "none"|"pip"|"full"|"talk", ...data } ] }
-   Text fields take *word* for the one ember accent in a view. */
+   Text fields take *word* for the one ember accent in a view.
+   text: "blur"|"mask"|"sweep" picks how headings come in, at the top level or per scene. */
 (function () {
   const E = "power3.out", SOFT = "power2.inOut";
   const ICONS = {
@@ -31,12 +32,34 @@
   const label = (s) => (s ? `<div class="label kicker">${esc(s)}</div>` : "");
   const initials = (n) => esc(n).split(/\s+/).map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 
+  // How headings come in. Set per scene with "text", or for the whole video at the top level.
+  //   blur  (default) words rise out of a blur
+  //   mask  Motion Kit heading rise: each word slides up out of its own mask, no fade-through-blur
+  //   sweep Motion Kit word sweep: each word fades in through ember, then settles on its own color
+  let MODE = "blur";
   function headIn(tl, root, at = 0) {
     const ws = root.querySelectorAll(".h1 .w, .h2 .w");
-    tl.from(ws, { yPercent: 60, opacity: 0, filter: "blur(10px)", duration: 0.7, ease: E, stagger: 0.06 }, at);
+    let st = 0.06;
+    if (MODE === "mask") {
+      ws.forEach((w) => { const m = document.createElement("span"); m.className = "wm"; w.replaceWith(m); m.appendChild(w); });
+      st = 0.05;
+      tl.from(ws, { yPercent: 105, duration: 0.8, ease: "power2.out", stagger: st }, at);
+    } else if (MODE === "sweep") {
+      const ember = getComputedStyle(document.body).getPropertyValue("--ember").trim() || "#E87757";
+      st = 0.08;
+      root.classList.add("sw");
+      ws.forEach((w, i) => {
+        const em = w.querySelector("em");
+        const end = em ? ember : getComputedStyle(w).color;
+        tl.fromTo(w, { color: "rgba(0,0,0,0)" }, { keyframes: { color: ["rgba(0,0,0,0)", ember, end], easeEach: "power2.in" },
+          ease: "power1.out", duration: 1, immediateRender: true }, at + i * st);
+      });
+    } else {
+      tl.from(ws, { yPercent: 60, opacity: 0, filter: "blur(10px)", duration: 0.7, ease: E, stagger: st }, at);
+    }
     const k = root.querySelector(".kicker");
     if (k) tl.from(k, { opacity: 0, x: -16, duration: 0.5, ease: E }, at);
-    return at + 0.25 + ws.length * 0.06;
+    return at + 0.25 + ws.length * st;
   }
   const rise = (tl, els, at, st = 0.12) =>
     tl.from(els, { y: 50, opacity: 0, scale: 0.98, duration: 0.7, ease: E, stagger: st }, at);
@@ -249,6 +272,29 @@
     },
   });
 
+  // one big line that lights up word by word as he says it (Motion Kit's scroll-scrubbed text,
+  // driven by his voice instead of the scroll). text is optional: without it the scene shows his own words.
+  // { type: "statement", kicker: "The gap", text: "Most agents have *tried* AI. Almost none *use* it." }
+  S.statement = (d) => ({
+    html: `<div class="statement">${label(d.kicker)}<div class="said">${words(d.text || "")}</div></div>`,
+    anim(tl, r, ctx) {
+      const box = r.querySelector(".said");
+      let said = (ctx.spoken || []);
+      if (!d.text) { box.innerHTML = said.map((w) => `<span class="w">${esc(w.w)}</span>`).join(" "); }
+      const ws = [...box.querySelectorAll(".w")];
+      const k = r.querySelector(".kicker");
+      if (k) tl.from(k, { opacity: 0, x: -16, duration: 0.5, ease: E }, 0);
+      const muted = getComputedStyle(box).getPropertyValue("--said-muted").trim();
+      const ember = getComputedStyle(document.body).getPropertyValue("--ember").trim() || "#E87757";
+      ws.forEach((w, i) => {
+        const end = w.querySelector("em") ? ember : getComputedStyle(w).color;
+        let at = 0.2 + i * Math.max(0.12, (ctx.dur * 0.8) / Math.max(ws.length, 1));
+        if (said.length) at = Math.max(0, said[Math.min(said.length - 1, Math.floor(i * said.length / ws.length))].s - ctx.start);
+        tl.fromTo(w, { color: muted }, { color: end, duration: 0.3, ease: "none", immediateRender: true }, at);
+      });
+    },
+  });
+
   // burned-in captions: his words in short lines, the word he's saying lights up
   function captions(stage, tl, ws) {
     const box = document.createElement("div");
@@ -296,7 +342,9 @@
       if (sc.face === "pip") el.style.paddingRight = "460px";
       stage.appendChild(el);
       const local = gsap.timeline();
-      built.anim(local, el);
+      MODE = sc.text || data.text || "blur";
+      const spoken = (data.captions || []).filter((w) => w.s >= t && w.s < t + sc.dur);
+      built.anim(local, el, { start: t, dur: sc.dur, spoken });
       const start = t, end = t + sc.dur;
       tl.set(el, { visibility: "visible" }, start);
       tl.add(local, start + 0.05);
@@ -317,7 +365,10 @@
       marks.push({ i, type: sc.type, face: sc.face || "none", start, end });
       t = end;
     });
-    if (Array.isArray(data.captions) && data.captions.length) captions(stage, tl, data.captions);
+    if (Array.isArray(data.captions) && data.captions.length && data.caption_box !== false) captions(stage, tl, data.captions);
+    // Motion Kit's pulsing accent square, on the chrome dot
+    const dot = stage.querySelector(".chrome .dot");
+    if (dot && t > 2) tl.to(dot, { opacity: 0.2, duration: 0.9, ease: "sine.inOut", yoyo: true, repeat: Math.floor(t / 0.9) - 1 }, 0);
     tl.set({}, {}, t); // pad to full length
     window.KIT = { tl, duration: t, marks, seek: (s) => { tl.time(Math.min(s, t), false); },
       slot: () => { const f = document.querySelector(".scene[style*='visible'] .faceslot"); return f && f.getBoundingClientRect(); } };

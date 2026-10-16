@@ -34,3 +34,8 @@ Looks: `ivory` (clean, closest to Nick), `ink` (dark), `grid` (ivory with dots a
 Face modes per scene: `full`, `pip` (the 360 px corner box), `talk` (full frame, the stage turns key green and the compositor puts his face under the pills) or `none`. `face_pos.talk_zoom` zooms the full-frame face in.
 
 Fonts are under the SIL Open Font License: Instrument Serif and Inter, plus Jackson Display (Caleb's, built on Inter).
+
+## Motion Kit text effects
+
+Headings take `"text": "blur"|"mask"|"sweep"` at the top level or per scene. `mask` is Motion Kit's heading rise, `sweep` is its word color sweep. Scene type `statement` lights a big line up word by word as he says it, using the scene list's `captions` for timing (`"caption_box": false` hides the caption bar). The chrome dot pulses. See `skills/motion-kit/SKILL.md` and `scenes/demo-motion-kit-text.json`.
+
