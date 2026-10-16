@@ -1,0 +1,11 @@
+credentials.json
+token.json
+processed.json
+log.csv
+dry-run.log
+errors.log
+text-queue.json
+contacts.csv
+sent-log.json
+flags.md
+queue-*.md
