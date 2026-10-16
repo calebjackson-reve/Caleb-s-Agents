@@ -40,7 +40,7 @@ skoolcut $HOME/Movies/skool/day-1-cut.mp4 \
 
 Clips play in the order you list them. `face:` is the iPhone take. `screen:` is the Mac screen recording with your voice on it. You get:
 
-- `day-1-cut.mp4`: 1080p, 30fps, loudness at -14 LUFS
+- `day-1-cut.mp4`: 1080p, 30fps, loudness at -20 LUFS
 - `day-1-cut.edl.json`: every shot, where it came from, the zoom, the text, and the check against the targets
 - `day-1-cut.work/`: work files. Delete it any time.
 

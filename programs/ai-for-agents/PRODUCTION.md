@@ -90,7 +90,7 @@ CapCut is free and handles everything here. Descript works too if you'd rather e
 - Short clips: bigger, centered, 2 to 4 words at a time, keyword in a single accent color.
 
 **6. Audio**
-- Normalize loudness (Audio, Normalize, around -14 LUFS).
+- Normalize loudness (Audio, Normalize, around -20 LUFS).
 - Turn on noise reduction if there's hum.
 - Music optional, under 10% volume, and only CapCut's licensed library or YouTube's Audio Library. Drop it to zero while you're explaining a prompt.
 

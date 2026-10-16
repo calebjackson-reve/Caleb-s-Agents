@@ -36,7 +36,7 @@ Scope right now: Lesson 1 only, the iMessage lesson. Don't start another lesson 
   - Cuts the pauses and the mistake phrase.
   - Renders every scene to the exact length he talks.
   - Puts his face in the card or the corner box.
-  - Levels the sound to -14 LUFS.
+  - Levels the sound to -20 LUFS.
 - Check the report: `full_face_share` should be about 0.10 to 0.20.
 
 ## 6. Check (Gate: the quality)

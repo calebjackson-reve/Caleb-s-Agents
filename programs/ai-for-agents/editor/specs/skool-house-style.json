@@ -6,7 +6,9 @@
   "width": 1920,
   "height": 1080,
   "fps": 30,
-  "loudness_lufs": -14,
+  "loudness_lufs": -20,
+    "_loudness_note": "Caleb, 2026-10-15: -14 sounded super loud. -20 with a two-pass linear level (no squashing) and a soft top end.",
+    "voice_tone": "highshelf=f=7000:g=-3,lowpass=f=14000",
   "_source": "decided: PRODUCTION.md export and audio steps"
  },
  "pauses": {

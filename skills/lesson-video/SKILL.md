@@ -57,7 +57,7 @@ Then run the ethics check:
 ## 4. Film and cut
 
 - Caleb films vertical on his iPhone at his desk. If he flubs a line, he says "Fuck that, Caleb" and goes again.
-- Run `python3 programs/ai-for-agents/motion/cut_to_scenes.py SCENES.json TAKE.MOV OUT`. It trims pauses, drops the mistake phrase, renders the scenes to his timing, adds his face and levels the sound to -14 LUFS.
+- Run `python3 programs/ai-for-agents/motion/cut_to_scenes.py SCENES.json TAKE.MOV OUT`. It trims pauses, drops the mistake phrase, renders the scenes to his timing, adds his face and levels the sound to -20 LUFS.
 - Before showing Caleb, open the result and pull a contact sheet. Check for clipped words, text running off screen, and a face over text. Confirm the mistake phrase is gone.
 
 ## Never

@@ -10,7 +10,7 @@ pills, the way Nate Herk cuts). The script:
   1. finds every word (the editor's whisper step) and drops the "Fuck that, Caleb" retakes,
   2. trims the pauses inside each stretch and joins them in scene order (face.mp4),
   3. renders the animation to the exact scene lengths (render.mjs, motion.mp4),
-  4. drops your face into the card or the corner box and levels the sound to -14 LUFS.
+  4. drops your face into the card or the corner box and levels the sound gently (see the spec's loudness_lufs).
 Writes OUT.mp4, OUT.scenes.json (the list with real lengths) and OUT.marks.json. The take is only read.
 """
 import argparse
@@ -144,7 +144,7 @@ def main():
           f"[f2]crop={ps}:{ps}:{px}:{py},scale={pw}:{pw},format=rgba[pc];[3:v]format=gray[mp];[pc][mp]alphamerge[pip];"
           f"[v0][full]overlay={int(round(box['x']))}:{int(round(box['y']))}:enable='{on(full, 0.3)}'[v1];"
           f"[v1][pip]overlay={int(round(P['x']))}:{int(round(P['y']))}:enable='{on(pip)}'[v];"
-          f"[1:a]loudnorm=I={spec['output']['loudness_lufs']}:TP=-1.5:LRA=11,aresample=48000[a]")
+          f"[1:a]{sc.soft_level(face, spec['output'])},aresample=48000[a]")
     final = out.with_suffix(".mp4")
     run(["ffmpeg", "-v", "error", "-y", "-i", str(motion), "-i", str(face), "-loop", "1", "-i", str(work / "m_full.png"),
          "-loop", "1", "-i", str(work / "m_pip.png"), "-filter_complex", fc, "-map", "[v]", "-map", "[a]",

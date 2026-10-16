@@ -492,8 +492,21 @@ def render(shots, events, spec, out, work):
     joined = work / "joined.mp4"
     run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", joined])
     run(["ffmpeg", "-v", "error", "-y", "-i", joined, "-c:v", "copy",
-         "-af", f"loudnorm=I={O['loudness_lufs']}:TP=-1.5:LRA=11", "-ar", "48000",
+         "-af", soft_level(joined, O), "-ar", "48000",
          "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out])
+
+
+def soft_level(src, out_spec):
+    """Two-pass loudnorm in linear mode: one gain change for the whole take, so his voice keeps its
+    natural rise and fall instead of being squashed, plus a gentle cut to the top end."""
+    O = out_spec
+    tone = O.get("voice_tone", "anull")
+    target = f"I={O['loudness_lufs']}:TP=-3:LRA=20"
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(src), "-af", f"{tone},loudnorm={target}:print_format=json",
+                        "-f", "null", "-"], capture_output=True, text=True)
+    m = json.loads(re.search(r"\{[^{}]*\}\s*$", r.stderr).group(0))
+    return (f"{tone},loudnorm={target}:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
+            f"measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
 
 
 # ---------- 7. check ----------
