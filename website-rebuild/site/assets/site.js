@@ -301,7 +301,7 @@
       .to('.hero-copy', { y: '-24vh', opacity: 0, ease: 'none', duration: 0.28 }, 0.1)
       .to('.hero-veil', { opacity: 0.55, ease: 'none', duration: 0.4 }, 0.2)
       .fromTo('.hero-wordmark', { opacity: 0, y: '40%' }, { opacity: 1, y: '0%', ease: 'none', duration: 0.34 }, 0.3)
-      .fromTo('.hero-portrait', { y: '100%', scale: 0.94 }, { y: phone ? '-12%' : '2%', scale: 1, ease: 'none', duration: 0.42 }, 0.34);
+      .fromTo('.hero-portrait', { y: '100%', scale: 0.9, rotateX: 14 }, { y: phone ? '-12%' : '2%', scale: 1, rotateX: 0, ease: 'none', duration: 0.42 }, 0.34);
   }
 
   /* ---------- split panels: slow drift on the photo ---------- */
