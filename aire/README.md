@@ -6,6 +6,8 @@ AIRE is Caleb's AI real estate agent system. Read `STATUS.md` before touching an
 |---|---|
 | `STATUS.md` | Status log, newest first. What was done, what needs Caleb. |
 | `STACK.md` | Living memory of which tool does which job. Skills read it. Caleb edits it. |
+| `rollout-2026-10/WEEK-4.md` | Week 4: live email decision, the agent offer. |
+| `offer/` | What Caleb teaches or sells to agents, three tiers. Drafts. |
 | `rollout-2026-10/WEEK-3.md` | Week 3: dashboard proof, pipeline sheet, market update. |
 | `approvals/` | The page of decisions waiting on Caleb, one button each. |
 | `dashboard/` | Market and pipeline dashboard page. |
