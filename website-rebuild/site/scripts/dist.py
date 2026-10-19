@@ -2,7 +2,8 @@
 """Build the launch bundle: built pages + assets + only the media the pages reference,
 with media paths made absolute, indexing switched on, and a CNAME for the domain.
 Usage: python3 site/scripts/dist.py [out_dir] (default website-rebuild/dist)"""
-import re, shutil, sys, pathlib
+import re, shutil, sys, pathlib, os
+host = os.environ.get('SITE_HOST', 'calebjackson.org')
 root = pathlib.Path(__file__).resolve().parents[2]          # website-rebuild/
 site = root / 'site'
 out = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'dist'
@@ -23,6 +24,8 @@ for r in sorted(refs):
 (out / '_redirects').write_text('/home-search https://search.calebjackson.org 301\n/about /about.html 301\n/sell /sell.html 301\n/contact /contact.html 301\n/communities /communities.html 301\n/search /search.html 301\n')
 (out / '_headers').write_text('/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/media/*\n  Cache-Control: public, max-age=31536000, immutable\n/assets/*\n  Cache-Control: public, max-age=86400\n')
 (out / '404.html').write_text((out / 'index.html').read_text())
+(out / 'CNAME').write_text(host + '\n')
+(out / '.nojekyll').write_text('')
 (out / 'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: https://' + host + '/sitemap.xml\n')
 pages = ['index', 'search', 'communities', 'sell', 'about', 'contact']
 (out / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>https://' + host + '/{"" if p=="index" else p+".html"}</loc></url>\n' for p in pages) + '</urlset>\n')
