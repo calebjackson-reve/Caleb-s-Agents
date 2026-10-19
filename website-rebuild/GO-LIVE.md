@@ -9,7 +9,17 @@ Updated October 19, 2026 after Caleb's answers: fix placeholders first, host on 
 - `www.calebjackson.org`: CNAME to `production.luxuryproxy.net` (Luxury Presence).
 - Mail: MX `smtp.google.com`, SPF for Google. Untouched by any of this.
 
-Whoever set up Luxury Presence put the domain on Cloudflare. Caleb needs the login to that Cloudflare account (or LP holds it, in which case step 0 is asking LP to hand over the zone or using Route 2 in `LP-SUPPORT-DRAFT.md`).
+**Confirmed from the inbox (October 19, 2026): Luxury Presence manages the DNS.** On October 14, Dante at LP support (case 00669637) added a CNAME `home.calebjackson.org` to `calebjackson-reve.github.io` on request and attached the zone file. So every DNS change is an LP support request, and they turn them around in about two days. The Cloudflare account is LP's, not Caleb's.
+
+What that changes: Cloudflare Pages still works, but the custom domain is attached by CNAME records that LP adds, not from inside Caleb's Cloudflare account. Pages supports that. The records LP needs to add once the Pages project exists (replace `PROJECT` with the pages.dev name):
+
+| Type | Name | Target | Note |
+| --- | --- | --- | --- |
+| CNAME | @ | PROJECT.pages.dev | Cloudflare flattens the apex CNAME automatically |
+| CNAME | www | PROJECT.pages.dev | replaces the current `production.luxuryproxy.net` |
+| CNAME | search | the LP target for the Home Search subdomain | LP supplies it |
+
+`home.calebjackson.org` already points at GitHub Pages. It can serve as the staging address for this build before cutover if Pages in the repo is set to deploy the workflow (set the bundle's CNAME to `home.calebjackson.org` for that).
 
 ## Done in the build (this PR)
 
@@ -33,11 +43,11 @@ Follow `functions/README.md`: new Google Sheet, Apps Script, paste `lead-webhook
 ### 3. Luxury Presence (10 min if the in-app route works)
 `LP-SUPPORT-DRAFT.md`, Route 1. Outcome needed: LP serving at `search.calebjackson.org` and the CNAME target it wants.
 
-### 4. DNS in Cloudflare (5 min, the actual cutover)
-In the zone for calebjackson.org, DNS, Records:
-1. Add CNAME `search` → the LP target from step 3, proxy off (grey cloud) unless LP says otherwise. Wait until `https://search.calebjackson.org` loads the Home Search.
-2. Pages project, Custom domains, add `calebjackson.org` and `www.calebjackson.org`. Cloudflare offers to create the records itself. Accept. That replaces the A record for the apex and the `www` CNAME that point at LP. This is the moment the new site goes live.
-3. Leave MX, SPF, DKIM, the Google verification TXT and everything else alone.
+### 4. DNS, through LP support (the actual cutover)
+1. Pages project, Custom domains, add `calebjackson.org` and `www.calebjackson.org`. Cloudflare shows the CNAME it expects and waits for verification.
+2. Reply on the open LP case with the three records in the table above, asking for `search` first, then the apex and `www` together once the Home Search subdomain loads. LP has done DNS edits for this account in two days before.
+3. Pages verifies the domain within minutes of the record change and issues SSL. That is the moment the new site goes live.
+4. Leave MX, SPF, DKIM, the Google verification TXT and the `home` record alone.
 
 ### 5. After cutover (me)
 I update the Search page and every "Find a home" button to `https://search.calebjackson.org`, push, Pages redeploys. Then: fresh load on desktop and phone, no console errors, hero video plays, each form delivers a test lead, Lighthouse, Google Search Console (the site verification TXT is already in DNS) and sitemap submit, license and brokerage line on every page.
