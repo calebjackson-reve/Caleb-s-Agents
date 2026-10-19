@@ -1,6 +1,16 @@
 # Home landing prototype, October 19, 2026
 
-Caleb's direction for the calebjackson.org home page, in one static page with no build step: the Zorge look, FIND's hero motion, command bar and quick call to action, and Sobha's curved gallery with a switch to turn the curve off.
+Caleb's direction for the calebjackson.org home page, in one static page with no build step, now on the brand tokens from `website-rebuild/DESIGN-SYSTEM.md` (ink and ivory surfaces that flip, ember once per view, Instrument Serif italic word over an uppercase line, Instrument Sans body standing in for Hauora). Structure: FIND's command bar, pinned hero over the Basil Lane drone loop and quick call to action, Zorge's sticky split panels, Sobha's curved gallery with a Curve switch.
+
+## Caleb's answers to the five design system questions, October 19
+
+1. Hero line: "The dream is the easy part."
+2. Hero portrait: show both. The Portrait switch (bottom right) turns the balcony cut-out on and off. Background removal was done locally with rembg, no credits spent. Cut-out is `assets/caleb-hero-cutout.png`.
+3. Target areas: the eight from the brand package stay.
+4. Testimonials: not yet. The band is built empty and says so. Nothing invented.
+5. Blush band: show both. The Blush switch flips the testimonial band between blush and ivory.
+
+The Compare panel is for Caleb only and comes out before anything ships.
 
 Open `index.html` from any static server (`python3 -m http.server`). GSAP and ScrollTrigger load from cdnjs. Native scrolling only, no Lenis, so it drops into Luxury Presence the same way `lp-integration/` does.
 
