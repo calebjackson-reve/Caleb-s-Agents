@@ -50,13 +50,13 @@ Compliance note: Basil Lane is a sold or past listing. If it appears on the site
 | --- | --- |
 | `brand/cj-wordmark.svg` | Lowercase thin serif "caleb jackson." with ember period and j-dot |
 | `brand/aj-monogram.svg` | "aj" monogram for favicon and avatar |
-| `brand/caleb-jackson-signature.png` | Handwritten signature, 921KB PNG. Use for the About page sign-off |
+| `brand/caleb-jackson-signature.png` | Email signature banner, 800x250: headshot, name, phone, email and the KW First Choice logo. Not a handwritten signature. Useful as the reference for the Contact block and for the brokerage lockup, not as page art |
 
 ## Video
 
 | File | Notes |
 | --- | --- |
-| `video/pool-broll-9x16.mp4` | First 3.8 seconds of `Caleb-TEASER.mp4`, the black and white pool pan, muted, 1080x1920. Good as a phone hero loop or a section background. The rest of the teaser is an event title card ("6PM Tonight") and not reusable |
+| `video/pool-broll-9x16.mp4` | First 3.8 seconds of `Caleb-TEASER.mp4`, a black and white aerial pan over the Basil Lane house and pool, muted, 1080x1920. Good as a phone hero loop or a section background. The rest of the teaser is an event title card ("6PM Tonight") and not reusable |
 | `video/pool-broll-poster.jpg` | Poster frame for the clip |
 
 Brand films on Drive, not downloaded (400MB to 1.6GB each): `Caleb-Horizontal.mp4`, `Caleb-Social-Final.mp4`, `Caleb-St-Francisville-Final.mp4`, `Caleb-10Reasons.mp4`, `Caleb-ServingPeople.mp4`, `Caleb-House-Event-V02.mp4`, `Caleb-Event-No-Interviews.mp4`. These are the real source for hero video. Pulling 6 to 10 second loops from `Caleb-Horizontal.mp4` and the St. Francisville film is the next media task and needs a session with more disk, or a local machine.
