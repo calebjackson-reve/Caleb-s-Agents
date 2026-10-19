@@ -62,7 +62,15 @@ Compliance note: Basil Lane is a sold or past listing. If it appears on the site
 | `video/aerial-2-pond-wide-9x16.mp4` | **Best for the phone hero.** Wide daytime aerial, house centered, pond in the foreground, 1080x1920, 8.1s, slowed from 60fps source. Cut from `BASIL EVENT 46 SECOND RELEASE.mp4` at 7.8s |
 | `video/aerial-3-house-pool-9x16.mp4` | Closer aerial of the house and pool with the barn behind, 1080x1920, 5.3s. Second phone option, or a section background. Cut from the event film at 36.25s |
 
-All three are real drone footage from Caleb's own films, muted, no text overlays, no people, no Rêve branding (the event film's end card carries Rêve and was not used). Proof sheet at one frame per second: `video/LOOPS-PROOF.jpg`.
+| `video/aerial-4-st-francisville-main-street-9x16.mp4` | Real drone pass over St. Francisville's main street under the live oaks, 1080x1920, 6.6s, from `Caleb-St-Francisville-Final.mp4` at 28.6s (4K source). The only true town aerial we own. For the St. Francisville community page. A red car passes through, which reads as life, not a flaw |
+| `video/aerial-5-pool-topdown-9x16.mp4` | Straight-down drone over the Basil Lane pool and roofline, 1080x1920, 3.9s, from the event film at 22.2s. Abstract, graphic, good as a section background on the Sell page |
+| `video/still-anim-1-front-night-16x9.mp4` | **AI animation of a real photo.** `basil-front-night.webp` with a slow push-in, 1920x1080, 8s. Clean: house holds shape, windows keep their glow. Seedance 1.5 Pro, 24 credits. Disclose as AI-animated if used |
+| `video/still-anim-2-pool-night-16x9.mp4` | AI animation of `basil-pool-night.webp`. The fountain grows into a tall geyser in the middle seconds and looks fake. First two and last two seconds are fine. Not recommended as is. A rerun with the water held still costs 24 credits |
+| `video/still-anim-3-gazebo-16x9.mp4` | AI animation of `basil-gazebo.webp`. Convincing detail but the camera travels too far, ending inside the gazebo. Usable as a background at low opacity, not as a hero. A rerun with the camera nearly still costs 24 credits |
+
+| `video/still-anim-4-bath-fireplace-16x9.mp4` | AI animation of `basil-bath.webp`: locked camera, only the linear fireplace flame moves. 1920x1080, 8s, 24 credits. For the Instagram cover and a quiet section background. See the verdict in the chat log of October 19 |
+
+Aerials 1 to 5 are real drone footage from Caleb's own films, muted, no text overlays, no people, no Rêve branding (the event film's end card carries Rêve and was not used). Proof sheet at one frame per second: `video/LOOPS-PROOF.jpg`.
 
 Brand films on Drive, not downloaded (400MB to 1.6GB each): `Caleb-Horizontal.mp4`, `Caleb-Social-Final.mp4`, `Caleb-St-Francisville-Final.mp4`, `Caleb-10Reasons.mp4`, `Caleb-ServingPeople.mp4`, `Caleb-House-Event-V02.mp4`, `Caleb-Event-No-Interviews.mp4`. These are the real source for hero video. Pulling 6 to 10 second loops from `Caleb-Horizontal.mp4` and the St. Francisville film is the next media task and needs a session with more disk, or a local machine.
 
