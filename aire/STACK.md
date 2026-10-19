@@ -17,7 +17,7 @@ Trade money for time. Pick the fastest reliable option. Every tool below is "cur
 | Everyday drafting and client copy | Claude Sonnet 5.5 | Mid tier, cache pricing dropped in October | 2026-10-19 |
 | Judgment, routing, anything Caleb reads before a client does | Claude Opus 5.5 or the Claude Code default | Top tier only where it matters | 2026-10-19 |
 | Very long documents (contracts, inspection packets, HOA docs) | Gemini 4 Argon | 1M output, intro pricing through Nov 30 2026 | watch |
-| Client-facing interactive calculators (net sheet, payment, rent vs buy) | ChatGPT GPT-6 Intelligent UI, or a Claude artifact | Interactive answers without building an app | watch |
+| Client-facing interactive calculators (net sheet, payment, rent vs buy) | Claude artifact, published from this repo | Interactive answers without building an app | 2026-10-19 |
 
 ## Where things run
 | Need | Tool | Note |
@@ -33,16 +33,15 @@ Trade money for time. Pick the fastest reliable option. Every tool below is "cur
 | Short explainer video, no AI people | Claude Motion beta | watch. Candidate: monthly market update. |
 | Generated video for ads | Kling 4.0 via Higgsfield | Disclose as AI-generated. Never for listing photos. |
 | Community | Skool, AI for Agents group | See SKOOL-AI-FOR-AGENTS/ |
-| Skill sync across ChatGPT and Claude | Notion 3.8 Skills API | watch. Only if a second assistant gets used daily. |
 
 ## Retired or avoid
 - Supabase. Schema removed 2026-10-19. Sheets is the database.
 - Airtable. Never adopted.
 - BoB Tools. Connected but unused, overlaps Sheets. Disconnect.
-- ChatGPT Codex. Second coding agent on the same repo. Claude Code is the one engine (Caleb, 2026-10-19).
+- ChatGPT, all of it (chat, Codex, custom GPTs). Cancelled by Caleb 2026-10-19. Nothing it does better than Claude is needed here: images and video are Higgsfield, calculators are Claude artifacts, coding is Claude Code.
 - Custom GPTs. OpenAI is retiring them (Enterprise Dec 11 2026, other plans to follow). Build as a skill here instead.
 - OpenAI Sora. Gone.
 - GPT-4o and 4.1 API models. Shut down Jan 14 2027.
 
 ## Subscriptions in play
-Confirm with Caleb before assuming any is paid: Claude Max (monthly API credits since Oct 7 2026), ChatGPT (plan unknown), Google Workspace (paid, needed for AI Inbox), Meta One (not subscribed, needed for Instagram feed links), Higgsfield (connected).
+Confirm with Caleb before assuming any is paid: Claude Max (monthly API credits since Oct 7 2026), ChatGPT (cancel, 2026-10-19), Google Workspace (paid, needed for AI Inbox), Meta One (not subscribed, needed for Instagram feed links), Higgsfield (connected).
