@@ -2,6 +2,14 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, two just sold posts
+
+**Done**
+- `aire/social/just-sold/2026-10/`: cards for 4615 41st Street (Caleb's listing, closed about September 22) and 11313 Triche Road (Caleb represented the buyers, listed by The Musso Group, closed about September 21). Photos are the MLS exteriors via Zillow, your own for 41st, the listing brokerage's for Triche. Captions and a compliance pass in `captions.md`. The card template and renderer are committed for the next sold post.
+
+**Needs Caleb**
+- Confirm dates and sides. Get Danielle Musso's OK on the Triche photo. Say "schedule" with a day.
+
 ## 2026-10-19, vertical cut and Skool stack template
 
 **Done**
