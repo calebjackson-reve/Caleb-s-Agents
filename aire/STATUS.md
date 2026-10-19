@@ -2,6 +2,24 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, evening: follow-up cadence, proposal tool, command center merged from the cloud branch
+
+**Done (cloud session, branch claude/gallant-lamport-c5mtmq)**
+- `aire/follow-up/`: daily cadence tool. Reads a KW Command export, finds contacts quiet exactly 1, 2, 3, 7, 14, 21, 28, 56 or 84 days, picks the next unused template from four pools in Caleb's voice, writes a dated queue file. `--approve` sends what Caleb leaves in it. 14 tests pass. Dry run by default.
+- `aire/proposal/`: listing appointment transcript (or audio via whisper) to a one-page proposal with signature pad plus email draft, extraction through `claude -p`, numbers guarded against the transcript. 10 tests pass, live extraction verified on a fake transcript.
+- `aire/command-center/`: Next.js page over the tools. Sync script, seed data, click-through proof in Chromium (674 ms load, every action works, 0 errors). Localhost only, no login. Supabase schema with RLS ready for version two. Every record carries listing_id for the seller view later.
+- Contract for the command center in `command-center/CONTRACT.md`, approved by Caleb on 2026-10-19. Caleb chose his own view over the seller dashboard.
+- Hooks for the Mac (done chime, needs-you ping) in `global-claude-md/settings.json`.
+
+**Corrected during the merge**
+- The cloud branch carried a second speed-to-lead runner (responder.py, built Oct 16). Removed here, same as the Oct 19 correction above: one runner, on the Mac. Main's directive and templates (within the hour, 9 pm quiet hours, texts off until A2P, KW Command Do Not Contact check) stay.
+- The command center reads the Mac runner's `log.csv`, `dry-run.log` and `token.json` in `aire/speed-to-lead/`. If the Mac runner's dry-run.log format differs from JSON blocks, `sync.py leads()` needs a one-line parser change.
+
+**Needs Caleb**
+- Pull on the Mac, run `python3 aire/command-center/sync.py --seed` and the app, click through.
+- Drop a KW Command export into `aire/follow-up/contacts.csv`.
+- Read the fixed marketing plan text in `aire/proposal/tests/sample-proposal.html`.
+
 ## 2026-10-19, two just sold posts
 
 **Done**

@@ -20,4 +20,7 @@ AIRE is Caleb's AI real estate agent system. Read `STATUS.md` before touching an
 | `rollout-2026-10/WEEK-1.md` | Week 1 switches with click paths and proof. |
 | `rollout-2026-10/PLAN.md` | The plan for putting October 2026's AI releases to work across website, lead gen, touches, operations and the agent offer. |
 | `ai-briefs/` | Dated weekly AI briefs. Written by the `ai-weekly-brief` skill. |
-| `speed-to-lead/` | Website inquiry responder: directive, templates, dry run. |
+| `speed-to-lead/` | Website inquiry responder: directive, templates, dry run. The runner lives on the Mac. |
+| `follow-up/` | Daily follow-up cadence: KW Command export in, morning approval queue out, four template pools. Dry run by default. |
+| `proposal/` | Call recording to listing proposal: transcript in, one-page HTML with signature pad and email draft out. |
+| `command-center/` | Caleb's morning page over the tools: leads, due today, proposals out, overnight, showings. Localhost only in version one. |
