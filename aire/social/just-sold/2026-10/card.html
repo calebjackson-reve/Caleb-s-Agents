@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;width:1080px;height:1350px;overflow:hidden;background:#FBF8F3;color:#14100E;font-family:Nunito,sans-serif}
+.photo{position:absolute;left:0;top:0;width:1080px;height:810px;background:#ddd center/cover no-repeat}
+.tag{position:absolute;left:60px;top:60px;background:#FBF8F3;color:#14100E;font-family:'Instrument Serif',serif;font-size:64px;line-height:1;padding:22px 34px 18px;letter-spacing:-.01em}
+.tag i{font-style:italic;color:#E87757}
+.band{position:absolute;left:0;top:810px;width:1080px;height:540px;padding:56px 60px 0;box-sizing:border-box}
+.addr{font-family:'Instrument Serif',serif;font-size:84px;line-height:.98;letter-spacing:-.015em;margin:0}
+.city{font-size:34px;color:#5a524b;margin:14px 0 0}
+.line{font-size:34px;margin:26px 0 0;max-width:920px;line-height:1.3}
+.sig{position:absolute;left:60px;right:60px;bottom:56px;display:flex;align-items:center;gap:26px;border-top:1px solid rgba(20,16,14,.24);padding-top:28px}
+.sig img{width:120px;height:120px;border-radius:50%;object-fit:cover;object-position:50% 50%}
+.sig b{font-family:'Instrument Serif',serif;font-weight:400;font-size:44px;display:block;line-height:1}
+.sig span{display:block;font-size:26px;color:#5a524b;margin-top:4px}
+.rule{position:absolute;left:0;top:810px;width:1080px;height:8px;background:#E87757}
+</style></head><body>
+<div class="photo" id="photo"></div><div class="rule"></div>
+<div class="tag">Just <i>sold</i></div>
+<div class="band">
+  <h1 class="addr" id="addr"></h1>
+  <p class="city" id="city"></p>
+  <p class="line" id="line"></p>
+  <div class="sig"><img src="headshot.jpg" alt=""><div><b>Caleb Jackson</b><span>REALTOR, Keller Williams First Choice</span><span>License 995709547. (225) 747-0303</span></div></div>
+</div>
+<script>
+const q=new URLSearchParams(location.search);
+document.getElementById('photo').style.backgroundImage='url('+q.get('photo')+')';
+document.getElementById('addr').textContent=q.get('addr');
+document.getElementById('city').textContent=q.get('city');
+document.getElementById('line').textContent=q.get('line');
+</script></body></html>
