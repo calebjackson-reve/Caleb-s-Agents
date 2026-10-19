@@ -2,6 +2,22 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, week 4 started
+
+**Confirmed from Caleb's Mac**
+- Enrichment dry run succeeded through OmniRoute on the fixed script: 3 rows, about $0.0008. OmniRoute adds about 2,000 tokens of setup per call. The tagger read "before school starts" as "now" and one next_touch suggested a week. Prompt tightened for both.
+
+**Done**
+- `aire/offer/OFFER-2026-10.md`: the AI office as the system, three tiers with offer sentences, cost table, compliance pass, and the gate (paid tiers wait for two real runs, second brief is October 26).
+- `programs/ai-for-agents/posts/ai-office-in-a-day.md`: the free Skool post in Caleb's voice with a 48 hour stack-memory offer. Not posted.
+- `aire/rollout-2026-10/WEEK-4.md`.
+- Speed to lead live is the Mac's call on October 22, per the earlier correction.
+
+**Needs Caleb**
+- Review and post the Skool post himself.
+- Prices for the workshop and the install (recommendations are in the offer file, labeled inference).
+- The broker's answer on teaching under the Keller Williams First Choice name, open since October 12.
+
 ## 2026-10-19, enrichment fixes from the Mac dry run
 
 **Confirmed from Caleb's Mac screenshot**
