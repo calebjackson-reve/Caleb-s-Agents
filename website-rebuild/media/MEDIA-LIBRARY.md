@@ -71,7 +71,7 @@ On Drive: `bio.md` (short and long bio, "Action Jackson" treatment) and `website
 
 ## What is still missing
 
-- Neighborhood photography for the gated subdivisions: Country Club of Louisiana, University Club Plantation, Bocage, Santa Maria. Nothing free exists anywhere (see `places/CREDITS.md`). These need a reshoot: entrance, one oak-lined street, the golf course edge at golden hour, from a public road or with HOA permission.
+- Neighborhood photography for the gated subdivisions: Country Club of Louisiana, University Club Plantation, Bocage, Santa Maria, Copper Mill in Zachary, and a New Roads aerial. Caleb supplied web images for these on October 19, now in `places/reference-unlicensed/`. They are copyrighted reference, not publishable. The README there has the owner for each and a one-morning reshoot brief.
 - Zachary: no usable free photo. Reshoot brief: Main Street, Zachary High area, a new-construction street.
 - New Roads and False River: only two 800px photos from 2006. Placeholders until a reshoot from the public landing or a boat.
 - A straight-on headshot on a plain dark or ivory background for the nav and for tiny crops.
