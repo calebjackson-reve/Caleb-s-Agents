@@ -1,0 +1,1723 @@
+{
+ "title": "Business class apartments Zorge 9|Luxury Real Estate",
+ "url": "https://zorge9.estate/",
+ "viewport": [
+  390,
+  844
+ ],
+ "docHeight": 844,
+ "libs": {
+  "gsap": false,
+  "ScrollTrigger": false,
+  "lenis": false,
+  "three": false,
+  "canvasCount": 0,
+  "jquery": "3.7.1",
+  "next": false,
+  "nuxt": false,
+  "webflow": false,
+  "barba": false,
+  "swiper": false,
+  "locomotive": false,
+  "smoothScrollbar": false
+ },
+ "scripts": [
+  "https://zorge9.estate/assets/javascripts/browser-message/browser-message.js?v=1787557849",
+  "https://zorge9.estate/assets/javascripts/shared.js?v=1787557849",
+  "https://zorge9.estate/assets/javascripts/landing.js?v=1787557849",
+  "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092"
+ ],
+ "stylesheets": [
+  "https://zorge9.estate/assets/stylesheets/global.css?v=1787557849",
+  "https://zorge9.estate/assets/stylesheets/landing.css?v=1787557849"
+ ],
+ "fontsLoaded": {
+  "Gilroy 600 normal": "loaded"
+ },
+ "fontFaces": [
+  "@font-face { font-display: swap; font-family: Gilroy; font-style: normal; font-weight: 600; src: url(\"/assets/fonts/Gilroy-SemiBold.woff2\") format(\"woff2\"), url(\"/assets/fonts/Gilroy-SemiBold.woff\") format(\"woff\"); }"
+ ],
+ "rootVars": {
+  "--scale-px": "1px",
+  "--scale-rem": "1rem",
+  "--scale-em": "1em",
+  "--scale-text-px": "1px",
+  "--scale-text-rem": "1rem",
+  "--scale-text-em": "1em",
+  "--spacing": "var(--xxxxl,calc(var(--scale-px) * 40)) var(--n-xxxxl,var(--xxl,calc(var(--scale-px) * 30)) var(--n-xxl,calc(var(--scale-px) * 20)))",
+  "--spacing-layout": "var(--xxl,calc(var(--scale-px) * 30)) var(--n-xxl,calc(var(--scale-px) * 20))",
+  "--vw": "1vw",
+  "--vw100": "100vw",
+  "--c-white": "#fff",
+  "--c-white-rgb": "255,255,255",
+  "--c-black": "#000",
+  "--c-black-rgb": "0,0,0",
+  "--c-brown": "#a0725b",
+  "--c-brown-rgb": "160,114,91",
+  "--c-turquoise": "#25c2a0",
+  "--c-turquoise-rgb": "37,194,160",
+  "--c-pink": "#a65db4",
+  "--c-pink-rgb": "166,93,180",
+  "--c-black-light": "#555",
+  "--c-black-light-rgb": "85,85,85",
+  "--c-gray": "#666",
+  "--c-gray-rgb": "102,102,102",
+  "--c-gray-light": "#aaa",
+  "--c-gray-light-rgb": "170,170,170",
+  "--c-error": "#c60000",
+  "--c-error-rgb": "198,0,0",
+  "--container-max-width": "var(--vw100)",
+  "--container-content-width": "var(--vw100)",
+  "--container-h-padding-left": "0px",
+  "--container-h-padding-right": "0px",
+  "--grid-gutter": "0vw",
+  "--is-visible--sm-down": "block",
+  "--is-visible--md-xxl": "none",
+  "--is-visible--md-up": "none",
+  "--is-visible--xl-down": "block",
+  "--is-visible--xxl-up": "none",
+  "--is-visible--xxxl": "none"
+ },
+ "base": {
+  "htmlFontSize": "10px",
+  "bodyFontFamily": "Gilroy, Helvetica, Arial, sans-serif",
+  "bodyFontSize": "12px",
+  "bodyLineHeight": "16px",
+  "bodyColor": "rgb(0, 0, 0)",
+  "bodyBg": "rgb(255, 255, 255)",
+  "htmlBg": "rgba(0, 0, 0, 0)"
+ },
+ "type": {
+  "h1": [
+   {
+    "family": "Gilroy",
+    "size": "24px",
+    "lineHeight": "25.9999px",
+    "weight": "600",
+    "letterSpacing": "normal",
+    "transform": "uppercase",
+    "color": "rgb(255, 255, 255)",
+    "count": 1,
+    "sample": "Zorge 9 - House with Privileges"
+   }
+  ],
+  "h2": [
+   {
+    "family": "Gilroy",
+    "size": "24px",
+    "lineHeight": "25.9999px",
+    "weight": "600",
+    "letterSpacing": "normal",
+    "transform": "uppercase",
+    "color": "rgb(0, 0, 0)",
+    "count": 10,
+    "sample": "Location"
+   },
+   {
+    "family": "Gilroy",
+    "size": "12px",
+    "lineHeight": "16px",
+    "weight": "600",
+    "letterSpacing": "0.36px",
+    "transform": "uppercase",
+    "color": "rgb(255, 255, 255)",
+    "count": 1,
+    "sample": "IT'S A WORLD THAT \nADAPTS TO YOU"
+   },
+   {
+    "family": "Gilroy",
+    "size": "36px",
+    "lineHeight": "38.0002px",
+    "weight": "600",
+    "letterSpacing": "normal",
+    "transform": "uppercase",
+    "color": "rgb(255, 255, 255)",
+    "count": 1,
+    "sample": "GALLERY"
+   },
+   {
+    "family": "Gilroy",
+    "size": "18px",
+    "lineHeight": "20px",
+    "weight": "600",
+    "letterSpacing": "normal",
+    "transform": "uppercase",
+    "color": "rgb(0, 0, 0)",
+    "count": 1,
+    "sample": "FITNESS CLUB\nWITH A 25m \nSWIMMING POOL"
+   }
+  ],
+  "h3": [],
+  "h4": [],
+  "h5": [],
+  "h6": [],
+  "p": [
+   {
+    "family": "Gilroy",
+    "size": "12px",
+    "lineHeight": "16px",
+    "weight": "600",
+    "letterSpacing": "0.36px",
+    "transform": "uppercase",
+    "color": "rgb(255, 255, 255)",
+    "count": 29,
+    "sample": "About the Project"
+   },
+   {
+    "family": "Gilroy",
+    "size": "24px",
+    "lineHeight": "25.9999px",
+    "weight": "600",
+    "letterSpacing": "normal",
+    "transform": "uppercase",
+    "color": "rgb(255, 255, 255)",
+    "count": 27,
+    "sample": "Premium residence — the embodimentof your status"
+   },
+   {
+    "family": "Gilroy",
+    "size": "18px",
+    "lineHeight": "20px",
+    "weight": "600",
+    "letterSpacing": "normal",
+    "transform": "uppercase",
+    "color": "rgb(0, 0, 0)",
+    "count": 4,
+    "sample": "Special Offers"
+   }
+  ],
+  "a": [
+   {
+    "family": "Gilroy",
+    "size": "12px",
+    "lineHeight": "16px",
+    "weight": "600",
+    "letterSpacing": "0.36px",
+    "transform": "uppercase",
+    "color": "rgb(160, 114, 91)",
+    "count": 13,
+    "sample": "Skip to main content"
+   }
+  ],
+  "button": [],
+  "li": [
+   {
+    "family": "Gilroy",
+    "size": "12px",
+    "lineHeight": "16px",
+    "weight": "600",
+    "letterSpacing": "0.36px",
+    "transform": "uppercase",
+    "color": "rgb(0, 0, 0)",
+    "count": 11,
+    "sample": "<picture class=\" location-card__image background background-"
+   }
+  ],
+  "span": [
+   {
+    "family": "Gilroy",
+    "size": "12px",
+    "lineHeight": "16px",
+    "weight": "600",
+    "letterSpacing": "0.36px",
+    "transform": "uppercase",
+    "color": "rgb(160, 114, 91)",
+    "count": 29,
+    "sample": "Watch"
+   },
+   {
+    "family": "Gilroy",
+    "size": "24px",
+    "lineHeight": "25.9999px",
+    "weight": "600",
+    "letterSpacing": "normal",
+    "transform": "uppercase",
+    "color": "rgb(255, 255, 255)",
+    "count": 17,
+    "sample": "Premium"
+   },
+   {
+    "family": "Gilroy",
+    "size": "56px",
+    "lineHeight": "57.9998px",
+    "weight": "600",
+    "letterSpacing": "normal",
+    "transform": "uppercase",
+    "color": "rgb(255, 255, 255)",
+    "count": 1,
+    "sample": "26-30"
+   }
+  ],
+  "label": [],
+  "small": []
+ },
+ "sections": [
+  {
+   "tag": "section",
+   "id": "",
+   "cls": "section section--full-height ui-dark ui-background",
+   "top": 0,
+   "height": 845,
+   "bg": "rgb(0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "ZORGE 9 - HOUSE WITH PRIVILEGES PREMIUMRESIDENCE— THEEMBODIMENTOFYOUR STATUS"
+  },
+  {
+   "tag": "section",
+   "id": "about",
+   "cls": "about section ui-dark ui-background",
+   "top": 1,
+   "height": 2532,
+   "bg": "rgb(0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "LIFE ON YOUR OWN TERMS ABOUT THE PROJECT INSTALLMENT AND MORTGAGE SPECIAL OFFERS WATCH"
+  },
+  {
+   "tag": "section",
+   "id": "location",
+   "cls": "location section section--no-overflow ui-background pb-2 pb-4:md",
+   "top": 1689,
+   "height": 969,
+   "bg": "rgb(255, 255, 255)",
+   "paddingTop": "0px",
+   "paddingBottom": "40px",
+   "position": "relative",
+   "text": "LOCATION PRIVILEGE OF LOCATION СITY SKYSCRAPERS AND ICONIC LANDMARKS ARE AT YOUR FEET. THE"
+  },
+  {
+   "tag": "section",
+   "id": "",
+   "cls": "map section ui-dark ui-background",
+   "top": 2657,
+   "height": 934,
+   "bg": "rgb(0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "MAP OF THE AREA"
+  },
+  {
+   "tag": "section",
+   "id": "",
+   "cls": "panorama section section--no-overflow-clip ui-dark ui-background",
+   "top": 3590,
+   "height": 856,
+   "bg": "rgb(0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "IT'S A WORLD THAT ADAPTS TO YOU IT IS NOT JUST A TRIO OF LUXURIOUS BUILDINGS AND THE PREMI"
+  },
+  {
+   "tag": "section",
+   "id": "style",
+   "cls": "style section ui-light ui-background pb-2 pb-3:xxxl pb-2:xxxxl",
+   "top": 4445,
+   "height": 2051,
+   "bg": "rgb(255, 255, 255)",
+   "paddingTop": "130px",
+   "paddingBottom": "40px",
+   "position": "relative",
+   "text": "ARCHITECTURE THREE BUILDINGS IN THE STYLE OF ELEGANT NEW YORK SKYSCRAPERS REFLECT THE PERF"
+  },
+  {
+   "tag": "section",
+   "id": "",
+   "cls": "gallery section section--full-height ui-dark ui-background",
+   "top": 6494,
+   "height": 844,
+   "bg": "rgb(0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "GALLERY /11 PHOTOS VIEW"
+  },
+  {
+   "tag": "section",
+   "id": "",
+   "cls": "time section ui-dark ui-background",
+   "top": 7337,
+   "height": 904,
+   "bg": "rgb(0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "DAILY SCHEDULE 07:00 ENJOY THE FIRST RAYS OF DAWN AS THE CITY UNFOLDS BEFORE YOU IN PANORA"
+  },
+  {
+   "tag": "section",
+   "id": "",
+   "cls": "lobby section ui-dark ui-background",
+   "top": 8240,
+   "height": 844,
+   "bg": "rgb(0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "THE LUXURY OF EXPERIENCE THE SOPHISTICATED DESIGN OF THE LOBBY IS INSPIRED BY THE INTERIOR"
+  },
+  {
+   "tag": "section",
+   "id": "",
+   "cls": "advantages section ui-dark ui-background",
+   "top": 9083,
+   "height": 3569,
+   "bg": "rgb(0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "1 5 LOBBY SPACIOUS AND ELEGANT LOBBIES WELCOME RESIDENTS WITH IMPECCABLE INTERIORS AND A C"
+  },
+  {
+   "tag": "section",
+   "id": "",
+   "cls": "fitness section section--top ui-light",
+   "top": 12652,
+   "height": 3359,
+   "bg": "rgb(255, 255, 255)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "FITNESS CLUB WITH A 25M SWIMMING POOL SPORT AND LUXURY COMBINE IN THE DESIGN OF THE SPACIO"
+  },
+  {
+   "tag": "section",
+   "id": "",
+   "cls": "section",
+   "top": 16010,
+   "height": 1687,
+   "bg": "rgba(0, 0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "INFRASTRUCTURE 1 3 RESTAURANT AND BAR THE CAPTIVATINGLY BEAUTIFUL RESTAURANT WILL WIN YOU "
+  },
+  {
+   "tag": "section",
+   "id": "improvement",
+   "cls": "improvement section section--top pb-2 ui-light ui-background",
+   "top": 17696,
+   "height": 1368,
+   "bg": "rgb(255, 255, 255)",
+   "paddingTop": "40px",
+   "paddingBottom": "40px",
+   "position": "relative",
+   "text": "RUSTLING TREE CROWNS, FLOWER BEDS AND A SCULPTURAL FOUNTAIN THAT REFRESHES ON HOT DAYS, SC"
+  },
+  {
+   "tag": "section",
+   "id": "",
+   "cls": "section",
+   "top": 19063,
+   "height": 1688,
+   "bg": "rgba(0, 0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "SPLENDID APARTMENTS REFINED FINISHES, NEOCLASSICAL FURNITURE, AND BEAUTY IMPRINTED IN EVER"
+  },
+  {
+   "tag": "section",
+   "id": "services",
+   "cls": "services section ui-dark ui-background",
+   "top": 20750,
+   "height": 2034,
+   "bg": "rgb(0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "TECHNOLOGIES AND SERVICES TECHNOLOGIES AND SERVICES DIGITAL ELEVATOR 1 3 THE INTELLIGENT S"
+  },
+  {
+   "tag": "section",
+   "id": "",
+   "cls": "section",
+   "top": 22783,
+   "height": 2577,
+   "bg": "rgba(0, 0, 0, 0)",
+   "paddingTop": "0px",
+   "paddingBottom": "0px",
+   "position": "relative",
+   "text": "PENTHOUSES WITH GLASS ROOFS CLIMB TO THE TOP, GAZE AT THE SKY THAT HAS BECOME MUCH CLOSER,"
+  }
+ ],
+ "containers": [
+  [
+   "max:100%",
+   37
+  ],
+  [
+   "350 mx:20px",
+   1
+  ]
+ ],
+ "padding": [
+  [
+   "paddingLeft:20px",
+   60
+  ],
+  [
+   "paddingTop:20px",
+   13
+  ],
+  [
+   "paddingTop:80px",
+   5
+  ],
+  [
+   "paddingTop:40px",
+   4
+  ],
+  [
+   "paddingTop:422px",
+   1
+  ],
+  [
+   "paddingTop:110px",
+   1
+  ],
+  [
+   "paddingTop:130px",
+   1
+  ],
+  [
+   "paddingTop:127px",
+   1
+  ]
+ ],
+ "images": [
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 520,
+   "ratio": 0.75,
+   "natural": "720x960",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_intro_bg_xs/uploads/39/6_final_4_1777386791.webp",
+   "top": 0
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 433,
+   "ratio": 0.9,
+   "natural": "720x800",
+   "fit": "contain",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/1.intro/decor-xs.webp?v=1787557849",
+   "top": 411
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 844,
+   "ratio": 0.46,
+   "natural": "720x1280",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/2.about/background@xs.webp",
+   "top": 1
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 390,
+   "ratio": 1,
+   "natural": "720x720",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/3.location/hero-xs.webp",
+   "top": 1689
+  },
+  {
+   "tag": "img",
+   "w": 420,
+   "h": 315,
+   "ratio": 1.33,
+   "natural": "640x480",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_8_1777287547.webp",
+   "top": 2355
+  },
+  {
+   "tag": "img",
+   "w": 420,
+   "h": 315,
+   "ratio": 1.33,
+   "natural": "640x480",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_9_1777287547.webp",
+   "top": 2355
+  },
+  {
+   "tag": "img",
+   "w": 420,
+   "h": 315,
+   "ratio": 1.33,
+   "natural": "640x480",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_10_1777287548.webp",
+   "top": 2355
+  },
+  {
+   "tag": "img",
+   "w": 420,
+   "h": 315,
+   "ratio": 1.33,
+   "natural": "640x480",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_11_1777287548.webp",
+   "top": 2355
+  },
+  {
+   "tag": "img",
+   "w": 420,
+   "h": 315,
+   "ratio": 1.33,
+   "natural": "640x480",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_12_1777287546.webp",
+   "top": 2355
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 1027,
+   "ratio": 0.38,
+   "natural": "720x1580",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_panorama_bg_xs/uploads/39/page_7_1_11_1_1_1777564634.webp",
+   "top": 3500
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 347,
+   "ratio": 1.13,
+   "natural": "720x640",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/image-1-xs.webp?v=1787557849",
+   "top": 4741
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 416,
+   "ratio": 0.84,
+   "natural": "640x760",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/image-2@xs.webp?v=1787557849",
+   "top": 5192
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 416,
+   "ratio": 0.84,
+   "natural": "640x760",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/image-3-xs.webp?v=1787557849",
+   "top": 5192
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 289,
+   "ratio": 1.21,
+   "natural": "640x528",
+   "fit": "fill",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/1.webp?v=1787557849",
+   "top": 5732
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 289,
+   "ratio": 1.21,
+   "natural": "640x528",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/2.webp?v=1787557849",
+   "top": 5732
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 289,
+   "ratio": 1.21,
+   "natural": "640x528",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/3.webp?v=1787557849",
+   "top": 5732
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 289,
+   "ratio": 1.21,
+   "natural": "640x528",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/4.webp?v=1787557849",
+   "top": 5732
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 289,
+   "ratio": 1.21,
+   "natural": "640x528",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/5.webp?v=1787557849",
+   "top": 5732
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 289,
+   "ratio": 1.21,
+   "natural": "640x528",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/6.webp?v=1787557849",
+   "top": 5732
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 289,
+   "ratio": 1.21,
+   "natural": "640x528",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/7.webp?v=1787557849",
+   "top": 5732
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 289,
+   "ratio": 1.21,
+   "natural": "640x528",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/4-mirror.webp?v=1787557849",
+   "top": 5732
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 320,
+   "ratio": 1.09,
+   "natural": "640x586",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/image-4-xs@xs.webp?v=1787557849",
+   "top": 6193
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 320,
+   "ratio": 1.09,
+   "natural": "640x586",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/6.style/image-5-xs@xs.webp?v=1787557849",
+   "top": 6193
+  },
+  {
+   "tag": "img",
+   "w": 195,
+   "h": 260,
+   "ratio": 0.75,
+   "natural": "360x480",
+   "fit": "fill",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_gallery_img_1_xs/uploads/39/image_1777288096.webp",
+   "top": 6494
+  },
+  {
+   "tag": "img",
+   "w": 293,
+   "h": 195,
+   "ratio": 1.5,
+   "natural": "540x360",
+   "fit": "fill",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_gallery_img_2_xs/uploads/39/11_1777288096.webp",
+   "top": 6473
+  },
+  {
+   "tag": "img",
+   "w": 195,
+   "h": 195,
+   "ratio": 1,
+   "natural": "360x360",
+   "fit": "fill",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_gallery_img_4_xs/uploads/39/img_0231_1777288095.webp",
+   "top": 6743
+  },
+  {
+   "tag": "img",
+   "w": 293,
+   "h": 244,
+   "ratio": 1.2,
+   "natural": "540x450",
+   "fit": "fill",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_gallery_img_5_xs/uploads/39/0k0a8352_1777288094.webp",
+   "top": 7025
+  },
+  {
+   "tag": "img",
+   "w": 195,
+   "h": 260,
+   "ratio": 0.75,
+   "natural": "360x480",
+   "fit": "fill",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_gallery_img_6_xs/uploads/39/%D0%97%D0%BE%D1%80%D0%B3%D0%B520821_1777288096.we",
+   "top": 6798
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 389,
+   "ratio": 1,
+   "natural": "720x640",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/image_13_1777289990.webp",
+   "top": 7337
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 928,
+   "ratio": 0.42,
+   "natural": "720x1280",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_lobby_bg_xs/uploads/39/zorge90843_1777290628.webp",
+   "top": 8240
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 367,
+   "ratio": 1.06,
+   "natural": "720x600",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_1777290624.webp",
+   "top": 9083
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 367,
+   "ratio": 1.06,
+   "natural": "720x600",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_1_1777290624.webp",
+   "top": 9782
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 367,
+   "ratio": 1.06,
+   "natural": "720x600",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_2_1777290624.webp",
+   "top": 10491
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 367,
+   "ratio": 1.06,
+   "natural": "720x600",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_1777290625.webp",
+   "top": 11199
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 367,
+   "ratio": 1.06,
+   "natural": "720x600",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_3_1777290626.webp",
+   "top": 11908
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 374,
+   "ratio": 0.94,
+   "natural": "640x684",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-1@xs.webp?v=1787557849",
+   "top": 12851
+  },
+  {
+   "tag": "img",
+   "w": 273,
+   "h": 373,
+   "ratio": 0.73,
+   "natural": "500x684",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/11.fitness/mobile/image-3.webp?v=1787557849",
+   "top": 13387
+  },
+  {
+   "tag": "img",
+   "w": 273,
+   "h": 373,
+   "ratio": 0.73,
+   "natural": "500x684",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/11.fitness/mobile/image-2.webp?v=1787557849",
+   "top": 13387
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 374,
+   "ratio": 0.94,
+   "natural": "640x684",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-4@xs.webp?v=1787557849",
+   "top": 14080
+  },
+  {
+   "tag": "img",
+   "w": 273,
+   "h": 373,
+   "ratio": 0.73,
+   "natural": "500x684",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-5@xs.webp?v=1787557849",
+   "top": 14648
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 374,
+   "ratio": 0.94,
+   "natural": "640x684",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-7@xs.webp?v=1787557849",
+   "top": 15095
+  },
+  {
+   "tag": "img",
+   "w": 273,
+   "h": 373,
+   "ratio": 0.73,
+   "natural": "500x684",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-6@xs.webp?v=1787557849",
+   "top": 15644
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 928,
+   "ratio": 0.42,
+   "natural": "720x1280",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_infrastructure_bg_xs/uploads/39/image_2_1777295254.webp",
+   "top": 16010
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 389,
+   "ratio": 1,
+   "natural": "720x640",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_infrastructure_slider_img_xs/uploads/39/img_4055_1_1777295251.webp",
+   "top": 16853
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 474,
+   "ratio": 0.74,
+   "natural": "640x866",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_improvement_img_2_xs/uploads/39/image_19_1777295653.webp",
+   "top": 17991
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 311,
+   "ratio": 1.13,
+   "natural": "720x640",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/14.improvement/bottom@xs.webp?v=1787557849",
+   "top": 18771
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 929,
+   "ratio": 0.42,
+   "natural": "720x1280",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/15.apartments-hero/background-xs.webp",
+   "top": 19063
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 350,
+   "ratio": 1,
+   "natural": "999x1680",
+   "fit": "contain",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/uploads/1/studio_1755094133.png?v=1787557849",
+   "top": 20186
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 432,
+   "ratio": 0.9,
+   "natural": "720x820",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/32/image2x_10_1755265771.webp",
+   "top": 20750
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 432,
+   "ratio": 0.9,
+   "natural": "720x820",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/39/image_23_1777295803.webp",
+   "top": 21419
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 432,
+   "ratio": 0.9,
+   "natural": "720x820",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/39/image_22_1777295806.webp",
+   "top": 22114
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 928,
+   "ratio": 0.42,
+   "natural": "720x1280",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_penthouse_bg_xs/uploads/39/rectangle_733_1777295807.webp",
+   "top": 22783
+  },
+  {
+   "tag": "img",
+   "w": 390,
+   "h": 390,
+   "ratio": 1,
+   "natural": "720x720",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_penthouse_img_1_xs/uploads/39/zorge90368_1777295805.webp",
+   "top": 23626
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 474,
+   "ratio": 0.74,
+   "natural": "640x866",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_penthouse_img_2_xs/uploads/39/image_25_1777295804.webp",
+   "top": 24328
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 474,
+   "ratio": 0.74,
+   "natural": "640x866",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/assets/images/media/landing/18.penthouses/image-2@xs.webp",
+   "top": 24328
+  },
+  {
+   "tag": "img",
+   "w": 350,
+   "h": 300,
+   "ratio": 1.17,
+   "natural": "640x548",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_penthouse_img_4_xs/assets/images/media/landing/18.penthouses/image-4%40xs.web",
+   "top": 24926
+  }
+ ],
+ "radii": [
+  [
+   "50%",
+   1
+  ]
+ ],
+ "borders": [
+  [
+   "1px rgba(255, 255, 255, 0.2)",
+   3
+  ]
+ ],
+ "transitions": [
+  [
+   "color 0.8s cubic-bezier(0.7, 0, 0.3, 1)",
+   31
+  ],
+  [
+   "color 0.4s cubic-bezier(0.7, 0, 0.3, 1)",
+   14
+  ],
+  [
+   "opacity 0.8s cubic-bezier(0.7, 0, 0.3, 1)",
+   5
+  ],
+  [
+   "background-color, box-shadow, transform 0.8s cubic-bezier(0.7, 0, 0.3, 1)",
+   1
+  ],
+  [
+   "color, transform 0.8s cubic-bezier(0.7, 0, 0.3, 1)",
+   1
+  ],
+  [
+   "opacity, visibility 0.4s cubic-bezier(0.7, 0, 0.3, 1)",
+   1
+  ]
+ ],
+ "topColors": [
+  [
+   "rgb(255, 255, 255)",
+   2653
+  ],
+  [
+   "rgb(0, 0, 0)",
+   416
+  ],
+  [
+   "rgb(160, 114, 91)",
+   78
+  ],
+  [
+   "rgba(255, 255, 255, 0.3)",
+   58
+  ],
+  [
+   "rgb(128, 128, 128)",
+   12
+  ],
+  [
+   "rgba(255, 255, 255, 0.2)",
+   4
+  ],
+  [
+   "rgb(198, 0, 0)",
+   1
+  ]
+ ],
+ "header": {
+  "tag": "HEADER",
+  "cls": "header is-hidden--print header--sticky ui-dark",
+  "position": "fixed",
+  "height": 68,
+  "bg": "rgba(0, 0, 0, 0)",
+  "mixBlend": "normal",
+  "backdrop": "none",
+  "links": [
+   "Choose an Apartment"
+  ]
+ },
+ "cursor": {
+  "bodyCursor": "auto",
+  "customCursorEl": true
+ },
+ "hasLoader": true,
+ "loadMs": 5131,
+ "consoleErrors": [],
+ "resources": [
+  {
+   "url": "https://zorge9.estate/assets/stylesheets/global.css?v=1787557849",
+   "type": "text/css",
+   "size": null,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_intro_bg_xs/uploads/39/6_final_4_1777386791.webp",
+   "type": "image/webp",
+   "size": 72882,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/stylesheets/landing.css?v=1787557849",
+   "type": "text/css",
+   "size": null,
+   "status": 200
+  },
+  {
+   "url": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+   "type": "text/javascript",
+   "size": null,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/1.intro/decor-xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 57662,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_intro_bg_xs/uploads/39/6_final_5_1777386791.webp",
+   "type": "image/webp",
+   "size": 72246,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/fonts/Gilroy-SemiBold.woff2",
+   "type": "font/woff2",
+   "size": 44644,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/menu/decor@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 44220,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/javascripts/browser-message/browser-message.js?v=1787557849",
+   "type": "application/javascript",
+   "size": null,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/javascripts/landing.js?v=1787557849",
+   "type": "application/javascript",
+   "size": null,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/2.about/background@xs.webp",
+   "type": "image/webp",
+   "size": 24764,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/javascripts/shared.js?v=1787557849",
+   "type": "application/javascript",
+   "size": null,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/icons.svg?v=1787557849",
+   "type": "image/svg+xml",
+   "size": null,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/4.webp",
+   "type": "image/webp",
+   "size": 8606,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_10_1777287548.webp",
+   "type": "image/webp",
+   "size": 23322,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_9_1777287547.webp",
+   "type": "image/webp",
+   "size": 16552,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/3.location/hero-xs.webp",
+   "type": "image/webp",
+   "size": 38380,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_8_1777287547.webp",
+   "type": "image/webp",
+   "size": 17812,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_panorama_bg_xs/uploads/39/page_7_1_11_1_1_1777564634.webp",
+   "type": "image/webp",
+   "size": 31042,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_11_1777287548.webp",
+   "type": "image/webp",
+   "size": 50672,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_12_1777287546.webp",
+   "type": "image/webp",
+   "size": 15146,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/image-1-xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 39540,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/image-3-xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 76046,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/image-2@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 79594,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/1.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 13434,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/3.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 4890,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/2.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 6712,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/6.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 3422,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/7.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 4342,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/4-mirror.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 7670,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/5.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 2334,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/image-4-xs@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 57482,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/image-5-xs@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 30848,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_gallery_img_1_xs/uploads/39/image_1777288096.webp",
+   "type": "image/webp",
+   "size": 26784,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_gallery_img_4_xs/uploads/39/img_0231_1777288095.webp",
+   "type": "image/webp",
+   "size": 16114,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_gallery_img_2_xs/uploads/39/11_1777288096.webp",
+   "type": "image/webp",
+   "size": 41440,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/image_13_1777289990.webp",
+   "type": "image/webp",
+   "size": 30796,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_gallery_img_5_xs/uploads/39/0k0a8352_1777288094.webp",
+   "type": "image/webp",
+   "size": 23326,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_gallery_img_6_xs/uploads/39/%D0%97%D0%BE%D1%80%D0%B3%D0%B520821_1777288096.webp",
+   "type": "image/webp",
+   "size": 26486,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_2_1777290624.webp",
+   "type": "image/webp",
+   "size": 37248,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_1_1777290624.webp",
+   "type": "image/webp",
+   "size": 35922,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_1777290625.webp",
+   "type": "image/webp",
+   "size": 18070,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_1777290624.webp",
+   "type": "image/webp",
+   "size": 21736,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_lobby_bg_xs/uploads/39/zorge90843_1777290628.webp",
+   "type": "image/webp",
+   "size": 46778,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_3_1777290626.webp",
+   "type": "image/webp",
+   "size": 35320,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/mobile/image-3.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 49542,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-1@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 45160,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/mobile/image-2.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 36198,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-4@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 28522,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-7@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 49048,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/4.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 8606,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_infrastructure_bg_xs/uploads/39/image_2_1777295254.webp",
+   "type": "image/webp",
+   "size": 49414,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-6@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 35216,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_improvement_img_2_xs/uploads/39/image_19_1777295653.webp",
+   "type": "image/webp",
+   "size": 68780,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/15.apartments-hero/background-xs.webp",
+   "type": "image/webp",
+   "size": 55260,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/14.improvement/bottom@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 98368,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/uploads/1/studio_1755094133.png?v=1787557849",
+   "type": "image/png",
+   "size": 149559,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/32/image2x_10_1755265771.webp",
+   "type": "image/webp",
+   "size": 17470,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/39/image_22_1777295806.webp",
+   "type": "image/webp",
+   "size": 39738,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_penthouse_bg_xs/uploads/39/rectangle_733_1777295807.webp",
+   "type": "image/webp",
+   "size": 35032,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/39/image_23_1777295803.webp",
+   "type": "image/webp",
+   "size": 42106,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_penthouse_img_1_xs/uploads/39/zorge90368_1777295805.webp",
+   "type": "image/webp",
+   "size": 16986,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_penthouse_img_2_xs/uploads/39/image_25_1777295804.webp",
+   "type": "image/webp",
+   "size": 35668,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/18.penthouses/image-2@xs.webp",
+   "type": "image/webp",
+   "size": 72068,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-5@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 17108,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_infrastructure_slider_img_xs/uploads/39/img_4055_1_1777295251.webp",
+   "type": "image/webp",
+   "size": 41350,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_penthouse_img_4_xs/assets/images/media/landing/18.penthouses/image-4%40xs.webp",
+   "type": "image/webp",
+   "size": 28452,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/image_15_1777289992.webp",
+   "type": "image/webp",
+   "size": 39312,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/image_14_1777289992.webp",
+   "type": "image/webp",
+   "size": 57652,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/13_1777289990.webp",
+   "type": "image/webp",
+   "size": 39548,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/13_1_1777289986.webp",
+   "type": "image/webp",
+   "size": 35254,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_infrastructure_slider_img_xs/uploads/39/img_4055_2_1777295279.webp",
+   "type": "image/webp",
+   "size": 54022,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_infrastructure_slider_img_xs/uploads/39/img_4055_1777295252.webp",
+   "type": "image/webp",
+   "size": 28218,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/uploads/1/1%D0%9A_1_1755097564.png?v=1787557849",
+   "type": "image/png",
+   "size": 50138,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/uploads/1/2%D0%9A_1_1755097563.png?v=1787557849",
+   "type": "image/png",
+   "size": 49881,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/uploads/1/3%D0%9A_1_1755097563.png?v=1787557849",
+   "type": "image/png",
+   "size": 62830,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/uploads/1/%D0%9F%D0%B5%D0%BD%D1%82%D1%85%D0%B0%D1%83%D1%81_1_1755097563.png?v=1787557849",
+   "type": "image/png",
+   "size": 227814,
+   "status": 200
+  }
+ ],
+ "resourceTotals": {
+  "text": 0,
+  "image": 2823960,
+  "font": 44644,
+  "application": 0
+ }
+}

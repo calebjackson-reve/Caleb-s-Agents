@@ -1162,7 +1162,7 @@
   "customCursorEl": true
  },
  "hasLoader": true,
- "loadMs": 5795,
+ "loadMs": 5543,
  "consoleErrors": [],
  "resources": [
   {
@@ -1184,15 +1184,15 @@
    "status": 200
   },
   {
-   "url": "https://sobha-privy-collection.com/assets/stylesheets/global.css?qqihq",
-   "type": "text/css",
-   "size": null,
-   "status": 200
-  },
-  {
    "url": "https://sobha-privy-collection.com/assets/images/common/logo.svg?qqihq",
    "type": "image/svg+xml",
    "size": 5944,
+   "status": 200
+  },
+  {
+   "url": "https://sobha-privy-collection.com/assets/stylesheets/global.css?qqihq",
+   "type": "text/css",
+   "size": null,
    "status": 200
   },
   {
@@ -1226,15 +1226,15 @@
    "status": 200
   },
   {
-   "url": "https://sobha-privy-collection.com/assets/javascripts/browser-message/browser-message.js?qqihq",
-   "type": "application/javascript",
-   "size": null,
-   "status": 200
-  },
-  {
    "url": "https://sobha-privy-collection.com/assets/images/media/header/logo-text-gradient-hover.webp",
    "type": "image/webp",
    "size": 1942,
+   "status": 200
+  },
+  {
+   "url": "https://use.typekit.net/af/2c5ecb/00000000000000007735ec1b/31/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3",
+   "type": "application/font-woff2",
+   "size": 29500,
    "status": 200
   },
   {
@@ -1244,9 +1244,15 @@
    "status": 200
   },
   {
-   "url": "https://use.typekit.net/af/2c5ecb/00000000000000007735ec1b/31/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3",
-   "type": "application/font-woff2",
-   "size": 29500,
+   "url": "https://sobha-privy-collection.com/assets/javascripts/browser-message/browser-message.js?qqihq",
+   "type": "application/javascript",
+   "size": null,
+   "status": 200
+  },
+  {
+   "url": "https://sobha-privy-collection.com/assets/javascripts/shared.js?qqihq",
+   "type": "application/javascript",
+   "size": null,
    "status": 200
   },
   {
@@ -1257,12 +1263,6 @@
   },
   {
    "url": "https://sobha-privy-collection.com/assets/javascripts/landing.js?qqihq",
-   "type": "application/javascript",
-   "size": null,
-   "status": 200
-  },
-  {
-   "url": "https://sobha-privy-collection.com/assets/javascripts/shared.js?qqihq",
    "type": "application/javascript",
    "size": null,
    "status": 200
@@ -1280,15 +1280,15 @@
    "status": 200
   },
   {
-   "url": "https://sobha-privy-collection.com/assets/images/media/landing/2.luxury-homes/top-large@xs.webp",
-   "type": "image/webp",
-   "size": 67262,
-   "status": 200
-  },
-  {
    "url": "https://sobha-privy-collection.com/assets/images/media/landing/2.luxury-homes/top-small-1@xs.webp",
    "type": "image/webp",
    "size": 17222,
+   "status": 200
+  },
+  {
+   "url": "https://sobha-privy-collection.com/assets/images/media/landing/2.luxury-homes/top-large@xs.webp",
+   "type": "image/webp",
+   "size": 67262,
    "status": 200
   },
   {
@@ -1322,6 +1322,12 @@
    "status": 200
   },
   {
+   "url": "https://sobha-privy-collection.com/assets/images/media/landing/2.luxury-homes/bottom-left@xs.webp",
+   "type": "image/webp",
+   "size": 35514,
+   "status": 200
+  },
+  {
    "url": "https://sobha-privy-collection.com/assets/images/media/landing/4.sensation/background@xs.webp",
    "type": "image/webp",
    "size": 9040,
@@ -1331,12 +1337,6 @@
    "url": "https://sobha-privy-collection.com/assets/images/media/landing/2.luxury-homes/bottom-right@xs.webp",
    "type": "image/webp",
    "size": 54334,
-   "status": 200
-  },
-  {
-   "url": "https://sobha-privy-collection.com/assets/images/media/landing/2.luxury-homes/bottom-left@xs.webp",
-   "type": "image/webp",
-   "size": 35514,
    "status": 200
   },
   {
@@ -1352,9 +1352,9 @@
    "status": 200
   },
   {
-   "url": "https://sobha-privy-collection.com/assets/images/media/landing/7.tenets/background@xs.webp",
+   "url": "https://sobha-privy-collection.com/assets/images/media/landing/7.tenets/video@xs.webp",
    "type": "image/webp",
-   "size": 177916,
+   "size": 25610,
    "status": 200
   },
   {
@@ -1376,21 +1376,9 @@
    "status": 200
   },
   {
-   "url": "https://sobha-privy-collection.com/assets/images/media/landing/6.three-worlds/background@xs.webp",
-   "type": "image/webp",
-   "size": 21288,
-   "status": 200
-  },
-  {
    "url": "https://sobha-privy-collection.com/assets/images/media/landing/8.expansive-spaces/video-1-xs@xs.webp",
    "type": "image/webp",
    "size": 23736,
-   "status": 200
-  },
-  {
-   "url": "https://sobha-privy-collection.com/assets/images/media/landing/7.tenets/video@xs.webp",
-   "type": "image/webp",
-   "size": 25610,
    "status": 200
   },
   {
@@ -1400,9 +1388,21 @@
    "status": 200
   },
   {
+   "url": "https://sobha-privy-collection.com/assets/images/media/landing/7.tenets/background@xs.webp",
+   "type": "image/webp",
+   "size": 177916,
+   "status": 200
+  },
+  {
    "url": "https://sobha-privy-collection.com/assets/images/media/landing/8.expansive-spaces/video-3-xs@xs.webp",
    "type": "image/webp",
    "size": 45182,
+   "status": 200
+  },
+  {
+   "url": "https://sobha-privy-collection.com/assets/images/media/landing/6.three-worlds/background@xs.webp",
+   "type": "image/webp",
+   "size": 21288,
    "status": 200
   },
   {
@@ -1418,6 +1418,12 @@
    "status": 200
   },
   {
+   "url": "https://sobha-privy-collection.com/assets/images/media/landing/8.expansive-spaces/image-small-3@xs.webp",
+   "type": "image/webp",
+   "size": 49968,
+   "status": 200
+  },
+  {
    "url": "https://sobha-privy-collection.com/assets/images/media/landing/8.expansive-spaces/full-image-4@xs.webp",
    "type": "image/webp",
    "size": 167526,
@@ -1427,12 +1433,6 @@
    "url": "https://sobha-privy-collection.com/assets/images/media/landing/8.expansive-spaces/image-small-5@xs.webp",
    "type": "image/webp",
    "size": 54652,
-   "status": 200
-  },
-  {
-   "url": "https://sobha-privy-collection.com/assets/images/media/landing/8.expansive-spaces/image-small-3@xs.webp",
-   "type": "image/webp",
-   "size": 49968,
    "status": 200
   },
   {
@@ -1460,6 +1460,12 @@
    "status": 200
   },
   {
+   "url": "https://sobha-privy-collection.com/assets/images/media/landing/8.expansive-spaces/image-carousel-2@xs.webp",
+   "type": "image/webp",
+   "size": 35676,
+   "status": 200
+  },
+  {
    "url": "https://sobha-privy-collection.com/assets/images/media/landing/8.expansive-spaces/image-carousel-3@xs.webp",
    "type": "image/webp",
    "size": 21872,
@@ -1472,15 +1478,15 @@
    "status": 200
   },
   {
-   "url": "https://sobha-privy-collection.com/assets/images/media/landing/10.location/logo-4-xs.svg",
-   "type": "image/svg+xml",
-   "size": 1529,
-   "status": 200
-  },
-  {
    "url": "https://sobha-privy-collection.com/assets/images/media/landing/10.location/logo-3-xs.svg",
    "type": "image/svg+xml",
    "size": 5587,
+   "status": 200
+  },
+  {
+   "url": "https://sobha-privy-collection.com/assets/images/media/landing/10.location/logo-4-xs.svg",
+   "type": "image/svg+xml",
+   "size": 1529,
    "status": 200
   },
   {
@@ -1508,12 +1514,6 @@
    "status": 200
   },
   {
-   "url": "https://sobha-privy-collection.com/assets/images/media/landing/8.expansive-spaces/image-carousel-2@xs.webp",
-   "type": "image/webp",
-   "size": 35676,
-   "status": 200
-  },
-  {
    "url": "https://sobha-privy-collection.com/uploads/expensive_spaces.mp4",
    "type": "video/webm",
    "size": 5403,
@@ -1532,13 +1532,13 @@
    "status": 200
   },
   {
-   "url": "https://sobha-privy-collection.com/uploads/space-table.mp4",
+   "url": "https://sobha-privy-collection.com/uploads/privacy.mp4",
    "type": "video/webm",
    "size": 5403,
    "status": 200
   },
   {
-   "url": "https://sobha-privy-collection.com/uploads/privacy.mp4",
+   "url": "https://sobha-privy-collection.com/uploads/space-table.mp4",
    "type": "video/webm",
    "size": 5403,
    "status": 200
