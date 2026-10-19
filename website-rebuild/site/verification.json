@@ -477,5 +477,36 @@
     "page hero parallax",
     "pill cloned label hover"
   ],
-  "homeRevision": "October 19, 2026, second pass: hero portrait rises once and stays with the wordmark behind it; every section below the hero follows FIND's order (why, chevron statement, rewired rows, about split, services giant words, feature cards, latest band, outro, directory, footer). Contact sheets: verification/hero-desktop-sheet.jpg, hero-mobile-sheet.jpg, home-desktop-sheet.jpg, home-mobile-sheet.jpg, outro-sheet.jpg."
+  "homeRevision": "October 19, 2026, second pass: hero portrait rises once and stays with the wordmark behind it; every section below the hero follows FIND's order (why, chevron statement, rewired rows, about split, services giant words, feature cards, latest band, outro, directory, footer). Contact sheets: verification/hero-desktop-sheet.jpg, hero-mobile-sheet.jpg, home-desktop-sheet.jpg, home-mobile-sheet.jpg, outro-sheet.jpg.",
+  "motionPass": {
+    "date": "October 19, 2026",
+    "changes": [
+      "Lenis runs on the GSAP ticker, one animation loop",
+      "videos play only while 25% on screen, autoplay attribute removed, preload none below the hero",
+      "posters served as 1200px webp",
+      "hero copy blur removed, portrait shadow baked into the PNG",
+      "hidden-at-rest rules apply only under html.js, so the page is fully visible without the script",
+      "scrubbed motion on every reveal image (drift), the chevrons, the numbered rows, the service words, the feature cards and the launch timeline",
+      "Zorge stack: services and features, then the recent work band, slide over each other with a scale on the one underneath",
+      "Sobha curved gallery and the Zorge communities runway back on the home page, count-up receipts under the about block",
+      "4.5 percent film grain on ink sections, pixel mosaic reveal on the hero poster and the three feature cards, pixel dissolve fill on every pill on hover"
+    ],
+    "measured": {
+      "method": "metrics.js, headless Chromium with software rendering, scroll in 18px steps per animation frame over the whole page",
+      "desktop": {
+        "scrollTriggers": 36,
+        "avgFrameMs": 28.7,
+        "framesOver34ms": "136 of 878",
+        "worstMs": 808
+      },
+      "mobile": {
+        "scrollTriggers": 35,
+        "avgFrameMs": 19.4,
+        "framesOver34ms": "29 of 891",
+        "worstMs": 239
+      },
+      "before": "design session measured 1 scroll-linked animation, 47ms average, 152 of 376 frames over 34ms, worst 767ms, 5 videos decoding at once",
+      "note": "software rendering in the container, so absolute numbers are harsh; videos playing at any time is now 1 and the hero remains the heaviest stretch"
+    }
+  }
 }

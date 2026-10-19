@@ -57,17 +57,17 @@ h1, h2, h3, h4, p { margin: 0; }
 
 /* word reveal (Zorge) */
 .words .line { display: block; overflow: hidden; }
-.words .w { display: inline-block; transform: translateY(110%); opacity: 0; color: var(--fg-3); transition: transform var(--dur-move) var(--ease-house), opacity var(--dur-move) var(--ease-house), color var(--dur-move) var(--ease-house); }
+.js .words .w { display: inline-block; transform: translateY(110%); opacity: 0; color: var(--fg-3); transition: transform var(--dur-move) var(--ease-house), opacity var(--dur-move) var(--ease-house), color var(--dur-move) var(--ease-house); }
 .words.is-in .w { transform: translateY(0); opacity: 1; color: inherit; }
 
 /* clip reveal with drift (FIND) */
 /* clip lives on the child, not the observed box, so IntersectionObserver still sees the element */
 .reveal { position: relative; overflow: hidden; }
-.reveal > * { clip-path: inset(100% 0 0 0); transition: clip-path var(--dur-reveal) var(--ease-reveal); }
-.reveal > img, .reveal > video { transform: scale(1.12); transition: clip-path var(--dur-reveal) var(--ease-reveal), transform var(--dur-drift) var(--ease-reveal); }
+.js .reveal > * { clip-path: inset(100% 0 0 0); transition: clip-path var(--dur-reveal) var(--ease-reveal); }
+.js .reveal > img, .reveal > video { transition: clip-path var(--dur-reveal) var(--ease-reveal); }
 .reveal.is-in > * { clip-path: inset(0 0 0 0); }
-.reveal.is-in > img, .reveal.is-in > video { transform: scale(1); }
-.fade { opacity: 0; transform: translateY(2.4rem); transition: opacity var(--dur-move) var(--ease-house), transform var(--dur-move) var(--ease-house); }
+
+.js .fade { opacity: 0; transform: translateY(2.4rem); transition: opacity var(--dur-move) var(--ease-house), transform var(--dur-move) var(--ease-house); }
 .fade.is-in { opacity: 1; transform: none; }
 [data-stagger] > * { transition-delay: calc(var(--i, 0) * 90ms); }
 
@@ -117,6 +117,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .hero { position: relative; height: 400vh; background: var(--ink); color: var(--ivory); }
 .hero-stick { position: sticky; top: 0; height: 100vh; overflow: hidden; }
 .hero-media { position: absolute; inset: 0; }
+.pix { position: absolute; inset: 0; z-index: 3; pointer-events: none; image-rendering: pixelated; }
 .hero-media video, .hero-media img { width: 100%; height: 100%; object-fit: cover; }
 .hero-media::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,16,14,0.25) 0%, rgba(20,16,14,0.15) 50%, rgba(20,16,14,0.65) 100%); }
 .hero-veil { position: absolute; inset: 0; z-index: 1; background: var(--ink); opacity: 0; pointer-events: none; }
@@ -125,7 +126,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .hero-copy .display-xl { font-size: var(--display-l); text-transform: uppercase; letter-spacing: 0.02em; }
 .hero-copy .lead { margin-top: 3rem; color: var(--ivory-50); }
 .hero-copy .ctas { margin-top: 4rem; display: flex; gap: 1.2rem; justify-content: center; flex-wrap: wrap; }
-.hero-portrait { position: absolute; left: 50%; bottom: 0; width: min(44vw, 700px); margin: 0; transform: translate(-50%, 100%); z-index: 3; pointer-events: none; will-change: transform; filter: drop-shadow(0 -2rem 6rem rgba(20,16,14,0.45)); }
+.hero-portrait { position: absolute; left: 50%; bottom: -2rem; width: min(52vw, 840px); margin: 0; transform: translate(-50%, 100%); z-index: 3; pointer-events: none; will-change: transform; }
 .hero-portrait img { width: 100%; height: auto; }
 .hero-wordmark { position: absolute; left: 0; right: 0; bottom: -0.08em; z-index: 2; font-family: var(--serif); font-size: clamp(6rem, 17vw, 30rem); line-height: 0.9; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ember); text-align: center; white-space: nowrap; opacity: 0; pointer-events: none; }
 .hero-hint { position: absolute; left: var(--gutter); bottom: 3rem; z-index: 5; }
@@ -135,7 +136,7 @@ h1, h2, h3, h4, p { margin: 0; }
 /* statement with chevrons (FIND) */
 .statement { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--gap); align-items: center; }
 .chevrons { display: flex; gap: 0.8rem; justify-content: flex-end; }
-.chevrons i { display: block; width: 7rem; height: 12rem; background: var(--fg); clip-path: polygon(0 0, 55% 0, 100% 50%, 55% 100%, 0 100%, 45% 50%); opacity: 0; transform: translateX(3rem); transition: opacity var(--dur-move) var(--ease-house), transform var(--dur-move) var(--ease-house); }
+.js .chevrons i { display: block; width: 7rem; height: 12rem; background: var(--fg); clip-path: polygon(0 0, 55% 0, 100% 50%, 55% 100%, 0 100%, 45% 50%); opacity: 0; transform: translateX(3rem); transition: opacity var(--dur-move) var(--ease-house), transform var(--dur-move) var(--ease-house); }
 .chevrons.is-in i { opacity: 1; transform: none; }
 .chevrons i:nth-child(2) { transition-delay: 90ms; } .chevrons i:nth-child(3) { transition-delay: 180ms; } .chevrons i:nth-child(4) { transition-delay: 270ms; }
 .chevrons.is-in i:nth-child(2) { opacity: 0.55; } .chevrons.is-in i:nth-child(3) { opacity: 0.3; } .chevrons.is-in i:nth-child(4) { opacity: 0.14; }
@@ -263,7 +264,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .strip img { width: 100%; height: 100%; object-fit: cover; }
 .arrows-title { max-width: 24ch; margin: 0 auto; }
 .chev { display: flex; justify-content: center; gap: 0.6rem; margin-top: 6rem; }
-.chev i { display: block; width: 24rem; height: 32rem; background-size: cover; background-position: 50% 50%; clip-path: polygon(0 0, 55% 0, 100% 50%, 55% 100%, 0 100%, 45% 50%); opacity: 0; transform: translateX(-6rem); transition: transform 1.2s var(--ease-reveal), opacity 0.6s ease-out; }
+.js .chev i { display: block; width: 24rem; height: 32rem; background-size: cover; background-position: 50% 50%; clip-path: polygon(0 0, 55% 0, 100% 50%, 55% 100%, 0 100%, 45% 50%); opacity: 0; transform: translateX(-6rem); transition: transform 1.2s var(--ease-reveal), opacity 0.6s ease-out; }
 .chev i:nth-child(2) { transition-delay: 120ms; } .chev i:nth-child(3) { transition-delay: 240ms; } .chev i:nth-child(4) { transition-delay: 360ms; }
 .chev.is-in i { opacity: 1; transform: none; }
 .arrows-caption { margin: 6rem auto 0; max-width: 52ch; }
@@ -387,3 +388,22 @@ h1, h2, h3, h4, p { margin: 0; }
 .card .ask-line + p { margin-top: 0.6rem; }
 .news.is-done { display: none; } .news-done { display: none; } .news-done.is-on { display: block; }
 @media (max-width: 900px) { .timeline { grid-template-columns: 1fr 1fr; } .ask { grid-template-columns: 1fr; } }
+
+/* ---------- motion pass: stack, grain, pixel fill, receipts ---------- */
+.stack { position: relative; }
+.stack-item { position: sticky; top: 0; will-change: transform; }
+.stack-item > section:first-child { box-shadow: 0 -1px 0 var(--hairline); }
+.ui-dark { position: relative; }
+.ui-dark::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; opacity: 0.045; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); background-size: 220px 220px; }
+.ui-dark > * { position: relative; z-index: 1; }
+.pill { isolation: isolate; }
+.pill .fillbg { position: absolute; left: 0; top: 0; z-index: -1; background: var(--ember); opacity: 0; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; }
+.pill.is-filling .fillbg { opacity: 1; }
+.pill.is-filled { background: var(--ember); color: var(--ink); }
+.pill.ghost.is-filled { border-color: var(--ember); }
+.receipts { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); margin-top: 8rem; padding-top: 3rem; border-top: 1px solid var(--hairline); }
+.receipts .stat { font-size: var(--display-m); }
+.receipts .label { margin-top: 1rem; } .receipts .source { margin-top: 0.4rem; font-size: var(--small); color: var(--fg-3); }
+.gallery-title .italic-word { color: var(--ember); }
+@media (max-width: 900px) { .receipts { grid-template-columns: 1fr; } .stack-item { position: relative; } }
+@media (prefers-reduced-motion: reduce) { .stack-item { position: relative; } .ui-dark::before { display: none; } }

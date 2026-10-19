@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-19T18:45:07.091Z",
+  "generated": "2026-10-19T18:50:31.951Z",
   "base": "http://localhost:8787/site/",
   "pages": {
     "index@desktop": {
@@ -11,26 +11,26 @@
         "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/still-anim-1-front-night-16x9.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 10286,
+      "scrollHeight": 16694,
       "overflowX": false,
-      "reveals": 7,
-      "revealsIn": 7,
+      "reveals": 13,
+      "revealsIn": 13,
       "words": 8,
       "wordsIn": 8,
-      "fades": 20,
-      "fadesIn": 20,
+      "fades": 21,
+      "fadesIn": 21,
       "header": true,
       "footer": true,
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 37,
       "fontsLoaded": true,
       "videos": [
         {
           "src": "still-anim-1-front-night-16x9.webm",
           "ready": 4,
-          "paused": false,
+          "paused": true,
           "w": 1280
         },
         {
@@ -54,7 +54,7 @@
         {
           "src": "aerial-1-dusk-estate-16x9.webm",
           "ready": 4,
-          "paused": false,
+          "paused": true,
           "w": 1920
         }
       ],
@@ -82,7 +82,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 2,
       "fontsLoaded": true,
       "videos": [
         {
@@ -116,7 +116,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 8,
       "fontsLoaded": true,
       "videos": [
         {
@@ -135,11 +135,11 @@
     "sell@desktop": {
       "consoleErrors": [],
       "failedRequests": [
+        "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/still-anim-4-bath-fireplace-16x9.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/pool-broll-9x16.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/still-anim-2b-pool-night-16x9.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED"
+        "http://localhost:8787/media/video/pool-broll-9x16.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED"
       ],
       "scrollHeight": 5925,
       "overflowX": false,
@@ -154,7 +154,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 8,
       "fontsLoaded": true,
       "videos": [
         {
@@ -212,7 +212,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 2,
       "fontsLoaded": true,
       "videos": [
         {
@@ -256,14 +256,14 @@
     "listing-template@desktop": {
       "consoleErrors": [],
       "failedRequests": [
-        "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/still-anim-4-bath-fireplace-16x9.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED"
       ],
       "scrollHeight": 7538,
       "overflowX": false,
       "reveals": 8,
-      "revealsIn": 8,
+      "revealsIn": 5,
       "words": 4,
       "wordsIn": 4,
       "fades": 13,
@@ -273,7 +273,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 2,
+      "triggers": 13,
       "fontsLoaded": true,
       "videos": [
         {
@@ -319,7 +319,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 2,
       "fontsLoaded": true,
       "videos": [
         {
@@ -340,24 +340,24 @@
       "failedRequests": [
         "http://localhost:8787/media/video/still-anim-2b-pool-night-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/still-anim-3-gazebo-16x9.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 11359,
+      "scrollHeight": 16866,
       "overflowX": false,
-      "reveals": 7,
-      "revealsIn": 7,
+      "reveals": 13,
+      "revealsIn": 13,
       "words": 8,
       "wordsIn": 8,
-      "fades": 20,
-      "fadesIn": 20,
+      "fades": 21,
+      "fadesIn": 21,
       "header": true,
       "footer": true,
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 35,
       "fontsLoaded": true,
       "videos": [
         {
@@ -387,7 +387,7 @@
         {
           "src": "aerial-1-dusk-estate-16x9.webm",
           "ready": 4,
-          "paused": false,
+          "paused": true,
           "w": 1920
         }
       ],
@@ -415,7 +415,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 2,
       "fontsLoaded": true,
       "videos": [
         {
@@ -449,7 +449,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 8,
       "fontsLoaded": true,
       "videos": [
         {
@@ -468,11 +468,11 @@
     "sell@mobile": {
       "consoleErrors": [],
       "failedRequests": [
-        "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/still-anim-4-bath-fireplace-16x9.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/still-anim-2b-pool-night-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/pool-broll-9x16.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED"
+        "http://localhost:8787/media/video/still-anim-2b-pool-night-16x9.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/still-anim-4-bath-fireplace-16x9.mp4 net::ERR_ABORTED"
       ],
       "scrollHeight": 6923,
       "overflowX": false,
@@ -487,7 +487,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 8,
       "fontsLoaded": true,
       "videos": [
         {
@@ -545,7 +545,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 2,
       "fontsLoaded": true,
       "videos": [
         {
@@ -589,14 +589,14 @@
     "listing-template@mobile": {
       "consoleErrors": [],
       "failedRequests": [
-        "http://localhost:8787/media/video/still-anim-4-bath-fireplace-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/still-anim-4-bath-fireplace-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED"
       ],
       "scrollHeight": 7619,
       "overflowX": false,
       "reveals": 8,
-      "revealsIn": 8,
+      "revealsIn": 3,
       "words": 4,
       "wordsIn": 4,
       "fades": 13,
@@ -606,7 +606,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 2,
+      "triggers": 13,
       "fontsLoaded": true,
       "videos": [
         {
@@ -652,7 +652,7 @@
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 1,
+      "triggers": 2,
       "fontsLoaded": true,
       "videos": [
         {

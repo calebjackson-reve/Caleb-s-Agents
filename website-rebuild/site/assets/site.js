@@ -2,6 +2,7 @@
    Lenis on native scroll (no virtual scroll), GSAP + ScrollTrigger for scrubbed stages, IntersectionObserver for entrances. */
 (function () {
   'use strict';
+  document.documentElement.classList.add('js');
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var phone = window.matchMedia('(max-width: 900px)').matches;
   var page = document.body.dataset.page || '';
@@ -76,8 +77,8 @@
   var lenis = null;
   if (!reduce && window.Lenis) {
     lenis = new window.Lenis({ lerp: 0.1 });
-    function raf(t) { lenis.raf(t); requestAnimationFrame(raf); }
-    requestAnimationFrame(raf);
+    if (window.gsap) { gsap.ticker.add(function (t) { lenis.raf(t * 1000); }); gsap.ticker.lagSmoothing(0); }
+    else { (function raf(t) { lenis.raf(t); requestAnimationFrame(raf); })(0); }
   }
 
   /* ---------- header: hide on down, return on up, flip color per section ---------- */
@@ -147,11 +148,80 @@
     });
   }
 
+
+  /* ---------- videos: play only while on screen, one decode at a time below the hero ---------- */
+  (function () {
+    var vids = Array.prototype.slice.call(document.querySelectorAll('video'));
+    if (!vids.length || !('IntersectionObserver' in window)) return;
+    var vio = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        var v = e.target;
+        if (e.isIntersecting && e.intersectionRatio >= 0.25) { if (v.preload === 'none') v.preload = 'auto'; var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); }
+        else if (!v.paused) v.pause();
+      });
+    }, { threshold: [0, 0.25, 0.6] });
+    vids.forEach(function (v) { v.removeAttribute('autoplay'); vio.observe(v); });
+  })();
+
+  /* ---------- pixel mosaic reveal: coarse blocks resolve to the image as it enters ---------- */
+  function pixelReveal(host, src, steps) {
+    if (reduce || !src) return;
+    var img = new Image(); img.crossOrigin = 'anonymous'; img.src = src;
+    img.onload = function () {
+      var c = document.createElement('canvas'); c.className = 'pix'; c.width = host.clientWidth || 600; c.height = host.clientHeight || 400; c.style.width = '100%'; c.style.height = '100%';
+      var ctx = c.getContext('2d'); if (!ctx) return;
+      host.appendChild(c);
+      var cells = steps || [48, 32, 20, 12, 7, 4, 2], i = 0;
+      function draw() {
+        var n = cells[i]; var w = Math.max(1, Math.round(c.width / n)), h = Math.max(1, Math.round(c.height / n));
+        ctx.imageSmoothingEnabled = true; ctx.clearRect(0, 0, c.width, c.height);
+        var tmp = document.createElement('canvas'); tmp.width = w; tmp.height = h; var t = tmp.getContext('2d');
+        var r = Math.max(w / img.width, h / img.height), iw = img.width * r, ih = img.height * r;
+        t.drawImage(img, (w - iw) / 2, (h - ih) / 2, iw, ih);
+        ctx.imageSmoothingEnabled = false; ctx.drawImage(tmp, 0, 0, w, h, 0, 0, c.width, c.height);
+        i++; if (i < cells.length) setTimeout(draw, 70); else { c.style.transition = 'opacity 0.4s ease-out'; c.style.opacity = '0'; setTimeout(function () { c.remove(); }, 450); }
+      }
+      draw();
+    };
+  }
+  var heroMedia = document.querySelector('.hero-media');
+  if (heroMedia) { var hv = heroMedia.querySelector('video'); var poster = hv && hv.getAttribute('poster'); setTimeout(function () { pixelReveal(heroMedia, poster, [40, 28, 18, 11, 6, 3]); }, sessionStorage.getItem('cj-seen') ? 100 : 900); }
+  var pio = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) { var im = e.target.querySelector('img'); pixelReveal(e.target, im && (im.currentSrc || im.src)); pio.unobserve(e.target); } });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('[data-pixelate]').forEach(function (el) { pio.observe(el); });
+
+  /* ---------- pixel dissolve fill on pills (motion kit idea, self-contained) ---------- */
+  (function () {
+    if (reduce || !window.matchMedia('(hover: hover)').matches) return;
+    var cols = 24, rows = 6, frames = 16;
+    var order = []; for (var k = 0; k < cols * rows; k++) order.push(k);
+    for (var a = order.length - 1; a > 0; a--) { var b = Math.floor(Math.random() * (a + 1)); var tmp = order[a]; order[a] = order[b]; order[b] = tmp; }
+    var sprite = document.createElement('canvas'); sprite.width = cols * frames; sprite.height = rows; var sc = sprite.getContext('2d'); sc.fillStyle = '#000';
+    for (var f = 0; f < frames; f++) { var upto = Math.round(order.length * f / (frames - 1)); for (var q = 0; q < upto; q++) { var idx = order[q]; sc.fillRect(f * cols + (idx % cols), Math.floor(idx / cols), 1, 1); } }
+    var url = 'url(' + sprite.toDataURL() + ')';
+    document.querySelectorAll('.pill').forEach(function (pill) {
+      var bg = document.createElement('span'); bg.className = 'fillbg'; pill.prepend(bg);
+      bg.style.webkitMaskImage = bg.style.maskImage = url; bg.style.webkitMaskSize = bg.style.maskSize = (frames * 100) + '% 100%';
+      function size() { var r = pill.getBoundingClientRect(); var cell = Math.max(r.width / cols, r.height / rows); bg.style.width = cell * cols + 'px'; bg.style.height = cell * rows + 'px'; }
+      size();
+      var step = 0, timer = null;
+      function run(dir, done) { clearInterval(timer); timer = setInterval(function () { step += dir; if (step < 0 || step >= frames) { clearInterval(timer); step = Math.max(0, Math.min(frames - 1, step)); done && done(); return; } var pos = (step / (frames - 1)) * 100; bg.style.webkitMaskPosition = bg.style.maskPosition = pos + '% 0'; }, 28); }
+      pill.addEventListener('pointerenter', function () { size(); pill.classList.add('is-filling'); pill.classList.remove('is-filled'); step = 0; run(1, function () { pill.classList.add('is-filled'); }); });
+      pill.addEventListener('pointerleave', function () { pill.classList.remove('is-filled'); run(-1, function () { pill.classList.remove('is-filling'); }); });
+    });
+  })();
+
   /* ---------- entrances ---------- */
   var io = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } });
   }, { rootMargin: '0px 0px -12% 0px', threshold: 0.05 });
   document.querySelectorAll('.words, .reveal, .fade, .chevrons, .chev, .sweep').forEach(function (el) { io.observe(el); });
+  /* runway cards sit off to the right, so reveal them all once the runway itself is on screen */
+  var rio = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) { e.target.querySelectorAll('.reveal, .fade').forEach(function (el, i) { el.style.transitionDelay = (i * 90) + 'ms'; el.classList.add('is-in'); io.unobserve(el); }); rio.unobserve(e.target); } });
+  }, { threshold: 0.2 });
+  document.querySelectorAll('.runway').forEach(function (r) { rio.observe(r); });
   document.querySelectorAll('[data-stagger]').forEach(function (g) { Array.prototype.forEach.call(g.children, function (c, i) { c.style.setProperty('--i', i); }); });
 
   /* sweep: gray words turn ink as they pass the middle of the viewport */
@@ -196,10 +266,10 @@
     var tl = gsap.timeline({ scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom bottom', scrub: 0.8 } });
     tl.to('.hero-media video, .hero-media img', { scale: 1.18, ease: 'none', duration: 1 }, 0)
       .to('.hero-hint, .hero-meta', { opacity: 0, duration: 0.08 }, 0)
-      .to('.hero-copy', { y: '-24vh', opacity: 0, filter: 'blur(8px)', ease: 'none', duration: 0.28 }, 0.1)
+      .to('.hero-copy', { y: '-24vh', opacity: 0, ease: 'none', duration: 0.28 }, 0.1)
       .to('.hero-veil', { opacity: 0.55, ease: 'none', duration: 0.4 }, 0.2)
       .fromTo('.hero-wordmark', { opacity: 0, y: '40%' }, { opacity: 1, y: '0%', ease: 'none', duration: 0.34 }, 0.3)
-      .fromTo('.hero-portrait', { y: '100%', scale: 0.94 }, { y: '4%', scale: 1, ease: 'none', duration: 0.42 }, 0.34);
+      .fromTo('.hero-portrait', { y: '100%', scale: 0.94 }, { y: '2%', scale: 1, ease: 'none', duration: 0.42 }, 0.34);
   }
 
   /* ---------- split panels: slow drift on the photo ---------- */
@@ -245,6 +315,29 @@
   /* ---------- closing statement: gradient fill scrubbed ---------- */
   document.querySelectorAll('.closing .fill').forEach(function (el) {
     gsap.fromTo(el, { backgroundPosition: '0 100%' }, { backgroundPosition: '0 0%', ease: 'none', scrollTrigger: { trigger: el.closest('.closing'), start: 'top 70%', end: 'center 40%', scrub: true } });
+  });
+
+
+  /* ---------- scrubbed motion below the hero (FIND: every image moves a little while on screen) ---------- */
+  document.querySelectorAll('.reveal > img, .reveal > video').forEach(function (m) {
+    if (m.closest('.hero') || m.closest('.panel')) return;
+    gsap.fromTo(m, { yPercent: -7, scale: 1.14 }, { yPercent: 7, scale: 1.0, ease: 'none', scrollTrigger: { trigger: m.parentNode, start: 'top bottom', end: 'bottom top', scrub: true } });
+  });
+  document.querySelectorAll('.chev i').forEach(function (c, i) {
+    gsap.fromTo(c, { xPercent: -60 - i * 15 }, { xPercent: 0, ease: 'none', scrollTrigger: { trigger: c.parentNode, start: 'top 95%', end: 'top 35%', scrub: true } });
+  });
+  document.querySelectorAll('.rows li, .service, .feature, .tl').forEach(function (el, i) {
+    gsap.fromTo(el, { y: 70, scale: 0.97 }, { y: 0, scale: 1, ease: 'none', scrollTrigger: { trigger: el, start: 'top 100%', end: 'top 55%', scrub: true } });
+  });
+  document.querySelectorAll('.service-word').forEach(function (w) {
+    gsap.fromTo(w, { x: 80 }, { x: 0, ease: 'none', scrollTrigger: { trigger: w, start: 'top 100%', end: 'top 45%', scrub: true } });
+  });
+  document.querySelectorAll('.stack-item').forEach(function (item, i, all) {
+    if (i === all.length - 1 || phone) return;
+    gsap.to(item, { scale: 0.96, ease: 'none', scrollTrigger: { trigger: all[i + 1], start: 'top bottom', end: 'top top', scrub: true } });
+  });
+  document.querySelectorAll('.why-strip, .asym-wide').forEach(function (el) {
+    gsap.fromTo(el, { y: 60 }, { y: -60, ease: 'none', scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: true } });
   });
 
   /* ---------- page hero parallax ---------- */
