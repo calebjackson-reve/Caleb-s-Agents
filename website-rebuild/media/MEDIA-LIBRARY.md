@@ -109,3 +109,9 @@ Nothing in this list has been generated.
 - Basil Lane: https://drive.google.com/drive/folders/1Er3WJnPUizjx0F6R5OVO3n1kMfusvNYP
 - Brand films: https://drive.google.com/drive/folders/15EZd_-RNBPkttzChuNnwof972mChG5cU
 - Brand package PDF: https://drive.google.com/file/d/1EgwpoxFYLsGUlUDrjyiqLg3wr9X0sUOJ/view
+
+
+## Hero cut-outs (October 19, 2026)
+
+- `headshots/caleb-hero-balcony-torso.png`: the real balcony photo, background removed locally, cropped above the railing, soft shadow baked in. This is the one on the site.
+- A 4K AI upscale of the balcony photo was tried (2 credits). Caleb rejected it because the upscaler redrew his face. Files deleted, not to be used. Rule stands: no AI on faces.
