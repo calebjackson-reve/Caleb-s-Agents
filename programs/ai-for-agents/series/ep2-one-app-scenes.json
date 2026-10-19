@@ -1,0 +1,344 @@
+{
+ "about": "Weekly series Ep 2: One App, Not Ten. Script draft 2026-10-19, timings estimated at 176 wpm, no take yet.",
+ "look": "ivory",
+ "chrome": "AI for Agents · Weekly",
+ "text": "mask",
+ "scenes": [
+  {
+   "type": "talk",
+   "face": "full",
+   "exact": true,
+   "say": "You don't need ten AI tools. You need one, on your home screen.",
+   "why": "Me too line for the 44% stuck on too many options. Promise in one sentence.",
+   "motion": "Full frame face. Pill '10 tools' pops, then gets struck in ember as '1 app' pops.",
+   "pills": [
+    {
+     "t": "10 tools",
+     "at": 0.6
+    },
+    {
+     "t": "*1 app*",
+     "at": 2.4,
+     "hi": true
+    }
+   ],
+   "dur": 5.4
+  },
+  {
+   "type": "phone",
+   "face": "none",
+   "app": "Your AI apps",
+   "kicker": "Sound familiar?",
+   "title": "Downloaded. *Never opened.*",
+   "rows": [
+    {
+     "n": "Listing writer",
+     "p": "Downloaded in March",
+     "tag": "Never opened"
+    },
+    {
+     "n": "Caption app",
+     "p": "Free trial ended",
+     "tag": "Never opened"
+    },
+    {
+     "n": "Video avatar",
+     "p": "Paid for 1 month",
+     "tag": "Cancelled"
+    },
+    {
+     "n": "AI notes",
+     "p": "Opened once",
+     "tag": "Forgot"
+    },
+    {
+     "n": "ChatGPT",
+     "p": "Used twice",
+     "tag": "Start here",
+     "hi": true
+    }
+   ],
+   "say": "If your phone looks like this, a listing app, a caption app, a video thing you paid for once, you're normal. Every best AI tools video sells you five more.",
+   "why": "Me too visual. Generic app names, no real products called out (Article 15 spirit).",
+   "motion": "Phone slides up. Rows drop in one by one. Tags pop on. Last row 'Start here' in ember.",
+   "dur": 11.2
+  },
+  {
+   "type": "title",
+   "face": "pip",
+   "kicker": "Hey, I'm",
+   "title": "Caleb *Jackson*",
+   "sub": "REALTOR with Keller Williams First Choice",
+   "tags": [
+    "Sells houses",
+    "Teaches AI from step 1"
+   ],
+   "say": "I'm Caleb Jackson, REALTOR with Keller Williams First Choice. Today we're cutting that down to one.",
+   "why": "Intro second. One line, ties back to the hook.",
+   "motion": "Same title card as Ep 1, so the series looks like a series.",
+   "dur": 6.5
+  },
+  {
+   "type": "chart",
+   "face": "pip",
+   "kicker": "It's not just you",
+   "title": "What stops agents",
+   "suf": "%",
+   "bars": [
+    {
+     "x": "Learning curve",
+     "v": 63
+    },
+    {
+     "x": "Cost",
+     "v": 59
+    },
+    {
+     "x": "Too many options",
+     "v": 44,
+     "hi": true
+    },
+    {
+     "x": "Privacy",
+     "v": 36
+    }
+   ],
+   "source": "Barriers to adopting new tech. NAR 2026 Technology Report, Sept 22, 2026, via Real Estate News and RISMedia",
+   "say": "The National Association of REALTORS asked agents this year what stops them. Forty four percent said too many options. Not the tech. The choosing.",
+   "why": "Sourced stat. Names the real problem: choosing, not ability.",
+   "motion": "Four bars grow. 'Too many options' in ember. Source line stays on screen.",
+   "dur": 9.2
+  },
+  {
+   "type": "chips",
+   "face": "pip",
+   "kicker": "Why clients decide",
+   "title": "More choices, *fewer decisions*",
+   "chips": [
+    {
+     "v": 3,
+     "suf": "%",
+     "lab": "bought with *24 jams* out"
+    },
+    {
+     "v": 30,
+     "suf": "%",
+     "lab": "bought with *6 jams* out",
+     "hi": true
+    }
+   ],
+   "say": "There's a famous study. A grocery store set out twenty four jams. Three percent of people bought one. When they set out six, thirty percent bought. More choices, fewer decisions.",
+   "why": "Psychology idea: choice overload. Iyengar and Lepper, 2000 (historical study, cite on screen).",
+   "motion": "Four number chips count up in pairs. 30% in ember. Add source line in the edit: Iyengar & Lepper, 2000.",
+   "dur": 11.2
+  },
+  {
+   "type": "statement",
+   "face": "pip",
+   "kicker": "You've seen this with buyers",
+   "text": "Show *15 houses*, they *freeze.*",
+   "say": "You've seen this with buyers. Show them fifteen houses and they freeze. Show them four good ones and they pick. Your brain does the same thing with apps.",
+   "why": "Ties the psychology to real estate. Inference: swap for his own buyer story if he has one.",
+   "motion": "Statement lights up. '15 houses' and 'freeze' in ember.",
+   "dur": 10.5
+  },
+  {
+   "type": "title",
+   "face": "pip",
+   "kicker": "So pick one",
+   "title": "For now, *ChatGPT*",
+   "sub": "Not because it's the best. Because it's the one everyone around you already uses.",
+   "say": "So pick one. For now, ChatGPT. Not because it's the best at everything. Because ninety one percent of agents who use AI use it, so when you get stuck, the agent next to you can help.",
+   "why": "A clear decision, with the reason. 91% stat: NAR 2026 via Real Estate News.",
+   "motion": "Headline rises. Sub fades. Small source label: 91% of AI-using agents use ChatGPT, NAR 2026.",
+   "dur": 13.3
+  },
+  {
+   "type": "cards",
+   "face": "pip",
+   "kicker": "What about the others?",
+   "title": "Good tools. *Later.*",
+   "stagger": 1.2,
+   "cards": [
+    {
+     "icon": "chat",
+     "t": "ChatGPT",
+     "d": "Start here. The basics.",
+     "tag": "Now",
+     "hi": true
+    },
+    {
+     "icon": "spark",
+     "t": "Claude",
+     "d": "When we build things",
+     "tag": "Later"
+    },
+    {
+     "icon": "doc",
+     "t": "The rest",
+     "d": "Off your home screen",
+     "tag": "Not yet"
+    }
+   ],
+   "say": "What about Claude, Gemini, the rest? Good tools. We'll use Claude when we start building. Right now, one app you actually open beats five you don't.",
+   "why": "Answers the obvious objection. Matches the approved tool decision (ChatGPT basics, Claude builds).",
+   "motion": "Three cards rise. Tags pop on. 'Now' tag in ember.",
+   "dur": 9.9
+  },
+  {
+   "type": "checklist",
+   "face": "none",
+   "kicker": "Set it up right",
+   "title": "5 steps, *on your phone*",
+   "checkAt": [
+    1.5,
+    3.5,
+    5.5,
+    8.0,
+    10.5
+   ],
+   "items": [
+    "Download *ChatGPT* by OpenAI",
+    "Sign in",
+    "Turn on *two-factor*",
+    "Turn off *training* in Data Controls",
+    "Move it to your *home screen*"
+   ],
+   "say": "Five steps on your phone. Download ChatGPT, the real one by OpenAI. Sign in. Turn on two factor. Go into data controls and turn off the setting that trains on your chats. Then move it to your home screen, where your thumb already goes.",
+   "why": "The hands-on part. Recheck every menu name on filming day (historical).",
+   "motion": "Five items check off on his words. Screen recording of each step plays in a phone frame beside the list (Caleb records on his iPhone).",
+   "dur": 16.0
+  },
+  {
+   "type": "flow",
+   "face": "pip",
+   "kicker": "Why the home screen",
+   "title": "Friction beats *willpower*",
+   "step": 1.1,
+   "nodes": [
+    {
+     "icon": "phone",
+     "t": "Buried in a folder",
+     "d": "You forget it exists"
+    },
+    {
+     "icon": "spark",
+     "t": "On your dock",
+     "d": "Your thumb finds it"
+    },
+    {
+     "icon": "check",
+     "t": "Used every day",
+     "hi": true
+    }
+   ],
+   "say": "Why the home screen? Because friction decides more than motivation. If it's three swipes away in a folder, you won't open it. If it's where your thumb already goes, you will.",
+   "why": "Second psychology idea, small: friction. Same idea as challenge Day 1, so the series and challenge agree.",
+   "motion": "Three nodes draw in. Last node in ember.",
+   "dur": 11.6
+  },
+  {
+   "type": "phone",
+   "face": "none",
+   "app": "Settings",
+   "kicker": "The one people miss",
+   "title": "Training: *off*",
+   "rows": [
+    {
+     "n": "Data controls",
+     "p": "Settings"
+    },
+    {
+     "n": "Improve the model for everyone",
+     "p": "Your chats train the model",
+     "tag": "Turn off",
+     "hi": true
+    },
+    {
+     "n": "Two-factor authentication",
+     "p": "Security",
+     "tag": "Turn on"
+    }
+   ],
+   "say": "This one's the one people miss. Settings, data controls, and turn off improve the model for everyone. Menu names change, so if yours looks different, look for training or data controls.",
+   "why": "Specific and useful. The safety habit before any real data goes in.",
+   "motion": "Phone with settings rows. Toggle tag pops in ember. Swap for his real screen recording in the edit.",
+   "dur": 11.6
+  },
+  {
+   "type": "statement",
+   "face": "pip",
+   "kicker": "Louisiana rule",
+   "text": "Training off is *not* a free pass.",
+   "say": "And training off is not a free pass. Louisiana's real estate commission says it plainly. No confidential or personal client info into public AI. Ever.",
+   "why": "LREC Chairman's Corner Q3 2026, quoted on screen. Previews Ep 3.",
+   "motion": "Statement lights up. Label under it: LREC Chairman's Corner, Q3 2026.",
+   "dur": 9.5
+  },
+  {
+   "type": "statement",
+   "face": "pip",
+   "kicker": "What it costs",
+   "text": "Start *free.* Upgrade when it's *earning its spot.*",
+   "say": "Start on the free plan. When you're using it every day, the paid plan is about twenty dollars a month. Don't pay for anything until it's earning its spot.",
+   "why": "Honest money talk. Price is historical, recheck on filming day.",
+   "motion": "Statement lights up. Small label: Price checked on filming day.",
+   "dur": 10.9
+  },
+  {
+   "type": "prompt",
+   "face": "none",
+   "kicker": "Your first real question",
+   "title": "Make it *ask you*",
+   "boxLabel": "ChatGPT",
+   "pill": "Try this",
+   "cps": 40,
+   "text": "I'm a real estate agent in Baton Rouge. Before you answer, ask me 3 questions about my business. Then tell me 3 things you could help me with this week.",
+   "say": "Now ask it one real question. Here's the trick. Tell it to ask you three questions first. I'm a real estate agent in Baton Rouge. Before you answer, ask me three questions about my business.",
+   "why": "A bet the viewer can test in 30 seconds. Callback to Ep 1: it fills its own blank page.",
+   "motion": "Prompt types out. 'ask me 3 questions' highlights in ember.",
+   "dur": 12.9
+  },
+  {
+   "type": "prompt",
+   "face": "none",
+   "kicker": "What comes back",
+   "title": "Now it's *interviewing you*",
+   "boxLabel": "ChatGPT reply",
+   "cps": 55,
+   "text": "Happy to help. 1. Do you mostly work with buyers, sellers or both? 2. Where do your leads come from right now? 3. What takes the most time in your week?",
+   "say": "And now it's interviewing you, instead of guessing. That's the Ep one lesson working for you. It's getting its own three details.",
+   "why": "Payoff, and it links the series together.",
+   "motion": "Reply types out. Each numbered question rises in turn.",
+   "dur": 8.5
+  },
+  {
+   "type": "title",
+   "face": "pip",
+   "kicker": "Your 10 minutes",
+   "title": "*One* app. *One* question.",
+   "sub": "ChatGPT on your home screen, training off, one real question asked.",
+   "tags": [
+    "Free checklist in Skool",
+    "No client info"
+   ],
+   "tagAccent": true,
+   "say": "Here's your ten minutes. ChatGPT on your home screen, training off, and one real question asked. Move the other apps off your home screen while you're there.",
+   "why": "One clear action.",
+   "motion": "Headline rises with mask, both 'One's in ember. Sub fades up. Pills pop.",
+   "dur": 10.2
+  },
+  {
+   "type": "face",
+   "face": "full",
+   "exact": true,
+   "kicker": "Do it now",
+   "title": "One app. *One question.*",
+   "sub": "The setup checklist is free in Skool.",
+   "say": "One app, one question. Do it before you put your phone down. The checklist's free in Skool.",
+   "why": "Last line, word for word, points to Skool.",
+   "motion": "Full face card right, headline left. Hold 1 second.",
+   "dur": 6.8
+  }
+ ]
+}

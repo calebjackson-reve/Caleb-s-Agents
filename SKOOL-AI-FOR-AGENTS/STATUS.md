@@ -2,6 +2,17 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, evening: Ep 1 and Ep 2 scripted
+
+**Done**
+- Full scripts for weekly series Ep 1 (You Tried It and It Was Bad) and Ep 2 (One App, Not Ten), 17 beats each, about 2:50 to 2:55 at Caleb's pace before he loosens it up. Each beat has words, face mode, kit scene, on-screen text, motion notes and why it holds attention. Three hook options per episode, one recommended.
+- Every beat rendered from the Course 1 motion kit (Ivory). Script page: https://claude.ai/artifact/WiAWiHZ661WajLewUUgrqX
+- Scene files in `programs/ai-for-agents/series/`.
+
+**Needs Caleb**
+- Pick a hook per episode, mark lines that don't sound like him, approve. Then teleprompters.
+- Confirm the series name. "AI for the Stuff You Already Do" is still a working name.
+
 ## 2026-10-19, later: weekly series outline from the research
 
 **Done**
