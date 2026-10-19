@@ -1,0 +1,105 @@
+<title>AIRE Approvals</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a checklist ledger. One row per decision, the action on the right, done state remembered on this device only. */
+:root{--paper:#fbf8f3;--ink:#14100e;--ink-2:#5a524b;--line:rgba(20,16,14,.18);--panel:#ffffff;--accent:#e87757;--ok:#2f7a4f;--display:'Instrument Serif',Georgia,serif;--body:Nunito,'Segoe UI',system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--paper:#14100e;--ink:#fbf8f3;--ink-2:#b9afa5;--line:rgba(251,248,243,.2);--panel:#1d1714;--accent:#f0906f;--ok:#6cc08f;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#14100e;--ink:#fbf8f3;--ink-2:#b9afa5;--line:rgba(251,248,243,.2);--panel:#1d1714;--accent:#f0906f;--ok:#6cc08f;color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:820px;margin:0 auto;display:grid;gap:26px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(2rem,5vw,2.8rem);line-height:1;letter-spacing:-.015em;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:1.3rem;margin:0 0 4px}
+.eyebrow{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin:0 0 8px}
+.lede{color:var(--ink-2);margin:8px 0 0;max-width:62ch}
+section{display:grid;gap:0;border-top:1px solid var(--ink)}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;padding:14px 0;border-bottom:1px solid var(--line);min-width:0}
+.item input{margin-top:5px;width:18px;height:18px;accent-color:var(--ok)}
+.item .t{min-width:0}
+.item b{font-weight:600}
+.item p{margin:2px 0 0;color:var(--ink-2);font-size:13.5px}
+.item.done .t{opacity:.5;text-decoration:line-through}
+.act{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.btn{font:inherit;font-size:12px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--ink);background:transparent;color:var(--ink);padding:9px 12px;cursor:pointer;border-radius:0;text-decoration:none;text-align:center;white-space:nowrap}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.copied{font-size:12px;color:var(--ok);text-align:center}
+pre{background:var(--panel);border:1px solid var(--line);padding:10px;font-size:12.5px;overflow-x:auto;margin:8px 0 0;white-space:pre-wrap}
+.count{font-family:var(--display);font-size:1.6rem}
+.foot{font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line);padding-top:12px}
+@media (max-width:520px){.item{grid-template-columns:auto 1fr}.act{grid-column:2}}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">October 19, 2026</p>
+    <h1>Everything waiting on Caleb</h1>
+    <p class="lede">One row per decision. The button on the right opens the exact place. Tick the box when it is done. Ticks are remembered on this device only. <span class="count" id="count"></span></p>
+  </header>
+
+  <section aria-label="Merge">
+    <p class="eyebrow" style="padding-top:14px">Merge</p>
+    <div class="item" data-k="pr31"><input type="checkbox" id="c-pr31"><div class="t"><b>Merge week 3</b><p>Dashboard, GBRAR data, pipeline template, market update script. Clean, no conflicts. Click Merge pull request on GitHub.</p></div><div class="act"><a class="btn primary" href="https://github.com/calebjackson-reve/Caleb-s-Agents/pull/31">Open PR 31</a></div></div>
+  </section>
+
+  <section aria-label="Review">
+    <p class="eyebrow" style="padding-top:14px">Review what was built</p>
+    <div class="item" data-k="calc"><input type="checkbox" id="c-calc"><div class="t"><b>Net sheet calculator</b><p>Check the defaults against your last three closings: 3 and 2.5 percent commission, 0.5 percent title, $150 recording. Then it goes into a custom HTML section on the Sell page in Luxury Presence.</p></div><div class="act"><a class="btn primary" href="https://claude.ai/artifact/9nV9rkWA422LkAbX5AC31L">Open calculator</a><a class="btn" href="https://github.com/calebjackson-reve/Caleb-s-Agents/blob/main/aire/calculators/net-sheet.html">Raw file to paste</a></div></div>
+    <div class="item" data-k="dash"><input type="checkbox" id="c-dash"><div class="t"><b>Market and pipeline dashboard</b><p>September GBRAR numbers, twelve month charts, your production line. The pipeline section fills once the sheet below has real deals.</p></div><div class="act"><a class="btn primary" href="https://claude.ai/artifact/BaiAEbjMLYo9neapCpaXhn">Open dashboard</a></div></div>
+  </section>
+
+  <section aria-label="Switches">
+    <p class="eyebrow" style="padding-top:14px">Switches only you can flip</p>
+    <div class="item" data-k="sidebar"><input type="checkbox" id="c-sidebar"><div class="t"><b>Install Claude in Docs, Sheets and Slides</b><p>Install, then in any Doc: Extensions, Claude, Open Claude. Sign in with your Claude account. Leave "Ask before edits" on.</p></div><div class="act"><a class="btn primary" href="https://workspace.google.com/marketplace/app/claude/12459801340">Open Marketplace</a></div></div>
+    <div class="item" data-k="credits"><input type="checkbox" id="c-credits"><div class="t"><b>Link the Console org for monthly API credits</b><p>Settings, Billing, API credits, Link organization. One org only, support has to change it later. Needs seven days on Max first.</p></div><div class="act"><a class="btn primary" href="https://claude.ai/settings/billing">Open billing</a></div></div>
+    <div class="item" data-k="inbox"><input type="checkbox" id="c-inbox"><div class="t"><b>Check for Gmail AI Inbox</b><p>Open Gmail on the web. If the to-do summary is at the top, it is on. If not by October 27, the admin path is in WEEK-1.md.</p></div><div class="act"><a class="btn primary" href="https://mail.google.com">Open Gmail</a></div></div>
+    <div class="item" data-k="meet"><input type="checkbox" id="c-meet"><div class="t"><b>Meet notes on your next consult</b><p>Turn on "Take notes for me" at the start of the next buyer or listing call on Meet. The recap email drafts itself after.</p></div><div class="act"><a class="btn" href="https://meet.google.com">Open Meet</a></div></div>
+  </section>
+
+  <section aria-label="Run">
+    <p class="eyebrow" style="padding-top:14px">Run on your Mac</p>
+    <div class="item" data-k="enrich"><input type="checkbox" id="c-enrich"><div class="t"><b>Enrichment dry run on Haiku 5.5</b><p>Prints three tagged rows and the cost, writes nothing. Needs your Anthropic API key in the environment.</p><pre id="cmd">cd ~/Caleb-s-Agents && git pull && cd aire/lead-enrichment && pip install anthropic && python3 enrich.py sample-leads.csv</pre></div><div class="act"><button class="btn primary" type="button" data-copy="cmd">Copy command</button><span class="copied" hidden>Copied</span></div></div>
+  </section>
+
+  <section aria-label="Fill">
+    <p class="eyebrow" style="padding-top:14px">Fill in</p>
+    <div class="item" data-k="sheet"><input type="checkbox" id="c-sheet"><div class="t"><b>AIRE Pipeline sheet</b><p>Created in your Drive today with the columns set and two example rows. Delete the examples, add every live deal.</p></div><div class="act"><a class="btn primary" href="https://docs.google.com/spreadsheets/d/1sD1cw5JK_i_Q60Y31wy_RODCcVYOMJaTQ1eAF8CVBV4/edit">Open sheet</a></div></div>
+    <div class="item" data-k="motion"><input type="checkbox" id="c-motion"><div class="t"><b>October market update in Claude Motion</b><p>Copy the prompt, open Claude, pick Motion, paste. Review the MP4 before anything is scheduled. Script and caption are in the repo.</p><pre id="motion" hidden>Create a 30 second explainer in a paper, ink and coral palette (background #FBF8F3, text #14100E, accent #E87757), serif headings, sans body. Scenes:
+1. Title card: "Baton Rouge, September 2026" with the source line "GBRAR MLS, current as of Oct 6, 2026" small at the bottom.
+2. Big number 737 "homes sold", small "+0.1% vs last year".
+3. Big number $269,000 "median price", small "-0.4% vs last year".
+4. Two bars side by side: 61 days (Sept 2025) and 79 days (Sept 2026), label "days on market". Make the 79 bar coral.
+5. Line: twelve months of inventory ending at 3,524, caption "4.6 months supply".
+6. Text: "Rates crossed 7% in late September" small "Freddie Mac, via GBRAR".
+7. Two lines: "Sellers: price it right on day one." "Buyers: you have room to negotiate."
+8. Sign off card: "Caleb Jackson, REALTOR, Keller Williams First Choice. (225) 747-0303. License 995709547."
+No people, no stock footage, no music with lyrics.</pre></div><div class="act"><button class="btn primary" type="button" data-copy="motion">Copy Motion prompt</button><span class="copied" hidden>Copied</span><a class="btn" href="https://claude.ai/new">Open Claude</a></div></div>
+  </section>
+
+  <section aria-label="Decide">
+    <p class="eyebrow" style="padding-top:14px">Decide</p>
+    <div class="item" data-k="metaone"><input type="checkbox" id="c-metaone"><div class="t"><b>Meta One Advanced, yes or no</b><p>$49.99 a month for links under Instagram feed posts and Reels. Check whether it is offered on your account. One buyer from a link pays for years of it.</p></div><div class="act"><a class="btn primary" href="https://accountscenter.instagram.com/">Open Accounts Center</a></div></div>
+    <div class="item" data-k="gpts"><input type="checkbox" id="c-gpts"><div class="t"><b>List your custom GPTs</b><p>OpenAI is retiring them. Open the list, send me the names, each becomes a skill here.</p></div><div class="act"><a class="btn primary" href="https://chatgpt.com/gpts/mine">Open my GPTs</a></div></div>
+    <div class="item" data-k="realassist"><input type="checkbox" id="c-realassist"><div class="t"><b>Is your market in RealAssist's 21?</b><p>Log in to Realtor.com+ and look for RealAssist. Yes or no is all I need.</p></div><div class="act"><a class="btn" href="https://www.realtor.com/">Open Realtor.com</a></div></div>
+    <div class="item" data-k="algo"><input type="checkbox" id="c-algo"><div class="t"><b>Facebook Your Algorithm</b><p>Phone only. Facebook app, three dots on the feed, Your Algorithm. Type: St. Francisville and Baton Rouge real estate, local agents, listings, market updates.</p></div><div class="act"><span class="copied" style="text-align:left">On your phone</span></div></div>
+    <div class="item" data-k="s2l"><input type="checkbox" id="c-s2l"><div class="t"><b>Speed to lead: keep the Mac's runner, decide live email October 22</b><p>Your Mac already runs a responder with the CRM do-not-contact check, "within the hour" wording and 9 pm quiet hours. Its dry run ends October 22. The cloud-built runner was removed from the repo so nothing double-replies. On the 22nd, read the Mac's dry-run.log and say "live email" there. Texts stay off until a registered number exists.</p><pre id="s2lcmd">cat ~/Caleb-s-Agents/aire/speed-to-lead/dry-run.log</pre></div><div class="act"><button class="btn" type="button" data-copy="s2lcmd">Copy log command</button><span class="copied" hidden>Copied</span></div></div>
+    <div class="item" data-k="skoolpost"><input type="checkbox" id="c-skoolpost"><div class="t"><b>Post the first pinned Skool post</b><p>Week 4, free tier. Shows your AI office and offers members a one-page stack memory within 48 hours of posting their tool list. Read it, edit anything that isn't you, post it yourself. Then answer comments within 48 hours for two weeks.</p></div><div class="act"><a class="btn primary" href="https://github.com/calebjackson-reve/Caleb-s-Agents/blob/main/programs/ai-for-agents/posts/ai-office-in-a-day.md">Read the post</a><a class="btn" href="https://www.skool.com/ai-for-agents-caleb-jackson-2010">Open Skool</a></div></div>
+    <div class="item" data-k="prices"><input type="checkbox" id="c-prices"><div class="t"><b>Set workshop and install prices</b><p>Recommendations in the offer file: $149 a seat for the 90 minute workshop, $497 for the done-for-you install. Both labeled inference. Neither is sellable until the second Monday brief lands on October 26.</p></div><div class="act"><a class="btn" href="https://github.com/calebjackson-reve/Caleb-s-Agents/blob/main/aire/offer/OFFER-2026-10.md">Read the offer</a></div></div>
+    <div class="item" data-k="boubkeur"><input type="checkbox" id="c-boubkeur"><div class="t"><b>Send the reply to Boubkeur Barakate</b><p>Signed in on your site Sunday 8:34 am, no phone, nothing went back. A draft is in your Gmail with the new sign-in template. Read it, hit send.</p></div><div class="act"><a class="btn primary" href="https://mail.google.com/mail/?authuser=aire@calebjackson.org#drafts">Open drafts</a></div></div>
+  </section>
+
+  <p class="foot">Nothing on this page sends, posts, pays or publishes by itself. Every button opens a place where you make the call. Caleb Jackson, Keller Williams First Choice.</p>
+</div>
+
+<script>
+(function(){
+  var items=document.querySelectorAll('.item'),KEY='aire-approvals';
+  var state={};try{state=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  function paint(){var n=0;items.forEach(function(it){var k=it.getAttribute('data-k'),cb=it.querySelector('input');cb.checked=!!state[k];it.classList.toggle('done',!!state[k]);if(state[k])n++});document.getElementById('count').textContent=n+' of '+items.length+' done'}
+  items.forEach(function(it){it.querySelector('input').addEventListener('change',function(e){state[it.getAttribute('data-k')]=e.target.checked;try{localStorage.setItem(KEY,JSON.stringify(state))}catch(x){}paint()})});
+  paint();
+  document.querySelectorAll('[data-copy]').forEach(function(b){b.addEventListener('click',function(){var t=document.getElementById(b.getAttribute('data-copy')).textContent,s=b.parentNode.querySelector('.copied');var ok=function(){s.hidden=false;setTimeout(function(){s.hidden=true},2000)};var fb=function(){var ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok()}catch(e){}document.body.removeChild(ta)};try{navigator.clipboard.writeText(t).then(ok,fb)}catch(e){fb()}})});
+})();
+</script>

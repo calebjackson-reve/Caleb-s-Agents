@@ -1,26 +1,26 @@
-# AIRE
+# AIRE project hub
 
-**Project hub.** AIRE is Caleb Jackson's AI system for his own real estate production at Keller Williams First Choice. Confirmed by Caleb on 2026-10-19: AIRE today is an idea plus three working tools, the first customer is Caleb himself, and selling to other agents comes later.
+AIRE is Caleb's AI real estate agent system. Read `STATUS.md` before touching anything here.
 
-Read `STATUS.md` before touching anything here.
-
-## What exists
-
-| Piece | Folder | State |
-|---|---|---|
-| Speed to lead responder | `speed-to-lead/` | Built, tested, copy approved. Needs Gmail credentials on the Mac to go live. |
-| Daily follow-up cadence | `follow-up/` | Built, tested. Needs a KW Command contacts export. |
-| Call recording to proposal | `proposal/` | Built, tested with a live extraction. Needs Caleb's read of the marketing plan text. |
-| Command center (Caleb's view) | `command-center/` | Contract drafted, waiting on Caleb's approval. First app build. The seller dashboard follows as a slice of it. |
-
-## What Caleb has (confirmed 2026-10-19)
-- CRM: KW Command, no public API, CSV export.
-- Email: aire@calebjackson.org on Google Workspace.
-- Texting: Caleb's own number (225) 747-0303 for lead replies, and a separate business texting number exists.
-- Payments: a Stripe or payment link exists.
-- E-sign: Authentisign (seen in the inbox). Not confirmed as the only one.
-- Booking link: not confirmed.
-- Website: calebjackson.org on Luxury Presence. Leads arrive as "New Lead" emails.
-
-## Rules
-Nothing sends, posts, spends or deletes without Caleb's yes. Keller Williams First Choice only. Every tool ships in dry run. Client data stays out of the repo.
+| File or folder | What it is |
+|---|---|
+| `STATUS.md` | Status log, newest first. What was done, what needs Caleb. |
+| `STACK.md` | Living memory of which tool does which job. Skills read it. Caleb edits it. |
+| `rollout-2026-10/WEEK-4.md` | Week 4: live email decision, the agent offer. |
+| `offer/` | What Caleb teaches or sells to agents, three tiers. Drafts. |
+| `rollout-2026-10/WEEK-3.md` | Week 3: dashboard proof, pipeline sheet, market update. |
+| `approvals/` | The page of decisions waiting on Caleb, one button each. |
+| `dashboard/` | Market and pipeline dashboard page. |
+| `market-data/` | Dated GBRAR market reports as JSON, with source. |
+| `market-update/` | Monthly market update scripts and Motion prompts. |
+| `pipeline/` | Pipeline sheet template and steps. |
+| `rollout-2026-10/WEEK-2.md` | Week 2: calculator proof, bulk tier pipeline, Meta One memo. |
+| `calculators/` | Interactive pages for calebjackson.org. Seller net sheet first. |
+| `lead-enrichment/` | Bulk tier lead tagging on Haiku 5.5. Directive, script, sample. |
+| `rollout-2026-10/WEEK-1.md` | Week 1 switches with click paths and proof. |
+| `rollout-2026-10/PLAN.md` | The plan for putting October 2026's AI releases to work across website, lead gen, touches, operations and the agent offer. |
+| `ai-briefs/` | Dated weekly AI briefs. Written by the `ai-weekly-brief` skill. |
+| `speed-to-lead/` | Website inquiry responder: directive, templates, dry run. The runner lives on the Mac. |
+| `follow-up/` | Daily follow-up cadence: KW Command export in, morning approval queue out, four template pools. Dry run by default. |
+| `proposal/` | Call recording to listing proposal: transcript in, one-page HTML with signature pad and email draft out. |
+| `command-center/` | Caleb's morning page over the tools: leads, due today, proposals out, overnight, showings. Localhost only in version one. |

@@ -1,7 +1,11 @@
-credentials.json
-token.json
+.env
 processed.json
 log.csv
-dry-run.log
 errors.log
+dry-run.log
+stdout.log
+stderr.log
 text-queue.json
+credentials.json
+token.json
+__pycache__/

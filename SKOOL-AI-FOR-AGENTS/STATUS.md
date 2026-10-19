@@ -2,6 +2,14 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19: first pinned post drafted
+
+**Done**
+- `programs/ai-for-agents/posts/ai-office-in-a-day.md`: a pinned post that shows Caleb's AI office and offers members a one-page stack memory within 48 hours of posting their tool list. Based on the AIRE rollout built the same day. Compliance passed.
+
+**Needs Caleb**
+- Read, edit, post it himself. Commit to answering comments within 48 hours for two weeks.
+- Export `aire/STACK.md` with his rows cleared as the classroom template.
 ## 2026-10-15: hub merged to main, roadmap status check
 
 **Done**
