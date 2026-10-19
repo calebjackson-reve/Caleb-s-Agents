@@ -35,7 +35,7 @@ Page state (called, dropped, signed) lives in `data/state.json` and survives eve
 - The action route accepts only known actions, strips the queue file name to safe characters and requires the `queue-` prefix, so no path traversal.
 - Nothing on the page sends except the approve button, and that goes through the follow-up tool.
 - No keys in the app. Gmail access is the responder's token, read by `sync.py` only.
-- Version two (`supabase/schema.sql`): Supabase tables with row-level security on every table, magic-link login for Caleb, then Netlify. Run the full `vc-security-audit` again before that deploy.
+- Later: a Claude Dashboard over the AIRE Pipeline sheet for a phone view. No second database (STACK.md, one-system rule).
 
 ## Proof
 
@@ -43,4 +43,4 @@ Page state (called, dropped, signed) lives in `data/state.json` and survives eve
 
 ## Seller view later
 
-Every lead, proposal and showing carries `listing_id`. The seller dashboard is a read-only page filtered on one listing id behind a long token (`listing_tokens` in the schema). Build it after version two.
+Every lead, proposal and showing carries `listing_id`. The seller dashboard is a read-only page filtered on one listing id behind a long token (`listing_tokens` in the schema). Build it as a Sheets-backed page when a listing needs it.

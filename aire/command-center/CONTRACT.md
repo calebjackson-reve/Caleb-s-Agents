@@ -13,7 +13,7 @@ One page Caleb opens every morning on his phone or Mac that answers four questio
 5. **This week.** Showings from ShowingTime emails, listed by property, so the seller update is a glance, not a search. Version one reads the emails already in the inbox.
 
 ## Constraints
-- Stack from `vc-supabase-full-stack-stack`: Next.js, Supabase with row-level security, Netlify. One user, Caleb, magic link login. Free tiers to start, any paid service needs a yes.
+- Stack: Next.js on the Mac, data from Google Sheets and the tools' own files. No Supabase (Caleb, 2026-10-19: one system, Google Workspace is the database). Any paid service needs a yes.
 - Data comes from the tools' own files: `speed-to-lead/log.csv` and `processed.json`, `follow-up/queue-*.md` and `sent-log.json`, `proposal/out/*/`, plus the ShowingTime and Luxury Presence emails through the same Gmail token. Version one syncs with a small script Caleb runs or a scheduled job on the Mac. A cloud sync is version two.
 - Nothing on this page sends anything except the "approve follow-ups" action, which calls the existing cadence tool and keeps its rules (templates only, quiet hours, opt-out flags).
 - Design: Keller Williams First Choice header, warm and plain, phone first, dark mode. No Rêve colors or fonts.
