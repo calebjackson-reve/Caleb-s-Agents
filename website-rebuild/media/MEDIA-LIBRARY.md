@@ -61,13 +61,19 @@ Compliance note: Basil Lane is a sold or past listing. If it appears on the site
 
 Brand films on Drive, not downloaded (400MB to 1.6GB each): `Caleb-Horizontal.mp4`, `Caleb-Social-Final.mp4`, `Caleb-St-Francisville-Final.mp4`, `Caleb-10Reasons.mp4`, `Caleb-ServingPeople.mp4`, `Caleb-House-Event-V02.mp4`, `Caleb-Event-No-Interviews.mp4`. These are the real source for hero video. Pulling 6 to 10 second loops from `Caleb-Horizontal.mp4` and the St. Francisville film is the next media task and needs a session with more disk, or a local machine.
 
+## Place photography (26 files, public sources)
+
+In `places/`. Covers St. Francisville (Rosedown oak allee is the strongest), the Garden District (Kleinert Terrace oak boulevard), downtown Baton Rouge (Old State Capitol, City Hall at twilight, the river bridge at sunset), the LSU lakes, Highland Road and generic Louisiana live oaks. Every file's author and license is in `places/CREDITS.md`, and the Creative Commons ones must be credited on the page. Pexels files can be graded freely.
+
 ## Copy that ships with the media
 
 On Drive: `bio.md` (short and long bio, "Action Jackson" treatment) and `website-copy.md` (slogan, hero options, section starters, voice guardrails). Both have bracketed numbers to fill with true figures before anything publishes.
 
 ## What is still missing
 
-- Neighborhood photography for Country Club of Louisiana, University Club, Bocage, Santa Maria, Garden District, Zachary, New Roads. Nothing on Drive. Reshoot brief or licensed stock, with the source named.
+- Neighborhood photography for the gated subdivisions: Country Club of Louisiana, University Club Plantation, Bocage, Santa Maria. Nothing free exists anywhere (see `places/CREDITS.md`). These need a reshoot: entrance, one oak-lined street, the golf course edge at golden hour, from a public road or with HOA permission.
+- Zachary: no usable free photo. Reshoot brief: Main Street, Zachary High area, a new-construction street.
+- New Roads and False River: only two 800px photos from 2006. Placeholders until a reshoot from the public landing or a boat.
 - A straight-on headshot on a plain dark or ivory background for the nav and for tiny crops.
 - Horizontal hero video loops from the brand films.
 - Photos from Caleb's Mac Photos app. Not reachable from this cloud session. If there are better shots there, drop them in the Drive `HEADSHOTS` folder (it has a `_DROP-HEADSHOTS-HERE.txt` placeholder) and they can be pulled the same way.
