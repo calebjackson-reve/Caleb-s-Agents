@@ -367,3 +367,23 @@ h1, h2, h3, h4, p { margin: 0; }
   .loader { display: none; }
   .closing .fill { background-position: 0 0; }
 }
+
+/* ---------- engagement tools (previews) ---------- */
+.form select { appearance: none; background: transparent; border: 0; border-bottom: 1px solid var(--hairline); color: var(--fg); font: inherit; padding: 1.2rem 0; outline: none; border-radius: 0; }
+.form.is-done > * { display: none; }
+.form.is-done .done { display: block; font-family: var(--serif); font-size: var(--h3); line-height: 1.1; }
+.form .done { display: none; }
+.booker .days, .booker .slots { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+.booker .chip { border: 1px solid var(--hairline); border-radius: 100px; padding: 1rem 1.6rem; font-family: var(--sans); font-size: var(--small); background: transparent; color: var(--fg); cursor: pointer; transition: background var(--dur-ui) var(--ease-house), color var(--dur-ui) var(--ease-house); }
+.booker .chip[aria-pressed="true"] { background: var(--ink); color: var(--ivory); border-color: var(--ink); }
+.booker .slots:empty::before { content: "Pick a day first"; color: var(--fg-3); font-size: var(--small); }
+.timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); }
+.tl { border-top: 1px solid var(--hairline); padding-top: 2.4rem; }
+.tl .num { font-family: var(--serif); font-size: var(--h2); color: var(--ember); display: block; }
+.tl .h3 { margin-top: 1.6rem; } .tl p { margin-top: 1.2rem; }
+.ask { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--gap) * 2); align-items: end; }
+.ask-stat { font-family: var(--serif); font-size: var(--display-l); line-height: 1; margin: 2rem 0 1.2rem; }
+.ask-line { margin-top: 1.2rem; }
+.card .ask-line + p { margin-top: 0.6rem; }
+.news.is-done { display: none; } .news-done { display: none; } .news-done.is-on { display: block; }
+@media (max-width: 900px) { .timeline { grid-template-columns: 1fr 1fr; } .ask { grid-template-columns: 1fr; } }

@@ -38,6 +38,28 @@
   </div>
 </section>
 
+
+<!-- Text alerts: saved search as a phone-first promise (preview, backed by the IDX saved search at launch) -->
+<section class="section ui-blush" data-surface="light" id="alerts" aria-label="Text alerts">
+  <div class="wrap split">
+    <div>
+      <span class="label eyebrow dim">Text alerts</span>
+      <h2 class="h2 words">Get a text the hour something hits.</h2>
+      <p class="col-copy dim measure fade">Pick an area and a ceiling. When a listing lands that fits, you get one text from me with the address, the price and whether it's worth the drive. No daily digest, no portal spam.</p>
+    </div>
+    <form class="form fade" data-preview data-done="You're set. First text comes the hour something fits." aria-label="Text alert sign-up">
+      <div class="row">
+        <label><span class="label dim">Area</span><select name="area"><option>St. Francisville</option><option>Garden District</option><option>Country Club of Louisiana</option><option>University Club</option><option>Bocage</option><option>Santa Maria</option><option>Zachary</option><option>New Roads and False River</option><option>Anywhere I work</option></select></label>
+        <label><span class="label dim">Up to</span><select name="max"><option>$300K</option><option>$450K</option><option>$600K</option><option>$800K</option><option>$1M</option><option>No ceiling</option></select></label>
+      </div>
+      <label><span class="label dim">Mobile number</span><input type="tel" name="phone" autocomplete="tel" required></label>
+      <label class="small dim" style="display:flex;gap:1rem;align-items:flex-start"><input type="checkbox" name="consent" style="width:auto" required> <span>Text me new listings at this number. Reply STOP any time to end texts.</span></label>
+      <div><button class="pill" type="submit"><span class="t"><span>Start my alerts</span><span>One text per hit</span></span><span class="arrow">&rarr;</span></button></div>
+      <p class="small dim">Preview. At launch this creates a saved search in the IDX and the text comes from Caleb.</p>
+    </form>
+  </div>
+</section>
+
 <section class="section ui-dark" data-surface="dark">
   <div class="wrap split">
     <div>
@@ -45,7 +67,7 @@
       <h2 class="h2 words">Tell me the parish, the school and the drive to work.</h2>
       <p class="col-copy dim measure fade">I'll tell you what's realistic, what's overpriced and where to move first. No forms, no funnel.</p>
       <div class="fade" style="margin-top:3rem;display:flex;gap:1.2rem;flex-wrap:wrap">
-        <a class="pill inverse" href="sms:+12257470303"><span class="t"><span>Text Caleb</span><span>(225) 747-0303</span></span><span class="arrow">&rarr;</span></a>
+        <a class="pill inverse" href="sms:+12257470303?&body=Hey%20Caleb%2C%20I%27m%20looking%20for%20a%20home.%20Here%27s%20what%20matters%20to%20me:%20"><span class="t"><span>Text Caleb</span><span>(225) 747-0303</span></span><span class="arrow">&rarr;</span></a>
         <a class="pill ghost" href="communities.html"><span class="t"><span>See the eight areas</span><span>Communities</span></span></a>
       </div>
     </div>

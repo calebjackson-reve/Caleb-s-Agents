@@ -27,6 +27,28 @@
   </div>
 </section>
 
+
+<!-- Home value: two fields, a hand-pulled number the same day (preview, delivery wired at launch) -->
+<section class="section ui-dark" data-surface="dark" id="worth" aria-label="What is my home worth">
+  <div class="wrap split">
+    <div>
+      <span class="label eyebrow dim">What is my home worth</span>
+      <h2 class="h2 words">A real number, pulled by hand, texted to you today.</h2>
+      <p class="col-copy dim measure fade">No instant estimate. I pull the comps myself and text you the range with the three sales it's based on. Address and phone, that's all it takes.</p>
+    </div>
+    <form class="form fade" data-preview data-done="Got it. I'll text you a number today with the comps behind it." aria-label="Home value request">
+      <label><span class="label dim">Property address</span><input type="text" name="address" autocomplete="street-address" placeholder="123 Main St, St. Francisville" required></label>
+      <div class="row">
+        <label><span class="label dim">Mobile number</span><input type="tel" name="phone" autocomplete="tel" required></label>
+        <label><span class="label dim">Thinking of selling</span><select name="when"><option>In the next 3 months</option><option>This year</option><option>Just curious</option></select></label>
+      </div>
+      <label class="small dim" style="display:flex;gap:1rem;align-items:flex-start"><input type="checkbox" name="consent" style="width:auto" required> <span>Text me the number at this mobile. Reply STOP any time to end texts.</span></label>
+      <div><button class="pill inverse" type="submit"><span class="t"><span>Text me my number</span><span>Today</span></span><span class="arrow">&rarr;</span></button></div>
+      <p class="small dim">Preview. Form delivery is wired at launch.</p>
+    </form>
+  </div>
+</section>
+
 <!-- Basil Lane case -->
 <section class="section ui-dark" data-surface="dark" aria-label="Basil Lane">
   <div class="wrap">
@@ -65,7 +87,7 @@
     <h2 class="h2 words">Want a number on your house?</h2>
     <p class="fade">Text me the address. I'll come back with real comps and a plain answer, not a form and a funnel.</p>
     <div class="ctas fade">
-      <a class="pill" href="sms:+12257470303"><span class="t"><span>Text the address</span><span>(225) 747-0303</span></span><span class="arrow">&rarr;</span></a>
+      <a class="pill" href="sms:+12257470303?&body=Hey%20Caleb%2C%20what%27s%20my%20house%20worth?%20The%20address%20is%20"><span class="t"><span>Text the address</span><span>(225) 747-0303</span></span><span class="arrow">&rarr;</span></a>
       <a class="pill ghost" href="contact.html"><span class="t"><span>Or use the form</span><span>Contact</span></span></a>
     </div>
   </div>

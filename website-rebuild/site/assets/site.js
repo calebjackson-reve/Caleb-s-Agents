@@ -32,7 +32,7 @@
     '<nav class="nav" aria-label="Main">' + navHtml() + '</nav>' +
     '<div class="header-right">' +
       '<button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu">Menu <i></i></button>' +
-      '<a class="pill inverse" href="sms:+12257470303"><span class="t"><span>Call or text</span><span>(225) 747-0303</span></span><span class="arrow">&rarr;</span></a>' +
+      '<a class="pill inverse" href="sms:+12257470303?&body=Hey%20Caleb%2C%20"><span class="t"><span>Call or text</span><span>(225) 747-0303</span></span><span class="arrow">&rarr;</span></a>' +
     '</div>';
   var menu = document.createElement('nav');
   menu.className = 'menu'; menu.id = 'menu'; menu.setAttribute('aria-label', 'Menu');
@@ -118,6 +118,34 @@
     var i = 0;
     el.querySelectorAll('.w').forEach(function (w) { w.style.transitionDelay = (i++ * 30) + 'ms'; });
   });
+
+  /* ---------- engagement previews: forms show their done state, nothing is sent yet ---------- */
+  document.querySelectorAll('form[data-preview]').forEach(function (f) {
+    var done = document.createElement('p'); done.className = 'done'; done.textContent = f.dataset.done || 'Got it.'; f.appendChild(done);
+    f.addEventListener('submit', function (e) { e.preventDefault(); if (!f.checkValidity()) { f.reportValidity(); return; } f.classList.add('is-done'); });
+  });
+  var news = document.querySelector('.news');
+  if (news) {
+    var nd = document.createElement('p'); nd.className = 'news-done small'; nd.textContent = "You're on the list. One note a month, nothing else."; news.after(nd);
+    news.addEventListener('submit', function (e) { e.preventDefault(); if (!news.checkValidity()) { news.reportValidity(); return; } news.classList.add('is-done'); nd.classList.add('is-on'); });
+  }
+  var bd = document.getElementById('bookDays'), bs = document.getElementById('bookSlots'), bsl = document.getElementById('bookSlot');
+  if (bd && bs) {
+    var d = new Date(), days = [], names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    while (days.length < 5) { d.setDate(d.getDate() + 1); if (d.getDay() > 0 && d.getDay() < 6) days.push(new Date(d)); }
+    var times = ['9:00 am', '11:30 am', '2:00 pm', '4:30 pm', '6:00 pm'];
+    days.forEach(function (day) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.setAttribute('aria-pressed', 'false');
+      b.textContent = names[day.getDay()] + ' ' + (day.getMonth() + 1) + '/' + day.getDate();
+      b.addEventListener('click', function () {
+        bd.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', 'false'); }); b.setAttribute('aria-pressed', 'true');
+        bs.innerHTML = ''; bsl.value = '';
+        times.forEach(function (t) { var c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.setAttribute('aria-pressed', 'false'); c.textContent = t;
+          c.addEventListener('click', function () { bs.querySelectorAll('.chip').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); }); c.setAttribute('aria-pressed', 'true'); bsl.value = b.textContent + ' ' + t; }); bs.appendChild(c); });
+      });
+      bd.appendChild(b);
+    });
+  }
 
   /* ---------- entrances ---------- */
   var io = new IntersectionObserver(function (entries) {
