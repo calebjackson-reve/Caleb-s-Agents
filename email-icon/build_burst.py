@@ -10,8 +10,8 @@ W = SIZE * S
 FONT, AXES = "source/BodoniModa.ttf", (900, 6)     # Bodoni Moda black, small optical size: thick strokes
 TEXT, TRACKING, PAD = "CJ.", 0.04, 0.14          # letters sit inside the triangle
 TRIANGLE = dict(radius=0.43, cy_shift=0.05, stroke=0.036, corner=0.05)   # fractions of W: circumradius, center drop, line width, corner rounding
-FIELD = np.array([0xE8, 0x77, 0x57], float)        # exact brand ember coral
-FIELD_EDGE = np.array([0xCB, 0x5E, 0x40], float)   # the same coral, a step deeper at the rim
+FIELD = np.array([0xEA, 0x6E, 0x4C], float)        # hotter coral field, brand ember pushed vivid (Caleb's pick, Oct 19 2026)
+FIELD_EDGE = np.array([0xC6, 0x4A, 0x30], float)   # deeper coral at the rim
 HOT = np.array([0xFF, 0xE6, 0xDC], float)          # white-pink core of the burst
 WHITE = np.array([255, 255, 255], float)
 FPS, DUR = 12, 4.0
