@@ -73,29 +73,30 @@ INDEX=head("Home","home")+f'''
 <section class="band hero-band" aria-label="Showreel">
   <div class="slider">
     {slide("assets/still-03.jpg","","",None,"pad")}
-    {slide("assets/still-01.jpg","Golden Hour, Baton Rouge","Wedding film","assets/reel-01.mp4")}
+    {slide("assets/basil-exterior.jpg","Basil Lane, St. Francisville","Listing film","assets/basil-exterior.mp4")}
+    {slide("assets/venue-oak-night.jpg","Under the Oak","Wedding venue","assets/venue-oak-night.mp4")}
+    {slide("assets/basil-pool.jpg","Basil Lane at dusk","Listing film","assets/basil-pool.mp4")}
     {slide("assets/still-02.jpg","Night Shift","Commercial","assets/reel-02.mp4")}
-    {slide("assets/still-04.jpg","Gulf Light","Documentary","assets/reel-04.mp4")}
     {slide("assets/still-07.jpg","","",None,"pad")}
   </div>
 </section>
 <section class="wrap statement">
   <p class="big">Brandhouse is the studio of videographer Tyler Boyle. We make brand films, commercials, wedding films and documentary work that people actually finish watching. Story first, then the gear.</p>
-  <div class="side"><img src="assets/still-10.jpg" alt="Sample still from a portrait session"><a class="ul" href="about.html">About</a></div>
+  <div class="side"><img src="assets/venue-oak-night.jpg" alt="The courtyard oak at the wedding venue, lit at night"><a class="ul" href="about.html">About</a></div>
 </section>
 
 <section class="wrap shead"><h2>Work</h2><a class="ul" href="work.html">All of the work</a></section>
 <section class="feature">
   <div class="band" style="padding-block:0;background:transparent"><div class="slider wrap" style="gap:10px">
-    {slide("assets/still-06.jpg","","",None,"")}
-    {slide("assets/still-02.jpg","","",None,"sm")}
-    {slide("assets/still-08.jpg","","",None,"xs")}
+    {slide("assets/basil-gazebo.jpg","","","assets/basil-gazebo.mp4","")}
+    {slide("assets/basil-bath.jpg","","",None,"sm")}
+    {slide("assets/basil-pool.jpg","","",None,"xs")}
   </div></div>
   <div class="wrap" style="padding-top:10px"><div class="black" style="display:grid;grid-template-columns:1fr 1fr;gap:28px" id="featured">
-    <div style="display:grid;gap:20px;align-content:start"><span class="tag">Commercial, Automotive</span><h3>Long Road Home</h3></div>
+    <div style="display:grid;gap:20px;align-content:start"><span class="tag">Real estate, Listing film</span><h3>Basil Lane</h3></div>
     <div class="body">
-      <div class="meta"><div><span>Tyler Boyle</span><span>2026 (Louisiana)</span></div><div><span>English, with on-screen text</span><span>2 min 10</span></div></div>
-      <p>A sixty-second spot and a two-minute cut for a regional truck dealer, shot over one evening on Highway 1. Practical lighting, one picture car, no drone. The brief was simple: make the drive home feel like the best part of the day.</p>
+      <div class="meta"><div><span>Tyler Boyle</span><span>2026 (St. Francisville, Louisiana)</span></div><div><span>No dialogue, AI-assisted motion</span><span>4 clips, 4 to 8 sec</span></div></div>
+      <p>A white farmhouse on Basil Lane in St. Francisville, filmed as a set of slow, locked-off moments: the house at blue hour, the pool and fountain at dusk, the gazebo on the pond, the primary bath with the fire lit. Stills from the listing brought to life with restrained AI motion.</p>
       <a class="ul" href="film.html">Learn more</a>
     </div>
   </div></div>
@@ -105,21 +106,21 @@ INDEX=head("Home","home")+f'''
 <section class="wrap proj">
   <div class="rail"></div>
   <div class="col">
+    <a class="tile" href="venue.html"><img src="assets/venue-oak-vertical.jpg" alt=""><div class="txt"><span class="tag">Wedding venue</span><h3>The courtyard oak, day to night</h3></div></a>
+    <a class="tile" href="film.html"><img src="assets/basil-bath.jpg" alt=""><div class="txt"><span class="tag">Real estate</span><h3>Basil Lane, primary bath</h3></div></a>
     <a class="tile" href="film.html"><img src="assets/still-05.jpg" alt=""><div class="txt"><span class="tag">Interview</span><h3>Founders, in their own words</h3></div></a>
-    <a class="tile" href="film.html"><img src="assets/still-07.jpg" alt=""><div class="txt"><span class="tag">Live event</span><h3>Riverfront Fest 2026</h3></div></a>
-    <a class="tile" href="film.html"><img src="assets/still-04.jpg" alt=""><div class="txt"><span class="tag">Aerial</span><h3>Gulf Light</h3></div></a>
   </div>
   <div class="col">
-    <a class="tile wide" href="film.html"><img src="assets/still-09.jpg" alt=""><div class="txt"><span class="tag">Real estate</span><h3>Twilight walkthrough, Garden District</h3></div></a>
-    <a class="tile wide" href="film.html"><img src="assets/still-08.jpg" alt=""><div class="txt"><span class="tag">Food and beverage</span><h3>Sunday service at Marigny Kitchen</h3></div></a>
+    <a class="tile wide" href="venue.html"><img src="assets/venue-oak-night.jpg" alt=""><div class="txt"><span class="tag">Wedding venue</span><h3>The courtyard, lit for the evening</h3></div></a>
+    <a class="tile wide" href="film.html"><img src="assets/basil-gazebo.jpg" alt=""><div class="txt"><span class="tag">Real estate</span><h3>Basil Lane, the gazebo on the pond</h3></div></a>
     <a class="tile wide" href="film.html"><img src="assets/still-03.jpg" alt=""><div class="txt"><span class="tag">Product</span><h3>Studio tabletop, 48 hours</h3></div></a>
   </div>
 </section>
 
 <section class="wrap reel" id="reel">
-  <h2 class="head"><span class="ul">Reel</span> 2026, the year in ninety seconds</h2>
-  <div class="copy"><p>Every project we shipped this year, cut to one track. Brand films, weddings, two documentaries and a lot of trucks. If you only watch one thing on this site, watch this.</p><a class="ul ext" href="https://vimeo.com">See more</a></div>
-  <div class="over slide" data-video><video src="assets/reel-03.mp4" muted loop playsinline preload="metadata" poster="assets/still-07.jpg"></video><div class="play"><b>&#9654;</b></div></div>
+  <h2 class="head"><span class="ul">Reel</span> the venue, from noon to night</h2>
+  <div class="copy"><p>One courtyard, one live oak, one continuous move from bright afternoon into string lights. Made for a St. Francisville wedding venue from a single frame of the real courtyard, so the owners could show the space at night before a single event was booked.</p><a class="ul" href="venue.html">See more</a></div>
+  <div class="over slide" data-video><video src="assets/venue-oak-night.mp4" muted loop playsinline preload="metadata" poster="assets/venue-oak-night.jpg"></video><div class="play"><b>&#9654;</b></div></div>
 </section>
 
 <section class="wrap" id="studio"><div class="photo-band"><img src="assets/still-05.jpg" alt="">
@@ -133,13 +134,13 @@ INDEX=head("Home","home")+f'''
 </section>
 '''+FOOT
 
-def wcard(img,tag,title,who,year,lang,dur,cat,video=None):
+def wcard(img,tag,title,who,year,lang,dur,cat,video=None,link="film.html"):
     media=f'<video src="{video}" muted loop playsinline autoplay poster="{img}"></video>' if video else f'<img src="{img}" alt="">'
     return f'''<article class="work-card" data-type="{cat}" data-year="{year}">
   <div class="thumb">{media}</div>
   <div class="info"><span class="tag">{tag}</span><h3>{title}</h3>
     <div class="meta"><div><span>{who}</span><span>{year} (Louisiana)</span></div><div><span>{lang}</span><span>{dur}</span></div></div>
-    <a class="ul" href="film.html">See more</a></div></article>'''
+    <a class="ul" href="{link}">See more</a></div></article>'''
 
 WORKJS='''<script>
 (function(){var t=document.getElementById('fType'),y=document.getElementById('fYear');function f(){document.querySelectorAll('.work-card').forEach(function(c){var ok=(!t.value||c.dataset.type===t.value)&&(!y.value||c.dataset.year===y.value);c.hidden=!ok;});}t.addEventListener('change',f);y.addEventListener('change',f);})();
@@ -160,6 +161,9 @@ WORK=head("Work","work")+f'''
   </div>
 </section>
 <section class="work-grid wrap" id="grid">
+{wcard("assets/basil-exterior.jpg","Real estate, Listing film","Basil Lane","Tyler Boyle","2026","No dialogue, AI-assisted","4 clips","Real estate","assets/basil-exterior.mp4","film.html")}
+{wcard("assets/venue-oak-night.jpg","Wedding venue, Promo","Under the Oak","Tyler Boyle","2026","Ambient, AI-assisted","2 clips","Wedding","assets/venue-oak-night.mp4","venue.html")}
+{wcard("assets/basil-pool.jpg","Real estate, Dusk","Basil Lane, pool and fountain","Tyler Boyle","2026","No dialogue","6 sec","Real estate","assets/basil-pool.mp4")}
 {wcard("assets/still-06.jpg","Commercial, Automotive","Long Road Home","Tyler Boyle","2026","English","2 min 10","Commercial","assets/reel-01.mp4")}
 {wcard("assets/still-01.jpg","Wedding, Short film","Golden Hour, Baton Rouge","Tyler Boyle","2026","No dialogue","4 min 30","Wedding")}
 {wcard("assets/still-04.jpg","Documentary, Aerial","Gulf Light","Tyler Boyle","2025","English with subtitles","12 min","Documentary","assets/reel-04.mp4")}
@@ -178,7 +182,7 @@ ABOUT=head("About","about")+f'''
 <section class="wrap ptitle"><h1>About</h1></section>
 <section class="band" aria-label="Studio footage"><div class="slider">
   {slide("assets/still-03.jpg","","",None,"pad")}
-  {slide("assets/tyler.jpg","Tyler Boyle, on set","Behind the scenes","assets/reel-03.mp4")}
+  {slide("assets/basil-gazebo.jpg","Basil Lane, the gazebo","On location","assets/basil-gazebo.mp4")}
   {slide("assets/still-05.jpg","","",None,"pad")}
 </div></section>
 <section class="wrap about-grid">
@@ -235,25 +239,50 @@ CONTACT=head("Contact Us","contact")+'''
 </script>
 '''+FOOT
 
-FILM=head("Long Road Home","film")+'''
+FILM=head("Basil Lane","film")+'''
 <section class="film-hero wrap">
-  <span class="tag">Commercial, Automotive</span>
-  <h1>Long Road Home</h1>
-  <div class="meta"><div><span>Directed by</span><span>Tyler Boyle</span></div><div><span>Client</span><span>Bayou Trucks (sample)</span></div><div><span>Year</span><span>2026 (Louisiana)</span></div><div><span>Runtime</span><span>2 min 10, and a 60 sec cut</span></div></div>
+  <span class="tag">Real estate, Listing film</span>
+  <h1>Basil Lane</h1>
+  <div class="meta"><div><span>Directed by</span><span>Tyler Boyle</span></div><div><span>Location</span><span>St. Francisville, Louisiana</span></div><div><span>Year</span><span>2026</span></div><div><span>Format</span><span>4 clips, 16:9, AI-assisted motion</span></div></div>
 </section>
-<section class="band" style="padding-block:0"><div class="wrap"><div class="slide" data-video style="width:100%;aspect-ratio:16/9"><video src="assets/reel-01.mp4" muted loop playsinline preload="metadata" poster="assets/still-06.jpg"></video><div class="play"><b>&#9654;</b></div></div></div></section>
+<section class="band" style="padding-block:0"><div class="wrap"><div class="slide" data-video style="width:100%;aspect-ratio:16/9"><video src="assets/basil-exterior.mp4" muted loop playsinline preload="metadata" poster="assets/basil-exterior.jpg"></video><div class="play"><b>&#9654;</b></div></div></div></section>
 <section class="wrap film-body">
   <div class="txt">
-    <p>A sixty-second spot and a two-minute cut for a regional truck dealer, shot over one evening on Highway 1. Practical lighting, one picture car and a chase vehicle. The brief was simple: make the drive home feel like the best part of the day.</p>
-    <p>We scouted three stretches of road and picked the one with the longest clean horizon. Sunset gave us twenty-two usable minutes, so every setup was rehearsed in daylight first. Sound was recorded in the cab with two lavs and a 416 on the dash.</p>
-    <p>Delivered in 16:9, 9:16 and 1:1 with a broadcast-safe mix and a social mix. The 60 second cut ran on local TV for six weeks. Sample copy for this mock.</p>
+    <p>A white farmhouse with a deep timber porch on Basil Lane in St. Francisville. The listing photography was strong, so instead of reshooting we gave each still a single slow move: a push-in on the house at blue hour, a glide along the pool deck at dusk, a drift toward the gazebo on the pond, a locked-off frame on the primary bath with the fireplace lit.</p>
+    <p>Every move was written to protect the real property. No new objects, no people, no changed materials. Water, flames, leaves and window light are the only things that move. The clips run four to eight seconds each and cut together into a thirty-second listing film or run on their own as social posts.</p>
+    <p>Motion was generated with AI from the real listing stills, then graded and conformed in Resolve. Say so on every post. Tap any clip to play.</p>
     <a class="ul" href="work.html">Back to work</a>
   </div>
-  <div class="stills"><img src="assets/still-06.jpg" alt=""><img src="assets/still-02.jpg" alt=""><img src="assets/still-01.jpg" alt=""></div>
+  <div class="stills">
+    <div class="slide" data-video style="width:100%;aspect-ratio:16/9"><video src="assets/basil-pool.mp4" muted loop playsinline preload="metadata" poster="assets/basil-pool.jpg"></video><div class="play"><b>&#9654;</b></div></div>
+    <div class="slide" data-video style="width:100%;aspect-ratio:16/9"><video src="assets/basil-gazebo.mp4" muted loop playsinline preload="metadata" poster="assets/basil-gazebo.jpg"></video><div class="play"><b>&#9654;</b></div></div>
+    <div class="slide" data-video style="width:100%;aspect-ratio:16/9"><video src="assets/basil-bath.mp4" muted loop playsinline preload="metadata" poster="assets/basil-bath.jpg"></video><div class="play"><b>&#9654;</b></div></div>
+  </div>
 </section>
-<section class="wrap ctas"><a class="cta" href="contact.html"><h2>Book a Shoot</h2></a><a class="cta" href="work.html"><h2>More Work</h2></a></section>
+<section class="wrap ctas"><a class="cta" href="contact.html"><h2>Book a Shoot</h2></a><a class="cta" href="venue.html"><h2>Next: Under the Oak</h2></a></section>
 '''+FOOT
 
-for name,html in [("index.html",INDEX),("work.html",WORK),("about.html",ABOUT),("contact.html",CONTACT),("film.html",FILM)]:
+VENUE=head("Under the Oak","venue")+'''
+<section class="film-hero wrap">
+  <span class="tag">Wedding venue, Promo</span>
+  <h1>Under the Oak</h1>
+  <div class="meta"><div><span>Directed by</span><span>Tyler Boyle</span></div><div><span>Location</span><span>St. Francisville, Louisiana</span></div><div><span>Year</span><span>2026</span></div><div><span>Format</span><span>2 clips, 16:9 and 9:16, AI-assisted</span></div></div>
+</section>
+<section class="band" style="padding-block:0"><div class="wrap"><div class="slide" data-video style="width:100%;aspect-ratio:16/9"><video src="assets/venue-oak-night.mp4" muted loop playsinline preload="metadata" poster="assets/venue-oak-night.jpg"></video><div class="play"><b>&#9654;</b></div></div></div></section>
+<section class="wrap film-body">
+  <div class="txt">
+    <p>A walled courtyard with one enormous live oak at its centre. The venue needed to sell the night before it had hosted one, so we started from a daylight frame of the real courtyard and built a single continuous move that carries it from afternoon into string lights and lanterns.</p>
+    <p>Alongside it, a vertical dolly toward the trunk cut for Reels, where the string lights come up as the camera settles. Both clips loop cleanly and run without sound on the venue's site and socials.</p>
+    <p>The day-to-night move was generated with AI from a single real frame of the courtyard, then graded in Resolve. Say so on every post. Tap any clip to play.</p>
+    <a class="ul" href="work.html">Back to work</a>
+  </div>
+  <div class="stills">
+    <div class="slide" data-video style="width:min(100%,360px);aspect-ratio:9/16"><video src="assets/venue-oak-vertical.mp4" muted loop playsinline preload="metadata" poster="assets/venue-oak-vertical.jpg"></video><div class="play"><b>&#9654;</b></div></div>
+  </div>
+</section>
+<section class="wrap ctas"><a class="cta" href="contact.html"><h2>Book a Shoot</h2></a><a class="cta" href="film.html"><h2>Next: Basil Lane</h2></a></section>
+'''+FOOT
+
+for name,html in [("index.html",INDEX),("work.html",WORK),("about.html",ABOUT),("contact.html",CONTACT),("film.html",FILM),("venue.html",VENUE)]:
     open(os.path.join(HERE,name),"w").write(html)
 print("built")
