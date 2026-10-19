@@ -1,36 +1,35 @@
-# Deploys website-rebuild to GitHub Pages. Runs only when Caleb triggers it by hand
-# or when main changes under website-rebuild/. Pages must be set to "GitHub Actions"
-# as the source in Settings > Pages before the first run.
+# Publishes website-rebuild to the gh-pages branch, which GitHub Pages serves.
+# Runs when main changes under website-rebuild/, or by hand. SITE_HOST is the
+# domain written into CNAME, robots.txt and sitemap.xml: home.calebjackson.org
+# until Luxury Presence repoints the apex, then calebjackson.org.
 name: Deploy calebjackson.org
 on:
   workflow_dispatch:
+    inputs:
+      site_host:
+        description: Domain to publish under
+        default: home.calebjackson.org
   push:
     branches: [main]
-    paths: ['website-rebuild/site/**', 'website-rebuild/media/**']
+    paths: ['website-rebuild/site/**', 'website-rebuild/media/**', '.github/workflows/deploy-site.yml']
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - run: python3 website-rebuild/site/scripts/build.py
-      - run: python3 website-rebuild/site/scripts/dist.py website-rebuild/dist
-      - uses: actions/upload-pages-artifact@v3
-        with: { path: website-rebuild/dist }
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - run: SITE_HOST="${{ github.event.inputs.site_host || 'home.calebjackson.org' }}" python3 website-rebuild/site/scripts/dist.py website-rebuild/dist
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: website-rebuild/dist
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: "Publish website-rebuild"
