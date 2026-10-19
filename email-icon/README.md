@@ -1,14 +1,16 @@
 # Email icon
 
-An animated version of the cj. monogram, made to be Caleb's Google account profile picture so it moves next to his emails in other people's Gmail inboxes (the Edward Sturm "animated email icon" hack, Instagram post DXs4k6nD3V6, April 2026).
+Case: uppercase CJ. per Caleb, October 19 2026.
 
-The look, chosen by Caleb on October 19 2026 after watching the reel: near-black background, coral cj., and light that emanates from behind the mark. A warm ember light swells from the center, falls off radially with soft slow rays, and breathes over 5 seconds. The letters sit on top and are never touched by the light, which is how the Airbnb example in the reel does it. 320 by 320 pixels. Google crops profile pictures to a circle, so the mark sits inside the inner 70 percent.
+An animated CJ. monogram, made to be Caleb's Google account profile picture so it moves next to his emails in other people's Gmail inboxes (the Edward Sturm "animated email icon" hack, Instagram post DXs4k6nD3V6, April 2026).
+
+The look, chosen by Caleb on October 19 2026 after watching the reel: near-black background, coral CJ., and light that emanates from behind the mark. A warm ember light swells from the center, falls off radially with soft slow rays, and breathes over 5 seconds. The letters sit on top and are never touched by the light, which is how the Airbnb example in the reel does it. 320 by 320 pixels. Google crops profile pictures to a circle, so the mark sits inside the inner 70 percent.
 
 Seen in the reel, October 19 2026: the animated Airbnb avatar does move in the Gmail inbox on the web client he filmed. Still not verified for Gmail mobile or other Google surfaces.
 
 Typeface: Bodoni Moda (SIL Open Font License, `source/BodoniModa.ttf`), chosen by Caleb on October 19 2026 for a more editorial, luxury feel than the brand package's Instrument Serif. It is set at weight 520 and optical size 14 with the hairlines thickened slightly so the didone contrast survives at inbox size. `source/font-comparison.png` shows the eleven faces that were compared. Letters are the package's ember #E87757 lifted slightly (#F28A6A) so they float above the light. The light itself is brand ember added over black so it stays saturated, with a small white push at the very center.
 
-Earlier mark: the brand package's own Instrument Serif glyphs (`source/cj-monogram.svg` and the two mask PNGs) are kept for reference. The package's own monogram is "aj." (Action Jackson); this icon uses "cj." at Caleb's request. Note for brand consistency: the website and wordmark still use Instrument Serif, so this avatar is a deliberate departure.
+Earlier mark: the brand package's own Instrument Serif glyphs (`source/cj-monogram.svg` and the two mask PNGs) are kept for reference. The package's own monogram is "aj." (Action Jackson); this icon uses "CJ." at Caleb's request. Note for brand consistency: the website and wordmark still use Instrument Serif, so this avatar is a deliberate departure.
 
 Files:
 - `caleb-cj-avatar-noir.gif`: the animated profile picture.

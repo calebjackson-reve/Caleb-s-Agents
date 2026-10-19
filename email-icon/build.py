@@ -23,7 +23,7 @@ RAY_DEPTH = 0.30                   # how visible the rays are (0 = none)
 PAD = 0.15                         # margin each side so the circle crop clears the mark
 FONT = "source/BodoniModa.ttf"     # editorial high-contrast serif (SIL OFL). Caleb's pick, Oct 19 2026.
 FONT_AXES = (520, 14)              # Bodoni Moda variable axes in font order: weight, optical size (6 = sturdiest hairlines)
-TEXT = "cj."
+TEXT = "CJ."
 HAIRLINE = 5                       # odd px, at the 1600 px render: how much to thicken hairlines (1 = none)
 TRACKING = 0.06                    # extra space between glyphs as a fraction of the font size
 FPS, DUR = 10, 5.0                 # one full breath in seconds
