@@ -1,0 +1,80 @@
+561x  0-0px  span.char :: color
+287x  0-0px  span.word :: height
+236x  1059-0px  span.char :: transform, opacity
+198x  0-0px  span.word :: opacity
+196x  0-0px  span.word-wrap :: height
+187x  0-0px  div.col.col--xs-4.col--md-2 :: height
+135x  454-0px  header.header.is-hidden--print.header--sticky :: [fixed]
+135x  676-0px  img :: transform
+120x  0-0px  div.col.col--md-2 :: height
+109x  0-0px  span.char :: transform
+ 94x  0-0px  span.char :: transform, opacity, color
+ 91x  454-0px  dialog#cookie-consent.cookie-consent.cookie-consent--simple :: [fixed]
+ 87x  0-0px  span.char :: height
+ 80x  454-0px  span.char :: transform, opacity, height, color
+ 80x  0-0px  img :: height
+ 74x  0-0px  img :: transform, height
+ 72x  0-0px  section.section.ui-light.l-expansive-section :: transform
+ 66x  0-0px  div.col.col--xs-4.col--md-auto :: height
+ 63x  1336-0px  span.char :: height, color
+ 63x  0-0px  div.sticky__layer.sticky__layer--sticky.is-inview :: transform
+ 62x  0-0px  div.l-expansive-slider :: transform
+ 61x  0-0px  div.sticky-slider__sticky.is-inview :: transform
+ 48x  676-0px  span.char :: transform, opacity, height
+ 38x  0-0px  span.text-subtitle.text-color-primary.leading-trim :: height
+ 38x  0-0px  picture.is-hidden--no-js.parallax-image-move.img-full :: height
+ 33x  0-0px  picture.is-hidden--no-js.background.background--top :: transform
+ 30x  0-0px  span.word :: opacity, height
+ 29x  0-0px  div.sticky__layer.sticky__layer--sticky :: transform, height, color
+ 29x  0-0px  section#collection.section.section--no-overflow-clip.ui-dark :: transform
+ 29x  0-0px  span.text-subtitle.text-color-primary.leading-trim :: opacity, height
+ 28x  0-0px  span.h1.leading-trim.splitting :: height
+ 27x  0-0px  circle :: opacity
+ 26x  0-0px  div.background.background--cover.l-expansive-finesse-images__iframe :: transform
+ 25x  0-0px  div.line-wrap :: height
+ 22x  0-0px  div.line :: height
+ 20x  454-0px  picture.is-hidden--no-js.img-full.parallax-image-move :: transform
+ 20x  0-0px  img :: height, color
+ 18x  0-0px  span.word :: color
+ 18x  0-0px  span.word :: height, color
+ 16x  454-0px  section#about.section.ui-light.ui-background :: transform
+ 16x  0-0px  section#tenets.section.section--no-overflow-clip.ui-light :: transform
+ 14x  893-0px  span.btn__content :: color
+ 14x  893-0px  span.btn__icon :: color
+ 14x  893-0px  svg :: color
+ 13x  0-0px  span.word-wrap :: color
+ 13x  0-0px  section#locations.section.ui-dark.ui-background-alt :: transform
+ 12x  0-0px  section.section.section--full-height.ui-dark :: transform
+ 12x  0-0px  section.section.section--no-overflow.ui-dark :: transform
+ 11x  0-0px  div.sticky__layer.sticky__layer--sticky.is-inview :: transform, color
+ 11x  0-0px  span.h1.leading-trim :: height
+ 11x  0-0px  section#selection.section.ui-dark.ui-background :: transform
+ 10x  0-0px  div.l-merit-background.background.background--cover :: transform
+ 10x  0-0px  div.l-merit-content.py-2 :: transform
+ 10x  0-0px  div.col.col--xs-4.col--md-3 :: height, color
+ 10x  0-0px  div.col.col--xs-4.col--md-7 :: color
+  9x  0-0px  picture.is-hidden--no-js.img-full.l-tenets-background :: transform
+  8x  893-0px  div.col.col--xs-1.col--md-4 :: color
+  8x  0-0px  div.l-three-worlds-sticky__title.h0 :: transform
+  7x  893-0px  a.btn.btn--link.header__logo-text-button :: color
+  7x  893-0px  use :: color
+  7x  893-0px  a.btn.btn--link.header__logo-button :: color
+  6x  0-0px  picture.is-hidden--no-js.background.background--cover :: transform
+  6x  0-0px  section#sublime.section.section--full-height.section--top :: transform
+  5x  454-1336px  section.section.section--top.section--full-height :: transform
+  5x  0-0px  div.l-three-worlds-webgl :: clip
+  5x  0-0px  div.l-location__map-inner :: transform
+  5x  0-0px  div.background.background--cover.l-location__map-dim :: opacity
+  5x  0-0px  div.l-location-intro :: opacity
+  4x  454-1059px  div.sticky.sticky--under-next.sticky--full-height :: transform
+  4x  454-1059px  div.intro.sticky__layer.sticky__layer--sticky :: transform
+  4x  454-1059px  div.mb-4 :: transform
+  4x  893-0px  header.header.is-hidden--print.header--sticky :: color, [fixed]
+  4x  893-0px  div.header__content.pt-1.pb-0 :: color
+  4x  893-0px  div.header__logo-text.col.col--xs-2 :: color
+  4x  0-0px  div.col.col--xs-3.offset--xs-1 :: color
+  4x  0-0px  picture.is-hidden--no-js.img-full.parallax-image-move :: color
+  4x  0-0px  img :: transform, color
+  4x  0-0px  div.sticky__layer.sticky__layer--sticky :: transform, height
+  3x  0-0px  div.l-three-worlds-webgl :: transform
+  3x  0-0px  p.h0.leading-trim.pb-1 :: opacity
