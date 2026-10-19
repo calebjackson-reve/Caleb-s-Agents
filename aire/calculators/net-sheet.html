@@ -1,0 +1,122 @@
+<title>Seller Net Sheet</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one column of ledger rows, the net figure pinned at the top like a settlement statement total. Brand tokens match lp-integration/tokens.css. */
+:root{--paper:#fbf8f3;--ink:#14100e;--ink-2:#3a332e;--accent:#e87757;--line:rgba(20,16,14,.24);--field:#ffffff;--display:'Instrument Serif',Georgia,serif;--body:Nunito,'Segoe UI',system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--paper:#14100e;--ink:#fbf8f3;--ink-2:#cfc6bd;--accent:#f0906f;--line:rgba(251,248,243,.26);--field:#211b18;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#14100e;--ink:#fbf8f3;--ink-2:#cfc6bd;--accent:#f0906f;--line:rgba(251,248,243,.26);--field:#211b18;color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 48px}
+.ns{max-width:720px;margin:0 auto;display:grid;gap:28px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(2.2rem,6vw,3.2rem);line-height:.98;letter-spacing:-.015em;margin:0;text-wrap:balance}
+.eyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin:0 0 10px}
+.lede{margin:10px 0 0;color:var(--ink-2);max-width:60ch}
+.total{border-top:1px solid var(--ink);border-bottom:1px solid var(--ink);padding:18px 0;display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap}
+.total .label{font-family:var(--display);font-size:1.5rem}
+.total .num{font-family:var(--display);font-size:clamp(2rem,7vw,3rem);font-variant-numeric:tabular-nums;color:var(--accent)}
+section{display:grid;gap:0}
+h2{font-family:var(--display);font-weight:400;font-size:1.4rem;margin:0 0 6px}
+.row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);min-width:0}
+.row label{display:grid;gap:2px;min-width:0}
+.row small{color:var(--ink-2);font-size:12.5px}
+.row .in{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+input[type=number]{width:9.5em;max-width:40vw;font:inherit;font-variant-numeric:tabular-nums;text-align:right;padding:8px 10px;border:1px solid var(--line);border-radius:0;background:var(--field);color:var(--ink)}
+input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.unit{color:var(--ink-2);font-size:13px;width:1.2em}
+.calc{color:var(--ink-2);font-variant-numeric:tabular-nums;font-size:14px;text-align:right}
+.sub{display:flex;justify-content:space-between;padding:12px 0 0;font-weight:700;font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--ink-2);border-left:2px solid var(--accent);padding-left:12px;margin:0}
+.sig{border-top:1px solid var(--ink);padding-top:16px;display:grid;gap:4px;font-size:14px}
+.sig b{font-family:var(--display);font-weight:400;font-size:1.25rem}
+.sig span{color:var(--ink-2)}
+.btn{font:inherit;font-size:13px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--ink);background:transparent;color:var(--ink);padding:12px 18px;cursor:pointer;border-radius:0}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){.total .num{transition:color .2s}}
+</style>
+
+<div class="ns">
+  <header>
+    <p class="eyebrow">Estimate only</p>
+    <h1>What would you walk away with?</h1>
+    <p class="lede">Change any number. This is a planning estimate, not a settlement statement. Your title company gives the final figures at closing.</p>
+  </header>
+
+  <div class="total" aria-live="polite">
+    <span class="label">Estimated net to you</span>
+    <span class="num" id="net">$0</span>
+  </div>
+
+  <section>
+    <h2>The sale</h2>
+    <div class="row"><label for="price">Sale price<small>Use the price you expect, not the list price.</small></label><div class="in"><span class="unit">$</span><input type="number" id="price" value="325000" min="0" step="1000"></div></div>
+    <div class="row"><label for="payoff">Mortgage payoff<small>Principal left plus interest to the closing date. Your lender's payoff letter is the real number.</small></label><div class="in"><span class="unit">$</span><input type="number" id="payoff" value="180000" min="0" step="1000"></div></div>
+  </section>
+
+  <section>
+    <h2>Commissions</h2>
+    <div class="row"><label for="listPct">Listing side<small>Negotiated in your listing agreement.</small></label><div class="in"><input type="number" id="listPct" value="3" min="0" max="10" step="0.25"><span class="unit">%</span></div></div>
+    <div class="row"><label for="buyPct">Buyer's agent<small>Optional and negotiable. Many sellers still offer it to widen the buyer pool.</small></label><div class="in"><input type="number" id="buyPct" value="2.5" min="0" max="10" step="0.25"><span class="unit">%</span></div></div>
+    <div class="sub"><span>Commission total</span><span id="commTotal">$0</span></div>
+  </section>
+
+  <section>
+    <h2>Closing costs</h2>
+    <div class="row"><label for="titlePct">Title and closing services<small>Louisiana sellers usually cover the title search and closing fee. Statewide averages run about half a percent.</small></label><div class="in"><input type="number" id="titlePct" value="0.5" min="0" max="5" step="0.05"><span class="unit">%</span></div></div>
+    <div class="row"><label for="recording">Recording and release fees<small>Parish clerk fees to record the sale and release your mortgage.</small></label><div class="in"><span class="unit">$</span><input type="number" id="recording" value="150" min="0" step="10"></div></div>
+    <div class="row"><label for="taxes">Prorated property taxes<small>Your share of this year's parish taxes up to closing. Louisiana bills at year end, so a fall closing carries most of the year.</small></label><div class="in"><span class="unit">$</span><input type="number" id="taxes" value="1500" min="0" step="50"></div></div>
+    <div class="row"><label for="warranty">Home warranty<small>Optional. Often offered to the buyer.</small></label><div class="in"><span class="unit">$</span><input type="number" id="warranty" value="500" min="0" step="25"></div></div>
+    <div class="row"><label for="concessions">Seller concessions<small>Anything you agree to pay toward the buyer's costs.</small></label><div class="in"><span class="unit">$</span><input type="number" id="concessions" value="0" min="0" step="250"></div></div>
+    <div class="row"><label for="repairs">Repairs and prep<small>Inspection items, paint, cleaning, staging.</small></label><div class="in"><span class="unit">$</span><input type="number" id="repairs" value="0" min="0" step="250"></div></div>
+    <div class="sub"><span>Closing costs total</span><span id="costTotal">$0</span></div>
+  </section>
+
+  <section>
+    <h2>Summary</h2>
+    <div class="row"><span>Sale price</span><span class="calc" id="sPrice">$0</span></div>
+    <div class="row"><span>Less commissions</span><span class="calc" id="sComm">$0</span></div>
+    <div class="row"><span>Less closing costs</span><span class="calc" id="sCost">$0</span></div>
+    <div class="row"><span>Less mortgage payoff</span><span class="calc" id="sPayoff">$0</span></div>
+    <div class="sub"><span>Estimated net</span><span id="sNet">$0</span></div>
+  </section>
+
+  <p class="note">Louisiana has no state transfer tax on home sales, so none is included. Defaults are statewide planning figures from consumer closing cost guides, October 2026, not quotes. No figure here is a promise of price, timing or proceeds.</p>
+
+  <div><button class="btn" type="button" id="copy">Copy this estimate</button> <span id="copied" class="calc" hidden>Copied</span></div>
+
+  <footer class="sig">
+    <b>Caleb Jackson</b>
+    <span>REALTOR, Keller Williams First Choice. License 995709547.</span>
+    <span>17111 Commerce Centre Drive, Prairieville, LA 70769</span>
+    <span>(225) 747-0303 · aire@calebjackson.org</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var ids=['price','payoff','listPct','buyPct','titlePct','recording','taxes','warranty','concessions','repairs'];
+  var $=function(id){return document.getElementById(id)};
+  var fmt=function(n){return (n<0?'-':'')+'$'+Math.round(Math.abs(n)).toLocaleString('en-US')};
+  var v=function(id){var x=parseFloat($(id).value);return isNaN(x)?0:x};
+  function calc(){
+    var price=v('price');
+    var comm=price*(v('listPct')+v('buyPct'))/100;
+    var costs=price*v('titlePct')/100+v('recording')+v('taxes')+v('warranty')+v('concessions')+v('repairs');
+    var net=price-comm-costs-v('payoff');
+    $('commTotal').textContent=fmt(comm);$('costTotal').textContent=fmt(costs);
+    $('sPrice').textContent=fmt(price);$('sComm').textContent=fmt(comm);$('sCost').textContent=fmt(costs);$('sPayoff').textContent=fmt(v('payoff'));
+    $('sNet').textContent=fmt(net);$('net').textContent=fmt(net);
+    return {price:price,comm:comm,costs:costs,payoff:v('payoff'),net:net};
+  }
+  ids.forEach(function(id){$(id).addEventListener('input',calc)});
+  var r=calc();
+  $('copy').addEventListener('click',function(){
+    var r=calc();
+    var text='Seller net sheet estimate\nSale price '+fmt(r.price)+'\nCommissions '+fmt(r.comm)+'\nClosing costs '+fmt(r.costs)+'\nMortgage payoff '+fmt(r.payoff)+'\nEstimated net '+fmt(r.net)+'\nEstimate only. Caleb Jackson, REALTOR, Keller Williams First Choice, (225) 747-0303';
+    var done=function(){$('copied').hidden=false;setTimeout(function(){$('copied').hidden=true},2000)};
+    try{navigator.clipboard.writeText(text).then(done,function(){fallback()})}catch(e){fallback()}
+    function fallback(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done()}catch(e){}document.body.removeChild(ta)}
+  });
+})();
+</script>
