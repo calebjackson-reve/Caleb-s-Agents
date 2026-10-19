@@ -1,0 +1,478 @@
+{
+  "generated": "2026-10-19T18:06:36.098Z",
+  "method": "Playwright 1.56 headless Chromium, 1440x900 desktop and 390x844 iPhone UA with touch, served from python http.server at /site/. Each page loaded to network idle, scrolled in 80% viewport steps with 220ms pauses, then measured. Lighthouse 12 run with the headless Chromium at /opt/pw-browsers/chromium, default mobile throttling. Script: site/scripts/verify.js.",
+  "definitionOfDone": {
+    "consoleErrorsTotal": 0,
+    "pagesWithHorizontalOverflow": [],
+    "allEntrancesFired": true
+  },
+  "notes": [
+    "failedRequests are all .mp4 net::ERR_ABORTED. Playwright Chromium ships without H.264, so it aborts the fetch after reading the container. The same files play in Chrome, Safari and Firefox. Poster frames render in their place in the screenshots.",
+    "Video source selection verified: desktop pages chose the 16x9 file, phone pages chose the 9x16 file (videoSourceChosen).",
+    "Lighthouse SEO is 60 to 63 on every page because _head.html carries meta robots noindex,nofollow on purpose while this is a prototype. Remove that line at launch and SEO goes to 100 (the only other failing SEO audit is none).",
+    "Lighthouse performance is 69 to 92 under simulated mobile 4G. LCP is the hero poster jpg at 225 to 277KB. Fixes listed in LAUNCH-OPTIONS.md: serve posters as 1200px webp and preload the hero poster.",
+    "Accessibility 100 on all eight pages after darkening --stone to #6F685E and the dim text alphas to 0.66 and 0.68, and after making the Sell steps label an h2.",
+    "Reference frames live in teardown/<site>/desktop-hero.png, mobile-hero.png, desktop-scroll-NN.png, CONTACT-*.jpg."
+  ],
+  "lighthouse": {
+    "index": {
+      "performance": 72,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 63,
+      "lcp": "5.6\u00a0s",
+      "cls": "0"
+    },
+    "search": {
+      "performance": 80,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 63,
+      "lcp": "4.1\u00a0s",
+      "cls": "0"
+    },
+    "communities": {
+      "performance": 79,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 63,
+      "lcp": "4.4\u00a0s",
+      "cls": "0"
+    },
+    "sell": {
+      "performance": 71,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 63,
+      "lcp": "6.3\u00a0s",
+      "cls": "0"
+    },
+    "about": {
+      "performance": 74,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 63,
+      "lcp": "5.4\u00a0s",
+      "cls": "0"
+    },
+    "contact": {
+      "performance": 91,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 60,
+      "lcp": "2.9\u00a0s",
+      "cls": "0"
+    },
+    "listing-template": {
+      "performance": 81,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 63,
+      "lcp": "4.1\u00a0s",
+      "cls": "0"
+    },
+    "neighborhood-template": {
+      "performance": 69,
+      "accessibility": 100,
+      "best-practices": 100,
+      "seo": 63,
+      "lcp": "11.9\u00a0s",
+      "cls": "0"
+    }
+  },
+  "pages": {
+    "index@desktop": {
+      "screenshots": [
+        "verification/index-desktop-top.png",
+        "verification/index-desktop-full.jpg"
+      ],
+      "scrollVideo": "verification/index-desktop-scroll.webm",
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "8/8",
+        "words": "7/7",
+        "fade": "13/13"
+      },
+      "scrollTriggers": 8,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [
+        "aerial-1-dusk-estate-16x9.mp4",
+        "still-anim-1-front-night-16x9.mp4"
+      ],
+      "failedRequests": [
+        "http://localhost:8787/media/video/still-anim-1-front-night-16x9.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED"
+      ]
+    },
+    "search@desktop": {
+      "screenshots": [
+        "verification/search-desktop-top.png",
+        "verification/search-desktop-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "1/1",
+        "words": "2/2",
+        "fade": "4/4"
+      },
+      "scrollTriggers": 1,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [],
+      "failedRequests": []
+    },
+    "communities@desktop": {
+      "screenshots": [
+        "verification/communities-desktop-top.png",
+        "verification/communities-desktop-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "8/8",
+        "words": "3/3",
+        "fade": "12/12"
+      },
+      "scrollTriggers": 1,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [
+        "aerial-4-st-francisville-main-street-9x16.mp4"
+      ],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
+      ]
+    },
+    "sell@desktop": {
+      "screenshots": [
+        "verification/sell-desktop-top.png",
+        "verification/sell-desktop-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "5/5",
+        "words": "3/3",
+        "fade": "10/10"
+      },
+      "scrollTriggers": 1,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [
+        "aerial-5-pool-topdown-9x16.mp4",
+        "aerial-3-house-pool-9x16.mp4"
+      ],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED"
+      ]
+    },
+    "about@desktop": {
+      "screenshots": [
+        "verification/about-desktop-top.png",
+        "verification/about-desktop-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "1/1",
+        "words": "3/3",
+        "fade": "10/10"
+      },
+      "scrollTriggers": 1,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [],
+      "failedRequests": []
+    },
+    "contact@desktop": {
+      "screenshots": [
+        "verification/contact-desktop-top.png",
+        "verification/contact-desktop-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "0/0",
+        "words": "1/1",
+        "fade": "3/3"
+      },
+      "scrollTriggers": 0,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [],
+      "failedRequests": []
+    },
+    "listing-template@desktop": {
+      "screenshots": [
+        "verification/listing-template-desktop-top.png",
+        "verification/listing-template-desktop-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "7/7",
+        "words": "4/4",
+        "fade": "9/9"
+      },
+      "scrollTriggers": 2,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [],
+      "failedRequests": []
+    },
+    "neighborhood-template@desktop": {
+      "screenshots": [
+        "verification/neighborhood-template-desktop-top.png",
+        "verification/neighborhood-template-desktop-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "1/1",
+        "words": "3/3",
+        "fade": "8/8"
+      },
+      "scrollTriggers": 1,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [
+        "aerial-4-st-francisville-main-street-9x16.mp4"
+      ],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
+      ]
+    },
+    "index@mobile": {
+      "screenshots": [
+        "verification/index-mobile-top.png",
+        "verification/index-mobile-full.jpg"
+      ],
+      "scrollVideo": "verification/index-mobile-scroll.webm",
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "8/8",
+        "words": "7/7",
+        "fade": "13/13"
+      },
+      "scrollTriggers": 8,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [
+        "aerial-2-pond-wide-9x16.mp4",
+        "still-anim-1-front-night-16x9.mp4"
+      ],
+      "failedRequests": [
+        "http://localhost:8787/media/video/still-anim-1-front-night-16x9.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-2-pond-wide-9x16.mp4 net::ERR_ABORTED"
+      ]
+    },
+    "search@mobile": {
+      "screenshots": [
+        "verification/search-mobile-top.png",
+        "verification/search-mobile-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "1/1",
+        "words": "2/2",
+        "fade": "4/4"
+      },
+      "scrollTriggers": 1,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [],
+      "failedRequests": []
+    },
+    "communities@mobile": {
+      "screenshots": [
+        "verification/communities-mobile-top.png",
+        "verification/communities-mobile-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "8/8",
+        "words": "3/3",
+        "fade": "12/12"
+      },
+      "scrollTriggers": 1,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [
+        "aerial-4-st-francisville-main-street-9x16.mp4"
+      ],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
+      ]
+    },
+    "sell@mobile": {
+      "screenshots": [
+        "verification/sell-mobile-top.png",
+        "verification/sell-mobile-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "5/5",
+        "words": "3/3",
+        "fade": "10/10"
+      },
+      "scrollTriggers": 1,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [
+        "aerial-5-pool-topdown-9x16.mp4",
+        "aerial-3-house-pool-9x16.mp4"
+      ],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED"
+      ]
+    },
+    "about@mobile": {
+      "screenshots": [
+        "verification/about-mobile-top.png",
+        "verification/about-mobile-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "1/1",
+        "words": "3/3",
+        "fade": "10/10"
+      },
+      "scrollTriggers": 1,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [],
+      "failedRequests": []
+    },
+    "contact@mobile": {
+      "screenshots": [
+        "verification/contact-mobile-top.png",
+        "verification/contact-mobile-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "0/0",
+        "words": "1/1",
+        "fade": "3/3"
+      },
+      "scrollTriggers": 0,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [],
+      "failedRequests": []
+    },
+    "listing-template@mobile": {
+      "screenshots": [
+        "verification/listing-template-mobile-top.png",
+        "verification/listing-template-mobile-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "7/7",
+        "words": "4/4",
+        "fade": "9/9"
+      },
+      "scrollTriggers": 2,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [],
+      "failedRequests": []
+    },
+    "neighborhood-template@mobile": {
+      "screenshots": [
+        "verification/neighborhood-template-mobile-top.png",
+        "verification/neighborhood-template-mobile-full.jpg"
+      ],
+      "scrollVideo": null,
+      "consoleErrors": [],
+      "horizontalOverflow": false,
+      "entrances": {
+        "reveal": "1/1",
+        "words": "3/3",
+        "fade": "8/8"
+      },
+      "scrollTriggers": 1,
+      "fontsLoaded": true,
+      "brokenImages": [],
+      "videoSourceChosen": [
+        "aerial-4-st-francisville-main-street-9x16.mp4"
+      ],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
+      ]
+    }
+  },
+  "sideBySide": [
+    {
+      "ours": "verification/index-desktop-top.png",
+      "reference": "../teardown/findrealestate/desktop-hero.png",
+      "matches": "full-bleed media stage, centered headline block, two pill CTAs, small caption bottom right, hairline nav with pill at right",
+      "differs": "our media and copy; FIND uses a still image, we use a drone loop; our H1 mixes italic serif and uppercase serif where FIND uses one sans weight"
+    },
+    {
+      "ours": "verification/index-desktop-full.jpg",
+      "reference": "../teardown/sobha-privy/desktop-full.png",
+      "matches": "pinned hero stage that scales as copy exits, sticky stacked panels, horizontal runway pinned for its travel, gradient-fill closing text, giant wordmark in footer",
+      "differs": "Sobha has a Three.js intro and a longer page (47 viewports) where ours is 16; our palette is ivory and blush rather than Sobha dark; our fonts are free substitutes"
+    },
+    {
+      "ours": "verification/communities-desktop-top.png",
+      "reference": "../teardown/zorge9/desktop-hero.png",
+      "matches": "left-aligned uppercase H1 with italic second line over media, eyebrow label, lead under it, media bleeds under header",
+      "differs": "our media; Zorge 9 uses Gilroy sans, we use Instrument Serif"
+    },
+    {
+      "ours": "verification/index-mobile-top.png",
+      "reference": "../teardown/findrealestate/mobile-hero.png",
+      "matches": "stacked CTAs full width, centered copy, caption at the bottom",
+      "differs": "our media; FIND hides the nav pill the same way"
+    }
+  ],
+  "remainingDifferences": [
+    "Fonts: Instrument Serif and Instrument Sans stand in for TT Ramillas, Altesse and Gilroy (paid). Accepted substitution per COMMAND.md.",
+    "No WebGL intro. Sobha opens with a Three.js scene; ours opens on drone footage with the loader wipe.",
+    "Cursor: no custom cursor (listed as not copied in DESIGN-SYSTEM.md).",
+    "Home page is 16 viewports long against Sobha 48 and Zorge 41. Deliberate, our content is thinner.",
+    "Zachary card and the New Roads cards use placeholders or 2006 photos until the reshoot in MEDIA-PLAN.md.",
+    "IDX, map and form delivery are empty slots until launch (see LAUNCH-OPTIONS.md)."
+  ],
+  "animationsConfirmed": [
+    "loader wipe",
+    "header hide on scroll down and surface flip",
+    "word stagger in line masks",
+    "clip reveal with drift on every image",
+    "fade and stagger groups",
+    "hero pinned timeline (media scale, copy out, portrait in, wordmark in)",
+    "world panel parallax",
+    "communities runway horizontal travel",
+    "curved gallery with switch",
+    "count up on stats",
+    "closing gradient fill scrub",
+    "page hero parallax",
+    "pill cloned label hover"
+  ]
+}

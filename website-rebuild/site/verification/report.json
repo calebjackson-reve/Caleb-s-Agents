@@ -1,0 +1,506 @@
+{
+  "generated": "2026-10-19T18:06:36.098Z",
+  "base": "http://localhost:8787/site/",
+  "pages": {
+    "index@desktop": {
+      "consoleErrors": [],
+      "failedRequests": [
+        "http://localhost:8787/media/video/still-anim-1-front-night-16x9.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED"
+      ],
+      "scrollHeight": 16204,
+      "overflowX": false,
+      "reveals": 8,
+      "revealsIn": 8,
+      "words": 7,
+      "wordsIn": 7,
+      "fades": 13,
+      "fadesIn": 13,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 8,
+      "fontsLoaded": true,
+      "videos": [
+        {
+          "src": "aerial-1-dusk-estate-16x9.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        },
+        {
+          "src": "still-anim-1-front-night-16x9.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        }
+      ],
+      "imgsBroken": [],
+      "screenshots": [
+        "index-desktop-top.png",
+        "index-desktop-full.jpg"
+      ]
+    },
+    "search@desktop": {
+      "consoleErrors": [],
+      "failedRequests": [],
+      "scrollHeight": 2913,
+      "overflowX": false,
+      "reveals": 1,
+      "revealsIn": 1,
+      "words": 2,
+      "wordsIn": 2,
+      "fades": 4,
+      "fadesIn": 4,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 1,
+      "fontsLoaded": true,
+      "videos": [],
+      "imgsBroken": [],
+      "screenshots": [
+        "search-desktop-top.png",
+        "search-desktop-full.jpg"
+      ]
+    },
+    "communities@desktop": {
+      "consoleErrors": [],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
+      ],
+      "scrollHeight": 4572,
+      "overflowX": false,
+      "reveals": 8,
+      "revealsIn": 8,
+      "words": 3,
+      "wordsIn": 3,
+      "fades": 12,
+      "fadesIn": 12,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 1,
+      "fontsLoaded": true,
+      "videos": [
+        {
+          "src": "aerial-4-st-francisville-main-street-9x16.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        }
+      ],
+      "imgsBroken": [],
+      "screenshots": [
+        "communities-desktop-top.png",
+        "communities-desktop-full.jpg"
+      ]
+    },
+    "sell@desktop": {
+      "consoleErrors": [],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED"
+      ],
+      "scrollHeight": 4789,
+      "overflowX": false,
+      "reveals": 5,
+      "revealsIn": 5,
+      "words": 3,
+      "wordsIn": 3,
+      "fades": 10,
+      "fadesIn": 10,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 1,
+      "fontsLoaded": true,
+      "videos": [
+        {
+          "src": "aerial-5-pool-topdown-9x16.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        },
+        {
+          "src": "aerial-3-house-pool-9x16.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        }
+      ],
+      "imgsBroken": [],
+      "screenshots": [
+        "sell-desktop-top.png",
+        "sell-desktop-full.jpg"
+      ]
+    },
+    "about@desktop": {
+      "consoleErrors": [],
+      "failedRequests": [],
+      "scrollHeight": 3282,
+      "overflowX": false,
+      "reveals": 1,
+      "revealsIn": 1,
+      "words": 3,
+      "wordsIn": 3,
+      "fades": 10,
+      "fadesIn": 10,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 1,
+      "fontsLoaded": true,
+      "videos": [],
+      "imgsBroken": [],
+      "screenshots": [
+        "about-desktop-top.png",
+        "about-desktop-full.jpg"
+      ]
+    },
+    "contact@desktop": {
+      "consoleErrors": [],
+      "failedRequests": [],
+      "scrollHeight": 1423,
+      "overflowX": false,
+      "reveals": 0,
+      "revealsIn": 0,
+      "words": 1,
+      "wordsIn": 1,
+      "fades": 3,
+      "fadesIn": 3,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 0,
+      "fontsLoaded": true,
+      "videos": [],
+      "imgsBroken": [],
+      "screenshots": [
+        "contact-desktop-top.png",
+        "contact-desktop-full.jpg"
+      ]
+    },
+    "listing-template@desktop": {
+      "consoleErrors": [],
+      "failedRequests": [],
+      "scrollHeight": 6395,
+      "overflowX": false,
+      "reveals": 7,
+      "revealsIn": 7,
+      "words": 4,
+      "wordsIn": 4,
+      "fades": 9,
+      "fadesIn": 9,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 2,
+      "fontsLoaded": true,
+      "videos": [],
+      "imgsBroken": [],
+      "screenshots": [
+        "listing-template-desktop-top.png",
+        "listing-template-desktop-full.jpg"
+      ]
+    },
+    "neighborhood-template@desktop": {
+      "consoleErrors": [],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
+      ],
+      "scrollHeight": 4039,
+      "overflowX": false,
+      "reveals": 1,
+      "revealsIn": 1,
+      "words": 3,
+      "wordsIn": 3,
+      "fades": 8,
+      "fadesIn": 8,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 1,
+      "fontsLoaded": true,
+      "videos": [
+        {
+          "src": "aerial-4-st-francisville-main-street-9x16.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        }
+      ],
+      "imgsBroken": [],
+      "screenshots": [
+        "neighborhood-template-desktop-top.png",
+        "neighborhood-template-desktop-full.jpg"
+      ]
+    },
+    "index@mobile": {
+      "consoleErrors": [],
+      "failedRequests": [
+        "http://localhost:8787/media/video/still-anim-1-front-night-16x9.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-2-pond-wide-9x16.mp4 net::ERR_ABORTED"
+      ],
+      "scrollHeight": 14565,
+      "overflowX": false,
+      "reveals": 8,
+      "revealsIn": 8,
+      "words": 7,
+      "wordsIn": 7,
+      "fades": 13,
+      "fadesIn": 13,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 8,
+      "fontsLoaded": true,
+      "videos": [
+        {
+          "src": "aerial-2-pond-wide-9x16.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        },
+        {
+          "src": "still-anim-1-front-night-16x9.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        }
+      ],
+      "imgsBroken": [],
+      "screenshots": [
+        "index-mobile-top.png",
+        "index-mobile-full.jpg"
+      ]
+    },
+    "search@mobile": {
+      "consoleErrors": [],
+      "failedRequests": [],
+      "scrollHeight": 2851,
+      "overflowX": false,
+      "reveals": 1,
+      "revealsIn": 1,
+      "words": 2,
+      "wordsIn": 2,
+      "fades": 4,
+      "fadesIn": 4,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 1,
+      "fontsLoaded": true,
+      "videos": [],
+      "imgsBroken": [],
+      "screenshots": [
+        "search-mobile-top.png",
+        "search-mobile-full.jpg"
+      ]
+    },
+    "communities@mobile": {
+      "consoleErrors": [],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
+      ],
+      "scrollHeight": 7408,
+      "overflowX": false,
+      "reveals": 8,
+      "revealsIn": 8,
+      "words": 3,
+      "wordsIn": 3,
+      "fades": 12,
+      "fadesIn": 12,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 1,
+      "fontsLoaded": true,
+      "videos": [
+        {
+          "src": "aerial-4-st-francisville-main-street-9x16.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        }
+      ],
+      "imgsBroken": [],
+      "screenshots": [
+        "communities-mobile-top.png",
+        "communities-mobile-full.jpg"
+      ]
+    },
+    "sell@mobile": {
+      "consoleErrors": [],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED"
+      ],
+      "scrollHeight": 5476,
+      "overflowX": false,
+      "reveals": 5,
+      "revealsIn": 5,
+      "words": 3,
+      "wordsIn": 3,
+      "fades": 10,
+      "fadesIn": 10,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 1,
+      "fontsLoaded": true,
+      "videos": [
+        {
+          "src": "aerial-5-pool-topdown-9x16.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        },
+        {
+          "src": "aerial-3-house-pool-9x16.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        }
+      ],
+      "imgsBroken": [],
+      "screenshots": [
+        "sell-mobile-top.png",
+        "sell-mobile-full.jpg"
+      ]
+    },
+    "about@mobile": {
+      "consoleErrors": [],
+      "failedRequests": [],
+      "scrollHeight": 4098,
+      "overflowX": false,
+      "reveals": 1,
+      "revealsIn": 1,
+      "words": 3,
+      "wordsIn": 3,
+      "fades": 10,
+      "fadesIn": 10,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 1,
+      "fontsLoaded": true,
+      "videos": [],
+      "imgsBroken": [],
+      "screenshots": [
+        "about-mobile-top.png",
+        "about-mobile-full.jpg"
+      ]
+    },
+    "contact@mobile": {
+      "consoleErrors": [],
+      "failedRequests": [],
+      "scrollHeight": 2337,
+      "overflowX": false,
+      "reveals": 0,
+      "revealsIn": 0,
+      "words": 1,
+      "wordsIn": 1,
+      "fades": 3,
+      "fadesIn": 3,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 0,
+      "fontsLoaded": true,
+      "videos": [],
+      "imgsBroken": [],
+      "screenshots": [
+        "contact-mobile-top.png",
+        "contact-mobile-full.jpg"
+      ]
+    },
+    "listing-template@mobile": {
+      "consoleErrors": [],
+      "failedRequests": [],
+      "scrollHeight": 6271,
+      "overflowX": false,
+      "reveals": 7,
+      "revealsIn": 7,
+      "words": 4,
+      "wordsIn": 4,
+      "fades": 9,
+      "fadesIn": 9,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 2,
+      "fontsLoaded": true,
+      "videos": [],
+      "imgsBroken": [],
+      "screenshots": [
+        "listing-template-mobile-top.png",
+        "listing-template-mobile-full.jpg"
+      ]
+    },
+    "neighborhood-template@mobile": {
+      "consoleErrors": [],
+      "failedRequests": [
+        "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
+      ],
+      "scrollHeight": 4026,
+      "overflowX": false,
+      "reveals": 1,
+      "revealsIn": 1,
+      "words": 3,
+      "wordsIn": 3,
+      "fades": 8,
+      "fadesIn": 8,
+      "header": true,
+      "footer": true,
+      "lenis": true,
+      "gsap": true,
+      "scrollTrigger": true,
+      "triggers": 1,
+      "fontsLoaded": true,
+      "videos": [
+        {
+          "src": "aerial-4-st-francisville-main-street-9x16.mp4",
+          "ready": 0,
+          "paused": true,
+          "w": 0
+        }
+      ],
+      "imgsBroken": [],
+      "screenshots": [
+        "neighborhood-template-mobile-top.png",
+        "neighborhood-template-mobile-full.jpg"
+      ]
+    }
+  }
+}

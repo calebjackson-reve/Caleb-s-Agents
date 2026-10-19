@@ -1,0 +1,91 @@
+/* Design tokens for calebjackson.org. Source: website-rebuild/DESIGN-SYSTEM.md (Stage 2, approved October 19, 2026).
+   Sizes are rem at the 1920 design width where 1rem = 10px. The fluid root below is FIND's mechanism. */
+
+:root {
+  /* color, brand package July 2026 */
+  --ink: #14100E;
+  --ivory: #FBF8F3;
+  --blush: #FBEFE9;
+  --ember: #E87757;
+  --stone: #6F685E;
+  --ink-50: rgba(20, 16, 14, 0.66);
+  --ivory-50: rgba(251, 248, 243, 0.68);
+  --hairline-on-ivory: rgba(20, 16, 14, 0.12);
+  --hairline-on-ink: rgba(251, 248, 243, 0.2);
+
+  /* per-surface roles, flipped by .ui-dark */
+  --bg: var(--ivory);
+  --fg: var(--ink);
+  --fg-2: var(--ink-50);
+  --fg-3: var(--stone);
+  --hairline: var(--hairline-on-ivory);
+
+  /* type */
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --sans: "Hauora", "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+
+  --display-xl: 14rem;   /* 140 at 1920 */
+  --display-l: 11.4rem;  /* 114 */
+  --display-m: 8rem;     /* 80 */
+  --h2: 7.2rem;          /* 72 */
+  --h3: 4.4rem;          /* 44 */
+  --lead: 3.2rem;        /* 32 */
+  --body: 2rem;          /* 20 */
+  --small: 1.6rem;       /* 16 */
+  --label: 1.4rem;       /* 14 */
+  --stat: 11.4rem;
+
+  /* spacing */
+  --gutter: 10rem;       /* 100 */
+  --section: 15rem;      /* 150 */
+  --section-tight: 6rem; /* 60 */
+  --gap: 2.4rem;
+  --max: 1920px;
+  --header-h: 9rem;
+
+  /* motion */
+  --ease-house: cubic-bezier(0.7, 0, 0.3, 1);
+  --ease-reveal: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-ui: 0.4s;
+  --dur-move: 0.8s;
+  --dur-reveal: 1s;
+  --dur-drift: 4s;
+  --dur-intro: 1.6s;
+
+  color-scheme: light;
+}
+
+/* FIND's fluid root: phones 2.6667vw (390 gives 10.4px), tablets and up 0.5208vw (1440 gives 7.5px, 1920 gives 10px), capped at 10px */
+html { font-size: 2.6667vw; }
+@media (min-width: 768px) { html { font-size: 0.5208vw; } }
+@media (min-width: 1920px) { html { font-size: 10px; } }
+
+/* phone overrides from the measured references */
+@media (max-width: 767px) {
+  :root {
+    --display-xl: 5.6rem;  /* 58 at 390 */
+    --display-l: 4.6rem;
+    --display-m: 3.8rem;
+    --h2: 4.4rem;
+    --h3: 3rem;
+    --lead: 2.2rem;
+    --body: 1.6rem;
+    --small: 1.4rem;
+    --label: 1.3rem;
+    --stat: 5.6rem;
+    --gutter: 2.5rem;      /* 26 */
+    --section: 6rem;
+    --section-tight: 4rem;
+    --header-h: 6.5rem;
+  }
+}
+
+.ui-dark {
+  --bg: var(--ink);
+  --fg: var(--ivory);
+  --fg-2: var(--ivory-50);
+  --fg-3: var(--stone);
+  --hairline: var(--hairline-on-ink);
+  color-scheme: dark;
+}
+.ui-blush { --bg: var(--blush); }
