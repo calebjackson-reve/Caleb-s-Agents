@@ -124,7 +124,8 @@ async function measure(page) {
     const sectionsTop = await measure(page);
     fs.writeFileSync(path.join(out, `${name}-attop.json`), JSON.stringify({ sections: sectionsTop.sections, images: sectionsTop.images }, null, 1));
     for (let y = 0; y < docH + vp.height && shots < 60; y += step) {
-      if (VIRTUAL) { await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown'); await page.waitForTimeout(700); }
+      if (VIRTUAL && name === 'mobile') { const cdp = await ctx.newCDPSession(page); const x = 195; let yy = 700; await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: yy }] }); for (let k = 0; k < 8; k++) { yy -= 60; await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: yy }] }); await page.waitForTimeout(16); } await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await cdp.detach(); await page.waitForTimeout(900); }
+      else if (VIRTUAL) { await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown'); await page.waitForTimeout(700); }
       else { await page.mouse.wheel(0, step); await page.waitForTimeout(350); }
       if (y % (vp.height) < step) { await page.screenshot({ path: path.join(out, `${name}-scroll-${String(shots).padStart(2, '0')}.png`) }); shots++; }
     }
