@@ -118,7 +118,7 @@ async function measure(page) {
     await page.waitForTimeout(4000);
     await page.screenshot({ path: path.join(out, `${name}-hero.png`) });
     // scroll through slowly, screenshot every viewport
-    const docH = await page.evaluate(() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
+    const docH = await page.evaluate(() => { let m = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight); for (const s of document.querySelectorAll('section')) { const r = s.getBoundingClientRect(); m = Math.max(m, Math.round(r.bottom + scrollY)); } return m; });
     const step = Math.round(vp.height * 0.5);
     let shots = 0;
     const sectionsTop = await measure(page);

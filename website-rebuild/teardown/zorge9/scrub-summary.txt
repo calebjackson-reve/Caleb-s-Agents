@@ -1,0 +1,80 @@
+708x  251-0px  span.word-wrap :: transform, opacity
+295x  0-0px  span.word :: height
+254x  0-0px  span.word-wrap :: height
+192x  0-0px  span.word :: color
+150x  0-0px  img :: transform
+124x  0-0px  span.word-wrap :: transform, opacity, color
+118x  251-0px  header.header.is-hidden--print.header--sticky :: [fixed]
+103x  0-0px  span.word :: height, color
+ 97x  251-0px  svg :: color
+ 97x  251-0px  use :: color
+ 88x  0-0px  span.word-wrap :: transform, opacity, height
+ 83x  0-0px  div.background.background--cover.ui-background :: transform, clip
+ 80x  251-0px  dialog#cookie-consent.cookie-consent.cookie-consent--simple.ui-dark :: [fixed]
+ 73x  0-0px  picture.is-hidden--no-js.background.background--cover :: transform
+ 64x  0-0px  span.word-wrap :: color
+ 46x  0-0px  span.word-wrap :: height, color
+ 45x  0-0px  section.fitness.section.section--top :: transform
+ 36x  0-0px  picture.is-hidden--no-js.location-card__image.background :: transform
+ 34x  0-0px  div.fitness__container.row :: transform
+ 33x  0-0px  section.advantages.section.ui-dark :: transform
+ 33x  0-0px  div.sticky-slider__sticky.is-inview :: transform
+ 28x  0-0px  span.word-wrap :: transform, opacity, height, color
+ 28x  0-0px  div.sticky__layer.sticky__layer--sticky.is-inview :: transform
+ 27x  0-0px  img :: height
+ 26x  0-0px  div.advantages__container.sticky__layer.sticky__layer--sticky :: transform
+ 25x  0-0px  div.fitness__text-bottom.col.col--xs-4 :: height, bg, 0, 0, 0)
+ 24x  0-0px  div.background.background--cover.ui-background :: transform
+ 22x  1068-0px  div.row :: height, color
+ 21x  0-0px  img :: transform, height
+ 20x  251-0px  div#ns28.ui-background.background.background--cover :: opacity
+ 20x  0-0px  div#ns27.ui-background.background.background--cover :: opacity
+ 20x  0-0px  section#style.style.section.ui-light :: transform
+ 20x  0-0px  p.leading-trim :: height
+ 19x  0-0px  section.lobby.section.ui-dark :: transform
+ 18x  0-0px  div.col.col--xs-4.col--md-6 :: height
+ 18x  0-0px  div.content-animation.content-animation--bottom.content-animation--ready :: height
+ 15x  0-0px  div.row :: height
+ 15x  0-0px  section.time.section.ui-dark :: transform
+ 15x  0-0px  section.section :: transform
+ 14x  0-0px  picture.is-hidden--no-js.img-full.js-gallery-image :: height
+ 14x  0-0px  div :: height
+ 13x  251-0px  section#about.about.section.ui-dark :: transform
+ 13x  0-0px  section#location.location.section.section--no-overflow :: transform
+ 13x  0-0px  section#improvement.improvement.section.section--top :: transform
+ 12x  0-0px  p.h3.leading-trim :: height
+ 11x  0-0px  section.panorama.section.section--no-overflow-clip :: transform
+ 11x  0-0px  picture.is-hidden--no-js.lobby__image.background :: transform
+ 11x  0-0px  div.lobby__content.pb-layout :: transform
+ 10x  0-0px  a.btn.header__logo.header__logo--landing :: color
+ 10x  0-0px  div.col.col--xs-4.col--md-12 :: height
+ 10x  0-0px  picture.is-hidden--no-js.background.background--cover :: transform, height
+ 10x  0-0px  section#services.services.section.ui-dark :: transform
+  9x  251-0px  div.about__background.sticky__layer.sticky__layer--sticky :: transform
+  9x  251-0px  div.about__content.sticky__layer.sticky__layer--sticky :: transform
+  9x  251-0px  div.col.col--xs-4.col--md-8 :: transform
+  9x  0-0px  li.carousel__list__item.mobile-scrollable__item.js-carousel-item :: transform
+  9x  0-0px  section.map.section.ui-dark :: transform
+  9x  0-0px  section.gallery.section.section--full-height :: transform
+  9x  0-0px  div.col.col--xs-2.col--md-4 :: height
+  8x  0-0px  div.col.col--xs-4.col--md-4 :: transform, height, color
+  8x  0-0px  span.btn__content :: color
+  8x  0-0px  picture.is-hidden--no-js.img-full :: transform
+  8x  0-0px  picture.is-hidden--no-js.style__decor-mirror.background :: transform
+  8x  0-0px  div.col.col--xs-1.col--md-3 :: height
+  8x  0-0px  div.time__sticky.sticky.sticky--under-next :: transform
+  8x  0-0px  div.time__container.sticky__layer.sticky__layer--sticky :: transform
+  8x  0-0px  span.text-nowrap :: color
+  7x  0-0px  div :: transform
+  7x  0-0px  p.h3.leading-trim.splitting :: height
+  6x  251-0px  div.col.col--xs-4.col--md-4 :: transform
+  6x  0-0px  header.header.is-hidden--print.header--sticky :: color, [fixed]
+  6x  0-0px  div.header__content.row.row--top-xs :: color
+  6x  0-0px  div.col.col--xs-3.col--md-9 :: color
+  6x  0-0px  div.background.background--cover.ui-background :: clip
+  6x  0-0px  div.lobby__shadow.is-hidden--sm-down :: opacity
+  6x  0-0px  div.advantages__sticky.sticky.sticky--under-next :: transform
+  6x  0-0px  div.col.col--xs-4.col--md-5 :: height
+  6x  0-0px  div.sticky__layer.sticky__layer--sticky :: height
+  6x  0-0px  div.card__lb :: height
+  5x  251-1068px  section.section.section--full-height.ui-dark :: transform
