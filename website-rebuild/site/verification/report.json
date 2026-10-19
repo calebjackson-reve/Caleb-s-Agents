@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-19T18:06:36.098Z",
+  "generated": "2026-10-19T18:22:45.007Z",
   "base": "http://localhost:8787/site/",
   "pages": {
     "index@desktop": {
@@ -8,27 +8,27 @@
         "http://localhost:8787/media/video/still-anim-1-front-night-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 16204,
+      "scrollHeight": 10286,
       "overflowX": false,
-      "reveals": 8,
-      "revealsIn": 8,
-      "words": 7,
-      "wordsIn": 7,
-      "fades": 13,
-      "fadesIn": 13,
+      "reveals": 7,
+      "revealsIn": 7,
+      "words": 8,
+      "wordsIn": 8,
+      "fades": 20,
+      "fadesIn": 20,
       "header": true,
       "footer": true,
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 8,
+      "triggers": 1,
       "fontsLoaded": true,
       "videos": [
         {
-          "src": "aerial-1-dusk-estate-16x9.mp4",
-          "ready": 0,
-          "paused": true,
-          "w": 0
+          "src": "aerial-1-dusk-estate-16x9.webm",
+          "ready": 4,
+          "paused": false,
+          "w": 1920
         },
         {
           "src": "still-anim-1-front-night-16x9.mp4",
@@ -40,7 +40,7 @@
       "imgsBroken": [],
       "screenshots": [
         "index-desktop-top.png",
-        "index-desktop-full.jpg"
+        "index-desktop-full.png"
       ]
     },
     "search@desktop": {
@@ -65,7 +65,7 @@
       "imgsBroken": [],
       "screenshots": [
         "search-desktop-top.png",
-        "search-desktop-full.jpg"
+        "search-desktop-full.png"
       ]
     },
     "communities@desktop": {
@@ -99,7 +99,7 @@
       "imgsBroken": [],
       "screenshots": [
         "communities-desktop-top.png",
-        "communities-desktop-full.jpg"
+        "communities-desktop-full.png"
       ]
     },
     "sell@desktop": {
@@ -140,7 +140,7 @@
       "imgsBroken": [],
       "screenshots": [
         "sell-desktop-top.png",
-        "sell-desktop-full.jpg"
+        "sell-desktop-full.png"
       ]
     },
     "about@desktop": {
@@ -165,7 +165,7 @@
       "imgsBroken": [],
       "screenshots": [
         "about-desktop-top.png",
-        "about-desktop-full.jpg"
+        "about-desktop-full.png"
       ]
     },
     "contact@desktop": {
@@ -190,7 +190,7 @@
       "imgsBroken": [],
       "screenshots": [
         "contact-desktop-top.png",
-        "contact-desktop-full.jpg"
+        "contact-desktop-full.png"
       ]
     },
     "listing-template@desktop": {
@@ -215,7 +215,7 @@
       "imgsBroken": [],
       "screenshots": [
         "listing-template-desktop-top.png",
-        "listing-template-desktop-full.jpg"
+        "listing-template-desktop-full.png"
       ]
     },
     "neighborhood-template@desktop": {
@@ -249,7 +249,7 @@
       "imgsBroken": [],
       "screenshots": [
         "neighborhood-template-desktop-top.png",
-        "neighborhood-template-desktop-full.jpg"
+        "neighborhood-template-desktop-full.png"
       ]
     },
     "index@mobile": {
@@ -258,20 +258,20 @@
         "http://localhost:8787/media/video/still-anim-1-front-night-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-2-pond-wide-9x16.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 14565,
+      "scrollHeight": 11359,
       "overflowX": false,
-      "reveals": 8,
-      "revealsIn": 8,
-      "words": 7,
-      "wordsIn": 7,
-      "fades": 13,
-      "fadesIn": 13,
+      "reveals": 7,
+      "revealsIn": 7,
+      "words": 8,
+      "wordsIn": 8,
+      "fades": 20,
+      "fadesIn": 20,
       "header": true,
       "footer": true,
       "lenis": true,
       "gsap": true,
       "scrollTrigger": true,
-      "triggers": 8,
+      "triggers": 1,
       "fontsLoaded": true,
       "videos": [
         {
@@ -290,7 +290,7 @@
       "imgsBroken": [],
       "screenshots": [
         "index-mobile-top.png",
-        "index-mobile-full.jpg"
+        "index-mobile-full.png"
       ]
     },
     "search@mobile": {
@@ -315,7 +315,7 @@
       "imgsBroken": [],
       "screenshots": [
         "search-mobile-top.png",
-        "search-mobile-full.jpg"
+        "search-mobile-full.png"
       ]
     },
     "communities@mobile": {
@@ -349,7 +349,7 @@
       "imgsBroken": [],
       "screenshots": [
         "communities-mobile-top.png",
-        "communities-mobile-full.jpg"
+        "communities-mobile-full.png"
       ]
     },
     "sell@mobile": {
@@ -390,7 +390,7 @@
       "imgsBroken": [],
       "screenshots": [
         "sell-mobile-top.png",
-        "sell-mobile-full.jpg"
+        "sell-mobile-full.png"
       ]
     },
     "about@mobile": {
@@ -415,7 +415,7 @@
       "imgsBroken": [],
       "screenshots": [
         "about-mobile-top.png",
-        "about-mobile-full.jpg"
+        "about-mobile-full.png"
       ]
     },
     "contact@mobile": {
@@ -440,7 +440,7 @@
       "imgsBroken": [],
       "screenshots": [
         "contact-mobile-top.png",
-        "contact-mobile-full.jpg"
+        "contact-mobile-full.png"
       ]
     },
     "listing-template@mobile": {
@@ -465,7 +465,7 @@
       "imgsBroken": [],
       "screenshots": [
         "listing-template-mobile-top.png",
-        "listing-template-mobile-full.jpg"
+        "listing-template-mobile-full.png"
       ]
     },
     "neighborhood-template@mobile": {
@@ -499,7 +499,7 @@
       "imgsBroken": [],
       "screenshots": [
         "neighborhood-template-mobile-top.png",
-        "neighborhood-template-mobile-full.jpg"
+        "neighborhood-template-mobile-full.png"
       ]
     }
   }

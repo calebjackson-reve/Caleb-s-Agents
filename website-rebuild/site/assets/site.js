@@ -10,7 +10,12 @@
   document.querySelectorAll('video[data-src-wide]').forEach(function (v) {
     var tall = window.matchMedia('(max-aspect-ratio: 1/1)').matches;
     if (tall && v.dataset.posterTall) v.poster = v.dataset.posterTall;
-    v.src = tall ? v.dataset.srcTall : v.dataset.srcWide;
+    var mp4 = tall ? v.dataset.srcTall : v.dataset.srcWide;
+    var webm = tall ? v.dataset.srcTallWebm : v.dataset.srcWideWebm;
+    [[mp4, 'video/mp4'], [webm, 'video/webm']].forEach(function (pair) {
+      if (!pair[0]) return;
+      var src = document.createElement('source'); src.src = pair[0]; src.type = pair[1]; v.appendChild(src);
+    });
     v.load();
   });
 
@@ -118,7 +123,7 @@
   var io = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } });
   }, { rootMargin: '0px 0px -12% 0px', threshold: 0.05 });
-  document.querySelectorAll('.words, .reveal, .fade, .chevrons, .sweep').forEach(function (el) { io.observe(el); });
+  document.querySelectorAll('.words, .reveal, .fade, .chevrons, .chev, .sweep').forEach(function (el) { io.observe(el); });
   document.querySelectorAll('[data-stagger]').forEach(function (g) { Array.prototype.forEach.call(g.children, function (c, i) { c.style.setProperty('--i', i); }); });
 
   /* sweep: gray words turn ink as they pass the middle of the viewport */
@@ -158,14 +163,15 @@
   /* ---------- home hero: pinned stage ---------- */
   var hero = document.querySelector('.hero');
   if (hero) {
-    var tl = gsap.timeline({ scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom bottom', scrub: 0.6 } });
-    tl.to('.hero-media video, .hero-media img', { scale: 1.12, ease: 'none', duration: 1 }, 0)
-      .to('.hero-copy', { y: '-30vh', opacity: 0, ease: 'none', duration: 0.3 }, 0.15)
-      .to('.hero-hint', { opacity: 0, duration: 0.1 }, 0);
-    if (document.querySelector('.hero-portrait')) {
-      tl.fromTo('.hero-portrait', { y: '100%' }, { y: '6%', ease: 'none', duration: 0.4 }, 0.3);
-    }
-    tl.fromTo('.hero-wordmark', { opacity: 0, y: '30%' }, { opacity: 1, y: '0%', ease: 'none', duration: 0.3 }, 0.55);
+    /* One pass, nothing bounces: the copy lifts away, the ground darkens, the name rises behind him and he rises in front of it and stays. Timings are fractions of the 400vh stage. */
+    var veil = document.createElement('div'); veil.className = 'hero-veil'; hero.querySelector('.hero-media').after(veil);
+    var tl = gsap.timeline({ scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom bottom', scrub: 0.8 } });
+    tl.to('.hero-media video, .hero-media img', { scale: 1.18, ease: 'none', duration: 1 }, 0)
+      .to('.hero-hint, .hero-meta', { opacity: 0, duration: 0.08 }, 0)
+      .to('.hero-copy', { y: '-24vh', opacity: 0, filter: 'blur(8px)', ease: 'none', duration: 0.28 }, 0.1)
+      .to('.hero-veil', { opacity: 0.55, ease: 'none', duration: 0.4 }, 0.2)
+      .fromTo('.hero-wordmark', { opacity: 0, y: '40%' }, { opacity: 1, y: '0%', ease: 'none', duration: 0.34 }, 0.3)
+      .fromTo('.hero-portrait', { y: '100%', scale: 0.94 }, { y: '4%', scale: 1, ease: 'none', duration: 0.42 }, 0.34);
   }
 
   /* ---------- split panels: slow drift on the photo ---------- */

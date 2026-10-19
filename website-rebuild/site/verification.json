@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-19T18:06:36.098Z",
+  "generated": "2026-10-19T18:22:45.007Z",
   "method": "Playwright 1.56 headless Chromium, 1440x900 desktop and 390x844 iPhone UA with touch, served from python http.server at /site/. Each page loaded to network idle, scrolled in 80% viewport steps with 220ms pauses, then measured. Lighthouse 12 run with the headless Chromium at /opt/pw-browsers/chromium, default mobile throttling. Script: site/scripts/verify.js.",
   "definitionOfDone": {
     "consoleErrorsTotal": 0,
@@ -90,15 +90,15 @@
       "consoleErrors": [],
       "horizontalOverflow": false,
       "entrances": {
-        "reveal": "8/8",
-        "words": "7/7",
-        "fade": "13/13"
+        "reveal": "7/7",
+        "words": "8/8",
+        "fade": "20/20"
       },
-      "scrollTriggers": 8,
+      "scrollTriggers": 1,
       "fontsLoaded": true,
       "brokenImages": [],
       "videoSourceChosen": [
-        "aerial-1-dusk-estate-16x9.mp4",
+        "aerial-1-dusk-estate-16x9.webm",
         "still-anim-1-front-night-16x9.mp4"
       ],
       "failedRequests": [
@@ -262,11 +262,11 @@
       "consoleErrors": [],
       "horizontalOverflow": false,
       "entrances": {
-        "reveal": "8/8",
-        "words": "7/7",
-        "fade": "13/13"
+        "reveal": "7/7",
+        "words": "8/8",
+        "fade": "20/20"
       },
-      "scrollTriggers": 8,
+      "scrollTriggers": 1,
       "fontsLoaded": true,
       "brokenImages": [],
       "videoSourceChosen": [
@@ -466,13 +466,16 @@
     "word stagger in line masks",
     "clip reveal with drift on every image",
     "fade and stagger groups",
-    "hero pinned timeline (media scale, copy out, portrait in, wordmark in)",
-    "world panel parallax",
-    "communities runway horizontal travel",
-    "curved gallery with switch",
-    "count up on stats",
-    "closing gradient fill scrub",
+    "hero pinned timeline (copy lifts and blurs, veil, wordmark rises, portrait rises and stays)",
+    "gray-to-ink word sweep on section headlines",
+    "four photo chevrons slide in",
+    "numbered rows stagger up",
+    "asymmetric split clip reveals",
+    "service giant words with arrow hover",
+    "feature card drift on hover",
+    "outro headline line reveal",
     "page hero parallax",
     "pill cloned label hover"
-  ]
+  ],
+  "homeRevision": "October 19, 2026, second pass: hero portrait rises once and stays with the wordmark behind it; every section below the hero follows FIND's order (why, chevron statement, rewired rows, about split, services giant words, feature cards, latest band, outro, directory, footer). Contact sheets: verification/hero-desktop-sheet.jpg, hero-mobile-sheet.jpg, home-desktop-sheet.jpg, home-mobile-sheet.jpg, outro-sheet.jpg."
 }
