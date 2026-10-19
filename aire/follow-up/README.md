@@ -4,7 +4,7 @@ Caleb's second automation tool, from Nick Saraev's `mk-crm-followup-cadence` ski
 
 ## Why a CSV and not a live CRM link
 
-KW Command has no public API and exports contacts from its own screen, up to 50 at a time ([KW documentation, bulk export](https://documentation.kw.com/html/kellercloud/command/contacts/managing-contacts/bulk-actions-contacts/export-bulk.html), read 2026-10-16). So the tool reads a `contacts.csv` that Caleb exports, or any sheet with these columns:
+KW Command has no public API and exports contacts from its own screen, up to 50 at a time ([KW documentation, bulk export](https://documentation.kw.com/html/kellercloud/command/contacts/managing-contacts/bulk-actions-contacts/export-bulk.html), read 2026-10-16). So the tool reads a `contacts.csv`. Since 2026-10-19 that file comes from the CRM: `python3 ../crm/crm.py export-followup` writes it from the AIRE CRM sheet (see `aire/crm/README.md`). The columns:
 
 ```
 name,email,phone,stage,last_touch,address,notes

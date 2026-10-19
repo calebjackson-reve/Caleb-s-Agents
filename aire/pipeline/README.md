@@ -1,5 +1,7 @@
 # Pipeline tracker
 
+**Moved 2026-10-19.** The pipeline is now the Pipeline tab of the AIRE CRM sheet (see `aire/crm/README.md`). The "AIRE Pipeline" sheet below is retired. Same columns, plus id, contact, listing_id, updated_at.
+
 No pipeline sheet existed in Caleb's Drive on October 19, 2026, so this is the template. Two example rows, clearly marked, replace them with real deals.
 
 ## Columns

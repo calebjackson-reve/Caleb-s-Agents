@@ -2,6 +2,22 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, late night: AIRE CRM, one database
+
+**Confirmed by Caleb**
+- One system. Google Workspace is the database, no Supabase, Airtable or BoB. ChatGPT and Codex retired, Grok kept for briefs. "Build it... all apps integrated and working flawlessly like Follow Up Boss."
+
+**Done**
+- The Hot-Warm-Cold sheet is now **AIRE CRM** (same Drive file, renamed). Contacts keeps Caleb's columns A to L, the tool owns M to P (stage, last_touch_iso, source, id). New tabs: Pipeline, Activity, Tasks, Leads, headers in place.
+- `aire/crm/crm.py`: the engine. auth, pull, import-hwc, ingest (Luxury Presence leads, ShowingTime, Authentisign from Gmail, read only), due, log, task, done, tasks, pipeline, export-followup, brief. 35 offline tests pass. Simulated on the real 458-row list: 456 last-touch dates parsed, 54 tasks from "Next action", 118 touches due.
+- Command center reads the CRM cache: new Deals, Touches due and Tasks sections at the top of Caleb's view. "Log a touch" and "Done" write to the sheet through crm.py. Chromium click-through: 931 ms load, both actions work, 0 errors. Fixed a state-file race (atomic write).
+- Follow-up tool now gets contacts.csv from `crm.py export-followup`. Morning run and its scheduled task read the CRM sheet. Mac companion writes Command changes into the CRM.
+- The old "AIRE Pipeline" sheet is retired.
+
+**Not done, needs the Mac**
+- The classifier would not let the cloud session write client deal rows to the sheet, so Pipeline rows and tasks come from `crm.py import-hwc` on the Mac. First run steps in `aire/crm/README.md`: put the OAuth client at ~/.aire/credentials.json, `crm.py auth`, `import-hwc`, `ingest --hours 72`, `pull`, then open the command center.
+- Pipeline rows for Lockhart, Pecan Tree, Turnberry and Cruden Bay: Caleb adds them on the Pipeline tab (prices and close dates are his to confirm).
+
 ## 2026-10-19, late: morning run live
 
 **Confirmed by Caleb**

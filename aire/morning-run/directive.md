@@ -4,7 +4,7 @@
 Every morning before Caleb's 7:30 sales block, one brief lands in his calendar that answers: what came in overnight, what moved in the pipeline, which contract deadlines are live, and where he has to be today, with travel already blocked. He opens the calendar, not six apps.
 
 ## Two runners, one brief
-- **Cloud (this session, 6:40 am Central daily).** Gmail, Google Calendar, the AIRE Pipeline sheet, the AIRE repo. Produces the brief and the calendar event.
+- **Cloud (this session, 6:40 am Central daily).** Gmail, Google Calendar, the AIRE CRM sheet (Contacts, Pipeline, Tasks, Leads tabs), the AIRE repo. Produces the brief and the calendar event.
 - **Mac companion (Caleb's Mac, on demand or scheduled after 6:50 am).** KW Command and ROAM MLS have no API. The Mac's Claude session opens them in Chrome, reads what the cloud cannot, and appends to the same brief. See `mac-companion.md`.
 
 ## Cloud process
@@ -14,7 +14,12 @@ Every morning before Caleb's 7:30 sales block, one brief lands in his calendar t
    - Authentisign: signing invitations (who still owes a signature), signing complete (which document, which deal), inactivity notices (deadline risk).
    - KW First Choice office emails with a date or deadline (open house posting cutoff, CE, phone duty).
    - Anything with inspection, appraisal, closing, walk through, listing appointment in the subject or body.
-2. **Pipeline sheet** (AIRE Pipeline, Drive). For every real row: stage, expected_close within 14 days, last_touch older than 7 days, next_step. Example rows are ignored. If the sheet has no real rows, say so in one line.
+2. **AIRE CRM sheet** (id 11t6vex49xdA7RmskELDxt2O044vo1EJkPqL3yCgglHE, see `aire/crm/README.md`).
+   - Pipeline tab: every live row (stage not closed or lost): client, stage, expected_close, next_step. Flag close within 14 days.
+   - Tasks tab: open tasks, overdue first.
+   - Contacts tab: touches due by tier cadence (HOT 7 days, WARM 14, COLD 90, CONTACT 365) from last_touch_iso, or from "Last touch" if column N is empty. List HOT and WARM by name with their "Next action". Count the rest.
+   - Leads tab: rows with status new.
+   If a tab is empty, say so in one line.
 3. **Contract terms.** From Authentisign subjects and the pipeline sheet, list each live contract with: document, parties still to sign, next dated deadline Caleb knows about. Never infer a deadline the emails do not state. Unknown dates read "date not in email, check Command."
 4. **Calendar.**
    - Read today's events on aire@calebjackson.org.
@@ -27,7 +32,9 @@ Every morning before Caleb's 7:30 sales block, one brief lands in his calendar t
 ```
 AIRE Morning Brief, Tue Oct 20
 NEW LEADS (n): name, type, phone, came in 9:52 pm, drafts waiting in Gmail
-PIPELINE (n live): client, stage, close date, last touch, next step. Flags: close within 14 days, quiet over 7 days.
+PIPELINE (n live): client, stage, close date, next step. Flag: close within 14 days.
+TOUCHES DUE (n): hot and warm by name with next action, cold/contact as a count
+TASKS (n open, n overdue): due, who, what
 CONTRACTS: document, who still owes a signature, deadline or "check Command"
 TODAY: time, what, where, travel blocked / conflict
 SHOWINGS ON MY LISTINGS: property, time, status

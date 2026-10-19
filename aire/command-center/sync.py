@@ -30,6 +30,7 @@ STATE = DATA / "state.json"
 STL = AIRE / "speed-to-lead"
 FU = AIRE / "follow-up"
 PROP = AIRE / "proposal"
+CRM_CACHE = AIRE / "crm" / "cache.json"
 
 
 def read_json(p: Path, default):
@@ -178,6 +179,22 @@ def showings() -> list[dict]:
         return [{"status": "Error", "property": "", "when": "", "listing_id": None, "at": "", "error": str(e)}]
 
 
+def crm_section() -> dict:
+    """The AIRE CRM sheet, through the cache that `crm.py pull` writes. Touches due, open tasks, live deals."""
+    empty = {"crm_pulled_at": None, "touches_due": [], "tasks": [], "pipeline": []}
+    if not CRM_CACHE.exists():
+        return empty
+    try:
+        import sys
+        sys.path.insert(0, str(AIRE / "crm"))
+        import crm as crmmod
+        c = crmmod.CRM(crmmod.LocalBackend(CRM_CACHE))
+        pulled = read_json(CRM_CACHE, {}).get("pulled_at")
+        return {"crm_pulled_at": pulled, "touches_due": c.due()[:40], "tasks": c.open_tasks(), "pipeline": c.live_deals()}
+    except Exception as e:
+        return {**empty, "crm_error": str(e)}
+
+
 # -------------------------------------------------------------------- store
 
 
@@ -191,6 +208,7 @@ def build() -> dict:
         "proposals": proposals(),
         "overnight": overnight(),
         "showings": showings(),
+        **crm_section(),
     }
 
 
@@ -232,6 +250,24 @@ def seed() -> dict:
             {"tool": "speed-to-lead", "at": iso(10.99), "level": "ok", "message": "replied to Sam Night in 55 s, text held until 8 am"},
             {"tool": "follow-up", "at": iso(0.5), "level": "ok", "message": "queue built: 2 due, 1 flagged, 3 skipped"},
             {"tool": "proposal", "at": iso(30), "level": "error", "message": "extraction returned no JSON for call-oct-18.txt (claude -p timed out). Re-run."},
+        ],
+        "crm_pulled_at": iso(0.2),
+        "touches_due": [
+            {"name": "Taylor Sample", "tier": "HOT", "phone": "(225) 555-0101", "email": "taylor.sample@icloud.com", "days": 8,
+             "next_action": "Send inspection report", "stage": "under-contract"},
+            {"name": "Jordan Warm", "tier": "WARM", "phone": "(225) 555-0102", "email": "", "days": 20,
+             "next_action": "Ask about spring timing", "stage": "new-lead"},
+        ],
+        "tasks": [
+            {"id": "a1b2c3d4", "due": now.date().isoformat(), "contact": "Taylor Sample", "task": "Send inspection report to the other agent",
+             "status": "open", "source": "Hot-Warm-Cold next action", "created_at": iso(12), "done_at": "", "overdue": False},
+            {"id": "e5f6a7b8", "due": (now - timedelta(days=1)).date().isoformat(), "contact": "", "task": "Sign 1 Test Ave - Inspection Response.pdf",
+             "status": "open", "source": "Authentisign", "created_at": iso(30), "done_at": "", "overdue": True},
+        ],
+        "pipeline": [
+            {"id": "test-ave-1", "client": "Taylor Sample", "side": "buyer", "address": "1 Test Ave, Zachary", "stage": "under_contract",
+             "price": "300000", "commission_pct": "2.5", "expected_close": (now + timedelta(days=9)).date().isoformat(), "source": "seed",
+             "last_touch": "2026-10-18", "next_step": "Send inspection report", "contact": "Taylor Sample", "listing_id": "1-test-ave-zachary", "updated_at": ""},
         ],
         "showings": [
             {"status": "Confirmed", "property": "2179 S Turnberry Ave, Zachary, LA 70791", "when": "Fri, 10/16 11:15 AM",
