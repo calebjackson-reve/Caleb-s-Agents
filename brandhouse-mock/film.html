@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Long Road Home - Brandhouse</title>
+<meta name="description" content="Brandhouse is the studio of videographer Tyler Boyle. Brand films, commercials, weddings and documentary work. Mock site with sample content.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="film">
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr wrap">
+  <a class="logo" href="index.html" aria-label="Brandhouse home"><svg viewBox="0 0 44 52" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 3h12l12 46H15z"/><path d="M19 3h22L29 49"/></svg></a>
+  <div class="hdr-right">
+    <a class="donate" href="contact.html">Book a Shoot</a>
+    <button class="menu-btn" id="menuOpen" aria-expanded="false" aria-controls="menu"><span class="bars"><i></i><i></i></span>Menu</button>
+  </div>
+</header>
+<div class="menu" id="menu" data-open="false" aria-hidden="true">
+  <div class="menu-top"><a class="logo" href="index.html" aria-label="Brandhouse home"><svg viewBox="0 0 44 52" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 3h12l12 46H15z"/><path d="M19 3h22L29 49"/></svg></a><button class="menu-close" id="menuClose">&times; Menu</button></div>
+  <nav aria-label="Main">
+    <a href="work.html">Work</a><a href="index.html#reel">Reel</a><a href="index.html#studio">Studio</a><a href="about.html#services">Services</a><a href="about.html">About</a><a href="contact.html">Contact</a><a href="contact.html">Book a Shoot</a><a class="ext" href="https://instagram.com">Instagram</a>
+  </nav>
+  <div class="menu-foot"><a href="https://instagram.com">Instagram</a><a href="https://vimeo.com">Vimeo</a><a href="https://youtube.com">YouTube</a><a href="contact.html">Newsletter</a></div>
+</div>
+<main id="main">
+
+<section class="film-hero wrap">
+  <span class="tag">Commercial, Automotive</span>
+  <h1>Long Road Home</h1>
+  <div class="meta"><div><span>Directed by</span><span>Tyler Boyle</span></div><div><span>Client</span><span>Bayou Trucks (sample)</span></div><div><span>Year</span><span>2026 (Louisiana)</span></div><div><span>Runtime</span><span>2 min 10, and a 60 sec cut</span></div></div>
+</section>
+<section class="band" style="padding-block:0"><div class="wrap"><div class="slide" data-video style="width:100%;aspect-ratio:16/9"><video src="assets/reel-01.mp4" muted loop playsinline preload="metadata" poster="assets/still-06.jpg"></video><div class="play"><b>&#9654;</b></div></div></div></section>
+<section class="wrap film-body">
+  <div class="txt">
+    <p>A sixty-second spot and a two-minute cut for a regional truck dealer, shot over one evening on Highway 1. Practical lighting, one picture car and a chase vehicle. The brief was simple: make the drive home feel like the best part of the day.</p>
+    <p>We scouted three stretches of road and picked the one with the longest clean horizon. Sunset gave us twenty-two usable minutes, so every setup was rehearsed in daylight first. Sound was recorded in the cab with two lavs and a 416 on the dash.</p>
+    <p>Delivered in 16:9, 9:16 and 1:1 with a broadcast-safe mix and a social mix. The 60 second cut ran on local TV for six weeks. Sample copy for this mock.</p>
+    <a class="ul" href="work.html">Back to work</a>
+  </div>
+  <div class="stills"><img src="assets/still-06.jpg" alt=""><img src="assets/still-02.jpg" alt=""><img src="assets/still-01.jpg" alt=""></div>
+</section>
+<section class="wrap ctas"><a class="cta" href="contact.html"><h2>Book a Shoot</h2></a><a class="cta" href="work.html"><h2>More Work</h2></a></section>
+</main>
+<footer class="foot wrap">
+  <div class="foot-grid">
+    <ul><li><a href="work.html">Work</a></li><li><a href="index.html#reel">Reel</a></li><li><a href="index.html#studio">Studio</a></li><li><a class="ext" href="https://vimeo.com">Vimeo</a></li></ul>
+    <ul><li><a href="about.html#services">Services</a></li><li><a href="about.html#kit">Gear</a></li><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li><li><a href="contact.html">Book a Shoot</a></li><li><a href="about.html">Careers</a></li></ul>
+    <ul><li><a href="https://instagram.com">Instagram</a></li><li><a href="https://youtube.com">YouTube</a></li><li style="margin-top:12px"><a href="contact.html">Newsletter</a></li></ul>
+    <a class="circle" href="contact.html"><span>Book</span></a>
+  </div>
+  <div class="foot-bottom"><span>&copy; 2026 - Brandhouse. Tyler Boyle.</span><span>Mock site. Sample images and footage.</span><span>Privacy Policy</span><span></span></div>
+</footer>
+<script>
+(function(){
+  var m=document.getElementById('menu'),o=document.getElementById('menuOpen'),c=document.getElementById('menuClose');
+  function set(v){m.dataset.open=v;m.setAttribute('aria-hidden',!v);o.setAttribute('aria-expanded',v);document.body.style.overflow=v?'hidden':'';}
+  o.addEventListener('click',function(){set(true)});c.addEventListener('click',function(){set(false)});
+  m.querySelectorAll('nav a').forEach(function(a){a.addEventListener('click',function(){set(false)})});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
+  document.querySelectorAll('.slide[data-video]').forEach(function(s){
+    s.addEventListener('click',function(){var v=s.querySelector('video');if(!v)return;if(v.paused){v.play();s.classList.add('playing')}else{v.pause();s.classList.remove('playing')}});
+  });
+})();
+</script>
+</body>
+</html>
