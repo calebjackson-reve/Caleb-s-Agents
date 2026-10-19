@@ -34,7 +34,10 @@ What that changes: Cloudflare Pages still works, but the custom domain is attach
 ### 1. Lead webhook (10 min)
 Follow `functions/README.md`: new Google Sheet, Apps Script, paste `lead-webhook.gs`, deploy as web app, copy the URL.
 
-### 2. Cloudflare Pages (10 min)
+### 2. Cloudflare Pages (10 min, or one command)
+
+Shortcut: `website-rebuild/site/scripts/deploy-cloudflare.sh` does the whole of this step by direct upload once `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `LEAD_WEBHOOK` are in the session environment. It creates the project, sets the variable, uploads the bundle with the lead function, and requests the custom domains. Re-run it to redeploy.
+
 1. dash.cloudflare.com, the account that holds calebjackson.org. Workers & Pages, Create, Pages, Connect to Git, pick `calebjackson-reve/Caleb-s-Agents`.
 2. Production branch: `main`. Root directory: `website-rebuild`. Build command: `python3 site/scripts/build.py && python3 site/scripts/dist.py dist`. Build output directory: `dist`. Functions are picked up from `website-rebuild/functions` automatically.
 3. Environment variables (Production): `LEAD_WEBHOOK` = the Apps Script URL from step 1.

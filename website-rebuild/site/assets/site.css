@@ -391,6 +391,7 @@ h1, h2, h3, h4, p { margin: 0; }
 
 /* ---------- motion pass: stack, grain, pixel fill, receipts ---------- */
 .stack { position: relative; }
+.services, .arrows, .rewired, .features, .latest, .asym, .why { overflow: hidden; }
 .stack-item { position: sticky; top: 0; will-change: transform; }
 .stack-item > section:first-child { box-shadow: 0 -1px 0 var(--hairline); }
 .ui-dark { position: relative; }
