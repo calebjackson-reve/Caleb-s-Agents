@@ -2,6 +2,41 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, late: morning run live
+
+**Confirmed by Caleb**
+- "You can have that every morning." Daily morning routine approved.
+
+**Done**
+- `aire/morning-run/directive.md` and `mac-companion.md`. Cloud runner reads Gmail (read only), the AIRE Pipeline sheet, Authentisign status and the calendar, then writes one "AIRE Morning Brief" event 6:45 to 7:00 Central and the brief file. Mac companion covers ROAM MLS and KW Command, which have no API.
+- Scheduled task "AIRE morning run" (trig_01THrpgYe4fxVc4z4QtynZBS) fires 6:40 am Central daily in the cloud session.
+- First brief produced for Tue Oct 20: calendar event bkvkvuclndidtsflr6a4c8kvds, file `briefs/2026-10-20.md`.
+
+**Needs Caleb**
+- Fill real rows in the AIRE Pipeline sheet so the pipeline section has something to track.
+- Turn on Flex saved-search daily email alerts so the cloud run can read MLS.
+- Run "morning companion" on the Mac for Command and MLS.
+
+## Morning run log
+- 2026-10-20 (run Oct 19 evening): 1 new lead, 0 pipeline rows, 5 contracts (0 waiting on Caleb, 1 item owed: inspection report to Aaron Goolsby), 1 conflict (Business Planning Clinic vs lead gen and sales block 2), 0 appointments added. Nothing failed.
+
+## 2026-10-19, night: supervised week, sales block, contacts mapped, proposal marketing text
+
+**Confirmed by Caleb**
+- Test the responder for a week with drafts he approves by hand. Do steps 4 and 5 of the plan (proposal marketing text, sales block on the calendar).
+
+**Done**
+- Scheduled task "Speed to lead supervised week" fires 7:05 am Central daily through Oct 26 in the cloud session: finds new Luxury Presence leads, creates one Gmail draft per lead from the main templates, plus a digest draft to aire@. Sends nothing. Caleb opens Drafts and hits send or delete. The Mac runner keeps its own dry run; neither sends.
+- Google Calendar: three weekday "Sales block" events from Oct 20 (7:30 to 8:30, 12:30 to 1:00, 5:00 to 5:30 Central), red, 10-minute popup. Roadmap step 14.
+- Contacts: mapped the Drive sheet "Hot-Warm-Cold Contacts 2026-10-19" (458 people) into the follow-up tool's format. 100 have email, 358 are phone only. Tier to pool: HOT with an active deal to under-contract, other HOT and WARM to new-lead, COLD and CONTACT to past-client (90/180/365). First dry-run queue for Oct 20: 3 due, 0 flagged, 97 skipped. File delivered to Caleb, not committed (client data).
+- A phone-only call list of the 41 HOT and WARM contacts without email, delivered to Caleb.
+- Proposal marketing plan rewritten from what Caleb actually does (pre-list walk, MLS plus calebjackson.org page, office and buyer-list announcement, first-weekend open house and social launch, ShowingTime approvals with same-day feedback, weekly update). Sample re-rendered, 10 tests pass.
+
+**Needs Caleb**
+- Read the new marketing plan in `aire/proposal/tests/sample-proposal.html` and say what is wrong.
+- Drop `contacts.csv` into `aire/follow-up/` on the Mac. The cadence can only email the 100 with addresses. The other 358 need the call list or an A2P-registered text line.
+- Each morning this week: open Gmail Drafts, send or delete.
+
 ## 2026-10-19, evening: follow-up cadence, proposal tool, command center merged from the cloud branch
 
 **Done (cloud session, branch claude/gallant-lamport-c5mtmq)**
