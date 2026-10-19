@@ -2,6 +2,23 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, evening: week 2 built
+
+**Done**
+- Merged the week 1 checklist. Built week 2 the same day on Caleb's say-so.
+- Seller net sheet calculator at `aire/calculators/net-sheet.html`, in the site's paper, ink and coral tokens. Proven in a headless browser: math matches hand calculation, no overflow at phone width, no errors. Preview at https://claude.ai/artifact/9nV9rkWA422LkAbX5AC31L.
+- First bulk tier workflow at `aire/lead-enrichment/`: directive, `enrich.py` on Haiku 5.5 with JSON schema output, DRY_RUN default, sample CSV. Compiles. Not run against the API, no key in this session.
+- `aire/rollout-2026-10/WEEK-2.md`: status, proof, the Meta One decision memo, and the two small checks.
+
+**Inference**
+- No enrichment pipeline existed, so "reroute to Haiku" became "build the first one on Haiku".
+
+**Needs Caleb**
+- Review the calculator defaults, then paste into the Sell page on Luxury Presence.
+- Run the enrichment dry run on the Mac (one command in WEEK-2.md).
+- Meta One yes or no. RealAssist market check. Facebook Your Algorithm.
+- Week 1 switches are still open.
+
 ## 2026-10-19, afternoon: plan merged, week 1 started
 
 **Done**
