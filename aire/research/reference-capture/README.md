@@ -25,13 +25,23 @@ Writes `sobha/desktop/` and `sobha/mobile/`, each with `viewport.png`, `fullpage
 - every @font-face rule and every font file the page requested
 - stylesheets loaded
 
-Popups and cookie banners are dismissed (Escape, close controls, accept buttons, then any surviving full-screen fixed overlay is removed) before the capture.
+Popups and cookie banners are dismissed before the capture: Escape, accept links and buttons, hiding self-identified cookie or promo modals, then one scored click on a small top-right close control with a reload guard so the click can never leave the site in a different mode. Nothing is removed from the DOM.
+
+Options: `ONLY=desktop` or `ONLY=mobile` runs one viewport. `TOUCH=1` gives the desktop viewport a touch screen, for sites that only scroll natively on touch devices (output goes to `desktop-touch/`).
+
+Sites with a smooth-scroll library on desktop (Locomotive, Lenis) ignore synthetic wheel input. The rig waits for the library's ready class, then drives the page with PageDown and ArrowDown and stitches viewport shots, tracking the sections themselves because the wrapper and a fixed footer never move. Pinned sections stall the metric, so the stall tolerance is 8 steps. On zorge9.estate this reached the first half of the desktop page (20 slices, 18,000 of 36,633 px) before stopping at a long pinned run. The section table in evidence.json covers the whole page regardless.
+
+## Summaries
+```
+python3 summarize.py zorge "Zorge 9" https://zorge9.estate/
+```
+Writes `zorge/ZORGE-measured.md`: the type table for both viewports, font families in use, section heights, grids, font faces and files, scroll model, Unknowns. This is the file that goes into the teardown. Captures do not.
 
 ## Compare a paid face with a free one
 ```
 node fontcompare.mjs sobha https://www.sobharealty.com/ h1 "Instrument Sans"
 ```
-Crops the live element as the site renders it under its own license, then sets the same text in the named Google Font at the same size, weight, tracking and leading. Output `sobha/font-compare.png`. No paid font file is downloaded, copied or embedded.
+Selector can be any Playwright locator, for example `h1`, `h2:visible` or `':text("PREMIUM RESIDENCE")'` when the h1 is a hidden one-pixel element. Optional fifth argument is the weight. Crops the live element as the site renders it under its own license, then sets the same text in the named Google Font at the same size, weight, tracking and leading. Output `sobha/font-compare.png`. No paid font file is downloaded, copied or embedded.
 
 ## Rules
 - Captures are evidence for the Blueprint, Proof, Unknowns report. Copy mechanics, never content.
