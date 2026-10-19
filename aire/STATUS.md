@@ -2,6 +2,16 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, late: approvals page and pipeline sheet
+
+**Done**
+- `aire/approvals/index.html`: every open decision with one button to the exact place. Published as a private artifact, link in the chat.
+- Created the "AIRE Pipeline" Google Sheet in Caleb's Drive from the template, two example rows marked delete me. https://docs.google.com/spreadsheets/d/1sD1cw5JK_i_Q60Y31wy_RODCcVYOMJaTQ1eAF8CVBV4/edit
+- Marked PR 31 ready for review so merge is one click.
+
+**Needs Caleb**
+- Work the approvals page top to bottom.
+
 ## 2026-10-19, night: week 3 built, weeks 1 and 2 merged
 
 **Done**

@@ -7,9 +7,9 @@ No pipeline sheet existed in Caleb's Drive on October 19, 2026, so this is the t
 
 Stages, in order: lead, consult, active (listed or actively showing), showing, under_contract, closed, lost.
 
-## Set up (Caleb, 5 minutes)
-1. Google Sheets, File, Import, upload `pipeline-template.csv`. Name the sheet "AIRE Pipeline".
-2. Delete the two example rows. Add every live deal.
+## Set up
+Done October 19, 2026. The sheet exists: https://docs.google.com/spreadsheets/d/1sD1cw5JK_i_Q60Y31wy_RODCcVYOMJaTQ1eAF8CVBV4/edit
+1. Delete the two example rows. Add every live deal.
 3. Share nothing. The dashboard reads it through Caleb's own Google connector.
 
 ## What reads it
