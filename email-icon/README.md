@@ -4,9 +4,9 @@ A subtle animated version of the cj. monogram, made to be Caleb's Google account
 
 Source of the mark: the Caleb Jackson Brand and Content Package (Google Drive, July 2026). The c glyph comes from `cj-wordmark.svg`, the j and the two ember marks from `aj-monogram.svg`. Colors are the package's ink #14100E and ember #E87757. The package's own monogram is "aj." (Action Jackson); this icon uses "cj." at Caleb's request, October 19 2026.
 
-Two variants, pick one:
+Two variants. Ember is the lead, matching the solid brand-color look in the reel; ivory is the quiet alternative.
+- `caleb-cj-avatar-ember.*`: solid ember background, ivory letters and marks, soft ivory glow. Stands out in a grey inbox.
 - `caleb-cj-avatar-ivory.*`: brand ivory background, ink letters, ember marks, ember glow. Quiet, matches the website.
-- `caleb-cj-avatar-ember.*`: solid ember background, ivory letters and marks, soft ivory glow. Louder, stands out in a grey inbox.
 
 Each comes as `.gif` (animated, for the profile picture), `.png` (one mid-glow frame, static fallback) and `.mp4` (about 11 seconds, three loops, for anything that wants video).
 

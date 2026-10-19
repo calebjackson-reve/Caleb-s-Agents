@@ -14,9 +14,9 @@ EMBER = (0xE8, 0x77, 0x57)    # brand ember (coral)
 # Variants. Google crops the profile picture to a circle, so the mark sits inside the inner 60%.
 VARIANTS = {
     "ivory": dict(bg=IVORY, ink=INK, ember=EMBER, glow=EMBER, glow_min=0.20, glow_max=0.60),
-    "ember": dict(bg=EMBER, ink=IVORY, ember=IVORY, glow=IVORY, glow_min=0.10, glow_max=0.40),
+    "ember": dict(bg=EMBER, ink=IVORY, ember=IVORY, glow=IVORY, glow_min=0.12, glow_max=0.45),
 }
-PAD = 0.22                        # margin on each side as a fraction of SIZE, keeps the mark inside the circle
+PAD = 0.15                        # margin each side; the circle crop still clears the mark
 FPS, DUR = 12, 3.6                # one full breath in seconds
 S = 3                             # supersample
 
