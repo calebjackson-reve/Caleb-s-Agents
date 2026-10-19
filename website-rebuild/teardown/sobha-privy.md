@@ -168,7 +168,7 @@ People photography: one black-and-white portrait of a woman in profile ("Sublime
 - Absolute scroll positions for each effect. The engine never moves the window, and the probe only has step counts.
 - Exact per-character stagger and distance values at runtime: `Stagger:.01` to `.04` and `duration:.8` are in the source but which applies to which element was not traced.
 - Custom cursor behavior and the 3D map page.
-- Mobile scroll captures: the mobile pass stopped after two frames because the document height reads as one viewport on this engine. Type and section data at 390 are valid; a re-run with the fixed height calculation is queued.
+- Mobile scroll frames were captured with real touch swipes through the DevTools protocol (`CONTACT-mobile.jpg`, 34 frames). Header 51px, gutter 20px, h1 36px/40px at 390.
 - Lighthouse: not run.
 
 ## What to take from this site

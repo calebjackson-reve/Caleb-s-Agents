@@ -164,7 +164,7 @@ People photography: fashion-editorial. A model in a black strapless gown in the 
 - Whether the hero wordmark is SVG text or an image, and its exact size: not read from the DOM in this pass.
 - Hover states beyond the cloned-button mechanic.
 - The map section's data source and interaction.
-- Mobile scroll frames: re-run queued with the fixed height calculation (type, header and padding at 390 are already measured).
+- Mobile scroll frames captured with touch swipes (`CONTACT-mobile.jpg`, 33 frames): single column, header 68px, gutter 20px, 24px headlines, one image per beat, the wordmark lockup in the header once scrolled, closing "Private Terraces" with a scroll-up arrow and the wordmark.
 - Lighthouse: not run.
 
 ## What to take from this site
