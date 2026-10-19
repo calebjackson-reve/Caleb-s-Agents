@@ -9,3 +9,5 @@ contacts.csv
 sent-log.json
 flags.md
 queue-*.md
+!queue-seed.md
+queue-*-approved.md
