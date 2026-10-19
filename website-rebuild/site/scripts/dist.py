@@ -9,7 +9,8 @@ out = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'dist'
 if out.exists(): shutil.rmtree(out)
 (out / 'assets').mkdir(parents=True)
 def fix(text): return text.replace('../media/', '/media/').replace('<meta name="robots" content="noindex,nofollow">', '<meta name="robots" content="index,follow">')
-for f in site.glob('*.html'): (out / f.name).write_text(fix(f.read_text()))
+for f in site.glob('*.html'):
+    if not f.name.startswith('_'): (out / f.name).write_text(fix(f.read_text()))
 for f in (site / 'assets').glob('*'): (out / 'assets' / f.name).write_text(fix(f.read_text()))
 refs = set()
 for f in list(out.glob('*.html')) + list((out / 'assets').glob('*')):
@@ -19,7 +20,8 @@ for r in sorted(refs):
     if src.exists():
         dst = out / r.lstrip('/'); dst.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(src, dst)
     else: print('missing', r)
-(out / 'CNAME').write_text('calebjackson.org\n')
+(out / '_redirects').write_text('/home-search https://search.calebjackson.org 301\n/about /about.html 301\n/sell /sell.html 301\n/contact /contact.html 301\n/communities /communities.html 301\n/search /search.html 301\n')
+(out / '_headers').write_text('/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/media/*\n  Cache-Control: public, max-age=31536000, immutable\n/assets/*\n  Cache-Control: public, max-age=86400\n')
 (out / '404.html').write_text((out / 'index.html').read_text())
 (out / 'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: https://calebjackson.org/sitemap.xml\n')
 pages = ['index', 'search', 'communities', 'sell', 'about', 'contact']

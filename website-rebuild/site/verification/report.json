@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-19T19:04:46.561Z",
+  "generated": "2026-10-19T19:24:57.075Z",
   "base": "http://localhost:8787/site/",
   "pages": {
     "index@desktop": {
@@ -7,18 +7,18 @@
       "failedRequests": [
         "http://localhost:8787/media/video/still-anim-3-gazebo-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/still-anim-2b-pool-night-16x9.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/still-anim-1-front-night-16x9.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 15492,
+      "scrollHeight": 14856,
       "overflowX": false,
       "reveals": 13,
       "revealsIn": 13,
       "words": 9,
-      "wordsIn": 9,
+      "wordsIn": 8,
       "fades": 27,
-      "fadesIn": 25,
+      "fadesIn": 21,
       "header": true,
       "footer": true,
       "lenis": true,
@@ -69,7 +69,7 @@
       "failedRequests": [
         "http://localhost:8787/media/video/aerial-2-pond-wide-9x16.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 3249,
+      "scrollHeight": 3216,
       "overflowX": false,
       "reveals": 1,
       "revealsIn": 1,
@@ -103,7 +103,7 @@
       "failedRequests": [
         "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 4420,
+      "scrollHeight": 4362,
       "overflowX": false,
       "reveals": 8,
       "revealsIn": 8,
@@ -135,13 +135,13 @@
     "sell@desktop": {
       "consoleErrors": [],
       "failedRequests": [
-        "http://localhost:8787/media/video/still-anim-2b-pool-night-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/still-anim-4-bath-fireplace-16x9.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/pool-broll-9x16.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/still-anim-2b-pool-night-16x9.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/pool-broll-9x16.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 5595,
+      "scrollHeight": 5562,
       "overflowX": false,
       "reveals": 7,
       "revealsIn": 7,
@@ -199,14 +199,14 @@
       "failedRequests": [
         "http://localhost:8787/media/video/aerial-2-pond-wide-9x16.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 3708,
+      "scrollHeight": 3072,
       "overflowX": false,
       "reveals": 1,
       "revealsIn": 1,
       "words": 4,
-      "wordsIn": 4,
+      "wordsIn": 3,
       "fades": 16,
-      "fadesIn": 14,
+      "fadesIn": 10,
       "header": true,
       "footer": true,
       "lenis": true,
@@ -218,7 +218,7 @@
         {
           "src": "aerial-2-pond-wide-9x16.mp4",
           "ready": 0,
-          "paused": true,
+          "paused": false,
           "w": 0
         }
       ],
@@ -340,18 +340,18 @@
       "failedRequests": [
         "http://localhost:8787/media/video/still-anim-2b-pool-night-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/still-anim-3-gazebo-16x9.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 17317,
+      "scrollHeight": 16439,
       "overflowX": false,
       "reveals": 13,
       "revealsIn": 13,
       "words": 9,
-      "wordsIn": 9,
+      "wordsIn": 8,
       "fades": 27,
-      "fadesIn": 24,
+      "fadesIn": 21,
       "header": true,
       "footer": true,
       "lenis": true,
@@ -402,7 +402,7 @@
       "failedRequests": [
         "http://localhost:8787/media/video/aerial-2-pond-wide-9x16.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 3747,
+      "scrollHeight": 3682,
       "overflowX": false,
       "reveals": 1,
       "revealsIn": 1,
@@ -436,7 +436,7 @@
       "failedRequests": [
         "http://localhost:8787/media/video/aerial-4-st-francisville-main-street-9x16.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 7610,
+      "scrollHeight": 7408,
       "overflowX": false,
       "reveals": 8,
       "revealsIn": 8,
@@ -470,11 +470,11 @@
       "failedRequests": [
         "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/pool-broll-9x16.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/still-anim-2b-pool-night-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/still-anim-4-bath-fireplace-16x9.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/still-anim-2b-pool-night-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-3-house-pool-9x16.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 6923,
+      "scrollHeight": 6880,
       "overflowX": false,
       "reveals": 7,
       "revealsIn": 7,
@@ -532,14 +532,14 @@
       "failedRequests": [
         "http://localhost:8787/media/video/aerial-2-pond-wide-9x16.mp4 net::ERR_ABORTED"
       ],
-      "scrollHeight": 4976,
+      "scrollHeight": 4098,
       "overflowX": false,
       "reveals": 1,
       "revealsIn": 1,
       "words": 4,
-      "wordsIn": 4,
+      "wordsIn": 3,
       "fades": 16,
-      "fadesIn": 13,
+      "fadesIn": 10,
       "header": true,
       "footer": true,
       "lenis": true,
@@ -564,7 +564,7 @@
     "contact@mobile": {
       "consoleErrors": [],
       "failedRequests": [],
-      "scrollHeight": 3042,
+      "scrollHeight": 3002,
       "overflowX": false,
       "reveals": 0,
       "revealsIn": 0,
@@ -589,9 +589,9 @@
     "listing-template@mobile": {
       "consoleErrors": [],
       "failedRequests": [
-        "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED",
+        "http://localhost:8787/media/video/still-anim-4-bath-fireplace-16x9.mp4 net::ERR_ABORTED",
         "http://localhost:8787/media/video/aerial-5-pool-topdown-9x16.mp4 net::ERR_ABORTED",
-        "http://localhost:8787/media/video/still-anim-4-bath-fireplace-16x9.mp4 net::ERR_ABORTED"
+        "http://localhost:8787/media/video/aerial-1-dusk-estate-16x9.mp4 net::ERR_ABORTED"
       ],
       "scrollHeight": 7619,
       "overflowX": false,

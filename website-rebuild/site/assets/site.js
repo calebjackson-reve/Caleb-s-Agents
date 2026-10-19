@@ -123,12 +123,26 @@
   /* ---------- engagement previews: forms show their done state, nothing is sent yet ---------- */
   document.querySelectorAll('form[data-preview]').forEach(function (f) {
     var done = document.createElement('p'); done.className = 'done'; done.textContent = f.dataset.done || 'Got it.'; f.appendChild(done);
-    f.addEventListener('submit', function (e) { e.preventDefault(); if (!f.checkValidity()) { f.reportValidity(); return; } f.classList.add('is-done'); });
+    f.addEventListener('submit', function (e) {
+      e.preventDefault(); if (!f.checkValidity()) { f.reportValidity(); return; }
+      var btn = f.querySelector('button[type=submit]'); if (btn) btn.disabled = true;
+      sendLead(f.getAttribute('aria-label') || 'form', f).then(function () { f.classList.add('is-done'); }).catch(function () {
+        if (btn) btn.disabled = false;
+        done.textContent = "That didn't go through. Text me instead: (225) 747-0303."; f.classList.add('is-done');
+      });
+    });
   });
+  /* leads go to /api/lead (a Cloudflare Pages function that forwards to Caleb). Local previews have no API, so they resolve after a beat. */
+  function sendLead(kind, form) {
+    var data = { kind: kind, page: location.pathname, at: new Date().toISOString() };
+    new FormData(form).forEach(function (v, k) { data[k] = v; });
+    if (location.protocol === 'file:' || /localhost|127\.0\.0\.1|claude\.ai|artifact/.test(location.host)) return new Promise(function (r) { setTimeout(r, 400); });
+    return fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function (r) { if (!r.ok) throw new Error(r.status); });
+  }
   var news = document.querySelector('.news');
   if (news) {
     var nd = document.createElement('p'); nd.className = 'news-done small'; nd.textContent = "You're on the list. One note a month, nothing else."; news.after(nd);
-    news.addEventListener('submit', function (e) { e.preventDefault(); if (!news.checkValidity()) { news.reportValidity(); return; } news.classList.add('is-done'); nd.classList.add('is-on'); });
+    news.addEventListener('submit', function (e) { e.preventDefault(); if (!news.checkValidity()) { news.reportValidity(); return; } sendLead('newsletter', news).then(function () { news.classList.add('is-done'); nd.classList.add('is-on'); }).catch(function () { nd.textContent = "That didn't go through. Email aire@calebjackson.org and I'll add you."; nd.classList.add('is-on'); }); });
   }
   var bd = document.getElementById('bookDays'), bs = document.getElementById('bookSlots'), bsl = document.getElementById('bookSlot');
   if (bd && bs) {
