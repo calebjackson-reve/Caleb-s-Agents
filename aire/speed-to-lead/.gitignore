@@ -1,0 +1,7 @@
+.env
+processed.json
+log.csv
+errors.log
+dry-run.log
+stdout.log
+stderr.log

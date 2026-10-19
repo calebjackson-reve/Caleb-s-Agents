@@ -29,3 +29,17 @@ Hi {{firstName}}, Caleb Jackson with KW First Choice. Got your {{requestPhrase}}
 ## Test addresses, never send
 cjjfrancis96@gmail.com
 aire@calebjackson.org
+
+## Email, Google sign on (new October 19, 2026, no call promised, no text)
+Subject: re: your sign in on calebjackson.org
+
+Hey {{firstName}}, saw you signed in on my site. If you're looking around St. Francisville or Baton Rouge, I'm happy to send you what's new before it shows up on the big portals. Anything in particular you're after?
+
+Caleb Jackson
+REALTOR, Keller Williams First Choice
+(225) 747-0303
+
+If you'd rather not hear from me, reply "stop" and I won't write again.
+
+## Opt-out line
+Every automated email ends with the "reply stop" line above. Every text ends with "Reply STOP to opt out."
