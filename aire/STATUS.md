@@ -2,6 +2,23 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, night: week 3 built, weeks 1 and 2 merged
+
+**Done**
+- Re-verified week 2: enrichment script ran end to end offline with a stubbed SDK (CSV in, tagged CSV out, cost printed). Calculator artifact intact. Merged.
+- Dashboard at `aire/dashboard/index.html`, live at https://claude.ai/artifact/BaiAEbjMLYo9neapCpaXhn. Market data from the official GBRAR September 2026 report saved in `aire/market-data/gbrar-2026-09.json`. Proven headless at phone width and desktop dark, chart palette validated.
+- Pipeline tracker template and steps in `aire/pipeline/`.
+- October market update script, Motion prompt, caption and compliance pass in `aire/market-update/2026-10-script.md`.
+- `aire/rollout-2026-10/WEEK-3.md`.
+
+**Confirmed**
+- GBRAR September 2026: 737 closed, $269,000 median, 79 days on market, 3,524 for sale, 4.6 months supply. Current as of October 6, 2026.
+
+**Needs Caleb**
+- Create the AIRE Pipeline sheet from the template (5 minutes).
+- Run the Motion prompt or record the script. Schedule in Metricool only after review.
+- Weeks 1 and 2 items still open: the four switches, calculator defaults and paste, enrichment dry run on the Mac, Meta One, RealAssist, Your Algorithm.
+
 ## 2026-10-19, evening: week 2 built
 
 **Done**
