@@ -13,7 +13,7 @@ Typeface: Bodoni Moda (SIL Open Font License, `source/BodoniModa.ttf`), chosen b
 Earlier mark: the brand package's own Instrument Serif glyphs (`source/cj-monogram.svg` and the two mask PNGs) are kept for reference. The package's own monogram is "aj." (Action Jackson); this icon uses "CJ." at Caleb's request. Note for brand consistency: the website and wordmark still use Instrument Serif, so this avatar is a deliberate departure.
 
 Lead version, October 19 2026, built to match the reel's Airbnb animation as closely as possible in Caleb's coral:
-- `caleb-cj-avatar-burst`: vivid coral field, thick white neon-glowing CJ. in Bodoni Moda black weight, a hot white burst at the center throwing soft turning rays to the rim, drifting sparkles, a slow pulse. `build_burst.py` makes it. This is the one that satisfied the brief after the quieter versions below did not.
+- `caleb-cj-avatar-burst`: exact brand ember coral field (#E87757, a step deeper at the rim), thick white neon-glowing CJ. in Bodoni Moda black weight, a hot white burst at the center throwing soft turning rays to the rim, a slow pulse. No sparkles, per Caleb. `build_burst.py` makes it. This is the one that satisfied the brief after the quieter versions below did not.
 
 Earlier, quieter variants, kept in case they are wanted later, each as `.gif` (animated profile picture), `.png` (one mid-glow frame, static fallback) and `.mp4` (about 15 seconds, three loops):
 - `caleb-cj-avatar-noir`: near-black background, coral CJ., ember light added over black.
