@@ -1,11 +1,14 @@
 # Email icon
 
-A subtle animated CJ monogram for Caleb's Gmail signature and emails. Charcoal serif letters with a soft Keller Williams red glow that slowly breathes in and out, about one breath every 3.6 seconds, looping forever. 160 by 160 pixels, white background.
+A subtle animated version of the cj. monogram for Caleb's Gmail signature and emails. Ink Instrument Serif letters with the ember j-dot and period from the brand package, and a soft ember glow behind the mark that slowly breathes in and out, one breath every 3.6 seconds, looping. 160 by 160 pixels, white background, about 88 KB.
+
+Source of the mark: the Caleb Jackson Brand and Content Package (Google Drive, July 2026). The c glyph comes from `cj-wordmark.svg`, the j and the two ember marks from `aj-monogram.svg`. Colors are the package's ink #14100E and ember #E87757. The package's own monogram is "aj." (Action Jackson); this icon uses "cj." at Caleb's request, October 19 2026.
 
 Files:
 - `caleb-cj-icon.gif` is the animated version.
-- `caleb-cj-icon.png` is a single frame at mid glow, for places that won't play a GIF.
-- `build.py` regenerates both. Run `python3 build.py` after editing colors, glow strength or timing.
+- `caleb-cj-icon.png` is a single mid-glow frame, for places that won't play a GIF.
+- `source/cj-monogram.svg` is the composed vector mark. `source/aj-monogram.svg` is the brand package original for reference. The two mask PNGs are renders of the composed mark that `build.py` reads.
+- `build.py` regenerates the GIF and PNG. Run `python3 build.py`.
 
 ## Add it to Gmail
 
@@ -21,4 +24,6 @@ Signatures uploaded straight from the computer get re-encoded by Gmail and may s
 
 ## Changing it
 
-Constants at the top of `build.py`: `INK` is the letter color, `RED` the glow color, `GLOW_MIN` and `GLOW_MAX` how faint and how strong the glow gets, `DUR` the length of one breath, `FONT` the typeface (FreeSerif Bold by default, swap in a brand font file if one is chosen later).
+Constants at the top of `build.py`: `BG` background (white for email, or the brand ivory), `GLOW_MIN` and `GLOW_MAX` for how faint and how strong the glow gets, `DUR` for the length of one breath, `DOT_LIFT` to let the ember marks brighten at the peak (off by default).
+
+To change the mark itself, edit `source/cj-monogram.svg`, re-render the two masks (ink only and ember only, black on transparent, 790 by 1040) with a browser or any SVG renderer, drop them in `source/`, and run the build.
