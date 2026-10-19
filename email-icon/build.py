@@ -16,12 +16,12 @@ EMBER = np.array([0xE8, 0x77, 0x57], float)
 VARIANTS = {
     # black background, coral letters, ember light added over black
     "noir": dict(bg=np.array([0x0A, 0x09, 0x08], float), letters=np.array([0xF2, 0x8A, 0x6A], float),
-                 mode="add", light=EMBER, white_hot=0.16, core=(0.45, 0.82), ring=None),
-    # peach tan background, white letters, coral ring at the edge, light is a coral bloom the
-    # background blends toward (darker and warmer at the center so the white letters gain contrast)
-    "peach": dict(bg=np.array([0xE9, 0xC2, 0xA4], float), letters=np.array([0xFF, 0xFB, 0xF7], float),
-                  mode="mix", light=EMBER, white_hot=0.0, core=(0.35, 0.75),
-                  ring=dict(color=EMBER, radius=0.465, width=0.028)),
+                 mode="add", light=EMBER, white_hot=0.16, core=(0.45, 0.82), ring=None, outline=None),
+    # tan background in the Claude palette range, warm white letters with a coral outline,
+    # light is a coral bloom the background leans toward so the letters keep contrast at the center
+    "tan": dict(bg=np.array([0xE3, 0xCD, 0xB3], float), letters=np.array([0xFF, 0xFB, 0xF6], float),
+                mode="mix", light=np.array([0xD9, 0x7A, 0x5A], float), white_hot=0.0, core=(0.30, 0.65),
+                ring=None, outline=dict(color=EMBER, width=0.018)),
 }
 CORE_REST, CORE_PEAK = 0.45, 0.82   # default brightness of the light at rest and at peak (overridden per variant)
 RADIUS_REST, RADIUS_PEAK = 0.40, 0.58  # how far the light reaches, as a fraction of SIZE
@@ -75,6 +75,13 @@ TH = np.arctan2(dy, dx)
 
 RC = np.sqrt((xs - W / 2) ** 2 + (ys - W / 2) ** 2) / W    # radius from the image center, for the ring
 
+def outline_mask(width_frac):
+    """Band just outside the letters, anti-aliased, for a stroke around the mark."""
+    k = max(3, int(width_frac * W) * 2 + 1)
+    m = Image.fromarray((MARK * 255).astype(np.uint8))
+    outer = np.asarray(m.filter(ImageFilter.MaxFilter(k)).filter(ImageFilter.GaussianBlur(0.6)), float) / 255.0
+    return np.clip(outer - MARK, 0, 1)
+
 def frame(t, v):
     e = 0.5 - 0.5 * math.cos(2 * math.pi * t)            # 0 rest, 1 peak
     core = v["core"][0] + (v["core"][1] - v["core"][0]) * e
@@ -95,11 +102,15 @@ def frame(t, v):
         ring = np.clip(1 - np.abs(RC - r["radius"]) / half, 0, 1) ** 0.5 * (np.abs(RC - r["radius"]) < half)
         soft = np.clip((half - np.abs(RC - r["radius"])) * W / 2.0, 0, 1)     # 2 px anti-aliased edge
         img = img * (1 - soft[..., None]) + r["color"] * soft[..., None]
+    if v.get("outline"):
+        o = v["outline"]; band = OUTLINES.setdefault(o["width"], outline_mask(o["width"]))
+        img = img * (1 - band[..., None]) + o["color"] * band[..., None]
     # the mark, untouched by the light
     img = img * (1 - MARK[..., None]) + v["letters"] * MARK[..., None]
     im = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
     return im.resize((SIZE, SIZE), Image.LANCZOS)
 
+OUTLINES = {}
 n = int(FPS * DUR)
 for name, v in VARIANTS.items():
     frames = [frame(i / n, v) for i in range(n)]

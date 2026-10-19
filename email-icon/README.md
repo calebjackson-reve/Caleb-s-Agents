@@ -14,7 +14,7 @@ Earlier mark: the brand package's own Instrument Serif glyphs (`source/cj-monogr
 
 Two variants, each as `.gif` (animated profile picture), `.png` (one mid-glow frame, static fallback) and `.mp4` (about 15 seconds, three loops):
 - `caleb-cj-avatar-noir`: near-black background, coral CJ., ember light added over black.
-- `caleb-cj-avatar-peach`: peach tan background (#E9C2A4), warm white CJ., coral ring at the edge, and the same breathing light done as a coral bloom the background leans toward, so the white letters gain contrast at the center. Added October 19 2026 at Caleb's request.
+- `caleb-cj-avatar-tan`: tan background (#E3CDB3, in the Claude palette range), warm white CJ. with a coral outline hugging the letters, no ring, and the same breathing light done as a coral bloom the background leans toward so the letters keep contrast at the center. Added October 19 2026 at Caleb's request (replaces an earlier peach version with a ring at the edge, in git history).
 
 Other files:
 - `source/BodoniModa.ttf` is the typeface the build renders from. `source/font-comparison.png` is the comparison sheet. The SVGs and mask PNGs are the earlier Instrument Serif mark, kept for reference.
@@ -37,6 +37,6 @@ Gmail plays animated GIFs in email bodies and signatures. Host the `.gif` on Goo
 
 ## Changing it
 
-`VARIANTS` at the top of `build.py` holds each variant's background, letter color, light mode (`add` over dark, `mix` over light), light color, white-hot amount, brightness range and optional ring. Shared constants: `RADIUS_REST` and `RADIUS_PEAK` for how far it reaches, `WHITE_HOT` for the white push at the center, `RAYS` and `RAY_DEPTH` for the soft streaks, `PAD` for how far inside the circle the mark sits, `DUR` for the length of one breath, `FONT`, `FONT_AXES` (weight, optical size), `TRACKING` and `HAIRLINE` for the type. Needs Pillow and numpy.
+`VARIANTS` at the top of `build.py` holds each variant's background, letter color, light mode (`add` over dark, `mix` over light), light color, white-hot amount, brightness range, optional ring and optional letter outline. Shared constants: `RADIUS_REST` and `RADIUS_PEAK` for how far it reaches, `WHITE_HOT` for the white push at the center, `RAYS` and `RAY_DEPTH` for the soft streaks, `PAD` for how far inside the circle the mark sits, `DUR` for the length of one breath, `FONT`, `FONT_AXES` (weight, optical size), `TRACKING` and `HAIRLINE` for the type. Needs Pillow and numpy.
 
 To try another typeface, drop its TTF in `source/`, point `FONT` at it, adjust `FONT_AXES` if it is variable, and run the build.
