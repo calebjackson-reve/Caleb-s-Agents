@@ -3,3 +3,4 @@ cache/
 *.db
 *.csv
 !tests/fixtures/*.csv
+__pycache__/
