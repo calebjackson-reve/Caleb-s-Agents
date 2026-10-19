@@ -2,6 +2,16 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, vertical cut and Skool stack template
+
+**Done**
+- `aire/market-update/vertical/`: the 9:16 Reels cut of the September market update, rendered here to MP4 (1080x1920, 30 fps, 30 s) and proven by pulling mid-animation frames from the file. Source page and renderer committed so it re-renders in one command.
+- `programs/ai-for-agents/skool/stack-template.md`: the blank stack memory for members, plain English, state rules section with "ask broker" default. Attachment for the first pinned post.
+
+**Needs Caleb**
+- Watch the MP4. Approve the caption in the script file. Schedule in Metricool himself.
+- Upload the template to the Skool classroom with the pinned post.
+
 ## 2026-10-19, week 4 started
 
 **Confirmed from Caleb's Mac**
