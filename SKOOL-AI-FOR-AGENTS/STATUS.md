@@ -2,6 +2,15 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, later: weekly series outline from the research
+
+**Done**
+- `programs/ai-for-agents/series-from-research.md`: a 10-episode free weekly series ordered by the ranked beginner needs, with two hooks, an outline, a psychology idea, a 10-minute action and a download per episode. Fills the weekly-lesson slot from the 2026-10-14 game plan. Challenge and Course 1 builds unchanged.
+- Proposes replacing the old draft `lessons/01` to `10`. Lessons 2, 3, 4, 8 and 9 carry over into episodes. 5, 6 and 7 parked.
+
+**Needs Caleb**
+- Approve or reorder the series, pick a name, pick the first episode to script (recommended: Ep 1).
+
 ## 2026-10-19: what beginner agents want from AI
 
 **Done**
