@@ -1,7 +1,7 @@
 {
   "name": "caleb-skills",
-  "description": "Caleb Jackson's skill library: Nick Saraev's full free course (145 skills), the $25K roadmap, and the brand consistency audit. Loads by description match.",
-  "version": "1.0.0",
+  "description": "Caleb Jackson's skill library: Nick Saraev's full free course, the $25K roadmap, brand and teardown audits, and the AIRE skills (weekly AI brief, stack memory, compliance check, agent offer builder). Loads by description match.",
+  "version": "1.1.0",
   "author": { "name": "Caleb Jackson", "email": "aire@calebjackson.org" },
   "skills": "./.claude/skills"
 }
