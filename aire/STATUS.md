@@ -2,6 +2,24 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, late: morning run live
+
+**Confirmed by Caleb**
+- "You can have that every morning." Daily morning routine approved.
+
+**Done**
+- `aire/morning-run/directive.md` and `mac-companion.md`. Cloud runner reads Gmail (read only), the AIRE Pipeline sheet, Authentisign status and the calendar, then writes one "AIRE Morning Brief" event 6:45 to 7:00 Central and the brief file. Mac companion covers ROAM MLS and KW Command, which have no API.
+- Scheduled task "AIRE morning run" (trig_01THrpgYe4fxVc4z4QtynZBS) fires 6:40 am Central daily in the cloud session.
+- First brief produced for Tue Oct 20: calendar event bkvkvuclndidtsflr6a4c8kvds, file `briefs/2026-10-20.md`.
+
+**Needs Caleb**
+- Fill real rows in the AIRE Pipeline sheet so the pipeline section has something to track.
+- Turn on Flex saved-search daily email alerts so the cloud run can read MLS.
+- Run "morning companion" on the Mac for Command and MLS.
+
+## Morning run log
+- 2026-10-20 (run Oct 19 evening): 1 new lead, 0 pipeline rows, 5 contracts (0 waiting on Caleb, 1 item owed: inspection report to Aaron Goolsby), 1 conflict (Business Planning Clinic vs lead gen and sales block 2), 0 appointments added. Nothing failed.
+
 ## 2026-10-19, night: supervised week, sales block, contacts mapped, proposal marketing text
 
 **Confirmed by Caleb**
