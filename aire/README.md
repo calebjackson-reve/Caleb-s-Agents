@@ -11,7 +11,7 @@ Read `STATUS.md` before touching anything here.
 | Speed to lead responder | `speed-to-lead/` | Built, tested, copy approved. Needs Gmail credentials on the Mac to go live. |
 | Daily follow-up cadence | `follow-up/` | Built, tested. Needs a KW Command contacts export. |
 | Call recording to proposal | `proposal/` | Built, tested with a live extraction. Needs Caleb's read of the marketing plan text. |
-| Seller dashboard | `seller-dashboard/` | Contract drafted, waiting on Caleb's approval. First app build. |
+| Command center (Caleb's view) | `command-center/` | Contract drafted, waiting on Caleb's approval. First app build. The seller dashboard follows as a slice of it. |
 
 ## What Caleb has (confirmed 2026-10-19)
 - CRM: KW Command, no public API, CSV export.

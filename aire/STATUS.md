@@ -8,7 +8,7 @@ Newest first.
 - AIRE is an idea plus the three tools. No running app anyone uses.
 - First customer is Caleb's own production. Not selling to agents yet.
 - Has a business texting number and a Stripe or payment link. Did not confirm a booking link. Authentisign is the e-sign tool seen in the inbox.
-- First app to build: the seller dashboard.
+- First app to build: Caleb's own command center. Caleb corrected this from the seller dashboard the same day. The seller dashboard becomes a per-listing slice of the command center later.
 
 **Where Caleb's production business sits on Nick Saraev's 22-step roadmap**
 | Step | Status |
@@ -26,9 +26,9 @@ Newest first.
 | 18 to 21 Scale | Not yet. |
 
 **Needs Caleb**
-- Approve or edit `seller-dashboard/CONTRACT.md`.
+- Approve or edit `command-center/CONTRACT.md`.
 - Gmail credentials on the Mac for speed to lead. Command export for follow-ups. Read the proposal marketing text.
 - Put the step 14 sales block on the calendar: two hours a day, three touchpoints.
 
 **Next for Claude**
-- Build the seller dashboard once the contract is approved, plan mode, Supabase, deploy to a private URL.
+- Build the command center once the contract is approved: plan mode, Supabase, sync script against the three tools, deploy to a private Netlify URL, security audit before real data.
