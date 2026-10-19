@@ -179,7 +179,7 @@
 
   /* ---------- pixel mosaic reveal: coarse blocks resolve to the image as it enters ---------- */
   function pixelReveal(host, src, steps) {
-    if (reduce || !src) return;
+    if (reduce || phone || !src) return;
     var img = new Image(); img.crossOrigin = 'anonymous'; img.src = src;
     img.onload = function () {
       var c = document.createElement('canvas'); c.className = 'pix'; c.width = host.clientWidth || 600; c.height = host.clientHeight || 400; c.style.width = '100%'; c.style.height = '100%';
@@ -309,6 +309,7 @@
 
   /* ---------- runway: vertical scroll to horizontal travel ---------- */
   document.querySelectorAll('.runway').forEach(function (rw) {
+    if (phone) return; /* phones swipe the row natively */
     var track = rw.querySelector('.runway-track');
     function setup() {
       var travel = track.scrollWidth - window.innerWidth + parseFloat(getComputedStyle(track).paddingLeft) * 2;

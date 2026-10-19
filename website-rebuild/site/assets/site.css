@@ -131,7 +131,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .hero-wordmark { position: absolute; left: 0; right: 0; bottom: -0.08em; z-index: 2; font-family: var(--serif); font-size: clamp(6rem, 17vw, 30rem); line-height: 0.9; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ember); text-align: center; white-space: nowrap; opacity: 0; pointer-events: none; }
 .hero-hint { position: absolute; left: var(--gutter); bottom: 3rem; z-index: 5; }
 .hero-meta { position: absolute; right: var(--gutter); bottom: 3rem; z-index: 5; text-align: right; color: var(--ivory-50); }
-@media (max-width: 767px) { .hero { height: 320vh; } .hero-portrait { width: 92vw; } .hero-wordmark { font-size: 17vw; } }
+@media (max-width: 767px) { .hero { height: 240vh; } .hero-portrait { width: 92vw; } .hero-wordmark { font-size: 17vw; } }
 
 /* statement with chevrons (FIND) */
 .statement { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--gap); align-items: center; }
@@ -319,7 +319,8 @@ h1, h2, h3, h4, p { margin: 0; }
   .services-title { grid-column: 1; } .service { grid-template-columns: 1fr; gap: 2rem; }
   .service-word { font-size: var(--display-l); }
   .asym-grid { grid-template-columns: 1fr 1fr; } .asym-small { grid-column: 1; } .asym-wide { grid-column: 1 / -1; } .asym-copy { grid-column: 1 / -1; }
-  .chev i { width: 9rem; height: 12rem; } .chev { gap: 0.3rem; }
+  .chev i { width: 21vw; height: 30vw; } .chev { gap: 0.6vw; }
+  .strip { aspect-ratio: 16 / 10; }
   .feature-grid, .directory-cols { grid-template-columns: 1fr; }
   .rows p { max-width: none; }
 }
@@ -435,3 +436,13 @@ h1, h2, h3, h4, p { margin: 0; }
 .reviews-nav .dots i.is-on { background: var(--ember); transform: scale(1.3); }
 .template-note { margin-top: 2rem; font-size: var(--small); color: var(--fg-3); }
 @media (max-width: 900px) { .review { flex-basis: 86%; } }
+
+/* phones: runway is a swipe row, not a pinned stage */
+@media (max-width: 900px) {
+  .runway { height: auto !important; }
+  .runway-stick { position: relative; height: auto; overflow: visible; display: block; padding-bottom: var(--section); }
+  .runway-head { padding-top: var(--section); }
+  .runway-track { transform: none !important; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; padding: 3rem var(--gutter) 1rem; scrollbar-width: none; }
+  .runway-track::-webkit-scrollbar { display: none; }
+  .runway-card { scroll-snap-align: start; width: 72vw; }
+}
