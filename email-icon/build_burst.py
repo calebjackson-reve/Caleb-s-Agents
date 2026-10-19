@@ -8,14 +8,14 @@ import numpy as np, math, os
 SIZE, S = 320, 2
 W = SIZE * S
 FONT, AXES = "source/BodoniModa.ttf", (900, 6)     # Bodoni Moda black, small optical size: thick strokes
-TEXT, TRACKING, PAD = "CJ.", 0.03, 0.285          # letters sit inside the triangle
+TEXT, TRACKING, PAD = "CJ.", 0.04, 0.14          # letters sit inside the triangle
 TRIANGLE = dict(radius=0.43, cy_shift=0.05, stroke=0.036, corner=0.05)   # fractions of W: circumradius, center drop, line width, corner rounding
 FIELD = np.array([0xE8, 0x77, 0x57], float)        # exact brand ember coral
 FIELD_EDGE = np.array([0xCB, 0x5E, 0x40], float)   # the same coral, a step deeper at the rim
 HOT = np.array([0xFF, 0xE6, 0xDC], float)          # white-pink core of the burst
 WHITE = np.array([255, 255, 255], float)
 FPS, DUR = 12, 4.0
-RAYS, SPARKLES = 28, 0
+RAYS, SPARKLES = 28, 64
 rng = np.random.default_rng(7)
 
 def render_mark():
@@ -31,7 +31,7 @@ def render_mark():
     m = Image.new("L", (total + 80, bot - top + 80), 0); d = ImageDraw.Draw(m); x = 40
     for ch, adv in zip(TEXT, advs):
         d.text((x, 40 - top), ch, font=font, fill=255); x += adv + gap
-    m = m.crop(m.getbbox()).filter(ImageFilter.MaxFilter(7))
+    m = m.crop(m.getbbox()).filter(ImageFilter.MaxFilter(3))
     box = int(W * (1 - 2 * PAD)); m.thumbnail((box, box), Image.LANCZOS)
     canvas = Image.new("L", (W, W), 0); canvas.paste(m, ((W - m.width) // 2, (W - m.height) // 2))
     return canvas
@@ -61,12 +61,9 @@ def render_triangle():
     return m
 
 MARK_IMG = render_mark()
-TRI_IMG = render_triangle()
-# letters drop to the triangle's centroid
-MARK_IMG = MARK_IMG.transform(MARK_IMG.size, Image.AFFINE, (1, 0, 0, 0, 1, -TRIANGLE["cy_shift"] * W * 0.9))
-MARK_IMG.paste(255, mask=TRI_IMG)
+# (render_triangle is kept for the optional triangle look; not used in this version)
 MARK = np.asarray(MARK_IMG, float) / 255.0
-NEON_IN = np.asarray(MARK_IMG.filter(ImageFilter.GaussianBlur(0.012 * W)), float) / 255.0   # tight neon halo
+NEON_IN = np.asarray(MARK_IMG.filter(ImageFilter.GaussianBlur(0.006 * W)), float) / 255.0   # tight neon halo
 NEON_OUT = np.asarray(MARK_IMG.filter(ImageFilter.GaussianBlur(0.05 * W)), float) / 255.0   # wide soft halo
 
 ys, xs = np.mgrid[0:W, 0:W].astype(float)
@@ -76,7 +73,7 @@ R = np.sqrt(dx * dx + dy * dy) / (W / 2)           # 0 center, 1 at the circle e
 TH = np.arctan2(dy, dx)
 ray_amp = rng.uniform(0.3, 1.0, RAYS); ray_phase = rng.uniform(0, 2 * math.pi, RAYS); ray_k = rng.integers(3, 9, RAYS)
 sp_x = rng.uniform(0, 1, SPARKLES); sp_y = rng.uniform(0, 1, SPARKLES); sp_ph = rng.uniform(0, 2 * math.pi, SPARKLES)
-sp_sz = rng.uniform(0.004, 0.011, SPARKLES); sp_drift = rng.uniform(-1, 1, (SPARKLES, 2)) * 0.02
+sp_sz = rng.uniform(0.0022, 0.0045, SPARKLES); sp_drift = rng.uniform(-1, 1, (SPARKLES, 2)) * 0.02
 
 def frame(t):
     pulse = 0.5 - 0.5 * math.cos(2 * math.pi * t)          # 0..1..0 over the loop
@@ -89,7 +86,7 @@ def frame(t):
     rays = rays / rays.max()
     rays *= np.clip(1 - R, 0, 1) ** 0.8 * np.clip(R * 3, 0, 1)
     # burst core
-    core = np.exp(-(R / (0.24 + 0.08 * pulse)) ** 2) * (0.50 + 0.22 * pulse)
+    core = np.exp(-(R / (0.22 + 0.08 * pulse)) ** 2) * (0.62 + 0.23 * pulse)
     # horizontal lens streak
     streak = np.exp(-(dy / (0.012 * W)) ** 2) * np.clip(1 - np.abs(dx) / (W * 0.5), 0, 1) ** 2 * (0.25 + 0.15 * pulse)
     light = np.clip(core + 0.35 * rays * (0.7 + 0.3 * pulse) + streak, 0, 1)
@@ -98,11 +95,11 @@ def frame(t):
     spark = np.zeros_like(R)
     for i in range(SPARKLES):
         px = (sp_x[i] + sp_drift[i, 0] * t) % 1.0 * W; py = (sp_y[i] + sp_drift[i, 1] * t) % 1.0 * W
-        tw = 0.5 + 0.5 * math.sin(2 * math.pi * (t * 2 + sp_ph[i]))
+        tw = (0.5 + 0.5 * math.sin(2 * math.pi * (t * 2 + sp_ph[i]))) ** 2.5     # sharp twinkle
         spark += tw * np.exp(-((xs - px) ** 2 + (ys - py) ** 2) / (sp_sz[i] * W) ** 2)
-    img = img + (WHITE - img) * np.clip(spark, 0, 1)[..., None] * 0.8
+    img = img + (WHITE - img) * np.clip(spark * 1.6, 0, 1)[..., None]
     # neon mark: wide halo, tight halo, then solid white
-    img = img + (WHITE - img) * np.clip(NEON_OUT * 0.55 + NEON_IN * 0.9, 0, 1)[..., None]
+    img = img + (WHITE - img) * np.clip(NEON_OUT * 0.40 + NEON_IN * 0.55, 0, 1)[..., None]
     img = img * (1 - MARK[..., None]) + WHITE * MARK[..., None]
     return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).resize((SIZE, SIZE), Image.LANCZOS)
 
