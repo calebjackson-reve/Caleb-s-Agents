@@ -1,0 +1,74 @@
+[
+ {
+  "Done": "No",
+  "Name": "Taylor Sample",
+  "Phone": "(225) 555-0101",
+  "Email": "",
+  "Category": "client",
+  "Tier": "HOT",
+  "Why this tier": "Under contract (Test Ave).",
+  "Last touch": "10/18 inspection response signed",
+  "Next action": "Send inspection report",
+  "Notes": "fixture"
+ },
+ {
+  "Done": "No",
+  "Name": "Jordan Warm",
+  "Phone": "",
+  "Email": "jordan@example.com",
+  "Category": "lead",
+  "Tier": "HOT",
+  "Why this tier": "Active buyer",
+  "Last touch": "10/15 text",
+  "Next action": "Ask about timing",
+  "Notes": ""
+ },
+ {
+  "Done": "No",
+  "Name": "Greg & Sarah Junghans",
+  "Phone": "",
+  "Email": "",
+  "Category": "client",
+  "Tier": "WARM",
+  "Why this tier": "Past clients, thinking of moving",
+  "Last touch": "10/14 text",
+  "Next action": "FORD check-in",
+  "Notes": ""
+ },
+ {
+  "Done": "No",
+  "Name": "Casey Cold",
+  "Phone": "(225) 555-0105",
+  "Email": "",
+  "Category": "friend",
+  "Tier": "COLD",
+  "Why this tier": "Sphere",
+  "Last touch": "",
+  "Next action": "FORD check-in",
+  "Notes": ""
+ },
+ {
+  "Done": "No",
+  "Name": "Brand New Cold",
+  "Phone": "(225) 555-0888",
+  "Email": "new@example.com",
+  "Category": "friend",
+  "Tier": "COLD",
+  "Why this tier": "Sphere",
+  "Last touch": "9/21 text",
+  "Next action": "FORD check-in",
+  "Notes": ""
+ },
+ {
+  "Done": "No",
+  "Name": "New Agent Person",
+  "Phone": "(225) 555-0777",
+  "Email": "",
+  "Category": "agent",
+  "Tier": "CONTACT",
+  "Why this tier": "Co-op agent",
+  "Last touch": "",
+  "Next action": "Partner touch",
+  "Notes": ""
+ }
+]

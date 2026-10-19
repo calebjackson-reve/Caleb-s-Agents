@@ -2,6 +2,27 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, night: CRM engine pointed at the real AIRE CRM
+
+**Confirmed by Caleb**
+- PR 59 is held as a draft, not merged: it built a second CRM. The one CRM is the AIRE CRM sheet (1w9iz..., 3,626 contacts). The Hot-Warm-Cold sheet is back to its original name and no sheet is renamed again.
+- The command center web app is rejected as the front end. The native Mac Pipeline app is the one daily tool.
+
+**Done**
+- `aire/crm/crm.py` rewritten for the real sheet: reads the live header, keeps every existing column, adds only Tasks and Deals tabs (when missing), enforces the Mac's write gates (person_id only, Do_Not_Contact one way, never Command_ID, every write audited to audit.jsonl and the Connector Log), Gmail read only, `--dry-run` on everything. 59 offline checks pass.
+- `feed.json` spec in `aire/crm/FEED.md` for Codex to wire into the Pipeline app. No web UI.
+- Dry run on the real sheet's header and rows: `aire/crm/reports/2026-10-19-dry-run.md`. Touches due 1,641 (all "never logged", Last_Touch is filled on 4 rows), 0 tasks, 0 deals as the sheet stands. Ingest of the real last 7 days of mail would create 1 lead, 1 showing deal, 5 signing deals, 2 sign tasks. Nothing written.
+- Hot-Warm-Cold merge dry run: `aire/crm/reports/2026-10-19-hwc-merge-dry-run.md`. 458 rows: 391 matched, 25 new, 42 conflicts. Nothing written.
+
+**Inference**
+- NURTURE 90 days and DORMANT 365 days cadence, from the band names.
+- COLD and CONTACT tiers map to no band; friend/family/lead become Type client.
+
+**Needs Caleb**
+- Read the merge report. Yes or no on applying matched and new rows. Settle the 42 conflicts in the sheet.
+- Confirm or change the cadence numbers and the tier-to-band mapping.
+- On the Mac: `crm.py auth`, `crm.py check`, `crm.py --dry-run ingest --hours 72`, then the real run. Codex wires feed.json into Pipeline.
+
 ## 2026-10-19, late: morning run live
 
 **Confirmed by Caleb**
