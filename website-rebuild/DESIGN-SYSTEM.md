@@ -175,4 +175,14 @@ No headshot and no listing photo is AI generated. The only AI uses proposed are 
 4. Testimonials: do we have client quotes with permission to use names and faces?
 5. The blush band: keep it, or go pure ivory and ink like the references?
 
+### Answers relayed October 19, 12:40 pm Central (from another session, pending Caleb's confirmation here)
+
+1. Hero line: "The dream is the easy part."
+2. Hero portrait: show both, drone plus type only, and the balcony cut-out. That comparison is being built in `home-landing/` on branch `claude/optimistic-davinci-kdbafw` (draft PR #41). No Higgsfield background removal without approval.
+3. Target areas: keep the eight.
+4. Testimonials: none yet. Build the slot empty, nothing invented.
+5. Blush band: show both, with and without, in the same comparison.
+
+Also relayed: the `home-landing/index.html` prototype on that branch is the approved structure (FIND command bar and pinned hero, Zorge sticky split panels, Sobha curved gallery with a Curve switch, FIND-style quick CTA) and should carry these tokens once the two comparisons are decided. Any generation that costs credits needs Caleb's yes first.
+
 Approve this, with changes, and Stage 3 builds every page in the page map.
