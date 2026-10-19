@@ -2,6 +2,17 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, afternoon: plan merged, week 1 started
+
+**Done**
+- Merged the rollout plan and the four skills into main.
+- Wrote `aire/rollout-2026-10/WEEK-1.md`: the six week 1 switches with click paths, requirements, proof and sources.
+- Created the scheduled task "AIRE Monday AI brief": every Monday 7:47 am Central, fresh session, runs `ai-weekly-brief`, opens a draft PR. First run October 26.
+
+**Needs Caleb**
+- Switches 1 to 4 in WEEK-1.md: install the Claude sidebar, check for Gmail AI Inbox, turn on Meet notes for the next consult, link the Console org in Max billing.
+- List any custom GPTs (switch 6).
+
 ## 2026-10-19: October AI rollout plan and four auto-loading skills
 
 **Done**
