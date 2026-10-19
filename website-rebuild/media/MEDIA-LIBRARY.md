@@ -58,6 +58,11 @@ Compliance note: Basil Lane is a sold or past listing. If it appears on the site
 | --- | --- |
 | `video/pool-broll-9x16.mp4` | First 3.8 seconds of `Caleb-TEASER.mp4`, a black and white aerial pan over the Basil Lane house and pool, muted, 1080x1920. Good as a phone hero loop or a section background. The rest of the teaser is an event title card ("6PM Tonight") and not reusable |
 | `video/pool-broll-poster.jpg` | Poster frame for the clip |
+| `video/aerial-1-dusk-estate-16x9.mp4` | **Best for the desktop hero.** Drone pull-back over the whole Basil Lane estate at dusk, pond and barn in frame, 1920x1080, 6.9s, slowed to one third with frame interpolation so the drift is slow and smooth. Cut from `Basil-Lane_PREVIEW-luxe-16x9.mp4` at 33.5s. Poster `aerial-1-dusk-estate-16x9-poster.jpg` |
+| `video/aerial-2-pond-wide-9x16.mp4` | **Best for the phone hero.** Wide daytime aerial, house centered, pond in the foreground, 1080x1920, 8.1s, slowed from 60fps source. Cut from `BASIL EVENT 46 SECOND RELEASE.mp4` at 7.8s |
+| `video/aerial-3-house-pool-9x16.mp4` | Closer aerial of the house and pool with the barn behind, 1080x1920, 5.3s. Second phone option, or a section background. Cut from the event film at 36.25s |
+
+All three are real drone footage from Caleb's own films, muted, no text overlays, no people, no Rêve branding (the event film's end card carries Rêve and was not used). Proof sheet at one frame per second: `video/LOOPS-PROOF.jpg`.
 
 Brand films on Drive, not downloaded (400MB to 1.6GB each): `Caleb-Horizontal.mp4`, `Caleb-Social-Final.mp4`, `Caleb-St-Francisville-Final.mp4`, `Caleb-10Reasons.mp4`, `Caleb-ServingPeople.mp4`, `Caleb-House-Event-V02.mp4`, `Caleb-Event-No-Interviews.mp4`. These are the real source for hero video. Pulling 6 to 10 second loops from `Caleb-Horizontal.mp4` and the St. Francisville film is the next media task and needs a session with more disk, or a local machine.
 
@@ -75,7 +80,6 @@ On Drive: `bio.md` (short and long bio, "Action Jackson" treatment) and `website
 - Zachary: no usable free photo. Reshoot brief: Main Street, Zachary High area, a new-construction street.
 - New Roads and False River: only two 800px photos from 2006. Placeholders until a reshoot from the public landing or a boat.
 - A straight-on headshot on a plain dark or ivory background for the nav and for tiny crops.
-- Horizontal hero video loops from the brand films.
 - Photos from Caleb's Mac Photos app. Not reachable from this cloud session. If there are better shots there, drop them in the Drive `HEADSHOTS` folder (it has a `_DROP-HEADSHOTS-HERE.txt` placeholder) and they can be pulled the same way.
 
 ## AI generation candidates (approval required before any run)
