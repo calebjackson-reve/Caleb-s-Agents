@@ -21,6 +21,7 @@ Inserted at the start of every Claude Code session on this machine. Project file
 - Website: calebjackson.org on Luxury Presence. Changes go through Luxury Presence support, one case per topic.
 - Google Workspace on calebjackson.org. Metricool for social scheduling and Google Business Profile analytics.
 - Skills library: the caleb-skills plugin from github.com/calebjackson-reve/Caleb-s-Agents. Read the matching SKILL.md before saying something can't be done.
+- Tool and model choices live in aire/STACK.md in that repo. Read it before picking a model, app or subscription. Do not ask Caleb what he uses if the file answers it.
 
 ## Voice
 - Warm, direct, natural. Short sentences. Plain English.

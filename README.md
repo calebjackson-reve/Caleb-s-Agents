@@ -29,13 +29,17 @@ cd skills/nick-saraev/<course> && zip -r <skill-name>.zip <skill-name>
 | [`brand-consistency`](skills/brand-consistency/SKILL.md) | Audit and fix Caleb's public identity and search visibility. |
 | [`teardown-tuesday`](skills/teardown-tuesday/SKILL.md) | Weekly review: pulls Metricool results, tears down the best and worst post, drafts two hooks for next week. Drafts only. |
 | [`teardown`](skills/teardown/SKILL.md) | Reverse engineers a reel, listing presentation, page, sequence or software feature into a Blueprint, Proof and Unknowns report, then drafts two original versions for my business. |
+| [`ai-weekly-brief`](skills/ai-weekly-brief/SKILL.md) | Monday sweep of what changed in AI and the major apps, saved to `aire/ai-briefs/` with sources, ranked for what moves the business. |
+| [`aire-stack`](skills/aire-stack/SKILL.md) | Reads `aire/STACK.md` so every task uses the right model, app and subscription without re-explaining the setup. |
+| [`ai-compliance-check`](skills/ai-compliance-check/SKILL.md) | Checks every client-facing draft against Louisiana advertising rules, fair housing, texting rules and AI disclosure before Caleb sees it. |
+| [`agent-offer-builder`](skills/agent-offer-builder/SKILL.md) | Packages a working AIRE workflow into free Skool content, a workshop, and a done-for-you install. Drafts only. |
 
 ## Projects
 
 | Project | What it is |
 |---|---|
 | [**SKOOL AI FOR AGENTS**](SKOOL-AI-FOR-AGENTS/README.md) | Project hub for the free Skool community: status log, shot board for every video, and links to the plan, scripts and research. Start here for anything Skool. |
-| [Speed to lead](aire/speed-to-lead/DRY-RUN-2026-10-15.md) | AIRE responder for website inquiries: dry run, directive and templates. |
+| [**AIRE**](aire/README.md) | Project hub: status log, stack memory, the October 2026 rollout plan, weekly AI briefs, and the speed to lead responder. Start here for anything AIRE. |
 | `global-claude-md/` | The global CLAUDE.md for Caleb's machine, with the install line. |
 
 ## Programs
