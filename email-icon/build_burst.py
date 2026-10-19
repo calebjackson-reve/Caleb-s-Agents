@@ -8,7 +8,8 @@ import numpy as np, math, os
 SIZE, S = 320, 2
 W = SIZE * S
 FONT, AXES = "source/BodoniModa.ttf", (900, 6)     # Bodoni Moda black, small optical size: thick strokes
-TEXT, TRACKING, PAD = "CJ.", 0.04, 0.17
+TEXT, TRACKING, PAD = "CJ.", 0.03, 0.285          # letters sit inside the triangle
+TRIANGLE = dict(radius=0.43, cy_shift=0.05, stroke=0.036, corner=0.05)   # fractions of W: circumradius, center drop, line width, corner rounding
 FIELD = np.array([0xE8, 0x77, 0x57], float)        # exact brand ember coral
 FIELD_EDGE = np.array([0xCB, 0x5E, 0x40], float)   # the same coral, a step deeper at the rim
 HOT = np.array([0xFF, 0xE6, 0xDC], float)          # white-pink core of the burst
@@ -35,7 +36,35 @@ def render_mark():
     canvas = Image.new("L", (W, W), 0); canvas.paste(m, ((W - m.width) // 2, (W - m.height) // 2))
     return canvas
 
+def render_triangle():
+    """Rounded equilateral triangle, apex up, as a thick stroke mask."""
+    t = TRIANGLE; r = t["radius"] * W; cx = W / 2; cy = W / 2 + t["cy_shift"] * W
+    pts = [(cx + r * math.cos(a), cy + r * math.sin(a)) for a in (-math.pi / 2, math.pi / 6, 5 * math.pi / 6)]
+    # pull the vertices in so a round-joined polyline gives soft corners
+    pull = t["corner"] * W
+    m = Image.new("L", (W, W), 0); d = ImageDraw.Draw(m)
+    path = []
+    for i in range(3):
+        p, q = pts[i], pts[(i + 1) % 3]
+        L = math.dist(p, q); ux, uy = (q[0] - p[0]) / L, (q[1] - p[1]) / L
+        path += [(p[0] + ux * pull, p[1] + uy * pull), (q[0] - ux * pull, q[1] - uy * pull)]
+    w = int(t["stroke"] * W)
+    for i in range(0, 6, 2):
+        d.line([path[i], path[i + 1]], fill=255, width=w)
+        # arc the corner between this side's end and the next side's start
+        a, b = path[i + 1], path[(i + 2) % 6]; v = pts[(i // 2 + 1) % 3]
+        steps = 12
+        arc = [((1 - k) ** 2 * a[0] + 2 * (1 - k) * k * v[0] + k ** 2 * b[0],
+                (1 - k) ** 2 * a[1] + 2 * (1 - k) * k * v[1] + k ** 2 * b[1]) for k in [j / steps for j in range(steps + 1)]]
+        d.line(arc, fill=255, width=w, joint="curve")
+    for p in path: d.ellipse([p[0] - w / 2, p[1] - w / 2, p[0] + w / 2, p[1] + w / 2], fill=255)
+    return m
+
 MARK_IMG = render_mark()
+TRI_IMG = render_triangle()
+# letters drop to the triangle's centroid
+MARK_IMG = MARK_IMG.transform(MARK_IMG.size, Image.AFFINE, (1, 0, 0, 0, 1, -TRIANGLE["cy_shift"] * W * 0.9))
+MARK_IMG.paste(255, mask=TRI_IMG)
 MARK = np.asarray(MARK_IMG, float) / 255.0
 NEON_IN = np.asarray(MARK_IMG.filter(ImageFilter.GaussianBlur(0.012 * W)), float) / 255.0   # tight neon halo
 NEON_OUT = np.asarray(MARK_IMG.filter(ImageFilter.GaussianBlur(0.05 * W)), float) / 255.0   # wide soft halo
@@ -60,7 +89,7 @@ def frame(t):
     rays = rays / rays.max()
     rays *= np.clip(1 - R, 0, 1) ** 0.8 * np.clip(R * 3, 0, 1)
     # burst core
-    core = np.exp(-(R / (0.22 + 0.08 * pulse)) ** 2) * (0.62 + 0.23 * pulse)
+    core = np.exp(-(R / (0.24 + 0.08 * pulse)) ** 2) * (0.50 + 0.22 * pulse)
     # horizontal lens streak
     streak = np.exp(-(dy / (0.012 * W)) ** 2) * np.clip(1 - np.abs(dx) / (W * 0.5), 0, 1) ** 2 * (0.25 + 0.15 * pulse)
     light = np.clip(core + 0.35 * rays * (0.7 + 0.3 * pulse) + streak, 0, 1)
