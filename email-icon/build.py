@@ -6,20 +6,24 @@ Inputs in source/: mask-ink.png and mask-ember.png, rendered from source/cj-mono
 from PIL import Image, ImageFilter
 import math
 
-SIZE = 160                    # output size in px
-BG = (255, 255, 255)          # email white; brand ivory is (251, 248, 243)
+import sys
+SIZE = 400                    # output size in px (Google profile pictures want at least 250)
+IVORY = (0xFB, 0xF8, 0xF3)    # brand ivory
 INK = (0x14, 0x10, 0x0E)      # brand ink
 EMBER = (0xE8, 0x77, 0x57)    # brand ember (coral)
-GLOW_MIN, GLOW_MAX = 0.18, 0.55   # how faint and how strong the ember glow breathes
-DOT_LIFT = 0.0                    # how much the ember marks brighten at peak (0 = none)
+# Variants. Google crops the profile picture to a circle, so the mark sits inside the inner 60%.
+VARIANTS = {
+    "ivory": dict(bg=IVORY, ink=INK, ember=EMBER, glow=EMBER, glow_min=0.20, glow_max=0.60),
+    "ember": dict(bg=EMBER, ink=IVORY, ember=IVORY, glow=IVORY, glow_min=0.10, glow_max=0.40),
+}
+PAD = 0.22                        # margin on each side as a fraction of SIZE, keeps the mark inside the circle
 FPS, DUR = 12, 3.6                # one full breath in seconds
-S = 4                             # supersample
+S = 3                             # supersample
 
 def load_mask(name):
     m = Image.open(f"source/{name}").convert("RGBA").split()[3]   # alpha channel
     # fit the tall mark into a square with padding
-    pad = 0.05
-    box = int(S * SIZE * (1 - 2 * pad))
+    box = int(S * SIZE * (1 - 2 * PAD))
     m.thumbnail((box, box), Image.LANCZOS)
     canvas = Image.new("L", (S * SIZE, S * SIZE), 0)
     canvas.paste(m, ((canvas.width - m.width) // 2, (canvas.height - m.height) // 2))
@@ -31,24 +35,26 @@ HALO = Image.composite(Image.new("L", INK_M.size, 255), Image.new("L", INK_M.siz
                        Image.eval(Image.merge("L", [INK_M]).point(lambda v: v), lambda v: v)) if False else None
 BOTH = Image.eval(Image.merge("L", [INK_M]), lambda v: v)
 BOTH.paste(255, mask=EMBER_M)
-HALO = BOTH.filter(ImageFilter.GaussianBlur(13 * S))
+HALO = BOTH.filter(ImageFilter.GaussianBlur(0.07 * SIZE * S))
 
-def lerp(a, b, t): return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
-
-def frame(t):
-    g = GLOW_MIN + (GLOW_MAX - GLOW_MIN) * (0.5 - 0.5 * math.cos(2 * math.pi * t))
-    im = Image.new("RGB", INK_M.size, BG)
-    im.paste(Image.new("RGB", im.size, EMBER), mask=HALO.point(lambda v: int(v * g)))
-    im.paste(Image.new("RGB", im.size, INK), mask=INK_M)
-    ember = lerp(EMBER, (255, 255, 255), DOT_LIFT * (g - GLOW_MIN) / (GLOW_MAX - GLOW_MIN))
-    im.paste(Image.new("RGB", im.size, ember), mask=EMBER_M)
+def frame(t, v):
+    g = v["glow_min"] + (v["glow_max"] - v["glow_min"]) * (0.5 - 0.5 * math.cos(2 * math.pi * t))
+    im = Image.new("RGB", INK_M.size, v["bg"])
+    im.paste(Image.new("RGB", im.size, v["glow"]), mask=HALO.point(lambda p: int(p * g)))
+    im.paste(Image.new("RGB", im.size, v["ink"]), mask=INK_M)
+    im.paste(Image.new("RGB", im.size, v["ember"]), mask=EMBER_M)
     return im.resize((SIZE, SIZE), Image.LANCZOS)
 
 n = int(FPS * DUR)
-frames = [frame(i / n) for i in range(n)]
-pal = frame(0.5).convert("P", palette=Image.ADAPTIVE, colors=96)
-q = [f.quantize(palette=pal, dither=Image.NONE) for f in frames]
-q[0].save("caleb-cj-icon.gif", save_all=True, append_images=q[1:],
-          duration=int(1000 / FPS), loop=0, optimize=True)
-frame(0.5).save("caleb-cj-icon.png")
-print("wrote caleb-cj-icon.gif and caleb-cj-icon.png", n, "frames")
+import os
+for name, v in VARIANTS.items():
+    frames = [frame(i / n, v) for i in range(n)]
+    pal = frame(0.5, v).convert("P", palette=Image.ADAPTIVE, colors=96)
+    q = [f.quantize(palette=pal, dither=Image.NONE) for f in frames]
+    q[0].save(f"caleb-cj-avatar-{name}.gif", save_all=True, append_images=q[1:],
+              duration=int(1000 / FPS), loop=0, optimize=True)
+    frame(0.5, v).save(f"caleb-cj-avatar-{name}.png")
+    os.makedirs(f"frames-{name}", exist_ok=True)
+    for i, f in enumerate(frames):
+        f.save(f"frames-{name}/{i:03d}.png")
+    print(f"wrote caleb-cj-avatar-{name}.gif/.png", n, "frames")
