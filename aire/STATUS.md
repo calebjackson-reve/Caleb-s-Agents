@@ -2,6 +2,25 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, correction: one speed to lead runner, not two
+
+**Confirmed from Caleb's Mac screenshot**
+- A responder already runs on the Mac with a KW Command Do Not Contact check, "within the hour" wording, 9 pm to 8 am quiet hours, and texting off until an A2P-registered number and Caleb's yes. Its dry run ends October 22.
+- The Mac session warned that two runners means two replies per lead.
+
+**Done**
+- Removed the cloud-built runner (speed_to_lead.py, install.sh, test_speed_to_lead.py) from the repo. Also removed a stray __pycache__ that had been committed.
+- Templates and directive now match the Mac's rules: "within the hour", 9 pm quiet hours, CRM check, texts off, no timing promise tighter than an hour.
+- Approvals page row replaced: on October 22 read the Mac's dry-run.log and say "live email" there.
+- The sign-on template and the Boubkeur draft stay.
+
+**Unmerged work found**
+- Branch `claude/gallant-lamport-c5mtmq` (October 15 and 16): responder.py with Gmail API, a follow-up cadence tool, a listing proposal tool. Not merged. Caleb should say whether that branch is the Mac's source or a third copy before anything merges.
+
+**Needs Caleb**
+- October 22: decide live email on the Mac.
+- Tell me whether the Mac's responder is the gallant-lamport branch or a local copy.
+
 ## 2026-10-19, go live
 
 **Done**
