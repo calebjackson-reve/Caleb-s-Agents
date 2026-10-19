@@ -2,6 +2,17 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, enrichment fixes from the Mac dry run
+
+**Confirmed from Caleb's Mac screenshot**
+- Haiku 5.5 spent all 256 output tokens thinking and returned no text. OmniRoute drops the structured output schema, so the model freelanced fields.
+
+**Done**
+- `enrich.py`: thinking off for the call, max_tokens 1024, hard error on max_tokens or missing text, prompt names the allowed values, fenced or chatty JSON is parsed, and any value outside the allowed lists marks the row error. Tested offline on both the fenced reply and a bad value.
+
+**Needs Caleb**
+- On the Mac: `git pull` and rerun the dry run through OmniRoute. Direct Anthropic is also fine now. No key is read from another project.
+
 ## 2026-10-19, correction: one speed to lead runner, not two
 
 **Confirmed from Caleb's Mac screenshot**

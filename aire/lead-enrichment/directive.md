@@ -10,7 +10,7 @@ Turn a raw lead export (KW Command CSV, website form log, open house sign-in she
 
 ## Process
 1. Run `python3 enrich.py leads.csv` from this folder. DRY_RUN is on by default and prints the first three rows' results without writing.
-2. For each row the script asks the model for exactly four fields, as JSON the API guarantees: `intent` (buyer, seller, both, renter, agent, vendor, unknown), `timeline` (now, 1-3 months, 3-12 months, someday, unknown), `area` (one of Caleb's markets or "other"), `next_touch` (one plain sentence Caleb would say, under 25 words).
+2. For each row the script asks the model for exactly four fields as JSON. The Anthropic API enforces the schema. Through a gateway like OmniRoute the schema can be dropped, so the prompt also spells out the allowed values and the script rejects anything outside them (the row is marked error, never trusted). Thinking is off for this call so Haiku 5.5 spends its tokens on the answer: `intent` (buyer, seller, both, renter, agent, vendor, unknown), `timeline` (now, 1-3 months, 3-12 months, someday, unknown), `area` (one of Caleb's markets or "other"), `next_touch` (one plain sentence Caleb would say, under 25 words).
 3. The model never invents facts. If the free text is empty, intent and timeline are "unknown" and next_touch asks one question.
 4. Output is `leads.enriched.csv`: every input column plus the four new ones plus `model` and `enriched_at`.
 5. Rows that error are written with `intent=error` and the message in `next_touch`, and the run continues.
