@@ -2,6 +2,21 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, late night: enrichment on the real CRM
+
+**Confirmed by Caleb**
+- The real CRM is the "AIRE CRM" sheet created Oct 16 (3,651 people), not the Hot-Warm-Cold sheet. My rename of that sheet was reverted on the Mac. PR 59 stays a draft. No sheet gets renamed again.
+- "Set up the enrichment like Nick on my real CRM, use my iMessages, emails and social media metrics as the main tools of measurement, categorize and find real leads, label people correctly, enrich what we know about each person."
+
+**Done**
+- `aire/enrichment/`: Nick-style pipeline. One deterministic script per signal (iMessage, Gmail, social engagers), one scorer with ten labels and two flags (hidden_lead, owes_reply), a practice-run merge of the Hot-Warm-Cold sheet, one cheap Haiku pass at the end, and a runner that writes a report first and the sheet only on `--write` (columns Z to AN plus Notes). 34 offline tests pass on a fake Messages database.
+- Practice run on the real CRM from the cloud (no message signals yet): 458 of 458 Hot-Warm-Cold rows matched, 316 tier-vs-band conflicts for Caleb, 1,253 unknown identities, 1,519 dormant. Reports delivered to Caleb, not committed.
+
+**Needs Caleb, on the Mac**
+- Give Terminal Full Disk Access, then run the order in `aire/enrichment/README.md`. The iMessage pass is where the labels get real.
+- Rule on the 316 conflicts (or say "the Hot-Warm-Cold sheet wins for HOT and WARM" and the merge applies that).
+- Approve the Haiku pass cost before `--llm` runs on more than 3 rows.
+
 ## 2026-10-19, late night: AIRE CRM, one database
 
 **Confirmed by Caleb**

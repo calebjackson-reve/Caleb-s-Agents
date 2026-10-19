@@ -1,0 +1,5 @@
+out/
+cache/
+*.db
+*.csv
+!tests/fixtures/*.csv
