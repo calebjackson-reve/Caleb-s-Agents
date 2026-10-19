@@ -1,24 +1,24 @@
 # Email icon
 
-An animated house icon for Caleb's Gmail signature and emails. The walls draw in charcoal, the roof draws in Keller Williams red, the door appears, then the window lights up. It holds for about two seconds and loops. 160 by 160 pixels, white background, about 24 KB.
+A subtle animated CJ monogram for Caleb's Gmail signature and emails. Charcoal serif letters with a soft Keller Williams red glow that slowly breathes in and out, about one breath every 3.6 seconds, looping forever. 160 by 160 pixels, white background.
 
 Files:
-- `caleb-house-icon.gif` is the animated version.
-- `caleb-house-icon.png` is the final frame, for places that won't play a GIF.
-- `build.py` regenerates both. Run `python3 build.py` after editing colors, timing or shapes.
+- `caleb-cj-icon.gif` is the animated version.
+- `caleb-cj-icon.png` is a single frame at mid glow, for places that won't play a GIF.
+- `build.py` regenerates both. Run `python3 build.py` after editing colors, glow strength or timing.
 
 ## Add it to Gmail
 
-Gmail plays animated GIFs in the body of an email and in signatures, and the icon stays as a static image in Outlook, which shows only the first frame of a GIF. The first frame here is blank, so for Outlook recipients use the PNG instead.
+Gmail plays animated GIFs in the body of an email and in signatures. Outlook shows only the first frame, which here is the faint-glow state, so it still looks right there.
 
-1. Upload `caleb-house-icon.gif` to Google Drive and set sharing to "Anyone with the link". Copy the direct image link, or host it on calebjackson.org.
+1. Upload `caleb-cj-icon.gif` to Google Drive and set sharing to "Anyone with the link", or host it on calebjackson.org. Copy the direct image link.
 2. Gmail, Settings, See all settings, General, Signature.
 3. Place the cursor where the icon goes, click the image button, paste the web address.
-4. Click the inserted image and pick Small (Gmail shows the full 160 px at Medium, about 48 px at Small).
+4. Click the inserted image and pick Small or Medium.
 5. Save changes and send a test to yourself.
 
-Signatures that are uploaded straight from the computer get re-encoded by Gmail and may stop animating, so the hosted link route is the reliable one.
+Signatures uploaded straight from the computer get re-encoded by Gmail and may stop animating, so the hosted link route is the reliable one.
 
 ## Changing it
 
-Colors, stroke width and timing are constants at the top of `build.py`. `RED` is the roof, `INK` the walls and door, `GLOW` the lit window. `DUR` is the drawing time and `HOLD` how long the finished icon sits before the loop restarts.
+Constants at the top of `build.py`: `INK` is the letter color, `RED` the glow color, `GLOW_MIN` and `GLOW_MAX` how faint and how strong the glow gets, `DUR` the length of one breath, `FONT` the typeface (FreeSerif Bold by default, swap in a brand font file if one is chosen later).
