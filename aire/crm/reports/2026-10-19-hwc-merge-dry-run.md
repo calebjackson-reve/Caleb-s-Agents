@@ -501,4 +501,4 @@ none
 - Whether a HWC phone should overwrite a CRM phone on a name match. This plan never touches primary_phone or email.
 - The HWC "Last touch" column is Caleb's shorthand ("10/15 text, unanswered"); the parsed date is the first m/d in it.
 
-Status: dry run, nothing written.
+Status: APPLIED 2026-10-19 at 18:07 Central, on Caleb's yes, through the Google Sheets connector from the cloud session. Matched 391 (390 Last_Touch, 391 Next_Action, 0 band), new 25 (person_id 7229 to 7253), 416 Notes rows, 855 Connector Log rows. Conflicts untouched. Read-back of every Contacts row in columns T to W matched the plan with 0 mismatches. Audit copy: `2026-10-19-hwc-merge-applied.audit.jsonl`.

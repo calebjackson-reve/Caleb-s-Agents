@@ -65,6 +65,8 @@ python3 crm.py task 247 "send BBA to Command" --due 2026-10-21
 python3 crm.py done a1b2c3d4
 ```
 
+Cloud sessions have no token file. Put the token JSON in the environment's secrets as `AIRE_GOOGLE_TOKEN_JSON` (never in chat) and the engine writes it to the token path on first use.
+
 `--local FILE` runs any command against a JSON snapshot instead of Google. That is how the cloud session ran the dry runs in `reports/` without a token. `--as-of YYYY-MM-DD` fixes the date for reproducible output.
 
 ### What `ingest` does
@@ -90,6 +92,8 @@ python3 crm.py --dry-run --as-of 2026-10-19 merge-hwc --hwc hwc.json --report re
 ```
 
 `hwc.json` is the sheet's Contacts tab as JSON (a list of row dicts, or `{"Contacts": [...]}`). The report classifies every row as matched, new or conflict and lists each planned cell. Nothing is written. The report from 2026-10-19 is `reports/2026-10-19-hwc-merge-dry-run.md`. After Caleb says yes, and only then, `merge-hwc --apply` performs the matched and new plans. Conflicts are never applied by code; Caleb settles them in the sheet.
+
+**Applied 2026-10-19.** Caleb said yes the same evening. The cloud session had no Google token, so the engine computed the exact writes on a local copy and the Google Sheets connector carried them to the sheet: 391 matched rows updated (Last_Touch and Next_Action, never band), 25 new contacts (person_id 7229 to 7253), 416 Notes rows, 855 Connector Log rows. Every row was read back and matched the plan. The 42 conflicts are still Caleb's to settle. Do not run `merge-hwc --apply` again for the 2026-10-19 list; a re-run would add duplicate Notes.
 
 Mapping decisions in the plan, all open for Caleb to change: HWC tier HOT and WARM fill a blank band; COLD and CONTACT fill no band. HWC Category friend, family, lead and client become Type client; agent and vendor keep their name; other becomes unknown. A phone or email in the CRM is never overwritten.
 

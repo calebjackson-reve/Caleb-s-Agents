@@ -50,6 +50,11 @@ SHEET_ID = os.getenv("AIRE_CRM_SHEET", "1w9izcliqmXlFR3_O3dnP2G5SGfCrua7mrCLCE7c
 FEED = HERE / "feed.json"
 AUDIT = Path(os.getenv("AIRE_CRM_AUDIT", str(Path.home() / "aire" / "crm" / "audit.jsonl")))
 TOKEN = Path(os.getenv("AIRE_GOOGLE_TOKEN", str(Path.home() / ".aire" / "google-token.json")))
+# In the cloud the token file does not exist; the environment secret AIRE_GOOGLE_TOKEN_JSON holds
+# the same JSON and is written to TOKEN on first use. Never paste a token into a chat.
+if os.getenv("AIRE_GOOGLE_TOKEN_JSON") and not TOKEN.exists():
+    TOKEN.parent.mkdir(parents=True, exist_ok=True)
+    TOKEN.write_text(os.environ["AIRE_GOOGLE_TOKEN_JSON"])
 CREDENTIALS = Path(os.getenv("AIRE_GOOGLE_CREDENTIALS", str(Path.home() / ".aire" / "credentials.json")))
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
