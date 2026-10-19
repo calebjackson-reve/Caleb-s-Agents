@@ -17,7 +17,9 @@
       if (!pair[0]) return;
       var src = document.createElement('source'); src.src = pair[0]; src.type = pair[1]; v.appendChild(src);
     });
+    v.muted = true; v.defaultMuted = true;
     v.load();
+    v.addEventListener('canplay', function () { var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); }, { once: true });
   });
 
   /* ---------- shared header, menu, footer ---------- */
@@ -170,11 +172,11 @@
     var vio = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         var v = e.target;
-        if (e.isIntersecting && e.intersectionRatio >= 0.25) { if (v.preload === 'none') v.preload = 'auto'; var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); }
+        if (e.isIntersecting && e.intersectionRatio >= 0.25) { if (v.preload === 'none') v.preload = 'auto'; v.muted = true; var pr = v.play(); if (pr && pr.catch) pr.catch(function () {}); }
         else if (!v.paused) v.pause();
       });
     }, { threshold: [0, 0.25, 0.6] });
-    vids.forEach(function (v) { v.removeAttribute('autoplay'); vio.observe(v); });
+    vids.forEach(function (v) { v.muted = true; v.defaultMuted = true; v.setAttribute('playsinline', ''); vio.observe(v); });
   })();
 
   /* ---------- pixel mosaic reveal: coarse blocks resolve to the image as it enters ---------- */
