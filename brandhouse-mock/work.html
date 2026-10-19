@@ -6,11 +6,13 @@
 <title>Work - Brandhouse</title>
 <meta name="description" content="Brandhouse is the studio of videographer Tyler Boyle. Brand films, commercials, weddings and documentary work. Mock site with sample content.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=DM+Mono:wght@400&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body data-page="work">
 <a class="skip" href="#main">Skip to content</a>
+<div class="noise" aria-hidden="true"></div>
 <header class="hdr wrap">
   <a class="logo" href="index.html" aria-label="Brandhouse home"><svg viewBox="0 0 44 52" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 3h12l12 46H15z"/><path d="M19 3h22L29 49"/></svg></a>
   <div class="hdr-right">
@@ -29,7 +31,7 @@
 
 <section class="work-top wrap">
   <div class="row">
-    <div style="display:grid;gap:22px"><h1>Work</h1><a class="btn" href="contact.html">Book a shoot <span>&#8599;</span></a></div>
+    <div style="display:grid;gap:22px"><h1><span>Work</span></h1><a class="btn" href="contact.html">Book a shoot <span>&#8599;</span></a></div>
     <div class="filters">
       <div class="sel">
         <select id="fType" aria-label="Type"><option value="">Type</option><option>Commercial</option><option>Wedding</option><option>Documentary</option><option>Real estate</option><option>Event</option><option>Product</option></select>
@@ -128,6 +130,11 @@
   o.addEventListener('click',function(){set(true)});c.addEventListener('click',function(){set(false)});
   m.querySelectorAll('nav a').forEach(function(a){a.addEventListener('click',function(){set(false)})});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
+  var rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!rm&&window.Lenis){var lenis=new Lenis({lerp:.09,smoothWheel:true});function raf(t){lenis.raf(t);requestAnimationFrame(raf)}requestAnimationFrame(raf);}
+  var els=document.querySelectorAll('.rv,.rv-img');
+  if(rm||!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});}
+  else{var io=new IntersectionObserver(function(en){en.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}})},{rootMargin:'0px 0px -8% 0px',threshold:.08});els.forEach(function(e){io.observe(e)});}
   document.querySelectorAll('.slide[data-video]').forEach(function(s){
     s.addEventListener('click',function(){var v=s.querySelector('video');if(!v)return;if(v.paused){v.play();s.classList.add('playing')}else{v.pause();s.classList.remove('playing')}});
   });

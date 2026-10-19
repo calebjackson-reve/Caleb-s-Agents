@@ -6,11 +6,13 @@
 <title>Basil Lane - Brandhouse</title>
 <meta name="description" content="Brandhouse is the studio of videographer Tyler Boyle. Brand films, commercials, weddings and documentary work. Mock site with sample content.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=DM+Mono:wght@400&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body data-page="film">
 <a class="skip" href="#main">Skip to content</a>
+<div class="noise" aria-hidden="true"></div>
 <header class="hdr wrap">
   <a class="logo" href="index.html" aria-label="Brandhouse home"><svg viewBox="0 0 44 52" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 3h12l12 46H15z"/><path d="M19 3h22L29 49"/></svg></a>
   <div class="hdr-right">
@@ -29,11 +31,11 @@
 
 <section class="film-hero wrap">
   <span class="tag">Real estate, Listing film</span>
-  <h1>Basil Lane</h1>
+  <h1><span>Basil Lane</span></h1>
   <div class="meta"><div><span>Directed by</span><span>Tyler Boyle</span></div><div><span>Location</span><span>St. Francisville, Louisiana</span></div><div><span>Year</span><span>2026</span></div><div><span>Format</span><span>4 clips, 16:9, AI-assisted motion</span></div></div>
 </section>
 <section class="band" style="padding-block:0"><div class="wrap"><div class="slide" data-video style="width:100%;aspect-ratio:16/9"><video src="assets/basil-exterior.mp4" muted loop playsinline preload="metadata" poster="assets/basil-exterior.jpg"></video><div class="play"><b>&#9654;</b></div></div></div></section>
-<section class="wrap film-body">
+<section class="wrap film-body rv">
   <div class="txt">
     <p>A white farmhouse with a deep timber porch on Basil Lane in St. Francisville. The listing photography was strong, so instead of reshooting we gave each still a single slow move: a push-in on the house at blue hour, a glide along the pool deck at dusk, a drift toward the gazebo on the pond, a locked-off frame on the primary bath with the fireplace lit.</p>
     <p>Every move was written to protect the real property. No new objects, no people, no changed materials. Water, flames, leaves and window light are the only things that move. The clips run four to eight seconds each and cut together into a thirty-second listing film or run on their own as social posts.</p>
@@ -46,7 +48,7 @@
     <div class="slide" data-video style="width:100%;aspect-ratio:16/9"><video src="assets/basil-bath.mp4" muted loop playsinline preload="metadata" poster="assets/basil-bath.jpg"></video><div class="play"><b>&#9654;</b></div></div>
   </div>
 </section>
-<section class="wrap ctas"><a class="cta" href="contact.html"><h2>Book a Shoot</h2></a><a class="cta" href="venue.html"><h2>Next: Under the Oak</h2></a></section>
+<section class="wrap ctas rv"><a class="cta" href="contact.html"><h2>Book a Shoot</h2></a><a class="cta" href="venue.html"><h2>Next: Under the Oak</h2></a></section>
 </main>
 <footer class="foot wrap">
   <div class="foot-grid">
@@ -64,6 +66,11 @@
   o.addEventListener('click',function(){set(true)});c.addEventListener('click',function(){set(false)});
   m.querySelectorAll('nav a').forEach(function(a){a.addEventListener('click',function(){set(false)})});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
+  var rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!rm&&window.Lenis){var lenis=new Lenis({lerp:.09,smoothWheel:true});function raf(t){lenis.raf(t);requestAnimationFrame(raf)}requestAnimationFrame(raf);}
+  var els=document.querySelectorAll('.rv,.rv-img');
+  if(rm||!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});}
+  else{var io=new IntersectionObserver(function(en){en.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}})},{rootMargin:'0px 0px -8% 0px',threshold:.08});els.forEach(function(e){io.observe(e)});}
   document.querySelectorAll('.slide[data-video]').forEach(function(s){
     s.addEventListener('click',function(){var v=s.querySelector('video');if(!v)return;if(v.paused){v.play();s.classList.add('playing')}else{v.pause();s.classList.remove('playing')}});
   });
