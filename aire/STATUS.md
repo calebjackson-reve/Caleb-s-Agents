@@ -2,6 +2,9 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, home landing prototype
+Caleb asked for the home page to look like Zorge, with the FIND hero motion, command bar and quick call to action, and the Sobha curved gallery (his screenshot of "The three worlds") with a toggle. Built as one static page in `home-landing/` with GSAP ScrollTrigger on native scroll, using the measured teardowns in `aire/research/reference-teardowns/`. Private page: https://claude.ai/artifact/HDQAaCMtYDssrfjMJNocMr. Proof: screenshots at 1440 and 390 at twelve depths, Curve switch on and off, two scroll recordings, zero console errors. Photos are Basil Lane placeholders. Awaiting Caleb's look before the website session ports it into Luxury Presence.
+
 ## 2026-10-19, two just sold posts
 
 **Done**

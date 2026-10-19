@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Caleb Jackson Home</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 fill=%27%2314100E%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-family=%27Georgia%27 font-style=%27italic%27 font-size=%2720%27 fill=%27%23FBF8F3%27 text-anchor=%27middle%27%3Ecj%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout concept: the website-rebuild design system (ink and ivory surfaces that flip, ember once per view) on the approved structure:
+   FIND command bar and pinned hero, Zorge sticky split panels, Sobha curved gallery, FIND quick CTA. Two compare switches: Portrait and Blush. */
+:root{
+  --ink:#14100E;
+  --ivory:#FBF8F3;
+  --blush:#FBEFE9;
+  --ember:#E87757;
+  --stone:#8D8578;
+  --ink-50:rgba(20,16,14,.5);
+  --ivory-50:rgba(251,248,243,.5);
+  --hair-ink:rgba(20,16,14,.12);
+  --hair-ivory:rgba(251,248,243,.2);
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --sans:"Instrument Sans","Hauora","Helvetica Neue",Arial,sans-serif;
+  --ease:cubic-bezier(.7,0,.3,1);
+  --ease-reveal:cubic-bezier(.16,1,.3,1);
+  --gl:max(26px,env(safe-area-inset-left,0px));
+  --gr:max(26px,env(safe-area-inset-right,0px));
+  --bg:var(--ivory);
+  --fg:var(--ink);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+html{font-size:2.6667vw}
+@media (min-width:768px){html{font-size:.5208vw}}
+@media (min-width:1920px){html{font-size:10px}}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:1.6rem;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--ink)}
+img,video{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+.skip{position:absolute;left:-999px;top:0}
+.skip:focus{left:16px;top:16px;background:var(--ink);color:var(--ivory);padding:8px 12px;z-index:100}
+:focus-visible{outline:2px solid var(--ember);outline-offset:3px}
+
+/* Surfaces */
+.s-ink{background:var(--ink);color:var(--ivory)}
+.s-ivory{background:var(--ivory);color:var(--ink)}
+.s-blush{background:var(--blush);color:var(--ink)}
+.s-ink .dim{color:var(--ivory-50)} .s-ivory .dim,.s-blush .dim{color:var(--ink-50)}
+.s-ink .hair{border-color:var(--hair-ivory)} .s-ivory .hair,.s-blush .hair{border-color:var(--hair-ink)}
+
+/* Type roles from DESIGN-SYSTEM.md, rem at the 1920 design width */
+.label{font-family:var(--sans);font-weight:600;font-size:1.4rem;letter-spacing:.08em;text-transform:uppercase;line-height:1.4}
+.display-xl{font-family:var(--serif);font-weight:400;font-size:clamp(44px,14rem,140px);line-height:1;letter-spacing:.02em;text-transform:uppercase;margin:0;text-wrap:balance}
+.display-l{font-family:var(--serif);font-weight:400;font-size:clamp(40px,11.4rem,114px);line-height:.96;letter-spacing:.02em;text-transform:uppercase;margin:0}
+.display-m{font-family:var(--serif);font-weight:400;font-size:clamp(32px,8rem,80px);line-height:1.06;letter-spacing:.02em;text-transform:uppercase;margin:0;text-wrap:balance}
+.ital{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:0;display:block}
+.h2{font-family:var(--serif);font-weight:400;font-size:clamp(34px,7.2rem,72px);line-height:1;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.lead{font-size:clamp(18px,3.2rem,32px);line-height:1.3}
+.body{font-size:clamp(16px,2rem,20px);line-height:1.5}
+.small{font-size:clamp(13px,1.6rem,16px)}
+.stat{font-family:var(--serif);font-size:clamp(56px,11.4rem,114px);line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.ember{color:var(--ember)}
+
+/* Command bar, after FIND. Flips color with the section under it, hides on scroll down. */
+.bar{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;height:9rem;min-height:64px;z-index:50;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding-left:var(--gl);padding-right:var(--gr);color:var(--ivory);transition:transform .8s var(--ease),color .4s var(--ease);will-change:transform}
+.bar.on-light{color:var(--ink)}
+.bar.is-hidden{transform:translateY(-110%)}
+.wordmark{font-family:var(--serif);font-size:clamp(22px,3rem,30px);line-height:1;letter-spacing:-.01em}
+.wordmark i{font-style:normal;color:var(--ember)}
+.wordmark small{display:block;font-family:var(--sans);font-weight:600;font-size:1rem;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-top:.4rem}
+.links{display:flex;gap:3.4rem}
+.links a{position:relative;padding:.6rem 0}
+.links a::after{content:"";position:absolute;left:0;right:100%;bottom:0;height:1px;background:currentColor;transition:right .4s var(--ease)}
+.links a:hover::after{right:0}
+.bar-right{display:flex;justify-content:flex-end;align-items:center;gap:1.2rem}
+.pill{position:relative;display:inline-flex;align-items:center;gap:1rem;background:var(--ink);color:var(--ivory);border-radius:100px;padding:1.6rem 2.6rem;min-height:44px;font-family:var(--sans);font-weight:500;font-size:clamp(14px,1.6rem,16px);overflow:hidden;transition:background .4s var(--ease),color .4s var(--ease)}
+.bar.on-light .pill,.s-ink .pill{background:var(--ivory);color:var(--ink)}
+.bar:not(.on-light) .pill{background:var(--ivory);color:var(--ink)}
+.s-ivory .pill,.s-blush .pill{background:var(--ink);color:var(--ivory)}
+.pill .lbl{display:block;position:relative;overflow:hidden;line-height:1.2}
+.pill .lbl span{display:block;transition:transform .8s var(--ease)}
+.pill .lbl span + span{position:absolute;left:0;top:100%}
+.pill:hover .lbl span{transform:translateY(-100%)}
+.pill.ghost{background:transparent !important;color:inherit !important;border:1px solid currentColor}
+.menu-btn{display:none;background:none;border:1px solid currentColor;color:inherit;font:inherit;font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:1.2rem;padding:1rem 1.4rem;border-radius:100px}
+
+/* Hero, after FIND's pinned stage on top of the drone loop. */
+.hero{position:relative;height:340vh}
+.hero-stick{position:sticky;top:0;height:100vh;overflow:hidden}
+.hero-media{position:absolute;inset:0}
+.hero-media video,.hero-media img{width:100%;height:100%;object-fit:cover}
+.hero-media::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,16,14,.35) 0%,rgba(20,16,14,.2) 45%,rgba(20,16,14,.75) 100%)}
+.hero-copy{position:absolute;left:0;right:0;top:50%;transform:translateY(-56%);z-index:3;text-align:center;padding:0 var(--gr) 0 var(--gl)}
+.hero-copy .ital{font-size:clamp(40px,9rem,90px);line-height:1;margin-bottom:.6rem}
+.hero-copy p{margin:2.4rem auto 0;max-width:44ch;color:var(--ivory)}
+.hero-copy p span{color:var(--ivory-50)}
+.hero-cta{margin-top:3.2rem;display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap}
+.hero-portrait{position:absolute;left:50%;bottom:0;z-index:4;width:min(46vw,620px);transform:translateX(-50%);opacity:0;pointer-events:none;will-change:transform;margin:0}
+.hero-portrait img{width:100%;height:auto}
+body[data-portrait="off"] .hero-portrait{display:none}
+.hero-name{position:absolute;inset:0;z-index:5;display:grid;place-items:center;opacity:0;pointer-events:none;text-align:center}
+.hero-name .cut{font-family:var(--serif);font-size:clamp(64px,16rem,180px);line-height:.9;letter-spacing:.02em;text-transform:uppercase;color:transparent;-webkit-background-clip:text;background-clip:text;background-image:url("assets/basil-front-1600.jpg");background-size:cover;background-position:50% 55%}
+.hero-name .ital{font-size:clamp(24px,4.4rem,44px);color:var(--ivory);-webkit-text-fill-color:var(--ivory);margin-top:1.2rem}
+.scroll-hint{position:absolute;bottom:2.8rem;left:50%;transform:translateX(-50%);z-index:6;color:var(--ivory-50)}
+
+/* Generic section shell */
+.sec{padding:15rem var(--gr) 15rem var(--gl)}
+.wrap{max-width:1920px;margin:0 auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:2.4rem;align-items:center}
+
+/* About strip, after Sobha's "art of detail" */
+.about .portrait{aspect-ratio:4/5;overflow:hidden;max-width:52rem;justify-self:end}
+.about .portrait img{width:100%;height:100%;object-fit:cover;transform:scale(1.06);transition:transform 4s var(--ease-reveal)}
+.about .portrait.in img{transform:scale(1)}
+.about .body{max-width:52ch;margin:2.4rem 0 0}
+.ulink{display:inline-block;margin-top:3rem;padding-bottom:.6rem;border-bottom:1px solid currentColor}
+.chevrons{display:flex;gap:.6rem;margin-top:4rem}
+.chevrons i{display:block;width:5.6rem;height:9.2rem;background:currentColor;clip-path:polygon(0 0,55% 0,100% 50%,55% 100%,0 100%,45% 50%)}
+.chevrons i:nth-child(2){opacity:.55}.chevrons i:nth-child(3){opacity:.3}.chevrons i:nth-child(4){opacity:.14}
+
+/* Split panels, after Zorge: each sticks under the next. */
+.worlds{position:relative}
+.world{position:sticky;top:0;height:100vh;display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--hair-ivory)}
+.world-text{padding:calc(9rem + 6vh) var(--gl) 8vh var(--gl);display:flex;flex-direction:column;justify-content:space-between}
+.world-text p{max-width:38ch;margin:0 0 2.4rem}
+.world-media{position:relative;overflow:hidden}
+.world-media img{width:100%;height:100%;object-fit:cover;transform:scale(1.08);will-change:transform}
+.world-media::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--ink) 0%,rgba(20,16,14,0) 28%)}
+.world:nth-child(2) .world-media{order:-1}
+.world:nth-child(2) .world-media::after{background:linear-gradient(270deg,var(--ink) 0%,rgba(20,16,14,0) 28%)}
+
+/* Gallery, after Sobha's three worlds. Curve switch flattens it. */
+.gallery{position:relative;height:260vh}
+.gallery-stick{position:sticky;top:0;height:100vh;overflow:hidden;display:grid;place-items:center;perspective:1400px;perspective-origin:50% 40%}
+.gallery-title{position:absolute;z-index:3;top:16vh;left:0;right:0;text-align:center;pointer-events:none}
+.gallery-title .ital{font-size:clamp(34px,7.2rem,72px);line-height:1}
+.panels{position:relative;z-index:2;width:min(92vw,1740px);display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:14vh;transform-style:preserve-3d}
+.panel{position:relative;aspect-ratio:16/10;overflow:hidden;transform-origin:100% 50%;will-change:transform;margin:0;background:#1c1714}
+.panel + .panel{transform-origin:0 50%}
+.panel img{width:100%;height:100%;object-fit:cover}
+.panel figcaption{position:absolute;left:1.8rem;bottom:1.6rem;color:var(--ivory);text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.gallery-rings{position:absolute;inset:-20% -10%;z-index:1;pointer-events:none;opacity:.5;background:
+  radial-gradient(closest-side at 50% 0%,transparent 58%,rgba(251,248,243,.08) 58.3%,transparent 59%),
+  radial-gradient(closest-side at 50% 0%,transparent 66%,rgba(251,248,243,.06) 66.3%,transparent 67%),
+  radial-gradient(closest-side at 50% 0%,transparent 74%,rgba(251,248,243,.05) 74.3%,transparent 75%)}
+.switches{position:absolute;z-index:4;top:calc(9rem + env(safe-area-inset-top,0px) + 1.4rem);right:var(--gr)}
+
+/* Switch control, shared */
+.switch{display:inline-flex;align-items:center;gap:1rem;background:rgba(20,16,14,.75);border:1px solid var(--hair-ivory);border-radius:100px;padding:.8rem 1.2rem .8rem 1.4rem;color:var(--ivory);font:inherit;font-family:var(--sans);font-size:1.1rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;min-height:36px}
+.switch .track{position:relative;width:34px;height:18px;border-radius:100px;background:var(--hair-ivory);transition:background .4s var(--ease)}
+.switch .track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--ivory);transition:transform .4s var(--ease)}
+.switch[aria-checked="true"] .track{background:var(--ember)}
+.switch[aria-checked="true"] .track::after{transform:translateX(16px)}
+
+/* Testimonials band: built empty on purpose. Surface flips with the Blush switch. */
+.band{text-align:center}
+.band .slot{margin:4rem auto 0;max-width:70ch;padding:4rem 2.4rem;border:1px dashed var(--hair-ink)}
+.band .slot .ital{font-size:clamp(22px,3.2rem,32px)}
+
+/* Market note: one sourced stat, per CLAUDE.md */
+.market .grid2{align-items:end}
+.market .src{margin-top:1.6rem;max-width:60ch}
+
+/* Quick CTA, after FIND's outro */
+.outro{text-align:center}
+.outro p{max-width:46ch;margin:1.8rem auto 0}
+.outro .num{margin-top:2.4rem}
+.outro .num b{font-weight:600;user-select:all}
+
+footer{padding:5.6rem var(--gr) 4.8rem var(--gl);border-top:1px solid var(--hair-ivory);display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:3.2rem;line-height:1.7}
+footer b{display:block;margin-bottom:.6rem}
+footer .big{grid-column:1/-1;font-family:var(--serif);font-size:clamp(48px,14rem,140px);line-height:.9;letter-spacing:.02em;text-transform:uppercase;color:rgba(251,248,243,.12);margin-top:2.4rem}
+footer .big i{font-style:normal;color:var(--ember);opacity:.6}
+
+/* Compare panel, for Caleb only. Not part of the site. */
+.compare{position:fixed;z-index:55;right:var(--gr);bottom:calc(1.6rem + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;align-items:flex-end;gap:.6rem}
+.compare .tag{color:var(--ivory);background:var(--ember);border-radius:100px;padding:.4rem 1rem;font-size:1rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;width:max-content}
+
+@media (max-width:900px){
+  .bar{grid-template-columns:1fr auto}
+  .links{display:none}
+  .menu-btn{display:inline-block}
+  .bar .pill{padding:1.1rem 1.6rem}
+  .hero{height:280vh}
+  .hero-copy{transform:translateY(-60%)}
+  .hero-portrait{width:78vw}
+  .sec{padding:12rem var(--gr) 10rem var(--gl)}
+  .grid2{grid-template-columns:1fr;gap:3rem}
+  .about .portrait{justify-self:start;max-width:100%}
+  .world{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+  .world-text{padding-top:calc(9rem + 3vh)}
+  .world:nth-child(2) .world-media{order:0}
+  .world-media::after,.world:nth-child(2) .world-media::after{background:linear-gradient(0deg,var(--ink) 0%,rgba(20,16,14,0) 30%)}
+  .gallery{height:220vh}
+  .gallery-stick{perspective:900px}
+  .gallery-title{top:14vh}
+  .panels{grid-template-columns:1fr;width:min(88vw,520px);margin-top:26vh;gap:.8rem}
+  .panel,.panel + .panel{transform-origin:50% 0%}
+  .switches{top:auto;bottom:calc(1.6rem + env(safe-area-inset-bottom,0px));right:auto;left:var(--gl)}
+  .display-xl{font-size:56px}.hero-copy .ital{font-size:40px}.display-l{font-size:48px}.display-m{font-size:34px}.h2{font-size:40px}.stat{font-size:64px}.hero-name .cut{font-size:56px}.hero-name .ital{font-size:22px}footer .big{font-size:48px}.wordmark{font-size:22px}
+  footer{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .hero{height:auto}.hero-stick{height:auto;min-height:100vh}
+  .hero-copy{position:relative;top:auto;transform:none;padding-top:30vh;padding-bottom:30vh}
+  .hero-portrait,.hero-name{display:none}
+  .world{position:relative;height:auto;min-height:70vh}
+  .gallery{height:auto}.gallery-stick{height:auto;padding:16vh 0}
+  .gallery-title{position:relative;top:auto;margin-bottom:2.4rem}
+  .panels{margin-top:0}
+  .bar{transition:none}
+}
+</style>
+</head>
+<body data-portrait="on" data-blush="on">
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="bar" id="bar">
+  <a class="wordmark" href="#top">caleb jackson<i>.</i><small>Keller Williams First Choice</small></a>
+  <nav class="links label" aria-label="Main">
+    <a href="#search">Search</a>
+    <a href="#communities">Communities</a>
+    <a href="#sell">Sell</a>
+    <a href="#about">About</a>
+  </nav>
+  <div class="bar-right">
+    <button class="menu-btn" type="button" aria-expanded="false">Menu</button>
+    <a class="pill" href="sms:+12257470303"><span class="lbl"><span>Call or text</span><span aria-hidden="true">Call or text</span></span> <span aria-hidden="true">→</span></a>
+  </div>
+</header>
+
+<main id="main">
+<section class="hero s-ink" id="top" data-surface="ink" aria-label="Welcome">
+  <div class="hero-stick">
+    <div class="hero-media">
+      <video id="heroVideo" autoplay muted loop playsinline poster="assets/aerial-1-dusk-estate-16x9-poster.jpg" aria-label="Drone footage over Basil Lane at dusk">
+        <source src="assets/aerial-1-dusk-estate-16x9.webm" type="video/webm">
+        <source src="assets/aerial-1-dusk-estate-16x9.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div class="hero-copy" id="heroCopy">
+      <h1 class="display-xl"><span class="ital">The dream</span>is the easy part.</h1>
+      <p class="lead">Real guidance. Real numbers. <span>A clear path to what comes next in Louisiana.</span></p>
+      <div class="hero-cta">
+        <a class="pill" href="#search"><span class="lbl"><span>Find Properties</span><span aria-hidden="true">Find Properties</span></span> <span aria-hidden="true">→</span></a>
+        <a class="pill ghost" href="#sell">What is my home worth</a>
+      </div>
+    </div>
+    <figure class="hero-portrait" id="heroPortrait"><img src="assets/caleb-hero-cutout.png" width="760" height="660" alt="Caleb Jackson"></figure>
+    <div class="hero-name" id="heroName" aria-hidden="true"><div><div class="cut">Caleb<br>Jackson</div><span class="ital">Louisiana real estate</span></div></div>
+    <div class="scroll-hint label" id="scrollHint">Scroll</div>
+  </div>
+</section>
+
+<section class="sec s-ivory about" id="about" data-surface="ivory">
+  <div class="wrap grid2">
+    <div>
+      <span class="label dim">About</span>
+      <h2 class="display-m" style="margin-top:1.6rem"><span class="ital">This isn't just about houses.</span>It's about where your life goes next.</h2>
+      <p class="body dim">You're not shopping for a listing. You're choosing a town, a commute, a school, a porch you'll sit on for years. I work from the whole picture, with Louisiana taxes, insurance and flood in plain view before you fall in love with anything. Your call gets returned today.</p>
+      <a class="ulink label" href="#about">More about Caleb</a>
+      <div class="chevrons" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    </div>
+    <figure class="portrait" data-reveal><img src="assets/02-bar-stool-tan-suit.webp" alt="Caleb Jackson, tan suit, seated at a bar in warm light" loading="lazy"></figure>
+  </div>
+</section>
+
+<section class="worlds s-ink" id="communities" data-surface="ink" aria-label="Buy, sell, communities">
+  <article class="world s-ink" id="buy">
+    <div class="world-text">
+      <span class="label dim">01 &nbsp; Buying</span>
+      <div>
+        <h3 class="display-m"><span class="ital">Know the true monthly cost</span>before you offer.</h3>
+        <p class="body dim">Compare what homes would really cost each month and at closing, with parish taxes, insurance and flood in the number.</p>
+        <a class="ulink label" href="#search">Compare homes</a>
+      </div>
+    </div>
+    <div class="world-media"><img src="assets/basil-porch-1600.jpg" alt="Timber porch at Basil Lane in evening light" loading="lazy"></div>
+  </article>
+  <article class="world s-ink" id="sell">
+    <div class="world-text">
+      <span class="label dim">02 &nbsp; Selling</span>
+      <div>
+        <h3 class="display-m"><span class="ital">See what a sale leaves you</span>after everything.</h3>
+        <p class="body dim">Payoff, fees, credits, proration and the move. Two scenarios side by side, then a plan for how the house gets presented.</p>
+        <a class="ulink label" href="#sell">Run my net sheet</a>
+      </div>
+    </div>
+    <div class="world-media"><img src="assets/basil-pool-night.webp" alt="Basil Lane pool at night" loading="lazy"></div>
+  </article>
+  <article class="world s-ink" id="explore">
+    <div class="world-text">
+      <span class="label dim">03 &nbsp; Communities</span>
+      <div>
+        <h3 class="display-m"><span class="ital">Eight places I know</span>street by street.</h3>
+        <p class="body dim">Country Club of Louisiana, University Club, Bocage, Santa Maria, Garden District, Zachary, St. Francisville, New Roads. Pick one, then see what is for sale near it.</p>
+        <a class="ulink label" href="#communities">Explore the communities</a>
+      </div>
+    </div>
+    <div class="world-media"><img src="assets/basil-front-night.webp" alt="Basil Lane front elevation at night" loading="lazy"></div>
+  </article>
+</section>
+
+<section class="gallery s-ink" id="search" data-surface="ink" aria-label="Selected work">
+  <div class="gallery-stick">
+    <div class="gallery-rings" aria-hidden="true"></div>
+    <div class="switches"><button class="switch" id="curveSwitch" role="switch" aria-checked="true" type="button">Curve <span class="track" aria-hidden="true"></span></button></div>
+    <div class="gallery-title"><span class="ital">Selected</span><div class="display-l">Work</div></div>
+    <div class="panels" id="panels">
+      <figure class="panel"><img src="assets/basil-front-1600.jpg" alt="Basil Lane, front" loading="lazy"><figcaption class="label">Basil Lane · St. Francisville · Sold</figcaption></figure>
+      <figure class="panel"><img src="assets/basil-patio-1600.jpg" alt="Basil Lane, patio" loading="lazy"><figcaption class="label">The patio · evening</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="sec band s-blush" id="band" data-surface="ivory">
+  <div class="wrap">
+    <span class="label dim">Client words</span>
+    <div class="slot">
+      <span class="ital">This band is built and waiting.</span>
+      <p class="body dim" style="margin:1.2rem 0 0">Quotes go here once clients have given permission for their names. Nothing is invented in the meantime.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec s-ivory market" data-surface="ivory">
+  <div class="wrap grid2">
+    <div>
+      <span class="label dim">The market, one number</span>
+      <div class="stat" style="margin-top:1.6rem">3,524</div>
+      <p class="h2" style="margin-top:1rem">homes for sale across Greater Baton Rouge.</p>
+    </div>
+    <p class="small dim src">Source: Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026, current as of October 6, 2026. Single family, townhomes and condos combined. Up 3.1 percent from September 2025.</p>
+  </div>
+</section>
+
+<section class="sec outro s-ink" data-surface="ink">
+  <div class="wrap">
+    <h2 class="display-m"><span class="ital">Thinking about a move?</span>Start with a text.</h2>
+    <p class="body dim">No forms, no funnel. Tell me the town or the address and I will come back with real comps and a plain answer.</p>
+    <div class="hero-cta">
+      <a class="pill" href="sms:+12257470303"><span class="lbl"><span>Text Caleb</span><span aria-hidden="true">Text Caleb</span></span> <span aria-hidden="true">→</span></a>
+      <a class="pill ghost" href="tel:+12257470303">Call</a>
+    </div>
+    <p class="num small dim">(225) 747-0303 · <b>aire@calebjackson.org</b></p>
+  </div>
+</section>
+</main>
+
+<footer class="s-ink small" data-surface="ink">
+  <div class="dim"><b class="label">Caleb Jackson, REALTOR®</b>Keller Williams First Choice<br>Louisiana license 995709547<br>Each office independently owned and operated. Equal Housing Opportunity.</div>
+  <div class="dim"><b class="label">Office</b>17111 Commerce Centre Drive<br>Prairieville, LA 70769</div>
+  <div class="dim"><b class="label">Reach me</b>(225) 747-0303<br>aire@calebjackson.org</div>
+  <div class="big">caleb jackson<i>.</i></div>
+</footer>
+
+<div class="compare" role="group" aria-label="Compare options">
+  <span class="tag">Compare</span>
+  <button class="switch" id="portraitSwitch" role="switch" aria-checked="true" type="button">Portrait in hero <span class="track" aria-hidden="true"></span></button>
+  <button class="switch" id="blushSwitch" role="switch" aria-checked="true" type="button">Blush band <span class="track" aria-hidden="true"></span></button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var body = document.body;
+  var bar = document.getElementById('bar');
+
+  /* Compare switches, remembered per browser. */
+  function bind(id, attr, cls){
+    var el = document.getElementById(id);
+    var on = true;
+    try { on = localStorage.getItem('cj-'+attr) !== 'off'; } catch(e){}
+    function apply(){
+      el.setAttribute('aria-checked', String(on));
+      body.setAttribute('data-'+attr, on ? 'on' : 'off');
+      if (attr === 'blush') {
+        var band = document.getElementById('band');
+        band.classList.toggle('s-blush', on); band.classList.toggle('s-ivory', !on);
+      }
+    }
+    apply();
+    el.addEventListener('click', function(){ on = !on; try{ localStorage.setItem('cj-'+attr, on?'on':'off'); }catch(e){} apply(); });
+  }
+  bind('portraitSwitch','portrait'); bind('blushSwitch','blush');
+
+  /* Header: hide on scroll down, flip color with the section under it. */
+  var lastY = 0, sections = Array.prototype.slice.call(document.querySelectorAll('[data-surface]'));
+  function onScroll(){
+    var y = window.scrollY || 0;
+    if (!reduce) bar.classList.toggle('is-hidden', y > lastY && y > 160);
+    lastY = y;
+    var probe = y + 40, light = false;
+    for (var i = 0; i < sections.length; i++) {
+      var r = sections[i].getBoundingClientRect(), top = r.top + y;
+      if (probe >= top && probe < top + r.height) { light = sections[i].getAttribute('data-surface') === 'ivory'; }
+    }
+    bar.classList.toggle('on-light', light);
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', onScroll);
+  onScroll();
+
+  if (reduce || !window.gsap || !window.ScrollTrigger) return;
+  gsap.registerPlugin(ScrollTrigger);
+  var mobile = window.matchMedia('(max-width: 900px)').matches;
+
+  /* Hero timeline across the pinned stage. */
+  var tl = gsap.timeline({ scrollTrigger:{ trigger:'.hero', start:'top top', end:'bottom bottom', scrub:0.6 }});
+  tl.to('#scrollHint', {opacity:0, duration:0.08}, 0)
+    .fromTo('#heroPortrait', {xPercent:-50, yPercent:100, opacity:0}, {xPercent:-50, yPercent:14, opacity:1, ease:'none', duration:0.3}, 0.08)
+    .to('#heroCopy', {y:'-26vh', opacity:0, filter:'blur(6px)', ease:'none', duration:0.25}, 0.3)
+    .to('#heroPortrait', {xPercent:-50, yPercent:110, opacity:0, ease:'none', duration:0.2}, 0.52)
+    .fromTo('#heroName', {opacity:0, scale:0.92}, {opacity:1, scale:1, ease:'none', duration:0.28}, 0.64);
+
+  /* About portrait: clip reveal with slow drift. */
+  var por = document.querySelector('.about .portrait');
+  gsap.fromTo(por, {clipPath:'inset(100% 0 0 0)'}, {clipPath:'inset(0% 0 0 0)', duration:1, ease:'expo.out',
+    scrollTrigger:{ trigger:por, start:'top 80%', once:true, onEnter:function(){ por.classList.add('in'); } }});
+
+  /* Split panel photos drift. */
+  document.querySelectorAll('.world-media img').forEach(function(img){
+    gsap.fromTo(img, {yPercent:-6}, {yPercent:6, ease:'none', scrollTrigger:{ trigger:img.closest('.world'), start:'top bottom', end:'bottom top', scrub:true }});
+  });
+
+  /* Curved gallery. */
+  var panels = gsap.utils.toArray('.panel');
+  var curve = { on:true }, prog = { p:0 };
+  function setCurve(p){
+    panels.forEach(function(el,i){
+      if (mobile) gsap.set(el, {rotateX:-28*(1-p), z:-60*(1-p), opacity:0.55+0.45*p});
+      else gsap.set(el, {rotateY:(i===0?1:-1)*34*(1-p), z:-140*(1-p), opacity:0.65+0.35*p});
+    });
+  }
+  function render(){ setCurve(curve.on ? Math.min(1, prog.p*1.6) : 1); }
+  gsap.timeline({ scrollTrigger:{ trigger:'.gallery', start:'top top', end:'bottom bottom', scrub:0.8, onUpdate:function(self){ prog.p = self.progress; render(); } }}).to({}, {duration:1});
+  gsap.fromTo('.gallery-title', {y:40, opacity:0}, {y:0, opacity:1, ease:'none', scrollTrigger:{ trigger:'.gallery', start:'top 60%', end:'top 10%', scrub:true }});
+  var sw = document.getElementById('curveSwitch');
+  try { curve.on = localStorage.getItem('cj-curve') !== 'off'; } catch(e){}
+  sw.setAttribute('aria-checked', String(curve.on)); render();
+  sw.addEventListener('click', function(){ curve.on = !curve.on; sw.setAttribute('aria-checked', String(curve.on)); try{ localStorage.setItem('cj-curve', curve.on?'on':'off'); }catch(e){} render(); });
+
+  /* Stat counts up once. */
+  var stat = document.querySelector('.stat'), target = 3524, obj = {v:0};
+  gsap.to(obj, {v:target, duration:0.8, ease:'power2.out', scrollTrigger:{ trigger:stat, start:'top 85%', once:true },
+    onUpdate:function(){ stat.textContent = Math.round(obj.v).toLocaleString('en-US'); }});
+})();
+</script>
+</body>
+</html>
