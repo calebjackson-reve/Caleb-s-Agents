@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Under the Oak - Brandhouse</title>
+<meta name="description" content="Brandhouse is the studio of videographer Tyler Boyle. Brand films, commercials, weddings and documentary work. Mock site with sample content.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=DM+Mono:wght@400&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="venue">
+<a class="skip" href="#main">Skip to content</a>
+<div class="noise" aria-hidden="true"></div>
+<header class="hdr wrap">
+  <a class="logo" href="index.html" aria-label="Brandhouse home"><svg viewBox="0 0 44 52" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 3h12l12 46H15z"/><path d="M19 3h22L29 49"/></svg></a>
+  <div class="hdr-right">
+    <a class="donate" href="contact.html">Book a Shoot</a>
+    <button class="menu-btn" id="menuOpen" aria-expanded="false" aria-controls="menu"><span class="bars"><i></i><i></i></span>Menu</button>
+  </div>
+</header>
+<div class="menu" id="menu" data-open="false" aria-hidden="true">
+  <div class="menu-top"><a class="logo" href="index.html" aria-label="Brandhouse home"><svg viewBox="0 0 44 52" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 3h12l12 46H15z"/><path d="M19 3h22L29 49"/></svg></a><button class="menu-close" id="menuClose">&times; Menu</button></div>
+  <nav aria-label="Main">
+    <a href="work.html">Work</a><a href="index.html#reel">Reel</a><a href="index.html#studio">Studio</a><a href="about.html#services">Services</a><a href="about.html">About</a><a href="contact.html">Contact</a><a href="contact.html">Book a Shoot</a><a class="ext" href="https://instagram.com">Instagram</a>
+  </nav>
+  <div class="menu-foot"><a href="https://instagram.com">Instagram</a><a href="https://vimeo.com">Vimeo</a><a href="https://youtube.com">YouTube</a><a href="contact.html">Newsletter</a></div>
+</div>
+<main id="main">
+
+<section class="film-hero wrap">
+  <span class="tag">Wedding venue, Promo</span>
+  <h1><span>Under the Oak</span></h1>
+  <div class="meta"><div><span>Directed by</span><span>Tyler Boyle</span></div><div><span>Location</span><span>St. Francisville, Louisiana</span></div><div><span>Year</span><span>2026</span></div><div><span>Format</span><span>2 clips, 16:9 and 9:16, AI-assisted</span></div></div>
+</section>
+<section class="band" style="padding-block:0"><div class="wrap"><div class="slide" data-video style="width:100%;aspect-ratio:16/9"><video src="assets/venue-oak-night.mp4" muted loop playsinline preload="metadata" poster="assets/venue-oak-night.jpg"></video><div class="play"><b>&#9654;</b></div></div></div></section>
+<section class="wrap film-body rv">
+  <div class="txt">
+    <p>A walled courtyard with one enormous live oak at its centre. The venue needed to sell the night before it had hosted one, so we started from a daylight frame of the real courtyard and built a single continuous move that carries it from afternoon into string lights and lanterns.</p>
+    <p>Alongside it, a vertical dolly toward the trunk cut for Reels, where the string lights come up as the camera settles. Both clips loop cleanly and run without sound on the venue's site and socials.</p>
+    <p>The day-to-night move was generated with AI from a single real frame of the courtyard, then graded in Resolve. Say so on every post. Tap any clip to play.</p>
+    <a class="ul" href="work.html">Back to work</a>
+  </div>
+  <div class="stills">
+    <div class="slide" data-video style="width:min(100%,360px);aspect-ratio:9/16"><video src="assets/venue-oak-vertical.mp4" muted loop playsinline preload="metadata" poster="assets/venue-oak-vertical.jpg"></video><div class="play"><b>&#9654;</b></div></div>
+  </div>
+</section>
+<section class="wrap ctas rv"><a class="cta" href="contact.html"><h2>Book a Shoot</h2></a><a class="cta" href="film.html"><h2>Next: Basil Lane</h2></a></section>
+</main>
+<footer class="foot wrap">
+  <div class="foot-grid">
+    <ul><li><a href="work.html">Work</a></li><li><a href="index.html#reel">Reel</a></li><li><a href="index.html#studio">Studio</a></li><li><a class="ext" href="https://vimeo.com">Vimeo</a></li></ul>
+    <ul><li><a href="about.html#services">Services</a></li><li><a href="about.html#kit">Gear</a></li><li><a href="about.html">About</a></li><li><a href="contact.html">Contact</a></li><li><a href="contact.html">Book a Shoot</a></li><li><a href="about.html">Careers</a></li></ul>
+    <ul><li><a href="https://instagram.com">Instagram</a></li><li><a href="https://youtube.com">YouTube</a></li><li style="margin-top:12px"><a href="contact.html">Newsletter</a></li></ul>
+    <a class="circle" href="contact.html"><span>Book</span></a>
+  </div>
+  <div class="foot-bottom"><span>&copy; 2026 - Brandhouse. Tyler Boyle.</span><span>Mock site. Sample images and footage.</span><span>Privacy Policy</span><span></span></div>
+</footer>
+<script>
+(function(){
+  var m=document.getElementById('menu'),o=document.getElementById('menuOpen'),c=document.getElementById('menuClose');
+  function set(v){m.dataset.open=v;m.setAttribute('aria-hidden',!v);o.setAttribute('aria-expanded',v);document.body.style.overflow=v?'hidden':'';}
+  o.addEventListener('click',function(){set(true)});c.addEventListener('click',function(){set(false)});
+  m.querySelectorAll('nav a').forEach(function(a){a.addEventListener('click',function(){set(false)})});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false)});
+  var rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!rm&&window.Lenis){var lenis=new Lenis({lerp:.09,smoothWheel:true});function raf(t){lenis.raf(t);requestAnimationFrame(raf)}requestAnimationFrame(raf);}
+  var els=document.querySelectorAll('.rv,.rv-img');
+  if(rm||!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('in')});}
+  else{var io=new IntersectionObserver(function(en){en.forEach(function(x){if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}})},{rootMargin:'0px 0px -8% 0px',threshold:.08});els.forEach(function(e){io.observe(e)});}
+  document.querySelectorAll('.slide[data-video]').forEach(function(s){
+    s.addEventListener('click',function(){var v=s.querySelector('video');if(!v)return;if(v.paused){v.play();s.classList.add('playing')}else{v.pause();s.classList.remove('playing')}});
+  });
+})();
+</script>
+</body>
+</html>
