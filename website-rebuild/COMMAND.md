@@ -32,7 +32,7 @@ Media folders to point the agent at: `architectural-preview/assets/`, `aire/mark
 
 ## 3. The command
 
-Replace `MEDIA_DIR` with the folder that holds Caleb's photos, headshots and video before running.
+`MEDIA_DIR` is `website-rebuild/media/`. Read `website-rebuild/media/MEDIA-LIBRARY.md` first, it ranks every file and says what slot it fits.
 
 ```text
 Read CLAUDE.md, skills/teardown/SKILL.md, motion-kit/README.md, motion-kit/TEARDOWN.md, lp-integration/README.md and aire/STACK.md before doing anything.
@@ -82,7 +82,7 @@ Definition of done: all five stage files exist, every page in the page map opens
 
 ## 4. How to run it
 
-1. Drop the photo library into a folder and set `MEDIA_DIR`.
+1. The media folder is already in the repo at `website-rebuild/media/`.
 2. Run the command in plan mode first so you can read the stage plan, then accept.
 3. Stage 2 stops for your approval. Read `DESIGN-SYSTEM.md` and say what to change before Stage 3 starts, that is the cheapest place to steer.
 4. Stage 5 stops again before any image is generated.
@@ -92,4 +92,4 @@ Definition of done: all five stage files exist, every page in the page map opens
 
 - Whether the three live sites can be opened from a cloud session. Some hosts block headless browsers. If blocked, run Stage 1 locally or feed the agent screen recordings and the sites' source.
 - Whether Luxury Presence will accept the amount of custom code the build needs. `lp-integration/README.md` records what was possible on October 13, 2026.
-- Where Caleb's photo library lives. Not in this repo as of today.
+- Whether the Mac Photos library holds better shots than the seven on Drive. Not reachable from a cloud session.
