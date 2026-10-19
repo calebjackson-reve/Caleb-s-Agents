@@ -2,6 +2,18 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19: what beginner agents want from AI
+
+**Done**
+- `programs/ai-for-agents/beginner-demand-research.md`: research on local Louisiana AI classes, Skool groups, YouTube and course teachers, agent surveys and Reddit, with a ranked list of what beginner agents need help with. Every claim labeled with a source link.
+- Top findings: agents use AI mostly for listing descriptions, social posts and follow-up (NAR 2026). The biggest barrier is not knowing where to start. Nobody in Louisiana teaches hands-on AI to agents, and LREC put out AI guidance in August 2026 that matches our values.
+- Inference: the "7 Days to Find the Leads in Your Phone" front door matches the demand. Listing descriptions fit better as Day 2 or 3.
+
+**Needs Caleb**
+- Read the ranked list and say if it matches what agents ask you in person.
+- Look through one or two local Baton Rouge agent Facebook groups. Claude didn't search Facebook.
+- Check GBRAR MLS rules on AI photos before any photo lesson.
+
 ## 2026-10-19: first pinned post drafted
 
 **Done**
