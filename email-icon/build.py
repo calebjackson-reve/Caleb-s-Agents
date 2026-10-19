@@ -7,17 +7,22 @@ from PIL import Image, ImageFilter
 import math
 
 import sys
-SIZE = 400                    # output size in px (Google profile pictures want at least 250)
+SIZE = 320                    # output size in px (Google profile pictures want at least 250)
 IVORY = (0xFB, 0xF8, 0xF3)    # brand ivory
 INK = (0x14, 0x10, 0x0E)      # brand ink
 EMBER = (0xE8, 0x77, 0x57)    # brand ember (coral)
-# Variants. Google crops the profile picture to a circle, so the mark sits inside the inner 60%.
+BLACK = (0x0A, 0x09, 0x08)
+# Variants. Google crops the profile picture to a circle, so the mark sits inside the inner 70%.
 VARIANTS = {
-    "ivory": dict(bg=IVORY, ink=INK, ember=EMBER, glow=EMBER, glow_min=0.30, glow_max=0.95),
-    "ember": dict(bg=EMBER, ink=IVORY, ember=IVORY, glow=IVORY, glow_min=0.20, glow_max=0.80),
+    "noir": dict(bg=BLACK,
+                 ink=(0xF2, 0x8C, 0x6E), ember=(0xF2, 0x8C, 0x6E),   # letters: ember lifted a touch so they sit on top of the glow
+                 glow=(0xD9, 0x5E, 0x3C),                            # glow: ember deepened so it reads as light, not paint
+                 core=(0.9, 1.5),       # tight glow hugging the letters: gain at rest, at peak
+                 bloom=(0.9, 1.9),      # wide emanating glow: gain at rest, at peak
+                 spread=(0.05, 0.13)),  # bloom radius as a fraction of SIZE: at rest, at peak
 }
 PAD = 0.15                        # margin each side; the circle crop still clears the mark
-FPS, DUR = 12, 3.6                # one full breath in seconds
+FPS, DUR = 10, 4.8                # one full breath in seconds
 S = 3                             # supersample
 
 def load_mask(name):
@@ -35,12 +40,32 @@ HALO = Image.composite(Image.new("L", INK_M.size, 255), Image.new("L", INK_M.siz
                        Image.eval(Image.merge("L", [INK_M]).point(lambda v: v), lambda v: v)) if False else None
 BOTH = Image.eval(Image.merge("L", [INK_M]), lambda v: v)
 BOTH.paste(255, mask=EMBER_M)
-HALO = BOTH.filter(ImageFilter.GaussianBlur(0.09 * SIZE * S))
+CORE = BOTH.filter(ImageFilter.GaussianBlur(0.012 * SIZE * S))
+_bloom_cache = {}
+def bloom(radius_px):
+    key = int(radius_px)
+    if key not in _bloom_cache:
+        _bloom_cache[key] = BOTH.filter(ImageFilter.GaussianBlur(key))
+    return _bloom_cache[key]
+
+def mix(a, b, t): return a + (b - a) * t
+
+def gain(mask, g):
+    return mask.point(lambda p: min(255, int(p * g)))
 
 def frame(t, v):
-    g = v["glow_min"] + (v["glow_max"] - v["glow_min"]) * (0.5 - 0.5 * math.cos(2 * math.pi * t))
+    e = 0.5 - 0.5 * math.cos(2 * math.pi * t)          # 0 at rest, 1 at peak, eased
     im = Image.new("RGB", INK_M.size, v["bg"])
-    im.paste(Image.new("RGB", im.size, v["glow"]), mask=HALO.point(lambda p: int(p * g)))
+    glow = Image.new("RGB", im.size, v["glow"])
+    hot = Image.new("RGB", im.size, tuple(int(c + (255 - c) * 0.18) for c in v["glow"]))
+    r = mix(*v["spread"], e) * SIZE * S
+    b = mix(*v["bloom"], e)
+    # emanating glow, built up additively from wide to tight so it fades to black at the edge
+    acc = Image.new("L", im.size, 0)
+    for radius, k in ((r * 2.4, 0.35), (r * 1.4, 0.55), (r, 0.8), (r * 0.5, 1.0)):
+        acc = Image.eval(Image.blend(acc, gain(bloom(radius), b * k), 0.5), lambda p: min(255, p * 2))
+    im.paste(glow, mask=acc)
+    im.paste(hot, mask=gain(CORE, mix(*v["core"], e)).point(lambda p: int(p * 0.6)))
     im.paste(Image.new("RGB", im.size, v["ink"]), mask=INK_M)
     im.paste(Image.new("RGB", im.size, v["ember"]), mask=EMBER_M)
     return im.resize((SIZE, SIZE), Image.LANCZOS)
