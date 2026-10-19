@@ -27,6 +27,7 @@ Trade money for time. Pick the fastest reliable option. Every tool below is "cur
 | Website and IDX | Luxury Presence, calebjackson.org | Changes through LP support, one case per topic. See lp-integration/. |
 | Social scheduling and GBP analytics | Metricool | Drafts only, Caleb schedules. |
 | Speed to lead | aire/speed-to-lead directive on the Mac | DRY_RUN until Caleb flips it. |
+| Running AIRE on the Mac | Apple Terminal with Claude Code | Free, built in. Every Mac-side tool starts here. |
 | Dashboards | aire/command-center on the Mac, reading the Google Sheets | Phone view later: a Claude Dashboard over the same sheet, never a second database. |
 | Short explainer video, no AI people | Claude Motion beta | watch. Candidate: monthly market update. |
 | Generated video for ads | Kling 4.0 via Higgsfield | Disclose as AI-generated. Never for listing photos. |
@@ -37,6 +38,8 @@ Trade money for time. Pick the fastest reliable option. Every tool below is "cur
 - Supabase. Schema removed 2026-10-19. Sheets is the database.
 - Airtable. Never adopted.
 - BoB Tools. Connected but unused, overlaps Sheets. Disconnect.
+- Grok (xAI). Not used anywhere in AIRE, Claude covers it. Cancel any paid plan held for AI (Caleb, 2026-10-19).
+- ChatGPT Codex. Second coding agent on the same repo. Claude Code is the one engine (Caleb, 2026-10-19).
 - Custom GPTs. OpenAI is retiring them (Enterprise Dec 11 2026, other plans to follow). Build as a skill here instead.
 - OpenAI Sora. Gone.
 - GPT-4o and 4.1 API models. Shut down Jan 14 2027.
