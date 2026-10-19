@@ -505,6 +505,18 @@
   {
    "tag": "img",
    "w": 390,
+   "h": 520,
+   "ratio": 0.75,
+   "natural": "720x960",
+   "fit": "cover",
+   "filter": "none",
+   "radius": "0px",
+   "src": "https://zorge9.estate/media/cache/homepage_intro_bg_xs/uploads/39/6_final_5_1777386791.webp",
+   "top": 0
+  },
+  {
+   "tag": "img",
+   "w": 390,
    "h": 433,
    "ratio": 0.9,
    "natural": "720x800",
@@ -1248,23 +1260,11 @@
   "customCursorEl": true
  },
  "hasLoader": true,
- "loadMs": 5131,
+ "loadMs": 10226,
  "consoleErrors": [],
  "resources": [
   {
    "url": "https://zorge9.estate/assets/stylesheets/global.css?v=1787557849",
-   "type": "text/css",
-   "size": null,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/media/cache/homepage_intro_bg_xs/uploads/39/6_final_4_1777386791.webp",
-   "type": "image/webp",
-   "size": 72882,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/assets/stylesheets/landing.css?v=1787557849",
    "type": "text/css",
    "size": null,
    "status": 200
@@ -1276,15 +1276,15 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/assets/images/media/landing/1.intro/decor-xs.webp?v=1787557849",
-   "type": "image/webp",
-   "size": 57662,
+   "url": "https://zorge9.estate/assets/stylesheets/landing.css?v=1787557849",
+   "type": "text/css",
+   "size": null,
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/media/cache/homepage_intro_bg_xs/uploads/39/6_final_5_1777386791.webp",
+   "url": "https://zorge9.estate/assets/images/media/landing/1.intro/decor-xs.webp?v=1787557849",
    "type": "image/webp",
-   "size": 72246,
+   "size": 57662,
    "status": 200
   },
   {
@@ -1300,25 +1300,25 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/assets/javascripts/browser-message/browser-message.js?v=1787557849",
-   "type": "application/javascript",
-   "size": null,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/assets/javascripts/landing.js?v=1787557849",
-   "type": "application/javascript",
-   "size": null,
-   "status": 200
-  },
-  {
    "url": "https://zorge9.estate/assets/images/media/landing/2.about/background@xs.webp",
    "type": "image/webp",
    "size": 24764,
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/assets/javascripts/shared.js?v=1787557849",
+   "url": "https://zorge9.estate/assets/javascripts/browser-message/browser-message.js?v=1787557849",
+   "type": "application/javascript",
+   "size": null,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_intro_bg_xs/uploads/39/6_final_4_1777386791.webp",
+   "type": "image/webp",
+   "size": 72882,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/javascripts/landing.js?v=1787557849",
    "type": "application/javascript",
    "size": null,
    "status": 200
@@ -1330,15 +1330,15 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/4.webp",
+   "url": "https://zorge9.estate/media/cache/homepage_intro_bg_xs/uploads/39/6_final_5_1777386791.webp",
    "type": "image/webp",
-   "size": 8606,
+   "size": 72246,
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_10_1777287548.webp",
-   "type": "image/webp",
-   "size": 23322,
+   "url": "https://zorge9.estate/assets/javascripts/shared.js?v=1787557849",
+   "type": "application/javascript",
+   "size": null,
    "status": 200
   },
   {
@@ -1348,15 +1348,21 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/assets/images/media/landing/3.location/hero-xs.webp",
-   "type": "image/webp",
-   "size": 38380,
-   "status": 200
-  },
-  {
    "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_8_1777287547.webp",
    "type": "image/webp",
    "size": 17812,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_12_1777287546.webp",
+   "type": "image/webp",
+   "size": 15146,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/4.webp",
+   "type": "image/webp",
+   "size": 8606,
    "status": 200
   },
   {
@@ -1366,15 +1372,15 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_11_1777287548.webp",
+   "url": "https://zorge9.estate/assets/images/media/landing/3.location/hero-xs.webp",
    "type": "image/webp",
-   "size": 50672,
+   "size": 38380,
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_12_1777287546.webp",
+   "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_10_1777287548.webp",
    "type": "image/webp",
-   "size": 15146,
+   "size": 23322,
    "status": 200
   },
   {
@@ -1390,15 +1396,27 @@
    "status": 200
   },
   {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/1.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 13434,
+   "status": 200
+  },
+  {
    "url": "https://zorge9.estate/assets/images/media/landing/6.style/image-2@xs.webp?v=1787557849",
    "type": "image/webp",
    "size": 79594,
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/1.webp?v=1787557849",
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/4.webp?v=1787557849",
    "type": "image/webp",
-   "size": 13434,
+   "size": 8606,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/5.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 2334,
    "status": 200
   },
   {
@@ -1426,39 +1444,9 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/4-mirror.webp?v=1787557849",
-   "type": "image/webp",
-   "size": 7670,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/5.webp?v=1787557849",
-   "type": "image/webp",
-   "size": 2334,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/assets/images/media/landing/6.style/image-4-xs@xs.webp?v=1787557849",
-   "type": "image/webp",
-   "size": 57482,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/assets/images/media/landing/6.style/image-5-xs@xs.webp?v=1787557849",
-   "type": "image/webp",
-   "size": 30848,
-   "status": 200
-  },
-  {
    "url": "https://zorge9.estate/media/cache/homepage_gallery_img_1_xs/uploads/39/image_1777288096.webp",
    "type": "image/webp",
    "size": 26784,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/media/cache/homepage_gallery_img_4_xs/uploads/39/img_0231_1777288095.webp",
-   "type": "image/webp",
-   "size": 16114,
    "status": 200
   },
   {
@@ -1468,9 +1456,27 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/image_13_1777289990.webp",
+   "url": "https://zorge9.estate/media/cache/homepage_gallery_img_4_xs/uploads/39/img_0231_1777288095.webp",
    "type": "image/webp",
-   "size": 30796,
+   "size": 16114,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/4-mirror.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 7670,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/image-5-xs@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 30848,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/6.style/image-4-xs@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 57482,
    "status": 200
   },
   {
@@ -1486,9 +1492,9 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_2_1777290624.webp",
+   "url": "https://zorge9.estate/media/cache/homepage_lobby_bg_xs/uploads/39/zorge90843_1777290628.webp",
    "type": "image/webp",
-   "size": 37248,
+   "size": 46778,
    "status": 200
   },
   {
@@ -1498,9 +1504,21 @@
    "status": 200
   },
   {
+   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/image_13_1777289990.webp",
+   "type": "image/webp",
+   "size": 30796,
+   "status": 200
+  },
+  {
    "url": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_1777290625.webp",
    "type": "image/webp",
    "size": 18070,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_location_cards_img_xs/uploads/39/image_11_1777287548.webp",
+   "type": "image/webp",
+   "size": 50672,
    "status": 200
   },
   {
@@ -1510,21 +1528,15 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/media/cache/homepage_lobby_bg_xs/uploads/39/zorge90843_1777290628.webp",
-   "type": "image/webp",
-   "size": 46778,
-   "status": 200
-  },
-  {
    "url": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_3_1777290626.webp",
    "type": "image/webp",
    "size": 35320,
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/mobile/image-3.webp?v=1787557849",
+   "url": "https://zorge9.estate/media/cache/homepage_advantages_slider_img_xs/uploads/39/5_final_01_final_2_1777290624.webp",
    "type": "image/webp",
-   "size": 49542,
+   "size": 37248,
    "status": 200
   },
   {
@@ -1546,99 +1558,21 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-7@xs.webp?v=1787557849",
-   "type": "image/webp",
-   "size": 49048,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/assets/images/media/landing/6.style/decor-xs/4.webp?v=1787557849",
-   "type": "image/webp",
-   "size": 8606,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/media/cache/homepage_infrastructure_bg_xs/uploads/39/image_2_1777295254.webp",
-   "type": "image/webp",
-   "size": 49414,
-   "status": 200
-  },
-  {
    "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-6@xs.webp?v=1787557849",
    "type": "image/webp",
    "size": 35216,
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/media/cache/homepage_improvement_img_2_xs/uploads/39/image_19_1777295653.webp",
+   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-7@xs.webp?v=1787557849",
    "type": "image/webp",
-   "size": 68780,
+   "size": 49048,
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/assets/images/media/landing/15.apartments-hero/background-xs.webp",
+   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/mobile/image-3.webp?v=1787557849",
    "type": "image/webp",
-   "size": 55260,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/assets/images/media/landing/14.improvement/bottom@xs.webp?v=1787557849",
-   "type": "image/webp",
-   "size": 98368,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/uploads/1/studio_1755094133.png?v=1787557849",
-   "type": "image/png",
-   "size": 149559,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/32/image2x_10_1755265771.webp",
-   "type": "image/webp",
-   "size": 17470,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/39/image_22_1777295806.webp",
-   "type": "image/webp",
-   "size": 39738,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/media/cache/homepage_penthouse_bg_xs/uploads/39/rectangle_733_1777295807.webp",
-   "type": "image/webp",
-   "size": 35032,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/39/image_23_1777295803.webp",
-   "type": "image/webp",
-   "size": 42106,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/media/cache/homepage_penthouse_img_1_xs/uploads/39/zorge90368_1777295805.webp",
-   "type": "image/webp",
-   "size": 16986,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/media/cache/homepage_penthouse_img_2_xs/uploads/39/image_25_1777295804.webp",
-   "type": "image/webp",
-   "size": 35668,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/assets/images/media/landing/18.penthouses/image-2@xs.webp",
-   "type": "image/webp",
-   "size": 72068,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-5@xs.webp?v=1787557849",
-   "type": "image/webp",
-   "size": 17108,
+   "size": 49542,
    "status": 200
   },
   {
@@ -1648,15 +1582,87 @@
    "status": 200
   },
   {
+   "url": "https://zorge9.estate/media/cache/homepage_infrastructure_bg_xs/uploads/39/image_2_1777295254.webp",
+   "type": "image/webp",
+   "size": 49414,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/14.improvement/bottom@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 98368,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/11.fitness/image-5@xs.webp?v=1787557849",
+   "type": "image/webp",
+   "size": 17108,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_improvement_img_2_xs/uploads/39/image_19_1777295653.webp",
+   "type": "image/webp",
+   "size": 68780,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/uploads/1/studio_1755094133.png?v=1787557849",
+   "type": "image/png",
+   "size": 149559,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/15.apartments-hero/background-xs.webp",
+   "type": "image/webp",
+   "size": 55260,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/39/image_22_1777295806.webp",
+   "type": "image/webp",
+   "size": 39738,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_penthouse_img_2_xs/uploads/39/image_25_1777295804.webp",
+   "type": "image/webp",
+   "size": 35668,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_penthouse_img_1_xs/uploads/39/zorge90368_1777295805.webp",
+   "type": "image/webp",
+   "size": 16986,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/39/image_23_1777295803.webp",
+   "type": "image/webp",
+   "size": 42106,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/assets/images/media/landing/18.penthouses/image-2@xs.webp",
+   "type": "image/webp",
+   "size": 72068,
+   "status": 200
+  },
+  {
    "url": "https://zorge9.estate/media/cache/homepage_penthouse_img_4_xs/assets/images/media/landing/18.penthouses/image-4%40xs.webp",
    "type": "image/webp",
    "size": 28452,
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/image_15_1777289992.webp",
+   "url": "https://zorge9.estate/media/cache/homepage_services_slider_img_xs/uploads/32/image2x_10_1755265771.webp",
    "type": "image/webp",
-   "size": 39312,
+   "size": 17470,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_penthouse_bg_xs/uploads/39/rectangle_733_1777295807.webp",
+   "type": "image/webp",
+   "size": 35032,
    "status": 200
   },
   {
@@ -1666,15 +1672,9 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/13_1777289990.webp",
+   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/image_15_1777289992.webp",
    "type": "image/webp",
-   "size": 39548,
-   "status": 200
-  },
-  {
-   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/13_1_1777289986.webp",
-   "type": "image/webp",
-   "size": 35254,
+   "size": 39312,
    "status": 200
   },
   {
@@ -1684,9 +1684,9 @@
    "status": 200
   },
   {
-   "url": "https://zorge9.estate/media/cache/homepage_infrastructure_slider_img_xs/uploads/39/img_4055_1777295252.webp",
+   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/13_1777289990.webp",
    "type": "image/webp",
-   "size": 28218,
+   "size": 39548,
    "status": 200
   },
   {
@@ -1705,6 +1705,18 @@
    "url": "https://zorge9.estate/uploads/1/3%D0%9A_1_1755097563.png?v=1787557849",
    "type": "image/png",
    "size": 62830,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_time_slider_img_xs/uploads/39/13_1_1777289986.webp",
+   "type": "image/webp",
+   "size": 35254,
+   "status": 200
+  },
+  {
+   "url": "https://zorge9.estate/media/cache/homepage_infrastructure_slider_img_xs/uploads/39/img_4055_1777295252.webp",
+   "type": "image/webp",
+   "size": 28218,
    "status": 200
   },
   {
