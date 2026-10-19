@@ -1,0 +1,56 @@
+ 67x  4498-12492px  div :: height
+ 61x  2104-11367px  div.container_container__v5gtR :: height
+ 51x  6865-13111px  div.container_container__v5gtR :: height, color
+ 43x  588-13111px  div.burger-menu_wrapper__gKR7D :: [fixed]
+ 43x  588-13111px  div#_rht_toaster :: [fixed]
+ 43x  588-13111px  div.grecaptcha-badge :: [fixed]
+ 43x  588-13111px  div#iubenda-cs-banner.iubenda-cs-default.iubenda-cs-bottom.iubenda-cs-slidein :: [fixed]
+ 34x  6570-11367px  p :: height
+ 33x  3582-13111px  header.header_wrapper__MJ5bn.header_transparent__rCyyn.header_-fixed__r0usw :: [sticky]
+ 30x  588-4767px  div.hero_cloud__TvA3o :: transform
+ 26x  7460-11065px  h3 :: height
+ 26x  8365-11065px  div :: height, color
+ 17x  588-5365px  div.hero_top__WegWw :: [sticky]
+ 17x  588-5365px  img :: height
+ 17x  6570-8965px  div.testimonials_quote__877vg :: height
+ 16x  588-5064px  path :: height
+ 16x  588-4767px  div.hero_smoke__8za_R :: transform
+ 16x  8965-11065px  div.features_item-title__uXmdj :: height
+ 15x  10465-11968px  a.post-entry_thumbnail__AD3RU :: clip
+ 14x  5665-6865px  div.rewired_list-item__R5lrq :: transform
+ 10x  4498-7165px  section :: height
+  9x  6570-8965px  div.swiper-slide :: height
+  8x  4767-6865px  div.assymetric-cols_row__tAyrs :: height
+  8x  4767-6865px  div.assymetric-cols_col__yB8jY :: height
+  8x  8965-10167px  svg :: transform, opacity
+  8x  9855-11968px  a.post-entry_title__JBO73 :: height
+  8x  10765-11669px  img.image_image__xwoGQ.image_lazy__jTV8A :: opacity
+  7x  878-2696px  header.header_wrapper__MJ5bn.header_transparent__rCyyn.header_-hidden__CVUoR :: [sticky]
+  7x  4767-6267px  div.arrows-section_arrow___KXxg :: transform
+  7x  9302-11065px  h2 :: height, color
+  7x  9302-11065px  div :: color
+  6x  5665-7165px  div.assymetric-image-split_image___yxAD :: clip
+  6x  5947-7460px  div.assymetric-image-split_small-img__199s0 :: clip
+  6x  9302-10765px  p :: height, color
+  6x  11669-13111px  ul :: height
+  5x  588-2376px  div.hero_logo__FxgRj :: opacity
+  5x  7165-8365px  div.testimonials_preview___uhyO :: clip
+  5x  11968-13111px  div.outro_title__Eqbbj :: clip
+  4x  3268-4185px  div.why-us_preview__OofJt :: clip
+  4x  5064-5365px  div.rewired_list-item__R5lrq :: transform, opacity
+  4x  11968-12872px  div :: opacity
+  4x  13111-13111px  path :: transform, opacity
+  3x  1487-2104px  div.hero_composite__3blHB :: opacity
+  3x  4185-5947px  div.arrows-section_arrow___KXxg :: transform, opacity
+  3x  5064-5665px  div.hero_house__aJy7p :: opacity
+  2x  8965-9302px  div.services_action__21_Mi :: opacity
+  2x  10167-10167px  div.services_item-bg___wJGg :: transform, clip
+  1x  588-588px  header.header_wrapper__MJ5bn.header_transparent__rCyyn.header_-hidden__CVUoR :: transform, [sticky]
+  1x  3268-3268px  header.header_wrapper__MJ5bn.header_transparent__rCyyn.header_-fixed__r0usw :: bg, 255, 255), [sticky]
+  1x  4767-4767px  div.hero_house__aJy7p :: transform, opacity
+  1x  4767-4767px  div.hero_house__aJy7p :: transform
+  1x  4767-4767px  div.hero_content__DK_Ny :: transform
+  1x  9302-9302px  div.services_item-bg___wJGg :: opacity, clip
+  1x  9855-9855px  div.services_item-bg___wJGg :: transform, opacity, clip
+  1x  10465-10465px  div.services_item-bg___wJGg :: clip
+  1x  13111-13111px  div.footer_content__E2ijt :: transform

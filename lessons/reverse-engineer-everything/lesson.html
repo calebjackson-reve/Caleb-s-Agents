@@ -1,0 +1,475 @@
+<title>Reverse Engineer Everything</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column on drafting paper. Blueprint grid in the header only. Sessions are a real sequence, so they are numbered. */
+:root {
+  --paper: #f4f6f9;
+  --sheet: #ffffff;
+  --ink: #15213a;
+  --muted: #56627a;
+  --line: #d6dde8;
+  --grid: rgba(31, 79, 209, 0.08);
+  --accent: #1f4fd1;
+  --accent-soft: #e6ecfb;
+  --video: #1f4fd1;
+  --applied: #0f766e;
+  --applied-soft: #e1f2ef;
+  --unverified: #a15c07;
+  --unverified-soft: #fbefd9;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --step--1: 0.84rem;
+  --step-0: 1.06rem;
+  --step-1: 1.3rem;
+  --step-2: 1.7rem;
+  --step-3: clamp(2.1rem, 6vw, 3.4rem);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0d1422; --sheet: #131c2e; --ink: #e5ebf5; --muted: #95a2ba; --line: #27334b;
+    --grid: rgba(127, 162, 255, 0.09); --accent: #86a7ff; --accent-soft: #1b2847;
+    --video: #86a7ff; --applied: #4fd1c0; --applied-soft: #12302e; --unverified: #f0b45a; --unverified-soft: #33260f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0d1422; --sheet: #131c2e; --ink: #e5ebf5; --muted: #95a2ba; --line: #27334b;
+  --grid: rgba(127, 162, 255, 0.09); --accent: #86a7ff; --accent-soft: #1b2847;
+  --video: #86a7ff; --applied: #4fd1c0; --applied-soft: #12302e; --unverified: #f0b45a; --unverified-soft: #33260f;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+}
+.wrap { max-width: 50rem; margin: 0 auto; padding-inline: 1.25rem; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; text-wrap: balance; margin: 0; }
+h2 { font-size: var(--step-2); font-weight: 750; font-stretch: 90%; }
+h3 { font-size: var(--step-1); font-weight: 700; font-stretch: 95%; }
+p { margin: 0; }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Header */
+.hero {
+  border-bottom: 1px solid var(--line);
+  background-color: var(--sheet);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.hero .wrap { padding-block: 3rem 2.25rem; display: grid; gap: 1.1rem; }
+.eyebrow { font-family: var(--font-mono); font-size: var(--step--1); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.hero h1 { font-size: var(--step-3); font-weight: 800; font-stretch: 80%; letter-spacing: -0.01em; }
+.hero .dek { font-size: var(--step-1); max-width: 38rem; color: var(--ink); }
+.meta { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); }
+.meta span { min-width: 0; overflow-wrap: anywhere; }
+
+/* Labels */
+.legend { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.tag {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 0.2rem 0.55rem; border-radius: 3px; border: 1px solid currentColor; white-space: nowrap;
+}
+.tag.video { color: var(--video); background: var(--accent-soft); }
+.tag.applied { color: var(--applied); background: var(--applied-soft); }
+.tag.unverified { color: var(--unverified); background: var(--unverified-soft); }
+
+/* Sections */
+main .wrap { padding-block: 2.5rem 4rem; display: grid; gap: 3.25rem; }
+section { display: grid; gap: 1.1rem; min-width: 0; }
+.section-head { display: grid; gap: 0.45rem; border-top: 2px solid var(--ink); padding-top: 0.9rem; }
+.section-head .eyebrow { color: var(--accent); }
+.lede { color: var(--muted); max-width: 40rem; }
+
+ol.claims, ul.plain { margin: 0; padding-left: 1.3rem; display: grid; gap: 0.7rem; }
+ol.claims li::marker { font-family: var(--font-mono); color: var(--muted); }
+ul.plain li::marker { color: var(--accent); }
+strong { font-weight: 600; }
+q { font-style: italic; }
+
+.callout { border-left: 3px solid var(--unverified); background: var(--unverified-soft); padding: 0.9rem 1.1rem; display: grid; gap: 0.5rem; border-radius: 0 4px 4px 0; }
+
+/* Tables */
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--sheet); }
+table { border-collapse: collapse; width: 100%; min-width: 34rem; font-size: 0.97rem; }
+th, td { text-align: left; vertical-align: top; padding: 0.7rem 0.85rem; border-bottom: 1px solid var(--line); }
+th { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); font-weight: 500; background: var(--paper); }
+tr:last-child td { border-bottom: 0; }
+td.num { font-family: var(--font-mono); color: var(--muted); font-variant-numeric: tabular-nums; width: 2.5rem; }
+
+/* Sessions */
+.sessions { display: grid; gap: 1rem; }
+.session { background: var(--sheet); border: 1px solid var(--line); border-radius: 4px; padding: 1.25rem 1.3rem; display: grid; gap: 0.8rem; min-width: 0; }
+.session-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.3rem 1rem; }
+.session-top h3 { display: flex; gap: 0.6rem; align-items: baseline; min-width: 0; }
+.session-num { font-family: var(--font-mono); font-size: var(--step--1); color: var(--accent); font-weight: 500; }
+.time { font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); }
+.session dl { margin: 0; display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.55rem 1rem; }
+.session dt { font-family: var(--font-mono); font-size: 0.76rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 0.2rem; }
+.session dd { margin: 0; min-width: 0; }
+.session dd ul, .session dd ol { margin: 0.35rem 0 0; padding-left: 1.2rem; display: grid; gap: 0.3rem; }
+.keep { display: flex; gap: 0.6rem; align-items: flex-start; border-top: 1px dashed var(--line); padding-top: 0.8rem; }
+.keep input { margin-top: 0.35rem; width: 1.05rem; height: 1.05rem; accent-color: var(--accent); flex: none; }
+.keep label { cursor: pointer; }
+.keep label b { font-family: var(--font-mono); font-size: 0.76rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); font-weight: 500; margin-right: 0.35rem; }
+.keep input:checked + label { color: var(--muted); }
+
+/* Rollout */
+.weeks { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.75rem; }
+.week { border-top: 3px solid var(--accent); background: var(--sheet); padding: 0.9rem 1rem 1rem; display: grid; gap: 0.4rem; align-content: start; min-width: 0; }
+.week .eyebrow { color: var(--accent); }
+.week h3 { font-size: 1.08rem; }
+.week p { font-size: 0.95rem; color: var(--muted); }
+
+/* Scorecard */
+.score { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.75rem; }
+.score > div { background: var(--sheet); border: 1px solid var(--line); border-radius: 4px; padding: 1rem 1.1rem; display: grid; gap: 0.6rem; align-content: start; }
+.score h3 { font-size: 1.05rem; }
+.score .decide { border-color: var(--applied); }
+.score .decide h3 { color: var(--applied); }
+.score ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.25rem; }
+
+/* Prompt */
+.prompt { position: relative; background: var(--sheet); border: 1px solid var(--line); border-radius: 4px; }
+.prompt pre { margin: 0; padding: 1.1rem 1.2rem; overflow-x: auto; font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.55; white-space: pre-wrap; }
+.prompt-bar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.55rem 0.8rem 0.55rem 1.2rem; border-bottom: 1px solid var(--line); }
+.prompt-bar span { font-family: var(--font-mono); font-size: 0.76rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+button.copy {
+  font-family: var(--font-mono); font-size: 0.8rem; color: var(--sheet); background: var(--accent);
+  border: 0; border-radius: 3px; padding: 0.4rem 0.8rem; cursor: pointer;
+}
+button.copy:hover { filter: brightness(1.08); }
+
+.status { font-family: var(--font-mono); font-size: 0.8rem; }
+.status.done { color: var(--applied); }
+.status.proposed { color: var(--unverified); }
+footer .wrap { padding-block: 1.5rem 3rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.92rem; display: grid; gap: 0.4rem; }
+
+@media (max-width: 34rem) {
+  .session dl { grid-template-columns: 1fr; gap: 0.2rem; }
+  .session dd { margin-bottom: 0.5rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Lesson plan · Caleb Jackson · Keller Williams First Choice · AIRE</p>
+    <h1>Reverse Engineer Everything</h1>
+    <p class="dek">What one video about the REA reverse engineering tool means for your listings, your video marketing and the way you build AIRE.</p>
+    <div class="meta">
+      <span>Source: <a href="https://www.youtube.com/watch?v=dAzs_rU6080" target="_blank" rel="noopener">youtube.com/watch?v=dAzs_rU6080</a></span>
+      <span>About 11 min · creator not named in transcript</span>
+      <span>Built from the full transcript, Oct 12, 2026</span>
+    </div>
+    <div class="legend" aria-label="How claims are labeled">
+      <span class="tag video">From the video</span>
+      <span class="tag applied">Applied to you</span>
+      <span class="tag unverified">Not verified</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <section id="video">
+      <div class="section-head">
+        <p class="eyebrow">Part 1</p>
+        <h2>What the video actually says</h2>
+      </div>
+      <p><span class="tag video">From the video</span></p>
+      <ol class="claims">
+        <li><strong>What REA is.</strong> "Reverse Engineer Anything" is an MCP, a plug-in that connects an AI agent like Claude to older reverse engineering tools (Ghidra, Hopper, IDA) plus Chrome DevTools. The agent asks how an app works, REA pokes at it, and it returns <strong>pseudocode</strong> (a plain description), <strong>proof</strong> of what is happening, and <strong>unknowns</strong>. The agent loops on that until the app is rebuilt.</li>
+        <li><strong>Setup is easy.</strong> He told his agent to download and install it. He runs Claude and Codex side by side in a terminal manager called Orca, but any app works.</li>
+        <li><strong>The demo.</strong> He had one Claude session rebuild the Mac Preview app with REA and a second one rebuild it without. The plain version finished first but felt laggy. The REA version took longer, came out a near match, and drew faster.</li>
+        <li><strong>It is not new.</strong> Ghidra dates to 2019 (from the NSA). Hopper and IDA are much older. REA just gives agents a simple interface to them.</li>
+        <li><strong>The hype is ahead of the substance.</strong> When a video leads with a GitHub-stars chart, <q>it probably lacks something more interesting to show you instead.</q> Show the demo, not the popularity.</li>
+        <li><strong>What it means for software.</strong> Most software trends toward open source and commodity. Wrapper apps get swallowed by the models. <q>The actual value ladder has moved.</q> Cloning to resell hits intellectual property walls. The real change is that recombining existing ideas got cheap.</li>
+        <li><strong>You may not need REA.</strong> Tell your agent you like a feature, ask it to figure out how it works and rebuild it. It will screenshot, study and get close.</li>
+        <li><strong>His business lens.</strong> <q>What new opportunity does this really open versus what doors does this close?</q></li>
+      </ol>
+      <div class="callout">
+        <p><span class="tag unverified">Not verified</span></p>
+        <p>His timing claims (plain agents in about two thirds of the time, Claude Code absorbing this within a month or two) are his opinion. The demo is one run on one app, an anecdote rather than a benchmark.</p>
+      </div>
+    </section>
+
+    <section id="takeaways">
+      <div class="section-head">
+        <p class="eyebrow">Part 2</p>
+        <h2>Eight takeaways for your business</h2>
+      </div>
+      <p><span class="tag applied">Applied to you</span></p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>#</th><th>His point</th><th>What it means for you</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td>The loop matters more than the tool</td><td>Every winning reel, listing presentation or follow-up sequence can be taken apart and rebuilt. Make it a habit.</td></tr>
+            <tr><td class="num">2</td><td>Pseudocode, proof, unknowns</td><td>Every research agent reports as Blueprint, Proof, Unknowns. Nothing gets acted on without proof, and gaps are named, not guessed.</td></tr>
+            <tr><td class="num">3</td><td>You often don't need the special tool</td><td>Before buying the next AI tool or add-on, ask Claude to rebuild the one feature you actually use.</td></tr>
+            <tr><td class="num">4</td><td>Show the demo, not the stars</td><td>Your GitHub stars are views, likes and followers. Decide on saves, shares, DMs, booked calls and signed agreements.</td></tr>
+            <tr><td class="num">5</td><td>Old tools plus a simple interface feel new</td><td>Your edge is packaging what you already know (local market, process, negotiation) into simple, repeatable systems.</td></tr>
+            <tr><td class="num">6</td><td>The value ladder moved</td><td>Anything in AIRE that is only a model wrapper is at risk. Build on your data, relationships, local judgment, voice and accountability.</td></tr>
+            <tr><td class="num">7</td><td>Recombination is cheap now</td><td>Borrow video formats from outside real estate and apply them to homes and neighborhoods.</td></tr>
+            <tr><td class="num">8</td><td>Run two versions and compare</td><td>Make two hooks, scripts or thumbnails for every piece. Post the better one or test both.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="sessions">
+      <div class="section-head">
+        <p class="eyebrow">Part 3</p>
+        <h2>Six sessions</h2>
+        <p class="lede">About 45 to 60 minutes each. Check off what you keep as you go. Checks are saved in this browser only.</p>
+      </div>
+      <div class="sessions">
+
+        <article class="session">
+          <div class="session-top"><h3><span class="session-num">01</span>The reverse engineering loop</h3><span class="time">45 min</span></div>
+          <dl>
+            <dt>Goal</dt><dd>Understand the loop well enough to run it on anything.</dd>
+            <dt>Key idea</dt><dd>Ask, take it apart, get a blueprint with proof and unknowns, rebuild, compare, repeat.</dd>
+            <dt>Exercise</dt><dd>Pick one thing that worked better than expected in the last 90 days (a post, a listing launch, a client conversation). Write its blueprint, the proof it worked, and what you still don't know about why.</dd>
+          </dl>
+          <div class="keep"><input type="checkbox" id="keep-1"><label for="keep-1"><b>You keep</b>Your first blueprint and a one-page copy of the loop.</label></div>
+        </article>
+
+        <article class="session">
+          <div class="session-top"><h3><span class="session-num">02</span>Teardown lab for video</h3><span class="time">60 min</span></div>
+          <dl>
+            <dt>Goal</dt><dd>Turn five videos that got real response into reusable blueprints.</dd>
+            <dt>Pick five</dt><dd>Three real estate videos from any market and two from outside real estate (food, fitness, finance, home improvement). Choose by comments and shares, not views alone.</dd>
+            <dt>Take apart</dt><dd>Run each through the teardown skill:
+              <ul>
+                <li>Hook in the first 3 seconds: visual, words, on-screen text</li>
+                <li>The promise that keeps people watching</li>
+                <li>Beats with timestamps, shot types, cuts per 10 seconds</li>
+                <li>On-screen text, audio, length and loop point</li>
+                <li>Call to action and where it lands</li>
+                <li>What people asked or argued about in the comments</li>
+              </ul>
+            </dd>
+          </dl>
+          <div class="keep"><input type="checkbox" id="keep-2"><label for="keep-2"><b>You keep</b>Five blueprints in the Blueprint, Proof, Unknowns format.</label></div>
+        </article>
+
+        <article class="session">
+          <div class="session-top"><h3><span class="session-num">03</span>Rebuild and race</h3><span class="time">60 min</span></div>
+          <dl>
+            <dt>Goal</dt><dd>Turn the blueprints into original Caleb videos.</dd>
+            <dt>Exercise</dt><dd>
+              <ol>
+                <li>Choose your two strongest blueprints.</li>
+                <li>Write an original script for each, built on a real listing, a local neighborhood or a question you hear every week.</li>
+                <li>Write two hooks per script, A and B. This is the two-agent race from the video.</li>
+                <li>Film both. Post one now and hold the other for a test window.</li>
+              </ol>
+            </dd>
+            <dt>Formats to borrow</dt><dd><span class="tag applied">Applied to you</span>
+              <ul>
+                <li>Game-show "guess the price" home tour, answer at the end</li>
+                <li>Hot-seat Q and A with a lender or inspector, questions getting harder</li>
+                <li>"Three things I'd change" walkthrough, with seller permission</li>
+                <li>Before and after of staging or a renovation</li>
+                <li>Walk-and-talk on one market stat, with the source on screen</li>
+              </ul>
+            </dd>
+          </dl>
+          <div class="keep"><input type="checkbox" id="keep-3"><label for="keep-3"><b>You keep</b>Two finished videos, four hooks and a test plan.</label></div>
+        </article>
+
+        <article class="session">
+          <div class="session-top"><h3><span class="session-num">04</span>Reverse engineer your own wins</h3><span class="time">45 min</span></div>
+          <dl>
+            <dt>Goal</dt><dd>Decompile your best work into a system an agent can run.</dd>
+            <dt>Exercise</dt><dd>Take your smoothest closed deal from the last year. Walk it from first contact to closing gift. For each step write what you did, the tool, what you said and how long it took. Then mark it:
+              <ul>
+                <li><strong>Me only:</strong> relationship or judgment</li>
+                <li><strong>Agent can draft:</strong> I approve before it goes out</li>
+                <li><strong>Agent can run:</strong> internal only, no approval needed</li>
+              </ul>
+            </dd>
+          </dl>
+          <div class="keep"><input type="checkbox" id="keep-4"><label for="keep-4"><b>You keep</b>A step-by-step workflow ready to become an AIRE workflow or Claude skill.</label></div>
+        </article>
+
+        <article class="session">
+          <div class="session-top"><h3><span class="session-num">05</span>Tool stack audit and the AIRE moat</h3><span class="time">60 min</span></div>
+          <dl>
+            <dt>Stack audit</dt><dd>List every paid tool and the one or two features you actually use. Sort each:
+              <ul>
+                <li><strong>Core:</strong> holds data, compliance or a network you can't rebuild (CRM of record, MLS, e-signature, transaction management)</li>
+                <li><strong>Rebuildable:</strong> Claude could build the feature you use (open house sign-in, buyer consultation one-pager, a seller net sheet estimate checked against title or escrow)</li>
+                <li><strong>Redundant:</strong> another tool already does it</li>
+              </ul>
+              Build the replacement first, run both for 30 days, then decide. Cancel nothing during the lesson.
+            </dd>
+            <dt>Moat test</dt><dd><span class="tag applied">Applied to you</span> For every AIRE feature or pitch, ask: <em>If Claude shipped this as a built-in next month, would anyone still need it from me?</em> Likely yes when it runs on your data, relationships, local judgment, voice or a workflow with accountability. Likely no for a generic caption writer, description generator or chat wrapper.</dd>
+          </dl>
+          <div class="keep"><input type="checkbox" id="keep-5"><label for="keep-5"><b>You keep</b>A stack sheet, one pilot rebuild picked, and AIRE features ranked by the moat test.</label></div>
+        </article>
+
+        <article class="session">
+          <div class="session-top"><h3><span class="session-num">06</span>Hype filter and review</h3><span class="time">45 min</span></div>
+          <dl>
+            <dt>Goal</dt><dd>Judge by outcomes, then lock in what worked.</dd>
+            <dt>Exercise</dt><dd>Compare the Session 3 videos to your 30-day Metricool baseline using the scorecard below. Keep blueprints that moved value metrics. Retire ones that only moved vanity metrics.</dd>
+            <dt>Hype filter</dt><dd>For any new AI tool or trend:
+              <ol>
+                <li>Is there a real demo, or only a popularity chart?</li>
+                <li>Can plain Claude do 80 percent of it today?</li>
+                <li>Does it open a door for my business or close one?</li>
+                <li>What would I stop doing if I adopted it?</li>
+              </ol>
+            </dd>
+          </dl>
+          <div class="keep"><input type="checkbox" id="keep-6"><label for="keep-6"><b>You keep</b>An updated video playbook and next month's teardown list.</label></div>
+        </article>
+
+      </div>
+    </section>
+
+    <section id="rollout">
+      <div class="section-head">
+        <p class="eyebrow">Part 4</p>
+        <h2>30-day rollout</h2>
+      </div>
+      <div class="weeks">
+        <div class="week"><p class="eyebrow">Week 1</p><h3>Learn and set up</h3><p>Sessions 1 and 2. Teardown skill installed. Metricool baseline saved. Five videos picked.</p></div>
+        <div class="week"><p class="eyebrow">Week 2</p><h3>Teardown and rebuild</h3><p>Five blueprints. Two videos filmed with A and B hooks. First one posted after your OK.</p></div>
+        <div class="week"><p class="eyebrow">Week 3</p><h3>Systems</h3><p>Session 4 workflow written. Stack audit done. One pilot rebuild running beside the paid tool.</p></div>
+        <div class="week"><p class="eyebrow">Week 4</p><h3>Review and lock in</h3><p>Session 6 review. Winners saved to the playbook. AIRE features ranked. Next month's list picked.</p></div>
+      </div>
+    </section>
+
+    <section id="scorecard">
+      <div class="section-head">
+        <p class="eyebrow">Part 5</p>
+        <h2>Scorecard</h2>
+        <p class="lede">His warning about GitHub stars applies to your content. Track both columns. Decide on the second.</p>
+      </div>
+      <div class="score">
+        <div><h3>Vanity: watch it</h3><ul><li>Views</li><li>Likes</li><li>Follower count</li><li>Trending sounds used</li><li>Posting streak</li></ul></div>
+        <div class="decide"><h3>Value: decide on it</h3><ul><li>Saves and shares</li><li>DMs and comments with a real question</li><li>Profile visits that lead to link clicks</li><li>Calls or consultations booked</li><li>Signed agreements traced to content</li></ul></div>
+      </div>
+    </section>
+
+    <section id="guardrails">
+      <div class="section-head">
+        <p class="eyebrow">Part 6</p>
+        <h2>Guardrails</h2>
+      </div>
+      <ul class="plain">
+        <li><strong>Copy the mechanics, not the content.</strong> Study structure and format. Never reuse another creator's footage, music, script wording, thumbnails or branding.</li>
+        <li><strong>Listing media belongs to someone.</strong> Don't reuse another agent's listing photos or video. MLS rules and photographer copyright apply.</li>
+        <li><strong>Software licenses.</strong> Many forbid reverse engineering, and he flagged IP risk himself. Rebuild from visible behavior for internal use. Ask an attorney when unclear.</li>
+        <li><strong>Competitor funnels.</strong> Walk public pages as a visitor. No fake leads or showing requests.</li>
+        <li><strong>Advertising rules.</strong> Follow your state's rules and Keller Williams First Choice brokerage disclosure requirements. Keep claims accurate. Apply Fair Housing to content and targeting.</li>
+        <li><strong>Sourced numbers only.</strong> Every market stat shows its source and date.</li>
+        <li><strong>Your approval gate.</strong> Agents draft. You approve before anything is posted, sent, published or paid for.</li>
+      </ul>
+    </section>
+
+    <section id="system">
+      <div class="section-head">
+        <p class="eyebrow">Part 7</p>
+        <h2>System changes</h2>
+        <p class="lede">What goes into your agents and AIRE. Four of five are built.</p>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Change</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Teardown skill</strong> at <code>skills/teardown/SKILL.md</code>. Runs the loop on any video, page, presentation, sequence or feature and reports as Blueprint, Proof, Unknowns.</td><td><span class="status done">Built</span></td></tr>
+            <tr><td>Blueprint, Proof, Unknowns as the standard output for every research agent in the repo, in <code>CLAUDE.md</code>.</td><td><span class="status done">Built</span></td></tr>
+            <tr><td>Weekly "teardown Tuesday" routine: pulls last week's Metricool numbers, takes apart the top and bottom posts, drafts next week's two hooks. Drafts only, never posts. Skill at <code>skills/teardown-tuesday/SKILL.md</code>.</td><td><span class="status done">Built, schedule pending</span></td></tr>
+            <tr><td>Session 4 workflow turned into an AIRE workflow or Claude skill.</td><td><span class="status proposed">After Session 4</span></td></tr>
+            <tr><td>Stack audit sheet in Google Sheets with Core, Rebuildable and Redundant columns.</td><td><span class="status done">Built</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="prompt">
+      <div class="section-head">
+        <p class="eyebrow">Appendix</p>
+        <h2>Copy-paste teardown prompt</h2>
+        <p class="lede">For any Claude session where the skill isn't loaded.</p>
+      </div>
+      <div class="prompt">
+        <div class="prompt-bar"><span>Prompt</span><button class="copy" id="copy-prompt" type="button">Copy</button></div>
+<pre id="prompt-text">Tear this down for me: [link, transcript or screenshots]
+
+Why I picked it: [what result it got]
+What I want to rebuild: [a video for my listing at ___ / a page / a sequence]
+
+Report back in three parts.
+1. Blueprint: how it works, step by step, in plain words. For video include hook,
+   promise, beats with timestamps, pacing, on-screen text, audio, length and CTA.
+2. Proof: the evidence for each part (timestamps, quotes, metrics, comments).
+3. Unknowns: what you can't tell from what I gave you.
+
+Then write two original versions (A and B) for my business as a REALTOR with
+Keller Williams First Choice. Copy the mechanics, not the content. Use my voice:
+warm, direct and natural, no em dashes, no semicolons, no corporate polish.
+Don't post or send anything.</pre>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Full lesson text: <code>lessons/reverse-engineer-everything/LESSON.md</code> in Caleb-s-Agents.</p>
+    <p>Labels separate what the creator said from how it applies to you. Applied sections are inference.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var KEY = "ree-lesson-keeps";
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { saved = {}; }
+  document.querySelectorAll(".keep input[type=checkbox]").forEach(function (box) {
+    if (saved[box.id]) box.checked = true;
+    box.addEventListener("change", function () {
+      saved[box.id] = box.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+    });
+  });
+
+  var btn = document.getElementById("copy-prompt");
+  var pre = document.getElementById("prompt-text");
+  function selectText() {
+    var range = document.createRange();
+    range.selectNodeContents(pre);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+  btn.addEventListener("click", function () {
+    var text = pre.textContent;
+    var done = function () { btn.textContent = "Copied"; setTimeout(function () { btn.textContent = "Copy"; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { selectText(); btn.textContent = "Selected, press Ctrl+C"; });
+    } else {
+      selectText();
+      btn.textContent = "Selected, press Ctrl+C";
+    }
+  });
+})();
+</script>

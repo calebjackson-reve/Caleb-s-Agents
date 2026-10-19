@@ -1,0 +1,128 @@
+<title>AIRE Pipeline</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: summary tiles first, two charts, then the pipeline ledger. Brand tokens from lp-integration/tokens.css. Chart series validated with the dataviz palette script, Oct 19 2026. */
+:root{--paper:#fbf8f3;--ink:#14100e;--ink-2:#5a524b;--line:rgba(20,16,14,.18);--grid:rgba(20,16,14,.08);--panel:#ffffff;--accent:#e87757;--s1:#d4603f;--s2:#2f6fa8;--display:'Instrument Serif',Georgia,serif;--body:Nunito,'Segoe UI',system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--paper:#14100e;--ink:#fbf8f3;--ink-2:#b9afa5;--line:rgba(251,248,243,.2);--grid:rgba(251,248,243,.09);--panel:#1d1714;--accent:#f0906f;--s1:#dd6c48;--s2:#4f8fcc;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#14100e;--ink:#fbf8f3;--ink-2:#b9afa5;--line:rgba(251,248,243,.2);--grid:rgba(251,248,243,.09);--panel:#1d1714;--accent:#f0906f;--s1:#dd6c48;--s2:#4f8fcc;color-scheme:dark}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:28px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(2rem,5vw,2.8rem);line-height:1;letter-spacing:-.015em;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:1.35rem;margin:0}
+.eyebrow{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin:0 0 8px}
+.src{font-size:12.5px;color:var(--ink-2);margin:0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-top:1px solid var(--ink);border-bottom:1px solid var(--ink)}
+.tile{background:var(--paper);padding:14px 12px 12px;display:grid;gap:2px;min-width:0;box-shadow:inset -1px -1px 0 var(--line)}
+.tile .k{font-size:12px;color:var(--ink-2)}
+.tile .v{font-family:var(--display);font-size:2rem;line-height:1;font-variant-numeric:tabular-nums}
+.tile .d{font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tile .d b{font-weight:600;color:var(--ink)}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.chart{display:grid;gap:8px;min-width:0}
+.legend{display:flex;gap:16px;font-size:12.5px;color:var(--ink-2);flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+svg{width:100%;height:auto;display:block;font-family:var(--body);overflow:visible}
+.tt{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);padding:6px 8px;font-size:12px;color:var(--ink);white-space:nowrap;transform:translate(-50%,calc(-100% - 10px));display:none;font-variant-numeric:tabular-nums}
+.chartbox{position:relative}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:600;color:var(--ink-2);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+details summary{cursor:pointer;color:var(--ink-2);font-size:13px}
+.empty{border:1px dashed var(--line);padding:22px;display:grid;gap:8px;max-width:62ch}
+.empty p{margin:0}
+.empty code{font-family:var(--body);background:var(--panel);padding:1px 5px;border:1px solid var(--line)}
+.prod{display:flex;gap:24px;flex-wrap:wrap;align-items:baseline;border-top:1px solid var(--ink);padding-top:14px}
+.prod .v{font-family:var(--display);font-size:2rem;font-variant-numeric:tabular-nums}
+.prod .k{font-size:12.5px;color:var(--ink-2)}
+.foot{font-size:12.5px;color:var(--ink-2);border-top:1px solid var(--line);padding-top:12px}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Greater Baton Rouge, September 2026</p>
+    <h1>Where the market and the pipeline stand</h1>
+    <p class="src">Market figures: Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026, current as of October 6, 2026. Single-family, townhomes and condos.</p>
+  </header>
+
+  <section class="tiles" aria-label="September 2026 key numbers">
+    <div class="tile"><span class="k">Homes sold</span><span class="v">737</span><span class="d"><b>+0.1%</b> vs Sept 2025</span></div>
+    <div class="tile"><span class="k">Median sale price</span><span class="v">$269k</span><span class="d"><b>-0.4%</b> vs Sept 2025</span></div>
+    <div class="tile"><span class="k">Days on market</span><span class="v">79</span><span class="d"><b>+29.5%</b> from 61</span></div>
+    <div class="tile"><span class="k">Homes for sale</span><span class="v">3,524</span><span class="d"><b>+3.1%</b>, 4.6 months supply</span></div>
+    <div class="tile"><span class="k">Of list price received</span><span class="v">98.0%</span><span class="d"><b>+0.1</b> pt</span></div>
+  </section>
+
+  <section class="charts">
+    <div class="chart">
+      <h2>Median sale price, last 12 months</h2>
+      <div class="legend"><span style="--c:var(--s1)">Oct 2025 to Sept 2026</span><span style="--c:var(--s2)">Same month, prior year</span></div>
+      <div class="chartbox" id="c1"></div>
+    </div>
+    <div class="chart">
+      <h2>Days on market, last 12 months</h2>
+      <div class="legend"><span style="--c:var(--s1)">Oct 2025 to Sept 2026</span><span style="--c:var(--s2)">Same month, prior year</span></div>
+      <div class="chartbox" id="c2"></div>
+    </div>
+  </section>
+
+  <details>
+    <summary>Table view of the twelve months</summary>
+    <div class="tbl"><table id="tbl"><thead><tr><th>Month</th><th>Median price</th><th>Prior year</th><th>Closed sales</th><th>Prior year</th><th>Days on market</th><th>Prior year</th></tr></thead><tbody></tbody></table></div>
+  </details>
+
+  <section>
+    <p class="eyebrow">Pipeline</p>
+    <h2>Live deals</h2>
+    <div class="empty">
+      <p><b>No pipeline sheet yet.</b> This section fills from a Google Sheet named <code>AIRE Pipeline</code>.</p>
+      <p>Import <code>aire/pipeline/pipeline-template.csv</code> into Google Sheets, delete the two example rows, add every live deal. Columns: client, side, address, stage, price, commission, expected close, source, last touch, next step.</p>
+      <p>Once it exists, this page shows deals by stage, expected commission by month, and the next step for each client.</p>
+    </div>
+  </section>
+
+  <section class="prod" aria-label="Production">
+    <div><div class="v">81</div><div class="k">closed deals since 2022</div></div>
+    <div><div class="v">$25.1M</div><div class="k">volume since 2022</div></div>
+    <div class="k">As of October 7, 2026. Caleb Jackson, REALTOR, Keller Williams First Choice.</div>
+  </section>
+
+  <p class="foot">Every number on this page carries its source and date. Market data is reported by GBRAR as reliable but not guaranteed. Nothing here is a prediction or a promise of price or timing.</p>
+</div>
+
+<script>
+(function(){
+  var D={"months": ["2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09"], "median_price": [269740, 255000, 263450, 265000, 276285, 266900, 276334, 278950, 283650, 276000, 274900, 269000], "median_price_prior_year": [265000, 257780, 263133, 262550, 259900, 255000, 260915, 270000, 275000, 270000, 272000, 270000], "closed_sales": [731, 638, 719, 521, 640, 821, 826, 922, 959, 869, 806, 737], "closed_sales_prior_year": [673, 697, 701, 540, 597, 729, 806, 909, 933, 881, 866, 736], "days_on_market": [69, 77, 73, 88, 80, 82, 82, 72, 68, 63, 70, 79], "days_on_market_prior_year": [68, 68, 70, 78, 83, 76, 81, 64, 67, 64, 68, 61]};
+  var lab=D.months.map(function(m){var p=m.split('-');return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+p[1]-1]+" '"+p[0].slice(2)});
+  var fmt$=function(n){return '$'+Math.round(n).toLocaleString('en-US')};
+  function line(id,a,b,fmt,unit){
+    var W=520,H=240,L=46,R=12,T=14,B=28,n=a.length;
+    var all=a.concat(b),lo=Math.min.apply(null,all),hi=Math.max.apply(null,all),pad=(hi-lo)*0.15||1;lo-=pad;hi+=pad;
+    var x=function(i){return L+(W-L-R)*i/(n-1)},y=function(v){return T+(H-T-B)*(1-(v-lo)/(hi-lo))};
+    var ticks=4,g='';for(var t=0;t<=ticks;t++){var v=lo+(hi-lo)*t/ticks,yy=y(v);g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'" stroke="var(--grid)"/><text x="'+(L-6)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11" fill="var(--ink-2)">'+fmt(v)+'</text>'}
+    var xl='';for(var i=0;i<n;i+=(n>8?2:1)){xl+='<text x="'+x(i)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="var(--ink-2)">'+lab[i]+'</text>'}
+    var path=function(s){return s.map(function(v,i){return (i?'L':'M')+x(i)+' '+y(v)}).join(' ')};
+    var last=n-1;
+    var svg='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+id+'">'+g+xl+
+      '<path d="'+path(b)+'" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round"/>'+
+      '<path d="'+path(a)+'" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round"/>'+
+      '<circle cx="'+x(last)+'" cy="'+y(a[last])+'" r="4" fill="var(--s1)" stroke="var(--paper)" stroke-width="2"/>'+
+      '<text x="'+(x(last)-8)+'" y="'+(y(a[last])-14)+'" text-anchor="end" font-size="12" font-weight="600" fill="var(--ink)">'+fmt(a[last])+unit+'</text>';
+    for(var i=0;i<n;i++){svg+='<rect class="hit" data-i="'+i+'" x="'+(x(i)-(W-L-R)/(n-1)/2)+'" y="0" width="'+((W-L-R)/(n-1))+'" height="'+H+'" fill="transparent"/>'}
+    svg+='<line id="'+id+'x" x1="0" x2="0" y1="'+T+'" y2="'+(H-B)+'" stroke="var(--line)" style="display:none"/></svg><div class="tt" id="'+id+'t"></div>';
+    var box=document.getElementById(id);box.innerHTML=svg;
+    var tt=document.getElementById(id+'t'),cx=document.getElementById(id+'x'),s=box.querySelector('svg');
+    box.addEventListener('mousemove',function(e){var r=e.target.getAttribute&&e.target.getAttribute('data-i');if(r==null){tt.style.display='none';cx.style.display='none';return}var i=+r;var bx=box.getBoundingClientRect(),sx=bx.width/W;tt.style.display='block';tt.style.left=(x(i)*sx)+'px';tt.style.top=(y(a[i])*sx)+'px';tt.innerHTML='<b>'+lab[i]+'</b><br>This year '+fmt(a[i])+unit+'<br>Prior year '+fmt(b[i])+unit;cx.setAttribute('x1',x(i));cx.setAttribute('x2',x(i));cx.style.display='block'});
+    box.addEventListener('mouseleave',function(){tt.style.display='none';cx.style.display='none'});
+  }
+  line('c1',D.median_price,D.median_price_prior_year,function(v){return '$'+Math.round(v/1000)+'k'},'');
+  line('c2',D.days_on_market,D.days_on_market_prior_year,function(v){return Math.round(v)},' days');
+  var tb=document.querySelector('#tbl tbody'),rows='';
+  for(var i=0;i<D.months.length;i++){rows+='<tr><td>'+lab[i]+'</td><td>'+fmt$(D.median_price[i])+'</td><td>'+fmt$(D.median_price_prior_year[i])+'</td><td>'+D.closed_sales[i]+'</td><td>'+D.closed_sales_prior_year[i]+'</td><td>'+D.days_on_market[i]+'</td><td>'+D.days_on_market_prior_year[i]+'</td></tr>'}
+  tb.innerHTML=rows;
+})();
+</script>

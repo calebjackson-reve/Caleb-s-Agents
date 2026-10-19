@@ -1,0 +1,204 @@
+{
+  "source": "Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.",
+  "source_url": "https://gbrar-public.stats.showingtime.com/docs/mmi/x/report",
+  "pulled": "2026-10-19",
+  "month": "2026-09",
+  "snapshot": {
+    "closed_sales": {
+      "now": 737,
+      "prior": 736,
+      "yoy": 0.1
+    },
+    "median_price": {
+      "now": 269000,
+      "prior": 270000,
+      "yoy": -0.4
+    },
+    "avg_price": {
+      "now": 318726,
+      "prior": 302157,
+      "yoy": 5.5
+    },
+    "days_on_market": {
+      "now": 79,
+      "prior": 61,
+      "yoy": 29.5
+    },
+    "pct_list_received": {
+      "now": 98.0,
+      "prior": 97.9,
+      "yoy": 0.1
+    },
+    "homes_for_sale": {
+      "now": 3524,
+      "prior": 3417,
+      "yoy": 3.1
+    },
+    "months_supply": {
+      "now": 4.6,
+      "prior": 4.5,
+      "yoy": 2.2
+    },
+    "new_listings": {
+      "now": 962,
+      "prior": 997,
+      "yoy": -3.5
+    },
+    "pending_sales": {
+      "now": 664,
+      "prior": 722,
+      "yoy": -8.0
+    },
+    "ytd_median_price": {
+      "now": 275000,
+      "prior": 267250,
+      "yoy": 2.9
+    },
+    "ytd_closed_sales": {
+      "now": 7101,
+      "prior": 6997,
+      "yoy": 1.5
+    }
+  },
+  "months": [
+    "2025-10",
+    "2025-11",
+    "2025-12",
+    "2026-01",
+    "2026-02",
+    "2026-03",
+    "2026-04",
+    "2026-05",
+    "2026-06",
+    "2026-07",
+    "2026-08",
+    "2026-09"
+  ],
+  "median_price": [
+    269740,
+    255000,
+    263450,
+    265000,
+    276285,
+    266900,
+    276334,
+    278950,
+    283650,
+    276000,
+    274900,
+    269000
+  ],
+  "median_price_prior_year": [
+    265000,
+    257780,
+    263133,
+    262550,
+    259900,
+    255000,
+    260915,
+    270000,
+    275000,
+    270000,
+    272000,
+    270000
+  ],
+  "closed_sales": [
+    731,
+    638,
+    719,
+    521,
+    640,
+    821,
+    826,
+    922,
+    959,
+    869,
+    806,
+    737
+  ],
+  "closed_sales_prior_year": [
+    673,
+    697,
+    701,
+    540,
+    597,
+    729,
+    806,
+    909,
+    933,
+    881,
+    866,
+    736
+  ],
+  "days_on_market": [
+    69,
+    77,
+    73,
+    88,
+    80,
+    82,
+    82,
+    72,
+    68,
+    63,
+    70,
+    79
+  ],
+  "days_on_market_prior_year": [
+    68,
+    68,
+    70,
+    78,
+    83,
+    76,
+    81,
+    64,
+    67,
+    64,
+    68,
+    61
+  ],
+  "national_context": "NAR: 30-year fixed moved above 7 percent in late September 2026, up from an August average of 6.67 percent per Freddie Mac. Fed raised its rate a quarter point on September 16. Quoted in the GBRAR report narrative.",
+  "homes_for_sale": [
+    3493,
+    3427,
+    3288,
+    3325,
+    3335,
+    3332,
+    3443,
+    3465,
+    3501,
+    3583,
+    3536,
+    3524
+  ],
+  "homes_for_sale_prior_year": [
+    3308,
+    3254,
+    3097,
+    3140,
+    3165,
+    3134,
+    3273,
+    3464,
+    3504,
+    3501,
+    3445,
+    3417
+  ],
+  "months_supply": [
+    4.6,
+    4.5,
+    4.3,
+    4.3,
+    4.4,
+    4.3,
+    4.4,
+    4.5,
+    4.5,
+    4.6,
+    4.6,
+    4.6
+  ]
+}

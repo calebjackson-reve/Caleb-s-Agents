@@ -1,0 +1,265 @@
+<title>Challenge Shot Board</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a production call sheet. One card per video, each with a frame storyboard, a time bar and the shot list. */
+:root{
+  --bg:#f6f4ef; --paper:#ffffff; --ink:#1b2230; --ink2:#5a6270; --line:#d9d4c8;
+  --accent:#e0541c; --accent-ink:#ffffff;
+  --cam:#1f5f8b; --screen:#2e8b6e; --graphic:#b5861b; --broll:#7a5ca6;
+  --display:"Barlow Condensed",system-ui,sans-serif; --body:"Source Sans 3",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+  --sil:#c7c1b4; --room:#ece8df;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15181e;--paper:#1d2129;--ink:#eceae3;--ink2:#a2a7b0;--line:#343a45;--accent:#f0683a;--cam:#5ea4d8;--screen:#4fc29a;--graphic:#e0b14a;--broll:#b399de;--sil:#4a5160;--room:#272c36;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15181e;--paper:#1d2129;--ink:#eceae3;--ink2:#a2a7b0;--line:#343a45;--accent:#f0683a;--cam:#5ea4d8;--screen:#4fc29a;--graphic:#e0b14a;--broll:#b399de;--sil:#4a5160;--room:#272c36;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5;padding-inline:16px;padding-block:0 60px;margin:0}
+.wrap{max-width:1080px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.05}
+h1{font-size:clamp(44px,8vw,84px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:clamp(28px,4vw,40px);font-weight:700}
+h3{font-size:26px;font-weight:700}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+header{padding-block:48px 28px;border-bottom:3px solid var(--ink)}
+header p{max-width:62ch;margin:14px 0 0;font-size:19px}
+.meta{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:18px;font-family:var(--mono);font-size:13px;color:var(--ink2)}
+section{padding-block:40px 8px}
+.lead{max-width:62ch;color:var(--ink2);margin:8px 0 22px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--mono);font-size:12px;margin:0 0 20px}
+.legend span::before{content:"";display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.cards{display:grid;gap:22px}
+.card{background:var(--paper);border:1px solid var(--line);border-top:5px solid var(--accent)}
+.card.first{border-top-color:var(--ink)}
+.head{display:grid;grid-template-columns:auto 1fr auto;gap:14px 18px;align-items:end;padding:18px 20px 12px}
+.day{font-family:var(--display);font-size:54px;line-height:.9;font-weight:700;color:var(--accent)}
+.card.first .day{color:var(--ink)}
+.head .len{font-family:var(--mono);font-size:13px;color:var(--ink2);text-align:right}
+.head .len b{display:block;font-size:22px;color:var(--ink);font-weight:600}
+.about{padding:0 20px;display:grid;grid-template-columns:1fr 1fr;gap:14px 28px}
+.about p{margin:0}
+.about .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);display:block;margin-bottom:2px}
+.hook{font-size:19px;font-style:italic}
+.frames{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:18px 20px 6px}
+.frame{min-width:0}
+.frame svg{width:100%;height:auto;display:block;border:1px solid var(--line);background:var(--room)}
+.frame .cap{font-family:var(--mono);font-size:11px;color:var(--ink2);margin-top:5px;line-height:1.35}
+.frame .cap b{color:var(--ink);font-weight:600}
+.bar{padding:12px 20px 4px}
+.bar .track{display:flex;height:22px;border:1px solid var(--line);overflow:hidden}
+.bar .track span{display:block;height:100%;background:var(--c);min-width:2px}
+.bar .ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink2);margin-top:4px}
+.shots{padding:10px 20px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px 28px}
+.shots ul{margin:0;padding-left:18px}
+.shots li{margin:3px 0}
+.shots .k{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);display:block;margin-bottom:4px}
+.clip{display:inline-block;font-family:var(--mono);font-size:11px;background:var(--accent);color:var(--accent-ink);padding:1px 6px;border-radius:2px;margin-right:4px}
+.set{display:grid;grid-template-columns:1.1fr 1fr;gap:28px;align-items:start}
+.set svg{width:100%;height:auto;display:block;border:1px solid var(--line);background:var(--paper)}
+.set ol{margin:0;padding-left:20px}
+.set li{margin:6px 0}
+.refs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.ref{background:var(--paper);border:1px solid var(--line);padding:16px 18px}
+.ref h3{font-size:22px;margin-bottom:6px}
+.ref p{margin:6px 0;color:var(--ink2);font-size:15px}
+.ref a{color:var(--accent);font-weight:600;word-break:break-word}
+.formula{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:18px}
+.formula div{border-left:3px solid var(--accent);padding:4px 14px}
+.formula b{font-family:var(--display);font-size:22px;display:block}
+.formula p{margin:4px 0 0;font-size:15px;color:var(--ink2)}
+.note{border:1px dashed var(--line);padding:12px 16px;font-size:15px;color:var(--ink2);margin-top:20px;max-width:70ch}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+.tbl{overflow-x:auto}
+a{color:var(--accent)}
+@media (max-width:760px){
+  .frames{grid-template-columns:repeat(2,1fr)}
+  .about,.shots,.set{grid-template-columns:1fr}
+  .head{grid-template-columns:auto 1fr}
+  .head .len{grid-column:1/-1;text-align:left}
+  .head .len b{display:inline;margin-right:8px}
+}
+@media (prefers-reduced-motion:no-preference){.card{transition:transform .2s}.card:hover{transform:translateY(-2px)}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">AI for Agents · 7 Days to Your First AI Assistant</div>
+  <h1>Challenge Shot Board</h1>
+  <p>One card per video. What it's about, how the frame looks, where the time goes, and what to film. Every video is cut to 3 to 6 minutes. Day 0 stays at 90 seconds.</p>
+  <div class="meta"><span>8 videos</span><span>1 batch day, about 4 hours</span><span>iPhone + clip-on mic + window light</span><span>Edit in CapCut</span></div>
+</header>
+
+<section>
+  <div class="eyebrow">The set</div>
+  <h2>One spot. Never change it.</h2>
+  <p class="lead">Every video and every clip comes from this one chair. Same shirt on batch day. Same light every Tuesday after that.</p>
+  <div class="set">
+    <svg viewBox="0 0 520 330" role="img" aria-label="Top-down diagram of the filming spot">
+      <rect x="0" y="0" width="520" height="330" fill="var(--paper)"/>
+      <!-- room -->
+      <rect x="30" y="30" width="460" height="270" fill="var(--room)" stroke="var(--line)"/>
+      <!-- window on left wall -->
+      <rect x="26" y="110" width="8" height="110" fill="var(--cam)"/>
+      <text x="44" y="170" font-family="var(--mono)" font-size="11" fill="var(--ink)">WINDOW</text>
+      <text x="44" y="184" font-family="var(--mono)" font-size="10" fill="var(--ink2)">soft light on your face</text>
+      <!-- light rays -->
+      <path d="M34 130 L200 150 M34 165 L200 165 M34 200 L200 180" stroke="var(--graphic)" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+      <!-- desk -->
+      <rect x="200" y="120" width="140" height="90" rx="3" fill="var(--paper)" stroke="var(--ink)"/>
+      <text x="270" y="170" text-anchor="middle" font-family="var(--mono)" font-size="11" fill="var(--ink2)">DESK</text>
+      <!-- you -->
+      <circle cx="270" cy="240" r="16" fill="var(--accent)"/>
+      <text x="270" y="275" text-anchor="middle" font-family="var(--display)" font-size="16" font-weight="700" fill="var(--ink)">YOU</text>
+      <text x="310" y="289" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink2)">facing the window side</text>
+      <!-- camera on tripod -->
+      <rect x="120" y="228" width="26" height="18" rx="2" fill="var(--ink)"/>
+      <path d="M146 232 L156 227 L156 247 L146 242 Z" fill="var(--ink)"/>
+      <line x1="133" y1="246" x2="133" y2="262" stroke="var(--ink)" stroke-width="2"/>
+      <text x="100" y="278" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink2)">iPHONE, eye level</text>
+      <text x="100" y="290" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink2)">4K, 5 to 6 ft away</text>
+      <line x1="156" y1="238" x2="252" y2="240" stroke="var(--ink2)" stroke-dasharray="3 3"/>
+      <!-- mic -->
+      <circle cx="286" cy="232" r="4" fill="var(--screen)"/>
+      <text x="300" y="236" font-family="var(--mono)" font-size="10" fill="var(--ink2)">clip-on mic</text>
+      <!-- background depth -->
+      <rect x="400" y="60" width="70" height="40" fill="var(--sil)"/>
+      <text x="435" y="85" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink)">SHELF</text>
+      <circle cx="460" cy="250" r="14" fill="var(--screen)" opacity=".6"/>
+      <text x="460" y="280" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink2)">plant or lamp</text>
+      <path d="M340 165 L395 165" stroke="var(--ink2)" stroke-dasharray="3 3"/>
+      <text x="368" y="158" text-anchor="middle" font-family="var(--mono)" font-size="10" fill="var(--ink2)">6+ ft of depth</text>
+      <text x="40" y="318" font-family="var(--mono)" font-size="10" fill="var(--ink2)">Nothing within 6 ft behind you. No window behind you. No client paperwork in frame.</text>
+    </svg>
+    <div>
+      <ol>
+        <li><b>Camera:</b> iPhone rear camera, 4K at 30fps, on a tripod at eye level, 5 to 6 feet from you. Tap and hold on your face to lock focus and exposure.</li>
+        <li><b>Mic:</b> clip-on wireless mic. Bad audio is the only thing that makes people leave. Bad video they forgive.</li>
+        <li><b>Light:</b> a window to one side at about 45 degrees, or one soft light there. Never a window behind you.</li>
+        <li><b>Background:</b> a real room with depth. A shelf, a lamp, a plant. Nothing you'd have to tidy every time. No KW signage until the brokerage says yes.</li>
+        <li><b>Screen:</b> record the Mac with Shift, Command and 5. Browser at 125%. Every tab, email and notification closed. No client info on screen, ever.</li>
+        <li><b>Framing:</b> head and shoulders, eyes on the top third line, a little room above your head. This is the "wide" in every storyboard below.</li>
+      </ol>
+      <div class="note">Buy nothing without saying yes first. If you don't own a clip-on mic, the iPhone wired earbuds mic beats the built-in mic for a test shoot.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">The formula</div>
+  <h2>How Nate Herk and Nick Saraev make a video</h2>
+  <p class="lead">I could not watch their footage from this server, so this is built from their video posts, their group pages and what their format is known for. Treat it as a strong read, not a frame-by-frame study. Open the references and check it against your own eyes before batch day.</p>
+  <div class="formula">
+    <div><b>Face, then screen by 0:20</b><p>They open on their face with the promise, then cut to the screen before the viewer can wonder what this is about.</p></div>
+    <div><b>Build it live</b><p>You watch them type the prompt, see the result and react. That reaction is the content. Your version: type, read, say "this is what I'd send."</p></div>
+    <div><b>Zoom on the thing</b><p>They punch in on the exact prompt box or button. A full browser is unreadable on a phone. Scale 150 to 200%.</p></div>
+    <div><b>One promise per title</b><p>"Follow-up texts that get answered," not "AI tips." The title is delivered in the first 30 seconds.</p></div>
+    <div><b>Picture changes every 5 to 10 seconds</b><p>Punch-in, screen cut, B-roll or text card. Nothing sits still long enough to scroll away.</p></div>
+    <div><b>Free download that only lives in Skool</b><p>Every video ends with "the prompt is in the group." That's the growth engine, not the editing.</p></div>
+  </div>
+  <div class="refs" style="margin-top:22px">
+    <div class="ref"><h3>Nate Herk, YouTube</h3><p>Open any recent video. Watch only the first 30 seconds and count how many times the picture changes. Then skip to a prompt and look at how far he zooms.</p><a href="https://www.youtube.com/@nateherk" target="_blank" rel="noopener">youtube.com/@nateherk</a></div>
+    <div class="ref"><h3>AI Automation Society, Skool</h3><p>The group his videos feed. Look at how each video post is written: a promise, a bullet list, a free file. Copy the structure for your Skool lesson posts.</p><a href="https://www.skool.com/ai-automation-society" target="_blank" rel="noopener">skool.com/ai-automation-society</a></div>
+    <div class="ref"><h3>Nick Saraev, YouTube</h3><p>The "Reverse Engineer Anything" video is the one you already pulled a lesson from. Watch his open: no logo, no intro, first spoken line is the hook.</p><a href="https://www.youtube.com/watch?v=dAzs_rU6080" target="_blank" rel="noopener">Reverse Engineer Anything</a> · <a href="https://www.youtube.com/@nicksaraev" target="_blank" rel="noopener">youtube.com/@nicksaraev</a></div>
+    <div class="ref"><h3>Your own price-point tours</h3><p>Your best-performing listing videos already follow the hook rule. Rewatch two of them before Day 4 and use the same opening energy on camera.</p><a href="https://www.youtube.com/results?search_query=caleb+jackson+realtor+zachary" target="_blank" rel="noopener">find them on YouTube</a></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">The 8 videos</div>
+  <h2>What each video is and how to shoot it</h2>
+  <p class="lead">Read the four frames left to right. That's the video. The bar under them shows where the minutes go. Lengths are trimmed from the scripts on the pull request: cut the second example, never the hook.</p>
+  <div class="legend"><span style="--c:var(--cam)">On camera</span><span style="--c:var(--screen)">Screen recording</span><span style="--c:var(--graphic)">Text card or graphic</span><span style="--c:var(--broll)">B-roll</span></div>
+  <div class="cards" id="cards"></div>
+</section>
+
+<section>
+  <div class="eyebrow">Batch day</div>
+  <h2>The 4-hour filming order</h2>
+  <p class="lead">On-camera parts first while your energy is high. Screen recordings second, they can be redone any time.</p>
+  <div class="tbl"><table>
+    <tr><th>Time</th><th>What</th><th>Notes</th></tr>
+    <tr><td>0:00 to 0:30</td><td>Setup and a 60-second test</td><td>Watch the test on your phone with the sound up. Fix light and audio now, not later.</td></tr>
+    <tr><td>0:30 to 2:00</td><td>On-camera lines for all 8 videos, Day 0 to Day 7</td><td>Read one line off the phone, look up, say it. Three takes max per line. Keep the last good one.</td></tr>
+    <tr><td>2:00 to 2:15</td><td>Break</td><td>Water, not coffee. Your voice has 2 more hours.</td></tr>
+    <tr><td>2:15 to 3:45</td><td>Screen recordings, Day 1 to Day 7</td><td>Fresh chat for each day. Type the prompts for real so the results are real. Speed up in the edit.</td></tr>
+    <tr><td>3:45 to 4:00</td><td>B-roll</td><td>Phone opening the app, you texting (fake names), notepad on the kitchen table, front door.</td></tr>
+  </table></div>
+  <div class="note">Day 1 is your test. Film it, edit it, watch it on your phone. Then decide if the rest of batch day is this week or next.</div>
+</section>
+</div>
+
+<script>
+// Frame drawings. Each returns an SVG string for a 16:9 storyboard frame.
+const F = {
+  wide: (t) => `<svg viewBox="0 0 160 90"><rect width="160" height="90" fill="var(--room)"/><rect x="118" y="18" width="30" height="22" fill="var(--sil)"/><circle cx="22" cy="62" r="8" fill="var(--sil)"/><circle cx="80" cy="40" r="11" fill="var(--accent)"/><path d="M58 90 Q80 56 102 90 Z" fill="var(--accent)"/><line x1="0" y1="30" x2="160" y2="30" stroke="var(--ink2)" stroke-dasharray="2 3" opacity=".5"/>${t?`<rect x="6" y="6" width="${Math.min(148,t.length*5.2+8)}" height="13" fill="var(--ink)"/><text x="10" y="16" font-family="var(--mono)" font-size="8" fill="var(--bg)">${t}</text>`:''}</svg>`,
+  punch: (t) => `<svg viewBox="0 0 160 90"><rect width="160" height="90" fill="var(--room)"/><rect x="128" y="8" width="40" height="30" fill="var(--sil)"/><circle cx="80" cy="42" r="17" fill="var(--accent)"/><path d="M46 90 Q80 60 114 90 Z" fill="var(--accent)"/>${t?`<rect x="6" y="6" width="${Math.min(148,t.length*5.2+8)}" height="13" fill="var(--ink)"/><text x="10" y="16" font-family="var(--mono)" font-size="8" fill="var(--bg)">${t}</text>`:''}</svg>`,
+  screen: (t) => `<svg viewBox="0 0 160 90"><rect width="160" height="90" fill="var(--paper)"/><rect x="0" y="0" width="160" height="10" fill="var(--line)"/><circle cx="6" cy="5" r="2" fill="var(--accent)"/><rect x="14" y="20" width="132" height="26" rx="3" fill="none" stroke="var(--screen)" stroke-width="2"/><rect x="20" y="26" width="90" height="3" fill="var(--ink2)"/><rect x="20" y="33" width="110" height="3" fill="var(--ink2)"/><rect x="20" y="40" width="60" height="3" fill="var(--ink2)"/><rect x="14" y="54" width="132" height="3" fill="var(--line)"/><rect x="14" y="61" width="120" height="3" fill="var(--line)"/><rect x="14" y="68" width="126" height="3" fill="var(--line)"/><rect x="14" y="75" width="80" height="3" fill="var(--line)"/><rect x="118" y="64" width="34" height="34" rx="17" fill="var(--accent)"/><path d="M122 100 Q135 84 148 100Z" fill="var(--accent)"/>${t?`<text x="16" y="17" font-family="var(--mono)" font-size="7" fill="var(--screen)">${t}</text>`:''}</svg>`,
+  zoom: (t) => `<svg viewBox="0 0 160 90"><rect width="160" height="90" fill="var(--paper)"/><rect x="-10" y="12" width="180" height="70" rx="4" fill="none" stroke="var(--screen)" stroke-width="3"/><rect x="8" y="24" width="120" height="5" fill="var(--ink)"/><rect x="8" y="35" width="140" height="5" fill="var(--ink)"/><rect x="8" y="46" width="100" height="5" fill="var(--ink)"/><rect x="8" y="57" width="130" height="5" fill="var(--ink)"/><rect x="8" y="68" width="60" height="5" fill="var(--ink)"/>${t?`<rect x="90" y="2" width="68" height="12" fill="var(--screen)"/><text x="94" y="11" font-family="var(--mono)" font-size="7" fill="var(--bg)">${t}</text>`:''}</svg>`,
+  split: (a,b) => `<svg viewBox="0 0 160 90"><rect width="80" height="90" fill="var(--room)"/><rect x="80" width="80" height="90" fill="var(--paper)"/><rect x="8" y="20" width="60" height="3" fill="var(--ink2)"/><rect x="8" y="28" width="64" height="3" fill="var(--ink2)"/><rect x="8" y="36" width="50" height="3" fill="var(--ink2)"/><rect x="8" y="44" width="58" height="3" fill="var(--ink2)"/><rect x="88" y="20" width="60" height="3" fill="var(--screen)"/><rect x="88" y="28" width="48" height="3" fill="var(--screen)"/><rect x="88" y="36" width="64" height="3" fill="var(--screen)"/><text x="40" y="78" text-anchor="middle" font-family="var(--mono)" font-size="8" fill="var(--ink)">${a}</text><text x="120" y="78" text-anchor="middle" font-family="var(--mono)" font-size="8" fill="var(--screen)">${b}</text><line x1="80" y1="0" x2="80" y2="90" stroke="var(--ink)"/></svg>`,
+  card: (lines) => `<svg viewBox="0 0 160 90"><rect width="160" height="90" fill="var(--ink)"/>${lines.map((l,i)=>`<text x="80" y="${34+i*18}" text-anchor="middle" font-family="var(--display)" font-size="${lines.length>2?12:15}" font-weight="700" fill="var(--bg)">${l}</text>`).join('')}<rect x="0" y="84" width="160" height="6" fill="var(--graphic)"/></svg>`,
+  phone: (lines) => `<svg viewBox="0 0 160 90"><rect width="160" height="90" fill="var(--room)"/><rect x="50" y="4" width="60" height="100" rx="8" fill="var(--paper)" stroke="var(--ink)"/>${lines.map((l,i)=>`<rect x="${i%2?74:56}" y="${16+i*22}" width="30" height="14" rx="6" fill="${i%2?'var(--cam)':'var(--line)'}"/>`).join('')}<text x="80" y="86" text-anchor="middle" font-family="var(--mono)" font-size="7" fill="var(--ink2)">text bubbles, fake names</text></svg>`,
+  broll: (t) => `<svg viewBox="0 0 160 90"><rect width="160" height="90" fill="var(--broll)" opacity=".25"/><rect x="20" y="30" width="120" height="50" fill="var(--sil)"/><path d="M20 80 L60 45 L90 70 L110 55 L140 80Z" fill="var(--broll)" opacity=".6"/><text x="80" y="20" text-anchor="middle" font-family="var(--mono)" font-size="8" fill="var(--ink)">B-ROLL: ${t}</text></svg>`,
+};
+const C = {cam:'var(--cam)',screen:'var(--screen)',graphic:'var(--graphic)',broll:'var(--broll)'};
+
+const videos = [
+ {day:'0',title:'Welcome',len:'1:30',target:'90 sec',hook:'"I lost a room full of agents in five minutes. I started at step 50 when they needed step 1. So I built step 1."',build:'Nothing. Post where you sell and the task that eats your week.',
+  frames:[[F.wide('7 DAYS TO YOUR FIRST AI'),'<b>0:00</b> Wide. Hook text on screen from frame one. No logo, no music.'],[F.punch(''),'<b>0:25</b> Punch in 115% on "So I built step 1."'],[F.wide(''),'<b>0:45</b> Back to wide. The promise and the one rule.'],[F.card(['DAY 1 IS WAITING','IN THE CLASSROOM']),'<b>1:20</b> End card. Cut 3 seconds after your last word.']],
+  bar:[['cam',25],['cam',20],['cam',35],['graphic',10]],
+  shots:['Wide shot only. This is your Skool about video and a Facebook clip too.','Say it to one person, not a room.'],
+  bRoll:['None. Keep it clean.'],text:['7 Days to Your First AI Assistant','Day 1 is waiting in the Classroom'],clip:'Whole video is the clip. 9:16 version swaps the last line for "Free for agents. Link in my profile."'},
+ {day:'1',title:'Your First Real Conversation',len:'4:30',target:'4 to 5 min',hook:'"Most agents type \'write my bio,\' get something a robot wrote, and quit. The problem isn\'t the AI. It knows nothing about you."',build:'Your agent bio, rewritten with the six pieces.',
+  frames:[[F.wide('DAY 1'),'<b>0:00</b> On camera. The problem and the curse of knowledge idea.'],[F.screen('weak prompt'),'<b>0:50</b> Screen. The weak way: "Write my real estate agent bio." Read the robot result.'],[F.zoom('175%'),'<b>1:40</b> Zoom 175% on the prompt box. Type the six-piece prompt, sped up 4x.'],[F.split('BEFORE','AFTER'),'<b>3:10</b> Split screen weak vs strong for 3 seconds. Then "Shorter, lead with where I grew up."']],
+  bar:[['cam',50],['screen',50],['graphic',4],['screen',90],['graphic',6],['screen',40],['cam',30]],
+  shots:['On camera: open and close.','Screen: claude.ai or ChatGPT, fresh chat, browser 125%.','Close on camera: "Check everything before you use it."'],
+  bRoll:['Your phone opening the app, 3 seconds.'],text:['Day 1','Who · What · For who · Details · Sound · Length, held 3 seconds'],clip:'Two clips: the curse-of-knowledge line, and the "check everything" rule.'},
+ {day:'2',title:'The Follow-Up They Answer',len:'4:30',target:'4 to 5 min',hook:'"Most follow-up texts don\'t get answered for one reason. They\'re about us."',build:'3 follow-up texts, edited in your voice.',
+  frames:[[F.punch('DAY 2'),'<b>0:00</b> Tight on you. Reciprocity: give first, then make the answer one word.'],[F.zoom('give first'),'<b>0:55</b> Zoom on the prompt. Box the "give first" and "one-word answer" lines.'],[F.phone(['a','b','c']),'<b>2:40</b> The 3 texts as phone bubbles, 4 seconds. Then "I\'d never say reach out."'],[F.wide(''),'<b>3:40</b> On camera. AI drafts, you send. Never paste a client\'s number.']],
+  bar:[['cam',55],['screen',105],['graphic',6],['screen',40],['cam',50],['broll',4]],
+  shots:['On camera: open, the psychology idea, the close.','Screen: same chat as Day 1 or a new one.'],
+  bRoll:['You texting on your phone. Fake names only, blur anything real.'],text:['Day 2','Give first. One-word answer.'],clip:'Two clips: the reciprocity open, and "AI drafts, you send."'},
+ {day:'3',title:'Ask Better Questions',len:'5:00',target:'5 to 6 min',hook:'"When someone tells you why they\'re moving, that\'s almost never the real reason."',build:'Your 5 consult questions, in your own words.',
+  frames:[[F.wide('DAY 3'),'<b>0:00</b> Mostly you. The "we need more space" story. Slow punch-ins, no B-roll yet.'],[F.card(['TIMELINE · MONEY · GOALS','Never who they are']),'<b>1:10</b> Fair Housing card, held 4 seconds. Serious tone.'],[F.zoom('best question'),'<b>1:45</b> Screen. Type the prompt, then zoom and underline the best story question.'],[F.broll('kitchen table, notepad'),'<b>3:20</b> B-roll under "double-check these for Fair Housing."']],
+  bar:[['cam',70],['graphic',8],['screen',95],['broll',10],['screen',30],['cam',45]],
+  shots:['On camera carries this one. The psychology is the lesson.','Screen: the prompt and the self-check.'],
+  bRoll:['Kitchen table, a notepad, a front door.'],text:['Day 3','Timeline · Money · Goals. Never who they are.'],clip:'Two clips: the "real reason" open, and "think better, not just faster."'},
+ {day:'4',title:'A Listing Video Script',len:'4:30',target:'4 to 5 min',hook:'"Nobody scrolls past a front door because it\'s boring. They scroll because there\'s no reason to stay."',build:'A 60-second listing script with your favorite hook.',
+  frames:[[F.broll('your best listing shot'),'<b>0:00</b> Open on your strongest listing B-roll, hook as text, NOT your face.'],[F.wide(''),'<b>0:12</b> Cut to you. The three-second problem and the hook fix.'],[F.screen('the prompt'),'<b>1:00</b> Screen. Type the script prompt with real listing facts. Listing clips under the read.'],[F.card(['"HERE\'S WHAT $197,500','BUYS YOU IN ZACHARY"']),'<b>2:50</b> Three hooks as big text cards, one after another.']],
+  bar:[['broll',12],['cam',45],['screen',100],['broll',10],['graphic',14],['screen',30],['cam',45]],
+  shots:['On camera: open and close.','Screen: the prompt and "give me 3 more hooks."'],
+  bRoll:['Clips from your own listing video, seller approved, or a past one.'],text:['Day 4','The 3 hook cards'],clip:'Two clips: the front-door open, and "curious beats polished."'},
+ {day:'5',title:'A Week of Posts in 20 Minutes',len:'4:00',target:'3 to 4 min',hook:'"The hardest part of posting isn\'t writing. It\'s staring at a blank box every day. So stop deciding every day."',build:'5 posts drafted and saved for the week.',
+  frames:[[F.wide('DAY 5'),'<b>0:00</b> On camera. Decide once a week.'],[F.card(['1 LOCAL SPOT  2 WHAT THEY GET WRONG','3 STORY  4 QUESTION  5 PRICE POINT']),'<b>0:40</b> The 5 post types as a numbered card, 4 seconds.'],[F.zoom('typing 4x'),'<b>0:50</b> Screen. The prompt, sped up. Number 3 asks you for details: answer it.'],[F.broll('Zachary drive, coffee'),'<b>2:30</b> B-roll of Baton Rouge or Zachary over the "local spot" read.']],
+  bar:[['cam',40],['graphic',8],['screen',90],['broll',12],['screen',30],['cam',40]],
+  shots:['On camera: open and close.','Screen: prompt, then a notes app with the 5 posts.'],
+  bRoll:['Scrolling your feed, coffee, a drive through your area.'],text:['Day 5','The 5 post types'],clip:'Two clips: the blank-box open, and "make the good habit the easy one."'},
+ {day:'6',title:'What Never Goes In',len:'3:30',target:'3 to 4 min',hook:'"Your clients trust you with things they don\'t tell anybody. None of that goes into AI. Ever."',build:'Your 6 personal AI rules.',
+  frames:[[F.punch('DAY 6'),'<b>0:00</b> Tight, slow, no music. This is the serious one.'],[F.card(['NEVER GOES IN','SSN · bank docs · wire numbers','full names + contact · contracts']),'<b>0:35</b> Full-screen list, held 5 seconds so people can screenshot it.'],[F.wide(''),'<b>1:20</b> On camera. The wire fraud warning: call the title company on a number you already have.'],[F.zoom('settings'),'<b>2:10</b> Screen. The rules prompt, then the privacy setting with a circle on it. Recheck menu names on filming day.']],
+  bar:[['cam',35],['graphic',12],['cam',45],['screen',85],['cam',30]],
+  shots:['Mostly on camera. Slower pace, slower cuts.','Screen: the rules prompt and the settings menu.'],
+  bRoll:['None.'],text:['Day 6','The "never goes in" list'],clip:'Two clips: the trust open, and the wire fraud warning.'},
+ {day:'7',title:'Your Saved Assistant',len:'5:30',target:'5 to 6 min',hook:'"All week you\'ve told AI who you are, over and over. Today you do it once. And it remembers."',build:'A saved Claude Project or ChatGPT setup. Post "done."',
+  frames:[[F.wide('DAY 7'),'<b>0:00</b> On camera. Good habits stick when they\'re easy.'],[F.screen('Projects › New'),'<b>0:45</b> Screen. Create the project, name it "My Real Estate Assistant."'],[F.zoom('instructions'),'<b>1:30</b> Zoom on the instructions box. Hold the template 5 seconds. Then the one-line test.'],[F.card(['YOU DID IT 🎓']),'<b>4:50</b> Graduation. Simple graphic, keep it short. The one-on-one ask.']],
+  bar:[['cam',45],['screen',45],['graphic',5],['screen',130],['screen',40],['cam',55],['graphic',10]],
+  shots:['On camera: open, the why, the graduation close.','Screen: Claude Project, with the ChatGPT version shown briefly.'],
+  bRoll:['You at your desk, phone in hand. A closing table if you have it.'],text:['Day 7','The instructions template, held 5 seconds','You did it'],clip:'Two clips: "do it once and it remembers," and "that\'s not behind, that\'s ahead."'},
+];
+
+const el = document.getElementById('cards');
+el.innerHTML = videos.map((v,i)=>{
+  const total = v.bar.reduce((s,[,n])=>s+n,0);
+  const m = Math.floor(total/60), s = total%60;
+  return `<article class="card ${i===0?'first':''}">
+    <div class="head"><div class="day">D${v.day}</div><div><div class="eyebrow">${i===0?'Welcome · also the Skool about video':'Day '+v.day+' · post as “Day '+v.day+'”'}</div><h3>${v.title}</h3></div><div class="len"><b>${v.len}</b>target ${v.target}</div></div>
+    <div class="about"><p><span class="k">The hook, first 10 seconds</span><span class="hook">${v.hook}</span></p><p><span class="k">What they build today</span>${v.build}</p></div>
+    <div class="frames">${v.frames.map(([svg,cap])=>`<div class="frame">${svg}<div class="cap">${cap}</div></div>`).join('')}</div>
+    <div class="bar"><div class="track">${v.bar.map(([t,n])=>`<span style="--c:${C[t]};flex:${n}" title="${t} ${n}s"></span>`).join('')}</div><div class="ticks"><span>0:00</span><span>${m}:${String(s).padStart(2,'0')}</span></div></div>
+    <div class="shots">
+      <div><span class="k">Shot list</span><ul>${v.shots.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div><span class="k">B-roll</span><ul>${v.bRoll.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div><span class="k">Text on screen</span><ul>${v.text.map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div><span class="k">Short clips</span><p style="margin:0"><span class="clip">✂ CLIP</span>${v.clip}</p></div>
+    </div>
+  </article>`;
+}).join('');
+</script>

@@ -1,0 +1,228 @@
+Browser tab: 1142917653, Title: "Keller Williams First Choice -Caleb Jackson - Google Search", URL: "https://www.google.com/search?newwindow=1&sca_esv=aafd06183b936b5d&cs=0&output=search&q=Keller+Williams+First+Choice+-Caleb+Jackson&ludocid=17113183507740077585&lsig=AB86z5W-3B9pHWT0fxQcWb8rlT_S&sa=X&ved=2ahUKEwikwL6WzrWXAxVYv4kEHbYXDhMQj9IGegQIERAD&biw=786&bih=806&dpr=2#mpd=editprofile/info".
+1 AXWebArea Keller Williams First Choice -Caleb Jackson - Google Search, URL: google.com/search?newwindow=1&sca_esv=aafd06183b936b5d&cs=0&output=search&q=Keller+Williams+First+Choice+-Caleb+Jackson&ludocid=17113183507740077585&lsig=AB86z5W-3B9pHWT0fxQcWb8rlT_S&sa=X&ved=2ahUKEwikwL6WzrWXAxVYv4kEHbYXDhMQj9IGegQIERAD&biw=786&bih=806&dpr=2#mpd=editprofile/info
+	2 container gsr
+		3 container
+			4 AXWebArea Business information, URL: google.com/local/business/7744506514819131081/editprofile/info?knm=0&ih=lu&origin=https%3A%2F%2Fwww.google.com&hl=en
+				5 container
+					6 container Business information, ID: FJtJce
+						7 container Business information
+							8 button Back
+							9 heading Business information, Value: 1, ID: i1
+								10 text Business information
+							11 pop up button (collapsed) Description: Menu, Secondary Actions: Expand
+							12 button Close
+						13 container
+							14 tab group
+								15 tab (selectable, settable, boolean) About, Value: 0, ID: qmcKvb
+								16 tab (selected, settable, boolean) Contact, Value: 1, ID: z4YBMd
+								17 tab (selectable, settable, boolean) Location, Value: 0, ID: yHbGQd
+								18 tab (selectable, settable, boolean) Hours, Value: 0, ID: IJ8bEd
+								19 tab (selectable, settable, boolean) More, Value: 0, ID: bSyaF
+							20 container
+								21 heading About your business, Value: 2
+									22 text About your business
+								23 container
+									24 heading Business name, Value: 3, ID: c64
+										25 text Business name
+									26 button Edit Business name
+										27 image
+									28 content list
+										29 container Keller Williams First Choice -Caleb Jackson
+								30 container
+									31 heading Business category, Value: 3, ID: c68
+										32 text Business category
+									33 button Edit Business category
+										34 image
+									35 text Your edit is taking a little longer to review. It may take up to 7 days to be published.
+									36 button Learn more: pending edits
+									37 heading CURRENT, Value: 4
+										38 text CURRENT
+									39 content list
+										40 container Real estate agent Primary category
+									41 content list
+										42 container Real estate agency
+									43 heading PENDING, Value: 4
+										44 text PENDING
+									45 content list
+										46 container Real estate agent Primary category
+									47 content list
+										48 container Real estate agency has been removed
+								49 container
+									50 heading Description, Value: 3, ID: c78
+										51 text Description
+									52 button Edit Description
+										53 image
+									54 content list
+										55 container Caleb Jackson, REALTOR with Keller Williams First Choice, serving Zachary, Baton Rouge, St. Francisville and the Felicianas. They call me Action Jackson because your call gets returned today. Since 2022: 81 closed deals and $25.1M in sales, 27 of them in the last 12 months, with 15 closings in Zachary alone. Buyers, sellers, first-time buyers and investment property, including a 30-unit multifamily sale. Priced straight, marketed hard, negotiated through to close. Faith first, family always. Call or text (225) 747-0303.
+								56 container
+									57 heading Opening date, Value: 3, ID: c82
+										58 text Opening date
+									59 button Edit Opening date
+										60 image
+									61 text Add
+								62 heading Contact information, Value: 2
+									63 text Contact information
+								64 container
+									65 heading Phone number, Value: 3, ID: c84
+										66 text Phone number
+									67 button Edit Phone number
+										68 image
+									69 content list
+										70 container (225) 747-0303
+								71 container
+									72 heading Chat, Value: 3, ID: c88
+										73 text Chat
+									74 button Edit Chat
+										75 image
+									76 content list
+										77 container
+											78 text Texting number sms:+12257470303 PRIMARY
+								79 container
+									80 heading Website, Value: 3, ID: c96
+										81 text Website
+									82 button Edit Website
+										83 image
+									84 content list
+										85 container https://calebjackson.org/?utm_source=google&utm_medium=organic&utm_campaign=gbp
+								86 container
+									87 heading Social profiles, Value: 3, ID: c100
+										88 text Social profiles
+									89 button Edit Social profiles
+										90 image
+									91 text Your edit is pending. It usually takes up to 10 minutes to be reviewed.
+									92 button Learn more: pending edits
+									93 heading CURRENT, Value: 4
+										94 text CURRENT
+									95 content list
+										96 container https://www.instagram.com/calebjacksonla/
+										97 container https://www.facebook.com/caleb.jackson.142/
+									98 heading PENDING, Value: 4
+										99 text PENDING
+									100 content list
+										101 container https://www.instagram.com/calebjacksonla/
+										102 container https://www.youtube.com/@calebjacksonla has been updated
+										103 container https://www.linkedin.com/in/calebjacksonla/ has been updated
+										104 container https://www.facebook.com/caleb.jackson.142/
+								105 heading Location and areas, Value: 2
+									106 text Location and areas
+								107 container
+									108 heading Business location, Value: 3, ID: c169
+										109 text Business location
+									110 button Edit Business location
+										111 image
+									112 content list
+										113 container 17111 Commerce Centre Drive, Prairieville, LA 70769
+									114 container
+										115 button Keyboard shortcuts
+										116 container Map
+										117 container
+											118 container
+										119 container
+											120 button Keyboard shortcuts
+											121 text Map data ©2026 Google
+											122 link Description: Terms (opens in new tab), Value: google.com/intl/en_US/help/terms_maps.html
+								123 container
+									124 heading Service area, Value: 3, ID: c172
+										125 text Service area
+									126 button Edit Service area
+										127 image
+									128 content list
+										129 container Baker, LA, USA
+										130 container Central, LA, USA
+										131 container Zachary, LA, USA
+										132 container Baton Rouge, LA, USA
+										133 container Ethel, LA 70730, USA
+										134 container Clinton, LA 70722, USA
+										135 container Jackson, LA 70748, USA
+										136 container Denham Springs, LA, USA
+										137 container Gonzales, LA 70737, USA
+										138 container New Roads, LA 70760, USA
+										139 container Slaughter, LA 70777, USA
+										140 container Port Allen, LA 70767, USA
+										141 container False River, LA 70756, USA
+										142 container Prairieville, LA 70769, USA
+										143 container St Francisville, LA 70775, USA
+										144 container Bocage, Baton Rouge, LA 70809, USA
+										145 container Garden District, Baton Rouge, LA, USA
+										146 container Greenwell Springs, Central, LA 70739, USA
+								147 heading Business hours, Value: 2
+									148 text Business hours
+								149 container
+									150 heading Hours, Value: 3, ID: c193
+										151 text Hours
+									152 button Edit Hours
+										153 image
+									154 content list
+										155 container Open with no main hours
+											156 text Open with no main hours
+								157 container
+									158 heading Add more hours, Value: 3
+										159 text Add more hours
+									160 toolbar
+										161 button Access, ID: ucc-133
+										162 button Breakfast, ID: ucc-134
+										163 button Brunch, ID: ucc-135
+										164 button Delivery, ID: ucc-136
+										165 button Dinner, ID: ucc-137
+										166 button Drive through, ID: ucc-138
+										167 button Happy hours, ID: ucc-139
+										168 button Kitchen, ID: ucc-140
+										169 button Lunch, ID: ucc-141
+										170 button Online service hours, ID: ucc-142
+										171 button Pickup, ID: ucc-143
+										172 button Senior hours, ID: ucc-144
+										173 button Takeout, ID: ucc-145
+								174 heading More, Value: 2
+									175 text More
+								176 container
+									177 heading From the business, Value: 3, ID: c222
+										178 text From the business
+									179 button Edit From the business
+										180 image
+									181 text Add
+								182 container
+									183 heading Accessibility, Value: 3, ID: c223
+										184 text Accessibility
+									185 button Edit Accessibility
+										186 image
+									187 text Add
+								188 container
+									189 heading Amenities, Value: 3, ID: c224
+										190 text Amenities
+									191 button Edit Amenities
+										192 image
+									193 text Add
+								194 container
+									195 heading Children, Value: 3, ID: c225
+										196 text Children
+									197 button Edit Children
+										198 image
+									199 text Add
+								200 container
+									201 heading Crowd, Value: 3, ID: c226
+										202 text Crowd
+									203 button Edit Crowd
+										204 image
+									205 text Add
+								206 container
+									207 heading Parking, Value: 3, ID: c227
+										208 text Parking
+									209 button Edit Parking
+										210 image
+									211 text Add
+								212 container
+									213 heading Planning, Value: 3, ID: c228
+										214 text Planning
+									215 button Edit Planning
+										216 image
+									217 text Add
+								218 container
+									219 heading Service options, Value: 3, ID: c229
+										220 text Service options
+									221 button Edit Service options
+										222 image
+									223 text Add
+								224 text Learn how business information is gathered and used by Google
+								225 button Learn more: how Google gathers and uses business information
+
+The focused UI element is 89 button Edit Social profiles
