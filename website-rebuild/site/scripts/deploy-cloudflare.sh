@@ -23,8 +23,6 @@ if [ -n "${LEAD_WEBHOOK:-}" ]; then
 fi
 # 3. upload: wrangler picks up functions/ next to the output dir
 npx --yes wrangler@3 pages deploy dist --project-name "$PROJECT" --branch main --commit-dirty=true
-# 4. custom domains (idempotent)
-for d in calebjackson.org www.calebjackson.org; do
-  curl -s "${H[@]}" -X POST "$API/$PROJECT/domains" -d "{\"name\":\"$d\"}" | python3 -c "import sys,json;r=json.load(sys.stdin);print('$d', 'added' if r.get('success') else r.get('errors'))"
-done
+# 4. no custom domains. calebjackson.org stays on Luxury Presence (Caleb, 2026-10-19).
+# This project lives at pages.dev only. Don't attach calebjackson.org or www here.
 echo "done. preview: https://$PROJECT.pages.dev"
