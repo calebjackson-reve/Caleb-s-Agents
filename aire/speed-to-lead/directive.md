@@ -21,7 +21,13 @@ Reply to every new website inquiry within 60 seconds by email and text, in Caleb
 ## Definition of done
 Every new lead has exactly one email and at most one text in log.csv, with seconds_to_reply under 90, and no address appears twice.
 
+## Runner
+`speed_to_lead.py` in this folder. Gmail over IMAP and SMTP with an app password in `.env`, texts through the Messages app by AppleScript. `install.sh` does the dry run, asks for the word LIVE, then installs a launchd job that keeps it running. Offline tests: `test_speed_to_lead.py`.
+
+## Lead types
+Home Valuation, Contact and Showing get the call-promise email and, in daytime, the text. Google Sign On gets the lighter sign-in email and no text. Anything else is treated as Contact.
+
 ## Safety
-- DRY_RUN=true by default. In dry run, write what would be sent to dry-run.log and send nothing.
+- DRY_RUN by default, LIVE only when the launchd job sets LIVE=1. In dry run, write what would be sent to dry-run.log and send nothing.
 - Never send to Caleb's own test addresses listed in templates.md.
 - Never send outside the templates. Never send twice to the same address. Never send to a number that replied STOP.

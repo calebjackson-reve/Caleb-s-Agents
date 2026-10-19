@@ -2,6 +2,19 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, go live
+
+**Done**
+- Caleb said "merge it and go live". Merged PR 31.
+- Built the speed to lead runner: `aire/speed-to-lead/speed_to_lead.py` (IMAP in, SMTP out, Messages by AppleScript, quiet hours, dedupe, log), `install.sh` (dry run, then type LIVE to install the launchd job), `test_speed_to_lead.py` (passes). Dry run is the default. Live only when the installer sets LIVE=1 on Caleb's Mac.
+- New lead type found in the inbox: Google Sign On (Boubkeur Barakate, Oct 18 8:34 am Central, unread, no phone, no reply sent). Added a sign-in template with no call promise and no text. Drafted the reply in Gmail for Caleb to send, since the lead is over a day old and the template is new.
+- GBRAR inventory and months supply series added to `aire/market-data/gbrar-2026-09.json` for the Motion piece.
+- Sample enrichment CSV no longer uses real lead names.
+
+**Needs Caleb**
+- Run the install command on the Mac (approvals page). Type LIVE at the prompt.
+- Send the Boubkeur draft.
+
 ## 2026-10-19, late: approvals page and pipeline sheet
 
 **Done**
