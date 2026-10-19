@@ -13,8 +13,8 @@ INK = (0x14, 0x10, 0x0E)      # brand ink
 EMBER = (0xE8, 0x77, 0x57)    # brand ember (coral)
 # Variants. Google crops the profile picture to a circle, so the mark sits inside the inner 60%.
 VARIANTS = {
-    "ivory": dict(bg=IVORY, ink=INK, ember=EMBER, glow=EMBER, glow_min=0.20, glow_max=0.60),
-    "ember": dict(bg=EMBER, ink=IVORY, ember=IVORY, glow=IVORY, glow_min=0.12, glow_max=0.45),
+    "ivory": dict(bg=IVORY, ink=INK, ember=EMBER, glow=EMBER, glow_min=0.30, glow_max=0.95),
+    "ember": dict(bg=EMBER, ink=IVORY, ember=IVORY, glow=IVORY, glow_min=0.20, glow_max=0.80),
 }
 PAD = 0.15                        # margin each side; the circle crop still clears the mark
 FPS, DUR = 12, 3.6                # one full breath in seconds
@@ -35,7 +35,7 @@ HALO = Image.composite(Image.new("L", INK_M.size, 255), Image.new("L", INK_M.siz
                        Image.eval(Image.merge("L", [INK_M]).point(lambda v: v), lambda v: v)) if False else None
 BOTH = Image.eval(Image.merge("L", [INK_M]), lambda v: v)
 BOTH.paste(255, mask=EMBER_M)
-HALO = BOTH.filter(ImageFilter.GaussianBlur(0.07 * SIZE * S))
+HALO = BOTH.filter(ImageFilter.GaussianBlur(0.09 * SIZE * S))
 
 def frame(t, v):
     g = v["glow_min"] + (v["glow_max"] - v["glow_min"]) * (0.5 - 0.5 * math.cos(2 * math.pi * t))
