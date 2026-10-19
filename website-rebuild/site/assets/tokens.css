@@ -37,7 +37,7 @@
 
   /* spacing */
   --gutter: 10rem;       /* 100 */
-  --section: 15rem;      /* 150 */
+  --section: 11rem;      /* 110, tightened from 150 on Caleb's note */
   --section-tight: 6rem; /* 60 */
   --gap: 2.4rem;
   --max: 1920px;

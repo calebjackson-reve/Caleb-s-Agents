@@ -212,11 +212,27 @@
     });
   })();
 
+  /* ---------- reviews carousel: slides one card at a time, auto every 6s, pauses on hover ---------- */
+  document.querySelectorAll('[data-reviews]').forEach(function (box) {
+    var track = box.querySelector('.reviews-track'), cards = track.children, n = cards.length, i = 0, timer;
+    var nav = box.parentNode.querySelector('.reviews-nav'), dots = nav.querySelector('.dots');
+    var per = function () { return phone ? 1 : 3; };
+    function buildDots() { dots.innerHTML = ''; for (var d = 0; d <= Math.max(0, n - per()); d++) dots.appendChild(document.createElement('i')); }
+    buildDots();
+    function go(k) { var max = Math.max(0, n - per()); i = (k + max + 1) % (max + 1); var card = cards[0]; var step = card.getBoundingClientRect().width + parseFloat(getComputedStyle(track).gap || 0); track.style.transform = 'translate3d(' + (-i * step) + 'px,0,0)'; Array.prototype.forEach.call(dots.children, function (x, j) { x.classList.toggle('is-on', j === i); }); }
+    function arm() { clearInterval(timer); if (!reduce) timer = setInterval(function () { go(i + 1); }, 6000); }
+    nav.querySelector('[data-next]').addEventListener('click', function () { go(i + 1); arm(); });
+    nav.querySelector('[data-prev]').addEventListener('click', function () { go(i - 1); arm(); });
+    box.addEventListener('pointerenter', function () { clearInterval(timer); }); box.addEventListener('pointerleave', arm);
+    window.addEventListener('resize', function () { buildDots(); go(i); });
+    go(0); arm();
+  });
+
   /* ---------- entrances ---------- */
   var io = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); } });
   }, { rootMargin: '0px 0px -12% 0px', threshold: 0.05 });
-  document.querySelectorAll('.words, .reveal, .fade, .chevrons, .chev, .sweep').forEach(function (el) { io.observe(el); });
+  document.querySelectorAll('.words, .reveal, .fade, .chevrons, .chev, .sweep, .review').forEach(function (el) { io.observe(el); });
   /* runway cards sit off to the right, so reveal them all once the runway itself is on screen */
   var rio = new IntersectionObserver(function (entries) {
     entries.forEach(function (e) { if (e.isIntersecting) { e.target.querySelectorAll('.reveal, .fade').forEach(function (el, i) { el.style.transitionDelay = (i * 90) + 'ms'; el.classList.add('is-in'); io.unobserve(el); }); rio.unobserve(e.target); } });
