@@ -191,23 +191,23 @@
    "kicker": "Set it up right",
    "title": "5 steps, *on your phone*",
    "checkAt": [
-    1.5,
-    3.5,
-    5.5,
-    8.0,
-    10.5
+    2.0,
+    4.5,
+    7.5,
+    10.0,
+    12.5
    ],
    "items": [
-    "Download *ChatGPT* by OpenAI",
-    "Sign in",
+    "Download *ChatGPT* by OpenAI and sign in",
     "Turn on *two-factor*",
     "Turn off *training* in Data Controls",
-    "Move it to your *home screen*"
+    "Move it to your *home screen*",
+    "Save your *profile* from Ep 1"
    ],
-   "say": "Five steps on your phone. Download ChatGPT, the real one by OpenAI. Sign in. Turn on two factor. Go into data controls and turn off the setting that trains on your chats. Then move it to your home screen, where your thumb already goes.",
+   "say": "Five steps on your phone. Download ChatGPT, the real one by OpenAI, and sign in. Turn on two factor. Go into data controls and turn off the setting that trains on your chats. Move it to your home screen, where your thumb already goes. And paste the profile you built in Ep one into custom instructions, so it knows you in every chat.",
    "why": "The hands-on part. Recheck every menu name on filming day (historical).",
    "motion": "Five items check off on his words. Screen recording of each step plays in a phone frame beside the list (Caleb records on his iPhone).",
-   "dur": 16.0
+   "dur": 22.5
   },
   {
    "type": "flow",

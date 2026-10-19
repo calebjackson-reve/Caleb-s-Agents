@@ -296,16 +296,16 @@
    "face": "pip",
    "kicker": "Your 10 minutes",
    "title": "Redo the *one that failed*",
-   "sub": "Same ask. Add the job, one real detail and your voice.",
+   "sub": "Run the interview prompt first. Then ask again with the job, one real detail and your voice.",
    "tags": [
     "Free card in Skool",
     "No client info"
    ],
    "tagAccent": true,
-   "say": "Here's your ten minutes. Go back to the one thing AI got wrong for you. Same ask. Add the job, one real detail and your voice. And no client names or private info in it.",
+   "say": "Here's your ten minutes. First, run the interview prompt in Skool. It asks you questions and writes your profile. Then go back to the one thing AI got wrong for you, and ask again with the job, one real detail and your voice. No client names or private info in it.",
    "why": "One clear action, with the LREC privacy rule attached.",
    "motion": "Headline rises with mask. Sub fades up. First pill in ember.",
-   "dur": 12.9
+   "dur": 18.4
   },
   {
    "type": "face",

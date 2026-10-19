@@ -10,7 +10,36 @@ Test note: these haven't been run in ChatGPT yet. Run each one once on your phon
 
 **Paste this under the video:**
 
-> If AI gave you garbage before, it was missing three things: the job, one real detail, and your voice. Copy the prompt below, fill in the brackets, and redo the one thing that failed you.
+> If AI gave you garbage before, it was missing three things: the job, one real detail, and your voice. Start with Prompt 0 so it learns who you are. Then use Prompt 1 to redo the one thing that failed you.
+
+### Prompt 0: Let It Interview You (do this first)
+
+Takes about 10 minutes. You answer questions, and ChatGPT writes a short profile you'll use from now on.
+
+```
+I'm a real estate agent and I want you to know me before you help me with anything. Interview me.
+
+Ask me one question at a time and wait for my answer before you ask the next one. Ask about 12 questions, covering:
+- Where I sell, and how long I've been an agent
+- Whether I mostly work with buyers, sellers or both, and the situations I help with most (like first-time buyers, relocations or downsizing)
+- What I'm best at, and what my clients thank me for
+- Where my business comes from right now
+- What eats the most time in my week
+- How I sound when I write. Ask me to paste 2 texts or posts I wrote myself.
+- Words I always use, and words I never want to see
+- What I want AI to help me with first
+
+Rules for the interview:
+- Never ask for client names, phone numbers, addresses, money details or anything private.
+- Never ask about anyone's race, religion, family status, disability, national origin, sex or other protected traits.
+- If I say skip, move on.
+
+When we're done, write "My Agent Profile" in under 200 words, in first person, ready to paste. Then write one line that describes my writing voice.
+```
+
+**After it's done:** copy "My Agent Profile" into your Notes app. In Ep 2 you'll save it inside ChatGPT so it remembers you in every chat. Until then, paste it at the top of any prompt.
+
+**Why this works:** AI can't know your business unless you tell it. Ten minutes of answers now means every draft after this starts from you, not from a blank page.
 
 ### Prompt 1: The 3 Details
 
@@ -56,7 +85,7 @@ This helps you catch phrases you might miss. You still make the final call, and 
 
 ### Your 10 minutes
 
-Go back to the one thing AI got wrong for you. Run it again with Prompt 1, then push back once with Prompt 2.
+Run Prompt 0 and save your profile. Then go back to the one thing AI got wrong for you. Run it again with Prompt 1, with your profile pasted on top, and push back once with Prompt 2.
 
 ### Keep it safe
 
@@ -77,11 +106,11 @@ Go back to the one thing AI got wrong for you. Run it again with Prompt 1, then 
 
 ### The 5-step setup (checklist, not a prompt)
 
-1. Download ChatGPT by OpenAI from the App Store or Google Play. Check that the developer says OpenAI.
-2. Sign in.
-3. Turn on two-factor in Settings, under Security.
-4. Turn off training. In Settings, go to Data Controls and turn off "Improve the model for everyone." Menu names change, so if yours looks different, look for training or data controls.
-5. Move the app to your home screen, where your thumb already goes.
+1. Download ChatGPT by OpenAI from the App Store or Google Play and sign in. Check that the developer says OpenAI.
+2. Turn on two-factor in Settings, under Security.
+3. Turn off training. In Settings, go to Data Controls and turn off "Improve the model for everyone." Menu names change, so if yours looks different, look for training or data controls.
+4. Move the app to your home screen, where your thumb already goes.
+5. Save your profile. In Settings, find Personalization or Custom Instructions and paste "My Agent Profile" from Ep 1. Haven't done Ep 1 yet? Run Prompt 0 from Ep 1 first. Now ChatGPT knows you in every new chat. (Menu name rechecked on filming day.)
 
 Start on the free plan. Paid is about $20 a month when you're using it every day. (Price checked [DATE], recheck before posting.)
 
@@ -101,7 +130,7 @@ For each one, tell me if you can do it yourself, and give me the exact words to 
 
 ### Your 10 minutes
 
-ChatGPT on your home screen, training off, Prompt 1 asked. Move the other AI apps off your home screen while you're there.
+ChatGPT on your home screen, training off, your profile saved, Prompt 1 asked. Move the other AI apps off your home screen while you're there.
 
 ### Keep it safe
 
