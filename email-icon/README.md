@@ -6,13 +6,15 @@ The look, chosen by Caleb on October 19 2026 after watching the reel: near-black
 
 Seen in the reel, October 19 2026: the animated Airbnb avatar does move in the Gmail inbox on the web client he filmed. Still not verified for Gmail mobile or other Google surfaces.
 
-Source of the mark: the Caleb Jackson Brand and Content Package (Google Drive, July 2026). The c glyph comes from `cj-wordmark.svg`, the j and the two ember marks from `aj-monogram.svg`. Letters are the package's ember #E87757 lifted slightly (#F28A6A) so they float above the light. The light itself is brand ember added over black so it stays saturated, with a small white push at the very center. The package's own monogram is "aj." (Action Jackson); this icon uses "cj." at Caleb's request.
+Typeface: Bodoni Moda (SIL Open Font License, `source/BodoniModa.ttf`), chosen by Caleb on October 19 2026 for a more editorial, luxury feel than the brand package's Instrument Serif. It is set at weight 520 and optical size 14 with the hairlines thickened slightly so the didone contrast survives at inbox size. `source/font-comparison.png` shows the eleven faces that were compared. Letters are the package's ember #E87757 lifted slightly (#F28A6A) so they float above the light. The light itself is brand ember added over black so it stays saturated, with a small white push at the very center.
+
+Earlier mark: the brand package's own Instrument Serif glyphs (`source/cj-monogram.svg` and the two mask PNGs) are kept for reference. The package's own monogram is "aj." (Action Jackson); this icon uses "cj." at Caleb's request. Note for brand consistency: the website and wordmark still use Instrument Serif, so this avatar is a deliberate departure.
 
 Files:
 - `caleb-cj-avatar-noir.gif`: the animated profile picture.
 - `caleb-cj-avatar-noir.png`: one mid-glow frame, static fallback.
 - `caleb-cj-avatar-noir.mp4`: about 14 seconds, three loops, for anything that wants video.
-- `source/cj-monogram.svg` is the composed vector mark. `source/aj-monogram.svg` is the brand package original for reference. The two mask PNGs are renders of the composed mark that `build.py` reads.
+- `source/BodoniModa.ttf` is the typeface the build renders from. `source/font-comparison.png` is the comparison sheet. The SVGs and mask PNGs are the earlier Instrument Serif mark, kept for reference.
 - `build.py` regenerates everything. Run `python3 build.py`, then encode the MP4 from the `frames-noir` folder it leaves behind.
 
 Earlier variants (ivory background, solid ember background) are in the git history of this folder if they are ever wanted.
@@ -32,6 +34,6 @@ Gmail plays animated GIFs in email bodies and signatures. Host the `.gif` on Goo
 
 ## Changing it
 
-Constants at the top of `build.py`: `CORE_REST` and `CORE_PEAK` for how bright the light gets, `RADIUS_REST` and `RADIUS_PEAK` for how far it reaches, `WHITE_HOT` for the white push at the center, `RAYS` and `RAY_DEPTH` for the soft streaks, `PAD` for how far inside the circle the mark sits, `DUR` for the length of one breath. Needs Pillow and numpy.
+Constants at the top of `build.py`: `CORE_REST` and `CORE_PEAK` for how bright the light gets, `RADIUS_REST` and `RADIUS_PEAK` for how far it reaches, `WHITE_HOT` for the white push at the center, `RAYS` and `RAY_DEPTH` for the soft streaks, `PAD` for how far inside the circle the mark sits, `DUR` for the length of one breath, `FONT`, `FONT_AXES` (weight, optical size), `TRACKING` and `HAIRLINE` for the type. Needs Pillow and numpy.
 
-To change the mark itself, edit `source/cj-monogram.svg`, re-render the two masks (ink only and ember only, black on transparent, 790 by 1040) with a browser or any SVG renderer, drop them in `source/`, and run the build.
+To try another typeface, drop its TTF in `source/`, point `FONT` at it, adjust `FONT_AXES` if it is variable, and run the build.
