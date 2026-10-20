@@ -70,6 +70,9 @@ def apple_ts(v) -> datetime | None:
     return APPLE_EPOCH + timedelta(seconds=v)
 
 
+GROUP_MIN_PEOPLE = 4  # a chat with this many people, Caleb included, is a group and is left out
+
+
 def read_messages(db: Path, days: int) -> list[tuple[str, datetime, bool, str]]:
     tmp = Path(tempfile.mkdtemp()) / "chat.db"
     shutil.copy2(db, tmp)
@@ -79,11 +82,16 @@ def read_messages(db: Path, days: int) -> list[tuple[str, datetime, bool, str]]:
             shutil.copy2(src, tmp.parent / extra)
     con = sqlite3.connect(f"file:{tmp}?mode=ro", uri=True)
     since = int((datetime.now(timezone.utc) - timedelta(days=days) - APPLE_EPOCH).total_seconds()) * 10**9
+    # Group chats of GROUP_MIN_PEOPLE or more (Caleb plus 3 others) never count as a conversation with that sender.
+    # Rule from Caleb, 2026-10-20. A message in no chat (rare) is kept as one to one.
     q = """select h.id, m.date, m.is_from_me, m.text, m.attributedBody
            from message m join handle h on h.ROWID = m.handle_id
-           where m.date >= ? order by m.date"""
+           left join chat_message_join cmj on cmj.message_id = m.ROWID
+           left join (select chat_id, count(*) as others from chat_handle_join group by chat_id) p on p.chat_id = cmj.chat_id
+           where m.date >= ? and coalesce(p.others, 1) < ?
+           order by m.date"""
     out = []
-    for hid, d, from_me, text, blob in con.execute(q, (since,)):
+    for hid, d, from_me, text, blob in con.execute(q, (since, GROUP_MIN_PEOPLE - 1)):
         body = decode_body(text, blob)
         ts = apple_ts(d)
         if ts:
