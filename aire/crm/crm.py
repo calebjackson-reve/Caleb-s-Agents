@@ -572,7 +572,9 @@ class CRM:
                     side: str = "", source: str = "") -> dict:
         key = slug(address)
         for d in self.deals():
-            if d["deal_id"] == key:
+            # Same street, written differently ("Pecan Tree Drive" vs "Pecan Tree Dr, Baton Rouge") is the same deal.
+            if d["deal_id"] == key or street_key(d.get("address", "")) == street_key(address):
+                key = d["deal_id"]
                 fields = {"last_event": event, "last_event_at": at, "updated_at": now_iso()}
                 if stage:
                     fields["stage"] = stage
@@ -766,6 +768,18 @@ ADDRESS_IN_DOC = re.compile(r"^(\d{1,6} [A-Za-z0-9 .']+?(?: (?:Dr|Drive|Ave|Aven
 
 AS_UPDATED = re.compile(r"Signing updated: (.+)$")
 AS_PERSON = re.compile(r"(?:Participant|Signer|Signed by|Completed by)\s*[:*]*\s*([A-Z][\w'.-]+(?: [A-Z][\w'.-]+){1,3})")
+
+
+STREET_ALIASES = {"south": "s", "north": "n", "east": "e", "west": "w", "avenue": "ave", "drive": "dr", "court": "ct",
+                  "lane": "ln", "street": "st", "road": "rd", "boulevard": "blvd", "highway": "hwy", "circle": "cir",
+                  "place": "pl", "parkway": "pkwy", "trail": "trl"}
+
+
+def street_key(address: str) -> str:
+    """'9241 Pecan Tree Dr, Baton Rouge, LA 70810' and '9241 Pecan Tree Drive' -> '9241 pecan tree dr'."""
+    street = (address or "").split(",")[0]
+    words = re.findall(r"[a-z0-9]+", street.lower())
+    return " ".join(STREET_ALIASES.get(w, w) for w in words)
 
 
 def deal_address(doc: str) -> str:
@@ -1276,6 +1290,12 @@ def run_tests() -> int:
     sigf.write_text(json.dumps({"+1" + phone_key(ph["primary_phone"]): {"last_inbound": "2026-10-15", "last_outbound": "2026-10-01", "in_90": 4, "recent_inbound": ["2026-10-15: fixture text"]}}))
     sg = load_signals(sigf, crm.contacts())
     check("signals match a +1 phone key to a 10-digit contact phone", ph["person_id"] in sg and sg[ph["person_id"]]["last_messages"] == ["2026-10-15: fixture text"])
+
+    check("street_key matches abbreviations and drops the city", street_key("9241 Pecan Tree Dr, Baton Rouge, LA 70810") == street_key("9241 Pecan Tree Drive") and street_key("2179 South Turnberry Avenue") == street_key("2179 S Turnberry Ave"))
+    n_before = len(crm.deals())
+    crm.upsert_deal("9999 Fixture Drive, Zachary, LA 70791", "seeded", "2026-10-20T08:00:00-05:00", stage="active", side="Listing", source="seed")
+    crm.upsert_deal("9999 Fixture Dr", "showing confirmed", "2026-10-20T09:00:00-05:00")
+    check("a seeded deal and an ingest event on the same street are one row", len(crm.deals()) == n_before + 1 and any(d["last_event"] == "showing confirmed" for d in crm.deals() if street_key(d["address"]) == "9999 fixture dr"))
 
     # stage, note, dnc: the Pipeline app's writes, on a fresh copy of the fixture
     db2 = tmp / "db2.json"
