@@ -797,12 +797,15 @@ def load_signals(path: Path, contacts: list[dict]) -> dict:
         if not sig:
             continue
         li, lo = sig.get("last_inbound", "")[:10], sig.get("last_outbound", "")[:10]
-        age = (today() - date.fromisoformat(li)).days if li else None
+        # Only a text that needs an answer puts Caleb on the hook. Older signal files have no last_reply_inbound.
+        ask = sig.get("last_reply_inbound", sig.get("last_inbound", ""))
+        ai = ask[:10]
+        age = (today() - date.fromisoformat(ai)).days if ai else None
         recent = sig.get("recent_inbound", [])
         out[c["person_id"]] = {"label": "", "last_inbound": li, "last_outbound": lo,
                                # They texted last within 60 days, today included. A text from this morning is the most urgent one.
-                               "owes_reply": bool(li) and li > lo and age is not None and 0 <= age <= 60,
-                               "last_inbound_at": sig.get("last_inbound", ""),
+                               "owes_reply": bool(ai) and ai > lo and age is not None and 0 <= age <= 60,
+                               "last_inbound_at": ask,
                                "signal_score": int(sig.get("in_90", 0)),
                                # The last three things they actually said, so the Pipeline app can show them above the
                                # compose box. Stays in feed.json on the Mac, never in the sheet or git.

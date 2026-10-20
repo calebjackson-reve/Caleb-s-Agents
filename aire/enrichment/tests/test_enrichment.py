@@ -7,7 +7,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "execution"))
 from identity import phone_key, email_key, name_key, Index  # noqa
-from imessage_signals import read_messages, build_signals, decode_body, APPLE_EPOCH  # noqa
+from imessage_signals import read_messages, build_signals, decode_body, needs_reply, APPLE_EPOCH  # noqa
 from social_signals import build as social_build  # noqa
 from score_and_label import score_person  # noqa
 from merge_hwc import merge, load_hwc  # noqa
@@ -103,6 +103,15 @@ check("unanswered computed", s1["unanswered_days"] == 1)
 check("name hint recovered", sig["+12255550102"]["name_hints"] == ["Marcus Pelt"])
 check("blob body decoded into keywords", sig["+12255550199"]["keyword_hits"].get("rent") == 1 and sig["+12255550199"]["keyword_hits"].get("deal") == 2)
 (out / "imessage-signals.json").write_text(json.dumps(sig))
+check("link, greeting, emoji, tapback and mass texts need no reply",
+      not any(needs_reply(b) for b in ["https://example.com/x", "Hey!", "thank you so much", "\U0001f44d\U0001f44d", "ok",
+                                         'Loved \u201cSee you then\u201d', "Vote Tuesday! Reply STOP to opt out", "Please donate today"]))
+check("real questions and attachments still need a reply",
+      all(needs_reply(b) for b in ["Are y'all still showing Saturday?", "hey can you call me", "https://zillow.com/x what do you think of this one", "\ufffc"]))
+_q = build_signals([("+12255550177", NOW - timedelta(days=3), False, "Can we see the house Friday?"),
+                    ("+12255550177", NOW - timedelta(days=2), True, "Yes, 4pm works"),
+                    ("+12255550177", NOW - timedelta(days=1), False, "Thanks!")], NOW)["+12255550177"]
+check("a thank-you after Caleb's answer does not reopen the thread", _q["unanswered_days"] == 0 and _q["last_inbound"] > _q["last_outbound"])
 
 soc = social_build([{"handle": "@Jordan.Friend", "platform": "Instagram", "action": "comment", "date": "2026-10-12", "post": ""},
                     {"handle": "jordan.friend", "platform": "instagram", "action": "like", "date": "2026-10-15", "post": ""},

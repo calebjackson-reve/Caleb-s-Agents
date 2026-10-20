@@ -33,6 +33,24 @@ KEYWORDS = {
     "referral": r"\b(my (friend|sister|brother|cousin|coworker|neighbor)|referr|knows? (someone|anybody)|looking for an agent)\b",
     "life": r"\b(engaged|married|wedding|baby|pregnant|retir|divorc|passed away|new job|promotion)\b",
 }
+# Texts that never need a reply from Caleb (rule from Caleb, 2026-10-20): only a link, only a greeting,
+# thanks or emoji, a tapback, or a mass message. They still count as contact, they just never make him owe a reply.
+LINK_ONLY = re.compile(r"^(\S*https?://\S+\s*)+$|^(www\.\S+\s*)+$", re.I)
+SMALL_TALK = re.compile(r"^(hi+|hey+|hello|yo|morning|good (morning|night|afternoon|evening)|gm|gn|thanks?( you)?( so much)?|thx|ty|ok(ay)?|k|kk|cool|great|awesome|nice|sounds good|will do|lol+|haha+|yes|yep|no|nope|sure|you too|same|love (it|you)|amen|congrats)[\s!.,?]*$", re.I)
+TAPBACK = re.compile(r"^(liked|loved|disliked|laughed at|emphasi[sz]ed|questioned|reacted .{1,8} to) [\u201c\"]", re.I)
+MASS = re.compile(r"\b(reply|text) stop\b|\bstop to (end|opt|quit|unsubscribe)|\bopt[- ]?out\b|\bunsubscribe\b|\bmsg ?& ?data rates\b|\bdonat(e|ion)\b|\bchip in\b", re.I)
+
+
+def needs_reply(body: str) -> bool:
+    """False for texts that never put Caleb on the hook. A blank body (photo, attachment) still counts, to be safe."""
+    t = body.replace("\ufffc", "").strip()
+    if not t:
+        return True  # an attachment with no words still needs a look
+    if LINK_ONLY.match(t) or TAPBACK.match(t) or MASS.search(t) or SMALL_TALK.match(t):
+        return False
+    return bool(re.search(r"[A-Za-z0-9]", t))  # emoji or punctuation only
+
+
 NAME_HINT = re.compile(r"\b(?i:this is|it's|its|my name is)\s+([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)")
 
 
@@ -108,7 +126,7 @@ def build_signals(messages: list[tuple[str, datetime, bool, str]], now: datetime
         if not k:
             continue
         s = sig.setdefault(k, {"last_inbound": "", "last_outbound": "", "in_30": 0, "in_90": 0, "in_365": 0, "out_90": 0,
-                               "keyword_hits": {}, "recent_inbound": [], "name_hints": []})
+                               "keyword_hits": {}, "recent_inbound": [], "name_hints": [], "last_reply_inbound": ""})
         age = (now - ts).days
         iso = ts.astimezone().strftime("%Y-%m-%d")
         if from_me:
@@ -117,6 +135,8 @@ def build_signals(messages: list[tuple[str, datetime, bool, str]], now: datetime
             s["last_outbound"] = max(s["last_outbound"], iso)
         else:
             s["last_inbound"] = max(s["last_inbound"], iso)
+            if needs_reply(body):
+                s["last_reply_inbound"] = max(s["last_reply_inbound"], iso)
             if age <= 30: s["in_30"] += 1
             if age <= 90: s["in_90"] += 1
             if age <= 365: s["in_365"] += 1
@@ -131,7 +151,7 @@ def build_signals(messages: list[tuple[str, datetime, bool, str]], now: datetime
                 if m.group(1) not in s["name_hints"]:
                     s["name_hints"].append(m.group(1))
     for s in sig.values():
-        li, lo = s["last_inbound"], s["last_outbound"]
+        li, lo = s["last_reply_inbound"], s["last_outbound"]
         s["unanswered_days"] = (now.date() - datetime.strptime(li, "%Y-%m-%d").date()).days if li and li > lo else 0
     return sig
 
