@@ -26,7 +26,7 @@ python3 tests/test_enrichment.py                              # 34 offline check
 python3 execution/run_enrichment.py --dump-contacts           # out/contacts.json
 python3 execution/imessage_signals.py                         # needs Full Disk Access for Terminal
 python3 execution/gmail_signals.py --contacts out/contacts.json
-python3 execution/merge_hwc.py --hwc out/hwc.json --crm out/crm.json   # practice merge, read out/merge-report.md
+python3 execution/merge_hwc.py                                # practice merge from both sheets, read out/merge-report.md
 python3 execution/run_enrichment.py                           # practice run, read out/enrichment-report.md
 python3 execution/run_enrichment.py --llm --limit 150         # Haiku pass on the hot and warm rows, prints cost (about $0.01 per person)
 python3 execution/run_enrichment.py --write                   # only after Caleb reads the report

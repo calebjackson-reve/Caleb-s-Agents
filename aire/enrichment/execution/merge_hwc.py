@@ -21,11 +21,27 @@ from identity import Index, phone_key, email_key  # noqa: E402
 TIER_TO_BAND = {"HOT": "HOT", "WARM": "WARM", "COLD": "NURTURE", "CONTACT": "DORMANT"}
 
 
-def load_hwc(path: Path) -> list[dict]:
-    raw = json.loads(path.read_text())
-    values = raw["values"] if isinstance(raw, dict) else raw
+HWC_SHEET_ID = "11t6vex49xdA7RmskELDxt2O044vo1EJkPqL3yCgglHE"  # "Hot-Warm-Cold Contacts 2026-10-19", read only here
+
+
+def load_hwc(path: Path | None) -> list[dict]:
+    """A Sheets API dump ({"values": [...]}) or, with no path, the Hot-Warm-Cold sheet itself through Caleb's token."""
+    if path is None:
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+        from crm_client import TOKEN, SCOPES
+        svc = build("sheets", "v4", credentials=Credentials.from_authorized_user_file(str(TOKEN), SCOPES), cache_discovery=False)
+        values = svc.spreadsheets().values().get(spreadsheetId=HWC_SHEET_ID, range="Contacts!A1:L").execute().get("values", [])
+    else:
+        raw = json.loads(path.read_text())
+        values = raw["values"] if isinstance(raw, dict) else raw
     hdr = values[0]
     return [{h: (r[i] if i < len(r) else "") for i, h in enumerate(hdr)} for r in values[1:] if any(r)]
+
+
+def load_crm(path: Path) -> list[dict]:
+    raw = json.loads(path.read_text())
+    return raw["Contacts"] if isinstance(raw, dict) else raw
 
 
 def merge(hwc: list[dict], crm: list[dict]) -> dict:
@@ -105,12 +121,13 @@ def write_outputs(res: dict, out: Path, hwc_n: int) -> None:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--hwc", required=True)
-    ap.add_argument("--crm", required=True)
+    ap.add_argument("--hwc", help="Sheets dump JSON. Leave out to read the Hot-Warm-Cold sheet directly (read only).")
+    ap.add_argument("--crm", default=str(Path(__file__).resolve().parent.parent / "out" / "contacts.json"),
+                    help="out/contacts.json from run_enrichment.py --dump-contacts")
     ap.add_argument("--out", default=str(Path(__file__).resolve().parent.parent / "out"))
     a = ap.parse_args()
-    hwc = load_hwc(Path(a.hwc))
-    crm = json.loads(Path(a.crm).read_text())["Contacts"]
+    hwc = load_hwc(Path(a.hwc) if a.hwc else None)
+    crm = load_crm(Path(a.crm))
     res = merge(hwc, crm)
     write_outputs(res, Path(a.out), len(hwc))
     print(f"{len(hwc)} HWC rows: {len(res['matched'])} matched, {len(res['new_people'])} new, {len(res['conflicts'])} conflicts, "
