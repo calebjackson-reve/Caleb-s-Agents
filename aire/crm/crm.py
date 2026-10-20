@@ -366,9 +366,10 @@ def col_letter(i: int) -> str:
 
 
 class CRM:
-    def __init__(self, backend, audit_path: Path = AUDIT):
+    def __init__(self, backend, audit_path: Path = AUDIT, client: str = CLIENT):
         self.b = backend
         self.audit_path = audit_path
+        self.client = client  # the Client column in Connector Log: who asked for the write
         self._contacts: list[dict] | None = None
         # In a dry run the backend performs nothing, so rows minted during the run live here
         # and the derived views still see them. Empty in a real run.
@@ -449,13 +450,13 @@ class CRM:
     # ---- gates and audit
 
     def _audit(self, tool: str, person_id: str, detail: str) -> None:
-        line = {"at": now_iso(), "tool": tool, "client": CLIENT, "person_id": str(person_id), "detail": detail,
+        line = {"at": now_iso(), "tool": tool, "client": self.client, "person_id": str(person_id), "detail": detail,
                 "dry_run": bool(getattr(self.b, "dry_run", False))}
         if not getattr(self.b, "dry_run", False):
             self.audit_path.parent.mkdir(parents=True, exist_ok=True)
             with self.audit_path.open("a") as f:
                 f.write(json.dumps(line, ensure_ascii=False) + "\n")
-        self.b.append("Connector Log", [{"At (CT)": now_sheet(), "Tool": tool, "Client": CLIENT,
+        self.b.append("Connector Log", [{"At (CT)": now_sheet(), "Tool": tool, "Client": self.client,
                                          "person_id": str(person_id), "Detail": detail}])
 
     def update_contact(self, person_id: str, fields: dict, reason: str) -> dict:
@@ -1231,6 +1232,11 @@ def run_tests() -> int:
     check("update writes the cell", crm.by_id("1")["Stage"] == "contacted")
     check("update is audited to audit.jsonl", len(audit.read_text().splitlines()) == n0 + 1)
     check("update is audited to Connector Log", any(r["Tool"] == "update_contact" and r["person_id"] == "1" for r in crm.b.read("Connector Log")))
+    tagged = CRM(LocalBackend(db), audit_path=audit, client="pipeline")
+    tagged.update_contact("1", {"Stage": "nurture"}, "test")
+    check("--client tag lands in Connector Log", crm.b.read("Connector Log")[-1]["Client"] == "crm.py"
+          and tagged.b.read("Connector Log")[-1]["Client"] == "pipeline")
+    tagged.update_contact("1", {"Stage": "contacted"}, "test"); crm = CRM(LocalBackend(db), audit_path=audit)
     check("unchanged update writes nothing", crm.update_contact("1", {"Stage": "contacted"}, "test") == {})
 
     # due by band
@@ -1434,6 +1440,7 @@ def main(argv=None) -> int:
     ap.add_argument("--test", action="store_true")
     ap.add_argument("--as-of", help="YYYY-MM-DD, default today (Central)")
     ap.add_argument("--json", action="store_true", help="write commands print one JSON object: {ok, result} or {ok: false, error}")
+    ap.add_argument("--client", default=CLIENT, help="who is asking, logged in the Client column (Pipeline passes: pipeline)")
     sub = ap.add_subparsers(dest="cmd")
     sub.add_parser("auth")
     sub.add_parser("check")
@@ -1463,7 +1470,9 @@ def main(argv=None) -> int:
     if a.cmd is None:
         ap.print_help(); return 0
     backend = LocalBackend(Path(a.local), dry_run=a.dry_run) if a.local else SheetsBackend(dry_run=a.dry_run)
-    crm = CRM(backend)
+    if not re.fullmatch(r"[a-z][a-z0-9._-]{0,31}", a.client):
+        ap.error("--client must be a short lowercase tag, like pipeline")
+    crm = CRM(backend, client=a.client)
     as_of = date.fromisoformat(a.as_of) if a.as_of else today()
 
     if a.json and a.cmd in APP_WRITES:
