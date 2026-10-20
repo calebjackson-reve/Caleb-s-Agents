@@ -290,6 +290,17 @@
   gsap.registerPlugin(ScrollTrigger);
   if (lenis) { lenis.on('scroll', ScrollTrigger.update); gsap.ticker.lagSmoothing(0); }
 
+  /* ---------- selling strategy pyramid: hover or tap a layer or its note to pick it out ---------- */
+  document.querySelectorAll('.pyr').forEach(function (pyr) {
+    var parts = pyr.querySelectorAll('[data-i]');
+    function on(i) { pyr.classList.toggle('is-hover', i !== null); parts.forEach(function (el) { el.classList.toggle('is-on', el.dataset.i === i); }); }
+    parts.forEach(function (el) {
+      el.addEventListener('mouseenter', function () { on(el.dataset.i); });
+      el.addEventListener('click', function () { on(el.classList.contains('is-on') ? null : el.dataset.i); });
+    });
+    pyr.addEventListener('mouseleave', function () { on(null); });
+  });
+
   /* ---------- home hero: a still frame. The old pinned zoom and portrait rise distorted the photos (Caleb, October 20, 2026) ---------- */
 
   /* ---------- split panels: slow drift on the photo ---------- */
