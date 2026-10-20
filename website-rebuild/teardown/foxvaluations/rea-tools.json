@@ -1,0 +1,31 @@
+{
+ "evidence_id": "ev_55d67772591b0576bea6a7e9df93a0258d480c560935f3cc070fa5be5f0f3eeb",
+ "tool": "rea-agents 6.7.0 inspect-web-page",
+ "target": {
+  "target_id": "ADA6E3A3FF67B18097EC9E6105F1E67E",
+  "type": "page",
+  "title": "Property calculators: QLD duty, yield, CGT | Fox Valuations",
+  "url": "https://foxvaluations.com.au/tools/",
+  "origin": "https://foxvaluations.com.au",
+  "attached": null
+ },
+ "captured": {
+  "started_at": "2026-10-20T20:35:09.503Z",
+  "ended_at": "2026-10-20T20:35:12.609Z",
+  "observation_ms": 3000
+ },
+ "scripts": [
+  "https://foxvaluations.com.au/assets/main.js?v=121",
+  "https://foxvaluations.com.au/tools/"
+ ],
+ "resources": [
+  "https://foxvaluations.com.au/assets/fonts/mona-sans-v118.woff2",
+  "https://foxvaluations.com.au/assets/fonts/spline-sans-mono-v13-latin-regular.woff2",
+  "https://foxvaluations.com.au/assets/img/cybercert-gold-88.png",
+  "https://foxvaluations.com.au/assets/styles.min.css?v=121",
+  "https://foxvaluations.com.au/assets/fonts/spline-sans-mono-v13-latin-500.woff2",
+  "https://foxvaluations.com.au/assets/img/fox-mark-rust.png",
+  "https://foxvaluations.com.au/assets/main.js?v=121",
+  "https://foxvaluations.com.au/assets/img/fv-hub-tools-1800.webp"
+ ]
+}

@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!--HEAD-->
+<title>Home buying and selling calculators, Caleb Jackson, Keller Williams First Choice</title>
+<meta name="description" content="Four quick tools for Louisiana buyers, sellers and investors: which home value you need, a payment estimate, a seller net estimate and rental yield.">
+<style>
+/* Tools index and calculators. Layout pattern from the Fox Valuations teardown (teardown/foxvaluations.md):
+   a ledger of tools, each answering one question a client actually asks, each saying when to call instead. */
+.tool-index { list-style: none; margin: 4rem 0 0; padding: 0; border-top: 1px solid var(--hairline); }
+.tool-index a { display: grid; grid-template-columns: 16rem 1fr auto; gap: var(--gap); align-items: baseline; padding: 2.8rem 0; border-bottom: 1px solid var(--hairline); transition: color var(--dur-ui) var(--ease-house); }
+.tool-index a:hover .h3, .tool-index a:focus-visible .h3 { color: var(--ember); }
+.tool-index .h3 { font-family: var(--serif); font-size: var(--h3); line-height: 1.15; display: block; }
+.tool-index p { margin: 1rem 0 0; font-size: var(--body); line-height: 1.5; color: var(--fg-2); max-width: 60ch; }
+.tool { border-top: 1px solid var(--hairline); }
+.tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--gap) * 3); align-items: start; }
+.tool h2 { margin: 1.6rem 0 2rem; }
+.tool .result { border-top: 1px solid var(--hairline); padding-top: 2.4rem; }
+.tool .result .stat { color: var(--fg); }
+.tool .result dl { display: grid; grid-template-columns: 1fr auto; gap: 1.2rem 2rem; margin: 3rem 0 0; font-size: var(--body); }
+.tool .result dt { color: var(--fg-2); }
+.tool .result dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.tool .fine { margin-top: 2.4rem; font-size: var(--small); color: var(--fg-2); max-width: 56ch; }
+.tool .answer h3 { font-family: var(--serif); font-weight: 400; font-size: var(--h3); line-height: 1.15; margin: 0 0 1.6rem; }
+.tool .answer p { font-size: var(--body); line-height: 1.5; margin: 0 0 1.2rem; }
+.tool .answer .label { color: var(--fg-2); display: block; margin-top: 2rem; }
+@media (max-width: 900px) {
+  .tool-index a { grid-template-columns: 1fr; gap: 0.8rem; }
+  .tool-grid { grid-template-columns: 1fr; gap: 4rem; }
+}
+</style>
+</head>
+<body data-page="tools">
+<a class="skip" href="#main">Skip to content</a>
+<main id="main">
+
+<section class="page-hero" data-surface="dark">
+  <span class="label eyebrow">Tools</span>
+  <h1 class="display-l words">Run the numbers.<br><span class="italic-word">Then call me.</span></h1>
+  <p class="lead fade">Each tool answers one question clients ask me every week, and tells you when the answer needs a real conversation instead.</p>
+</section>
+
+<section class="section" data-surface="light" aria-label="All tools">
+  <div class="wrap">
+    <h2 class="label dim">Four tools</h2>
+    <ul class="tool-index">
+      <li><a href="#which-value"><span class="label dim">Start here</span><span><span class="h3">Which home value do you need?</span><p>Answer one question and see whether you need a market analysis or an appraisal, and who orders it.</p></span><span class="label dim">One question</span></a></li>
+      <li><a href="#payment"><span class="label dim">Buying</span><span><span class="h3">Monthly payment estimate</span><p>Principal and interest from your price, down payment and quoted rate, plus taxes, insurance and HOA if you know them.</p></span><span class="label dim">Four inputs</span></a></li>
+      <li><a href="#net"><span class="label dim">Selling</span><span><span class="h3">Seller net estimate</span><p>What could land in your account at closing, after your payoff and the costs you enter.</p></span><span class="label dim">Five inputs</span></a></li>
+      <li><a href="#yield"><span class="label dim">Investing</span><span><span class="h3">Rental yield</span><p>Gross and net yield from the price, the monthly rent and what the property costs you each year.</p></span><span class="label dim">Three inputs</span></a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- 1. Which value -->
+<section class="section tool" id="which-value" data-surface="light" aria-labelledby="t1">
+  <div class="wrap tool-grid">
+    <div>
+      <span class="label dim">Start here</span>
+      <h2 class="h2" id="t1">Which home value do you need?</h2>
+      <form class="form" data-tool="which" onsubmit="return false">
+        <label><span class="label dim">What is the number for?</span>
+          <select name="why">
+            <option value="list">I'm thinking about selling</option>
+            <option value="buy">I'm buying and my lender needs it</option>
+            <option value="refi">I'm refinancing</option>
+            <option value="legal">Estate, divorce or taxes</option>
+            <option value="curious">I'm just curious</option>
+          </select>
+        </label>
+      </form>
+    </div>
+    <div class="answer result" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 2. Payment -->
+<section class="section tool ui-blush" id="payment" data-surface="light" aria-labelledby="t2">
+  <div class="wrap tool-grid">
+    <div>
+      <span class="label dim">Buying</span>
+      <h2 class="h2" id="t2">Monthly payment estimate</h2>
+      <form class="form" data-tool="payment" onsubmit="return false">
+        <div class="row">
+          <label><span class="label dim">Price ($)</span><input name="price" inputmode="decimal" value="300000"></label>
+          <label><span class="label dim">Down payment (%)</span><input name="down" inputmode="decimal" value="10"></label>
+        </div>
+        <div class="row">
+          <label><span class="label dim">Your quoted rate (%)</span><input name="rate" inputmode="decimal" placeholder="Ask your lender"></label>
+          <label><span class="label dim">Loan term</span><select name="years"><option value="30">30 years</option><option value="20">20 years</option><option value="15">15 years</option></select></label>
+        </div>
+        <div class="row">
+          <label><span class="label dim">Property tax per year ($)</span><input name="tax" inputmode="decimal" placeholder="Optional"></label>
+          <label><span class="label dim">Insurance per year ($)</span><input name="ins" inputmode="decimal" placeholder="Optional"></label>
+        </div>
+        <label><span class="label dim">HOA per month ($)</span><input name="hoa" inputmode="decimal" placeholder="Optional"></label>
+      </form>
+    </div>
+    <div class="result" aria-live="polite">
+      <span class="label dim">Estimated monthly payment</span>
+      <div class="stat" data-out="total">Add your rate</div>
+      <dl>
+        <dt>Loan amount</dt><dd data-out="loan">-</dd>
+        <dt>Principal and interest</dt><dd data-out="pi">-</dd>
+        <dt>Taxes, insurance, HOA</dt><dd data-out="extras">-</dd>
+      </dl>
+      <p class="fine">An estimate from the numbers you enter, not a loan offer. Your rate, mortgage insurance and flood insurance come from your lender and your insurance agent. I can connect you with both.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Seller net -->
+<section class="section tool" id="net" data-surface="light" aria-labelledby="t3">
+  <div class="wrap tool-grid">
+    <div>
+      <span class="label dim">Selling</span>
+      <h2 class="h2" id="t3">Seller net estimate</h2>
+      <form class="form" data-tool="net" onsubmit="return false">
+        <div class="row">
+          <label><span class="label dim">Sale price ($)</span><input name="price" inputmode="decimal" value="300000"></label>
+          <label><span class="label dim">Mortgage payoff ($)</span><input name="payoff" inputmode="decimal" placeholder="0"></label>
+        </div>
+        <div class="row">
+          <label><span class="label dim">Commissions you agree to (%)</span><input name="comm" inputmode="decimal" placeholder="Your number"></label>
+          <label><span class="label dim">Other closing costs ($)</span><input name="other" inputmode="decimal" placeholder="Title, prorations, fees"></label>
+        </div>
+        <label><span class="label dim">Repairs or credits to the buyer ($)</span><input name="credits" inputmode="decimal" placeholder="0"></label>
+      </form>
+    </div>
+    <div class="result" aria-live="polite">
+      <span class="label dim">Estimated net at closing</span>
+      <div class="stat" data-out="net">-</div>
+      <dl>
+        <dt>Sale price</dt><dd data-out="price">-</dd>
+        <dt>Payoff</dt><dd data-out="payoff">-</dd>
+        <dt>Commissions</dt><dd data-out="comm">-</dd>
+        <dt>Other costs and credits</dt><dd data-out="costs">-</dd>
+      </dl>
+      <p class="fine">Commissions are negotiable and set by agreement, not by law or by any board. This uses only the numbers you type. For a real net sheet from the title company, text me the address.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Yield -->
+<section class="section tool ui-blush" id="yield" data-surface="light" aria-labelledby="t4">
+  <div class="wrap tool-grid">
+    <div>
+      <span class="label dim">Investing</span>
+      <h2 class="h2" id="t4">Rental yield</h2>
+      <form class="form" data-tool="yield" onsubmit="return false">
+        <label><span class="label dim">Purchase price or value ($)</span><input name="price" inputmode="decimal" value="200000"></label>
+        <div class="row">
+          <label><span class="label dim">Monthly rent ($)</span><input name="rent" inputmode="decimal" value="1600"></label>
+          <label><span class="label dim">Yearly costs ($)</span><input name="costs" inputmode="decimal" placeholder="Taxes, insurance, repairs, management"></label>
+        </div>
+      </form>
+    </div>
+    <div class="result" aria-live="polite">
+      <span class="label dim">Net yield</span>
+      <div class="stat" data-out="net">-</div>
+      <dl>
+        <dt>Gross yield</dt><dd data-out="gross">-</dd>
+        <dt>Rent per year</dt><dd data-out="rentYr">-</dd>
+        <dt>Left after costs</dt><dd data-out="left">-</dd>
+      </dl>
+      <p class="fine">Yield before your mortgage. Whether the rent holds up depends on what similar homes are actually renting for, and I can pull that for you.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section cta-band" data-surface="light">
+  <div class="wrap">
+    <h2 class="h2 words">Numbers look right?</h2>
+    <p class="fade">Text me the address and what you're trying to decide. You'll get a call back today.</p>
+    <div class="ctas fade">
+      <a class="pill" href="sms:+12257470303"><span class="t"><span>Text Caleb</span><span>(225) 747-0303</span></span><span class="arrow">&rarr;</span></a>
+      <a class="pill ghost" href="contact.html"><span class="t"><span>Or use the form</span><span>Contact</span></span></a>
+    </div>
+  </div>
+</section>
+
+</main>
+<!--SCRIPTS-->
+<script>
+(function () {
+  'use strict';
+  var usd = function (n) { return (n < 0 ? '-$' : '$') + Math.round(Math.abs(n)).toLocaleString('en-US'); };
+  var pct = function (n) { return (Math.round(n * 100) / 100).toFixed(2) + '%'; };
+  var num = function (f, k) { var v = parseFloat(String(f.elements[k].value).replace(/[$,%\s]/g, '')); return isFinite(v) ? v : 0; };
+  var has = function (f, k) { return String(f.elements[k].value).trim() !== ''; };
+  var out = function (f, k, v) { f.closest('.tool').querySelector('[data-out="' + k + '"]').textContent = v; };
+
+  var WHICH = {
+    list: ['A market analysis', 'I pull the recent sales near you by hand and walk you through a list price range. It is free and there is no obligation.', 'Who orders it: you, through me.'],
+    buy: ['An appraisal', 'Your lender orders it from a licensed appraiser after you are under contract. You usually pay for it at or before closing.', 'Who orders it: your lender.'],
+    refi: ['An appraisal', 'Your lender orders it as part of the refinance. A market analysis from me can tell you if the numbers are worth starting.', 'Who orders it: your lender.'],
+    legal: ['An independent appraisal', 'Courts, estates and tax filings usually need a licensed appraiser\'s signed report, not an agent\'s opinion. Ask your attorney or CPA what they need, and I can refer appraisers.', 'Who orders it: you or your attorney.'],
+    curious: ['A market analysis', 'Text me the address and I will send a range with the three sales it is based on. No forms, no funnel.', 'Who orders it: you, by text.']
+  };
+
+  var calc = {
+    which: function (f) {
+      var a = WHICH[f.elements.why.value];
+      f.closest('.tool').querySelector('.answer').innerHTML =
+        '<span class="label">You need</span><h3>' + a[0] + '</h3><p>' + a[1] + '</p><span class="label">' + a[2] + '</span>' +
+        '<p class="fine">General information, not legal or tax advice.</p>';
+    },
+    payment: function (f) {
+      var loan = num(f, 'price') * (1 - num(f, 'down') / 100);
+      var n = parseInt(f.elements.years.value, 10) * 12;
+      var r = num(f, 'rate') / 100 / 12;
+      var extras = num(f, 'tax') / 12 + num(f, 'ins') / 12 + num(f, 'hoa');
+      out(f, 'loan', usd(loan));
+      out(f, 'extras', usd(extras));
+      if (!has(f, 'rate')) { out(f, 'pi', '-'); out(f, 'total', 'Add your rate'); return; }
+      var pi = r > 0 ? loan * r / (1 - Math.pow(1 + r, -n)) : loan / n;
+      out(f, 'pi', usd(pi));
+      out(f, 'total', usd(pi + extras));
+    },
+    net: function (f) {
+      var price = num(f, 'price'), comm = price * num(f, 'comm') / 100, costs = num(f, 'other') + num(f, 'credits');
+      out(f, 'price', usd(price));
+      out(f, 'payoff', usd(-num(f, 'payoff')));
+      out(f, 'comm', usd(-comm));
+      out(f, 'costs', usd(-costs));
+      out(f, 'net', usd(price - num(f, 'payoff') - comm - costs));
+    },
+    yield: function (f) {
+      var price = num(f, 'price'), yr = num(f, 'rent') * 12, left = yr - num(f, 'costs');
+      out(f, 'rentYr', usd(yr));
+      out(f, 'left', usd(left));
+      out(f, 'gross', price > 0 ? pct(yr / price * 100) : '-');
+      out(f, 'net', price > 0 ? pct(left / price * 100) : '-');
+    }
+  };
+
+  document.querySelectorAll('form[data-tool]').forEach(function (f) {
+    var run = function () { calc[f.dataset.tool](f); };
+    f.addEventListener('input', run);
+    f.addEventListener('change', run);
+    run();
+  });
+})();
+</script>
+</body>
+</html>

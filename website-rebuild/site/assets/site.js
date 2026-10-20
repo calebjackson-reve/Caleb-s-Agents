@@ -23,7 +23,7 @@
   });
 
   /* ---------- shared header, menu, footer ---------- */
-  var NAV = [['search.html', 'Search'], ['communities.html', 'Communities'], ['sell.html', 'Sell'], ['about.html', 'About']];
+  var NAV = [['search.html', 'Search'], ['communities.html', 'Communities'], ['sell.html', 'Sell'], ['tools.html', 'Tools'], ['about.html', 'About']];
   function navHtml(cls) {
     return NAV.map(function (n) { return '<a href="' + n[0] + '"' + (page === n[0].replace('.html', '') ? ' aria-current="page"' : '') + '>' + n[1] + '</a>'; }).join('');
   }
