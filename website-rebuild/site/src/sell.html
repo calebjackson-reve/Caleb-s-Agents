@@ -114,6 +114,38 @@
   </div>
 </section>
 
+<!-- Listing book: a flip-through book of the Basil Lane launch (idea from the Framer 3D PDF Flipbook plugin, built with page-flip, MIT) -->
+<section class="section listing-book" data-surface="light" aria-label="The Basil Lane listing book">
+  <div class="wrap">
+    <div class="split">
+      <div>
+        <span class="label eyebrow dim">The listing book</span>
+        <h2 class="h2 words">Flip through a real launch.</h2>
+      </div>
+      <p class="col-copy dim measure fade">Every listing gets a book like this one: the photos buyers see first, in the order they walk the house. Drag a corner or use the arrows.</p>
+    </div>
+    <div class="fb-stage fade">
+      <div class="flipbook" id="flipbook">
+      <div class="fb-page fb-cover" data-density="hard"><div class="fb-cover-in"><span class="label">Basil Lane</span><p class="fb-title">St. Francisville</p><span class="label dim">Listed with Caleb Jackson<br>Keller Williams First Choice</span></div></div>
+      <div class="fb-page"><figure><img src="../media/listing-basil-ln/basil-porch.webp" alt="The porch, Basil Lane" loading="lazy"><figcaption class="label">The porch</figcaption></figure></div>
+      <div class="fb-page"><figure><img src="../media/listing-basil-ln/basil-livingroom.webp" alt="Living room, Basil Lane" loading="lazy"><figcaption class="label">Living room</figcaption></figure></div>
+      <div class="fb-page"><figure><img src="../media/listing-basil-ln/basil-kitchen.webp" alt="Kitchen, Basil Lane" loading="lazy"><figcaption class="label">Kitchen</figcaption></figure></div>
+      <div class="fb-page"><figure><img src="../media/listing-basil-ln/basil-master.webp" alt="Primary suite, Basil Lane" loading="lazy"><figcaption class="label">Primary suite</figcaption></figure></div>
+      <div class="fb-page"><figure><img src="../media/listing-basil-ln/basil-bath.webp" alt="Primary bath, Basil Lane" loading="lazy"><figcaption class="label">Primary bath</figcaption></figure></div>
+      <div class="fb-page"><figure><img src="../media/listing-basil-ln/basil-pool-night.webp" alt="Pool at night, Basil Lane" loading="lazy"><figcaption class="label">Pool at night</figcaption></figure></div>
+      <div class="fb-page"><figure><img src="../media/listing-basil-ln/basil-patio.webp" alt="Patio, Basil Lane" loading="lazy"><figcaption class="label">Patio</figcaption></figure></div>
+      <div class="fb-page"><figure><img src="../media/listing-basil-ln/basil-gazebo.webp" alt="The gazebo, Basil Lane" loading="lazy"><figcaption class="label">The gazebo</figcaption></figure></div>
+      <div class="fb-page fb-cover" data-density="hard"><div class="fb-cover-in"><p class="fb-title">Want a book like this for your home?</p><span class="label">Text Caleb (225) 747-0303</span><span class="label dim">Status: sold</span></div></div>
+      </div>
+    </div>
+    <div class="fb-controls">
+      <button class="circle" type="button" data-fb="prev" aria-label="Previous page">&larr;</button>
+      <span class="label dim" data-fb="count" aria-live="polite"></span>
+      <button class="circle" type="button" data-fb="next" aria-label="Next page">&rarr;</button>
+    </div>
+  </div>
+</section>
+
 <section class="section ui-blush" data-surface="light">
   <div class="wrap">
     <span class="label dim">Receipts over adjectives</span>
@@ -138,5 +170,21 @@
 
 </main>
 <!--SCRIPTS-->
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+<script>
+(function () {
+  'use strict';
+  var el = document.getElementById('flipbook');
+  if (!el || !window.St) return;
+  var book = new St.PageFlip(el, { width: 520, height: 680, size: 'stretch', minWidth: 260, maxWidth: 620, minHeight: 340, maxHeight: 810, showCover: true, maxShadowOpacity: 0.35, mobileScrollSupport: true, flippingTime: 900 });
+  book.loadFromHTML(el.querySelectorAll('.fb-page'));
+  var count = document.querySelector('[data-fb="count"]');
+  var total = book.getPageCount();
+  function update() { count.textContent = 'Page ' + (book.getCurrentPageIndex() + 1) + ' of ' + total; }
+  book.on('flip', update); update();
+  document.querySelector('[data-fb="prev"]').addEventListener('click', function () { book.flipPrev(); });
+  document.querySelector('[data-fb="next"]').addEventListener('click', function () { book.flipNext(); });
+})();
+</script>
 </body>
 </html>
