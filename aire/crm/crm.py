@@ -87,7 +87,7 @@ SCHEMA = {
     # Added by this tool when missing:
     "Tasks": ["task_id", "person_id", "display", "task", "due", "status", "source", "created_at", "done_at"],
     "Deals": ["deal_id", "person_id", "display", "address", "side", "stage", "price", "expected_close",
-              "next_step", "last_event", "last_event_at", "source", "updated_at"],
+              "next_step", "last_event", "last_event_at", "source", "updated_at", "commission"],
 }
 ADDED_TABS = ["Tasks", "Deals"]
 
@@ -218,6 +218,9 @@ class LocalBackend:
     def live_header(self, tab: str) -> list[str]:
         return list(self.data["header"]) if tab == "Contacts" else list(SCHEMA[tab])
 
+    def ensure_columns(self, tab: str) -> list[str]:
+        return []  # the local header is SCHEMA itself
+
     def ensure_tab(self, tab: str) -> bool:
         if tab in self.data:
             return False
@@ -292,6 +295,21 @@ class SheetsBackend:
             res = self._x(self.svc.spreadsheets().values().get(spreadsheetId=self.sheet_id, range=f"'{tab}'!1:1"))
             self._headers[tab] = (res.get("values") or [[]])[0]
         return list(self._headers[tab])
+
+    def ensure_columns(self, tab: str) -> list[str]:
+        """Columns added to SCHEMA after a tab was created go on the end of its live header. Existing columns never move."""
+        header = self.live_header(tab)
+        missing = [c for c in SCHEMA[tab] if c not in header]
+        if not missing:
+            return []
+        self.writes.append({"op": "add_columns", "tab": tab, "columns": missing})
+        if self.dry_run:
+            return missing
+        start = col_letter(len(header))
+        self._x(self.svc.spreadsheets().values().update(
+            spreadsheetId=self.sheet_id, range=f"'{tab}'!{start}1", valueInputOption="RAW", body={"values": [missing]}))
+        self._headers[tab] = header + missing
+        return missing
 
     def ensure_tab(self, tab: str) -> bool:
         if tab in self.tabs():
@@ -398,6 +416,11 @@ class CRM:
         added = [t for t in ADDED_TABS if self.b.ensure_tab(t)]
         for t in added:
             self._audit("create_tab", "", f"tab {t} added with header {SCHEMA[t]}")
+        for t in ADDED_TABS:
+            if t not in added:
+                cols = self.b.ensure_columns(t)
+                if cols:
+                    self._audit("add_columns", "", f"tab {t}: added {', '.join(cols)}")
         return added
 
     # ---- reads
@@ -630,6 +653,8 @@ class CRM:
             raise GateError("Deal stage must be one of: " + ", ".join(sorted(DEAL_STAGES)))
         if fields.get("price") and not re.fullmatch(r"\d{4,9}", fields["price"]):
             raise GateError("price is whole dollars, digits only")
+        if fields.get("commission") and not re.fullmatch(r"\d{1,7}(\.\d{2})?", fields["commission"]):
+            raise GateError("commission is dollars, digits only, like 12750 or 7198.50")
         if fields.get("expected_close"):
             try:
                 date.fromisoformat(fields["expected_close"])
@@ -651,7 +676,7 @@ class CRM:
             row = self.upsert_deal(address, fields.get("last_event", "Added by Caleb"), day or today().isoformat(),
                                    person_id=fields.get("person_id", ""), stage=fields.get("stage", ""), side=side,
                                    source="Caleb")
-            rest = {k: v for k, v in fields.items() if k in ("price", "expected_close", "next_step")}
+            rest = {k: v for k, v in fields.items() if k in ("price", "expected_close", "next_step", "commission")}
             if rest:
                 self.b.update_row("Deals", "deal_id", row["deal_id"], rest)
             return {**row, **rest, "created": True}
@@ -1446,9 +1471,10 @@ def run_tests() -> int:
     check("deal edit matches the street however it is written", r["stage"] == "closed" and r["price"] == "250000")
     check("deal edit is audited", c2.b.read("Connector Log")[-1]["Tool"] == "edit_deal")
     check("deal edit refuses a stale review", raises(lambda: c2.edit_deal("12 Oak Ln", {"stage": "active"}, expect_stage="under_contract")))
-    check("deal edit refuses a bad stage, price, date or person",
+    check("deal edit refuses a bad stage, price, commission, date or person",
           all(raises(lambda f=f: c2.edit_deal("12 Oak Ln", f)) for f in
-              [{"stage": "won"}, {"price": "$250k"}, {"expected_close": "Nov 29"}, {"person_id": "999"}]))
+              [{"stage": "won"}, {"price": "$250k"}, {"commission": "3%"}, {"expected_close": "Nov 29"}, {"person_id": "999"}]))
+    check("deal edit sets commission", c2.edit_deal("12 Oak Ln", {"commission": "7198.50"})["commission"] == "7198.50")
     check("deal edit links a person and copies the display", c2.edit_deal("12 Oak Ln", {"person_id": "7"})["display"] == c2.by_id("7")["display"])
     check("deal edit clears a close date with blank", c2.edit_deal("12 Oak Ln", {"expected_close": "2026-11-29"})["expected_close"] == "2026-11-29"
           and c2.edit_deal("12 Oak Ln", {"expected_close": ""})["expected_close"] == "")
@@ -1500,7 +1526,7 @@ def run_app_write(crm: "CRM", a, as_of: date):
         return {"person_id": a.person_id, "Do_Not_Contact": "YES", "changed": changed}
     if a.cmd == "deal":
         crm.ensure_tabs()
-        fields = {"stage": a.stage, "price": a.price, "next_step": a.next_step, "person_id": a.person,
+        fields = {"stage": a.stage, "price": a.price, "commission": a.commission, "next_step": a.next_step, "person_id": a.person,
                   "last_event": a.event, "expected_close": "" if a.clear_close else a.close}
         return crm.edit_deal(a.address, fields, expect_stage=a.expect, create=a.create, side=a.side or "",
                              day=as_of.isoformat())
@@ -1534,7 +1560,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("dnc", help="Do_Not_Contact to YES. One way: there is no command to set it back to NO")
     p.add_argument("person_id"); p.add_argument("--reason", required=True)
     p = sub.add_parser("deal", help="Caleb's correction to one deal, matched by street")
-    p.add_argument("address"); p.add_argument("--stage"); p.add_argument("--price"); p.add_argument("--close")
+    p.add_argument("address"); p.add_argument("--stage"); p.add_argument("--price"); p.add_argument("--commission"); p.add_argument("--close")
     p.add_argument("--clear-close", action="store_true"); p.add_argument("--next-step"); p.add_argument("--person")
     p.add_argument("--event"); p.add_argument("--expect", help="refuse if the deal's stage differs")
     p.add_argument("--create", action="store_true"); p.add_argument("--side", choices=["buyer", "seller"])
