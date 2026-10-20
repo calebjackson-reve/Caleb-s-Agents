@@ -108,6 +108,7 @@ def norm_band(v: str | None) -> str:
 NEVER_TOUCH_TYPES = {"vendor", "agent", "lender"}
 PARTNER_CADENCE_DAYS = 60  # agents, lenders, vendors: their own section in the feed, not the client touch list
 LIVE_DEAL_STAGES = {"lead", "consult", "active", "showing", "under_contract", "unknown"}
+DEAL_STAGES = LIVE_DEAL_STAGES | {"closed", "fell_through"}
 # Contact stages, the same list the Mac's ~/aire/crm/execution/crm_client.py enforces.
 STAGES = ["new lead", "contacted", "nurture", "showing scheduled", "under contract", "closed", "past client"]
 
@@ -617,6 +618,60 @@ class CRM:
             self._overlay["Deals"].append(row)
         self._audit("create_deal", person_id, f"{address}: {event}")
         return row
+
+    def edit_deal(self, address: str, fields: dict, expect_stage: str | None = None, create: bool = False,
+                  side: str = "", day: str | None = None) -> dict:
+        """Caleb's correction to one deal, matched by street. Only stage, price, expected_close, next_step,
+        person_id and last_event can change. create makes the row when no deal has this street yet."""
+        fields = {k: (v or "").strip() for k, v in fields.items() if v is not None}
+        if not fields:
+            raise GateError("nothing to change")
+        if "stage" in fields and fields["stage"] not in DEAL_STAGES:
+            raise GateError("Deal stage must be one of: " + ", ".join(sorted(DEAL_STAGES)))
+        if fields.get("price") and not re.fullmatch(r"\d{4,9}", fields["price"]):
+            raise GateError("price is whole dollars, digits only")
+        if fields.get("expected_close"):
+            try:
+                date.fromisoformat(fields["expected_close"])
+            except ValueError:
+                raise GateError("expected_close is YYYY-MM-DD, or blank to clear it")
+        if len(fields.get("next_step", "")) > 200 or len(fields.get("last_event", "")) > 300:
+            raise GateError("next_step is at most 200 characters, last_event 300")
+        if fields.get("person_id"):
+            c = self.by_id(fields["person_id"])
+            if not c:
+                raise GateError(f"no contact with person_id {fields['person_id']}; deals link by person_id only")
+            fields["display"] = c["display"]
+        hits = [d for d in self.deals() if street_key(d.get("address", "")) == street_key(address)]
+        if len(hits) > 1:
+            raise GateError(f"{len(hits)} deals share the street {street_key(address)}; fix the sheet first")
+        if not hits:
+            if not create:
+                raise GateError(f"no deal at {address}; pass --create to add one")
+            row = self.upsert_deal(address, fields.get("last_event", "Added by Caleb"), day or today().isoformat(),
+                                   person_id=fields.get("person_id", ""), stage=fields.get("stage", ""), side=side,
+                                   source="Caleb")
+            rest = {k: v for k, v in fields.items() if k in ("price", "expected_close", "next_step")}
+            if rest:
+                self.b.update_row("Deals", "deal_id", row["deal_id"], rest)
+            return {**row, **rest, "created": True}
+        d = hits[0]
+        before = (d.get("stage") or "unknown").strip()
+        if expect_stage is not None and before != expect_stage.strip():
+            raise GateError(f"Deal stage changed since you reviewed it (now {before}). Nothing written. Review again.")
+        changes = {k: v for k, v in fields.items() if (d.get(k) or "") != v}
+        if not changes:
+            raise GateError("the deal already says that")
+        if "last_event" in changes:
+            changes["last_event_at"] = day or today().isoformat()
+        changes["updated_at"] = now_iso()
+        self.b.update_row("Deals", "deal_id", d["deal_id"], changes)
+        if self._dry():
+            d.update(changes)
+        self._audit("edit_deal", changes.get("person_id") or d.get("person_id", ""),
+                    f"{d.get('address', address)}: " + ", ".join(f"{k}={v or 'blank'}" for k, v in changes.items()
+                                                               if k not in ("updated_at", "display")))
+        return {**d, **changes, "before_stage": before}
 
     def rescale_band(self) -> dict:
         """Rewrite every legacy band value to the five-step scale. Only cells whose value changes are written,
@@ -1386,6 +1441,19 @@ def run_tests() -> int:
     check("stage refuses the same stage", raises(lambda: c2.set_stage("7", "contacted")))
     check("stage refuses a stale review", raises(lambda: c2.set_stage("7", "closed", expect="nurture")) and c2.by_id("7")["Stage"] == "contacted")
     check("stage refuses an unknown person", raises(lambda: c2.set_stage("999", "closed")))
+    c2.ensure_tabs(); c2.upsert_deal("12 Oak Ln, Zachary, LA", "seeded", "2026-10-01", stage="under_contract")
+    r = c2.edit_deal("12 Oak Lane", {"stage": "closed", "price": "250000"}, expect_stage="under_contract")
+    check("deal edit matches the street however it is written", r["stage"] == "closed" and r["price"] == "250000")
+    check("deal edit is audited", c2.b.read("Connector Log")[-1]["Tool"] == "edit_deal")
+    check("deal edit refuses a stale review", raises(lambda: c2.edit_deal("12 Oak Ln", {"stage": "active"}, expect_stage="under_contract")))
+    check("deal edit refuses a bad stage, price, date or person",
+          all(raises(lambda f=f: c2.edit_deal("12 Oak Ln", f)) for f in
+              [{"stage": "won"}, {"price": "$250k"}, {"expected_close": "Nov 29"}, {"person_id": "999"}]))
+    check("deal edit links a person and copies the display", c2.edit_deal("12 Oak Ln", {"person_id": "7"})["display"] == c2.by_id("7")["display"])
+    check("deal edit clears a close date with blank", c2.edit_deal("12 Oak Ln", {"expected_close": "2026-11-29"})["expected_close"] == "2026-11-29"
+          and c2.edit_deal("12 Oak Ln", {"expected_close": ""})["expected_close"] == "")
+    check("deal edit needs --create for a new street", raises(lambda: c2.edit_deal("9 New St", {"stage": "under_contract"}))
+          and c2.edit_deal("9 New St", {"stage": "under_contract", "next_step": "inspection"}, create=True)["created"])
     lt = c2.by_id("6").get("Last_Touch", "")
     c2.note("6", "Prefers texts after 5")
     check("note is kept and Last_Touch does not move", c2.by_id("6").get("Last_Touch", "") == lt and any(n.get("Note") == "Prefers texts after 5" and n.get("By") == "Caleb" for n in c2.notes()))
@@ -1410,7 +1478,7 @@ def run_tests() -> int:
 # ---------------------------------------------------------------------- cli
 
 
-APP_WRITES = {"touch", "done", "task", "stage", "note", "dnc"}
+APP_WRITES = {"touch", "done", "task", "stage", "note", "dnc", "deal"}
 
 
 def run_app_write(crm: "CRM", a, as_of: date):
@@ -1430,6 +1498,12 @@ def run_app_write(crm: "CRM", a, as_of: date):
     if a.cmd == "dnc":
         changed = crm.set_do_not_contact(a.person_id, a.reason)
         return {"person_id": a.person_id, "Do_Not_Contact": "YES", "changed": changed}
+    if a.cmd == "deal":
+        crm.ensure_tabs()
+        fields = {"stage": a.stage, "price": a.price, "next_step": a.next_step, "person_id": a.person,
+                  "last_event": a.event, "expected_close": "" if a.clear_close else a.close}
+        return crm.edit_deal(a.address, fields, expect_stage=a.expect, create=a.create, side=a.side or "",
+                             day=as_of.isoformat())
     raise GateError(f"unknown write {a.cmd}")
 
 
@@ -1459,6 +1533,11 @@ def main(argv=None) -> int:
     p = sub.add_parser("note"); p.add_argument("person_id"); p.add_argument("text")
     p = sub.add_parser("dnc", help="Do_Not_Contact to YES. One way: there is no command to set it back to NO")
     p.add_argument("person_id"); p.add_argument("--reason", required=True)
+    p = sub.add_parser("deal", help="Caleb's correction to one deal, matched by street")
+    p.add_argument("address"); p.add_argument("--stage"); p.add_argument("--price"); p.add_argument("--close")
+    p.add_argument("--clear-close", action="store_true"); p.add_argument("--next-step"); p.add_argument("--person")
+    p.add_argument("--event"); p.add_argument("--expect", help="refuse if the deal's stage differs")
+    p.add_argument("--create", action="store_true"); p.add_argument("--side", choices=["buyer", "seller"])
     p = sub.add_parser("merge-hwc"); p.add_argument("--hwc", required=True); p.add_argument("--report", required=True)
     p.add_argument("--apply", action="store_true", help="only after Caleb has said yes to the report")
     a = ap.parse_args(argv)
@@ -1528,7 +1607,7 @@ def main(argv=None) -> int:
         print(crm.add_task(a.person_id, a.task, a.due))
     elif a.cmd == "done":
         print("done" if crm.done(a.task_id) else "no such open task")
-    elif a.cmd in ("stage", "note", "dnc"):
+    elif a.cmd in ("stage", "note", "dnc", "deal"):
         print(run_app_write(crm, a, as_of))
     elif a.cmd == "merge-hwc":
         hwc = json.loads(Path(a.hwc).read_text())
