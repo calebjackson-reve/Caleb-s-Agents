@@ -456,7 +456,7 @@ def run_tests() -> int:
     check(all("—" not in x and ";" not in x for v in t["pools"].values() for x in v), "no em dashes or semicolons")
     check(len(t["subjects"]) == 6 and "stop emailing" in t["optout"] and "price" in t["handoff"], "subjects and phrase lists")
 
-    contacts = load_contacts(HERE / "tests" / "fixtures" / "contacts.csv")
+    contacts = load_contacts(HERE / "tests" / "fixtures" / "fake-contacts.csv")
     as_of = date(2026, 10, 16)
     r = build_queue(contacts, t, as_of)
     names = {q["name"]: q for q in r["queue"]}
