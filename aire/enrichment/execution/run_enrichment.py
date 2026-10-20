@@ -72,7 +72,7 @@ def run(crm, as_of: date, out: Path, llm: bool = False, limit: int = 150, dry_ru
 
 def build_report(rows, strangers, as_of, msg, mail, soc, cost) -> str:
     labels = Counter(r["aire_label"] for r in rows)
-    changed = [r for r in rows if r["aire_label"] in ("hot", "warm") and r["band_before"] not in ("HOT", "WARM")]
+    changed = [r for r in rows if r["aire_label"] in ("hot", "warm") and r["band_before"] not in ("hot", "warm")]
     due = [r for r in rows if r["due"]]
     status = Counter(r["status"] for r in rows)
     hidden = [r for r in rows if r["hidden_lead"]]
@@ -143,7 +143,7 @@ def main():
         notes = [{"At": now_ct(), "person_id": r["person_id"], "display": r["display"],
                   "Note": f"AIRE label {r['aire_label']} (was band {r['band_before'] or 'blank'}), score {r['signal_score']}, {r['keywords'] or 'no keywords'}",
                   "By": "AIRE enrichment"}
-                 for r in rows if r["aire_label"] in ("hot", "warm") and r["band_before"] not in ("HOT", "WARM")]
+                 for r in rows if r["aire_label"] in ("hot", "warm") and r["band_before"] not in ("hot", "warm")]
         crm.add_notes(notes)
         print(f"WROTE enrichment columns for {n} people and {len(notes)} notes.")
 

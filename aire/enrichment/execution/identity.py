@@ -7,7 +7,7 @@ _NAME_JUNK = re.compile(r"[^a-z ]")
 
 
 def phone_key(raw: str | None) -> str:
-    """'(225) 405-4181' / '225.405.4181' / '+12254054181' -> '+12254054181'. Empty when not a 10/11 digit US number."""
+    """'(225) 555-0101' / '225.555.0101' / '+12255550101' -> '+12255550101'. Empty when not a 10/11 digit US number."""
     d = re.sub(r"\D", "", raw or "")
     if len(d) == 11 and d.startswith("1"):
         d = d[1:]
@@ -20,7 +20,7 @@ def email_key(raw: str | None) -> str:
 
 
 def name_key(first: str | None = "", last: str | None = "", display: str | None = "") -> str:
-    """'Paul & Cynthia Brown' -> 'paul brown'. First token plus last token, lowercase, letters only."""
+    """'Pat & Sam Example' -> 'pat example'. First token plus last token, lowercase, letters only."""
     s = display or f"{first or ''} {last or ''}"
     s = _NAME_JUNK.sub("", s.lower().replace("&", " ")).strip()
     parts = [t for t in s.split() if t != "and"]

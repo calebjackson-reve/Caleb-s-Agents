@@ -1,8 +1,8 @@
 import { promises as fs } from "fs";
 import path from "path";
 
-// Version one reads the JSON that sync.py writes. The CRM sections come from aire/crm/cache.json
-// (the AIRE CRM Google Sheet, pulled by crm.py). One database, no second copy.
+// Version one reads the JSON that sync.py writes. The CRM sections come from aire/crm/feed.json
+// (the AIRE CRM Google Sheet, written by crm.py feed). One database, no second copy.
 
 const DATA = path.resolve(process.cwd(), "..", "data");
 
@@ -23,7 +23,7 @@ export type Proposal = {
 };
 export type Event = { tool: string; at: string; level: "ok" | "error"; message: string };
 export type Showing = { status: string; property: string; when: string; listing_id: string | null; at: string; error?: string };
-export type Touch = { name: string; tier: string; phone: string; email: string; days: number | null; next_action: string; stage: string };
+export type Touch = { name: string; tier: string; phone: string; email: string; days: number | null; next_action: string; stage: string; person_id?: string };
 export type Task = { id: string; due: string; contact: string; task: string; status: string; source: string; created_at: string; done_at: string; overdue: boolean };
 export type Deal = { id: string; client: string; side: string; address: string; stage: string; price: string; commission_pct: string;
   expected_close: string; source: string; last_touch: string; next_step: string; contact: string; listing_id: string; updated_at: string };

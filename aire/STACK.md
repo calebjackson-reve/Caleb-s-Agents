@@ -23,13 +23,14 @@ Trade money for time. Pick the fastest reliable option. Every tool below is "cur
 | Need | Tool | Note |
 |---|---|---|
 | Inbox, calendar, docs | Google Workspace on calebjackson.org | Gmail AI Inbox arriving Oct 12 to 26 2026. Claude for Workspace sidebar in beta. |
-| CRM | KW Command via Chrome extension | No API in use. Browser automation only. |
+| CRM | The AIRE CRM Google Sheet (1w9izcliqmXlFR3_O3dnP2G5SGfCrua7mrCLCE7cdoDc), engine in aire/crm | One CRM, 3,626 contacts, created Oct 16 2026. Mac scripts, the Pipeline app and aire/crm all read and write it with the same gates. KW Command stays because the brokerage requires it; read only through the Mac companion. No second CRM, no renaming of sheets (Caleb, 2026-10-19). |
 | Website and IDX | Luxury Presence, calebjackson.org | Changes through LP support, one case per topic. See lp-integration/. |
 | Social scheduling and GBP analytics | Metricool | Drafts only, Caleb schedules. |
 | Speed to lead | aire/speed-to-lead directive on the Mac | DRY_RUN until Caleb flips it. |
 | Running AIRE on the Mac | Apple Terminal with Claude Code | Free, built in. Every Mac-side tool starts here. |
 | Quick briefs and plugins (news, X, read-outs on the go) | Grok | Caleb keeps it (2026-10-19). Reading and briefs only, never client data or outbound drafts. Anything it produces that touches AIRE gets saved here. |
 | Dashboards | aire/command-center on the Mac, reading the Google Sheets | Phone view later: a Claude Dashboard over the same sheet, never a second database. |
+| Daily view | The native Mac Pipeline app, reading aire/crm/feed.json | Caleb's one daily tool (2026-10-19). The command center web app was rejected as the front end; improve Pipeline, never build a parallel dashboard. |
 | Short explainer video, no AI people | Claude Motion beta | watch. Candidate: monthly market update. |
 | Generated video for ads | Kling 4.0 via Higgsfield | Disclose as AI-generated. Never for listing photos. |
 | Community | Skool, AI for Agents group | See SKOOL-AI-FOR-AGENTS/ |

@@ -2,12 +2,12 @@
 
 Temperature (Caleb's scale, 2026-10-20), one per person:
   hot       Live deal (stage under contract or active, or 2+ deal words in 90 days), or real estate intent in
-            their own words in the last 30 days, or band HOT with a text in the last 90 days (or band HOT when no
+            their own words in the last 30 days, or band hot with a text in the last 90 days (or band hot when no
             message signals are loaded at all, since Caleb's band is then the best evidence).
-  warm      Intent in the last 90 days, or band WARM with a text in the last 180 days (same no-signal rule).
+  warm      Intent in the last 90 days, or band warm with a text in the last 180 days (same no-signal rule).
   lukewarm  Engages without intent: 3+ inbound in 90 days, 3+ social actions, a referral mention, a past client,
             or any contact in the last 180 days.
-  cold      Known person, something in the last year, or band NURTURE, but quiet for 6 months or more.
+  cold      Known person, something in the last year, or band cold, but quiet for 6 months or more.
   ice-cold  Nothing in or out for a year, or a phone number with no name and no history.
 
 status (separate from temperature, so nobody warm gets contacted by mistake):
@@ -15,7 +15,7 @@ status (separate from temperature, so nobody warm gets contacted by mistake):
 
 due: they are owed a touch now. True when they texted last and 2+ days passed (owes_reply), or their last
      contact is older than the cadence for their temperature: hot 7 days, warm 14, lukewarm 30, cold 90, ice-cold 365.
-hidden_lead: their own words show intent but the CRM band was not HOT or WARM.
+hidden_lead: their own words show intent but the CRM band was not hot or warm.
 """
 from __future__ import annotations
 from datetime import date, datetime
@@ -24,6 +24,12 @@ INTENT_KW = {"sell", "buy", "move", "rent", "invest"}
 DEAL_KW = {"deal"}
 VENDOR_TYPES = {"vendor", "agent", "lender", "recruit"}
 CADENCE = {"hot": 7, "warm": 14, "lukewarm": 30, "cold": 90, "ice-cold": 365}
+LEGACY_BAND = {"HOT": "hot", "WARM": "warm", "NURTURE": "cold", "DORMANT": "ice-cold", "COLD": "cold", "CONTACT": "ice-cold"}
+
+
+def norm_band(v: str | None) -> str:
+    v = (v or "").strip()
+    return v if v in CADENCE else LEGACY_BAND.get(v.upper(), "")
 
 
 def days_since(iso: str, as_of: date) -> int | None:
@@ -54,7 +60,7 @@ def score_person(p: dict, msg: dict | None, mail: dict | None, soc: dict | None,
     deal = sum(kws.get(k, 0) for k in DEAL_KW)
     referral = kws.get("referral", 0)
     life = kws.get("life", 0)
-    band = (p.get("band") or "").upper()
+    band = norm_band(p.get("band"))
     stage = (p.get("Stage") or "").lower()
     typ = (p.get("Type") or "").lower()
     dnc = (p.get("Do_Not_Contact") or "").upper() == "YES"
@@ -64,7 +70,7 @@ def score_person(p: dict, msg: dict | None, mail: dict | None, soc: dict | None,
     score += min(in_30, 10) * 6 + min(in_90, 20) * 2 + min(in_365, 40)
     score += min(intent, 5) * 12 + min(deal, 5) * 8 + referral * 10 + life * 4
     score += min(social, 30) * 2
-    score += {"HOT": 25, "WARM": 12, "NURTURE": 4}.get(band, 0)
+    score += {"hot": 25, "warm": 12, "lukewarm": 8, "cold": 4}.get(band, 0)
     if li_age is not None:
         score += max(0, 30 - li_age) if li_age <= 30 else 0
     if (p.get("homestead") or "") == "True" and p.get("fair_market_value"):
@@ -78,13 +84,13 @@ def score_person(p: dict, msg: dict | None, mail: dict | None, soc: dict | None,
     status = "do-not-contact" if dnc else "vendor-agent" if typ in VENDOR_TYPES else "ok"
     # With no message history loaded, Caleb's own band is the best evidence we have and it drives the label.
     if "under contract" in stage or "active" in stage or (deal >= 2 and li_age is not None and li_age <= 90) \
-            or (recent_intent and li_age <= 30) or (band == "HOT" and (no_signals or (li_age is not None and li_age <= 90))):
+            or (recent_intent and li_age <= 30) or (band == "hot" and (no_signals or (li_age is not None and li_age <= 90))):
         label = "hot"
-    elif recent_intent or (band == "WARM" and (no_signals or (li_age is not None and li_age <= 180))):
+    elif recent_intent or (band == "warm" and (no_signals or (li_age is not None and li_age <= 180))):
         label = "warm"
     elif in_90 >= 3 or social_n >= 3 or referral > 0 or "past client" in stage or (any_age is not None and any_age <= 180):
         label = "lukewarm"
-    elif in_365 > 0 or out_90 > 0 or band in ("HOT", "WARM", "NURTURE") or (any_age is not None and any_age <= 365):
+    elif in_365 > 0 or out_90 > 0 or band in ("hot", "warm", "lukewarm", "cold") or (any_age is not None and any_age <= 365):
         label = "cold"
     else:
         label = "ice-cold"
@@ -94,7 +100,7 @@ def score_person(p: dict, msg: dict | None, mail: dict | None, soc: dict | None,
         cadence = CADENCE[label]
         due = owes or any_age is None and label in ("hot", "warm") or (any_age is not None and any_age >= cadence)
 
-    hidden = recent_intent and band not in ("HOT", "WARM") and "lead" not in stage and label in ("hot", "warm")
+    hidden = recent_intent and band not in ("hot", "warm") and "lead" not in stage and label in ("hot", "warm")
     return {
         "person_id": p["person_id"], "display": p.get("display", ""), "signal_score": score, "aire_label": label,
         "status": status, "due": "YES" if due else "",

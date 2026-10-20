@@ -18,7 +18,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from identity import Index, phone_key, email_key  # noqa: E402
 
-TIER_TO_BAND = {"HOT": "HOT", "WARM": "WARM", "COLD": "NURTURE", "CONTACT": "DORMANT"}
+TIER_TO_BAND = {"HOT": "hot", "WARM": "warm", "COLD": "cold", "CONTACT": "ice-cold"}
+LEGACY_BAND = {"HOT": "hot", "WARM": "warm", "NURTURE": "cold", "DORMANT": "ice-cold"}
 
 
 HWC_SHEET_ID = "11t6vex49xdA7RmskELDxt2O044vo1EJkPqL3yCgglHE"  # "Hot-Warm-Cold Contacts 2026-10-19", read only here
@@ -71,7 +72,8 @@ def merge(hwc: list[dict], crm: list[dict]) -> dict:
         if r.get("Notes"):
             adds["note"] = r["Notes"][:300]
         want = TIER_TO_BAND.get((r.get("Tier") or "").upper(), "")
-        have = (p.get("band") or "").upper()
+        have = (p.get("band") or "").strip()
+        have = have if have in TIER_TO_BAND.values() else LEGACY_BAND.get(have.upper(), "")
         if want and have and want != have:
             conflicts.append({"person_id": p["person_id"], "display": p.get("display", ""), "hwc_tier": r.get("Tier", ""),
                               "crm_band": have, "matched_by": how, "why": r.get("Why this tier", "")[:120]})

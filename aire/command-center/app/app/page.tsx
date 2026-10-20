@@ -47,7 +47,7 @@ export default async function Page() {
 
       <section>
         <h2>Deals <span className="count">{deals.length} live</span></h2>
-        {!store.crm_pulled_at && <div className="empty">No CRM cache yet. On the Mac: <code>python3 aire/crm/crm.py pull</code>{store.crm_error ? ` (${store.crm_error})` : ""}</div>}
+        {!store.crm_pulled_at && <div className="empty">No CRM feed yet. On the Mac: <code>python3 aire/crm/crm.py feed</code>{store.crm_error ? ` (${store.crm_error})` : ""}</div>}
         {deals.map((d) => {
           const n = closeIn(d.expected_close);
           return (
@@ -75,7 +75,7 @@ export default async function Page() {
               {t.phone && <a className="call" href={`tel:${t.phone.replace(/\D/g, "")}`}>Call {t.phone}</a>}
             </div>
             <div className="actions">
-              <ActionButton id={t.name} on={false} onLabel="Touched" offLabel="Log a touch" onAction="touched" offAction="untouched" />
+              <ActionButton id={t.name} personId={t.person_id} on={false} onLabel="Touched" offLabel="Log a touch" onAction="touched" offAction="untouched" />
             </div>
           </div>
         ))}

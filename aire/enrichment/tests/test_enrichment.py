@@ -81,7 +81,7 @@ out = tmp / "out"; out.mkdir()
 
 check("phone_key formats", phone_key("(225) 555-0102") == "+12255550102" and phone_key("1-225-555-0102") == "+12255550102" and phone_key("555") == "")
 check("email_key lowercases", email_key(" Jordan@Example.com ") == "jordan@example.com" and email_key("nope") == "")
-check("name_key handles couples", name_key(display="Paul & Cynthia Brown") == "paul brown")
+check("name_key handles couples", name_key(display="Pat & Sam Example") == "pat example")
 check("attributedBody decode", decode_body(None, b"\x00NSString\x01\x94\x84\x01+\x05hello") == "hello")
 
 msgs = read_messages(db, 365)
@@ -138,7 +138,7 @@ hwc.write_text(json.dumps({"values": [
 m = merge(load_hwc(hwc), crm.contacts())
 check("merge matches by phone, email and name", m["how"] == {"phone": 1, "email": 1, "name": 1, "none": 1})
 check("merge finds new person", len(m["new_people"]) == 1 and m["new_people"][0]["Name"] == "New Person")
-check("merge conflicts HOT vs NURTURE and COLD vs DORMANT", {c["person_id"] for c in m["conflicts"]} == {"1", "3"})
+check("merge conflicts HOT vs cold and COLD vs ice-cold", {c["person_id"] for c in m["conflicts"]} == {"1", "3"})
 check("merge proposes email add", any(u.get("email") == "taylor@example.com" for u in m["updates"]))
 check("merge recovers handles", {(h["platform"], h["handle"]) for h in m["handles"]} == {("instagram", "taylor.s"), ("facebook", "jordan.f")})
 check("merge writes nothing", LocalCRM(crm_path).contacts()[0].get("email", "") == "")

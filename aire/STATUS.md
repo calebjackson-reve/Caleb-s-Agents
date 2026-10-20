@@ -31,7 +31,42 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 
 **Not done, needs the Mac**
 - The classifier would not let the cloud session write client deal rows to the sheet, so Pipeline rows and tasks come from `crm.py import-hwc` on the Mac. First run steps in `aire/crm/README.md`: put the OAuth client at ~/.aire/credentials.json, `crm.py auth`, `import-hwc`, `ingest --hours 72`, `pull`, then open the command center.
-- Pipeline rows for Lockhart, Pecan Tree, Turnberry and Cruden Bay: Caleb adds them on the Pipeline tab (prices and close dates are his to confirm).
+- Pipeline rows for the four live deals: Caleb adds them on the Pipeline tab (prices and close dates are his to confirm).
+## 2026-10-19, late night: Hot-Warm-Cold merge applied to the AIRE CRM
+
+**Confirmed by Caleb**
+- "Yes, apply the merge for matched and new rows."
+
+**Done**
+- Applied through the Google Sheets connector from the cloud (no token there): 391 matched contacts got Last_Touch and Next_Action where blank (band untouched), 25 new contacts (person_id 7229 to 7253), 416 Notes rows, 855 Connector Log rows. Every Contacts row read back and compared: 0 mismatches. Audit copy in `aire/crm/reports/2026-10-19-hwc-merge-applied.audit.jsonl`.
+- The sheet now: 3,651 contacts, Last_Touch filled on 417 rows (was 4), Next_Action on 417 (was 1). Feed as of tonight: 1,529 touches due (HOT 112, WARM 47), 101 Next_Action tasks waiting for the Tasks tab, 0 deals.
+- `crm.py` reads the token from the `AIRE_GOOGLE_TOKEN_JSON` environment secret when there is no token file, so the cloud can run `ingest` once Caleb adds it.
+
+**Needs Caleb**
+- Settle the 42 conflicts in the sheet (band disagreements, 3 Do_Not_Contact or duplicate matches).
+- Add the Google token to the cloud environment's secrets as `AIRE_GOOGLE_TOKEN_JSON` (environment settings, not chat) so the daily ingest can run in the cloud.
+- Do not run the 2026-10-19 merge again.
+
+## 2026-10-19, night: CRM engine pointed at the real AIRE CRM
+
+**Confirmed by Caleb**
+- PR 59 is held as a draft, not merged: it built a second CRM. The one CRM is the AIRE CRM sheet (1w9iz..., 3,626 contacts). The Hot-Warm-Cold sheet is back to its original name and no sheet is renamed again.
+- The command center web app is rejected as the front end. The native Mac Pipeline app is the one daily tool.
+
+**Done**
+- `aire/crm/crm.py` rewritten for the real sheet: reads the live header, keeps every existing column, adds only Tasks and Deals tabs (when missing), enforces the Mac's write gates (person_id only, Do_Not_Contact one way, never Command_ID, every write audited to audit.jsonl and the Connector Log), Gmail read only, `--dry-run` on everything. 59 offline checks pass.
+- `feed.json` spec in `aire/crm/FEED.md` for Codex to wire into the Pipeline app. No web UI.
+- Dry run on the real sheet's header and rows: `aire/crm/reports/2026-10-19-dry-run.md`. Touches due 1,641 (all "never logged", Last_Touch is filled on 4 rows), 0 tasks, 0 deals as the sheet stands. Ingest of the real last 7 days of mail would create 1 lead, 1 showing deal, 5 signing deals, 2 sign tasks. Nothing written.
+- Hot-Warm-Cold merge dry run: `aire/crm/reports/2026-10-19-hwc-merge-dry-run.md`. 458 rows: 391 matched, 25 new, 42 conflicts. Nothing written.
+
+**Inference**
+- NURTURE 90 days and DORMANT 365 days cadence, from the band names.
+- COLD and CONTACT tiers map to no band; friend/family/lead become Type client.
+
+**Needs Caleb**
+- Read the merge report. Yes or no on applying matched and new rows. Settle the 42 conflicts in the sheet.
+- Confirm or change the cadence numbers and the tier-to-band mapping.
+- On the Mac: `crm.py auth`, `crm.py check`, `crm.py --dry-run ingest --hours 72`, then the real run. Codex wires feed.json into Pipeline.
 
 ## 2026-10-19, late: morning run live
 
@@ -49,7 +84,7 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - Run "morning companion" on the Mac for Command and MLS.
 
 ## Morning run log
-- 2026-10-20 (run Oct 19 evening): 1 new lead, 0 pipeline rows, 5 contracts (0 waiting on Caleb, 1 item owed: inspection report to Aaron Goolsby), 1 conflict (Business Planning Clinic vs lead gen and sales block 2), 0 appointments added. Nothing failed.
+- 2026-10-20 (run Oct 19 evening): 1 new lead, 0 pipeline rows, 5 contracts (0 waiting on Caleb, 1 item owed: inspection report to the other agent), 1 conflict (Business Planning Clinic vs lead gen and sales block 2), 0 appointments added. Nothing failed.
 
 ## 2026-10-19, night: supervised week, sales block, contacts mapped, proposal marketing text
 
@@ -141,7 +176,7 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - Removed the cloud-built runner (speed_to_lead.py, install.sh, test_speed_to_lead.py) from the repo. Also removed a stray __pycache__ that had been committed.
 - Templates and directive now match the Mac's rules: "within the hour", 9 pm quiet hours, CRM check, texts off, no timing promise tighter than an hour.
 - Approvals page row replaced: on October 22 read the Mac's dry-run.log and say "live email" there.
-- The sign-on template and the Boubkeur draft stay.
+- The sign-on template and the new-lead draft stay.
 
 **Unmerged work found**
 - Branch `claude/gallant-lamport-c5mtmq` (October 15 and 16): responder.py with Gmail API, a follow-up cadence tool, a listing proposal tool. Not merged. Caleb should say whether that branch is the Mac's source or a third copy before anything merges.
@@ -155,13 +190,13 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 **Done**
 - Caleb said "merge it and go live". Merged PR 31.
 - Built the speed to lead runner: `aire/speed-to-lead/speed_to_lead.py` (IMAP in, SMTP out, Messages by AppleScript, quiet hours, dedupe, log), `install.sh` (dry run, then type LIVE to install the launchd job), `test_speed_to_lead.py` (passes). Dry run is the default. Live only when the installer sets LIVE=1 on Caleb's Mac.
-- New lead type found in the inbox: Google Sign On (Boubkeur Barakate, Oct 18 8:34 am Central, unread, no phone, no reply sent). Added a sign-in template with no call promise and no text. Drafted the reply in Gmail for Caleb to send, since the lead is over a day old and the template is new.
+- New lead type found in the inbox: Google Sign On (a website lead, Oct 18 8:34 am Central, unread, no phone, no reply sent). Added a sign-in template with no call promise and no text. Drafted the reply in Gmail for Caleb to send, since the lead is over a day old and the template is new.
 - GBRAR inventory and months supply series added to `aire/market-data/gbrar-2026-09.json` for the Motion piece.
 - Sample enrichment CSV no longer uses real lead names.
 
 **Needs Caleb**
 - Run the install command on the Mac (approvals page). Type LIVE at the prompt.
-- Send the Boubkeur draft.
+- Send the new-lead draft.
 
 ## 2026-10-19, late: approvals page and pipeline sheet
 

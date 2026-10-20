@@ -30,7 +30,7 @@ STATE = DATA / "state.json"
 STL = AIRE / "speed-to-lead"
 FU = AIRE / "follow-up"
 PROP = AIRE / "proposal"
-CRM_CACHE = AIRE / "crm" / "cache.json"
+CRM_FEED = AIRE / "crm" / "feed.json"
 
 
 def read_json(p: Path, default):
@@ -180,19 +180,25 @@ def showings() -> list[dict]:
 
 
 def crm_section() -> dict:
-    """The AIRE CRM sheet, through the cache that `crm.py pull` writes. Touches due, open tasks, live deals."""
+    """The AIRE CRM sheet through feed.json, which `python3 ../crm/crm.py feed` writes (see ../crm/FEED.md).
+    Shapes mapped once here so the page never knows the engine's field names."""
     empty = {"crm_pulled_at": None, "touches_due": [], "tasks": [], "pipeline": []}
-    if not CRM_CACHE.exists():
+    f = read_json(CRM_FEED, None)
+    if not f:
         return empty
-    try:
-        import sys
-        sys.path.insert(0, str(AIRE / "crm"))
-        import crm as crmmod
-        c = crmmod.CRM(crmmod.LocalBackend(CRM_CACHE))
-        pulled = read_json(CRM_CACHE, {}).get("pulled_at")
-        return {"crm_pulled_at": pulled, "touches_due": c.due()[:40], "tasks": c.open_tasks(), "pipeline": c.live_deals()}
-    except Exception as e:
-        return {**empty, "crm_error": str(e)}
+    touches = [{"name": t.get("display", ""), "tier": t.get("band", ""), "phone": t.get("phone", ""), "email": t.get("email", ""),
+                "days": t.get("days_quiet"), "next_action": t.get("next_action", ""), "stage": t.get("stage", ""),
+                "person_id": t.get("person_id", "")} for t in f.get("touches_due", [])[:40]]
+    tasks = [{"id": t.get("task_id") or f"na-{t.get('person_id', '')}", "due": t.get("due", ""), "contact": t.get("display", ""),
+              "task": t.get("task", ""), "status": t.get("status", "open"), "source": t.get("source", ""),
+              "created_at": t.get("created_at", ""), "done_at": t.get("done_at", ""), "overdue": bool(t.get("overdue")),
+              "person_id": t.get("person_id", "")} for t in f.get("tasks", [])]
+    deals = [{"id": d.get("deal_id", ""), "client": d.get("display", "") or d.get("address", ""), "side": d.get("side", ""),
+              "address": d.get("address", ""), "stage": d.get("stage", ""), "price": d.get("price", ""), "commission_pct": "",
+              "expected_close": d.get("expected_close", ""), "source": d.get("source", ""), "last_touch": d.get("last_event_at", "")[:10],
+              "next_step": d.get("next_step", "") or d.get("last_event", ""), "contact": d.get("display", ""),
+              "listing_id": d.get("deal_id", ""), "updated_at": d.get("updated_at", "")} for d in f.get("deals", [])]
+    return {"crm_pulled_at": f.get("generated_at"), "touches_due": touches, "tasks": tasks, "pipeline": deals}
 
 
 # -------------------------------------------------------------------- store

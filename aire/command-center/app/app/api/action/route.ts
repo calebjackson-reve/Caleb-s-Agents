@@ -8,7 +8,7 @@ import { readState, writeState } from "@/lib/store";
 // "approve" runs the existing follow-up tool, which keeps its own rules (templates only,
 // quiet hours, opt-out flags). It runs in dry run unless APPROVE_LIVE=true is set on the server.
 
-type Body = { action: "called" | "uncalled" | "drop" | "undrop" | "signed" | "unsigned" | "approve" | "task-done" | "task-undone" | "touched" | "untouched"; id?: string; queue_file?: string; dropped?: string[]; note?: string };
+type Body = { person_id?: string; action: "called" | "uncalled" | "drop" | "undrop" | "signed" | "unsigned" | "approve" | "task-done" | "task-undone" | "touched" | "untouched"; id?: string; queue_file?: string; dropped?: string[]; note?: string };
 
 function runCrm(args: string[]): Promise<string> {
   const dir = path.resolve(process.cwd(), "..", "..", "crm");
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     case "task-done": {
       // Source of truth is the CRM sheet. crm.py done writes it; state remembers the click so the page updates at once.
       const tid = (body.id || "").replace(/[^a-z0-9]/g, "");
-      const out = await runCrm(["done", tid]);
+      const out = tid.startsWith("na") ? "next_action task, mark it in the sheet" : await runCrm(["done", tid]);
       const fresh = await readState(); // re-read: another click may have landed while crm.py ran
       fresh.done = fresh.done || {}; fresh.done[tid] = now;
       await writeState(fresh);
@@ -48,7 +48,9 @@ export async function POST(req: Request) {
     case "touched": {
       // Logs a touch on the CRM (Activity row + last touch) for the contact named by id.
       const who = (body.id || "").replace(/[^A-Za-z0-9 .'&-]/g, "").slice(0, 80);
-      const out = await runCrm(["log", who, body.note || "touched from the command center", "--type", "call"]);
+      // crm.py touch takes a person_id. The page sends "person_id|display"; fall back to a name search is not allowed by the engine.
+      const pid = (body.person_id || "").replace(/[^0-9]/g, "");
+      const out = pid ? await runCrm(["touch", pid, body.note || "touched from the command center"]) : "no person_id, nothing written";
       const fresh = await readState();
       fresh.touched = fresh.touched || {}; fresh.touched[who.toLowerCase()] = now;
       await writeState(fresh);
