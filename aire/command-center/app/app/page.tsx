@@ -22,6 +22,10 @@ export default async function Page() {
   const uncalled = store.leads.filter((l) => !state.called[l.id]);
   const called = store.leads.filter((l) => state.called[l.id]);
   const errors = store.overnight.filter((e) => e.level === "error");
+  const deals = store.pipeline || [];
+  const touches = (store.touches_due || []).filter((t) => !(state.touched || {})[t.name.toLowerCase()]);
+  const tasks = (store.tasks || []).filter((t) => !(state.done || {})[t.id]);
+  const closeIn = (d: string) => (d ? Math.round((new Date(d).getTime() - Date.now()) / 86400000) : null);
   const byListing = new Map<string, typeof store.showings>();
   for (const s of store.showings) {
     const k = s.property || "unknown";
@@ -40,6 +44,59 @@ export default async function Page() {
           {errors.length > 0 && <> · <span className="pill bad">{errors.length} error{errors.length > 1 ? "s" : ""} overnight</span></>}
         </div>
       </header>
+
+      <section>
+        <h2>Deals <span className="count">{deals.length} live</span></h2>
+        {!store.crm_pulled_at && <div className="empty">No CRM feed yet. On the Mac: <code>python3 aire/crm/crm.py feed</code>{store.crm_error ? ` (${store.crm_error})` : ""}</div>}
+        {deals.map((d) => {
+          const n = closeIn(d.expected_close);
+          return (
+            <div className="row" key={d.id}>
+              <div className="main">
+                <div className="name">{d.client} <span className="pill warn">{d.stage.replace("_", " ")}</span>
+                  {n !== null && n <= 14 && <> <span className={`pill ${n < 0 ? "bad" : "ok"}`}>{n < 0 ? `close date passed ${-n} d ago` : `closes in ${n} d`}</span></>}</div>
+                <div className="sub">{d.side} · {d.address}{d.price ? ` · $${Number(d.price).toLocaleString()}` : ""}{d.expected_close ? ` · close ${d.expected_close}` : " · no close date"}</div>
+                {d.next_step && <div className="sub">Next: {d.next_step}</div>}
+              </div>
+            </div>
+          );
+        })}
+      </section>
+
+      <section>
+        <h2>Touches due <span className="count">{touches.length}</span></h2>
+        {store.crm_pulled_at && touches.length === 0 && <div className="empty">Everyone on the hot and warm list has been touched inside their cadence.</div>}
+        {touches.slice(0, 25).map((t) => (
+          <div className="row" key={t.name}>
+            <div className="main">
+              <div className="name">{t.name} <span className={`pill ${t.tier === "HOT" ? "bad" : t.tier === "WARM" ? "warn" : "ok"}`}>{t.tier}</span>
+                {" "}<span className="sub">{t.days === null ? "never logged" : `${t.days} d quiet`}</span></div>
+              {t.next_action && <div className="sub">{t.next_action}</div>}
+              {t.phone && <a className="call" href={`tel:${t.phone.replace(/\D/g, "")}`}>Call {t.phone}</a>}
+            </div>
+            <div className="actions">
+              <ActionButton id={t.name} personId={t.person_id} on={false} onLabel="Touched" offLabel="Log a touch" onAction="touched" offAction="untouched" />
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <section>
+        <h2>Tasks <span className="count">{tasks.length} open · {tasks.filter((t) => t.overdue).length} overdue</span></h2>
+        {store.crm_pulled_at && tasks.length === 0 && <div className="empty">No open tasks.</div>}
+        {tasks.slice(0, 30).map((t) => (
+          <div className="row" key={t.id}>
+            <div className="main">
+              <div className="name">{t.contact ? `${t.contact}: ` : ""}{t.task}
+                {t.overdue && <> <span className="pill bad">overdue</span></>}</div>
+              <div className="sub">due {t.due} · {t.source}</div>
+            </div>
+            <div className="actions">
+              <ActionButton id={t.id} on={false} onLabel="Done" offLabel="Done" onAction="task-done" offAction="task-undone" />
+            </div>
+          </div>
+        ))}
+      </section>
 
       <section>
         <h2>New leads <span className="count">{uncalled.length} to call</span></h2>
@@ -137,7 +194,7 @@ export default async function Page() {
         ))}
       </section>
 
-      <p className="note">Caleb Jackson · REALTOR · Keller Williams First Choice · (225) 747-0303. This page reads the tools’ files. The only thing it can send is the follow-up queue, through the follow-up tool’s own rules.</p>
+      <p className="note">Caleb Jackson · REALTOR · Keller Williams First Choice · (225) 747-0303. This page reads the AIRE CRM sheet (through crm.py) and the tools’ files. The only thing it can send is the follow-up queue, through the follow-up tool’s own rules.</p>
     </div>
   );
 }

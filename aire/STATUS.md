@@ -2,6 +2,87 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-20: CRM engine, no more junk deals, feed ranks by texts first
+
+**Confirmed by Caleb (through the Mac session)**
+- `claude/tender-rubin-eo4m13` was deleted from GitHub on purpose because it carried client data. It is not pushed again. The live engine branch is `claude/gallant-lamport-c5mtmq`. The guard `tools/check-no-client-data.py` runs before every push.
+
+**Done**
+- `aire/crm/crm.py`: an Authentisign document with no street address never becomes a Deals row. It takes an address from another mail in the same Gmail thread when one named it, else it is attached as a note to the signer the CRM knows (Participant name or waiting-on email), else it is logged once as `unmatched_authentisign` in the audit file and Connector Log. A "Sign ..." task is still created when Caleb owes the signature. "Signing updated" mail is now read the same way.
+- `feed --signals FILE` and `due --signals FILE`: the enrichment's `enriched.csv` or `imessage-signals.json` ranks the touch list. Owes-a-reply first, last text counts as last touch, enrichment label sets the cadence. Read only.
+- Docs (README, FEED.md, directive) on the five-step band scale. 75 offline checks pass. Dry run on the fixture: 2 real deals, 0 form-named deals, 2 unmatched lines.
+
+**Needs Caleb**
+- Run on the Mac: `python3 crm.py --dry-run ingest --hours 72` to confirm the three form-named deals from the 2026-10-19 dry run are gone, then `python3 crm.py feed --signals ../enrichment/out/enriched.csv`.
+- The three junk Deals rows, if a real ingest already wrote them, are Caleb's to delete in the sheet. The engine deletes nothing.
+- Closed PR 12 may still keep the leaked commit reachable until GitHub support purges it.
+
+## 2026-10-19, late night: enrichment on the real CRM
+
+**Confirmed by Caleb**
+- The real CRM is the "AIRE CRM" sheet created Oct 16 (3,651 people), not the Hot-Warm-Cold sheet. My rename of that sheet was reverted on the Mac. PR 59 stays a draft. No sheet gets renamed again.
+- "Set up the enrichment like Nick on my real CRM, use my iMessages, emails and social media metrics as the main tools of measurement, categorize and find real leads, label people correctly, enrich what we know about each person."
+
+**Done**
+- `aire/enrichment/`: Nick-style pipeline. One deterministic script per signal (iMessage, Gmail, social engagers), one scorer with ten labels and two flags (hidden_lead, owes_reply), a practice-run merge of the Hot-Warm-Cold sheet, one cheap Haiku pass at the end, and a runner that writes a report first and the sheet only on `--write` (columns Z to AN plus Notes). 34 offline tests pass on a fake Messages database.
+- Practice run on the real CRM from the cloud (no message signals yet): 458 of 458 Hot-Warm-Cold rows matched, 316 tier-vs-band conflicts for Caleb, 1,253 unknown identities, 1,519 dormant. Reports delivered to Caleb, not committed.
+
+**Needs Caleb, on the Mac**
+- Give Terminal Full Disk Access, then run the order in `aire/enrichment/README.md`. The iMessage pass is where the labels get real.
+- Rule on the 316 conflicts (or say "the Hot-Warm-Cold sheet wins for HOT and WARM" and the merge applies that).
+- Approve the Haiku pass cost before `--llm` runs on more than 3 rows.
+
+## 2026-10-19, late night: AIRE CRM, one database
+
+**Confirmed by Caleb**
+- One system. Google Workspace is the database, no Supabase, Airtable or BoB. ChatGPT and Codex retired, Grok kept for briefs. "Build it... all apps integrated and working flawlessly like Follow Up Boss."
+
+**Done**
+- The Hot-Warm-Cold sheet is now **AIRE CRM** (same Drive file, renamed). Contacts keeps Caleb's columns A to L, the tool owns M to P (stage, last_touch_iso, source, id). New tabs: Pipeline, Activity, Tasks, Leads, headers in place.
+- `aire/crm/crm.py`: the engine. auth, pull, import-hwc, ingest (Luxury Presence leads, ShowingTime, Authentisign from Gmail, read only), due, log, task, done, tasks, pipeline, export-followup, brief. 35 offline tests pass. Simulated on the real 458-row list: 456 last-touch dates parsed, 54 tasks from "Next action", 118 touches due.
+- Command center reads the CRM cache: new Deals, Touches due and Tasks sections at the top of Caleb's view. "Log a touch" and "Done" write to the sheet through crm.py. Chromium click-through: 931 ms load, both actions work, 0 errors. Fixed a state-file race (atomic write).
+- Follow-up tool now gets contacts.csv from `crm.py export-followup`. Morning run and its scheduled task read the CRM sheet. Mac companion writes Command changes into the CRM.
+- The old "AIRE Pipeline" sheet is retired.
+
+**Not done, needs the Mac**
+- The classifier would not let the cloud session write client deal rows to the sheet, so Pipeline rows and tasks come from `crm.py import-hwc` on the Mac. First run steps in `aire/crm/README.md`: put the OAuth client at ~/.aire/credentials.json, `crm.py auth`, `import-hwc`, `ingest --hours 72`, `pull`, then open the command center.
+- Pipeline rows for the four live deals: Caleb adds them on the Pipeline tab (prices and close dates are his to confirm).
+## 2026-10-19, late night: Hot-Warm-Cold merge applied to the AIRE CRM
+
+**Confirmed by Caleb**
+- "Yes, apply the merge for matched and new rows."
+
+**Done**
+- Applied through the Google Sheets connector from the cloud (no token there): 391 matched contacts got Last_Touch and Next_Action where blank (band untouched), 25 new contacts (person_id 7229 to 7253), 416 Notes rows, 855 Connector Log rows. Every Contacts row read back and compared: 0 mismatches. Audit copy in `aire/crm/reports/2026-10-19-hwc-merge-applied.audit.jsonl`.
+- The sheet now: 3,651 contacts, Last_Touch filled on 417 rows (was 4), Next_Action on 417 (was 1). Feed as of tonight: 1,529 touches due (HOT 112, WARM 47), 101 Next_Action tasks waiting for the Tasks tab, 0 deals.
+- `crm.py` reads the token from the `AIRE_GOOGLE_TOKEN_JSON` environment secret when there is no token file, so the cloud can run `ingest` once Caleb adds it.
+
+**Needs Caleb**
+- Settle the 42 conflicts in the sheet (band disagreements, 3 Do_Not_Contact or duplicate matches).
+- Add the Google token to the cloud environment's secrets as `AIRE_GOOGLE_TOKEN_JSON` (environment settings, not chat) so the daily ingest can run in the cloud.
+- Do not run the 2026-10-19 merge again.
+
+## 2026-10-19, night: CRM engine pointed at the real AIRE CRM
+
+**Confirmed by Caleb**
+- PR 59 is held as a draft, not merged: it built a second CRM. The one CRM is the AIRE CRM sheet (1w9iz..., 3,626 contacts). The Hot-Warm-Cold sheet is back to its original name and no sheet is renamed again.
+- The command center web app is rejected as the front end. The native Mac Pipeline app is the one daily tool.
+
+**Done**
+- `aire/crm/crm.py` rewritten for the real sheet: reads the live header, keeps every existing column, adds only Tasks and Deals tabs (when missing), enforces the Mac's write gates (person_id only, Do_Not_Contact one way, never Command_ID, every write audited to audit.jsonl and the Connector Log), Gmail read only, `--dry-run` on everything. 59 offline checks pass.
+- `feed.json` spec in `aire/crm/FEED.md` for Codex to wire into the Pipeline app. No web UI.
+- Dry run on the real sheet's header and rows: `aire/crm/reports/2026-10-19-dry-run.md`. Touches due 1,641 (all "never logged", Last_Touch is filled on 4 rows), 0 tasks, 0 deals as the sheet stands. Ingest of the real last 7 days of mail would create 1 lead, 1 showing deal, 5 signing deals, 2 sign tasks. Nothing written.
+- Hot-Warm-Cold merge dry run: `aire/crm/reports/2026-10-19-hwc-merge-dry-run.md`. 458 rows: 391 matched, 25 new, 42 conflicts. Nothing written.
+
+**Inference**
+- NURTURE 90 days and DORMANT 365 days cadence, from the band names.
+- COLD and CONTACT tiers map to no band; friend/family/lead become Type client.
+
+**Needs Caleb**
+- Read the merge report. Yes or no on applying matched and new rows. Settle the 42 conflicts in the sheet.
+- Confirm or change the cadence numbers and the tier-to-band mapping.
+- On the Mac: `crm.py auth`, `crm.py check`, `crm.py --dry-run ingest --hours 72`, then the real run. Codex wires feed.json into Pipeline.
+
 ## 2026-10-19, late: morning run live
 
 **Confirmed by Caleb**
@@ -17,8 +98,12 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - Turn on Flex saved-search daily email alerts so the cloud run can read MLS.
 - Run "morning companion" on the Mac for Command and MLS.
 
+## Supervised week log
+- 2026-10-20 (7:05 am run): 0 new website leads in the last 26 hours, 0 drafts created. The only lead in the window search is Sunday's Google sign-on lead, already drafted on 10/19. Nothing sent.
+
 ## Morning run log
-- 2026-10-20 (run Oct 19 evening): 1 new lead, 0 pipeline rows, 5 contracts (0 waiting on Caleb, 1 item owed: inspection report to Aaron Goolsby), 1 conflict (Business Planning Clinic vs lead gen and sales block 2), 0 appointments added. Nothing failed.
+- 2026-10-20 (6:40 am run): 0 new leads, 1529 touches due (112 hot, 47 warm), 4 contracts tracked (0 waiting on Caleb), 1 conflict (Business Planning Clinic), 0 appointments added. Brief kept out of git. Nothing failed.
+- 2026-10-20 (run Oct 19 evening): 1 new lead, 0 pipeline rows, 5 contracts (0 waiting on Caleb, 1 item owed: inspection report to the other agent), 1 conflict (Business Planning Clinic vs lead gen and sales block 2), 0 appointments added. Nothing failed.
 
 ## 2026-10-19, night: supervised week, sales block, contacts mapped, proposal marketing text
 
@@ -110,7 +195,7 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - Removed the cloud-built runner (speed_to_lead.py, install.sh, test_speed_to_lead.py) from the repo. Also removed a stray __pycache__ that had been committed.
 - Templates and directive now match the Mac's rules: "within the hour", 9 pm quiet hours, CRM check, texts off, no timing promise tighter than an hour.
 - Approvals page row replaced: on October 22 read the Mac's dry-run.log and say "live email" there.
-- The sign-on template and the Boubkeur draft stay.
+- The sign-on template and the new-lead draft stay.
 
 **Unmerged work found**
 - Branch `claude/gallant-lamport-c5mtmq` (October 15 and 16): responder.py with Gmail API, a follow-up cadence tool, a listing proposal tool. Not merged. Caleb should say whether that branch is the Mac's source or a third copy before anything merges.
@@ -124,13 +209,13 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 **Done**
 - Caleb said "merge it and go live". Merged PR 31.
 - Built the speed to lead runner: `aire/speed-to-lead/speed_to_lead.py` (IMAP in, SMTP out, Messages by AppleScript, quiet hours, dedupe, log), `install.sh` (dry run, then type LIVE to install the launchd job), `test_speed_to_lead.py` (passes). Dry run is the default. Live only when the installer sets LIVE=1 on Caleb's Mac.
-- New lead type found in the inbox: Google Sign On (Boubkeur Barakate, Oct 18 8:34 am Central, unread, no phone, no reply sent). Added a sign-in template with no call promise and no text. Drafted the reply in Gmail for Caleb to send, since the lead is over a day old and the template is new.
+- New lead type found in the inbox: Google Sign On (a website lead, Oct 18 8:34 am Central, unread, no phone, no reply sent). Added a sign-in template with no call promise and no text. Drafted the reply in Gmail for Caleb to send, since the lead is over a day old and the template is new.
 - GBRAR inventory and months supply series added to `aire/market-data/gbrar-2026-09.json` for the Motion piece.
 - Sample enrichment CSV no longer uses real lead names.
 
 **Needs Caleb**
 - Run the install command on the Mac (approvals page). Type LIVE at the prompt.
-- Send the Boubkeur draft.
+- Send the new-lead draft.
 
 ## 2026-10-19, late: approvals page and pipeline sheet
 

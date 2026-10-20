@@ -26,6 +26,10 @@ What can't be told from the material available. Name the gap. Don't guess.
 
 Label claims as from the source, inference, or not verified. Recommendations come after the three sections.
 
+## Client data never goes to GitHub
+
+Names, phones, emails, addresses tied to a person, message text, CRM exports, merge reports, audit files, morning briefs and follow-up queues stay on the Mac or in git-ignored folders (`reports/`, `out/`, `briefs/`, `cache/`, `queue-*.md`, `*.audit.jsonl`). Test fixtures use made-up people only. Run `python3 tools/check-no-client-data.py` before every push; `sh tools/install-hooks.sh` makes the pre-push hook do it for you. The deleted branch `claude/tender-rubin-eo4m13` is never re-pushed. (Caleb, 2026-10-20)
+
 ## Approval gate
 
 Agents draft. Caleb approves before anything is posted, sent, scheduled, published, deleted or paid for.

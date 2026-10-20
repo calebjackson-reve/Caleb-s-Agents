@@ -8,12 +8,12 @@ async function post(body: object) {
   return r.json();
 }
 
-export function ActionButton(props: { id: string; on: boolean; onLabel: string; offLabel: string; onAction: string; offAction: string; small?: boolean }) {
+export function ActionButton(props: { id: string; personId?: string; on: boolean; onLabel: string; offLabel: string; onAction: string; offAction: string; small?: boolean }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const click = async () => {
     setBusy(true);
-    await post({ action: props.on ? props.offAction : props.onAction, id: props.id });
+    await post({ action: props.on ? props.offAction : props.onAction, id: props.id, person_id: props.personId });
     router.refresh();
     setBusy(false);
   };

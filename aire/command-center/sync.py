@@ -30,6 +30,7 @@ STATE = DATA / "state.json"
 STL = AIRE / "speed-to-lead"
 FU = AIRE / "follow-up"
 PROP = AIRE / "proposal"
+CRM_FEED = AIRE / "crm" / "feed.json"
 
 
 def read_json(p: Path, default):
@@ -178,6 +179,28 @@ def showings() -> list[dict]:
         return [{"status": "Error", "property": "", "when": "", "listing_id": None, "at": "", "error": str(e)}]
 
 
+def crm_section() -> dict:
+    """The AIRE CRM sheet through feed.json, which `python3 ../crm/crm.py feed` writes (see ../crm/FEED.md).
+    Shapes mapped once here so the page never knows the engine's field names."""
+    empty = {"crm_pulled_at": None, "touches_due": [], "tasks": [], "pipeline": []}
+    f = read_json(CRM_FEED, None)
+    if not f:
+        return empty
+    touches = [{"name": t.get("display", ""), "tier": t.get("band", ""), "phone": t.get("phone", ""), "email": t.get("email", ""),
+                "days": t.get("days_quiet"), "next_action": t.get("next_action", ""), "stage": t.get("stage", ""),
+                "person_id": t.get("person_id", "")} for t in f.get("touches_due", [])[:40]]
+    tasks = [{"id": t.get("task_id") or f"na-{t.get('person_id', '')}", "due": t.get("due", ""), "contact": t.get("display", ""),
+              "task": t.get("task", ""), "status": t.get("status", "open"), "source": t.get("source", ""),
+              "created_at": t.get("created_at", ""), "done_at": t.get("done_at", ""), "overdue": bool(t.get("overdue")),
+              "person_id": t.get("person_id", "")} for t in f.get("tasks", [])]
+    deals = [{"id": d.get("deal_id", ""), "client": d.get("display", "") or d.get("address", ""), "side": d.get("side", ""),
+              "address": d.get("address", ""), "stage": d.get("stage", ""), "price": d.get("price", ""), "commission_pct": "",
+              "expected_close": d.get("expected_close", ""), "source": d.get("source", ""), "last_touch": d.get("last_event_at", "")[:10],
+              "next_step": d.get("next_step", "") or d.get("last_event", ""), "contact": d.get("display", ""),
+              "listing_id": d.get("deal_id", ""), "updated_at": d.get("updated_at", "")} for d in f.get("deals", [])]
+    return {"crm_pulled_at": f.get("generated_at"), "touches_due": touches, "tasks": tasks, "pipeline": deals}
+
+
 # -------------------------------------------------------------------- store
 
 
@@ -191,6 +214,7 @@ def build() -> dict:
         "proposals": proposals(),
         "overnight": overnight(),
         "showings": showings(),
+        **crm_section(),
     }
 
 
@@ -232,6 +256,24 @@ def seed() -> dict:
             {"tool": "speed-to-lead", "at": iso(10.99), "level": "ok", "message": "replied to Sam Night in 55 s, text held until 8 am"},
             {"tool": "follow-up", "at": iso(0.5), "level": "ok", "message": "queue built: 2 due, 1 flagged, 3 skipped"},
             {"tool": "proposal", "at": iso(30), "level": "error", "message": "extraction returned no JSON for call-oct-18.txt (claude -p timed out). Re-run."},
+        ],
+        "crm_pulled_at": iso(0.2),
+        "touches_due": [
+            {"name": "Taylor Sample", "tier": "HOT", "phone": "(225) 555-0101", "email": "taylor.sample@icloud.com", "days": 8,
+             "next_action": "Send inspection report", "stage": "under-contract"},
+            {"name": "Jordan Warm", "tier": "WARM", "phone": "(225) 555-0102", "email": "", "days": 20,
+             "next_action": "Ask about spring timing", "stage": "new-lead"},
+        ],
+        "tasks": [
+            {"id": "a1b2c3d4", "due": now.date().isoformat(), "contact": "Taylor Sample", "task": "Send inspection report to the other agent",
+             "status": "open", "source": "Hot-Warm-Cold next action", "created_at": iso(12), "done_at": "", "overdue": False},
+            {"id": "e5f6a7b8", "due": (now - timedelta(days=1)).date().isoformat(), "contact": "", "task": "Sign 1 Test Ave - Inspection Response.pdf",
+             "status": "open", "source": "Authentisign", "created_at": iso(30), "done_at": "", "overdue": True},
+        ],
+        "pipeline": [
+            {"id": "test-ave-1", "client": "Taylor Sample", "side": "buyer", "address": "1 Test Ave, Zachary", "stage": "under_contract",
+             "price": "300000", "commission_pct": "2.5", "expected_close": (now + timedelta(days=9)).date().isoformat(), "source": "seed",
+             "last_touch": "2026-10-18", "next_step": "Send inspection report", "contact": "Taylor Sample", "listing_id": "1-test-ave-zachary", "updated_at": ""},
         ],
         "showings": [
             {"status": "Confirmed", "property": "2179 S Turnberry Ave, Zachary, LA 70791", "when": "Fri, 10/16 11:15 AM",

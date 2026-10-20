@@ -8,7 +8,19 @@ import { readState, writeState } from "@/lib/store";
 // "approve" runs the existing follow-up tool, which keeps its own rules (templates only,
 // quiet hours, opt-out flags). It runs in dry run unless APPROVE_LIVE=true is set on the server.
 
-type Body = { action: "called" | "uncalled" | "drop" | "undrop" | "signed" | "unsigned" | "approve"; id?: string; queue_file?: string; dropped?: string[] };
+type Body = { person_id?: string; action: "called" | "uncalled" | "drop" | "undrop" | "signed" | "unsigned" | "approve" | "task-done" | "task-undone" | "touched" | "untouched"; id?: string; queue_file?: string; dropped?: string[]; note?: string };
+
+function runCrm(args: string[]): Promise<string> {
+  const dir = path.resolve(process.cwd(), "..", "..", "crm");
+  return new Promise((resolve) => {
+    const p = spawn("python3", ["crm.py", ...args], { cwd: dir, env: process.env });
+    let buf = "";
+    p.stdout.on("data", (d) => (buf += d.toString()));
+    p.stderr.on("data", (d) => (buf += d.toString()));
+    p.on("close", () => resolve(buf));
+    p.on("error", (e) => resolve(`could not run crm.py: ${e.message}`));
+  });
+}
 
 export async function POST(req: Request) {
   const body = (await req.json()) as Body;
@@ -23,6 +35,28 @@ export async function POST(req: Request) {
     case "undrop": delete state.dropped[id]; break;
     case "signed": state.signed[id] = now; break;
     case "unsigned": delete state.signed[id]; break;
+    case "task-done": {
+      // Source of truth is the CRM sheet. crm.py done writes it; state remembers the click so the page updates at once.
+      const tid = (body.id || "").replace(/[^a-z0-9]/g, "");
+      const out = tid.startsWith("na") ? "next_action task, mark it in the sheet" : await runCrm(["done", tid]);
+      const fresh = await readState(); // re-read: another click may have landed while crm.py ran
+      fresh.done = fresh.done || {}; fresh.done[tid] = now;
+      await writeState(fresh);
+      return NextResponse.json({ ok: true, output: out.slice(-500) });
+    }
+    case "task-undone": state.done = state.done || {}; delete state.done[(body.id || "").replace(/[^a-z0-9]/g, "")]; break;
+    case "touched": {
+      // Logs a touch on the CRM (Activity row + last touch) for the contact named by id.
+      const who = (body.id || "").replace(/[^A-Za-z0-9 .'&-]/g, "").slice(0, 80);
+      // crm.py touch takes a person_id. The page sends "person_id|display"; fall back to a name search is not allowed by the engine.
+      const pid = (body.person_id || "").replace(/[^0-9]/g, "");
+      const out = pid ? await runCrm(["touch", pid, body.note || "touched from the command center"]) : "no person_id, nothing written";
+      const fresh = await readState();
+      fresh.touched = fresh.touched || {}; fresh.touched[who.toLowerCase()] = now;
+      await writeState(fresh);
+      return NextResponse.json({ ok: true, output: out.slice(-500) });
+    }
+    case "untouched": state.touched = state.touched || {}; delete state.touched[(body.id || "").toLowerCase()]; break;
     case "approve": {
       const file = (body.queue_file || "").replace(/[^a-zA-Z0-9._-]/g, "");
       if (!file.startsWith("queue-")) return NextResponse.json({ ok: false, error: "bad queue file" }, { status: 400 });

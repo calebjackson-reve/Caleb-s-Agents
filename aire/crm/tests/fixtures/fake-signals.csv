@@ -1,0 +1,5 @@
+person_id,display,signal_score,aire_label,status,due,last_inbound,last_outbound,owes_reply
+1,Taylor Sample,80,hot,ok,YES,2026-10-17,2026-10-15,YES
+2,Jordan Warm,30,warm,ok,,2026-10-19,2026-10-19,
+3,Pat Nurture,12,lukewarm,ok,YES,2026-09-01,2026-08-20,
+5,Casey Cold,5,cold,do-not-contact,,2026-10-01,,

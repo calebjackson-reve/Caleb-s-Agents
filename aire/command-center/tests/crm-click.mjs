@@ -1,0 +1,18 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({executablePath:'/opt/pw-browsers/chromium', args:['--no-sandbox']});
+const errs=[];
+const p=await b.newPage({viewport:{width:390,height:844}});
+p.on('pageerror',e=>errs.push(e.message)); p.on('console',m=>{if(m.type()==='error')errs.push(m.text())});
+const t0=Date.now(); await p.goto('http://localhost:3123/',{waitUntil:'networkidle'}); const load=Date.now()-t0;
+const dealsBefore = await p.locator('section').nth(0).locator('.row').count();
+const touchesBefore = await p.locator('section').nth(1).locator('.row').count();
+const tasksBefore = await p.locator('section').nth(2).locator('.row').count();
+await p.screenshot({path:'crm-phone.png', fullPage:true});
+await p.getByRole('button',{name:'Log a touch'}).first().click(); await p.waitForTimeout(4000);
+const touchesAfter = await p.locator('section').nth(1).locator('.row').count();
+await p.getByRole('button',{name:'Done'}).first().click(); await p.waitForTimeout(4000);
+const tasksAfter = await p.locator('section').nth(2).locator('.row').count();
+await p.screenshot({path:'crm-phone-after.png', fullPage:true});
+const dk=await b.newPage({viewport:{width:1280,height:900}}); await dk.goto('http://localhost:3123/',{waitUntil:'networkidle'}); await dk.screenshot({path:'crm-desktop.png', fullPage:true});
+console.log(JSON.stringify({load_ms:load, dealsBefore, touchesBefore, touchesAfter, tasksBefore, tasksAfter, errs}));
+await b.close();
