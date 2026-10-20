@@ -11,8 +11,8 @@ Caleb opens the Pipeline app on his Mac and sees who is due a touch, what he owe
 ## Process
 1. `check`: read the live Contacts header. Stop if a column is missing.
 2. `ingest`: read the three senders from Gmail. Match each lead by email, phone, then exact name before creating anyone. Showings and signatures become Deals rows and Notes. A signature Caleb owes becomes a task; "Signing complete" closes it.
-3. `sync-tasks`: one Tasks row per HOT or WARM contact with a Next_Action, due today for HOT and in three days for WARM.
-4. `feed`: write feed.json for the Pipeline app. Touches due by band cadence, open tasks, live deals, new leads.
+3. `sync-tasks`: one Tasks row per hot or warm contact with a Next_Action, due today for hot and in three days for warm.
+4. `feed`: write feed.json for the Pipeline app. Touches due by band cadence, open tasks, live deals, new leads. Pass `--signals ../enrichment/out/enriched.csv` when the enrichment has run, so the iMessage record ranks first.
 5. Caleb acts in the app. Each action is a `touch`, `task` or `done` call that moves Last_Touch or closes a task, audited.
 6. The morning brief reads the same feed, so the brief and the app never disagree.
 

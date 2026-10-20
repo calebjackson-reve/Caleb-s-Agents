@@ -2,6 +2,21 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-20: CRM engine, no more junk deals, feed ranks by texts first
+
+**Confirmed by Caleb (through the Mac session)**
+- `claude/tender-rubin-eo4m13` was deleted from GitHub on purpose because it carried client data. It is not pushed again. The live engine branch is `claude/gallant-lamport-c5mtmq`. The guard `tools/check-no-client-data.py` runs before every push.
+
+**Done**
+- `aire/crm/crm.py`: an Authentisign document with no street address never becomes a Deals row. It takes an address from another mail in the same Gmail thread when one named it, else it is attached as a note to the signer the CRM knows (Participant name or waiting-on email), else it is logged once as `unmatched_authentisign` in the audit file and Connector Log. A "Sign ..." task is still created when Caleb owes the signature. "Signing updated" mail is now read the same way.
+- `feed --signals FILE` and `due --signals FILE`: the enrichment's `enriched.csv` or `imessage-signals.json` ranks the touch list. Owes-a-reply first, last text counts as last touch, enrichment label sets the cadence. Read only.
+- Docs (README, FEED.md, directive) on the five-step band scale. 75 offline checks pass. Dry run on the fixture: 2 real deals, 0 form-named deals, 2 unmatched lines.
+
+**Needs Caleb**
+- Run on the Mac: `python3 crm.py --dry-run ingest --hours 72` to confirm the three form-named deals from the 2026-10-19 dry run are gone, then `python3 crm.py feed --signals ../enrichment/out/enriched.csv`.
+- The three junk Deals rows, if a real ingest already wrote them, are Caleb's to delete in the sheet. The engine deletes nothing.
+- Closed PR 12 may still keep the leaked commit reachable until GitHub support purges it.
+
 ## 2026-10-19, late night: enrichment on the real CRM
 
 **Confirmed by Caleb**
