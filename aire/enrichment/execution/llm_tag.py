@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "lead-enrichment"))
 import enrich  # noqa: E402  (SYSTEM, SCHEMA, MODEL, validate, parse_json, PRICE_IN, PRICE_OUT)
 
-ELIGIBLE = {"hot-lead", "warm-lead", "active-client"}
+ELIGIBLE = {"hot", "warm"}
 
 
 def tag(rows: list[dict], snippets: dict[str, list[str]], limit: int, dry_run: bool) -> tuple[list[dict], float]:

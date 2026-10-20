@@ -20,10 +20,10 @@ CRM_COLUMNS = ["person_id", "display", "first", "last", "name_tier", "primary_ph
                "street", "city", "state", "zip", "addr_tier", "homestead", "fair_market_value", "band",
                "opportunity_types", "provenance", "Stage", "Do_Not_Contact", "Source", "Last_Touch",
                "Next_Action", "Command_ID", "Type"]
-ENRICH_COLUMNS = ["signal_score", "aire_label", "last_inbound", "last_outbound", "msgs_90d", "emails_90d",
-                  "owes_reply", "social_90d", "hidden_lead", "keywords", "intent", "timeline", "area",
+ENRICH_COLUMNS = ["signal_score", "aire_label", "status", "due", "last_inbound", "last_outbound", "msgs_90d",
+                  "emails_90d", "owes_reply", "social_90d", "hidden_lead", "keywords", "intent", "timeline", "area",
                   "next_touch", "enriched_at"]
-ENRICH_START_COL = "Z"  # Z..AN
+ENRICH_START_COL = "Z"  # Z..AP
 
 
 def col_letter(n: int) -> str:

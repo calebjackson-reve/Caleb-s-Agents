@@ -14,9 +14,13 @@ Target: the real **AIRE CRM** sheet (`1w9izcliqmXlFR3_O3dnP2G5SGfCrua7mrCLCE7cdo
 | The CRM itself | `execution/score_and_label.py` | band, Stage, Type, Do_Not_Contact, homestead and fair market value (equity review candidate) | anywhere |
 | Hot-Warm-Cold sheet | `execution/merge_hwc.py` | Caleb's hand-tiered 458 people with reasons: fills email, phone, why, next action, notes, social handles into the CRM, as a practice run first | anywhere |
 
-## Labels, one per person
+## Temperature, one per person (Caleb's scale, 2026-10-20)
 
-do-not-contact, active-client, hot-lead, warm-lead, advocate (engages but no intent: the referral engine), past-client, nurture, dormant, vendor-agent, unknown-identity (phone only, no name, no history). Rules are at the top of `score_and_label.py`. Two flags: `hidden_lead` (their own words show intent but the CRM did not have them as a lead) and `owes_reply` (they texted last and it has been 2 or more days).
+hot, warm, lukewarm, cold, ice-cold. Rules at the top of `score_and_label.py`. A separate `status` keeps do-not-contact and vendor-agent off every list without pretending they have a temperature. Flags: `due` (owed a reply, or past the cadence for their temperature: hot 7d, warm 14d, lukewarm 30d, cold 90d, ice-cold 365d), `hidden_lead` (their own words show intent but the CRM band was not HOT or WARM), `owes_reply` (they texted last, 2+ days ago).
+
+Practice run on the real CRM with no message signals yet (band drives the label until the iMessage pass runs): hot 119, warm 50, lukewarm 262, cold 338, ice-cold 2,882, 421 due now.
+
+Sister engine: `aire/crm/crm.py` on branch `claude/tender-rubin-eo4m13` holds the write gates (person_id only, audit log, Connector Log, Do_Not_Contact one way) and the Tasks and Deals tabs. Enrichment is the signal layer. When the two land together, `--write` goes through that engine instead of writing columns directly.
 
 ## Run order on the Mac
 

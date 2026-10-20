@@ -72,7 +72,9 @@ def run(crm, as_of: date, out: Path, llm: bool = False, limit: int = 150, dry_ru
 
 def build_report(rows, strangers, as_of, msg, mail, soc, cost) -> str:
     labels = Counter(r["aire_label"] for r in rows)
-    changed = [r for r in rows if r["aire_label"] in ("hot-lead", "warm-lead", "active-client") and r["band_before"] not in ("HOT", "WARM")]
+    changed = [r for r in rows if r["aire_label"] in ("hot", "warm") and r["band_before"] not in ("HOT", "WARM")]
+    due = [r for r in rows if r["due"]]
+    status = Counter(r["status"] for r in rows)
     hidden = [r for r in rows if r["hidden_lead"]]
     owes = sorted([r for r in rows if r["owes_reply"]], key=lambda r: r["last_inbound"])
     top = sorted(rows, key=lambda r: -r["signal_score"])[:25]
@@ -81,13 +83,21 @@ def build_report(rows, strangers, as_of, msg, mail, soc, cost) -> str:
          f"Signals loaded: iMessage {len(msg)} handles, Gmail {len(mail)} addresses, social {len(soc)} people. "
          f"{'No message signals yet, labels come from the CRM columns alone.' if not (msg or mail) else ''}",
          f"Haiku tagging cost this run: ${cost:.4f}" if cost else "Haiku tagging pass: not run.", "",
-         "## Labels", ""]
-    for k, n in labels.most_common():
-        L.append(f"- {k}: {n}")
+         "## Temperature", ""]
+    for k in ("hot", "warm", "lukewarm", "cold", "ice-cold"):
+        L.append(f"- {k}: {labels.get(k, 0)}")
+    L += ["", f"Status: {status.get('ok', 0)} ok, {status.get('do-not-contact', 0)} do not contact, {status.get('vendor-agent', 0)} vendor or agent (never on a touch list)", "",
+          f"## Due now ({len(due)}): owed a reply or past their cadence (hot 7d, warm 14d, lukewarm 30d, cold 90d, ice-cold 365d)", ""]
+    for k in ("hot", "warm", "lukewarm", "cold", "ice-cold"):
+        n = sum(1 for r in due if r["aire_label"] == k)
+        if n:
+            L.append(f"- {k}: {n}")
+    for r in sorted([r for r in due if r["aire_label"] in ("hot", "warm")], key=lambda r: -r["signal_score"])[:40]:
+        L.append(f"- {r['aire_label']:8} {r['display']} (#{r['person_id']}) last in {r['last_inbound'] or 'never'}, last out {r['last_outbound'] or 'never'}{', owes reply' if r['owes_reply'] else ''}")
     L += ["", f"## Hidden leads ({len(hidden)}): real estate intent in their own messages, CRM did not have them as a lead", ""]
     for r in hidden[:40]:
         L.append(f"- {r['display']} (#{r['person_id']}) score {r['signal_score']}, {r['keywords']}, last inbound {r['last_inbound']}")
-    L += ["", f"## Would move up ({len(changed)}): label is hot, warm or active but band was {{{', '.join(sorted({r['band_before'] or 'blank' for r in changed}))}}}", ""]
+    L += ["", f"## Would move up ({len(changed)}): hot or warm now, band was {{{', '.join(sorted({r['band_before'] or 'blank' for r in changed}))}}}", ""]
     for r in changed[:40]:
         L.append(f"- {r['display']} (#{r['person_id']}): {r['band_before'] or 'no band'} -> {r['aire_label']}, score {r['signal_score']}")
     L += ["", f"## Caleb owes a reply ({len(owes)})", ""]
@@ -133,7 +143,7 @@ def main():
         notes = [{"At": now_ct(), "person_id": r["person_id"], "display": r["display"],
                   "Note": f"AIRE label {r['aire_label']} (was band {r['band_before'] or 'blank'}), score {r['signal_score']}, {r['keywords'] or 'no keywords'}",
                   "By": "AIRE enrichment"}
-                 for r in rows if r["aire_label"] in ("hot-lead", "warm-lead", "active-client", "advocate") and r["band_before"] not in ("HOT", "WARM")]
+                 for r in rows if r["aire_label"] in ("hot", "warm") and r["band_before"] not in ("HOT", "WARM")]
         crm.add_notes(notes)
         print(f"WROTE enrichment columns for {n} people and {len(notes)} notes.")
 
