@@ -22,7 +22,7 @@ Values the sheet actually uses (counted 2026-10-19): band is HOT 117, WARM 46, N
 
 ## Write gates
 
-The same rules the Mac's `crm_client` enforces, reused here, never loosened. They are tested offline (`python3 crm.py --test`, 59 checks).
+The same rules the Mac's `crm_client` enforces, reused here, never loosened. They are tested offline (`python3 crm.py --test`, 75 checks).
 
 - Every contact write is by `person_id`, and the id must already exist. A new person gets a minted id one past the highest id ever seen in Contacts, Notes or the Connector Log, so a deleted row's id is never reused.
 - `Do_Not_Contact` can be set to YES. There is no code path that sets it back to NO. A touch on a Do_Not_Contact person is refused.
@@ -33,16 +33,17 @@ The same rules the Mac's `crm_client` enforces, reused here, never loosened. The
 
 ## Cadence
 
-By the sheet's own `band` column. Blank band is not on the touch list. Type vendor, agent and lender are never on it. Do_Not_Contact YES is never on it.
+By the sheet's own `band` column on Caleb's five-step scale (2026-10-20). Legacy values are read as HOT = hot, WARM = warm, NURTURE = cold, DORMANT = ice-cold until `rescale-band` rewrites them. Blank band is not on the touch list. Type vendor, agent and lender are never on it. Do_Not_Contact YES is never on it.
 
 | band | Days between touches |
 |---|---|
-| HOT | 7 |
-| WARM | 14 |
-| NURTURE | 90 |
-| DORMANT | 365 |
+| hot | 7 |
+| warm | 14 |
+| lukewarm | 30 |
+| cold | 90 |
+| ice-cold | 365 |
 
-NURTURE 90 and DORMANT 365 are an inference from the band names, not something Caleb has confirmed. Change `CADENCE_DAYS` in `crm.py` if he wants different numbers.
+**iMessage data first.** `feed --signals FILE` and `due --signals FILE` take either output of `aire/enrichment` (`out/enriched.csv` or `out/imessage-signals.json`, both stay on the Mac and out of git). With signals loaded, the last real text in or out counts as the last touch when it is newer than Last_Touch, the enrichment label sets the cadence instead of the sheet band, and anyone who texted last and is still waiting on Caleb (`owes_reply`) is due today and sorts to the top. Without `--signals` the feed falls back to Last_Touch and band alone. Signals are read only, nothing from them is written to the sheet.
 
 ## Commands
 
@@ -57,7 +58,9 @@ python3 crm.py --dry-run ingest --hours 72   # what Gmail ingest would write. No
 python3 crm.py ingest --hours 72    # website leads, showings, signatures into the sheet
 python3 crm.py sync-tasks           # one Tasks row per HOT/WARM Next_Action, idempotent
 python3 crm.py feed                 # writes feed.json for the Pipeline app (see FEED.md)
-python3 crm.py due                  # who is past their band's cadence
+python3 crm.py feed --signals ../enrichment/out/enriched.csv   # same, ranked by iMessage data first
+python3 crm.py due                  # who is past their band's cadence (--signals works here too)
+python3 crm.py rescale-band         # legacy HOT/WARM/NURTURE/DORMANT cells to the five-step scale, audited
 python3 crm.py tasks                # open tasks, overdue first, plus Next_Action items not yet synced
 python3 crm.py deals                # live deals
 python3 crm.py touch 247 "called Paul, counter is with Novak"
@@ -75,7 +78,7 @@ Only mail from luxurypresence.com, showingtime.com and authentisign.com, only ne
 
 - **Luxury Presence "New Lead - Name"**: matched to a contact by email, then 10-digit phone, then exact display name. A match gets a Notes row ("Website lead 2026-10-18: Google Sign On email") and a Next_Action if theirs is blank. No match creates a contact: band HOT, Stage `new lead`, Source `Luxury Presence YYYY-MM-DD`, Next_Action "Call within the hour", Type client, Do_Not_Contact NO.
 - **ShowingTime "SHOWING CONFIRMED | address ..."**: a Deals row keyed by the address (stage active, side listing) with the last event, and a Notes row when the deal has a person_id.
-- **Authentisign "Your signature is requested / Notice of inactivity / Signing complete"**: a Deals row keyed by the address in the document name (or the document name when it has none, stage unknown), the last event, and a Tasks row "Sign <doc>" when Caleb is the one who owes the signature. "Signing complete" closes that task.
+- **Authentisign "Your signature is requested / Notice of inactivity / Signing complete / Signing updated"**: a Deals row only when there is a real street address, taken from the document name ("9241 Pecan Tree Drive - Inspection Response.pdf") or lent by another mail in the same Gmail thread that named one. A document with no address ("GBRAR Counteroffer Addendum", "LRA General Addendum") never becomes a Deals row. It is attached as a Notes row to the signer when the mail names a Participant or waiting-on email the CRM knows, otherwise it is logged once as `unmatched_authentisign` in the audit file and the Connector Log. Either way a Tasks row "Sign <doc>" is created when Caleb is the one who owes the signature, and "Signing complete" closes it.
 
 Idempotent: the Connector Log is the memory of what was already ingested, so a re-run writes nothing new.
 

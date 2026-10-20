@@ -584,22 +584,34 @@ class CRM:
                 and (c.get("Type") or "").lower() not in NEVER_TOUCH_TYPES
                 and norm_band(c.get("band")) in CADENCE_DAYS)
 
-    def due(self, as_of: date | None = None) -> list[dict]:
+    def due(self, as_of: date | None = None, signals: dict | None = None) -> list[dict]:
+        """Who is owed a touch. With `signals` (see load_signals) the iMessage record comes first: the last real
+        text in or out counts as the last touch, the enrichment label sets the cadence, and someone who texted
+        last and is still waiting on Caleb (owes_reply) is due today and sorts to the top."""
         as_of = as_of or today()
+        signals = signals or {}
         out = []
         for c in self.contacts():
-            if not self.touchable(c):
+            sig = signals.get(c["person_id"], {})
+            band = norm_band(sig.get("label")) or norm_band(c.get("band"))
+            if not self.touchable({**c, "band": band}):
                 continue
-            band = norm_band(c["band"])
             last = parse_touch(c.get("Last_Touch", ""), as_of)
+            last_msg = max(sig.get("last_inbound", ""), sig.get("last_outbound", ""))[:10]
+            if last_msg and last_msg <= as_of.isoformat() and (not last or last_msg > last):
+                last = last_msg
             days = (as_of - date.fromisoformat(last)).days if last else None
-            if days is None or days >= CADENCE_DAYS[band]:
+            owes = bool(sig.get("owes_reply"))
+            if owes or days is None or days >= CADENCE_DAYS[band]:
                 out.append({"person_id": c["person_id"], "display": c.get("display", ""), "band": band,
                             "phone": c.get("primary_phone", ""), "email": c.get("email", ""),
                             "days_quiet": days, "last_touch": c.get("Last_Touch", ""),
+                            "last_inbound": sig.get("last_inbound", ""), "last_outbound": sig.get("last_outbound", ""),
+                            "owes_reply": owes, "signal_score": sig.get("signal_score", 0),
                             "next_action": c.get("Next_Action", ""), "stage": c.get("Stage", ""),
                             "opportunity_types": c.get("opportunity_types", "")})
-        return sorted(out, key=lambda x: (BAND_ORDER[x["band"]], -(x["days_quiet"] if x["days_quiet"] is not None else 99999)))
+        return sorted(out, key=lambda x: (not x["owes_reply"], BAND_ORDER[x["band"]], -x["signal_score"],
+                                          -(x["days_quiet"] if x["days_quiet"] is not None else 99999)))
 
     def open_tasks(self, as_of: date | None = None) -> list[dict]:
         as_of = as_of or today()
@@ -647,10 +659,10 @@ class CRM:
                             "next_action": c.get("Next_Action", "")})
         return sorted(out, key=lambda x: x["received"], reverse=True)
 
-    def feed(self, as_of: date | None = None) -> dict:
+    def feed(self, as_of: date | None = None, signals: dict | None = None, signals_file: str = "") -> dict:
         """Everything the Pipeline app shows. See FEED.md. Read only."""
         as_of = as_of or today()
-        due = self.due(as_of)
+        due = self.due(as_of, signals)
         tasks = self.open_tasks(as_of) + [{**t, "task_id": "", "status": "open", "overdue": t["due"] < as_of.isoformat()}
                                           for t in self.next_action_tasks(as_of)]
         deals = self.live_deals()
@@ -658,6 +670,8 @@ class CRM:
         return {
             "generated_at": now_iso(), "as_of": as_of.isoformat(), "sheet_id": getattr(self.b, "sheet_id", "local"),
             "header_ok": chk["contacts_header_ok"], "missing_columns": chk["missing_columns"],
+            "signals": {"file": signals_file, "people": len(signals or {}),
+                        "owes_reply": sum(1 for d in due if d["owes_reply"])},
             "counts": {"contacts": len(self.contacts()), "touches_due": len(due),
                        "by_band": {b: sum(1 for d in due if d["band"] == b) for b in BAND_ORDER},
                        "tasks_open": len(tasks), "tasks_overdue": sum(1 for t in tasks if t["overdue"]),
@@ -666,6 +680,36 @@ class CRM:
             "new_leads": self.new_leads(as_of=as_of),
             "cadence_days": CADENCE_DAYS,
         }
+
+
+def load_signals(path: Path, contacts: list[dict]) -> dict:
+    """Message signals keyed by person_id, from either output of aire/enrichment:
+    - enriched.csv (one row per person: aire_label, last_inbound, last_outbound, owes_reply, signal_score, status)
+    - imessage-signals.json (one entry per phone or email handle: last_inbound, last_outbound, in_90 ...)
+    Read only. Nothing here is ever written to the sheet."""
+    import csv
+    out: dict[str, dict] = {}
+    if path.suffix.lower() == ".csv":
+        with path.open(newline="") as f:
+            for r in csv.DictReader(f):
+                if r.get("status", "ok") not in ("", "ok"):
+                    continue
+                out[r["person_id"]] = {"label": r.get("aire_label", ""), "last_inbound": r.get("last_inbound", "")[:10],
+                                       "last_outbound": r.get("last_outbound", "")[:10],
+                                       "owes_reply": (r.get("owes_reply") or "").upper() == "YES",
+                                       "signal_score": int(r.get("signal_score") or 0)}
+        return out
+    raw = json.loads(path.read_text())
+    for c in contacts:
+        sig = raw.get(phone_key(c.get("primary_phone"))) or raw.get(email_key(c.get("email")))
+        if not sig:
+            continue
+        li, lo = sig.get("last_inbound", "")[:10], sig.get("last_outbound", "")[:10]
+        age = (today() - date.fromisoformat(li)).days if li else None
+        out[c["person_id"]] = {"label": "", "last_inbound": li, "last_outbound": lo,
+                               "owes_reply": bool(li) and li > lo and age is not None and 2 <= age <= 60,
+                               "signal_score": int(sig.get("in_90", 0))}
+    return out
 
 
 # -------------------------------------------------------------------- gmail
@@ -679,10 +723,15 @@ AS_INACTIVE = re.compile(r"Notice of inactivity: (.+)$")
 ADDRESS_IN_DOC = re.compile(r"^(\d{1,6} [A-Za-z0-9 .']+?(?: (?:Dr|Drive|Ave|Avenue|St|Street|Rd|Road|Ln|Lane|Ct|Court|Blvd|Hwy|Way|Pl|Cir|Trl|Pkwy)\.?))\b")
 
 
+AS_UPDATED = re.compile(r"Signing updated: (.+)$")
+AS_PERSON = re.compile(r"(?:Participant|Signer|Signed by|Completed by)\s*[:*]*\s*([A-Z][\w'.-]+(?: [A-Z][\w'.-]+){1,3})")
+
+
 def deal_address(doc: str) -> str:
-    """'9241 Pecan Tree Drive - Inspection Response.pdf' -> '9241 Pecan Tree Drive'. Else the doc name."""
+    """'9241 Pecan Tree Drive - Inspection Response.pdf' -> '9241 Pecan Tree Drive'. A document with no street
+    address ('GBRAR Counteroffer Addendum') gives '' and never becomes a Deals row of its own."""
     m = ADDRESS_IN_DOC.match(doc.strip())
-    return m.group(1) if m else re.sub(r"\.pdf$", "", doc.strip())[:60]
+    return m.group(1) if m else ""
 
 
 def parse_message(m: dict) -> dict | None:
@@ -702,19 +751,22 @@ def parse_message(m: dict) -> dict | None:
         return {"kind": "showing", "status": status.lower(), "address": prop.split(",")[0].strip(), "property": prop,
                 "when": t, "agent": agent.group(1).strip() if agent else "", "at": when}
     if "authentisign" in frm:
-        for kind, rx in (("complete", AS_COMPLETE), ("requested", AS_REQUEST), ("inactive", AS_INACTIVE)):
+        for kind, rx in (("complete", AS_COMPLETE), ("requested", AS_REQUEST), ("inactive", AS_INACTIVE), ("updated", AS_UPDATED)):
             if (x := rx.match(subj)):
                 doc = x.group(1).strip()
                 waiting = re.search(r"waiting on ([\w.+-]+@[\w-]+\.[\w.]+)", body)
+                person = AS_PERSON.search(body)
                 return {"kind": "signing", "event": kind, "doc": doc, "address": deal_address(doc),
-                        "waiting_on": waiting.group(1) if waiting else "", "at": when}
+                        "waiting_on": waiting.group(1) if waiting else "",
+                        "signer": person.group(1).strip() if person else "",
+                        "thread_id": m.get("thread_id", ""), "at": when}
     return None
 
 
 def ingest(crm: CRM, messages: list[dict], my_email: str = "aire@calebjackson.org") -> dict:
     """Events -> the CRM, idempotent. Leads become contacts (matched first), showings and signatures
     become Deals rows and Notes, a signature Caleb owes becomes a Task."""
-    counts = {"leads_new": 0, "leads_matched": 0, "showings": 0, "signings": 0, "tasks": 0, "skipped": 0, "events": []}
+    counts = {"leads_new": 0, "leads_matched": 0, "showings": 0, "signings": 0, "tasks": 0, "unmatched": 0, "skipped": 0, "events": []}
     note_keys = {(n["person_id"], n["Note"]) for n in crm.notes()}
     # The Connector Log is the memory of what was already ingested, so a re-run is a no-op.
     log = crm.b.read("Connector Log")
@@ -722,11 +774,18 @@ def ingest(crm: CRM, messages: list[dict], my_email: str = "aire@calebjackson.or
                    for r in log if r.get("Tool") in ("create_deal", "update_deal") and ": " in r.get("Detail", "")}
     tasks_ever = {r["Detail"].rsplit(" due ", 1)[0] for r in log if r.get("Tool") == "add_task"}
     open_tasks = {t["task"] for t in crm.tasks() if t.get("status") == "open"} | tasks_ever
+    unmatched_ever = {r["Detail"] for r in log if r.get("Tool") == "unmatched_authentisign"}
+    events = []
     for m in sorted(messages, key=lambda m: m["date_iso"]):
         ev = parse_message(m)
         if not ev:
             counts["skipped"] += 1
             continue
+        events.append(ev)
+    # A Gmail thread that ever named a street address lends it to the addressless Authentisign mail in the same thread.
+    thread_addr = {ev["thread_id"]: ev["address"] for ev in events
+                   if ev["kind"] in ("showing", "signing") and ev.get("thread_id") and ev.get("address")}
+    for ev in events:
         day = ev["at"][:10]
         if ev["kind"] == "lead":
             note = f"Website lead {day}: {ev['type'] or 'inquiry'} {ev['email']} {ev['phone']}".strip()
@@ -765,16 +824,44 @@ def ingest(crm: CRM, messages: list[dict], my_email: str = "aire@calebjackson.or
             counts["events"].append(f"showing {ev['address']}: {event}")
         elif ev["kind"] == "signing":
             event = f"Authentisign {ev['event']}: {ev['doc']}" + (f" (waiting on {ev['waiting_on']})" if ev["waiting_on"] else "")
-            key = slug(ev["address"])
-            if (key, event) in deal_events:
-                counts["skipped"] += 1
-                continue
-            d = crm.upsert_deal(ev["address"], event, ev["at"], source="Authentisign")
-            if d.get("person_id"):
-                crm.add_note(d["person_id"], f"{ev['address']}: {event}")
-            deal_events.add((key, event))
-            counts["signings"] += 1
-            counts["events"].append(f"signing {ev['address']}: {event}")
+            address = ev["address"] or thread_addr.get(ev.get("thread_id", ""), "")
+            pid = ""
+            if address:
+                # A real street address: one Deals row keyed by it, as before.
+                key = slug(address)
+                if (key, event) in deal_events:
+                    counts["skipped"] += 1
+                    continue
+                d = crm.upsert_deal(address, event, ev["at"], source="Authentisign")
+                pid = d.get("person_id", "")
+                if pid:
+                    crm.add_note(pid, f"{address}: {event}")
+                deal_events.add((key, event))
+                counts["signings"] += 1
+                counts["events"].append(f"signing {address}: {event}")
+            else:
+                # No address anywhere: attach to the signer when the CRM knows them, else log it and move on.
+                # Never a Deals row named after a form.
+                hits = crm.find(ev.get("signer", ""), "" if my_email in ev["waiting_on"] else ev["waiting_on"])
+                hits = [h for h in hits if email_key(h.get("email")) != email_key(my_email)]
+                if hits:
+                    pid = hits[0]["person_id"]
+                    if (pid, event) in note_keys:
+                        counts["skipped"] += 1
+                        continue
+                    crm.add_note(pid, event)
+                    note_keys.add((pid, event))
+                    counts["signings"] += 1
+                    counts["events"].append(f"signing attached to person_id {pid} ({hits[0]['_match']}): {event}")
+                else:
+                    detail = f"{event} on {day}" + (f" [{ev['signer']}]" if ev.get("signer") else "")
+                    if detail in unmatched_ever:
+                        counts["skipped"] += 1
+                        continue
+                    crm._audit("unmatched_authentisign", "", detail)
+                    unmatched_ever.add(detail)
+                    counts["unmatched"] += 1
+                    counts["events"].append(f"unmatched Authentisign: {detail}")
             owes_me = ev["event"] == "requested" or (ev["event"] == "inactive" and my_email in ev["waiting_on"])
             task = f"Sign {ev['doc']}"
             if ev["event"] == "complete":
@@ -783,7 +870,7 @@ def ingest(crm: CRM, messages: list[dict], my_email: str = "aire@calebjackson.or
                         crm.done(t["task_id"])
                         open_tasks.discard(task)
             elif owes_me and task not in open_tasks:
-                crm.add_task(d.get("person_id", ""), task, day, source="Authentisign")
+                crm.add_task(pid, task, day, source="Authentisign")
                 open_tasks.add(task)
                 counts["tasks"] += 1
     return counts
@@ -814,7 +901,7 @@ def gmail_messages(hours: int) -> list[dict]:
                 break
         if not body:
             body = full.get("snippet", "")
-        out.append({"subject": h.get("Subject", ""), "from": h.get("From", ""),
+        out.append({"subject": h.get("Subject", ""), "from": h.get("From", ""), "thread_id": full.get("threadId", ""),
                     "date_iso": when.astimezone(CENTRAL).replace(microsecond=0).isoformat(), "body": body})
     return out
 
@@ -1068,10 +1155,40 @@ def run_tests() -> int:
     check("showing makes a deal", any(d["deal_id"] == slug("1 Test Ave") and d["source"] == "ShowingTime" for d in crm.deals()))
     check("signature request makes a Sign task", any(x["task"] == "Sign 2 Done St - Listing Agreement.pdf" for x in crm.open_tasks(as_of)))
     check("signing complete closes it", not any(x["task"] == "Sign 1 Test Ave - Inspection Response.pdf" for x in crm.open_tasks(as_of)))
-    check("doc without an address keeps the doc name", deal_address("GBRAR Counteroffer Addendum") == "GBRAR Counteroffer Addendum")
+    check("doc without a street address has no deal address", deal_address("GBRAR Counteroffer Addendum") == ""
+          and deal_address("9241 Pecan Tree Drive - Inspection Response.pdf") == "9241 Pecan Tree Drive")
+    junk = [d for d in crm.deals() if not re.match(r"^\d", d["address"])]
+    check("no Deals row is ever named after a form", junk == [] and len(crm.deals()) == 2)
+    check("addressless signing attaches to the signer the CRM knows", any(n["person_id"] == "1"
+          and n["Note"] == "Authentisign complete: GBRAR Counteroffer Addendum" for n in crm.notes()))
+    check("addressless signing nobody knows is logged as unmatched", r["unmatched"] == 2 and any(
+          x["Tool"] == "unmatched_authentisign" and "LRA General Addendum" in x["Detail"] and "[Stranger Person]" in x["Detail"]
+          for x in crm.b.read("Connector Log")))
+    check("signature Caleb owes still makes a task without a deal", any(x["task"] == "Sign Due Diligence and Inspection Response"
+          and x["person_id"] == "" for x in crm.open_tasks(as_of)))
+    one = [d for d in crm.deals() if d["deal_id"] == slug("1 Test Ave")][0]
+    check("signing updated in a known thread lands on that address's deal", "Authentisign complete: 1 Test Ave" in one["last_event"]
+          and any("Authentisign updated: 1 Test Ave" in x["Detail"] for x in crm.b.read("Connector Log") if x["Tool"] == "update_deal"))
     check("unrelated mail skipped", r["skipped"] >= 1)
     r2 = ingest(crm, msgs)
-    check("ingest is idempotent", r2["leads_new"] == 0 and r2["leads_matched"] == 0 and r2["showings"] == 0 and r2["signings"] == 0)
+    check("ingest is idempotent", r2["leads_new"] == 0 and r2["leads_matched"] == 0 and r2["showings"] == 0
+          and r2["signings"] == 0 and r2["unmatched"] == 0 and r2["tasks"] == 0)
+
+    # signals: iMessage data ranks first
+    sig = load_signals(HERE / "tests" / "fixtures" / "fake-signals.csv", crm.contacts())
+    check("enriched.csv loads by person_id and drops non-ok status", set(sig) == {"1", "2", "3"} and sig["1"]["owes_reply"])
+    d_plain = {x["person_id"]: x for x in crm.due(as_of)}
+    d_sig = crm.due(as_of, sig)
+    ids = [x["person_id"] for x in d_sig]
+    check("owes_reply is due today and sorts first", ids and ids[0] == "1" and d_sig[0]["owes_reply"] and d_sig[0]["days_quiet"] == 2)
+    check("a recent text clears someone the sheet called due", "2" not in ids)
+    check("enrichment label sets the cadence", "3" in ids and d_sig[ids.index("3")]["band"] == "lukewarm" and d_plain["3"]["band"] == "cold")
+    check("do-not-contact stays off the list with signals", "5" not in ids)
+    sig2 = load_signals(HERE / "tests" / "fixtures" / "fake-imessage-signals.json", crm.contacts())
+    check("imessage-signals.json maps handles to person_id", set(sig2) == {"1", "7"} and sig2["1"]["last_inbound"] == "2026-10-17")
+    f2 = crm.feed(as_of, sig, "fake-signals.csv")
+    check("feed carries the signals summary", f2["signals"]["people"] == 3 and f2["signals"]["owes_reply"] == 1
+          and f2["touches_due"][0]["last_inbound"] == "2026-10-17")
 
     # feed
     f = crm.feed(as_of)
@@ -1127,7 +1244,8 @@ def main(argv=None) -> int:
     sub.add_parser("auth")
     sub.add_parser("check")
     p = sub.add_parser("feed"); p.add_argument("--out", default=str(FEED))
-    sub.add_parser("due")
+    p.add_argument("--signals", help="enriched.csv or imessage-signals.json from aire/enrichment: rank by texts first")
+    p = sub.add_parser("due"); p.add_argument("--signals")
     sub.add_parser("tasks")
     sub.add_parser("deals")
     p = sub.add_parser("ingest"); p.add_argument("--hours", type=int, default=26); p.add_argument("--messages", help="JSON file of messages instead of Gmail")
@@ -1153,13 +1271,17 @@ def main(argv=None) -> int:
     if a.cmd == "check":
         print(json.dumps(crm.check(), indent=1))
     elif a.cmd == "feed":
-        f = crm.feed(as_of)
+        sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
+        f = crm.feed(as_of, sig, a.signals or "")
         Path(a.out).write_text(json.dumps(f, indent=1, ensure_ascii=False))
-        print(f"{a.out}: " + ", ".join(f"{k} {v}" for k, v in f["counts"].items() if not isinstance(v, dict)))
+        print(f"{a.out}: " + ", ".join(f"{k} {v}" for k, v in f["counts"].items() if not isinstance(v, dict))
+              + (f", signals for {f['signals']['people']} people, {f['signals']['owes_reply']} owe a reply" if sig else ""))
     elif a.cmd == "due":
-        for d in crm.due(as_of):
+        sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
+        for d in crm.due(as_of, sig):
             days = "never" if d["days_quiet"] is None else f"{d['days_quiet']}d"
-            print(f"{d['band']:8} {days:>6}  #{d['person_id']:<5} {d['display']:30} {d['phone']:14} {d['next_action']}")
+            flag = "REPLY" if d["owes_reply"] else "     "
+            print(f"{flag} {d['band']:8} {days:>6}  #{d['person_id']:<5} {d['display']:30} {d['phone']:14} {d['next_action']}")
     elif a.cmd == "tasks":
         for t in crm.open_tasks(as_of) + crm.next_action_tasks(as_of):
             print(f"{'OVERDUE' if t.get('overdue') else '       '} {t['due']} #{t['person_id']:<5} {t['display']:28} {t['task']} [{t.get('task_id', 'next_action')}]")
