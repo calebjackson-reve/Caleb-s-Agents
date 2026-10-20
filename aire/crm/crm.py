@@ -666,12 +666,19 @@ class CRM:
                             "days_quiet": days, "last_touch": c.get("Last_Touch", ""),
                             "last_inbound": sig.get("last_inbound", ""), "last_outbound": sig.get("last_outbound", ""),
                             "owes_reply": owes, "signal_score": sig.get("signal_score", 0),
+                            "_in_at": sig.get("last_inbound_at", ""),
                             "last_messages": sig.get("last_messages", []),
                             "type": (c.get("Type") or "").lower(),
                             "next_action": c.get("Next_Action", ""), "stage": c.get("Stage", ""),
                             "opportunity_types": c.get("opportunity_types", "")})
-        return sorted(out, key=lambda x: (not x["owes_reply"], BAND_ORDER[x["band"]], -x["signal_score"],
+        # Unanswered texts first, newest first, so this morning's question beats one from three weeks ago.
+        # Everyone else: hottest band, then strongest signal, then longest silence.
+        owes = sorted([x for x in out if x["owes_reply"]], key=lambda x: (x.pop("_in_at", "") or x["last_inbound"]), reverse=True)
+        rest = sorted([x for x in out if not x["owes_reply"]], key=lambda x: (BAND_ORDER[x["band"]], -x["signal_score"],
                                           -(x["days_quiet"] if x["days_quiet"] is not None else 99999)))
+        for x in rest:
+            x.pop("_in_at", None)
+        return owes + rest
 
     def open_tasks(self, as_of: date | None = None) -> list[dict]:
         as_of = as_of or today()
@@ -793,7 +800,9 @@ def load_signals(path: Path, contacts: list[dict]) -> dict:
         age = (today() - date.fromisoformat(li)).days if li else None
         recent = sig.get("recent_inbound", [])
         out[c["person_id"]] = {"label": "", "last_inbound": li, "last_outbound": lo,
-                               "owes_reply": bool(li) and li > lo and age is not None and 2 <= age <= 60,
+                               # They texted last within 60 days, today included. A text from this morning is the most urgent one.
+                               "owes_reply": bool(li) and li > lo and age is not None and 0 <= age <= 60,
+                               "last_inbound_at": sig.get("last_inbound", ""),
                                "signal_score": int(sig.get("in_90", 0)),
                                # The last three things they actually said, so the Pipeline app can show them above the
                                # compose box. Stays in feed.json on the Mac, never in the sheet or git.
@@ -1345,6 +1354,17 @@ def run_tests() -> int:
     crm.upsert_deal("9999 Fixture Drive, Zachary, LA 70791", "seeded", "2026-10-20T08:00:00-05:00", stage="active", side="Listing", source="seed")
     crm.upsert_deal("9999 Fixture Dr", "showing confirmed", "2026-10-20T09:00:00-05:00")
     check("a seeded deal and an ingest event on the same street are one row", len(crm.deals()) == n_before + 1 and any(d["last_event"] == "showing confirmed" for d in crm.deals() if street_key(d["address"]) == "9999 fixture dr"))
+
+    # owes-reply: today's text counts, and the newest unanswered text sorts first
+    sigs = {c["person_id"]: {"label": "", "last_inbound": d, "last_outbound": "2026-09-01", "owes_reply": True, "signal_score": 0,
+                             "last_inbound_at": d + "T10:00:00", "last_messages": []}
+            for c, d in zip([c for c in crm.contacts() if crm.touchable(c)][:3], ["2026-09-30", "2026-10-20", "2026-10-10"])}
+    order = [d["last_inbound"] for d in crm.due(as_of, sigs) if d["owes_reply"]]
+    check("unanswered texts sort newest first", order == sorted(order, reverse=True) and order[:1] == ["2026-10-20"])
+    sigf2 = tmp / "today.json"
+    ph2 = next(c for c in crm.contacts() if phone_key(c.get("primary_phone")))
+    sigf2.write_text(json.dumps({"+1" + phone_key(ph2["primary_phone"]): {"last_inbound": today().isoformat() + "T08:00:00", "last_outbound": "2026-01-01T08:00:00", "in_90": 1, "recent_inbound": []}}))
+    check("a text from today counts as owes_reply", load_signals(sigf2, crm.contacts())[ph2["person_id"]]["owes_reply"] is True)
 
     # stage, note, dnc: the Pipeline app's writes, on a fresh copy of the fixture
     db2 = tmp / "db2.json"

@@ -20,4 +20,9 @@ stamp() { date "+%Y-%m-%d %H:%M:%S"; }
   else
     rm -f feed.json.tmp; echo "$(stamp) feed failed, previous feed.json kept"
   fi
+  # Pre-written reply drafts for the Pipeline app (counts only in this log). Skipped when the app is not installed.
+  PANEL="${PIPELINE_PANEL:-$HOME/Documents/Codex/2026-10-19/task-3/PipelinePanel}"
+  if [ -f "$PANEL/Sources/predraft.py" ]; then
+    /opt/homebrew/bin/python3 "$PANEL/Sources/predraft.py" && echo "$(stamp) predraft done" || echo "$(stamp) predraft failed"
+  fi
 } >> "$LOG" 2>&1
