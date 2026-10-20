@@ -269,14 +269,25 @@ class SheetsBackend:
         self.dry_run = dry_run
         self.writes: list[dict] = []
         self._headers: dict[str, list[str]] = {}
+        # One read per tab per run. Writes keep this copy current, so a run never re-reads a tab it already has.
+        # That keeps an ingest under the Sheets per-minute read quota (it crashed on 429 on 2026-10-20).
+        self._cache: dict[str, list[dict]] = {}
+        self._tabs: list[str] | None = None
+
+    @staticmethod
+    def _x(req):
+        # Retries 429 and 5xx with exponential backoff instead of failing mid-run.
+        return req.execute(num_retries=6)
 
     def tabs(self) -> list[str]:
-        meta = self.svc.spreadsheets().get(spreadsheetId=self.sheet_id, fields="sheets.properties.title").execute()
-        return [s["properties"]["title"] for s in meta.get("sheets", [])]
+        if self._tabs is None:
+            meta = self._x(self.svc.spreadsheets().get(spreadsheetId=self.sheet_id, fields="sheets.properties.title"))
+            self._tabs = [s["properties"]["title"] for s in meta.get("sheets", [])]
+        return list(self._tabs)
 
     def live_header(self, tab: str) -> list[str]:
         if tab not in self._headers:
-            res = self.svc.spreadsheets().values().get(spreadsheetId=self.sheet_id, range=f"'{tab}'!1:1").execute()
+            res = self._x(self.svc.spreadsheets().values().get(spreadsheetId=self.sheet_id, range=f"'{tab}'!1:1"))
             self._headers[tab] = (res.get("values") or [[]])[0]
         return list(self._headers[tab])
 
@@ -286,21 +297,25 @@ class SheetsBackend:
         self.writes.append({"op": "create_tab", "tab": tab})
         if self.dry_run:
             return True
-        self.svc.spreadsheets().batchUpdate(spreadsheetId=self.sheet_id, body={
-            "requests": [{"addSheet": {"properties": {"title": tab, "gridProperties": {"frozenRowCount": 1}}}}]}).execute()
-        self.svc.spreadsheets().values().update(
+        self._x(self.svc.spreadsheets().batchUpdate(spreadsheetId=self.sheet_id, body={
+            "requests": [{"addSheet": {"properties": {"title": tab, "gridProperties": {"frozenRowCount": 1}}}}]}))
+        self._x(self.svc.spreadsheets().values().update(
             spreadsheetId=self.sheet_id, range=f"'{tab}'!A1", valueInputOption="RAW",
-            body={"values": [SCHEMA[tab]]}).execute()
+            body={"values": [SCHEMA[tab]]}))
         self._headers[tab] = list(SCHEMA[tab])
+        if self._tabs is not None:
+            self._tabs.append(tab)
+        self._cache[tab] = []
         return True
 
     def read(self, tab: str) -> list[dict]:
-        res = self.svc.spreadsheets().values().get(spreadsheetId=self.sheet_id, range=f"'{tab}'!A1:Z").execute()
-        values = res.get("values", [])
-        if not values:
-            return []
-        self._headers[tab] = values[0]
-        return pad(values[1:], values[0])
+        if tab not in self._cache:
+            res = self._x(self.svc.spreadsheets().values().get(spreadsheetId=self.sheet_id, range=f"'{tab}'!A1:Z"))
+            values = res.get("values", [])
+            if values:
+                self._headers[tab] = values[0]
+            self._cache[tab] = pad(values[1:], values[0]) if values else []
+        return [dict(r) for r in self._cache[tab]]
 
     def append(self, tab: str, items: list[dict]) -> None:
         if not items:
@@ -308,15 +323,18 @@ class SheetsBackend:
         self.writes.append({"op": "append", "tab": tab, "rows": items})
         if self.dry_run:
             return
-        self.svc.spreadsheets().values().append(
+        self._x(self.svc.spreadsheets().values().append(
             spreadsheetId=self.sheet_id, range=f"'{tab}'!A1", valueInputOption="RAW",
-            insertDataOption="INSERT_ROWS", body={"values": to_rows(items, self.live_header(tab))}).execute()
+            insertDataOption="INSERT_ROWS", body={"values": to_rows(items, self.live_header(tab))}))
+        if tab in self._cache:
+            self._cache[tab].extend({k: str(v) for k, v in it.items()} for it in items)
 
     def update_row(self, tab: str, key_col: str, key: str, fields: dict) -> None:
         self.writes.append({"op": "update", "tab": tab, key_col: key, "fields": fields})
         if self.dry_run:
             return
-        res = self.svc.spreadsheets().values().get(spreadsheetId=self.sheet_id, range=f"'{tab}'!A1:Z").execute()
+        # Row positions come from a fresh read, so a row moved by hand is never mis-addressed.
+        res = self._x(self.svc.spreadsheets().values().get(spreadsheetId=self.sheet_id, range=f"'{tab}'!A1:Z"))
         values = res.get("values", [])
         header = values[0]
         ki = header.index(key_col)
@@ -327,8 +345,11 @@ class SheetsBackend:
                     ci = header.index(col)
                     data.append({"range": f"'{tab}'!{col_letter(ci)}{i}", "values": [[str(val)]]})
         if data:
-            self.svc.spreadsheets().values().batchUpdate(
-                spreadsheetId=self.sheet_id, body={"valueInputOption": "RAW", "data": data}).execute()
+            self._x(self.svc.spreadsheets().values().batchUpdate(
+                spreadsheetId=self.sheet_id, body={"valueInputOption": "RAW", "data": data}))
+        for r in self._cache.get(tab, []):
+            if str(r.get(key_col)) == str(key):
+                r.update({k: str(v) for k, v in fields.items()})
 
 
 def col_letter(i: int) -> str:
@@ -939,11 +960,11 @@ def gmail_messages(hours: int) -> list[dict]:
     creds = Credentials.from_authorized_user_file(str(TOKEN), SCOPES)
     svc = build("gmail", "v1", credentials=creds, cache_discovery=False)
     q = f"newer_than:{max(1, hours // 24 + 1)}d (from:luxurypresence.com OR from:showingtime.com OR from:authentisign.com)"
-    res = svc.users().messages().list(userId="me", q=q, maxResults=200).execute()
+    res = svc.users().messages().list(userId="me", q=q, maxResults=200).execute(num_retries=6)
     out = []
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
     for m in res.get("messages", []):
-        full = svc.users().messages().get(userId="me", id=m["id"], format="full").execute()
+        full = svc.users().messages().get(userId="me", id=m["id"], format="full").execute(num_retries=6)
         h = {x["name"]: x["value"] for x in full["payload"]["headers"]}
         when = datetime.fromtimestamp(int(full["internalDate"]) / 1000, tz=timezone.utc)
         if when < cutoff:
