@@ -284,6 +284,9 @@ def build_feed_queue(feed: dict, t: dict, as_of: date, max_emails: int = MAX_EMA
         name = r.get("display") or r.get("phone") or ""
         first = (name.split() or [""])[0].title()
         key = person_key(r)
+        if not first.isalpha() or first.lower() in ("household", "unknown"):
+            skipped.append((name or r.get("phone", ""), "no usable first name, hand to Caleb"))
+            continue
         if (r.get("email") or "").lower() in t["tests"]:
             skipped.append((name, "test address"))
             continue
@@ -296,7 +299,7 @@ def build_feed_queue(feed: dict, t: dict, as_of: date, max_emails: int = MAX_EMA
         used = [e["template"] for e in sent_log.get(key, []) if e.get("pool", e.get("stage")) == pool]
         day = r.get("days_quiet")
         base = {"person_id": r.get("person_id", ""), "name": name, "first_name": first, "email": (r.get("email") or "").lower(),
-                "phone": r.get("phone", ""), "stage": pool, "day": day if day is not None else 0,
+                "phone": r.get("phone", ""), "stage": pool, "day": day if day is not None else 0, "day_known": day is not None,
                 "band": r.get("band", ""), "next_action": r.get("next_action", ""), "address": ""}
         if base["email"]:
             if len(queue) >= max_emails:
@@ -341,7 +344,8 @@ def write_text_queue(result: dict, as_of: date) -> Path:
         lines.append("")
     lines += ["## Drafts", ""]
     for i, q in enumerate(result["texts"], 1):
-        lines += [f"{i}. {q['name']} {q['phone']} (id:{q['person_id']}) {q['stage']}, {q['day']}d quiet, template {q['template'] + 1}",
+        quiet = f"{q['day']}d quiet" if q.get("day_known", True) else "never logged"
+        lines += [f"{i}. {q['name']} {q['phone']} (id:{q['person_id']}) {q['stage']}, {quiet}, template {q['template'] + 1}",
                   f"   {q['text']}", ""]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     (OUT / "text-queue.json").write_text(json.dumps({
@@ -506,6 +510,8 @@ def run_tests() -> int:
     em = {q["name"] for q in fr["queue"]}; tx = {q["name"] for q in fr["texts"]}
     check("Past Client" in em and "Friend Sphere" in tx, "email when they have one, text when phone only")
     check(all(q["person_id"] for q in fr["queue"] + fr["texts"]), "every draft carries the CRM person_id")
+    odd = build_feed_queue({"touches_due": [{"person_id": "9", "display": "?Smith household", "phone": "+12255550199", "band": "cold", "days_quiet": None, "type": "household"}]}, t, as_of)
+    check(not odd["texts"] and odd["skipped"] and "first name" in odd["skipped"][0][1], "a row with no real first name is handed to Caleb, not templated")
     check(all("{{" not in q["text"] for q in fr["texts"]) and all("Keller Williams First Choice" in q["body"] for q in fr["queue"]), "text slots filled, emails signed")
     qp = write_queue_file(fr, as_of); tp = write_text_queue(fr, as_of)
     back = parse_queue_file(qp)
