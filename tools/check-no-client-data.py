@@ -34,8 +34,8 @@ def changed_files(all_files: bool) -> list[str]:
     else:
         base = subprocess.run(["git", "merge-base", "HEAD", "origin/main"], text=True, capture_output=True, cwd=ROOT)
         ref = base.stdout.strip() or "HEAD~1"
-        out = subprocess.check_output(["git", "diff", "--name-only", ref], text=True, cwd=ROOT)
-        out += subprocess.check_output(["git", "diff", "--name-only", "--cached"], text=True, cwd=ROOT)
+        out = subprocess.check_output(["git", "diff", "--name-only", "--diff-filter=d", ref], text=True, cwd=ROOT)
+        out += subprocess.check_output(["git", "diff", "--name-only", "--cached", "--diff-filter=d"], text=True, cwd=ROOT)
         out += subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard"], text=True, cwd=ROOT)
     return sorted({f for f in out.splitlines() if f and (ROOT / f).is_file()})
 
