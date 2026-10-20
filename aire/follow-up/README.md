@@ -1,5 +1,7 @@
 # Daily follow-up cadence
 
+**Pipeline is the one sender (Caleb, 2026-10-20).** This folder is the drafting library behind it, not a second outreach system. `pools.py` is what Pipeline's predraft step imports: `audience(row)` says which pool a person is in, `next_line(pool, used, row)` hands back the next unused line filled with their first name. `followups.py --queue` still writes the review files and `out/email-queue.json` plus `out/text-queue.json` for Pipeline to show. `--approve` is a dry run unless `FOLLOWUP_SENDER=followups` is set on purpose. Pipeline keeps the send log, the Do Not Contact check on every send and the daily cap, so nobody gets two messages from two places.
+
 **Since 2026-10-20 the queue comes from the CRM.** `python3 followups.py --queue` reads `aire/crm/feed.json` (written by `crm.py feed`, see `aire/crm/FEED.md`) and sorts every person who is due into a pool by who they are to Caleb:
 
 | Pool | Who | Decided by |

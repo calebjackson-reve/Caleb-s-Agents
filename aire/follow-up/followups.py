@@ -16,7 +16,7 @@ through crm.py touch so the person drops off tomorrow's list.
 
 Usage:
   python3 followups.py --queue [--as-of YYYY-MM-DD] [--feed ../crm/feed.json | --contacts FILE]   # write queue-<date>.md
-  python3 followups.py --approve queue-<date>.md                          # send what is left in the file
+  python3 followups.py --approve queue-<date>.md                          # dry run only. Pipeline is the one sender.
   python3 followups.py --test                                             # built-in checks on tests/fixtures
 
 Gmail (optional): if token.json from the speed-to-lead responder exists next to this
@@ -36,6 +36,9 @@ from datetime import date, datetime, timezone
 from email.mime.text import MIMEText
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from pools import audience, first_name as _first_name, SELLER_WORDS  # noqa: E402  (the library Pipeline imports)
 
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates.md"
@@ -237,32 +240,6 @@ def build_queue(contacts: list[dict], t: dict, as_of: date, svc=None) -> dict:
 FEED = HERE.parent / "crm" / "feed.json"
 OUT = HERE / "out"
 CRM_PY = HERE.parent / "crm" / "crm.py"
-SELLER_WORDS = ("equity_review", "mover", "sell", "listing", "downsiz", "upsiz", "land")
-
-
-def audience(row: dict) -> str:
-    """Which pool a CRM person belongs to. Who they are to Caleb decides, then what they are doing."""
-    typ = (row.get("type") or "").lower()
-    stage = (row.get("stage") or "").lower()
-    opp = (row.get("opportunity_types") or "").lower()
-    nxt = (row.get("next_action") or "").lower()
-    if typ in ("agent", "lender", "vendor"):
-        return "partner"
-    if typ == "recruit":
-        return "recruit"
-    if "new lead" in stage or "contacted" in stage:
-        return "new-lead"
-    if "under contract" in stage or "active" == stage:
-        return "under-contract"
-    if "active_buyer" in opp or "buyer" in nxt or "pre-approved" in nxt or "preapproved" in nxt:
-        return "active-buyer"
-    if any(w in opp or w in nxt for w in SELLER_WORDS):
-        return "seller-candidate"
-    if "past client" in stage or "past_client" in opp:
-        return "past-client"
-    return "sphere"
-
-
 def person_key(row: dict) -> str:
     return (row.get("email") or "").lower() or re.sub(r"\D", "", row.get("phone") or "") or f"id:{row.get('person_id', '')}"
 
@@ -282,9 +259,9 @@ def build_feed_queue(feed: dict, t: dict, as_of: date, max_emails: int = MAX_EMA
            [dict(r, _section="partner") for r in feed.get("partners", [])]
     for r in rows:
         name = r.get("display") or r.get("phone") or ""
-        first = (name.split() or [""])[0].title()
+        first = _first_name(r)
         key = person_key(r)
-        if not first.isalpha() or first.lower() in ("household", "unknown"):
+        if not first:
             skipped.append((name or r.get("phone", ""), "no usable first name, hand to Caleb"))
             continue
         if (r.get("email") or "").lower() in t["tests"]:
@@ -348,6 +325,12 @@ def write_text_queue(result: dict, as_of: date) -> Path:
         lines += [f"{i}. {q['name']} {q['phone']} (id:{q['person_id']}) {q['stage']}, {quiet}, template {q['template'] + 1}",
                   f"   {q['text']}", ""]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (OUT / "email-queue.json").write_text(json.dumps({
+        "generated_at": datetime.now(CENTRAL).isoformat(timespec="seconds"), "as_of": as_of.isoformat(),
+        "drafts": [{"person_id": q["person_id"], "name": q["name"], "email": q["email"], "pool": q["stage"],
+                    "template": q["template"] + 1, "subject": q["subject"], "body": q["body"], "days_quiet": q["day"]}
+                   for q in result["queue"]],
+    }, indent=1, ensure_ascii=False))
     (OUT / "text-queue.json").write_text(json.dumps({
         "generated_at": datetime.now(CENTRAL).isoformat(timespec="seconds"), "as_of": as_of.isoformat(),
         "reply_first": result["reply_first"],
@@ -407,7 +390,13 @@ def parse_queue_file(path: Path) -> list[dict]:
     return items
 
 
+SENDER_ALLOWED = os.getenv("FOLLOWUP_SENDER", "pipeline") == "followups"
+
+
 def approve(path: Path, t: dict) -> None:
+    if not SENDER_ALLOWED and not DRY_RUN:
+        sys.exit("Pipeline is the one sender (Caleb, 2026-10-20). This tool only drafts. "
+                 "Its queue files feed Pipeline's predraft step. To send from here anyway, set FOLLOWUP_SENDER=followups.")
     items = parse_queue_file(path)
     if not items:
         print("nothing left in the queue file")
@@ -518,6 +507,14 @@ def run_tests() -> int:
     check(back and all(b["person_id"] for b in back), "queue file keeps the person_id through the round trip")
     tq = json.loads((OUT / "text-queue.json").read_text())
     check(len(tq["drafts"]) == len(fr["texts"]) and tq["reply_first"][0]["name"] == "Texted Last", "text-queue.json for the Pipeline app")
+    eq = json.loads((OUT / "email-queue.json").read_text())
+    check(len(eq["drafts"]) == len(fr["queue"]) and all(d["person_id"] and d["body"] for d in eq["drafts"]), "email-queue.json for the Pipeline app")
+    from pools import next_line, load_templates as _lt
+    _t = _lt()
+    nl = next_line(_t["texts"]["sphere"], [0], {"display": "Taylor Sample"})
+    check(nl is not None and nl[0] == 1 and "Taylor" in nl[1], "pools.next_line skips used lines and fills the name")
+    check(next_line(_t["texts"]["sphere"], [], {"display": "?Smith household"}) is None, "pools.next_line refuses a row with no real first name")
+    (OUT / "email-queue.json").unlink()
     check(log_touch_to_crm("", "x").startswith("no person_id"), "touch logging refuses without a person_id")
     capped = build_feed_queue(feed, t, as_of, max_emails=1, max_texts=2)
     check(len(capped["queue"]) == 1 and len(capped["texts"]) == 2 and capped["deferred"] == 3 and len(capped["reply_first"]) == 1,

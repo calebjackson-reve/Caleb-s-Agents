@@ -27,8 +27,10 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - Engine: `feed.json` gains `partners` (agents, lenders, vendors with a next action or band, 60 day cadence, never on the client list) and `type` on due rows. 67 tests pass.
 - Offline run on the real CRM for Oct 20: 25 reply first, 1,529 due by audience: sphere 1,211, seller-candidate 142, active-buyer 76, past-client 74, partner 7. With caps: 25 email drafts, 25 text drafts, 1,479 deferred. Nothing sent, files stay out of git.
 
+**Corrected the same afternoon, from the CLI's objection**
+- Two senders would break the one-system rule. Pipeline is the one sender. The follow-up tool keeps the pools and templates as `aire/follow-up/pools.py`, a library Pipeline's predraft step imports, and writes `out/email-queue.json` and `out/text-queue.json` for Pipeline to show. Its own send path is a dry run unless `FOLLOWUP_SENDER=followups` is set on purpose.
+
 **Needs Caleb**
-- On the Mac: `python3 aire/follow-up/followups.py --queue`, read `queue-<date>.md` and `texts-<date>.md`, delete what you do not want, `--approve` the email file. Texts go out one at a time from the Pipeline app with your tap.
 - Say if 25 and 25 are the right daily caps, and whether the sphere pool reads like you.
 
 ## 2026-10-19, late night: enrichment on the real CRM
