@@ -106,6 +106,7 @@ def norm_band(v: str | None) -> str:
         return v
     return LEGACY_BAND.get(v.upper(), "")
 NEVER_TOUCH_TYPES = {"vendor", "agent", "lender"}
+PARTNER_CADENCE_DAYS = 60  # agents, lenders, vendors: their own section in the feed, not the client touch list
 LIVE_DEAL_STAGES = {"lead", "consult", "active", "showing", "under_contract", "unknown"}
 # Contact stages, the same list the Mac's ~/aire/crm/execution/crm_client.py enforces.
 STAGES = ["new lead", "contacted", "nurture", "showing scheduled", "under contract", "closed", "past client"]
@@ -666,6 +667,7 @@ class CRM:
                             "last_inbound": sig.get("last_inbound", ""), "last_outbound": sig.get("last_outbound", ""),
                             "owes_reply": owes, "signal_score": sig.get("signal_score", 0),
                             "last_messages": sig.get("last_messages", []),
+                            "type": (c.get("Type") or "").lower(),
                             "next_action": c.get("Next_Action", ""), "stage": c.get("Stage", ""),
                             "opportunity_types": c.get("opportunity_types", "")})
         return sorted(out, key=lambda x: (not x["owes_reply"], BAND_ORDER[x["band"]], -x["signal_score"],
@@ -705,6 +707,28 @@ class CRM:
     def live_deals(self) -> list[dict]:
         return [d for d in self.deals() if (d.get("stage") or "unknown") in LIVE_DEAL_STAGES]
 
+    def partners(self, as_of: date | None = None) -> list[dict]:
+        """Agents, lenders and vendors Caleb nurtures as referral partners. They never sit on the client touch list,
+        but they get their own section: due every PARTNER_CADENCE_DAYS, or at once when never touched and Caleb
+        left a Next_Action for them. Read only."""
+        as_of = as_of or today()
+        out = []
+        for c in self.contacts():
+            typ = (c.get("Type") or "").lower()
+            if typ not in NEVER_TOUCH_TYPES or (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
+            nxt = (c.get("Next_Action") or "").strip()
+            band = norm_band(c.get("band"))
+            if not nxt and not band:
+                continue
+            last = parse_touch(c.get("Last_Touch", ""), as_of)
+            days = (as_of - date.fromisoformat(last)).days if last else None
+            if days is None or days >= PARTNER_CADENCE_DAYS:
+                out.append({"person_id": c["person_id"], "display": c.get("display", ""), "type": typ, "band": band,
+                            "phone": c.get("primary_phone", ""), "email": c.get("email", ""), "days_quiet": days,
+                            "last_touch": c.get("Last_Touch", ""), "next_action": nxt})
+        return sorted(out, key=lambda x: -(x["days_quiet"] if x["days_quiet"] is not None else 99999))
+
     def new_leads(self, days: int = 14, as_of: date | None = None) -> list[dict]:
         as_of = as_of or today()
         cutoff = (as_of - timedelta(days=days)).isoformat()
@@ -736,6 +760,7 @@ class CRM:
                        "deals_live": len(deals)},
             "touches_due": due, "tasks": sorted(tasks, key=lambda t: t["due"] or "9999"), "deals": deals,
             "new_leads": self.new_leads(as_of=as_of),
+            "partners": self.partners(as_of),
             "cadence_days": CADENCE_DAYS,
         }
 
@@ -1273,6 +1298,9 @@ def run_tests() -> int:
     check("feed has every section", all(k in f for k in ("touches_due", "tasks", "deals", "new_leads", "counts", "header_ok")))
     check("feed lists the new lead", any(l["display"] == "Sam Newlead" for l in f["new_leads"]))
     check("feed is json", json.dumps(f) is not None)
+    check("partners section lists the vendor with a next action, never in touches_due",
+          any(x["person_id"] == "6" for x in f["partners"]) and all(d["person_id"] != "6" for d in f["touches_due"]))
+    check("due rows carry type", all("type" in d for d in f["touches_due"]))
 
     # dry run writes nothing
     before = db.read_text()

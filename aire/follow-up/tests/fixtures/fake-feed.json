@@ -1,0 +1,114 @@
+{
+ "generated_at": "2026-10-16T06:40:00-05:00",
+ "as_of": "2026-10-16",
+ "touches_due": [
+  {
+   "person_id": "11",
+   "display": "Texted Last",
+   "band": "hot",
+   "phone": "+12255550111",
+   "email": "",
+   "days_quiet": 3,
+   "owes_reply": true,
+   "signal_score": 9,
+   "last_messages": [
+    "2026-10-17: are yall still doing open houses"
+   ],
+   "type": "client",
+   "next_action": "",
+   "stage": "",
+   "opportunity_types": ""
+  },
+  {
+   "person_id": "12",
+   "display": "Friend Sphere",
+   "band": "cold",
+   "phone": "+12255550112",
+   "email": "",
+   "days_quiet": 120,
+   "owes_reply": false,
+   "signal_score": 0,
+   "last_messages": [],
+   "type": "household",
+   "next_action": "FORD check-in",
+   "stage": "nurture",
+   "opportunity_types": "nurture"
+  },
+  {
+   "person_id": "13",
+   "display": "Past Client",
+   "band": "warm",
+   "phone": "+12255550113",
+   "email": "past.client@example.com",
+   "days_quiet": 200,
+   "owes_reply": false,
+   "signal_score": 0,
+   "last_messages": [],
+   "type": "client",
+   "next_action": "",
+   "stage": "past client",
+   "opportunity_types": "past_client_review"
+  },
+  {
+   "person_id": "14",
+   "display": "Buyer Active",
+   "band": "hot",
+   "phone": "+12255550114",
+   "email": "buyer.active@example.com",
+   "days_quiet": 9,
+   "owes_reply": false,
+   "signal_score": 2,
+   "last_messages": [],
+   "type": "client",
+   "next_action": "Send two listings",
+   "stage": "",
+   "opportunity_types": "active_buyer"
+  },
+  {
+   "person_id": "15",
+   "display": "Equity Owner",
+   "band": "warm",
+   "phone": "+12255550115",
+   "email": "",
+   "days_quiet": 40,
+   "owes_reply": false,
+   "signal_score": 0,
+   "last_messages": [],
+   "type": "client",
+   "next_action": "",
+   "stage": "nurture",
+   "opportunity_types": "equity_review_candidate"
+  },
+  {
+   "person_id": "16",
+   "display": "Rookie Agent",
+   "band": "warm",
+   "phone": "+12255550116",
+   "email": "",
+   "days_quiet": 30,
+   "owes_reply": false,
+   "signal_score": 0,
+   "last_messages": [],
+   "type": "recruit",
+   "next_action": "",
+   "stage": "",
+   "opportunity_types": ""
+  }
+ ],
+ "partners": [
+  {
+   "person_id": "17",
+   "display": "Lender Pal",
+   "type": "lender",
+   "band": "hot",
+   "phone": "+12255550117",
+   "email": "lender.pal@example.com",
+   "days_quiet": 75,
+   "last_touch": "",
+   "next_action": "Partner touch: coffee"
+  }
+ ],
+ "tasks": [],
+ "deals": [],
+ "new_leads": []
+}

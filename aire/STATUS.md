@@ -17,6 +17,20 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - The three junk Deals rows, if a real ingest already wrote them, are Caleb's to delete in the sheet. The engine deletes nothing.
 - Closed PR 12 may still keep the leaked commit reachable until GitHub support purges it.
 
+## 2026-10-20, midday: the follow-up loop on the real CRM
+
+**Confirmed by Caleb**
+- "Build the follow-up loop, for my sphere and my types of clients."
+
+**Done**
+- `aire/follow-up/followups.py --queue` now reads the engine's `feed.json`. Nine pools by who the person is: sphere, past-client, active-buyer, seller-candidate, partner, recruit, new-lead, under-contract, seller-presentation. Email draft when they have an email, text draft (short pool) when phone only, written to `texts-<date>.md` and `out/text-queue.json` for the Pipeline app's compose box. People who texted last get no template: REPLY FIRST with their last three messages. Daily caps 25 emails, 25 texts, hottest first, rest deferred. After `--approve` sends, `crm.py touch` logs it by person_id so they drop off tomorrow's list. 32 tests pass.
+- Engine: `feed.json` gains `partners` (agents, lenders, vendors with a next action or band, 60 day cadence, never on the client list) and `type` on due rows. 67 tests pass.
+- Offline run on the real CRM for Oct 20: 25 reply first, 1,529 due by audience: sphere 1,211, seller-candidate 142, active-buyer 76, past-client 74, partner 7. With caps: 25 email drafts, 25 text drafts, 1,479 deferred. Nothing sent, files stay out of git.
+
+**Needs Caleb**
+- On the Mac: `python3 aire/follow-up/followups.py --queue`, read `queue-<date>.md` and `texts-<date>.md`, delete what you do not want, `--approve` the email file. Texts go out one at a time from the Pipeline app with your tap.
+- Say if 25 and 25 are the right daily caps, and whether the sphere pool reads like you.
+
 ## 2026-10-19, late night: enrichment on the real CRM
 
 **Confirmed by Caleb**
