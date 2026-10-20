@@ -608,6 +608,7 @@ class CRM:
                             "days_quiet": days, "last_touch": c.get("Last_Touch", ""),
                             "last_inbound": sig.get("last_inbound", ""), "last_outbound": sig.get("last_outbound", ""),
                             "owes_reply": owes, "signal_score": sig.get("signal_score", 0),
+                            "last_messages": sig.get("last_messages", []),
                             "next_action": c.get("Next_Action", ""), "stage": c.get("Stage", ""),
                             "opportunity_types": c.get("opportunity_types", "")})
         return sorted(out, key=lambda x: (not x["owes_reply"], BAND_ORDER[x["band"]], -x["signal_score"],
@@ -706,9 +707,13 @@ def load_signals(path: Path, contacts: list[dict]) -> dict:
             continue
         li, lo = sig.get("last_inbound", "")[:10], sig.get("last_outbound", "")[:10]
         age = (today() - date.fromisoformat(li)).days if li else None
+        recent = sig.get("recent_inbound", [])
         out[c["person_id"]] = {"label": "", "last_inbound": li, "last_outbound": lo,
                                "owes_reply": bool(li) and li > lo and age is not None and 2 <= age <= 60,
-                               "signal_score": int(sig.get("in_90", 0))}
+                               "signal_score": int(sig.get("in_90", 0)),
+                               # The last three things they actually said, so the Pipeline app can show them above the
+                               # compose box. Stays in feed.json on the Mac, never in the sheet or git.
+                               "last_messages": recent[-3:]}
     return out
 
 
@@ -1186,6 +1191,8 @@ def run_tests() -> int:
     check("do-not-contact stays off the list with signals", "5" not in ids)
     sig2 = load_signals(HERE / "tests" / "fixtures" / "fake-imessage-signals.json", crm.contacts())
     check("imessage-signals.json maps handles to person_id", set(sig2) == {"1", "7"} and sig2["1"]["last_inbound"] == "2026-10-17")
+    check("last three inbound texts ride along for the compose box", sig2["1"]["last_messages"] == ["2026-10-17: thinking about listing in spring"]
+          and any(d.get("last_messages") == ["2026-10-17: thinking about listing in spring"] for d in crm.feed(as_of, sig2, "x")["touches_due"]))
     f2 = crm.feed(as_of, sig, "fake-signals.csv")
     check("feed carries the signals summary", f2["signals"]["people"] == 3 and f2["signals"]["owes_reply"] == 1
           and f2["touches_due"][0]["last_inbound"] == "2026-10-17")
