@@ -34,8 +34,11 @@ def fake_chat_db(path: Path):
     con.executescript("""
       create table handle (ROWID integer primary key, id text);
       create table message (ROWID integer primary key, handle_id int, date int, is_from_me int, text text, attributedBody blob);
+      create table chat_message_join (chat_id int, message_id int);
+      create table chat_handle_join (chat_id int, handle_id int);
     """)
-    handles = {1: "+12255550101", 2: "(225) 555-0102", 3: "jordan@example.com", 4: "+12255550199"}
+    handles = {1: "+12255550101", 2: "(225) 555-0102", 3: "jordan@example.com", 4: "+12255550199",
+               5: "+12255550155", 6: "+12255550156", 7: "+12255550157"}
     for k, v in handles.items():
         con.execute("insert into handle values (?,?)", (k, v))
     d = lambda days: apple_ns(NOW - timedelta(days=days))
@@ -54,6 +57,11 @@ def fake_chat_db(path: Path):
         (4, d(18), 0, "and the appraisal came back fine", None),
     ]
     con.executemany("insert into message (handle_id,date,is_from_me,text,attributedBody) values (?,?,?,?,?)", msgs)
+    # A 4-person group chat (Caleb plus handles 5, 6, 7). Its messages must never count.
+    for h in (5, 6, 7):
+        con.execute("insert into chat_handle_join values (99, ?)", (h,))
+    cur = con.execute("insert into message (handle_id,date,is_from_me,text,attributedBody) values (5, ?, 0, 'group: who is bringing ice?', NULL)", (d(1),))
+    con.execute("insert into chat_message_join values (99, ?)", (cur.lastrowid,))
     con.commit(); con.close()
 
 
@@ -85,6 +93,7 @@ check("name_key handles couples", name_key(display="Pat & Sam Example") == "pat 
 check("attributedBody decode", decode_body(None, b"\x00NSString\x01\x94\x84\x01+\x05hello") == "hello")
 
 msgs = read_messages(db, 365)
+check("group chats of 4 or more are left out", not any(h == "+12255550155" for h, _, _, _ in msgs))
 check("reads all messages", len(msgs) == 12)
 sig = build_signals(msgs, NOW)
 check("handles normalized", "+12255550102" in sig and "jordan@example.com" in sig)
