@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="assets/site.css">
 
 <title>Home buying and selling calculators, Caleb Jackson, Keller Williams First Choice</title>
-<meta name="description" content="Four quick tools for Louisiana buyers, sellers and investors: which home value you need, a payment estimate, a seller net estimate and rental yield.">
+<meta name="description" content="Quick tools and guides for Louisiana buyers, sellers and investors: which home value you need, a payment estimate, a seller net estimate and rental yield.">
 <style>
 /* Tools index and calculators. Layout pattern from the Fox Valuations teardown (teardown/foxvaluations.md):
    a ledger of tools, each answering one question a client actually asks, each saying when to call instead. */
@@ -34,7 +34,16 @@
 .tool .answer h3 { font-family: var(--serif); font-weight: 400; font-size: var(--h3); line-height: 1.15; margin: 0 0 1.6rem; }
 .tool .answer p { font-size: var(--body); line-height: 1.5; margin: 0 0 1.2rem; }
 .tool .answer .label { color: var(--fg-2); display: block; margin-top: 2rem; }
+.wo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--gap) * 3); margin-top: 4rem; }
+.wo-list, .value-list { list-style: none; margin: 1.6rem 0 0; padding: 0; }
+.wo-list li, .value-list li { border-top: 1px solid var(--hairline); padding: 2rem 0; }
+.wo-list h3, .value-list h3 { font-family: var(--serif); font-weight: 400; font-size: 3.2rem; line-height: 1.15; margin: 0 0 0.8rem; }
+.wo-list p, .value-list p { margin: 0; font-size: var(--body); line-height: 1.5; color: var(--fg-2); max-width: 60ch; }
+.wo-list .src { display: inline-block; margin-top: 0.8rem; font-size: var(--small); color: var(--fg-3); text-decoration: underline; text-underline-offset: 0.3em; }
+.wo-list .src:hover, .wo-list .src:focus-visible { color: var(--fg); }
+.value-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: calc(var(--gap) * 3); margin-top: 3rem; }
 @media (max-width: 900px) {
+  .wo-grid, .value-list { grid-template-columns: 1fr; gap: 0; }
   .tool-index a { grid-template-columns: 1fr; gap: 0.8rem; }
   .tool-grid { grid-template-columns: 1fr; gap: 4rem; }
 }
@@ -52,12 +61,14 @@
 
 <section class="section" data-surface="light" aria-label="All tools">
   <div class="wrap">
-    <h2 class="label dim">Four tools</h2>
+    <h2 class="label dim">Tools and guides</h2>
     <ul class="tool-index">
       <li><a href="#which-value"><span class="label dim">Start here</span><span><span class="h3">Which home value do you need?</span><p>Answer one question and see whether you need a market analysis or an appraisal, and who orders it.</p></span><span class="label dim">One question</span></a></li>
       <li><a href="#payment"><span class="label dim">Buying</span><span><span class="h3">Monthly payment estimate</span><p>Principal and interest from your price, down payment and quoted rate, plus taxes, insurance and HOA if you know them.</p></span><span class="label dim">Four inputs</span></a></li>
       <li><a href="#net"><span class="label dim">Selling</span><span><span class="h3">Seller net estimate</span><p>What could land in your account at closing, after your payoff and the costs you enter.</p></span><span class="label dim">Five inputs</span></a></li>
       <li><a href="#yield"><span class="label dim">Investing</span><span><span class="h3">Rental yield</span><p>Gross and net yield from the price, the monthly rent and what the property costs you each year.</p></span><span class="label dim">Three inputs</span></a></li>
+          <li><a href="#write-offs"><span class="label dim">Taxes</span><span><span class="h3">Write-offs to ask your CPA about</span><p>Homeowner and investor deductions for 2026, each with its source.</p></span><span class="label dim">Checklist</span></a></li>
+      <li><a href="#add-value"><span class="label dim">Selling</span><span><span class="h3">Ways to add value before you sell</span><p>The projects that help a sale, and the ones to skip.</p></span><span class="label dim">Checklist</span></a></li>
     </ul>
   </div>
 </section>
@@ -175,6 +186,55 @@
       </dl>
       <p class="fine">Yield before your mortgage. Whether the rent holds up depends on what similar homes are actually renting for, and I can pull that for you.</p>
     </div>
+  </div>
+</section>
+
+<!-- Tax write-offs (research October 20, 2026, sources linked per item) and ways to add value -->
+<section class="section tool" id="write-offs" data-surface="light" aria-labelledby="t5">
+  <div class="wrap">
+    <span class="label dim">Taxes</span>
+    <h2 class="h2" id="t5">Write-offs to ask your CPA about</h2>
+    <p class="col-copy dim measure">Federal rules for tax year 2026, after the 2025 tax law changes. Every item links to its source. Bring this list to your CPA, not your tax return.</p>
+    <div class="wo-grid">
+      <div><h3 class="label">Homeowners</h3><ul class="wo-list">
+        <li><h3>Mortgage interest</h3><p>Interest on up to $750,000 of loan used to buy or build your main home ($375,000 married filing separately). The 2025 tax law made that cap permanent.</p><a class="src" href="https://www.irs.gov/publications/p936" target="_blank" rel="noopener">Source: IRS Publication 936</a></li>
+        <li><h3>Points</h3><p>Points paid to buy your main home are usually deductible the year you pay them. Points on a refinance are spread over the loan.</p><a class="src" href="https://www.irs.gov/taxtopics/tc504" target="_blank" rel="noopener">Source: IRS Topic 504</a></li>
+        <li><h3>Property taxes</h3><p>State and local taxes, including property tax, are deductible up to a cap of $40,000 for 2025, rising 1% a year through 2029. Higher incomes get a smaller cap.</p><a class="src" href="https://www.irs.gov/newsroom/working-families-tax-cuts" target="_blank" rel="noopener">Source: IRS, Working Families Tax Cuts</a></li>
+        <li><h3>Mortgage insurance</h3><p>Mortgage insurance premiums are deductible again starting in 2026. Ask your CPA about the income limits.</p><a class="src" href="https://www.nahb.org/Advocacy/Industry-Issues/Tax-Issues/Tax-Reform" target="_blank" rel="noopener">Source: NAHB tax reform summary</a></li>
+        <li><h3>Home office</h3><p>Only if you're self-employed or own a business and use the space regularly and only for that business. W-2 employees can't take it.</p><a class="src" href="https://www.irs.gov/publications/p587" target="_blank" rel="noopener">Source: IRS Publication 587</a></li>
+        <li><h3>Selling your home</h3><p>Up to $250,000 of gain is tax free ($500,000 married filing jointly) if you owned and lived there 2 of the last 5 years. Commissions, title and closing costs you pay reduce the gain.</p><a class="src" href="https://www.irs.gov/publications/p523" target="_blank" rel="noopener">Source: IRS Publication 523</a></li>
+        <li><h3>Improvements raise your basis</h3><p>A new roof, HVAC, an addition. Keep every receipt, because they lower the taxable gain when you sell. Repairs don't count.</p><a class="src" href="https://www.irs.gov/publications/p523" target="_blank" rel="noopener">Source: IRS Publication 523</a></li>
+        <li><h3>Energy credits ended</h3><p>The energy efficient home improvement and residential solar credits stopped after December 31, 2025. Don't count on them for a 2026 project.</p><a class="src" href="https://www.irs.gov/credits-deductions/energy-efficient-home-improvement-credit" target="_blank" rel="noopener">Source: IRS, Energy Efficient Home Improvement Credit</a></li>
+        <li><h3>Louisiana homestead exemption</h3><p>The first $75,000 of your home's market value is exempt from parish property tax if it's your primary residence. File with your parish assessor.</p><a class="src" href="https://www.louisianaassessors.org" target="_blank" rel="noopener">Source: Louisiana Assessors' Association</a></li>
+      </ul></div>
+      <div><h3 class="label">Rental and commercial investors</h3><ul class="wo-list">
+        <li><h3>Depreciation</h3><p>Rental houses are depreciated over 27.5 years, commercial buildings over 39. Land never depreciates.</p><a class="src" href="https://www.irs.gov/publications/p527" target="_blank" rel="noopener">Source: IRS Publication 527</a></li>
+        <li><h3>Operating expenses</h3><p>Insurance, management fees, mortgage interest, property taxes, utilities, advertising, legal and accounting, and travel to the property.</p><a class="src" href="https://www.irs.gov/publications/p527" target="_blank" rel="noopener">Source: IRS Publication 527</a></li>
+        <li><h3>Repairs vs. improvements</h3><p>Repairs are deducted the same year. Improvements get depreciated. Items up to $2,500 each can often be expensed under the de minimis safe harbor.</p><a class="src" href="https://www.irs.gov/businesses/small-businesses-self-employed/tangible-property-final-regulations" target="_blank" rel="noopener">Source: IRS, Tangible Property Regulations</a></li>
+        <li><h3>Bonus depreciation and cost segregation</h3><p>100% bonus depreciation is back for qualifying property bought after January 19, 2025. A cost segregation study moves parts of a building into faster schedules so more of it qualifies.</p><a class="src" href="https://www.irs.gov/businesses/cost-segregation-audit-techniques-guide-table-of-contents" target="_blank" rel="noopener">Source: IRS, Cost Segregation Guide</a></li>
+        <li><h3>1031 exchange</h3><p>Sell investment or business property and buy like-kind real estate to defer the gain. 45 days to name the replacement, 180 days to close, and a qualified intermediary holds the money. Your own home doesn't qualify.</p><a class="src" href="https://www.irs.gov/newsroom/like-kind-exchanges-real-estate-tax-tips" target="_blank" rel="noopener">Source: IRS, Like-Kind Exchanges</a></li>
+        <li><h3>$25,000 rental loss allowance</h3><p>If you actively manage your rental, up to $25,000 of losses can offset other income. It phases out between $100,000 and $150,000 of modified AGI.</p><a class="src" href="https://www.irs.gov/publications/p925" target="_blank" rel="noopener">Source: IRS Publication 925</a></li>
+        <li><h3>20% business income deduction</h3><p>The qualified business income deduction is now permanent. A rental has to run like a business to qualify, and there's a 250-hour safe harbor.</p><a class="src" href="https://www.irs.gov/newsroom/qualified-business-income-deduction" target="_blank" rel="noopener">Source: IRS, QBI Deduction</a></li>
+      </ul></div>
+    </div>
+    <p class="fine">General information only, not tax or legal advice. Tax rules change and every situation is different, so talk with a licensed CPA or tax professional before acting. Checked against the linked sources October 20, 2026.</p>
+  </div>
+</section>
+
+<section class="section tool ui-blush" id="add-value" data-surface="light" aria-labelledby="t6">
+  <div class="wrap">
+    <span class="label dim">Selling</span>
+    <h2 class="h2" id="t6">Ways to add value before you sell</h2>
+    <ol class="value-list">
+      <li><h3>Fix what an inspector will flag</h3><p>Roof, HVAC, water heater, leaks, electrical panel. Buyers negotiate hardest on the inspection report, so handle the big items first.</p></li>
+      <li><h3>Paint, light and curb appeal</h3><p>Neutral paint, bright bulbs, a clean yard and a front door that looks cared for. Small money, first impression.</p></li>
+      <li><h3>Get a pre-listing inspection</h3><p>Find the surprises before a buyer does, then fix them or price them in.</p></li>
+      <li><h3>Keep a receipts folder</h3><p>Every improvement with a date and a cost. It supports your price and lowers your taxable gain later.</p></li>
+      <li><h3>Check your homestead and tax bill</h3><p>Make sure the exemption is filed and the assessment is right. It matters to your budget and to the next buyer.</p></li>
+      <li><h3>Flood zone and elevation certificate</h3><p>In Louisiana buyers ask about flood insurance early. Having the elevation certificate ready keeps a deal moving.</p></li>
+      <li><h3>Price it on real comps</h3><p>The best improvement is the right list price. Ask me for a free CMA before you spend money on projects.</p></li>
+    </ol>
+    <p class="fine">Which projects pay off depends on your house and your street. I'll walk it with you and tell you what to skip.</p>
   </div>
 </section>
 

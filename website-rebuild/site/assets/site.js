@@ -303,6 +303,11 @@
 
   /* ---------- home hero: a still frame. The old pinned zoom and portrait rise distorted the photos (Caleb, October 20, 2026) ---------- */
 
+  /* ---------- slide-up portrait (About): rises into place as its section scrolls in, translate only ---------- */
+  document.querySelectorAll('.slide-up img').forEach(function (img) {
+    gsap.fromTo(img, { yPercent: 45 }, { yPercent: 0, ease: 'none', scrollTrigger: { trigger: img.closest('section'), start: 'top 85%', end: 'center 55%', scrub: 0.6 } });
+  });
+
   /* ---------- split panels: slow drift on the photo ---------- */
   document.querySelectorAll('.world-media img, .world-media video').forEach(function (img) {
     gsap.fromTo(img, { yPercent: -6 }, { yPercent: 6, ease: 'none', scrollTrigger: { trigger: img.closest('.world'), start: 'top bottom', end: 'bottom top', scrub: true } });

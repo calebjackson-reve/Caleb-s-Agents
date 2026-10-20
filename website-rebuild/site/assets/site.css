@@ -511,3 +511,10 @@ h1, h2, h3, h4, p { margin: 0; }
 .fb-controls { display: flex; justify-content: center; align-items: center; gap: 2.4rem; margin-top: 3rem; }
 .fb-controls button { background: none; color: var(--fg); cursor: pointer; font-size: 2rem; min-width: 44px; min-height: 44px; }
 .fb-controls button:hover, .fb-controls button:focus-visible { border-color: var(--ember); color: var(--ember); }
+
+/* About: portrait slides straight up as the section scrolls in. Position only, never scale or tilt, so the photo keeps its shape */
+.about-left { display: grid; gap: 4rem; align-content: start; }
+.slide-up { margin: 0; overflow: hidden; }
+.slide-up img { display: block; width: 100%; max-width: 46rem; height: auto; will-change: transform; }
+.about-photo img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; display: block; }
+@media (max-width: 900px) { .about-left { grid-column: 1 / -1 !important; } .slide-up img { max-width: 70%; margin: 0 auto; } }
