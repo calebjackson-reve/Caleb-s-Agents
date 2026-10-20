@@ -735,6 +735,8 @@ def load_signals(path: Path, contacts: list[dict]) -> dict:
                                        "signal_score": int(r.get("signal_score") or 0)}
         return out
     raw = json.loads(path.read_text())
+    # imessage_signals.py keys phones as +1XXXXXXXXXX. Normalize both sides the same way before matching.
+    raw = {(email_key(k) if "@" in k else phone_key(k)): v for k, v in raw.items() if isinstance(v, dict)}
     for c in contacts:
         sig = raw.get(phone_key(c.get("primary_phone"))) or raw.get(email_key(c.get("email")))
         if not sig:
@@ -1267,6 +1269,13 @@ def run_tests() -> int:
     check("rescale rewrites only legacy cells", all(norm_band(c["band"]) == c["band"] for c in crm.contacts() if c["band"]) and sum(rc.values()) >= 2)
     check("rescale is audited", any(r["Tool"] == "rescale_band" for r in crm.b.read("Connector Log")))
     check("rescale twice is a no-op", crm.rescale_band() == {})
+
+    # imessage-signals.json keys phones with +1; contacts store them however the sheet has them
+    sigf = tmp / "imessage-signals.json"
+    ph = next(c for c in crm.contacts() if phone_key(c.get("primary_phone")))
+    sigf.write_text(json.dumps({"+1" + phone_key(ph["primary_phone"]): {"last_inbound": "2026-10-15", "last_outbound": "2026-10-01", "in_90": 4, "recent_inbound": ["2026-10-15: fixture text"]}}))
+    sg = load_signals(sigf, crm.contacts())
+    check("signals match a +1 phone key to a 10-digit contact phone", ph["person_id"] in sg and sg[ph["person_id"]]["last_messages"] == ["2026-10-15: fixture text"])
 
     # stage, note, dnc: the Pipeline app's writes, on a fresh copy of the fixture
     db2 = tmp / "db2.json"
