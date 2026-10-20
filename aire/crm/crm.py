@@ -39,6 +39,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import uuid
 from datetime import date, datetime, timedelta, timezone
@@ -106,6 +107,8 @@ def norm_band(v: str | None) -> str:
     return LEGACY_BAND.get(v.upper(), "")
 NEVER_TOUCH_TYPES = {"vendor", "agent", "lender"}
 LIVE_DEAL_STAGES = {"lead", "consult", "active", "showing", "under_contract", "unknown"}
+# Contact stages, the same list the Mac's ~/aire/crm/execution/crm_client.py enforces.
+STAGES = ["new lead", "contacted", "nurture", "showing scheduled", "under contract", "closed", "past client"]
 
 
 # ------------------------------------------------------------------ helpers
@@ -533,6 +536,37 @@ class CRM:
                 self._audit("task_done", t.get("person_id", ""), f"{t['task']} [{task_id}]")
                 return True
         return False
+
+    def set_stage(self, person_id: str, stage: str, expect: str | None = None, day: str | None = None) -> dict:
+        """Stage moves and Last_Touch moves forward, like the Mac's update_stage.py. expect guards a stale review."""
+        stage = (stage or "").strip().lower()
+        if stage not in STAGES:
+            raise GateError("Stage must be one of: " + ", ".join(STAGES))
+        c = self.by_id(person_id)
+        if not c:
+            raise GateError(f"no contact with person_id {person_id}; writes are by person_id only")
+        before = (c.get("Stage") or "").strip().lower()
+        if expect is not None and before != expect.strip().lower():
+            raise GateError(f"Stage changed since you reviewed it (now {before or 'blank'}). Nothing written. Review again.")
+        if before == stage:
+            raise GateError(f"Stage is already {stage}")
+        day = day or today().isoformat()
+        fields = {"Stage": stage}
+        current = parse_touch(c.get("Last_Touch", ""))
+        if not current or current < day:
+            fields["Last_Touch"] = day
+        changes = self.update_contact(person_id, fields, "stage")
+        self.add_note(person_id, f"Stage: {before or 'blank'} -> {stage}")
+        return {"person_id": str(person_id), "before": before, "after": stage, "changes": changes}
+
+    def note(self, person_id: str, text: str) -> dict:
+        """A note only. Last_Touch does not move; use touch when a conversation happened."""
+        text = (text or "").strip()
+        if not 0 < len(text) <= 1000:
+            raise GateError("Note must be 1 to 1000 characters")
+        if not person_id or not self.by_id(person_id):
+            raise GateError(f"no contact with person_id {person_id}; writes are by person_id only")
+        return self.add_note(person_id, text, by="Caleb")
 
     def upsert_deal(self, address: str, event: str, at: str, person_id: str = "", stage: str = "",
                     side: str = "", source: str = "") -> dict:
@@ -1234,11 +1268,62 @@ def run_tests() -> int:
     check("rescale is audited", any(r["Tool"] == "rescale_band" for r in crm.b.read("Connector Log")))
     check("rescale twice is a no-op", crm.rescale_band() == {})
 
+    # stage, note, dnc: the Pipeline app's writes, on a fresh copy of the fixture
+    db2 = tmp / "db2.json"
+    db2.write_text((HERE / "tests" / "fixtures" / "fake-crm.json").read_text())
+    c2 = CRM(LocalBackend(db2), audit_path=tmp / "audit2.jsonl")
+    r = c2.set_stage("7", "Contacted", day="2026-10-20")
+    check("stage moves and Last_Touch moves forward", c2.by_id("7")["Stage"] == "contacted" and c2.by_id("7")["Last_Touch"] == "2026-10-20" and r["before"] == "nurture")
+    check("stage leaves a note", any(n.get("person_id") == "7" and "nurture -> contacted" in n.get("Note", "") for n in c2.notes()))
+    check("stage refuses an unknown stage", raises(lambda: c2.set_stage("7", "hot")))
+    check("stage refuses the same stage", raises(lambda: c2.set_stage("7", "contacted")))
+    check("stage refuses a stale review", raises(lambda: c2.set_stage("7", "closed", expect="nurture")) and c2.by_id("7")["Stage"] == "contacted")
+    check("stage refuses an unknown person", raises(lambda: c2.set_stage("999", "closed")))
+    lt = c2.by_id("6").get("Last_Touch", "")
+    c2.note("6", "Prefers texts after 5")
+    check("note is kept and Last_Touch does not move", c2.by_id("6").get("Last_Touch", "") == lt and any(n.get("Note") == "Prefers texts after 5" and n.get("By") == "Caleb" for n in c2.notes()))
+    check("note refuses empty and oversize", raises(lambda: c2.note("6", "  ")) and raises(lambda: c2.note("6", "x" * 1001)))
+    check("dnc sets YES and is audited", c2.set_do_not_contact("6", "asked to stop") and c2.by_id("6")["Do_Not_Contact"] == "YES"
+          and any(r.get("Tool") == "set_do_not_contact" and r.get("person_id") == "6" for r in c2.b.read("Connector Log")))
+    check("dnc twice is a no-op", c2.set_do_not_contact("6", "again") is False)
+    check("Do_Not_Contact cannot be written back through update_contact", raises(lambda: c2.update_contact("6", {"Do_Not_Contact": "NO"}, "x")))
+    check("touch refuses a DNC person", raises(lambda: c2.touch("6", "called")))
+    out = subprocess.run([sys.executable, __file__, "--local", str(db2), "--json", "note", "999", "x"], capture_output=True, text=True)
+    one = out.stdout.strip().splitlines()
+    check("--json prints exactly one JSON error object and exits 1", out.returncode == 1 and len(one) == 1 and json.loads(one[0])["ok"] is False)
+    out = subprocess.run([sys.executable, __file__, "--local", str(db2), "--dry-run", "--json", "stage", "3", "closed"], capture_output=True, text=True)
+    one = out.stdout.strip().splitlines()
+    check("--json dry run reports planned writes and performs none", out.returncode == 0 and len(one) == 1 and json.loads(one[0])["planned_writes"] >= 1
+          and json.loads(db2.read_text())["Contacts"][2]["Stage"] == "past client")
+
     print(f"\n{'ALL PASS' if not fails else str(len(fails)) + ' FAILED'}")
     return 1 if fails else 0
 
 
 # ---------------------------------------------------------------------- cli
+
+
+APP_WRITES = {"touch", "done", "task", "stage", "note", "dnc"}
+
+
+def run_app_write(crm: "CRM", a, as_of: date):
+    if a.cmd == "touch":
+        return crm.touch(a.person_id, a.what, day=as_of.isoformat())
+    if a.cmd == "done":
+        if not crm.done(a.task_id):
+            raise GateError("no such open task")
+        return {"task_id": a.task_id, "status": "done"}
+    if a.cmd == "task":
+        crm.ensure_tabs()
+        return crm.add_task(a.person_id, a.task, a.due)
+    if a.cmd == "stage":
+        return crm.set_stage(a.person_id, a.stage, expect=a.expect, day=as_of.isoformat())
+    if a.cmd == "note":
+        return crm.note(a.person_id, a.text)
+    if a.cmd == "dnc":
+        changed = crm.set_do_not_contact(a.person_id, a.reason)
+        return {"person_id": a.person_id, "Do_Not_Contact": "YES", "changed": changed}
+    raise GateError(f"unknown write {a.cmd}")
 
 
 def main(argv=None) -> int:
@@ -1247,6 +1332,7 @@ def main(argv=None) -> int:
     ap.add_argument("--dry-run", action="store_true", help="list every write, perform none")
     ap.add_argument("--test", action="store_true")
     ap.add_argument("--as-of", help="YYYY-MM-DD, default today (Central)")
+    ap.add_argument("--json", action="store_true", help="write commands print one JSON object: {ok, result} or {ok: false, error}")
     sub = ap.add_subparsers(dest="cmd")
     sub.add_parser("auth")
     sub.add_parser("check")
@@ -1261,6 +1347,10 @@ def main(argv=None) -> int:
     p = sub.add_parser("touch"); p.add_argument("person_id"); p.add_argument("what")
     p = sub.add_parser("task"); p.add_argument("person_id"); p.add_argument("task"); p.add_argument("--due", default=today().isoformat())
     p = sub.add_parser("done"); p.add_argument("task_id")
+    p = sub.add_parser("stage"); p.add_argument("person_id"); p.add_argument("stage"); p.add_argument("--expect", help="refuse if the current Stage differs")
+    p = sub.add_parser("note"); p.add_argument("person_id"); p.add_argument("text")
+    p = sub.add_parser("dnc", help="Do_Not_Contact to YES. One way: there is no command to set it back to NO")
+    p.add_argument("person_id"); p.add_argument("--reason", required=True)
     p = sub.add_parser("merge-hwc"); p.add_argument("--hwc", required=True); p.add_argument("--report", required=True)
     p.add_argument("--apply", action="store_true", help="only after Caleb has said yes to the report")
     a = ap.parse_args(argv)
@@ -1274,6 +1364,20 @@ def main(argv=None) -> int:
     backend = LocalBackend(Path(a.local), dry_run=a.dry_run) if a.local else SheetsBackend(dry_run=a.dry_run)
     crm = CRM(backend)
     as_of = date.fromisoformat(a.as_of) if a.as_of else today()
+
+    if a.json and a.cmd in APP_WRITES:
+        # One JSON object on stdout, nothing else, so the Pipeline app can parse it.
+        try:
+            result = run_app_write(crm, a, as_of)
+            print(json.dumps({"ok": True, "result": result, "dry_run": bool(a.dry_run),
+                              "planned_writes": len(backend.writes) if a.dry_run else None}, ensure_ascii=False, default=str))
+            return 0
+        except GateError as e:
+            print(json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+            return 1
+        except Exception as e:
+            print(json.dumps({"ok": False, "error": f"CRM write failed: {type(e).__name__}. Nothing confirmed."}))
+            return 1
 
     if a.cmd == "check":
         print(json.dumps(crm.check(), indent=1))
@@ -1314,6 +1418,8 @@ def main(argv=None) -> int:
         print(crm.add_task(a.person_id, a.task, a.due))
     elif a.cmd == "done":
         print("done" if crm.done(a.task_id) else "no such open task")
+    elif a.cmd in ("stage", "note", "dnc"):
+        print(run_app_write(crm, a, as_of))
     elif a.cmd == "merge-hwc":
         hwc = json.loads(Path(a.hwc).read_text())
         hwc = hwc.get("Contacts", hwc) if isinstance(hwc, dict) else hwc
