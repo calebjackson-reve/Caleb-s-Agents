@@ -115,6 +115,7 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - Run "morning companion" on the Mac for Command and MLS.
 
 ## Supervised week log
+- 2026-10-21 (7:05 am run): 2 new website leads in the last 26 hours (both Google sign on, Mon 8:13 am and Mon 5:53 pm Central), 2 sign-in drafts created, 1 digest draft to Caleb. No prior drafts or sent mail to either address. Nothing sent, nothing labeled.
 - 2026-10-20 (7:05 am run): 0 new website leads in the last 26 hours, 0 drafts created. The only lead in the window search is Sunday's Google sign-on lead, already drafted on 10/19. Nothing sent.
 
 ## Morning run log
