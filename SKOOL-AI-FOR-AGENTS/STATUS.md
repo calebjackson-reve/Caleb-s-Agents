@@ -2,6 +2,17 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-21: Maker School reel breakdown
+
+**Done**
+- Broke down the Instagram reel Caleb sent (skool_com, Oct 20, 19 seconds, selling Nick Saraev's Maker School). Downloaded, transcribed and pulled every frame. Doc: https://claude.ai/artifact/Vh1oehMHSpzUrphBVZ4A49. Reference copy, transcript and contact sheet in project files `skool/research/maker-school-reel/` (not our footage, never post).
+- Loaded Maker School's live About page: $184 a month, 2,644 members, 14 courses, email as join question 1, 3 rules, auto DM on (confirmed 2026-10-21).
+- Loaded our live About page for the first time (Skool no longer blocks this server). Confirmed: 1 member, 0 courses, no About video, and the About text is still the old challenge copy, not the Oct 14 v2 copy.
+
+**Needs Caleb**
+- Approve the one-line promise and the 10 ranked changes in the doc, then make the Skool edits yourself.
+- Approve or rewrite the 20 second promo reel draft before anything is filmed.
+
 ## 2026-10-19: first pinned post drafted
 
 **Done**
