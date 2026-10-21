@@ -1,0 +1,23 @@
+name = "calebjackson-chat"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+# widget.js is served from here, so there is nothing else to host.
+[assets]
+directory = "./public"
+
+# Visitors' messages per IP per hour live here. Leads live in LEADS.
+# Create both once: npx wrangler kv namespace create RATE ; npx wrangler kv namespace create LEADS
+# then paste the ids below.
+kv_namespaces = [
+  { binding = "RATE",  id = "REPLACE_WITH_RATE_ID" },
+  { binding = "LEADS", id = "REPLACE_WITH_LEADS_ID" }
+]
+
+[vars]
+GROK_MODEL = "grok-4-1-fast-non-reasoning"
+ALLOWED_ORIGINS = "https://calebjackson.org,https://www.calebjackson.org"
+
+# Secrets, never in this file:
+#   npx wrangler secret put XAI_API_KEY
+#   npx wrangler secret put LEAD_WEBHOOK_URL   (optional: Zapier, Make, or KW Command inbox)
