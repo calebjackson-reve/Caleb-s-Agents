@@ -50,6 +50,88 @@ Closed clients. Thresholds for this pool are 90, 180, 365 days instead.
 3. {{firstName}}, checking in. Happy to run an updated value on your place anytime, no strings.
 4. Hey {{firstName}}, hope the family's well. If anyone you know is thinking about moving, I'm glad to help.
 
+## Pool: sphere
+Friends, family, households, the people who know Caleb. FORD check-ins: family, occupation, recreation, dreams. No business ask.
+1. Hey {{firstName}}, how y'all been? Anything I can help with?
+2. Hi {{firstName}}, you crossed my mind today. How's the family doing?
+3. {{firstName}}, how's work treating you lately? Hope things are good.
+4. Hey {{firstName}}, got anything fun on the calendar this fall?
+5. Hi {{firstName}}, been a minute. What's new with y'all?
+6. {{firstName}}, thinking about you. Hope the house is treating you right.
+7. Hey {{firstName}}, if you ever need a hand with anything around the house, I know good people. Just say the word.
+8. Hi {{firstName}}, hope the week's going easy on you. Let's catch up soon.
+
+## Pool: active-buyer
+Looking now, or pre-approved and watching.
+1. Hey {{firstName}}, a couple of new ones hit the market near what you wanted. Want me to send them?
+2. Hi {{firstName}}, anything change on what you're looking for? Happy to tighten the search.
+3. {{firstName}}, rates moved a little this week. Want me to have the lender rerun your numbers?
+4. Hey {{firstName}}, want to see anything this weekend? I can set up two or three in a row.
+5. Hi {{firstName}}, still watching the areas you liked. Say the word and I'll pull the fresh list.
+6. {{firstName}}, quick check-in. Still on track, or has the timing shifted?
+7. Hey {{firstName}}, no pressure. Here when you want to look again.
+
+## Pool: seller-candidate
+Owns a home with equity, mentioned selling, or a move is coming.
+1. Hey {{firstName}}, want me to run what your place would bring right now? Takes me ten minutes, no strings.
+2. Hi {{firstName}}, a home near you just sold. Want to know what it does to your number?
+3. {{firstName}}, still thinking about a move? Happy to talk through timing whenever.
+4. Hey {{firstName}}, if a bigger place or more land is still on your mind, let's look at what selling first would take.
+5. Hi {{firstName}}, quick one. Want a fresh value on your house for your own records?
+6. {{firstName}}, no rush on any of it. I'm here when you want real numbers.
+
+## Pool: partner
+Agents, lenders, vendors, title. Referral partners. Gratitude first, ask second.
+1. Hey {{firstName}}, thanks again for the help lately. Coffee on me this month?
+2. Hi {{firstName}}, anything I can send your way right now? Always glad to return the favor.
+3. {{firstName}}, got a client who could use someone like you. Mind if I pass your number along?
+4. Hey {{firstName}}, how's business this fall? Let's compare notes soon.
+5. Hi {{firstName}}, appreciate you. Let me know what you need from me.
+
+## Pool: recruit
+Agents Caleb would like on the team at Keller Williams First Choice.
+1. Hey {{firstName}}, saw your recent closing. Nice work. Coffee sometime?
+2. Hi {{firstName}}, curious how things are going where you are. Happy to share what's working for me.
+3. {{firstName}}, if you ever want to talk about what KW First Choice looks like from the inside, I'm an open book.
+4. Hey {{firstName}}, no pitch. Just want to stay in touch with the good ones.
+
+## Text: sphere
+1. Hey {{firstName}}, how y'all been?
+2. {{firstName}}! Thought of you today. How's the family?
+3. Hey {{firstName}}, been a minute. What's new?
+4. Hope the week's being good to you {{firstName}}. Let's catch up soon.
+
+## Text: past-client
+1. Hey {{firstName}}, how's the house treating you?
+2. {{firstName}}, thought about y'all today. Everything good at home?
+3. Hey {{firstName}}, want a fresh value on the house for your records? Quick and free.
+
+## Text: active-buyer
+1. Hey {{firstName}}, a couple new ones popped up near what you wanted. Want them?
+2. {{firstName}}, want to see anything this weekend?
+3. Hey {{firstName}}, anything change on what you're looking for?
+
+## Text: seller-candidate
+1. Hey {{firstName}}, want me to run what your place would bring right now? Ten minutes, no strings.
+2. {{firstName}}, a home near you just sold. Want to know what it does to your number?
+3. Hey {{firstName}}, still thinking about a move? Here when you want real numbers.
+
+## Text: partner
+1. Hey {{firstName}}, thanks again for the help lately. Coffee on me this month?
+2. {{firstName}}, anything I can send your way? Glad to return the favor.
+
+## Text: recruit
+1. Hey {{firstName}}, saw your recent closing. Nice work. Coffee sometime?
+2. {{firstName}}, no pitch. Just want to stay in touch with the good ones.
+
+## Text: new-lead
+1. Hey {{firstName}}, it's Caleb Jackson with KW First Choice. Still happy to pull real numbers for you whenever works.
+2. Hi {{firstName}}, Caleb here. Any questions I can answer about the market around you?
+
+## Text: under-contract
+1. Hey {{firstName}}, quick check-in. Need anything from me this week?
+2. {{firstName}}, all moving along on my end. Holler if anything comes up.
+
 ## Subjects
 {{firstName}} | quick check-in | following up | how are things going | anything you need | checking in
 

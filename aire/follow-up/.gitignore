@@ -11,3 +11,6 @@ flags.md
 queue-*.md
 !queue-seed.md
 queue-*-approved.md
+texts-*.md
+out/
+__pycache__/

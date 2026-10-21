@@ -87,7 +87,7 @@ SCHEMA = {
     # Added by this tool when missing:
     "Tasks": ["task_id", "person_id", "display", "task", "due", "status", "source", "created_at", "done_at"],
     "Deals": ["deal_id", "person_id", "display", "address", "side", "stage", "price", "expected_close",
-              "next_step", "last_event", "last_event_at", "source", "updated_at"],
+              "next_step", "last_event", "last_event_at", "source", "updated_at", "commission"],
 }
 ADDED_TABS = ["Tasks", "Deals"]
 
@@ -106,7 +106,9 @@ def norm_band(v: str | None) -> str:
         return v
     return LEGACY_BAND.get(v.upper(), "")
 NEVER_TOUCH_TYPES = {"vendor", "agent", "lender"}
+PARTNER_CADENCE_DAYS = 60  # agents, lenders, vendors: their own section in the feed, not the client touch list
 LIVE_DEAL_STAGES = {"lead", "consult", "active", "showing", "under_contract", "unknown"}
+DEAL_STAGES = LIVE_DEAL_STAGES | {"closed", "fell_through"}
 # Contact stages, the same list the Mac's ~/aire/crm/execution/crm_client.py enforces.
 STAGES = ["new lead", "contacted", "nurture", "showing scheduled", "under contract", "closed", "past client"]
 
@@ -216,6 +218,9 @@ class LocalBackend:
     def live_header(self, tab: str) -> list[str]:
         return list(self.data["header"]) if tab == "Contacts" else list(SCHEMA[tab])
 
+    def ensure_columns(self, tab: str) -> list[str]:
+        return []  # the local header is SCHEMA itself
+
     def ensure_tab(self, tab: str) -> bool:
         if tab in self.data:
             return False
@@ -291,6 +296,21 @@ class SheetsBackend:
             self._headers[tab] = (res.get("values") or [[]])[0]
         return list(self._headers[tab])
 
+    def ensure_columns(self, tab: str) -> list[str]:
+        """Columns added to SCHEMA after a tab was created go on the end of its live header. Existing columns never move."""
+        header = self.live_header(tab)
+        missing = [c for c in SCHEMA[tab] if c not in header]
+        if not missing:
+            return []
+        self.writes.append({"op": "add_columns", "tab": tab, "columns": missing})
+        if self.dry_run:
+            return missing
+        start = col_letter(len(header))
+        self._x(self.svc.spreadsheets().values().update(
+            spreadsheetId=self.sheet_id, range=f"'{tab}'!{start}1", valueInputOption="RAW", body={"values": [missing]}))
+        self._headers[tab] = header + missing
+        return missing
+
     def ensure_tab(self, tab: str) -> bool:
         if tab in self.tabs():
             return False
@@ -365,9 +385,10 @@ def col_letter(i: int) -> str:
 
 
 class CRM:
-    def __init__(self, backend, audit_path: Path = AUDIT):
+    def __init__(self, backend, audit_path: Path = AUDIT, client: str = CLIENT):
         self.b = backend
         self.audit_path = audit_path
+        self.client = client  # the Client column in Connector Log: who asked for the write
         self._contacts: list[dict] | None = None
         # In a dry run the backend performs nothing, so rows minted during the run live here
         # and the derived views still see them. Empty in a real run.
@@ -395,6 +416,11 @@ class CRM:
         added = [t for t in ADDED_TABS if self.b.ensure_tab(t)]
         for t in added:
             self._audit("create_tab", "", f"tab {t} added with header {SCHEMA[t]}")
+        for t in ADDED_TABS:
+            if t not in added:
+                cols = self.b.ensure_columns(t)
+                if cols:
+                    self._audit("add_columns", "", f"tab {t}: added {', '.join(cols)}")
         return added
 
     # ---- reads
@@ -448,13 +474,13 @@ class CRM:
     # ---- gates and audit
 
     def _audit(self, tool: str, person_id: str, detail: str) -> None:
-        line = {"at": now_iso(), "tool": tool, "client": CLIENT, "person_id": str(person_id), "detail": detail,
+        line = {"at": now_iso(), "tool": tool, "client": self.client, "person_id": str(person_id), "detail": detail,
                 "dry_run": bool(getattr(self.b, "dry_run", False))}
         if not getattr(self.b, "dry_run", False):
             self.audit_path.parent.mkdir(parents=True, exist_ok=True)
             with self.audit_path.open("a") as f:
                 f.write(json.dumps(line, ensure_ascii=False) + "\n")
-        self.b.append("Connector Log", [{"At (CT)": now_sheet(), "Tool": tool, "Client": CLIENT,
+        self.b.append("Connector Log", [{"At (CT)": now_sheet(), "Tool": tool, "Client": self.client,
                                          "person_id": str(person_id), "Detail": detail}])
 
     def update_contact(self, person_id: str, fields: dict, reason: str) -> dict:
@@ -616,6 +642,62 @@ class CRM:
         self._audit("create_deal", person_id, f"{address}: {event}")
         return row
 
+    def edit_deal(self, address: str, fields: dict, expect_stage: str | None = None, create: bool = False,
+                  side: str = "", day: str | None = None) -> dict:
+        """Caleb's correction to one deal, matched by street. Only stage, price, expected_close, next_step,
+        person_id and last_event can change. create makes the row when no deal has this street yet."""
+        fields = {k: (v or "").strip() for k, v in fields.items() if v is not None}
+        if not fields:
+            raise GateError("nothing to change")
+        if "stage" in fields and fields["stage"] not in DEAL_STAGES:
+            raise GateError("Deal stage must be one of: " + ", ".join(sorted(DEAL_STAGES)))
+        if fields.get("price") and not re.fullmatch(r"\d{4,9}", fields["price"]):
+            raise GateError("price is whole dollars, digits only")
+        if fields.get("commission") and not re.fullmatch(r"\d{1,7}(\.\d{2})?", fields["commission"]):
+            raise GateError("commission is dollars, digits only, like 12750 or 7198.50")
+        if fields.get("expected_close"):
+            try:
+                date.fromisoformat(fields["expected_close"])
+            except ValueError:
+                raise GateError("expected_close is YYYY-MM-DD, or blank to clear it")
+        if len(fields.get("next_step", "")) > 200 or len(fields.get("last_event", "")) > 300:
+            raise GateError("next_step is at most 200 characters, last_event 300")
+        if fields.get("person_id"):
+            c = self.by_id(fields["person_id"])
+            if not c:
+                raise GateError(f"no contact with person_id {fields['person_id']}; deals link by person_id only")
+            fields["display"] = c["display"]
+        hits = [d for d in self.deals() if street_key(d.get("address", "")) == street_key(address)]
+        if len(hits) > 1:
+            raise GateError(f"{len(hits)} deals share the street {street_key(address)}; fix the sheet first")
+        if not hits:
+            if not create:
+                raise GateError(f"no deal at {address}; pass --create to add one")
+            row = self.upsert_deal(address, fields.get("last_event", "Added by Caleb"), day or today().isoformat(),
+                                   person_id=fields.get("person_id", ""), stage=fields.get("stage", ""), side=side,
+                                   source="Caleb")
+            rest = {k: v for k, v in fields.items() if k in ("price", "expected_close", "next_step", "commission")}
+            if rest:
+                self.b.update_row("Deals", "deal_id", row["deal_id"], rest)
+            return {**row, **rest, "created": True}
+        d = hits[0]
+        before = (d.get("stage") or "unknown").strip()
+        if expect_stage is not None and before != expect_stage.strip():
+            raise GateError(f"Deal stage changed since you reviewed it (now {before}). Nothing written. Review again.")
+        changes = {k: v for k, v in fields.items() if (d.get(k) or "") != v}
+        if not changes:
+            raise GateError("the deal already says that")
+        if "last_event" in changes:
+            changes["last_event_at"] = day or today().isoformat()
+        changes["updated_at"] = now_iso()
+        self.b.update_row("Deals", "deal_id", d["deal_id"], changes)
+        if self._dry():
+            d.update(changes)
+        self._audit("edit_deal", changes.get("person_id") or d.get("person_id", ""),
+                    f"{d.get('address', address)}: " + ", ".join(f"{k}={v or 'blank'}" for k, v in changes.items()
+                                                               if k not in ("updated_at", "display")))
+        return {**d, **changes, "before_stage": before}
+
     def rescale_band(self) -> dict:
         """Rewrite every legacy band value to the five-step scale. Only cells whose value changes are written,
         each through update_row so it lands in the audit file and the Connector Log."""
@@ -665,11 +747,19 @@ class CRM:
                             "days_quiet": days, "last_touch": c.get("Last_Touch", ""),
                             "last_inbound": sig.get("last_inbound", ""), "last_outbound": sig.get("last_outbound", ""),
                             "owes_reply": owes, "signal_score": sig.get("signal_score", 0),
+                            "_in_at": sig.get("last_inbound_at", ""),
                             "last_messages": sig.get("last_messages", []),
+                            "type": (c.get("Type") or "").lower(),
                             "next_action": c.get("Next_Action", ""), "stage": c.get("Stage", ""),
                             "opportunity_types": c.get("opportunity_types", "")})
-        return sorted(out, key=lambda x: (not x["owes_reply"], BAND_ORDER[x["band"]], -x["signal_score"],
+        # Unanswered texts first, newest first, so this morning's question beats one from three weeks ago.
+        # Everyone else: hottest band, then strongest signal, then longest silence.
+        owes = sorted([x for x in out if x["owes_reply"]], key=lambda x: (x.pop("_in_at", "") or x["last_inbound"]), reverse=True)
+        rest = sorted([x for x in out if not x["owes_reply"]], key=lambda x: (BAND_ORDER[x["band"]], -x["signal_score"],
                                           -(x["days_quiet"] if x["days_quiet"] is not None else 99999)))
+        for x in rest:
+            x.pop("_in_at", None)
+        return owes + rest
 
     def open_tasks(self, as_of: date | None = None) -> list[dict]:
         as_of = as_of or today()
@@ -705,6 +795,28 @@ class CRM:
     def live_deals(self) -> list[dict]:
         return [d for d in self.deals() if (d.get("stage") or "unknown") in LIVE_DEAL_STAGES]
 
+    def partners(self, as_of: date | None = None) -> list[dict]:
+        """Agents, lenders and vendors Caleb nurtures as referral partners. They never sit on the client touch list,
+        but they get their own section: due every PARTNER_CADENCE_DAYS, or at once when never touched and Caleb
+        left a Next_Action for them. Read only."""
+        as_of = as_of or today()
+        out = []
+        for c in self.contacts():
+            typ = (c.get("Type") or "").lower()
+            if typ not in NEVER_TOUCH_TYPES or (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
+            nxt = (c.get("Next_Action") or "").strip()
+            band = norm_band(c.get("band"))
+            if not nxt and not band:
+                continue
+            last = parse_touch(c.get("Last_Touch", ""), as_of)
+            days = (as_of - date.fromisoformat(last)).days if last else None
+            if days is None or days >= PARTNER_CADENCE_DAYS:
+                out.append({"person_id": c["person_id"], "display": c.get("display", ""), "type": typ, "band": band,
+                            "phone": c.get("primary_phone", ""), "email": c.get("email", ""), "days_quiet": days,
+                            "last_touch": c.get("Last_Touch", ""), "next_action": nxt})
+        return sorted(out, key=lambda x: -(x["days_quiet"] if x["days_quiet"] is not None else 99999))
+
     def new_leads(self, days: int = 14, as_of: date | None = None) -> list[dict]:
         as_of = as_of or today()
         cutoff = (as_of - timedelta(days=days)).isoformat()
@@ -736,6 +848,7 @@ class CRM:
                        "deals_live": len(deals)},
             "touches_due": due, "tasks": sorted(tasks, key=lambda t: t["due"] or "9999"), "deals": deals,
             "new_leads": self.new_leads(as_of=as_of),
+            "partners": self.partners(as_of),
             "cadence_days": CADENCE_DAYS,
         }
 
@@ -765,10 +878,15 @@ def load_signals(path: Path, contacts: list[dict]) -> dict:
         if not sig:
             continue
         li, lo = sig.get("last_inbound", "")[:10], sig.get("last_outbound", "")[:10]
-        age = (today() - date.fromisoformat(li)).days if li else None
+        # Only a text that needs an answer puts Caleb on the hook. Older signal files have no last_reply_inbound.
+        ask = sig.get("last_reply_inbound", sig.get("last_inbound", ""))
+        ai = ask[:10]
+        age = (today() - date.fromisoformat(ai)).days if ai else None
         recent = sig.get("recent_inbound", [])
         out[c["person_id"]] = {"label": "", "last_inbound": li, "last_outbound": lo,
-                               "owes_reply": bool(li) and li > lo and age is not None and 2 <= age <= 60,
+                               # They texted last within 60 days, today included. A text from this morning is the most urgent one.
+                               "owes_reply": bool(ai) and ai > lo and age is not None and 0 <= age <= 60,
+                               "last_inbound_at": ask,
                                "signal_score": int(sig.get("in_90", 0)),
                                # The last three things they actually said, so the Pipeline app can show them above the
                                # compose box. Stays in feed.json on the Mac, never in the sheet or git.
@@ -1194,6 +1312,11 @@ def run_tests() -> int:
     check("update writes the cell", crm.by_id("1")["Stage"] == "contacted")
     check("update is audited to audit.jsonl", len(audit.read_text().splitlines()) == n0 + 1)
     check("update is audited to Connector Log", any(r["Tool"] == "update_contact" and r["person_id"] == "1" for r in crm.b.read("Connector Log")))
+    tagged = CRM(LocalBackend(db), audit_path=audit, client="pipeline")
+    tagged.update_contact("1", {"Stage": "nurture"}, "test")
+    check("--client tag lands in Connector Log", crm.b.read("Connector Log")[-1]["Client"] == "crm.py"
+          and tagged.b.read("Connector Log")[-1]["Client"] == "pipeline")
+    tagged.update_contact("1", {"Stage": "contacted"}, "test"); crm = CRM(LocalBackend(db), audit_path=audit)
     check("unchanged update writes nothing", crm.update_contact("1", {"Stage": "contacted"}, "test") == {})
 
     # due by band
@@ -1273,6 +1396,9 @@ def run_tests() -> int:
     check("feed has every section", all(k in f for k in ("touches_due", "tasks", "deals", "new_leads", "counts", "header_ok")))
     check("feed lists the new lead", any(l["display"] == "Sam Newlead" for l in f["new_leads"]))
     check("feed is json", json.dumps(f) is not None)
+    check("partners section lists the vendor with a next action, never in touches_due",
+          any(x["person_id"] == "6" for x in f["partners"]) and all(d["person_id"] != "6" for d in f["touches_due"]))
+    check("due rows carry type", all("type" in d for d in f["touches_due"]))
 
     # dry run writes nothing
     before = db.read_text()
@@ -1318,6 +1444,17 @@ def run_tests() -> int:
     crm.upsert_deal("9999 Fixture Dr", "showing confirmed", "2026-10-20T09:00:00-05:00")
     check("a seeded deal and an ingest event on the same street are one row", len(crm.deals()) == n_before + 1 and any(d["last_event"] == "showing confirmed" for d in crm.deals() if street_key(d["address"]) == "9999 fixture dr"))
 
+    # owes-reply: today's text counts, and the newest unanswered text sorts first
+    sigs = {c["person_id"]: {"label": "", "last_inbound": d, "last_outbound": "2026-09-01", "owes_reply": True, "signal_score": 0,
+                             "last_inbound_at": d + "T10:00:00", "last_messages": []}
+            for c, d in zip([c for c in crm.contacts() if crm.touchable(c)][:3], ["2026-09-30", "2026-10-20", "2026-10-10"])}
+    order = [d["last_inbound"] for d in crm.due(as_of, sigs) if d["owes_reply"]]
+    check("unanswered texts sort newest first", order == sorted(order, reverse=True) and order[:1] == ["2026-10-20"])
+    sigf2 = tmp / "today.json"
+    ph2 = next(c for c in crm.contacts() if phone_key(c.get("primary_phone")))
+    sigf2.write_text(json.dumps({"+1" + phone_key(ph2["primary_phone"]): {"last_inbound": today().isoformat() + "T08:00:00", "last_outbound": "2026-01-01T08:00:00", "in_90": 1, "recent_inbound": []}}))
+    check("a text from today counts as owes_reply", load_signals(sigf2, crm.contacts())[ph2["person_id"]]["owes_reply"] is True)
+
     # stage, note, dnc: the Pipeline app's writes, on a fresh copy of the fixture
     db2 = tmp / "db2.json"
     db2.write_text((HERE / "tests" / "fixtures" / "fake-crm.json").read_text())
@@ -1329,6 +1466,20 @@ def run_tests() -> int:
     check("stage refuses the same stage", raises(lambda: c2.set_stage("7", "contacted")))
     check("stage refuses a stale review", raises(lambda: c2.set_stage("7", "closed", expect="nurture")) and c2.by_id("7")["Stage"] == "contacted")
     check("stage refuses an unknown person", raises(lambda: c2.set_stage("999", "closed")))
+    c2.ensure_tabs(); c2.upsert_deal("12 Oak Ln, Zachary, LA", "seeded", "2026-10-01", stage="under_contract")
+    r = c2.edit_deal("12 Oak Lane", {"stage": "closed", "price": "250000"}, expect_stage="under_contract")
+    check("deal edit matches the street however it is written", r["stage"] == "closed" and r["price"] == "250000")
+    check("deal edit is audited", c2.b.read("Connector Log")[-1]["Tool"] == "edit_deal")
+    check("deal edit refuses a stale review", raises(lambda: c2.edit_deal("12 Oak Ln", {"stage": "active"}, expect_stage="under_contract")))
+    check("deal edit refuses a bad stage, price, commission, date or person",
+          all(raises(lambda f=f: c2.edit_deal("12 Oak Ln", f)) for f in
+              [{"stage": "won"}, {"price": "$250k"}, {"commission": "3%"}, {"expected_close": "Nov 29"}, {"person_id": "999"}]))
+    check("deal edit sets commission", c2.edit_deal("12 Oak Ln", {"commission": "7198.50"})["commission"] == "7198.50")
+    check("deal edit links a person and copies the display", c2.edit_deal("12 Oak Ln", {"person_id": "7"})["display"] == c2.by_id("7")["display"])
+    check("deal edit clears a close date with blank", c2.edit_deal("12 Oak Ln", {"expected_close": "2026-11-29"})["expected_close"] == "2026-11-29"
+          and c2.edit_deal("12 Oak Ln", {"expected_close": ""})["expected_close"] == "")
+    check("deal edit needs --create for a new street", raises(lambda: c2.edit_deal("9 New St", {"stage": "under_contract"}))
+          and c2.edit_deal("9 New St", {"stage": "under_contract", "next_step": "inspection"}, create=True)["created"])
     lt = c2.by_id("6").get("Last_Touch", "")
     c2.note("6", "Prefers texts after 5")
     check("note is kept and Last_Touch does not move", c2.by_id("6").get("Last_Touch", "") == lt and any(n.get("Note") == "Prefers texts after 5" and n.get("By") == "Caleb" for n in c2.notes()))
@@ -1353,7 +1504,7 @@ def run_tests() -> int:
 # ---------------------------------------------------------------------- cli
 
 
-APP_WRITES = {"touch", "done", "task", "stage", "note", "dnc"}
+APP_WRITES = {"touch", "done", "task", "stage", "note", "dnc", "deal"}
 
 
 def run_app_write(crm: "CRM", a, as_of: date):
@@ -1373,6 +1524,12 @@ def run_app_write(crm: "CRM", a, as_of: date):
     if a.cmd == "dnc":
         changed = crm.set_do_not_contact(a.person_id, a.reason)
         return {"person_id": a.person_id, "Do_Not_Contact": "YES", "changed": changed}
+    if a.cmd == "deal":
+        crm.ensure_tabs()
+        fields = {"stage": a.stage, "price": a.price, "commission": a.commission, "next_step": a.next_step, "person_id": a.person,
+                  "last_event": a.event, "expected_close": "" if a.clear_close else a.close}
+        return crm.edit_deal(a.address, fields, expect_stage=a.expect, create=a.create, side=a.side or "",
+                             day=as_of.isoformat())
     raise GateError(f"unknown write {a.cmd}")
 
 
@@ -1383,6 +1540,7 @@ def main(argv=None) -> int:
     ap.add_argument("--test", action="store_true")
     ap.add_argument("--as-of", help="YYYY-MM-DD, default today (Central)")
     ap.add_argument("--json", action="store_true", help="write commands print one JSON object: {ok, result} or {ok: false, error}")
+    ap.add_argument("--client", default=CLIENT, help="who is asking, logged in the Client column (Pipeline passes: pipeline)")
     sub = ap.add_subparsers(dest="cmd")
     sub.add_parser("auth")
     sub.add_parser("check")
@@ -1401,6 +1559,11 @@ def main(argv=None) -> int:
     p = sub.add_parser("note"); p.add_argument("person_id"); p.add_argument("text")
     p = sub.add_parser("dnc", help="Do_Not_Contact to YES. One way: there is no command to set it back to NO")
     p.add_argument("person_id"); p.add_argument("--reason", required=True)
+    p = sub.add_parser("deal", help="Caleb's correction to one deal, matched by street")
+    p.add_argument("address"); p.add_argument("--stage"); p.add_argument("--price"); p.add_argument("--commission"); p.add_argument("--close")
+    p.add_argument("--clear-close", action="store_true"); p.add_argument("--next-step"); p.add_argument("--person")
+    p.add_argument("--event"); p.add_argument("--expect", help="refuse if the deal's stage differs")
+    p.add_argument("--create", action="store_true"); p.add_argument("--side", choices=["buyer", "seller"])
     p = sub.add_parser("merge-hwc"); p.add_argument("--hwc", required=True); p.add_argument("--report", required=True)
     p.add_argument("--apply", action="store_true", help="only after Caleb has said yes to the report")
     a = ap.parse_args(argv)
@@ -1412,7 +1575,9 @@ def main(argv=None) -> int:
     if a.cmd is None:
         ap.print_help(); return 0
     backend = LocalBackend(Path(a.local), dry_run=a.dry_run) if a.local else SheetsBackend(dry_run=a.dry_run)
-    crm = CRM(backend)
+    if not re.fullmatch(r"[a-z][a-z0-9._-]{0,31}", a.client):
+        ap.error("--client must be a short lowercase tag, like pipeline")
+    crm = CRM(backend, client=a.client)
     as_of = date.fromisoformat(a.as_of) if a.as_of else today()
 
     if a.json and a.cmd in APP_WRITES:
@@ -1468,7 +1633,7 @@ def main(argv=None) -> int:
         print(crm.add_task(a.person_id, a.task, a.due))
     elif a.cmd == "done":
         print("done" if crm.done(a.task_id) else "no such open task")
-    elif a.cmd in ("stage", "note", "dnc"):
+    elif a.cmd in ("stage", "note", "dnc", "deal"):
         print(run_app_write(crm, a, as_of))
     elif a.cmd == "merge-hwc":
         hwc = json.loads(Path(a.hwc).read_text())

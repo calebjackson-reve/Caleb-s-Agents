@@ -1,5 +1,7 @@
 # Morning companion (runs on Caleb's Mac)
 
+**Command, since 2026-10-20:** `aire/command-reader/` keeps a dedicated Chrome profile logged in to KW Command (30 minute heartbeat, Keychain password, emailed code read from Gmail) and reads it hourly into the CRM tagged `command`. Once its selectors are filled in, step 2 below is automatic and the companion only does MLS.
+
 KW Command and ROAM MLS (Flex) have no API, so this part runs in Chrome on the Mac with Caleb signed in. Say this in the Mac's Claude Code session after the cloud brief lands (about 6:50 am), or schedule it there:
 
 ```

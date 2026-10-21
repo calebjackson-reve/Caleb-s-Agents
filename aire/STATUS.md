@@ -17,6 +17,22 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - The three junk Deals rows, if a real ingest already wrote them, are Caleb's to delete in the sheet. The engine deletes nothing.
 - Closed PR 12 may still keep the leaked commit reachable until GitHub support purges it.
 
+## 2026-10-20, midday: the follow-up loop on the real CRM
+
+**Confirmed by Caleb**
+- "Build the follow-up loop, for my sphere and my types of clients."
+
+**Done**
+- `aire/follow-up/followups.py --queue` now reads the engine's `feed.json`. Nine pools by who the person is: sphere, past-client, active-buyer, seller-candidate, partner, recruit, new-lead, under-contract, seller-presentation. Email draft when they have an email, text draft (short pool) when phone only, written to `texts-<date>.md` and `out/text-queue.json` for the Pipeline app's compose box. People who texted last get no template: REPLY FIRST with their last three messages. Daily caps 25 emails, 25 texts, hottest first, rest deferred. After `--approve` sends, `crm.py touch` logs it by person_id so they drop off tomorrow's list. 32 tests pass.
+- Engine: `feed.json` gains `partners` (agents, lenders, vendors with a next action or band, 60 day cadence, never on the client list) and `type` on due rows. 67 tests pass.
+- Offline run on the real CRM for Oct 20: 25 reply first, 1,529 due by audience: sphere 1,211, seller-candidate 142, active-buyer 76, past-client 74, partner 7. With caps: 25 email drafts, 25 text drafts, 1,479 deferred. Nothing sent, files stay out of git.
+
+**Corrected the same afternoon, from the CLI's objection**
+- Two senders would break the one-system rule. Pipeline is the one sender. The follow-up tool keeps the pools and templates as `aire/follow-up/pools.py`, a library Pipeline's predraft step imports, and writes `out/email-queue.json` and `out/text-queue.json` for Pipeline to show. Its own send path is a dry run unless `FOLLOWUP_SENDER=followups` is set on purpose.
+
+**Needs Caleb**
+- Say if 25 and 25 are the right daily caps, and whether the sphere pool reads like you.
+
 ## 2026-10-19, late night: enrichment on the real CRM
 
 **Confirmed by Caleb**
@@ -99,9 +115,11 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - Run "morning companion" on the Mac for Command and MLS.
 
 ## Supervised week log
+- 2026-10-21 (7:05 am run): 2 new website leads in the last 26 hours (both Google sign on, Mon 8:13 am and Mon 5:53 pm Central), 2 sign-in drafts created, 1 digest draft to Caleb. No prior drafts or sent mail to either address. Nothing sent, nothing labeled.
 - 2026-10-20 (7:05 am run): 0 new website leads in the last 26 hours, 0 drafts created. The only lead in the window search is Sunday's Google sign-on lead, already drafted on 10/19. Nothing sent.
 
 ## Morning run log
+- 2026-10-21 (6:40 am run): 2 new leads, 1 listing went under contract, 5 live deals tracked (0 waiting on Caleb), 7 touches logged by Pipeline yesterday, 0 conflicts, 0 appointments added. Brief kept out of git. Nothing failed.
 - 2026-10-20 (6:40 am run): 0 new leads, 1529 touches due (112 hot, 47 warm), 4 contracts tracked (0 waiting on Caleb), 1 conflict (Business Planning Clinic), 0 appointments added. Brief kept out of git. Nothing failed.
 - 2026-10-20 (run Oct 19 evening): 1 new lead, 0 pipeline rows, 5 contracts (0 waiting on Caleb, 1 item owed: inspection report to the other agent), 1 conflict (Business Planning Clinic vs lead gen and sales block 2), 0 appointments added. Nothing failed.
 

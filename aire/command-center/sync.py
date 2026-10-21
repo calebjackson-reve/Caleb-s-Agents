@@ -87,7 +87,7 @@ def followups_due() -> list[dict]:
     latest = files[-1]
     items = []
     for block in re.split(r"\n---\n", latest.read_text()):
-        m = re.search(r"## \d+\. (.+?) <([^>]+)>\s+stage (\S+), day (\d+), template (\d+)\nSubject: ([^\n]*)\n\n(.*)",
+        m = re.search(r"## \d+\. (.+?) <([^>]+)>\s+stage (\S+), day (\d+), template (\d+)(?: id:\d+)?\nSubject: ([^\n]*)\n\n(.*)",
                       block.strip(), re.S)
         if m:
             name, email, stage, day, tpl, subject, body = m.groups()
