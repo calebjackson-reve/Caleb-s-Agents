@@ -2,6 +2,20 @@
 
 Updated October 19, 2026 after Caleb's answers: fix placeholders first, host on Cloudflare Pages, Google Domains/Squarespace registrar, Luxury Presence by the in-app route if one exists. Nothing on the live domain has been changed.
 
+## Update October 21, 2026: the host is GitHub Pages, and forms post straight to the Apps Script
+
+Caleb's goal: the new site on calebjackson.org. LP controls the DNS zone, and the Oct 19 email to LP (cases 00677632 and 00677715) already asks for GitHub Pages records. So GitHub Pages is the host and the Cloudflare Pages steps below are the fallback. Reason, from Cloudflare's docs as I remember them and not re-checked this session: Pages wants the apex domain's zone in your own Cloudflare account, and this zone is LP's.
+
+GitHub Pages has no server functions (checked: `home.calebjackson.org/api/lead` returns 404), so `dist.py` now swaps the form target for the Apps Script web app URL when `LEAD_WEBHOOK` is set. The forms post straight to it, and `lead-webhook.gs` runs the same checks `api/lead.js` did (honeypot, phone or email required, field lengths, consent yes or no). If the post fails the form still shows the phone number.
+
+What Caleb does, in order:
+1. Open the "Website leads" sheet, Extensions, Apps Script, replace the code with the new `functions/lead-webhook.gs`, Deploy, New deployment, Web app, Execute as Me, Anyone. Copy the web app URL.
+2. GitHub repo, Settings, Secrets and variables, Actions, Variables, add `LEAD_WEBHOOK` = that URL.
+3. Run the "Deploy calebjackson.org" workflow by hand, then submit the contact form on `home.calebjackson.org`. A row should land in the sheet and an email in aire@. Not yet tested against the real Apps Script, only against a mock.
+4. When LP finishes step 1 of the case (search subdomain serving Home Search), run the workflow with `site_host` = `calebjackson.org`. Do this the same day LP repoints the apex, not before.
+
+Known gaps on GitHub Pages: `_redirects` and `_headers` are ignored (checked: `home.calebjackson.org/_redirects` is served as a plain file). `/about`, `/sell`, `/contact`, `/communities` and `/search` still work. `/home-search` now has a stub page that forwards to the search subdomain. Other old LP URLs (the old sitemap had 39 pages) land on the 404 page.
+
 ## What I found about the domain (looked up October 19, 2026, Google public DNS)
 
 - Nameservers: `amy.ns.cloudflare.com` and `byron.ns.cloudflare.com`. **DNS already lives in a Cloudflare account**, not at Squarespace. The registrar only holds the nameserver pointer. That makes this easy: Cloudflare Pages and the DNS are in the same place.
