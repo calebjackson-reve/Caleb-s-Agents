@@ -10,7 +10,7 @@ Page: `site/review/` and it goes live at https://home.calebjackson.org/review/ (
 Google and Zillow do not allow anyone to post a review for a client. The client always posts from their own account. This page gets it down to about 90 seconds.
 
 ## Before going live (Caleb)
-1. Google link is set. Confirm the Zillow profile shows a Write a review button (see `ZILLOW-PROFILE.md`).
+1. Google and Zillow review links are set (Oct 21).
 2. Approve the publish to home.calebjackson.org/review.
 
 ## Building a link
