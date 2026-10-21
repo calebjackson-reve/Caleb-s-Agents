@@ -48,7 +48,34 @@ textarea{min-height:90px;resize:vertical}
 .btn.google{background:var(--ink);color:var(--ivory)}
 .btn.zillow{background:#fff;color:var(--ink);border:1px solid var(--ink)}
 .status{font-size:14px;color:var(--stone);min-height:20px;margin-top:8px}
-.steps{font-size:14px;color:var(--stone);margin:12px 0 0;padding-left:18px}
+.steps{list-style:none;margin:16px 0 0;padding:0;counter-reset:s}
+.steps li{counter-increment:s;display:flex;gap:12px;align-items:center;font-size:17px;font-weight:600;padding:10px 0;border-top:1px solid var(--line)}
+.steps li:before{content:counter(s);flex:none;width:32px;height:32px;border-radius:50%;background:var(--ember);color:#fff;display:grid;place-items:center;font-size:16px}
+.steps small{display:block;font-weight:400;font-size:14px;color:var(--stone)}
+.demo{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:14px 0 4px;position:relative;overflow:hidden}
+.demo .cap{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--stone);margin:0 0 8px}
+.demo .ds{font-size:28px;letter-spacing:4px;color:#D9D3CA}
+.demo .ds i{font-style:normal;animation:star 10s infinite}
+.demo .ds i:nth-child(2){animation-delay:.25s}.demo .ds i:nth-child(3){animation-delay:.5s}.demo .ds i:nth-child(4){animation-delay:.75s}.demo .ds i:nth-child(5){animation-delay:1s}
+.demo .box{margin-top:8px;height:64px;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;color:var(--ink);position:relative}
+.demo .txt{opacity:0;animation:txt 10s infinite}
+.demo .paste{position:absolute;left:30px;top:-14px;background:var(--ink);color:#fff;font-size:13px;padding:4px 10px;border-radius:6px;opacity:0;animation:paste 10s infinite}
+.demo .dot{position:absolute;width:26px;height:26px;border-radius:50%;background:rgba(232,119,87,.45);left:40px;top:22px;opacity:0;animation:dot 10s infinite}
+.demo .post{margin-top:8px;text-align:right}
+.demo .post span{display:inline-block;font-size:13px;font-weight:600;padding:6px 14px;border-radius:999px;background:#eee;color:var(--stone);animation:post 10s infinite}
+.demo .lbl{position:absolute;right:12px;top:12px;font-size:13px;font-weight:600;color:var(--ember)}
+.demo .lbl span{position:absolute;right:0;white-space:nowrap;opacity:0}
+.demo .lbl span:nth-child(1){animation:l1 10s infinite}.demo .lbl span:nth-child(2){animation:l2 10s infinite}.demo .lbl span:nth-child(3){animation:l3 10s infinite}.demo .lbl span:nth-child(4){animation:l4 10s infinite}
+@keyframes star{0%,5%{color:#D9D3CA}10%,95%{color:var(--ember)}100%{color:#D9D3CA}}
+@keyframes dot{0%,28%{opacity:0;transform:scale(.6)}32%,48%{opacity:1;transform:scale(1)}52%,100%{opacity:0}}
+@keyframes paste{0%,40%{opacity:0}44%,54%{opacity:1}58%,100%{opacity:0}}
+@keyframes txt{0%,56%{opacity:0}60%,95%{opacity:1}100%{opacity:0}}
+@keyframes post{0%,68%{background:#eee;color:var(--stone)}72%,95%{background:var(--ink);color:#fff}100%{background:#eee}}
+@keyframes l1{0%,2%{opacity:0}4%,26%{opacity:1}28%,100%{opacity:0}}
+@keyframes l2{0%,28%{opacity:0}30%,41%{opacity:1}43%,100%{opacity:0}}
+@keyframes l3{0%,42%{opacity:0}44%,68%{opacity:1}70%,100%{opacity:0}}
+@keyframes l4{0%,70%{opacity:0}72%,95%{opacity:1}97%,100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.demo *{animation:none!important}.demo .ds i{color:var(--ember)}.demo .txt,.demo .lbl span:nth-child(4){opacity:1}}
 footer{border-top:1px solid var(--line);margin-top:32px;padding-top:16px;font-size:12px;color:var(--stone)}
 
 .stars{display:flex;gap:6px}
@@ -158,13 +185,21 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding-top:16px;font-si
       <p class="hint">Written from your answers. Change anything you like.</p>
       <textarea id="out" aria-label="Your review"></textarea>
       <button type="button" class="btn ghost" id="again">Write it a different way</button>
+      <div class="demo" aria-hidden="true">
+        <p class="cap">What you'll see next</p>
+        <div class="lbl"><span>1. Tap the stars</span><span>2. Press and hold</span><span>3. Tap Paste</span><span>4. Tap Post</span></div>
+        <div class="ds"><i>★</i><i>★</i><i>★</i><i>★</i><i>★</i></div>
+        <div class="box"><span class="paste">Paste</span><span class="dot"></span><span class="txt">Caleb helped us buy our first home...</span></div>
+        <div class="post"><span>Post</span></div>
+      </div>
       <button type="button" class="btn google" id="g">Copy and post on Google</button>
       <button type="button" class="btn zillow" id="z">Copy and post on Zillow</button>
       <p class="status" id="st"></p>
       <ol class="steps">
-        <li>Tap a button. Your review is copied.</li>
-        <li>Pick your stars, then long-press the box and tap Paste.</li>
-        <li>Tap Post. If you have a Zillow account, doing both helps a lot.</li>
+        <li><div>Tap the Google button<small>Your review is copied for you</small></div></li>
+        <li><div>Tap the stars</div></li>
+        <li><div>Press and hold the box, tap Paste</div></li>
+        <li><div>Tap Post. Done!<small>Have Zillow? Tap that button too, it helps a lot</small></div></li>
       </ol>
     </section>
   </form>
@@ -234,7 +269,7 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding-top:16px;font-si
     if(friend.trim())s.push(sentence(friend));
     if(stars>=4||!stars){
       var who=rec.length?list(rec):'anyone looking for a realtor'+(a?' in '+a:'');
-      s.push(['I would recommend Caleb to '+who+'.','I highly recommend him to '+who+'.','Caleb is the realtor I would send '+who+' to.'][Math.floor(r()*3)]);
+      s.push(['I would recommend Caleb to '+who+'.','I highly recommend him to '+who+'.','I would send '+who+' straight to Caleb.'][Math.floor(r()*3)]);
     }
     return s.join(' ');
   }
