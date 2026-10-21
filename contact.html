@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<!-- Shared head fragment, inlined into every page by scripts/build.py. Not served. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="index,follow">
+<link rel="icon" href="/media/brand/aj-monogram.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/site.css">
+
+<title>Contact Caleb Jackson, Keller Williams First Choice</title>
+<meta name="description" content="Call or text (225) 747-0303. You'll hear back today.">
+</head>
+<body data-page="contact">
+<a class="skip" href="#main">Skip to content</a>
+<main id="main">
+
+<section class="section ui-dark" data-surface="dark" style="min-height:100vh;padding-top:calc(var(--header-h) + 8vh)">
+  <div class="wrap grid">
+    <div style="grid-column:1 / span 6">
+      <span class="label dim">Contact</span>
+      <h1 class="display-l words" style="margin-top:1rem">Your call<br><span class="italic-word">gets returned today.</span></h1>
+      <p class="lead dim fade" style="margin-top:3rem;max-width:34ch">That's the whole point.</p>
+      <div class="col-copy fade" style="margin-top:4rem">
+        <p><a class="h3" href="tel:+12257470303">(225) 747-0303</a></p>
+        <p style="margin-top:1rem"><a href="mailto:aire@calebjackson.org">aire@calebjackson.org</a></p>
+        <p class="dim" style="margin-top:2.4rem">Keller Williams First Choice<br>17111 Commerce Centre Drive<br>Prairieville, LA 70769</p>
+        <p class="dim small" style="margin-top:2.4rem">Showings seven days. Calls and texts answered the same day.</p>
+      </div>
+    </div>
+    <div style="grid-column:8 / span 5">
+      <form class="form fade" data-preview data-done="Got it. You'll hear from me today." aria-label="Contact form">
+        <div class="row">
+          <label><span class="label dim">Name</span><input type="text" name="name" autocomplete="name" required></label>
+          <label><span class="label dim">Phone</span><input type="tel" name="phone" autocomplete="tel"></label>
+        </div>
+        <label><span class="label dim">Email</span><input type="email" name="email" autocomplete="email" required></label>
+        <label><span class="label dim">What's going on</span><textarea name="message" rows="4" placeholder="Buying, selling, or just a question about an address"></textarea></label>
+        <label class="small dim" style="display:flex;gap:1rem;align-items:flex-start"><input type="checkbox" name="consent" style="width:auto"> <span>It's OK to text me back at the number above. Reply STOP any time to end texts.</span></label>
+        <div><button class="pill inverse" type="submit"><span class="t"><span>Send</span><span>Send it</span></span><span class="arrow">&rarr;</span></button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+
+<section class="section ui-blush" data-surface="light" id="book" aria-label="Book a call">
+  <div class="wrap split">
+    <div>
+      <span class="label eyebrow dim">Book a call</span>
+      <h2 class="h2 words">Fifteen minutes. Pick a time.</h2>
+      <p class="col-copy dim measure fade">Don't like texting first? Pick a slot and I'll call you. I confirm the slot by text within the hour, so it's a real appointment once you hear back.</p>
+    </div>
+    <form class="form fade booker" data-preview data-done="Booked. You'll get a text confirming the time, and I'll call you then." aria-label="Pick a time">
+      <div class="days" id="bookDays" aria-label="Day"></div>
+      <div class="slots" id="bookSlots" aria-label="Time"></div>
+      <input type="hidden" name="slot" id="bookSlot" required>
+      <label><span class="label dim">Mobile number</span><input type="tel" name="phone" autocomplete="tel" required></label>
+      <div><button class="pill" type="submit"><span class="t"><span>Book it</span><span>15 minutes</span></span><span class="arrow">&rarr;</span></button></div>
+    </form>
+  </div>
+</section>
+
+</main>
+<!-- Shared scripts fragment, inlined into every page by scripts/build.py. Not served. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.4/dist/lenis.min.js"></script>
+<script src="assets/site.js"></script>
+
+</body>
+</html>
