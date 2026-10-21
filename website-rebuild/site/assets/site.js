@@ -134,12 +134,15 @@
       });
     });
   });
-  /* leads go to /api/lead (a Cloudflare Pages function that forwards to Caleb). Local previews have no API, so they resolve after a beat. */
+  /* leads go to /api/lead (a Cloudflare Pages function that forwards to Caleb). GitHub Pages has no functions, so dist.py swaps LEAD_URL
+     for the Apps Script web app URL when LEAD_WEBHOOK is set, and the form posts straight to it. Local previews have no API, so they resolve after a beat. */
+  var LEAD_URL = '/api/lead';
   function sendLead(kind, form) {
     var data = { kind: kind, page: location.pathname, at: new Date().toISOString() };
     new FormData(form).forEach(function (v, k) { data[k] = v; });
     if (location.protocol === 'file:' || /localhost|127\.0\.0\.1|claude\.ai|artifact/.test(location.host)) return new Promise(function (r) { setTimeout(r, 400); });
-    return fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function (r) { if (!r.ok) throw new Error(r.status); });
+    if (LEAD_URL !== '/api/lead') return fetch(LEAD_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(data) });
+    return fetch(LEAD_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(function (r) { if (!r.ok) throw new Error(r.status); });
   }
   var news = document.querySelector('.news');
   if (news) {
