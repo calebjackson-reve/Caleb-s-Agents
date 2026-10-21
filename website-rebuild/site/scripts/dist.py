@@ -13,6 +13,12 @@ def fix(text): return text.replace('../media/', '/media/').replace('<meta name="
 for f in site.glob('*.html'):
     if not f.name.startswith('_'): (out / f.name).write_text(fix(f.read_text()))
 for f in (site / 'assets').glob('*'): (out / 'assets' / f.name).write_text(fix(f.read_text()))
+# review link page: self-contained folder, og-card.html is only the thumbnail source
+(out / 'review').mkdir()
+for f in (site / 'review').glob('*'):
+    if f.name == 'og-card.html': continue
+    if f.suffix == '.html': (out / 'review' / f.name).write_text(f.read_text().replace('home.calebjackson.org', host))
+    else: shutil.copy2(f, out / 'review' / f.name)
 refs = set()
 for f in list(out.glob('*.html')) + list((out / 'assets').glob('*')):
     refs.update(re.findall(r'/media/[^"\' )]+', f.read_text()))
