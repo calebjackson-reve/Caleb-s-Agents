@@ -50,6 +50,13 @@ textarea{min-height:90px;resize:vertical}
 .status{font-size:14px;color:var(--stone);min-height:20px;margin-top:8px}
 .steps{font-size:14px;color:var(--stone);margin:12px 0 0;padding-left:18px}
 footer{border-top:1px solid var(--line);margin-top:32px;padding-top:16px;font-size:12px;color:var(--stone)}
+
+.stars{display:flex;gap:6px}
+.stars button{background:none;border:0;padding:2px;font-size:38px;line-height:1;color:#D9D3CA;cursor:pointer}
+.stars button.on{color:var(--ember)}
+.stars button:focus-visible{outline:2px solid var(--ember);outline-offset:2px;border-radius:6px}
+.btn.ghost{background:none;color:var(--ink);text-decoration:underline;padding:8px;margin-top:4px;font-weight:500}
+.rating-line{font-size:14px;color:var(--stone);margin:0 0 8px}
 </style>
 </head>
 <body>
@@ -63,12 +70,24 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding-top:16px;font-si
   </header>
 
   <h1 id="hello">Thank you for <em>trusting me</em> with your move.</h1>
-  <p class="lede">If you have two minutes, a few quick taps below will help you write a review. You stay in control of every word, and you post it yourself on Google and Zillow.</p>
+  <p class="lede">Tap your answers and your review writes itself as you go. You stay in control of every word, and you post it yourself on Google and Zillow.</p>
 
   <form id="f" autocomplete="off">
     <fieldset>
+      <legend>How would you rate your experience?</legend>
+      <div class="stars" id="stars" role="radiogroup" aria-label="Star rating">
+        <button type="button" data-s="1" aria-label="1 star">★</button>
+        <button type="button" data-s="2" aria-label="2 stars">★</button>
+        <button type="button" data-s="3" aria-label="3 stars">★</button>
+        <button type="button" data-s="4" aria-label="4 stars">★</button>
+        <button type="button" data-s="5" aria-label="5 stars">★</button>
+      </div>
+      <p class="hint" style="margin:8px 0 0">Google and Zillow will ask you to tap your stars again when you post.</p>
+    </fieldset>
+
+    <fieldset>
       <legend>Did you buy, sell, or both?</legend>
-      <div class="chips" data-name="t">
+      <div class="chips">
         <label><input type="radio" name="t" value="buy"><span>Bought</span></label>
         <label><input type="radio" name="t" value="sell"><span>Sold</span></label>
         <label><input type="radio" name="t" value="both"><span>Both</span></label>
@@ -89,23 +108,37 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding-top:16px;font-si
     </fieldset>
 
     <fieldset>
-      <legend>What stood out most?</legend>
-      <p class="hint">Pick up to 3</p>
+      <legend>How did Caleb help most?</legend>
+      <p class="hint">Pick up to 4</p>
       <div class="chips" id="vals">
-        <label><input type="checkbox" name="v" value="comm"><span>Communication</span></label>
-        <label><input type="checkbox" name="v" value="neg"><span>Negotiation</span></label>
+        <label><input type="checkbox" name="v" value="comm"><span>Kept me updated</span></label>
+        <label><input type="checkbox" name="v" value="fastreply"><span>Answered fast, even after hours</span></label>
+        <label><input type="checkbox" name="v" value="neg"><span>Negotiated a great deal</span></label>
         <label><input type="checkbox" name="v" value="local"><span>Knows the area</span></label>
         <label><input type="checkbox" name="v" value="guide"><span>Explained every step</span></label>
+        <label><input type="checkbox" name="v" value="honest"><span>Honest advice</span></label>
+        <label><input type="checkbox" name="v" value="budget"><span>Respected my budget</span></label>
+        <label><input type="checkbox" name="v" value="find"><span>Found the right house</span></label>
         <label><input type="checkbox" name="v" value="price"><span>Pricing and marketing</span></label>
+        <label><input type="checkbox" name="v" value="staging"><span>Got my home ready to sell</span></label>
+        <label><input type="checkbox" name="v" value="inspect"><span>Handled inspection and repairs</span></label>
+        <label><input type="checkbox" name="v" value="vendors"><span>Great lender and vendor contacts</span></label>
+        <label><input type="checkbox" name="v" value="paper"><span>Took care of the paperwork</span></label>
         <label><input type="checkbox" name="v" value="fast"><span>Fast, smooth closing</span></label>
         <label><input type="checkbox" name="v" value="calm"><span>Made it less stressful</span></label>
+        <label><input type="checkbox" name="v" value="relo"><span>Helped us relocate</span></label>
       </div>
     </fieldset>
 
     <fieldset>
-      <legend>What was the hardest part, and how did Caleb help?</legend>
-      <p class="hint">One or two sentences in your own words. This is the part future clients read most.</p>
+      <legend>In your own words: what was the hardest part, and how did Caleb help?</legend>
+      <p class="hint">One or two sentences. This is the part future clients read most.</p>
       <textarea name="story" placeholder="We had a low appraisal and Caleb..."></textarea>
+    </fieldset>
+
+    <fieldset>
+      <legend>In your own words: what would you tell a friend about working with Caleb?</legend>
+      <textarea name="friend" placeholder="He treated us like family..."></textarea>
     </fieldset>
 
     <fieldset>
@@ -115,13 +148,16 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding-top:16px;font-si
         <label><input type="checkbox" name="r" value="families"><span>Families</span></label>
         <label><input type="checkbox" name="r" value="anyone selling"><span>Sellers</span></label>
         <label><input type="checkbox" name="r" value="people moving to the area"><span>People relocating</span></label>
+        <label><input type="checkbox" name="r" value="investors"><span>Investors</span></label>
       </div>
     </fieldset>
 
     <section class="draft" aria-live="polite">
       <h2>Your review</h2>
-      <p class="hint">Built from your answers. Change anything you like.</p>
+      <p class="rating-line" id="rl"></p>
+      <p class="hint">Written from your answers. Change anything you like.</p>
       <textarea id="out" aria-label="Your review"></textarea>
+      <button type="button" class="btn ghost" id="again">Write it a different way</button>
       <button type="button" class="btn google" id="g">Copy and post on Google</button>
       <button type="button" class="btn zillow" id="z">Copy and post on Zillow</button>
       <p class="status" id="st"></p>
@@ -141,7 +177,9 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding-top:16px;font-si
 <script src="config.js"></script>
 <script>
 (function(){
-  var f=document.getElementById('f'),out=document.getElementById('out'),st=document.getElementById('st'),edited=false;
+  var f=document.getElementById('f'),out=document.getElementById('out'),st=document.getElementById('st'),rl=document.getElementById('rl'),edited=false,stars=0;
+  // per-visit seed so two clients with the same taps still get different wording
+  var seed=Math.floor(Math.random()*1e9);
   var q=new URLSearchParams(location.search),name=(q.get('n')||'').slice(0,30),area=(q.get('a')||'').slice(0,40),t=q.get('t');
   if(name){document.getElementById('hello').innerHTML='Hi '+esc(name)+', thank you for <em>trusting me</em> with your move.';}
   if(area)f.a.value=area;
@@ -149,29 +187,74 @@ footer{border-top:1px solid var(--line);margin-top:32px;padding-top:16px;font-si
   function esc(s){return s.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function all(n){return Array.prototype.map.call(f.querySelectorAll('input[name='+n+']:checked'),function(i){return i.value;});}
   function list(a){return a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];}
-  var V={comm:'He kept us updated the whole way and always answered quickly',neg:'He negotiated hard for us and it paid off',local:'He really knows the area and the neighborhoods',guide:'He explained every step so we never felt lost',price:'His pricing and marketing plan got our home real attention',fast:'Everything moved fast and closing day was smooth',calm:'He made a stressful process feel calm'};
-  f.querySelectorAll('#vals input').forEach(function(i){i.addEventListener('change',function(){if(all('v').length>3)i.checked=false;});});
+  function hash(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+  function rng(s){var x=hash(s)||1;return function(){x^=x<<13;x^=x>>>17;x^=x<<5;return (x>>>0)/4294967296;};}
+  function shuffle(a,r){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(r()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+  // each choice has several phrasings
+  var V={
+    comm:['He kept us updated the whole way','We always knew exactly where things stood','He checked in with us at every step without us having to ask'],
+    fastreply:['He answered calls and texts fast, even at night and on weekends','Any time we had a question he got back to us quickly','He was always reachable, even after hours'],
+    neg:['He negotiated hard for us and it paid off','His negotiating saved us real money','He fought for the best terms and got them'],
+    local:['He really knows the area and the neighborhoods','His local knowledge made a big difference','He knew every neighborhood we asked about'],
+    guide:['He explained every step so we never felt lost','He walked us through the whole process in plain language','Every question got a clear, patient answer'],
+    honest:['He gave us honest advice, even when it was not what we wanted to hear','We trusted him because he was straight with us','He never pushed us, he just told us the truth'],
+    budget:['He respected our budget and never pushed us past it','He kept us focused on homes we could actually afford','He took our budget seriously from day one'],
+    find:['He found us a house that checked every box','He helped us find the right home, not just any home','He knew what we wanted and found it'],
+    price:['His pricing and marketing plan got our home real attention','He priced our home right and the showings came fast','His marketing made our home stand out'],
+    staging:['He helped us get the house ready to sell','His prep and staging advice made our home show beautifully','He told us exactly what to fix before listing and it paid off'],
+    inspect:['He handled the inspection and repair negotiations for us','When the inspection turned up issues he took care of it','He got us through inspections and repairs without the stress'],
+    vendors:['He connected us with a great lender and inspector','His network of lenders and contractors was a huge help','Every person he referred us to was excellent'],
+    paper:['He took care of the paperwork and deadlines','We never had to worry about missing a deadline','He kept all the paperwork organized and on time'],
+    fast:['Everything moved fast and closing day was smooth','We closed on time with no surprises','Closing was quick and easy'],
+    calm:['He made a stressful process feel calm','He kept us calm when things got stressful','He took so much stress off our plate'],
+    relo:['He made relocating to a new area easy','Moving here from out of town was simple with his help','He helped us get settled in a brand new area']
+  };
+  function opening(type,a,first,r){
+    var w=a?' in '+a:'';
+    var what={sell:['sold our home'+w,'sell our house'+w,'list and sell our home'+w],
+      both:['sold our home and bought our next one'+w,'sell and buy at the same time'+w,'make our move'+w],
+      buy:first==='yes'?['bought our first home'+w,'buy our very first house'+w,'become first-time homeowners'+w]:['bought our home'+w,'buy our new house'+w,'find and buy our home'+w]}[type]||['worked with him'+w,'made our move'+w,'started our home search'+w];
+    var p=what[Math.floor(r()*what.length)];
+    var leads=['Caleb Jackson with Keller Williams First Choice helped us '+p.replace(/^(sold|bought|worked)/,function(m){return {sold:'when we sold',bought:'when we bought',worked:'when we worked'}[m];})+'.',
+      'We used Caleb Jackson at Keller Williams First Choice to '+p.replace(/^sold/,'sell').replace(/^bought/,'buy').replace(/^worked with him/,'help us').replace(/^made/,'make').replace(/^started/,'start')+'.',
+      'If you need a realtor'+w+', call Caleb Jackson with Keller Williams First Choice. He helped us '+p.split(w).join('').replace(/^sold/,'sell').replace(/^bought/,'buy').replace(/^worked with him/,'with everything').replace(/^made/,'make').replace(/^started/,'start')+'.'];
+    return leads[Math.floor(r()*leads.length)];
+  }
+  function sentence(s){s=s.trim();if(!s)return '';s=s.charAt(0).toUpperCase()+s.slice(1);return /[.!?]$/.test(s)?s:s+'.';}
   function build(){
     var type=(f.querySelector('input[name=t]:checked')||{}).value,a=f.a.value.trim(),first=(f.querySelector('input[name=first]:checked')||{}).value;
-    var where=a?' in '+a:'',s=[];
-    var what=type==='sell'?'sold our home'+where:type==='both'?'sold our home and bought our next one'+where:type==='buy'?(first==='yes'?'bought our first home'+where:'bought our home'+where):'worked with him'+where;
-    s.push('Caleb Jackson with Keller Williams First Choice helped us when we '+what+'.');
-    if(type!=='sell'&&first==='yes')s.push('As first-time home buyers we had a lot of questions, and he was patient with every one.');
-    all('v').forEach(function(k){s.push(V[k]+'.');});
-    var story=f.story.value.trim();if(story)s.push(story.replace(/\s+$/,'')+(/[.!?]$/.test(story)?'':'.'));
-    var rec=all('r');s.push(rec.length?'I would recommend Caleb to '+list(rec)+'.':'I would recommend Caleb to anyone looking for a realtor'+(a?' in '+a:'')+'.');
+    var story=f.story.value,friend=f.friend.value,rec=all('r');
+    // wording depends on the visit seed plus what they typed, so identical taps still read differently
+    var r=rng(seed+'|'+name+'|'+story+'|'+friend);
+    var s=[opening(type,a,first,r)];
+    if(type!=='sell'&&first==='yes')s.push(['As first-time home buyers we had a lot of questions, and he was patient with every one.','Buying our first home felt big, and he made it feel doable.','He was perfect for first-time buyers like us.'][Math.floor(r()*3)]);
+    shuffle(all('v'),r).forEach(function(k){var o=V[k];s.push(o[Math.floor(r()*o.length)]+'.');});
+    if(story.trim())s.push(sentence(story));
+    if(friend.trim())s.push(sentence(friend));
+    if(stars>=4||!stars){
+      var who=rec.length?list(rec):'anyone looking for a realtor'+(a?' in '+a:'');
+      s.push(['I would recommend Caleb to '+who+'.','I highly recommend him to '+who+'.','Caleb is the realtor I would send '+who+' to.'][Math.floor(r()*3)]);
+    }
     return s.join(' ');
   }
+  function paint(){
+    document.querySelectorAll('#stars button').forEach(function(b){var on=+b.dataset.s<=stars;b.classList.toggle('on',on);b.setAttribute('aria-checked',+b.dataset.s===stars);});
+    rl.textContent=stars?'★★★★★'.slice(0,stars)+'  '+stars+' out of 5':'';
+  }
   function sync(){if(!edited)out.value=build();}
+  document.querySelectorAll('#stars button').forEach(function(b){b.addEventListener('click',function(){stars=+b.dataset.s;paint();sync();});});
+  f.querySelectorAll('#vals input').forEach(function(i){i.addEventListener('change',function(){if(all('v').length>4)i.checked=false;});});
   f.addEventListener('input',sync);f.addEventListener('change',sync);
   out.addEventListener('input',function(){edited=true;});
+  document.getElementById('again').onclick=function(){seed=Math.floor(Math.random()*1e9);edited=false;sync();};
   sync();
   function go(url,label){
     // copy synchronously first so the tap still counts as a user gesture, then open the review site
     var ok=false;out.focus();out.select();out.setSelectionRange(0,out.value.length);
     try{ok=document.execCommand('copy');}catch(e){}
     if(!ok&&navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(out.value).catch(function(){});ok=true;}
-    st.textContent=ok?'Copied. Paste it on '+label+' and tap Post.':'Press and hold your review above, tap Copy, then paste it on '+label+'.';
+    st.textContent=ok?'Copied. Tap '+(stars||'your')+' stars on '+label+', paste, and tap Post.':'Press and hold your review above, tap Copy, then paste it on '+label+'.';
     var w=window.open(url,'_blank');
     if(!w)location.href=url;
   }
