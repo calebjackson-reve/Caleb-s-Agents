@@ -4,8 +4,10 @@ Profile: https://www.zillow.com/profile/CalebCBR. Caleb logs in and makes each c
 
 ## 1. Make sure it's the right account (2 min)
 - Log in at zillow.com/agent-hub (Premier Agent). The account should show profile **CalebCBR**, agent ID **995709547**.
-- If you have more than one Zillow login, use the one that owns that profile. Try aire@calebjackson.org first, then calebjackson@kw.com, then the old brokerage email.
-- Settings > Contact info: set email to **aire@calebjackson.org**. Don't delete the old brokerage email association if Zillow lists it separately. Past sales stay attached to it.
+- Login used: the Premier Agent account with Caleb's photo, current email caleb.jackson@reverealtors.com (Oct 21).
+- aire@calebjackson.org is already taken by a separate Zillow account, so Zillow rejects it. Leave that account alone for now. Check later for a second agent profile and ask Zillow to merge if one exists.
+- New Zillow email: **reviews@calebjackson.org**. It's a Workspace alias on the aire user, created Oct 21. Gmail labels it "Reviews & Zillow" and it stays in the inbox so the morning speed-to-lead run still sees Zillow leads.
+- Status: alias live. The Zillow email change is pending until Caleb submits it and clicks the verification email.
 
 ## 2. Profile basics (5 min)
 | Field | Set to |
