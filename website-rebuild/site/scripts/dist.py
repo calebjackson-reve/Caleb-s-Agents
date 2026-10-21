@@ -18,6 +18,12 @@ for f in (site / 'assets').glob('*'):
     if f.name == 'site.js' and lead: text = text.replace("var LEAD_URL = '/api/lead';", "var LEAD_URL = '" + lead.replace("'", '') + "';")
     (out / 'assets' / f.name).write_text(text)
 if not lead: print('LEAD_WEBHOOK not set: forms post to /api/lead, which only exists on Cloudflare Pages')
+# review link page: self-contained folder, og-card.html is only the thumbnail source
+(out / 'review').mkdir()
+for f in (site / 'review').glob('*'):
+    if f.name == 'og-card.html': continue
+    if f.suffix == '.html': (out / 'review' / f.name).write_text(f.read_text().replace('home.calebjackson.org', host))
+    else: shutil.copy2(f, out / 'review' / f.name)
 refs = set()
 for f in list(out.glob('*.html')) + list((out / 'assets').glob('*')):
     refs.update(re.findall(r'/media/[^"\' )]+', f.read_text()))
