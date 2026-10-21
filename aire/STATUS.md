@@ -2,6 +2,13 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-21, morning: PR 61 merged, Turnberry fixed, Spark agent approval done
+
+- PR 61 (follow-up pools library, engine partners feed) merged to main. Working branch fast-forwarded onto main.
+- Deals tab: the Turnberry listing moved from active to under_contract with expected close 2026-11-29 (was 11-30). Logged in the Connector Log tagged claude.
+- MLS feed: Caleb approved the agent-level Spark Datamart licensee request for Luxury Presence's ROAM IDX plan at 8:52 am Central. Spark then put the request in "Brokerage approval pending from Keller Williams Realty-First Choice." Chain per Luxury Presence's IDX coordinator: agent approves, brokerage office approves with the office MLS login, ROAM gives final approval. A draft to the office front desk asking for the brokerage click is in Gmail Drafts for Caleb to send. The cloud morning run watches for the Spark "final approval" email.
+- Still open for the MLS parser: one Flex saved-search email alert from Caleb's account, so there is a real sample to build against.
+
 ## 2026-10-20: CRM engine, no more junk deals, feed ranks by texts first
 
 **Confirmed by Caleb (through the Mac session)**
