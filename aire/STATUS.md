@@ -118,6 +118,7 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - 2026-10-20 (7:05 am run): 0 new website leads in the last 26 hours, 0 drafts created. The only lead in the window search is Sunday's Google sign-on lead, already drafted on 10/19. Nothing sent.
 
 ## Morning run log
+- 2026-10-21 (6:40 am run): 2 new leads, 1 listing went under contract, 5 live deals tracked (0 waiting on Caleb), 7 touches logged by Pipeline yesterday, 0 conflicts, 0 appointments added. Brief kept out of git. Nothing failed.
 - 2026-10-20 (6:40 am run): 0 new leads, 1529 touches due (112 hot, 47 warm), 4 contracts tracked (0 waiting on Caleb), 1 conflict (Business Planning Clinic), 0 appointments added. Brief kept out of git. Nothing failed.
 - 2026-10-20 (run Oct 19 evening): 1 new lead, 0 pipeline rows, 5 contracts (0 waiting on Caleb, 1 item owed: inspection report to the other agent), 1 conflict (Business Planning Clinic vs lead gen and sales block 2), 0 appointments added. Nothing failed.
 
