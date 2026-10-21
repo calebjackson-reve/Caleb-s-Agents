@@ -114,7 +114,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .circle { width: 6rem; height: 6rem; border-radius: 50%; border: 1px solid var(--hairline); display: inline-grid; place-items: center; }
 
 /* hero (home): pinned stage over drone footage */
-.hero { position: relative; height: 340vh; background: var(--ink); color: var(--ivory); }
+.hero { position: relative; height: 100vh; height: 100svh; background: var(--ink); color: var(--ivory); }
 .hero-stick { position: sticky; top: 0; height: 100vh; overflow: hidden; perspective: 1200px; }
 .hero-media { position: absolute; inset: 0; }
 .pix { position: absolute; inset: 0; z-index: 3; pointer-events: none; image-rendering: pixelated; }
@@ -131,7 +131,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .hero-wordmark { position: absolute; left: 0; right: 0; bottom: -0.08em; z-index: 2; font-family: var(--serif); font-size: clamp(6rem, 17vw, 30rem); line-height: 0.9; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ember); text-align: center; white-space: nowrap; opacity: 0; pointer-events: none; }
 .hero-hint { position: absolute; left: var(--gutter); bottom: 3rem; z-index: 5; }
 .hero-meta { position: absolute; right: var(--gutter); bottom: 3rem; z-index: 5; text-align: right; color: var(--ivory-50); }
-@media (max-width: 767px) { .hero { height: 260vh; } .hero-portrait { height: auto; width: 120vw; bottom: 0; } .hero-wordmark { font-size: 21vw; bottom: 0.1em; } }
+@media (max-width: 767px) { .hero-portrait { height: auto; width: 120vw; bottom: 0; } .hero-wordmark { font-size: 21vw; bottom: 0.1em; } }
 
 /* statement with chevrons (FIND) */
 .statement { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--gap); align-items: center; }
@@ -446,3 +446,75 @@ h1, h2, h3, h4, p { margin: 0; }
   .runway-track::-webkit-scrollbar { display: none; }
   .runway-card { scroll-snap-align: start; width: 72vw; }
 }
+
+/* Quick doors, from the Fox Valuations teardown: photo, title, one line, a go link */
+.doors-band .h2 { max-width: 20ch; }
+.door-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap); margin-top: 5rem; }
+.door { display: grid; gap: 1.4rem; align-content: start; color: var(--fg); }
+.door-media { display: block; aspect-ratio: 4 / 3; overflow: hidden; background: var(--blush); }
+.door-media img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--dur-move) var(--ease-reveal); }
+.door:hover .door-media img, .door:focus-visible .door-media img { transform: scale(1.04); }
+.door-title { font-family: var(--serif); font-size: var(--h3); line-height: 1.1; margin-top: 0.6rem; }
+.door-desc { font-size: var(--body); line-height: 1.5; color: var(--fg-2); }
+.door-go { display: inline-flex; gap: 0.8rem; padding-bottom: 0.6rem; border-bottom: 1px solid currentColor; justify-self: start; }
+.door:hover .door-go, .door:focus-visible .door-go { color: var(--ember); }
+@media (max-width: 1100px) { .door-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .door-grid { grid-template-columns: 1fr; gap: 4rem; } .door-title { font-size: 3.2rem; } }
+
+/* Meet Caleb band: portrait at its own proportions, the name fully on screen */
+.meet { padding-bottom: 0; overflow: hidden; }
+.meet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: calc(var(--gap) * 2); align-items: end; }
+.meet-copy { padding-bottom: var(--section); display: grid; gap: 2rem; justify-items: start; }
+.meet-name { font-family: var(--serif); font-size: clamp(4.8rem, 9vw, 16rem); line-height: 0.9; text-transform: uppercase; letter-spacing: 0.02em; color: var(--ember); margin: 0; }
+.meet-portrait { margin: 0; align-self: end; }
+.meet-portrait img { display: block; width: 100%; height: auto; max-width: 72rem; margin-left: auto; }
+@media (max-width: 900px) { .meet-grid { grid-template-columns: 1fr; } .meet-copy { padding-bottom: 0; } .meet-name { font-size: 14vw; } }
+.doors-more { margin-top: 5rem; font-size: var(--body); color: var(--fg-2); display: flex; gap: 1.6rem; align-items: baseline; flex-wrap: wrap; }
+
+/* Selling strategy pyramid */
+.pyr { display: grid; grid-template-columns: 1.2fr 1fr; margin-top: 5rem; align-items: stretch; }
+.pyr-shape { width: 100%; height: auto; display: block; overflow: visible; }
+.pyr-layer, .pyr-note { cursor: pointer; }
+.pyr-shape text { pointer-events: none; font-family: var(--serif); font-size: 26px; text-anchor: middle; dominant-baseline: central; }
+.pyr-lead { stroke: var(--hairline); stroke-width: 1; stroke-dasharray: 3 4; }
+.pyr-notes { list-style: none; margin: 0; padding: 0 0 0 2.4rem; display: grid; grid-template-rows: repeat(5, 1fr); }
+.pyr-note { display: flex; align-items: center; font-size: var(--body); line-height: 1.45; color: var(--fg-2); border-top: 1px solid transparent; transition: color var(--dur-ui) var(--ease-house); }
+.pyr-note b { color: var(--fg); font-weight: 600; margin-right: 0.6rem; }
+.pyr-layer polygon { transition: opacity var(--dur-ui) var(--ease-house); }
+.pyr.is-hover .pyr-layer polygon { opacity: 0.35; }
+.pyr.is-hover .pyr-layer.is-on polygon { opacity: 1; }
+.pyr.is-hover .pyr-note { color: var(--fg-3); }
+.pyr.is-hover .pyr-note.is-on { color: var(--fg); }
+.js .pyr .pyr-layer, .js .pyr .pyr-note { opacity: 0; transform: translateY(1.2rem); transition: opacity var(--dur-move) var(--ease-reveal), transform var(--dur-move) var(--ease-reveal); transition-delay: calc((4 - var(--i)) * 110ms); }
+.pyr.is-in .pyr-layer, .pyr.is-in .pyr-note { opacity: 1; transform: none; }
+@media (max-width: 900px) {
+  .pyr { grid-template-columns: 1fr; gap: 3rem; }
+  .pyr-lead { display: none; }
+  .pyr-notes { padding: 0; grid-template-rows: none; gap: 1.6rem; }
+  .pyr-note { display: block; border-top: 1px solid var(--hairline); padding-top: 1.6rem; }
+  .pyr-shape text { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) { .js .pyr .pyr-layer, .js .pyr .pyr-note { opacity: 1; transform: none; } }
+
+/* Listing book (page-flip) */
+.fb-stage { margin-top: 5rem; display: flex; justify-content: center; }
+.flipbook { width: 100%; max-width: 124rem; }
+.fb-page { background: var(--ivory); overflow: hidden; }
+.fb-page figure { margin: 0; height: 100%; display: grid; grid-template-rows: 1fr auto; }
+.fb-page img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fb-page figcaption { padding: 1.6rem 2rem; color: var(--ink); background: var(--ivory); border-top: 1px solid var(--hairline-on-ivory); }
+.fb-cover { background: var(--ink); color: var(--ivory); }
+.fb-cover-in { height: 100%; display: grid; align-content: center; justify-items: center; gap: 2.4rem; text-align: center; padding: 4rem; }
+.fb-cover .label.dim { color: var(--ivory-50); }
+.fb-title { font-family: var(--serif); font-size: clamp(2.8rem, 4vw, 6rem); line-height: 1.05; margin: 0; }
+.fb-cover .label:first-child { color: var(--ember); }
+.fb-controls { display: flex; justify-content: center; align-items: center; gap: 2.4rem; margin-top: 3rem; }
+.fb-controls button { background: none; color: var(--fg); cursor: pointer; font-size: 2rem; min-width: 44px; min-height: 44px; }
+.fb-controls button:hover, .fb-controls button:focus-visible { border-color: var(--ember); color: var(--ember); }
+
+/* About: portrait slides straight up as the section scrolls in. Position only, never scale or tilt, so the photo keeps its shape */
+.about-left { display: grid; gap: 4rem; align-content: start; }
+.slide-up { margin: 0; overflow: hidden; }
+.slide-up img { display: block; width: 100%; max-width: 46rem; height: auto; will-change: transform; }
+.about-photo img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; display: block; }
+@media (max-width: 900px) { .about-left { grid-column: 1 / -1 !important; } .slide-up img { max-width: 70%; margin: 0 auto; } }

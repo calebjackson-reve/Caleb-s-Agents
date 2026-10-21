@@ -23,7 +23,7 @@
   });
 
   /* ---------- shared header, menu, footer ---------- */
-  var NAV = [['search.html', 'Search'], ['communities.html', 'Communities'], ['sell.html', 'Sell'], ['about.html', 'About']];
+  var NAV = [['search.html', 'Search'], ['communities.html', 'Communities'], ['sell.html', 'Sell'], ['commercial.html', 'Commercial'], ['tools.html', 'Tools'], ['about.html', 'About']];
   function navHtml(cls) {
     return NAV.map(function (n) { return '<a href="' + n[0] + '"' + (page === n[0].replace('.html', '') ? ' aria-current="page"' : '') + '>' + n[1] + '</a>'; }).join('');
   }
@@ -290,19 +290,23 @@
   gsap.registerPlugin(ScrollTrigger);
   if (lenis) { lenis.on('scroll', ScrollTrigger.update); gsap.ticker.lagSmoothing(0); }
 
-  /* ---------- home hero: pinned stage ---------- */
-  var hero = document.querySelector('.hero');
-  if (hero) {
-    /* One pass, nothing bounces: the copy lifts away, the ground darkens, the name rises behind him and he rises in front of it and stays. Timings are fractions of the 400vh stage. */
-    var veil = document.createElement('div'); veil.className = 'hero-veil'; hero.querySelector('.hero-media').after(veil);
-    var tl = gsap.timeline({ scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom bottom', scrub: 0.8 } });
-    tl.to('.hero-media video, .hero-media img', { scale: 1.18, ease: 'none', duration: 1 }, 0)
-      .to('.hero-hint, .hero-meta', { opacity: 0, duration: 0.08 }, 0)
-      .to('.hero-copy', { y: '-24vh', opacity: 0, ease: 'none', duration: 0.28 }, 0.1)
-      .to('.hero-veil', { opacity: 0.55, ease: 'none', duration: 0.4 }, 0.2)
-      .fromTo('.hero-wordmark', { opacity: 0, y: '40%' }, { opacity: 1, y: '0%', ease: 'none', duration: 0.34 }, 0.3)
-      .fromTo('.hero-portrait', { y: '100%', scale: 0.9, rotateX: 14 }, { y: phone ? '-12%' : '2%', scale: 1, rotateX: 0, ease: 'none', duration: 0.42 }, 0.34);
-  }
+  /* ---------- selling strategy pyramid: hover or tap a layer or its note to pick it out ---------- */
+  document.querySelectorAll('.pyr').forEach(function (pyr) {
+    var parts = pyr.querySelectorAll('[data-i]');
+    function on(i) { pyr.classList.toggle('is-hover', i !== null); parts.forEach(function (el) { el.classList.toggle('is-on', el.dataset.i === i); }); }
+    parts.forEach(function (el) {
+      el.addEventListener('mouseenter', function () { on(el.dataset.i); });
+      el.addEventListener('click', function () { on(el.classList.contains('is-on') ? null : el.dataset.i); });
+    });
+    pyr.addEventListener('mouseleave', function () { on(null); });
+  });
+
+  /* ---------- home hero: a still frame. The old pinned zoom and portrait rise distorted the photos (Caleb, October 20, 2026) ---------- */
+
+  /* ---------- slide-up portrait (About): rises into place as its section scrolls in, translate only ---------- */
+  document.querySelectorAll('.slide-up img').forEach(function (img) {
+    gsap.fromTo(img, { yPercent: 45 }, { yPercent: 0, ease: 'none', scrollTrigger: { trigger: img.closest('section'), start: 'top 85%', end: 'center 55%', scrub: 0.6 } });
+  });
 
   /* ---------- split panels: slow drift on the photo ---------- */
   document.querySelectorAll('.world-media img, .world-media video').forEach(function (img) {
