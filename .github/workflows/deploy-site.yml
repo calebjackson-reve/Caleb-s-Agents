@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - run: python3 website-rebuild/site/scripts/build.py
-      - run: SITE_HOST="${{ github.event.inputs.site_host || 'home.calebjackson.org' }}" python3 website-rebuild/site/scripts/dist.py website-rebuild/dist
+      - run: SITE_HOST="${{ github.event.inputs.site_host || 'home.calebjackson.org' }}" LEAD_WEBHOOK="${{ vars.LEAD_WEBHOOK }}" python3 website-rebuild/site/scripts/dist.py website-rebuild/dist
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,5 +1,7 @@
 # Lead delivery
 
+On GitHub Pages (the current host) there is no `/api/lead`. Set the repo variable `LEAD_WEBHOOK` to the Apps Script URL and `dist.py` makes the forms post straight to it. `lead-webhook.gs` does the validation. See the October 21 update in `../GO-LIVE.md`. The rest of this page is the Cloudflare Pages route.
+
 `api/lead.js` runs on Cloudflare Pages as a function at `/api/lead`. Every form on the site posts JSON to it. It validates, drops bots, and forwards to `LEAD_WEBHOOK`.
 
 ## The webhook: Google Apps Script (free, Caleb's Workspace, no new account)

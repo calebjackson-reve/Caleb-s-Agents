@@ -12,7 +12,18 @@ if out.exists(): shutil.rmtree(out)
 def fix(text): return text.replace('../media/', '/media/').replace('<meta name="robots" content="noindex,nofollow">', '<meta name="robots" content="index,follow">')
 for f in site.glob('*.html'):
     if not f.name.startswith('_'): (out / f.name).write_text(fix(f.read_text()))
-for f in (site / 'assets').glob('*'): (out / 'assets' / f.name).write_text(fix(f.read_text()))
+lead = os.environ.get('LEAD_WEBHOOK', '')
+for f in (site / 'assets').glob('*'):
+    text = fix(f.read_text())
+    if f.name == 'site.js' and lead: text = text.replace("var LEAD_URL = '/api/lead';", "var LEAD_URL = '" + lead.replace("'", '') + "';")
+    (out / 'assets' / f.name).write_text(text)
+if not lead: print('LEAD_WEBHOOK not set: forms post to /api/lead, which only exists on Cloudflare Pages')
+# review link page: self-contained folder, og-card.html is only the thumbnail source
+(out / 'review').mkdir()
+for f in (site / 'review').glob('*'):
+    if f.name == 'og-card.html': continue
+    if f.suffix == '.html': (out / 'review' / f.name).write_text(f.read_text().replace('home.calebjackson.org', host))
+    else: shutil.copy2(f, out / 'review' / f.name)
 refs = set()
 for f in list(out.glob('*.html')) + list((out / 'assets').glob('*')):
     refs.update(re.findall(r'/media/[^"\' )]+', f.read_text()))
@@ -22,6 +33,8 @@ for r in sorted(refs):
         dst = out / r.lstrip('/'); dst.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(src, dst)
     else: print('missing', r)
 (out / '_redirects').write_text('/home-search https://search.calebjackson.org 301\n/about /about.html 301\n/sell /sell.html 301\n/contact /contact.html 301\n/communities /communities.html 301\n/search /search.html 301\n')
+# GitHub Pages ignores _redirects, so the one old LP path that matters gets a stub page too
+(out / 'home-search').mkdir(); (out / 'home-search' / 'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Home Search</title><meta http-equiv="refresh" content="0;url=https://search.calebjackson.org"><link rel="canonical" href="https://search.calebjackson.org"><a href="https://search.calebjackson.org">Search homes</a>\n')
 (out / '_headers').write_text('/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/media/*\n  Cache-Control: public, max-age=31536000, immutable\n/assets/*\n  Cache-Control: public, max-age=86400\n')
 (out / '404.html').write_text((out / 'index.html').read_text())
 (out / 'CNAME').write_text(host + '\n')
