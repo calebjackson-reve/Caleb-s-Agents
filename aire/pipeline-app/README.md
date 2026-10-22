@@ -42,7 +42,7 @@ Checks: `python3 aire/pipeline-app/app.py --test` runs 27 offline checks (demo w
 | Variable | Default | What it does |
 |---|---|---|
 | `PIPELINE_PORT` | `4747` | Port on 127.0.0.1. The server never listens on any other interface. |
-| `PIPELINE_PYTHON` | `~/.aire/venv/bin/python` if it exists | Python used to run `crm.py`. That venv has the Sheets credentials and Full Disk Access, so the app itself needs neither. |
+| `PIPELINE_PYTHON` | `~/.aire/venv/bin/python` if it exists | Python used to run `crm.py`. That venv has the Sheets credentials and Full Disk Access, so the app itself needs neither. Any Python 3.10 or newer works, built with uv or Homebrew. Full Disk Access goes on the real binary, not the venv symlink: `readlink -f ~/.aire/venv/bin/python` prints it (for uv, under `~/.local/share/uv/python/`). |
 | `PIPELINE_SENDER` | `dry` | `live` sends for real: texts through Messages, email through Gmail. Anything else logs the send and sends nothing. The screen says which mode it is in. |
 | `PIPELINE_MAX_TEXTS`, `PIPELINE_MAX_EMAILS` | `25` | Daily caps, counted from `out/send-log.json` in Central time. |
 

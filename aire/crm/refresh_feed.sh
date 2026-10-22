@@ -1,7 +1,8 @@
 #!/bin/sh
 # Rebuilds feed.json for the Pipeline app: iMessage signals, then the CRM feed with those signals.
 # Run by the LaunchAgent org.calebjackson.aire.feed every 15 minutes and at login.
-# The Homebrew Python already has Full Disk Access, so the Pipeline app never needs it.
+# The venv's Python (~/.aire/venv, built with uv or Homebrew, 3.10 or newer) has Full Disk Access for Messages,
+# so the Pipeline app never needs it. Grant it to the real binary: readlink -f ~/.aire/venv/bin/python.
 # Read only against Messages and the CRM. Writes only the gitignored feed.json and enrichment/out/.
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)

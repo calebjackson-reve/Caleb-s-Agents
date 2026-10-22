@@ -33,6 +33,7 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - On the Mac: `python3 aire/pipeline-app/app.py --demo` to see it, then `sh aire/crm/refresh_feed.sh` and `~/.aire/venv/bin/python aire/pipeline-app/app.py` for the real feed, then `sh aire/pipeline-app/install.sh` to keep it at login.
 - Say when to flip `PIPELINE_SENDER` to `live`, and whether 25 and 25 stay the caps.
 - Put `ANTHROPIC_API_KEY` and `ELEVENLABS_API_KEY` in `~/.aire/pipeline.env` on the Mac to turn on the Q&A step and the voice. Both spend per call; the screen shows the running count.
+- The Mac had no Homebrew and `~/.aire/venv` was on Python 3.9 (end of life). The Mac session is rebuilding it on 3.13 with uv; the LaunchAgent, `install.sh` and `refresh_feed.sh` only need `~/.aire/venv/bin/python`, so uv is fine. Full Disk Access must be granted to the real 3.13 binary (`readlink -f ~/.aire/venv/bin/python`), not the venv symlink.
 - For calls: `pip install elevenlabs` in the venv, run ngrok, `speech_engine.py create --ws-url wss://<ngrok host>/ws --save`, then `speech_engine.py serve`. Speech Engine minutes bill on the ElevenLabs plan on top of the Claude tokens.
 - The visual improvements list from before this rebuild was never found. Say what is still missing after seeing this version.
 - If the "Build, run and screenshot the Pipeline app" task card was started on the Mac, stop it: it would copy the Codex source into the same folder.
