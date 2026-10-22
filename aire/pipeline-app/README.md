@@ -110,7 +110,26 @@ Say **"hey Pipeline"** (or "hey Jarvis"), then a command. Pipeline answers out l
 
 How it works, all in the browser: Chrome's speech recognition listens (`webkitSpeechRecognition`, which sends audio to Google's speech service while the loop is on), `speechSynthesis` talks with a British voice when the Mac has one (Daniel), and the intents are plain word matching in `static/voice.js`. There is no LLM in the loop. Safari has no speech recognition, so use Chrome on the Mac; the Dock app from `install.sh` opens Chrome. Where there is no microphone the same commands can be typed in the sidebar's command box (`t`). The mic button (`v`) turns the loop on and off; after the wake word it stays awake for 25 seconds, so you can chain commands. The status chip shows LISTENING, THINKING or SPEAKING, the core fires streaks while it thinks, and the core panel shows the last thing heard and a telemetry ticker of what the app did.
 
-What the two reels Caleb sent have that this does not: an LLM answering open questions, a paid voice (ElevenLabs), and sub-agents per business tool. `REFERENCE.md` has the full notes on both reels with what is confirmed and what is inference.
+### Claude Q&A and the ElevenLabs voice
+
+Both are off until their key is present, and both cost money per call. Put the keys in `~/.aire/pipeline.env` (one `KEY=VALUE` per line, never in the repo, never in the LaunchAgent plist) and restart Pipeline:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+ELEVENLABS_API_KEY=...
+# optional
+PIPELINE_ASK_MODEL=claude-opus-5-5
+ELEVENLABS_VOICE_ID=onwK4e9ZLuTAKqWW03F9
+ELEVENLABS_MODEL=eleven_flash_v2_5
+```
+
+**Claude Q&A.** Anything the word-matching intents do not recognize goes to Claude, and "ask ..." forces it ("hey Pipeline, ask who is most likely to list this spring"). Claude gets a compact view of today: counts, the top 25 touches due with band, stage, next action and their last three texts, open tasks, live deals, new leads, today's send counts and the Command state. No phone numbers or emails are in it. The system prompt tells it to answer in two or three spoken sentences from that data only, never to invent a name or number, and never to promise to send anything. Model: `claude-opus-5-5` at low effort (quick spoken answers), with the server-side refusal fallback on, 400 output tokens max. Needs the `anthropic` package in Pipeline's Python, which the enrichment pass already uses. Each question is roughly 2,000 to 4,000 input tokens and under 100 output, so about a cent or two at the published Opus 5.5 prices. The Sources panel shows how many questions were asked and `out/voice-usage.json` keeps the token counts and a running cost estimate.
+
+**ElevenLabs voice.** With `ELEVENLABS_API_KEY` set, everything Pipeline says goes through ElevenLabs text to speech (default voice Daniel, British, model `eleven_flash_v2_5` for low latency) and plays in the page. Without the key, or if a call fails, the browser's own voice speaks instead and the transcript line says so. Characters spoken are counted in the Sources panel; ElevenLabs bills by character on its plans.
+
+**Privacy.** Names and last texts leave the Mac only while the Q&A step is on, to Anthropic, the same way the enrichment's Haiku pass already sends them. What Pipeline says (which can include names) goes to ElevenLabs only while that key is set. Chrome's speech recognition sends the microphone audio to Google's speech service while the loop is on. Set no key and none of that happens.
+
+What the two reels Caleb sent have that this does not: sub-agents per business tool. `REFERENCE.md` has the full notes on both reels with what is confirmed and what is inference.
 
 ## The screen
 
@@ -150,6 +169,7 @@ Built and tested in a Linux cloud session against the fixtures. These three path
 - `PIPELINE_SENDER=live` email sending through the Gmail token in `aire/follow-up/`.
 - Refresh from the screen, which runs `sh crm/refresh_feed.sh` and reads the last line of `~/.aire/logs/feed.log` for the toast.
 - The microphone half of the voice loop. Headless Chromium has no speech recognition, so the intents were exercised by typing the commands; the spoken half fell back to the transcript line. On the Mac, Chrome asks for the mic once.
+- The Claude Q&A call and the ElevenLabs call against the real services. Both were tested with the network faked (the request shape, the key header, the usage counters). First real question: "hey Pipeline, ask what should I do first today".
 
 `install.sh` and the LaunchAgent follow the same pattern as `org.calebjackson.aire.feed` but were written here, not run on the Mac.
 

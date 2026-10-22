@@ -15,8 +15,30 @@ const Voice = (() => {
     const vs = speechSynthesis.getVoices();
     voice = vs.find(v => /en-GB/i.test(v.lang) && /Daniel|Google UK English Male|Arthur/i.test(v.name)) || vs.find(v => /en-GB/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || vs[0] || null;
   }
+  let audioEl = null;
   function say(text, done) {
-    if (!('speechSynthesis' in window)) { transcript('pipeline', text); done && done(); return; }
+    const tts = (window.S && S.data && S.data.voice && S.data.voice.tts) || 'browser';
+    if (tts === 'elevenlabs') return sayEleven(text, done);
+    sayBrowser(text, done);
+  }
+  function sayEleven(text, done) {
+    transcript('pipeline', text);
+    setState('speaking');
+    if (audioEl) { try { audioEl.pause(); } catch (e) { } }
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    fetch('/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) })
+      .then(r => { if (!r.ok || !(r.headers.get('content-type') || '').startsWith('audio/')) return r.json().then(j => { throw new Error(j.error || 'no audio'); }); return r.blob(); })
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        audioEl = new Audio(url);
+        audioEl.onended = () => { URL.revokeObjectURL(url); setState(on && awake ? 'listening' : 'idle'); done && done(); };
+        audioEl.onerror = () => { URL.revokeObjectURL(url); setState('idle'); done && done(); };
+        return audioEl.play();
+      })
+      .catch(err => { transcript('pipeline', '(ElevenLabs: ' + (err && err.message || 'failed') + ', using the browser voice)'); sayBrowser(text, done, true); });
+  }
+  function sayBrowser(text, done, silentLog) {
+    if (!('speechSynthesis' in window)) { if (!silentLog) transcript('pipeline', text); done && done(); return; }
     speechSynthesis.cancel();
     if (!voice) pickVoice();
     const u = new SpeechSynthesisUtterance(text);
@@ -25,7 +47,7 @@ const Voice = (() => {
     u.onstart = () => setState('speaking');
     u.onend = () => { setState(on && awake ? 'listening' : 'idle'); done && done(); };
     u.onerror = () => { setState('idle'); done && done(); };
-    transcript('pipeline', text);
+    if (!silentLog) transcript('pipeline', text);
     speechSynthesis.speak(u);
   }
   function transcript(who, text) { log.push({ at: new Date(), who, text }); if (log.length > 40) log.shift(); if (window.onVoiceLine) window.onVoiceLine(who, text); }
@@ -36,7 +58,8 @@ const Voice = (() => {
   function handle(text) {
     const f = (window.feed && feed()) || {}, c = f.counts || {}, q = text.toLowerCase();
     const owes = (f.touches_due || []).filter(r => r.owes_reply), over = (f.tasks || []).filter(t => t.overdue);
-    if (/\b(stop|quiet|cancel|never ?mind|hush)\b/.test(q)) { speechSynthesis.cancel(); setState(on ? 'listening' : 'idle'); return; }
+    if (/^(ask|question|hey claude|claude)[ ,:]/i.test(q.trim())) return askClaude(text.replace(/^(ask|question|hey claude|claude)[ ,:]+/i, ''));
+    if (/\b(stop|quiet|cancel|never ?mind|hush)\b/.test(q)) { if ('speechSynthesis' in window) speechSynthesis.cancel(); if (audioEl) { try { audioEl.pause(); } catch (e) { } } setState(on ? 'listening' : 'idle'); return; }
     setState('thinking');
     if (/\b(brief|morning|rundown|summary|how.?s (my|the) day)\b/.test(q)) {
       go('cc');
@@ -57,8 +80,18 @@ const Voice = (() => {
     if (/\b(home|command|center|dashboard|overview)\b/.test(q)) { go('cc'); return say('Command center.'); }
     if (/\b(sent|what did i send|log)\b/.test(q)) { go('sent'); const s = S.data.caps; return say(`${s.sent_texts} of ${s.texts} texts and ${s.sent_emails} of ${s.emails} emails today.`); }
     if (/\b(status|problem|attention|anything wrong|health)\b/.test(q)) { const p = problems(); return say(p.length ? `${p.length} thing${p.length === 1 ? '' : 's'} need${p.length === 1 ? 's' : ''} attention. ${p.map(x => x.text).join(' ')}` : 'All systems are fine. Feed is fresh, Command is signed in, sender is ' + (S.data.sender === 'live' ? 'live' : 'in dry run') + '.'); }
-    if (/\b(help|what can you do|commands)\b/.test(q)) return say('Say brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, or stop.');
-    return say("I didn't catch that. Say brief, touches, tasks, deals, leads, compose, or status.");
+    if (/\b(help|what can you do|commands)\b/.test(q)) return say('Say brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, or stop.' + (askOn() ? ' Or ask me anything about today.' : ''));
+    return askClaude(text);
+  }
+  function askOn() { return !!(window.S && S.data && S.data.voice && S.data.voice.ask); }
+  function askClaude(question) {
+    if (!askOn()) return say("I didn't catch that. Say brief, touches, tasks, deals, leads, compose, or status.");
+    setState('thinking');
+    if (window.Core) Core.burst();
+    return fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) })
+      .then(r => r.json())
+      .then(r => { if (!r.ok) return say(r.error || 'Claude did not answer.'); if (window.load) load(); say(r.result.answer); })
+      .catch(() => say('Claude did not answer.'));
   }
   function hourWord() { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'; }
 

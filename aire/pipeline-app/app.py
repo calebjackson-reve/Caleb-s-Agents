@@ -21,6 +21,14 @@ Pipeline is the one sender (Caleb, 2026-10-20). Every send goes through three ch
      logs the send and sends nothing. The screen shows which mode it is in.
 After a real send the engine logs it with `touch`, so the person drops off tomorrow's list.
 
+Two optional paid services, each off until its key is present (env, or ~/.aire/pipeline.env as KEY=VALUE lines):
+  ANTHROPIC_API_KEY     turns on the Claude Q&A step: a question the word-matching intents cannot answer goes to Claude
+                        with a compact view of today's feed (names, bands, next actions, their last texts, tasks, deals,
+                        leads) and the spoken answer comes back. PIPELINE_ASK_MODEL (default claude-opus-5-5).
+  ELEVENLABS_API_KEY    turns on the ElevenLabs voice for everything Pipeline says. ELEVENLABS_VOICE_ID (default Daniel,
+                        British), ELEVENLABS_MODEL (default eleven_flash_v2_5). Without it the browser's own voice talks.
+  Both spend money per call. out/voice-usage.json keeps the running count and the screen shows it.
+
 Environment:
   PIPELINE_PORT      default 4747
   PIPELINE_PYTHON    Python for crm.py, default ~/.aire/venv/bin/python when it exists, else this interpreter
@@ -37,7 +45,9 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.parse
+import urllib.request
 from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -50,14 +60,44 @@ FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
 CENTRAL = ZoneInfo("America/Chicago")
 
+ENV_FILE = Path.home() / ".aire" / "pipeline.env"
+
+
+def load_env_file(path: Path = ENV_FILE) -> int:
+    """KEY=VALUE lines, never committed. Real env wins over the file."""
+    n = 0
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k, v = k.strip(), v.strip().strip('"').strip("'")
+            if k and k not in os.environ:
+                os.environ[k] = v
+                n += 1
+    except FileNotFoundError:
+        pass
+    return n
+
+
 PATHS = {
     "feed": AIRE / "crm" / "feed.json",
     "text_queue": AIRE / "follow-up" / "out" / "text-queue.json",
     "email_queue": AIRE / "follow-up" / "out" / "email-queue.json",
     "command_status": AIRE / "command-reader" / "out" / "status.json",
     "send_log": OUT / "send-log.json",
+    "voice_usage": OUT / "voice-usage.json",
     "feed_log": Path.home() / ".aire" / "logs" / "feed.log",
 }
+ASK_MODEL_DEFAULT = "claude-opus-5-5"
+ELEVEN_VOICE_DEFAULT = "onwK4e9ZLuTAKqWW03F9"   # ElevenLabs premade "Daniel", British
+ELEVEN_MODEL_DEFAULT = "eleven_flash_v2_5"
+ASK_SYSTEM = """You are Pipeline, the voice of Caleb Jackson's daily real estate tool. Caleb is a REALTOR with Keller Williams
+First Choice in the Baton Rouge area. You answer out loud, so keep it to two or three short sentences, plain words, no
+lists, no markdown. Answer only from the pipeline data you are given. If the data does not say, say you don't have that
+and name what you do have. Never invent a name, number or date. Never promise to send, text, email or schedule anything:
+Pipeline only sends when Caleb presses send himself. Warm, direct, natural; no em dashes."""
 DEMO_PATHS = {
     "feed": FIXTURES / "demo-feed.json",
     "text_queue": FIXTURES / "demo-text-queue.json",
@@ -235,6 +275,12 @@ class State:
         self.sender = "dry" if demo else (os.getenv("PIPELINE_SENDER", "dry").strip().lower() or "dry")
         self.crm = DemoCRM(self) if demo else EngineCRM(python_for_crm())
         self.refresh = {"running": False, "started": "", "finished": "", "ok": None, "detail": ""}
+        self.usage_path = (send_log.parent / "voice-usage.json") if send_log else OUT / ("demo-voice-usage.json" if demo else "voice-usage.json")
+        self.ask_model = os.getenv("PIPELINE_ASK_MODEL", ASK_MODEL_DEFAULT)
+        self.ask_key = "" if demo else os.getenv("ANTHROPIC_API_KEY", "")
+        self.eleven_key = "" if demo else os.getenv("ELEVENLABS_API_KEY", "")
+        self.eleven_voice = os.getenv("ELEVENLABS_VOICE_ID", ELEVEN_VOICE_DEFAULT)
+        self.eleven_model = os.getenv("ELEVENLABS_MODEL", ELEVEN_MODEL_DEFAULT)
         self.lock = threading.Lock()
         self._demo_cache: dict | None = None
         self.started = now().isoformat(timespec="seconds")
@@ -255,6 +301,113 @@ class State:
         d = today().isoformat()
         rows = [r for r in self.send_log() if r.get("at", "").startswith(d) and r.get("status") in ("sent", "dry-run")]
         return {"texts": sum(1 for r in rows if r["kind"] == "text"), "emails": sum(1 for r in rows if r["kind"] == "email")}
+
+    # ---- voice services
+    def voice_usage(self) -> dict:
+        u = read_json(self.usage_path, {})
+        if not isinstance(u, dict) or "_error" in u:
+            u = {}
+        return {"asked": int(u.get("asked", 0)), "input_tokens": int(u.get("input_tokens", 0)), "output_tokens": int(u.get("output_tokens", 0)),
+                "spoken_chars": int(u.get("spoken_chars", 0)), "last": u.get("last", "")}
+
+    def _bump_usage(self, **delta) -> dict:
+        with self.lock:
+            u = self.voice_usage()
+            for k, v in delta.items():
+                u[k] = u.get(k, 0) + v
+            u["last"] = now().isoformat(timespec="seconds")
+            write_json(self.usage_path, u)
+            return u
+
+    def voice_info(self) -> dict:
+        u = self.voice_usage()
+        # Rough spend, from the published per-token prices of the default model and ElevenLabs' per-character plans.
+        est = u["input_tokens"] / 1e6 * 4.0 + u["output_tokens"] / 1e6 * 20.0 if self.ask_model == ASK_MODEL_DEFAULT else None
+        return {"ask": bool(self.ask_key), "ask_model": self.ask_model, "tts": "elevenlabs" if self.eleven_key else "browser",
+                "voice_id": self.eleven_voice if self.eleven_key else "", "usage": u, "ask_cost_estimate_usd": round(est, 4) if est is not None else None}
+
+    def ask_context(self) -> dict:
+        """A compact, bounded view of today for the model. Names and last texts are in it, so this leaves the Mac only
+        when the Q&A step is on, the same way the enrichment's Haiku pass does."""
+        f = self.feed()
+        if not f or "_error" in f:
+            return {"note": "no feed loaded"}
+        due = [{"name": r.get("display"), "band": r.get("band"), "stage": r.get("stage"), "days_quiet": r.get("days_quiet"),
+                "owes_reply": r.get("owes_reply"), "next_action": r.get("next_action"), "last_texts": (r.get("last_messages") or [])[-3:],
+                "has_phone": bool(r.get("phone")), "has_email": bool(r.get("email"))} for r in f.get("touches_due", [])[:25]]
+        tasks = [{"task": t.get("task"), "who": t.get("display"), "due": t.get("due"), "overdue": t.get("overdue"), "source": t.get("source")}
+                 for t in f.get("tasks", [])[:20]]
+        deals = [{"address": d.get("address"), "who": d.get("display"), "side": d.get("side"), "stage": d.get("stage"), "price": d.get("price"),
+                  "expected_close": d.get("expected_close"), "next_step": d.get("next_step"), "last_event": d.get("last_event")} for d in f.get("deals", [])[:15]]
+        leads = [{"name": l.get("display"), "source": l.get("source"), "received": l.get("received"), "next_action": l.get("next_action")} for l in f.get("new_leads", [])[:15]]
+        sent = self.sent_today()
+        return {"today": today().isoformat(), "feed_as_of": f.get("as_of"), "counts": f.get("counts"), "cadence_days": f.get("cadence_days"),
+                "touches_due_top": due, "tasks": tasks, "live_deals": deals, "new_leads": leads,
+                "sent_today": sent, "caps": {"texts": self.max_texts, "emails": self.max_emails}, "sender_mode": self.sender,
+                "command_reader": read_json(self.paths["command_status"], {}).get("state", "unknown")}
+
+    def ask(self, question: str) -> dict:
+        question = (question or "").strip()
+        if not question:
+            raise CRMError("ask needs a question")
+        if self.demo:
+            u = self._bump_usage(asked=1)
+            return {"ok": True, "result": {"answer": "Demo mode. On the Mac, with ANTHROPIC_API_KEY set, Claude answers from today's feed. "
+                                                      "I heard: " + question[:120], "model": "demo"}, "usage": u}
+        if not self.ask_key:
+            raise CRMError("Claude Q&A is off: set ANTHROPIC_API_KEY in ~/.aire/pipeline.env and restart Pipeline")
+        try:
+            import anthropic
+        except ImportError:
+            raise CRMError("the anthropic package is not installed in Pipeline's Python (pip install anthropic in ~/.aire/venv)")
+        client = anthropic.Anthropic(api_key=self.ask_key)
+        messages = [{"role": "user", "content": "Today's pipeline data as JSON:\n" + json.dumps(self.ask_context(), ensure_ascii=False)
+                                                + "\n\nCaleb asked, by voice: " + question}]
+        kwargs = dict(model=self.ask_model, max_tokens=400, system=ASK_SYSTEM, messages=messages, output_config={"effort": "low"})
+        try:
+            try:  # refusal fallback on the current Opus and Fable models; older SDKs or models do not know the parameter
+                resp = client.beta.messages.create(betas=["server-side-fallback-2026-07-01"], fallbacks="default", **kwargs)
+            except TypeError:
+                resp = client.messages.create(**kwargs)
+        except anthropic.AuthenticationError:
+            raise CRMError("Anthropic refused the API key")
+        except anthropic.RateLimitError:
+            raise CRMError("Anthropic rate limit, try again in a minute")
+        except anthropic.APIStatusError as e:
+            raise CRMError(f"Anthropic error {e.status_code}: {getattr(e, 'message', '')[:120]}")
+        except anthropic.APIConnectionError:
+            raise CRMError("could not reach Anthropic")
+        if getattr(resp, "stop_reason", "") == "refusal":
+            raise CRMError("Claude declined that one")
+        answer = " ".join(b.text for b in resp.content if getattr(b, "type", "") == "text").strip()
+        u = self._bump_usage(asked=1, input_tokens=int(getattr(resp.usage, "input_tokens", 0)), output_tokens=int(getattr(resp.usage, "output_tokens", 0)))
+        return {"ok": True, "result": {"answer": answer or "I have nothing on that.", "model": getattr(resp, "model", self.ask_model)}, "usage": u}
+
+    def speak(self, text: str) -> bytes:
+        text = (text or "").strip()
+        if not text:
+            raise CRMError("nothing to say")
+        if len(text) > 2500:
+            text = text[:2500]
+        if self.demo or not self.eleven_key:
+            raise CRMError("ElevenLabs is off: set ELEVENLABS_API_KEY in ~/.aire/pipeline.env and restart Pipeline")
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{urllib.parse.quote(self.eleven_voice)}?output_format=mp3_44100_128"
+        body = json.dumps({"text": text, "model_id": self.eleven_model, "voice_settings": {"stability": 0.45, "similarity_boost": 0.8, "style": 0.2}}).encode()
+        req = urllib.request.Request(url, data=body, method="POST", headers={"xi-api-key": self.eleven_key, "Content-Type": "application/json", "Accept": "audio/mpeg"})
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                audio = r.read()
+        except urllib.error.HTTPError as e:
+            detail = ""
+            try:
+                detail = json.loads(e.read().decode())["detail"]["message"][:120]
+            except Exception:
+                pass
+            raise CRMError(f"ElevenLabs error {e.code}" + (f": {detail}" if detail else ""))
+        except urllib.error.URLError:
+            raise CRMError("could not reach ElevenLabs")
+        self._bump_usage(spoken_chars=len(text))
+        return audio
 
     def snapshot(self) -> dict:
         feed = self.feed()
@@ -297,6 +450,7 @@ class State:
             "problems": problems,
             "links": {"sheet": SHEET_URL.format(sheet_id=feed.get("sheet_id", "")) if feed.get("sheet_id") else "", "command": COMMAND_URL},
             "stages": DEAL_STAGES,
+            "voice": self.voice_info(),
         }
 
     # ---- writes
@@ -534,6 +688,17 @@ class Handler(BaseHTTPRequestHandler):
                              body.get("subject", ""), body.get("display", ""))
             elif u.path == "/api/refresh":
                 out = {"ok": True, "result": s.start_refresh()}
+            elif u.path == "/api/ask":
+                out = s.ask(body.get("question", ""))
+            elif u.path == "/api/speak":
+                audio = s.speak(body.get("text", ""))
+                self.send_response(200)
+                self.send_header("Content-Type", "audio/mpeg")
+                self.send_header("Content-Length", str(len(audio)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(audio)
+                return
             else:
                 return self._json(404, {"ok": False, "error": "no such action"})
             return self._json(200, out)
@@ -547,7 +712,9 @@ def serve(state: State, port: int, open_browser: bool) -> None:
     Handler.state = state
     httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     url = f"http://127.0.0.1:{port}/"
-    print(f"Pipeline {'(demo) ' if state.demo else ''}on {url}  sender={state.sender}  crm python={getattr(state.crm, 'python', 'demo')}")
+    v = state.voice_info()
+    print(f"Pipeline {'(demo) ' if state.demo else ''}on {url}  sender={state.sender}  crm python={getattr(state.crm, 'python', 'demo')}  "
+          f"claude q&a={'on (' + v['ask_model'] + ')' if v['ask'] else 'off'}  voice={v['tts']}")
     if open_browser and platform.system() == "Darwin":
         subprocess.Popen(["open", url])
     try:
@@ -626,6 +793,61 @@ def run_tests() -> int:
         check("cap" in str(e), "daily cap refuses the text past the cap")
     s.max_texts = 25
 
+    # Claude Q&A and ElevenLabs, with the network faked
+    v = s.snapshot()["voice"]
+    check(v["ask"] is False and v["tts"] == "browser", "demo: both paid services read as off")
+    r = s.ask("who should I call first")
+    check(r["ok"] and "Demo mode" in r["result"]["answer"] and s.voice_usage()["asked"] == 1, "demo ask answers without the network and counts")
+    ctx = State(demo=True, send_log=tmp / "ctx.json").ask_context()
+    check(ctx["touches_due_top"][0]["name"] == "Taylor Sample" and ctx["touches_due_top"][0]["last_texts"] and "+1225" not in json.dumps(ctx)
+          and "@example.com" not in json.dumps(ctx), "ask context carries names, bands and last texts but no phone numbers or emails")
+    import types
+    calls = {}
+
+    class FakeResp:
+        stop_reason = "end_turn"; model = "claude-opus-5-5"
+        content = [types.SimpleNamespace(type="text", text="Call Taylor first, they texted twice yesterday.")]
+        usage = types.SimpleNamespace(input_tokens=1200, output_tokens=30)
+
+    class FakeMessages:
+        def create(self, **kw):
+            calls.update(kw); return FakeResp()
+
+    class FakeAnthropic:
+        def __init__(self, api_key=""):
+            self.beta = types.SimpleNamespace(messages=FakeMessages()); self.messages = FakeMessages()
+    fake = types.ModuleType("anthropic"); fake.Anthropic = FakeAnthropic
+    for name in ("AuthenticationError", "RateLimitError", "APIStatusError", "APIConnectionError"):
+        setattr(fake, name, type(name, (Exception,), {}))
+    sys.modules["anthropic"] = fake
+    s3 = State(demo=True, send_log=tmp / "ask.json"); s3.demo = False; s3.ask_key = "sk-test"; s3.usage_path = tmp / "usage.json"
+    r = s3.ask("who first")
+    check(r["ok"] and r["result"]["answer"].startswith("Call Taylor") and calls["model"] == ASK_MODEL_DEFAULT and calls["max_tokens"] <= 500
+          and calls.get("fallbacks") == "default" and "Caleb asked, by voice: who first" in calls["messages"][0]["content"],
+          "ask calls the SDK with the default model, a short answer cap, the fallback and the question")
+    check(s3.voice_usage()["input_tokens"] == 1200 and s3.voice_info()["ask_cost_estimate_usd"] > 0, "ask logs the tokens and estimates the spend")
+    del sys.modules["anthropic"]
+    try:
+        s.speak("hello"); check(False, "speak refuses without a key")
+    except CRMError as e:
+        check("ElevenLabs is off" in str(e), "speak refuses without a key")
+    seen = {}
+
+    class FakeHTTP:
+        def __init__(self, req, timeout=0): seen["url"] = req.full_url; seen["key"] = req.get_header("Xi-api-key"); seen["body"] = json.loads(req.data)
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self): return b"ID3fake-mp3"
+    real_open = urllib.request.urlopen; urllib.request.urlopen = FakeHTTP
+    s3.eleven_key = "el-test"
+    audio = s3.speak("Pipeline online.")
+    urllib.request.urlopen = real_open
+    check(audio.startswith(b"ID3") and ELEVEN_VOICE_DEFAULT in seen["url"] and seen["key"] == "el-test" and seen["body"]["model_id"] == ELEVEN_MODEL_DEFAULT
+          and s3.voice_usage()["spoken_chars"] == len("Pipeline online."), "speak posts the text to ElevenLabs with the key and counts the characters")
+    envf = tmp / "pipeline.env"; envf.write_text("# keys\nPIPELINE_TEST_KEY=abc\nELEVENLABS_VOICE_ID='v1'\n")
+    os.environ.pop("PIPELINE_TEST_KEY", None); n = load_env_file(envf)
+    check(n >= 1 and os.environ.get("PIPELINE_TEST_KEY") == "abc", "pipeline.env lines land in the environment")
+
     # header_ok false: the screen gets a stop-level problem and no feed
     s2 = State(demo=True, send_log=tmp / "x.json")
     s2._demo_cache = {**read_json(DEMO_PATHS["feed"], {}), "header_ok": False, "missing_columns": ["Last_Touch"]}
@@ -680,6 +902,7 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     if a.test:
         return run_tests()
+    load_env_file()
     paths = None
     if a.demo and (a.demo_feed or a.demo_status):
         paths = dict(DEMO_PATHS)

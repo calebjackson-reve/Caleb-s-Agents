@@ -14,6 +14,7 @@
   <key>EnvironmentVariables</key>
   <dict>
     <key>PIPELINE_PORT</key><string>4747</string>
+    <!-- API keys never go here: app.py reads ~/.aire/pipeline.env at start (ANTHROPIC_API_KEY, ELEVENLABS_API_KEY) -->
     <!-- dry until Caleb flips it: live sends texts through Messages and email through Gmail -->
     <key>PIPELINE_SENDER</key><string>dry</string>
     <key>PIPELINE_MAX_TEXTS</key><string>25</string>

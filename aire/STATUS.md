@@ -17,7 +17,10 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 **Added the same evening, from the reels**
 - A Claude session on the Mac watched the two reels in Chrome and wrote up what is in them; Caleb pasted the notes into the cloud session and they are saved as `pipeline-app/REFERENCE.md` (Blueprint, Proof, Unknowns). What went into Pipeline: a particle neural-network core in the center (five clusters by band, streaks, radar sweep, energy follows the voice state), a voice loop in the browser (`static/voice.js`: wake word "hey Pipeline", Chrome speech recognition, speechSynthesis with a British voice, intents matched by plain words against the feed, no LLM, nothing sent by voice), LISTENING / THINKING / SPEAKING on the status chip, a transcript line and telemetry ticker in the core panel, a mic orb and typed-command box in the sidebar, and the bottom pill is now TALK TO PIPELINE with Compose next beside it. The intents were exercised by typing in headless Chromium (the brief reads the right names and counts); the microphone half runs only in Chrome on the Mac.
 
+- Caleb then asked for the Claude Q&A step and the ElevenLabs voice. Both added, both off until the key is in `~/.aire/pipeline.env`: a question the intents do not know goes to Claude (`claude-opus-5-5`, low effort, refusal fallback on, short spoken answer) with a compact view of today's feed (names, bands, next actions, last texts, tasks, deals, leads; no phones or emails), and everything Pipeline says goes through ElevenLabs (Daniel, `eleven_flash_v2_5`) with the browser voice as the fallback. Usage and a cost estimate in `out/voice-usage.json` and the Sources panel. Tested with the network faked; not yet called for real.
+
 **Stubbed or not verified**
+- The real Claude and ElevenLabs calls. The request shapes and counters are tested; the first real call happens on the Mac after the keys are in `~/.aire/pipeline.env`.
 - The microphone half of the voice loop and the spoken answers: headless Chromium has neither. First run on the Mac: open Chrome, press `v`, allow the mic, say "hey Pipeline, brief".
 - Live sending (Messages via `osascript`, Gmail via the follow-up token), refresh from the screen on the Mac, `install.sh` and the LaunchAgent: written for macOS, not run there. First real send should be to Caleb himself.
 - `stage` is served (`/api/stage`) but has no button.
@@ -26,6 +29,7 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 **Needs Caleb**
 - On the Mac: `python3 aire/pipeline-app/app.py --demo` to see it, then `sh aire/crm/refresh_feed.sh` and `~/.aire/venv/bin/python aire/pipeline-app/app.py` for the real feed, then `sh aire/pipeline-app/install.sh` to keep it at login.
 - Say when to flip `PIPELINE_SENDER` to `live`, and whether 25 and 25 stay the caps.
+- Put `ANTHROPIC_API_KEY` and `ELEVENLABS_API_KEY` in `~/.aire/pipeline.env` on the Mac to turn on the Q&A step and the voice. Both spend per call; the screen shows the running count.
 - The visual improvements list from before this rebuild was never found. Say what is still missing after seeing this version.
 - If the "Build, run and screenshot the Pipeline app" task card was started on the Mac, stop it: it would copy the Codex source into the same folder.
 

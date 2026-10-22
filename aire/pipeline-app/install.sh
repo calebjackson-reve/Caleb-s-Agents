@@ -25,6 +25,7 @@ sed -e "s|__HOME__|$HOME|g" -e "s|__REPO__|$REPO|g" "$HERE/launchd/$LABEL.plist"
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
 echo "server: launchctl loaded $LABEL (log: ~/.aire/logs/pipeline.log)"
+[ -f "$HOME/.aire/pipeline.env" ] && echo "keys: ~/.aire/pipeline.env found (Claude Q&A and ElevenLabs turn on if their keys are in it)" || echo "keys: no ~/.aire/pipeline.env, Claude Q&A and ElevenLabs stay off (see README)"
 
 # 2. A Dock app that opens the screen as its own window (Chrome app mode, Safari otherwise).
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"

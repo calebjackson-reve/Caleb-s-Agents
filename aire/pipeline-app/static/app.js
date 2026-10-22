@@ -63,6 +63,7 @@ function render() {
   // send status
   const mode = $('#mode'); mode.textContent = d.demo ? 'DEMO · DRY RUN' : d.sender === 'live' ? 'LIVE' : 'DRY RUN'; mode.className = 'mode mono' + (d.sender === 'live' && !d.demo ? ' live' : '');
   $('#mode-sub').textContent = d.demo ? 'made-up people, nothing is written' : d.sender === 'live' ? 'texts via Messages, email via Gmail' : 'set PIPELINE_SENDER=live to send';
+  const vst = $('#voice-state'); if (vst && d.voice) vst.title = (d.voice.ask ? 'Claude Q&A on' : 'Claude Q&A off') + ' · ' + (d.voice.tts === 'elevenlabs' ? 'ElevenLabs voice' : 'browser voice');
   $('#caps-mini').innerHTML = `<div><b>${d.caps.sent_texts}/${d.caps.texts}</b>texts</div><div><b>${d.caps.sent_emails}/${d.caps.emails}</b>emails</div>`;
   const wave = $('#wave'); if (!wave.children.length) wave.innerHTML = Array.from({ length: 28 }, (_, i) => `<i style="--d:${(i * 37) % 900}"></i>`).join('');
   document.querySelectorAll('.wave.small').forEach(w => { if (!w.children.length) w.innerHTML = Array.from({ length: 9 }, (_, i) => `<i style="--d:${(i * 97) % 700}"></i>`).join(''); });
@@ -203,6 +204,8 @@ function sourceRows() {
     ['✉', 'Email drafts', eq.drafts ? 'ok' : 'off', eq.drafts ? `${eq.drafts.length} ready` : 'no queue yet'],
     ['▭', 'Text drafts', tq.drafts ? 'ok' : 'off', tq.drafts ? `${tq.drafts.length} + ${(tq.reply_first || []).length} replies` : 'no queue yet'],
     ['↗', 'Sender', d.demo ? 'warn' : d.sender === 'live' ? 'ok' : 'warn', d.demo ? 'demo' : d.sender === 'live' ? 'Messages + Gmail' : 'dry run'],
+    ['◍', 'Claude Q&A', (d.voice || {}).ask ? 'ok' : 'off', (d.voice || {}).ask ? `${(d.voice || {}).ask_model} · ${((d.voice || {}).usage || {}).asked || 0} asked` : 'no key'],
+    ['♪', 'Voice', (d.voice || {}).tts === 'elevenlabs' ? 'ok' : 'warn', (d.voice || {}).tts === 'elevenlabs' ? `ElevenLabs · ${(((d.voice || {}).usage || {}).spoken_chars || 0).toLocaleString()} chars` : 'browser voice'],
   ];
 }
 function sourcesOK() { return sourceRows().filter(r => r[2] === 'ok').length; }
@@ -406,7 +409,7 @@ function openProblems() {
     () => (p.some(x => x.code.startsWith('command')) ? 'command' : true), p.some(x => x.code.startsWith('command')) ? 'Open Command' : 'OK').then(v => { if (v === 'command') window.open(S.data.links.command); });
 }
 function openHelp() {
-  modal('Keys', `<div class="brief"><ul><li><kbd>1</kbd> to <kbd>7</kbd> switch views</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Every answer is read from the feed. Nothing is made up and nothing is sent by voice.</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
+  modal('Keys', `<div class="brief"><ul><li><kbd>1</kbd> to <kbd>7</kbd> switch views</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Those answers are read straight from the feed. Anything else goes to Claude with today's feed when the Q&amp;A step is on (ANTHROPIC_API_KEY). Say "ask ..." to force it.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li><li>The Sources panel shows whether Claude Q&amp;A and the ElevenLabs voice are on and what they have used.</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
 }
 
 // ---------------------------------------------------------------- toasts, clock, keys, boot
