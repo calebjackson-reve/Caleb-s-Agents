@@ -205,7 +205,7 @@ function sourceRows() {
     ['▭', 'Text drafts', tq.drafts ? 'ok' : 'off', tq.drafts ? `${tq.drafts.length} + ${(tq.reply_first || []).length} replies` : 'no queue yet'],
     ['↗', 'Sender', d.demo ? 'warn' : d.sender === 'live' ? 'ok' : 'warn', d.demo ? 'demo' : d.sender === 'live' ? 'Messages + Gmail' : 'dry run'],
     ['◍', 'Claude Q&A', (d.voice || {}).ask ? 'ok' : 'off', (d.voice || {}).ask ? `${(d.voice || {}).ask_model} · ${((d.voice || {}).usage || {}).asked || 0} asked` : 'no key'],
-    ['♪', 'Voice', (d.voice || {}).tts === 'elevenlabs' ? 'ok' : 'warn', (d.voice || {}).tts === 'elevenlabs' ? `ElevenLabs · ${(((d.voice || {}).usage || {}).spoken_chars || 0).toLocaleString()} chars` : 'browser voice'],
+    ['♪', 'Voice', (d.voice || {}).tts === 'elevenlabs' ? 'ok' : 'warn', (d.voice || {}).tts === 'elevenlabs' ? `ElevenLabs · ${(((d.voice || {}).usage || {}).spoken_chars || 0).toLocaleString()} chars${(d.voice || {}).speech_engine ? ' · calls on' : ''}` : 'browser voice'],
   ];
 }
 function sourcesOK() { return sourceRows().filter(r => r[2] === 'ok').length; }
@@ -409,7 +409,7 @@ function openProblems() {
     () => (p.some(x => x.code.startsWith('command')) ? 'command' : true), p.some(x => x.code.startsWith('command')) ? 'Open Command' : 'OK').then(v => { if (v === 'command') window.open(S.data.links.command); });
 }
 function openHelp() {
-  modal('Keys', `<div class="brief"><ul><li><kbd>1</kbd> to <kbd>7</kbd> switch views</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Those answers are read straight from the feed. Anything else goes to Claude with today's feed when the Q&amp;A step is on (ANTHROPIC_API_KEY). Say "ask ..." to force it.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li><li>The Sources panel shows whether Claude Q&amp;A and the ElevenLabs voice are on and what they have used.</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
+  modal('Keys', `<div class="brief"><ul><li><kbd>1</kbd> to <kbd>7</kbd> switch views</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Those answers are read straight from the feed. Anything else goes to Claude with today's feed when the Q&amp;A step is on (ANTHROPIC_API_KEY). Say "ask ..." to force it.</li><li>With the Speech Engine set up (README), the bottom pill starts a call: ElevenLabs listens and talks over WebRTC, Claude answers from the feed, you can interrupt it. Tap again to hang up.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li><li>The Sources panel shows whether Claude Q&amp;A and the ElevenLabs voice are on and what they have used.</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
 }
 
 // ---------------------------------------------------------------- toasts, clock, keys, boot
@@ -432,8 +432,10 @@ function reflectVoice() {
   const mic = $('#mic'); mic.className = 'orb ' + (v.on ? 'on ' + v.state : 'off');
   const vs = $('#voice-state'); vs.className = 'voice-state mono ' + (v.on ? v.state : ''); vs.textContent = !v.supported ? 'no mic here · type below' : !v.on ? 'tap to talk' : v.state === 'idle' ? (v.awake ? 'listening' : 'say "hey Pipeline"') : v.state;
   const talk = $('#talk'); talk.classList.toggle('on', v.on);
-  $('#talk-title').textContent = v.on ? (v.state === 'speaking' ? 'PIPELINE' : v.state === 'thinking' ? 'THINKING' : 'LISTENING') : 'TALK TO PIPELINE';
-  if (!v.on) $('#talk-sub').textContent = v.supported ? 'say "hey Pipeline", then brief, touches, deals, compose' : 'type a command in the sidebar';
+  const onCall = v.call && v.call !== 'off';
+  $('#talk-title').textContent = onCall ? (v.call === 'connecting' ? 'CALLING…' : v.state === 'speaking' ? 'PIPELINE' : 'ON THE CALL') : v.on ? (v.state === 'speaking' ? 'PIPELINE' : v.state === 'thinking' ? 'THINKING' : 'LISTENING') : Voice.callOn() ? 'CALL PIPELINE' : 'TALK TO PIPELINE';
+  if (!v.on) $('#talk-sub').textContent = Voice.callOn() ? 'ElevenLabs listens and talks, Claude answers · tap to hang up' : v.supported ? 'say "hey Pipeline", then brief, touches, deals, compose' : 'type a command in the sidebar';
+  else if (onCall && v.state === 'listening' && !S.lastHeard) $('#talk-sub').textContent = 'on the call, just talk';
   else if (v.state === 'idle' && !S.lastHeard) $('#talk-sub').textContent = 'listening for "hey Pipeline"';
   document.querySelectorAll('.wave').forEach(w => w.classList.toggle('quiet', !v.on || v.state === 'idle'));
   const hero = $('.hero'); if (hero) hero.className = 'panel hero ' + (v.on ? v.state : '');
@@ -445,7 +447,13 @@ Voice.onChange(reflectVoice);
 window.onVoiceInterim = text => { if (text) { S.lastHeard = text; $('#talk-sub').textContent = '“' + text + '”'; const h = $('#heard'); if (h) { h.textContent = text; h.className = 'heard you'; } } };
 window.onVoiceLine = (who, text) => { S.lastHeard = text; tele((who === 'you' ? 'you: ' : 'pipeline: ') + text, who !== 'you'); $('#talk-sub').textContent = (who === 'you' ? '“' : '') + text + (who === 'you' ? '”' : ''); const h = $('#heard'); if (h) { h.textContent = text; h.className = 'heard ' + who; } };
 $('#mic').onclick = () => { if (!Voice.state().supported) { $('#type-cmd').focus(); toast('warn', 'VOICE', 'No speech recognition in this browser. Chrome on the Mac has it. Type a command instead.'); return; } const on = Voice.toggle(); if (on) { tele('voice loop on, wake word "hey Pipeline"', true); Voice.say('Pipeline online.'); } else tele('voice loop off'); reflectVoice(); };
-$('#talk').onclick = () => $('#mic').click();
+$('#talk').onclick = async () => {
+  if (!Voice.callOn()) { $('#mic').click(); return; }
+  const was = Voice.callState();
+  if (was === 'off') { tele('call: connecting to ElevenLabs Speech Engine', true); if (window.Core) Core.setState('thinking'); }
+  await Voice.toggleCall(); reflectVoice();
+  if (was !== 'off') tele('call ended');
+};
 $('#type-form').addEventListener('submit', e => { e.preventDefault(); const v = $('#type-cmd').value; $('#type-cmd').value = ''; Voice.type(v); });
 $('#open-sheet').onclick = () => window.open(S.data.links.sheet);
 

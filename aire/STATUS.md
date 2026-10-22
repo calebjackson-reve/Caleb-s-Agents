@@ -19,7 +19,10 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 
 - Caleb then asked for the Claude Q&A step and the ElevenLabs voice. Both added, both off until the key is in `~/.aire/pipeline.env`: a question the intents do not know goes to Claude (`claude-opus-5-5`, low effort, refusal fallback on, short spoken answer) with a compact view of today's feed (names, bands, next actions, last texts, tasks, deals, leads; no phones or emails), and everything Pipeline says goes through ElevenLabs (Daniel, `eleven_flash_v2_5`) with the browser voice as the fallback. Usage and a cost estimate in `out/voice-usage.json` and the Sources panel. Tested with the network faked; not yet called for real.
 
+- Calls through the ElevenLabs Speech Engine (Caleb: "create a Speech Engine instance, connect it to my own LLM through the transcript server protocol, stream speech back in real time"). `pipeline-app/speech_engine.py` is the transcript server on the ElevenLabs Python SDK: `create` makes the resource pointing at a public wss:// URL (ngrok), `serve` answers each transcript with Claude streamed (same feed view as the Q&A, cached in the system prompt, call rules on top), interruptions handled by the SDK. `app.py` mints the WebRTC token at `/api/voice/token`, the screen loads the pinned ElevenLabs client on demand and the bottom pill becomes CALL PIPELINE when all three keys are in `~/.aire/pipeline.env`. 9 offline checks for the server, 2 more in app.py. Not yet run against ElevenLabs for real.
+
 **Stubbed or not verified**
+- A real Speech Engine call: needs ngrok, the resource and the keys on the Mac. Steps in the README under "Calls".
 - The real Claude and ElevenLabs calls. The request shapes and counters are tested; the first real call happens on the Mac after the keys are in `~/.aire/pipeline.env`.
 - The microphone half of the voice loop and the spoken answers: headless Chromium has neither. First run on the Mac: open Chrome, press `v`, allow the mic, say "hey Pipeline, brief".
 - Live sending (Messages via `osascript`, Gmail via the follow-up token), refresh from the screen on the Mac, `install.sh` and the LaunchAgent: written for macOS, not run there. First real send should be to Caleb himself.
@@ -30,6 +33,7 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - On the Mac: `python3 aire/pipeline-app/app.py --demo` to see it, then `sh aire/crm/refresh_feed.sh` and `~/.aire/venv/bin/python aire/pipeline-app/app.py` for the real feed, then `sh aire/pipeline-app/install.sh` to keep it at login.
 - Say when to flip `PIPELINE_SENDER` to `live`, and whether 25 and 25 stay the caps.
 - Put `ANTHROPIC_API_KEY` and `ELEVENLABS_API_KEY` in `~/.aire/pipeline.env` on the Mac to turn on the Q&A step and the voice. Both spend per call; the screen shows the running count.
+- For calls: `pip install elevenlabs` in the venv, run ngrok, `speech_engine.py create --ws-url wss://<ngrok host>/ws --save`, then `speech_engine.py serve`. Speech Engine minutes bill on the ElevenLabs plan on top of the Claude tokens.
 - The visual improvements list from before this rebuild was never found. Say what is still missing after seeing this version.
 - If the "Build, run and screenshot the Pipeline app" task card was started on the Mac, stop it: it would copy the Codex source into the same folder.
 

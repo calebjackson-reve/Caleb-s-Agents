@@ -117,11 +117,48 @@ const Voice = (() => {
   }
   function armSleep() { clearTimeout(awakeTimer); awakeTimer = setTimeout(() => { awake = false; if (state !== 'speaking') setState('idle'); emit(); }, 25000); }
   function stop() { on = false; awake = false; if (rec) { try { rec.onend = null; rec.stop(); } catch (e) { } rec = null; } speechSynthesis.cancel(); setState('idle'); }
+  // ---- calls: ElevenLabs Speech Engine does the listening and talking over WebRTC, speech_engine.py answers with Claude.
+  // The browser SDK is loaded only when a call starts, from a pinned CDN build, so the app stays offline otherwise.
+  const CLIENT_SDK = 'https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.30.0/dist/lib.iife.js';
+  let call = null, callState = 'off';
+  function callOn() { return !!(window.S && S.data && S.data.voice && S.data.voice.speech_engine); }
+  function loadClientSdk() {
+    if (window.ElevenLabsClient) return Promise.resolve();
+    return new Promise((resolve, reject) => { const el = document.createElement('script'); el.src = CLIENT_SDK; el.onload = resolve; el.onerror = () => reject(new Error('could not load the ElevenLabs client')); document.head.appendChild(el); });
+  }
+  async function startCall() {
+    if (!callOn()) { transcript('pipeline', 'Calls are off. Set up the Speech Engine (see README).'); return false; }
+    if (call) return true;
+    callState = 'connecting'; emit();
+    try {
+      await loadClientSdk();
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const r = await fetch('/api/voice/token').then(x => x.json());
+      if (!r.ok) throw new Error(r.error || 'no token');
+      transcript('pipeline', 'calling…');
+      call = await ElevenLabsClient.Conversation.startSession({
+        conversationToken: r.result.token,
+        overrides: { agent: { firstMessage: 'Pipeline here. What do you need?' } },
+        onConnect: () => { callState = 'on'; setState('listening'); transcript('pipeline', 'on the call'); },
+        onDisconnect: () => { call = null; callState = 'off'; setState('idle'); transcript('pipeline', 'call ended'); },
+        onError: (e) => { transcript('pipeline', 'call error: ' + (e && e.message || e)); },
+        onModeChange: (m) => { setState(m && m.mode === 'speaking' ? 'speaking' : 'listening'); },
+        onMessage: (m) => { if (!m || !m.message) return; transcript(m.source === 'user' ? 'you' : 'pipeline', m.message); if (m.source !== 'user' && window.Core) Core.burst(); },
+      });
+      return true;
+    } catch (e) {
+      call = null; callState = 'off'; setState('idle');
+      transcript('pipeline', 'could not start the call: ' + (e && e.message || e));
+      return false;
+    }
+  }
+  async function endCall() { if (call) { try { await call.endSession(); } catch (e) { } } call = null; callState = 'off'; setState('idle'); }
   if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
   return {
+    startCall, endCall, toggleCall() { return call ? (endCall(), Promise.resolve(false)) : startCall(); }, callState: () => callState, callOn,
     start, stop, toggle() { return on ? (stop(), false) : start(); },
     type(text) { if (!text.trim()) return; transcript('you', text.trim()); handle(text.replace(WAKE, '').trim() || text); },
-    say, log: () => log, onChange(f) { listeners.push(f); }, state: () => ({ state, on, awake, supported: !!REC }),
+    say, log: () => log, onChange(f) { listeners.push(f); }, state: () => ({ state, on: on || callState !== 'off', awake: awake || callState === 'on', supported: !!REC, call: callState }),
   };
 })();
 

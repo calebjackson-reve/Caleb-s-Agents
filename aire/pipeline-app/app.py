@@ -27,7 +27,9 @@ Two optional paid services, each off until its key is present (env, or ~/.aire/p
                         leads) and the spoken answer comes back. PIPELINE_ASK_MODEL (default claude-opus-5-5).
   ELEVENLABS_API_KEY    turns on the ElevenLabs voice for everything Pipeline says. ELEVENLABS_VOICE_ID (default Daniel,
                         British), ELEVENLABS_MODEL (default eleven_flash_v2_5). Without it the browser's own voice talks.
-  Both spend money per call. out/voice-usage.json keeps the running count and the screen shows it.
+  ELEVENLABS_SPEECH_ENGINE_ID with both keys above turns on calls: ElevenLabs does the listening and talking over
+                        WebRTC and speech_engine.py (this folder) answers with Claude. /api/voice/token mints the browser token.
+  All of it spends money per call. out/voice-usage.json keeps the running count and the screen shows it.
 
 Environment:
   PIPELINE_PORT      default 4747
@@ -281,6 +283,7 @@ class State:
         self.eleven_key = "" if demo else os.getenv("ELEVENLABS_API_KEY", "")
         self.eleven_voice = os.getenv("ELEVENLABS_VOICE_ID", ELEVEN_VOICE_DEFAULT)
         self.eleven_model = os.getenv("ELEVENLABS_MODEL", ELEVEN_MODEL_DEFAULT)
+        self.speech_engine_id = "" if demo else os.getenv("ELEVENLABS_SPEECH_ENGINE_ID", "")
         self.lock = threading.Lock()
         self._demo_cache: dict | None = None
         self.started = now().isoformat(timespec="seconds")
@@ -308,7 +311,7 @@ class State:
         if not isinstance(u, dict) or "_error" in u:
             u = {}
         return {"asked": int(u.get("asked", 0)), "input_tokens": int(u.get("input_tokens", 0)), "output_tokens": int(u.get("output_tokens", 0)),
-                "spoken_chars": int(u.get("spoken_chars", 0)), "last": u.get("last", "")}
+                "spoken_chars": int(u.get("spoken_chars", 0)), "calls": int(u.get("calls", 0)), "last": u.get("last", "")}
 
     def _bump_usage(self, **delta) -> dict:
         with self.lock:
@@ -324,7 +327,29 @@ class State:
         # Rough spend, from the published per-token prices of the default model and ElevenLabs' per-character plans.
         est = u["input_tokens"] / 1e6 * 4.0 + u["output_tokens"] / 1e6 * 20.0 if self.ask_model == ASK_MODEL_DEFAULT else None
         return {"ask": bool(self.ask_key), "ask_model": self.ask_model, "tts": "elevenlabs" if self.eleven_key else "browser",
-                "voice_id": self.eleven_voice if self.eleven_key else "", "usage": u, "ask_cost_estimate_usd": round(est, 4) if est is not None else None}
+                "voice_id": self.eleven_voice if self.eleven_key else "", "usage": u, "ask_cost_estimate_usd": round(est, 4) if est is not None else None,
+                "speech_engine": bool(self.eleven_key and self.speech_engine_id and self.ask_key), "speech_engine_id": self.speech_engine_id,
+                "calls": int(u.get("calls", 0))}
+
+    def call_token(self) -> dict:
+        """A short-lived WebRTC token so the browser can start a Speech Engine conversation without ever seeing the API key.
+        The Speech Engine id is passed as the agent id, as the ElevenLabs quickstart does."""
+        if self.demo:
+            raise CRMError("calls are off in demo mode")
+        if not (self.eleven_key and self.speech_engine_id):
+            raise CRMError("calls need ELEVENLABS_API_KEY and ELEVENLABS_SPEECH_ENGINE_ID (run speech_engine.py create)")
+        if not self.ask_key:
+            raise CRMError("calls need ANTHROPIC_API_KEY: Claude is the brain on a call")
+        try:
+            from elevenlabs import ElevenLabs
+        except ImportError:
+            raise CRMError("the elevenlabs package is not installed in Pipeline's Python (pip install elevenlabs)")
+        try:
+            resp = ElevenLabs(api_key=self.eleven_key).conversational_ai.conversations.get_webrtc_token(agent_id=self.speech_engine_id)
+        except Exception as e:
+            raise CRMError(f"ElevenLabs would not mint a call token: {type(e).__name__}: {str(e)[:120]}")
+        self._bump_usage(calls=1)
+        return {"ok": True, "result": {"token": resp.token, "speech_engine_id": self.speech_engine_id}}
 
     def ask_context(self) -> dict:
         """A compact, bounded view of today for the model. Names and last texts are in it, so this leaves the Mac only
@@ -656,6 +681,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, self.state.snapshot())
         if u.path == "/api/refresh":
             return self._json(200, self.state.refresh)
+        if u.path == "/api/voice/token":
+            try:
+                return self._json(200, self.state.call_token())
+            except CRMError as e:
+                return self._json(200, {"ok": False, "error": str(e)})
         if u.path in ("/", "/index.html"):
             return self._file("index.html")
         return self._file(u.path)
@@ -844,6 +874,19 @@ def run_tests() -> int:
     urllib.request.urlopen = real_open
     check(audio.startswith(b"ID3") and ELEVEN_VOICE_DEFAULT in seen["url"] and seen["key"] == "el-test" and seen["body"]["model_id"] == ELEVEN_MODEL_DEFAULT
           and s3.voice_usage()["spoken_chars"] == len("Pipeline online."), "speak posts the text to ElevenLabs with the key and counts the characters")
+    try:
+        s3.call_token(); check(False, "call token refuses without the Speech Engine id")
+    except CRMError as e:
+        check("SPEECH_ENGINE_ID" in str(e), "call token refuses without the Speech Engine id")
+    class FakeConvs:
+        def get_webrtc_token(self, agent_id): seen["agent_id"] = agent_id; return types.SimpleNamespace(token="tok_123")
+    fake_el = types.ModuleType("elevenlabs"); fake_el.ElevenLabs = lambda api_key="": types.SimpleNamespace(conversational_ai=types.SimpleNamespace(conversations=FakeConvs()))
+    sys.modules["elevenlabs"] = fake_el
+    s3.speech_engine_id = "seng_test"
+    t = s3.call_token()
+    del sys.modules["elevenlabs"]
+    check(t["ok"] and t["result"]["token"] == "tok_123" and seen["agent_id"] == "seng_test" and s3.voice_usage()["calls"] == 1 and s3.voice_info()["speech_engine"],
+          "call token comes from ElevenLabs with the Speech Engine id as agent id and is counted")
     envf = tmp / "pipeline.env"; envf.write_text("# keys\nPIPELINE_TEST_KEY=abc\nELEVENLABS_VOICE_ID='v1'\n")
     os.environ.pop("PIPELINE_TEST_KEY", None); n = load_env_file(envf)
     check(n >= 1 and os.environ.get("PIPELINE_TEST_KEY") == "abc", "pipeline.env lines land in the environment")

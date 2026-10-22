@@ -129,6 +129,34 @@ ELEVENLABS_MODEL=eleven_flash_v2_5
 
 **Privacy.** Names and last texts leave the Mac only while the Q&A step is on, to Anthropic, the same way the enrichment's Haiku pass already sends them. What Pipeline says (which can include names) goes to ElevenLabs only while that key is set. Chrome's speech recognition sends the microphone audio to Google's speech service while the loop is on. Set no key and none of that happens.
 
+### Calls: ElevenLabs Speech Engine with Claude as the brain
+
+The two modes above run in the browser. Speech Engine is the third mode and the one from the second reel: ElevenLabs does the listening and the talking over WebRTC (its own turn-taking, interruptions, a studio voice), and Pipeline's own server supplies the words. `speech_engine.py` is that server, written with the ElevenLabs Python SDK's transcript server protocol: ElevenLabs connects to it over WebSocket, sends the transcript with the full history each time you finish speaking, and streams Claude's reply back as text chunks that ElevenLabs turns into speech as they arrive. You can interrupt mid-sentence; the SDK cancels the in-flight answer.
+
+Setup, once, on the Mac:
+
+```
+# 1. packages in Pipeline's Python
+~/.aire/venv/bin/pip install elevenlabs anthropic
+
+# 2. a public wss:// address for the transcript server (ngrok free tier works; keep this running)
+ngrok http 3001          # copy the https host, for example abc123.ngrok.io
+
+# 3. create the Speech Engine resource that points at it, and save its id to ~/.aire/pipeline.env
+~/.aire/venv/bin/python aire/pipeline-app/speech_engine.py create --ws-url wss://abc123.ngrok.io/ws --save
+
+# 4. run the transcript server (keep this running too)
+~/.aire/venv/bin/python aire/pipeline-app/speech_engine.py serve
+```
+
+Then restart `app.py`. With `ELEVENLABS_API_KEY`, `ELEVENLABS_SPEECH_ENGINE_ID` and `ANTHROPIC_API_KEY` all in `~/.aire/pipeline.env`, the bottom pill reads CALL PIPELINE. Tap it: the browser asks `app.py` for a short-lived WebRTC token (`/api/voice/token`, minted with your key on the server, never in the page), loads the ElevenLabs client from the pinned CDN build, and starts the conversation. Pipeline greets you, then you just talk. The core follows the call (listening, speaking), the transcript shows both sides, and tap again hangs up. Conversations are capped at 20 minutes by the resource; ngrok's free host changes each restart, so after a restart run `speech_engine.py create --save` again or update the resource's `ws_url` in the ElevenLabs dashboard.
+
+What the brain gets: the same compact feed view as the typed Q&A (names, bands, next actions, last three texts, tasks, deals, leads; no phones or emails), placed in the system prompt with a cache breakpoint so the second question in a call reads it from cache, plus call rules: one to three spoken sentences, names and numbers only from the data, and never a promise to send anything. Model `claude-opus-5-5`, low effort, 300 output tokens, refusal fallback on. Every turn is counted in `out/voice-usage.json` with the typed questions.
+
+Security: the SDK verifies ElevenLabs' JWT on every incoming connection with your API key (HS256 over the SHA-256 of the key, issuer `https://api.elevenlabs.io/convai/speech-engine`), so nobody else can feed the server transcripts. Never pass `disable_auth`. The transcript is user speech going into a prompt; the call rules and the data-only instruction are the guardrail, and the server cannot write to the CRM, send, or run anything.
+
+Tests: `python3 aire/pipeline-app/speech_engine.py --test` (history mapping, the streamed brain, the handlers, with Claude faked).
+
 What the two reels Caleb sent have that this does not: sub-agents per business tool. `REFERENCE.md` has the full notes on both reels with what is confirmed and what is inference.
 
 ## The screen
@@ -170,6 +198,7 @@ Built and tested in a Linux cloud session against the fixtures. These three path
 - Refresh from the screen, which runs `sh crm/refresh_feed.sh` and reads the last line of `~/.aire/logs/feed.log` for the toast.
 - The microphone half of the voice loop. Headless Chromium has no speech recognition, so the intents were exercised by typing the commands; the spoken half fell back to the transcript line. On the Mac, Chrome asks for the mic once.
 - The Claude Q&A call and the ElevenLabs call against the real services. Both were tested with the network faked (the request shape, the key header, the usage counters). First real question: "hey Pipeline, ask what should I do first today".
+- A real Speech Engine call end to end (ngrok, the resource, the WebSocket from ElevenLabs, WebRTC in Chrome). The transcript server's handlers and the brain are tested with Claude faked, and the `create` request shape was checked against the installed SDK; the live path needs the Mac and the keys.
 
 `install.sh` and the LaunchAgent follow the same pattern as `org.calebjackson.aire.feed` but were written here, not run on the Mac.
 
