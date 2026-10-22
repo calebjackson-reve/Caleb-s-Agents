@@ -2,6 +2,13 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-21, morning: PR 61 merged, Turnberry fixed, Spark agent approval done
+
+- PR 61 (follow-up pools library, engine partners feed) merged to main. Working branch fast-forwarded onto main.
+- Deals tab: the Turnberry listing moved from active to under_contract with expected close 2026-11-29 (was 11-30). Logged in the Connector Log tagged claude.
+- MLS feed: Caleb approved the agent-level Spark Datamart licensee request for Luxury Presence's ROAM IDX plan at 8:52 am Central. Spark then put the request in "Brokerage approval pending from Keller Williams Realty-First Choice." Chain per Luxury Presence's IDX coordinator: agent approves, brokerage office approves with the office MLS login, ROAM gives final approval. A draft to the office front desk asking for the brokerage click is in Gmail Drafts for Caleb to send. The cloud morning run watches for the Spark "final approval" email.
+- Still open for the MLS parser: one Flex saved-search email alert from Caleb's account, so there is a real sample to build against.
+
 ## 2026-10-20: CRM engine, no more junk deals, feed ranks by texts first
 
 **Confirmed by Caleb (through the Mac session)**
@@ -115,10 +122,12 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - Run "morning companion" on the Mac for Command and MLS.
 
 ## Supervised week log
+- 2026-10-22 (7:05 am run): 0 new website leads in the last 26 hours, 0 drafts created. Only a Luxury Presence newsletter and a support case came from that sender. Nothing sent.
 - 2026-10-21 (7:05 am run): 2 new website leads in the last 26 hours (both Google sign on, Mon 8:13 am and Mon 5:53 pm Central), 2 sign-in drafts created, 1 digest draft to Caleb. No prior drafts or sent mail to either address. Nothing sent, nothing labeled.
 - 2026-10-20 (7:05 am run): 0 new website leads in the last 26 hours, 0 drafts created. The only lead in the window search is Sunday's Google sign-on lead, already drafted on 10/19. Nothing sent.
 
 ## Morning run log
+- 2026-10-22 (6:41 am run): 0 new leads, 6 live deals tracked (0 waiting on Caleb for a signature), 1537 touches due from the Oct 19 night snapshot (117 hot, 47 warm, not a live pull), 0 open tasks, 1 conflict (a personal appointment inside the lead gen block), 1 travel block added, 1 deal date mismatch flagged for Caleb. Brief kept out of git. Nothing failed.
 - 2026-10-21 (6:40 am run): 2 new leads, 1 listing went under contract, 5 live deals tracked (0 waiting on Caleb), 7 touches logged by Pipeline yesterday, 0 conflicts, 0 appointments added. Brief kept out of git. Nothing failed.
 - 2026-10-20 (6:40 am run): 0 new leads, 1529 touches due (112 hot, 47 warm), 4 contracts tracked (0 waiting on Caleb), 1 conflict (Business Planning Clinic), 0 appointments added. Brief kept out of git. Nothing failed.
 - 2026-10-20 (run Oct 19 evening): 1 new lead, 0 pipeline rows, 5 contracts (0 waiting on Caleb, 1 item owed: inspection report to the other agent), 1 conflict (Business Planning Clinic vs lead gen and sales block 2), 0 appointments added. Nothing failed.
