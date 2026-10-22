@@ -2,6 +2,28 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-22: the Pipeline app gets a home in the repo
+
+**Confirmed (from the repo, not from running the app)**
+- The native Mac Pipeline app is Caleb's one daily tool and no parallel dashboard is built (`aire/STACK.md`, 2026-10-19). Codex built it on 2026-10-19 at `~/Documents/Codex/2026-10-19/task-3/PipelinePanel` on the Mac. Codex and ChatGPT were cancelled the same day, so Claude Code on the Mac maintains it now.
+- What it is wired to, from `aire/crm/FEED.md`, `crm.py` and `aire/follow-up/README.md`: it reads `crm/feed.json` (touches due, tasks, deals, new leads, counts, `header_ok`), `follow-up/out/text-queue.json` and `email-queue.json` (drafts for its compose box) and `command-reader/out/status.json` (the Command "login needed" warning). It writes back through `crm.py --json --client pipeline` with `touch`, `done`, `task`, `deal` (`stage`, `note`, `dnc` are also available), and refreshes with `ingest` then `feed`. Its `Sources/predraft.py` imports `follow-up/pools.py` and is run by `refresh_feed.sh` every 15 minutes.
+- The morning run of 2026-10-21 counted 7 touches logged by Pipeline the day before, so the `touch` path works on the real sheet (from the morning run log below).
+- A `pipeline-airdrop.zip` (230 MB) was uploaded to Caleb's Drive on 2026-10-22 at 2:30 pm Central. Inference: it is the app folder with build output. The cloud session could not unpack it (the Drive tool returns file bytes into the chat, and 230 MB does not fit).
+
+**Done (cloud)**
+- `aire/pipeline-app/` created: README with what the app reads, every `crm.py` command it calls back and the exact contract (`--json --client pipeline`, one JSON object out), a `.gitignore` for feed, queues, status, logs, audit files and build output, and `screenshots/README.md` naming the eight screenshots to take. No source yet.
+- `aire/crm/refresh_feed.sh`: `PIPELINE_PANEL` now defaults to `aire/pipeline-app`. The env override stays. Until the copy lands, it falls back to the Codex folder on the Mac when that folder still has `Sources/predraft.py`, so tonight's feed refresh does not lose the predraft step.
+- `aire/README.md` lists the new folder.
+
+**Not done, needs the Mac**
+- The copy itself, the build and run command, and the screenshots. A cloud session cannot read `~/Documents` on the Mac. Steps are in `aire/pipeline-app/README.md`, "Bringing the source into this folder", and in the suggested task card for this session.
+- What is stubbed and what broke in the app: unknown from here. The Mac session fills that in from the source and from running it.
+- The list of visual improvements Caleb asked for: not found in the repo, Slack, or Wispr Flow notes. Caleb, say them again in the Mac session or add them here.
+
+**Needs Caleb**
+- Start the "Copy the Pipeline app into aire/pipeline-app" task on the Mac (Claude Desktop or `claude remote-control` in `~/Caleb-s-Agents`).
+- Confirm the Drive zip is the app folder, or delete it if it was only for this session. It never gets committed.
+
 ## 2026-10-20: CRM engine, no more junk deals, feed ranks by texts first
 
 **Confirmed by Caleb (through the Mac session)**

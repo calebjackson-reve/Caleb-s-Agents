@@ -14,6 +14,7 @@ AIRE is Caleb's AI real estate agent system. Read `STATUS.md` before touching an
 | `market-data/` | Dated GBRAR market reports as JSON, with source. |
 | `market-update/` | Monthly market update scripts and Motion prompts. |
 | `crm/` | CRM engine on the one AIRE CRM sheet: Gmail ingest, cadence, tasks, deals, feed.json for the Pipeline app. |
+| `pipeline-app/` | The native Mac Pipeline app, Caleb's one daily tool. README says what it reads and which `crm.py` commands it calls. Source is copied in from the Mac. |
 | `pipeline/` | Historical pipeline template. Deals are now the Deals tab of the AIRE CRM sheet. |
 | `rollout-2026-10/WEEK-2.md` | Week 2: calculator proof, bulk tier pipeline, Meta One memo. |
 | `calculators/` | Interactive pages for calebjackson.org. Seller net sheet first. |
