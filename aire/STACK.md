@@ -30,7 +30,7 @@ Trade money for time. Pick the fastest reliable option. Every tool below is "cur
 | Running AIRE on the Mac | Apple Terminal with Claude Code | Free, built in. Every Mac-side tool starts here. |
 | Quick briefs and plugins (news, X, read-outs on the go) | Grok | Caleb keeps it (2026-10-19). Reading and briefs only, never client data or outbound drafts. Anything it produces that touches AIRE gets saved here. |
 | Dashboards | aire/command-center on the Mac, reading the Google Sheets | Phone view later: a Claude Dashboard over the same sheet, never a second database. |
-| Daily view | The native Mac Pipeline app, reading aire/crm/feed.json | Caleb's one daily tool (2026-10-19). The command center web app was rejected as the front end; improve Pipeline, never build a parallel dashboard. |
+| Daily view | Pipeline (`aire/pipeline-app/`, local Python server plus a Jarvis-style screen, rebuilt 2026-10-22), reading aire/crm/feed.json | Caleb's one daily tool (2026-10-19). The command center web app was rejected as the front end; improve Pipeline, never build a parallel dashboard. |
 | Short explainer video, no AI people | Claude Motion beta | watch. Candidate: monthly market update. |
 | Generated video for ads | Kling 4.0 via Higgsfield | Disclose as AI-generated. Never for listing photos. |
 | Community | Skool, AI for Agents group | See SKOOL-AI-FOR-AGENTS/ |

@@ -1,16 +1,26 @@
-# Pipeline app screenshots
+# Pipeline screenshots
 
-Taken on the Mac against the real feed, then blurred or cropped so no real name, phone, email or message text is visible. PNG, one per screen, named as below so the main README can link them.
+Taken from `python3 app.py --demo` with the made-up people in `../fixtures/`, headless Chromium at 1440 by 900, on 2026-10-22. No real name, phone, email or message text is in any of them because none was on the screen. If a screenshot is ever taken from the real feed, blur or crop every name, number, email and message before it comes anywhere near git, and look at it again by eye: `tools/check-no-client-data.py` reads text files only.
 
 | File | Screen |
 |---|---|
-| `01-touches-due.png` | Touches due, owes-a-reply rows at the top |
-| `02-tasks.png` | Open tasks, overdue first |
+| `00-command-center.png` | The home screen: overview, core, live feed, deals, timeline, quick commands, gauges, bands, sources |
+| `01-touches-due.png` | Touches due, owes-a-reply rows at the top with their last text |
+| `02-tasks.png` | Open tasks, overdue first, Next_Action rows marked |
 | `03-deals.png` | Live deals |
 | `04-new-leads.png` | New leads of the last 14 days |
-| `05-compose-text.png` | Compose box with a text draft from `text-queue.json` and the person's last three texts above it |
-| `06-compose-email.png` | Compose box with an email draft from `email-queue.json` |
-| `07-command-login-warning.png` | The warning shown when `command-reader/out/status.json` says `login needed` |
-| `08-header-not-ok.png` | What the app shows when `feed.json` has `header_ok: false` (optional, needs a doctored copy of the feed) |
+| `05-compose-text.png` | Compose drawer on a reply-first person: their last three texts above an empty draft |
+| `06-compose-email.png` | Compose drawer with an email draft from `email-queue.json` |
+| `07-command-login-warning.png` | The attention list when `command-reader/out/status.json` says `login needed` |
+| `08-header-not-ok.png` | The stop screen when `feed.json` has `header_ok: false` |
+| `09-compose-queue.png` | The Drafts view, the queue in send order |
+| `10-deal-edit.png` | The deal editor |
+| `11-morning-brief.png` | The morning brief |
 
-Nothing here yet. Run `python3 tools/check-no-client-data.py` before committing any of them, and look at each image once more by eye: the checker reads text files only, it cannot see a name inside a PNG.
+To retake them: start three demo servers and run a Playwright script against them.
+
+```
+python3 app.py --demo --no-open --port 4747
+python3 app.py --demo --no-open --port 4748 --demo-status fixtures/demo-status-login-needed.json
+python3 app.py --demo --no-open --port 4749 --demo-feed <a copy of fixtures/demo-feed.json with header_ok false>
+```

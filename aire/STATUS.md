@@ -2,6 +2,29 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-22, evening: Pipeline rebuilt from the ground up, Jarvis style
+
+**Confirmed by Caleb (this session)**
+- "Build it from the ground up with only Claude Code as the main source", with the Jarvis command center look he sent (dark navy HUD, cyan glow, cut-corner panels, left nav, center core, live feed on the right, big action pill at the bottom), "change it up some" and "more animations". He also said he still wants the buttons, toggles, charts and systems of that reference. Two Instagram reels he sent as motion and voice references could not be opened from the cloud (Instagram shows a login wall), so the motion is from the still image only.
+
+**Done (cloud, tested against fixtures)**
+- `aire/pipeline-app/` now holds the whole app: `app.py` (standard-library Python server, the one caller of `crm.py`), `static/` (the screen, no build step, offline), `predraft.py` (drafts from the feed through `follow-up/pools.py` and `followups.build_feed_queue`), `fixtures/` (made-up people for `--demo`), `launchd/` and `install.sh` (server at login, Dock app in a Chrome app window). README has the build and run steps, every `crm.py` command the app calls, the three send gates and the screenshots.
+- What it does today: Command Center (overview counts, rotating core, live feed, active deals with stage bars, today's timeline, quick commands, send gauges, band chart, sources), Touches due, Tasks, Deals, New leads, Drafts queue, Sent today, compose drawer (text or email, their last three texts above the draft, send, skip, touched), deal editor, new task, note, Do Not Contact with reason, morning brief, problems list, keyboard shortcuts, search. Every write is `crm.py --json --client pipeline` with `touch`, `done` (with `sync-tasks` first for Next_Action rows), `task`, `deal`, `note`, `dnc`. Refresh runs `refresh_feed.sh` in the background.
+- Sends: Do Not Contact check through the engine's gate (dry-run touch), daily cap 25 texts and 25 emails from `out/send-log.json`, `PIPELINE_SENDER=live` or dry run. Dry run is the default and the screen says so.
+- `aire/crm/refresh_feed.sh` runs `pipeline-app/predraft.py` with the venv Python; the Codex folder fallback stays only for `Sources/predraft.py`.
+- 27 offline checks pass (`app.py --test`). 12 screenshots from the demo in `pipeline-app/screenshots/`, no real people in them.
+
+**Stubbed or not verified**
+- Live sending (Messages via `osascript`, Gmail via the follow-up token), refresh from the screen on the Mac, `install.sh` and the LaunchAgent: written for macOS, not run there. First real send should be to Caleb himself.
+- `stage` is served (`/api/stage`) but has no button.
+- The old Codex SwiftUI app is replaced, not copied. Its folder on the Mac and the Drive zip are not needed.
+
+**Needs Caleb**
+- On the Mac: `python3 aire/pipeline-app/app.py --demo` to see it, then `sh aire/crm/refresh_feed.sh` and `~/.aire/venv/bin/python aire/pipeline-app/app.py` for the real feed, then `sh aire/pipeline-app/install.sh` to keep it at login.
+- Say when to flip `PIPELINE_SENDER` to `live`, and whether 25 and 25 stay the caps.
+- The visual improvements list from before this rebuild was never found. Say what is still missing after seeing this version.
+- If the "Build, run and screenshot the Pipeline app" task card was started on the Mac, stop it: it would copy the Codex source into the same folder.
+
 ## 2026-10-22: the Pipeline app gets a home in the repo
 
 **Confirmed (from the repo, not from running the app)**

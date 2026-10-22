@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="boot" class="boot">
+  <div class="boot-ring"><span></span><span></span><span></span></div>
+  <div class="boot-title">PIPELINE</div>
+  <div class="boot-sub mono" id="boot-sub">reading feed.json</div>
+  <div class="boot-bar"><i id="boot-bar"></i></div>
+</div>
+
+<div id="app" class="app" hidden>
+  <aside class="side panel" style="--i:0">
+    <div class="brand">
+      <div class="brand-ring"><i></i><i></i><i></i></div>
+      <div><div class="brand-name">PIPELINE</div><div class="brand-sub mono">AIRE DAILY</div></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="send-status">
+      <div class="mini-h">SEND STATUS <span class="chev">›</span></div>
+      <div class="wave" id="wave"></div>
+      <div class="mode mono" id="mode">DRY RUN</div>
+      <div class="caps-mini" id="caps-mini"></div>
+      <div class="mode-sub mono" id="mode-sub">set PIPELINE_SENDER=live to send</div>
+    </div>
+    <button class="ghost-btn" id="open-sheet">⌗ Open the CRM sheet</button>
+  </aside>
+
+  <header class="top panel" style="--i:1">
+    <div class="status-chip" id="status-chip"><span class="mono">SYSTEM STATUS</span><b><i class="dot"></i><span id="status-word">READING</span></b></div>
+    <div class="clock"><div class="date mono" id="date"></div><div class="time" id="time"></div></div>
+    <div class="top-right">
+      <label class="search"><span>⌕</span><input id="search" placeholder="Search people, deals, tasks" autocomplete="off"><kbd>/</kbd></label>
+      <button class="icon-btn" id="refresh" title="Refresh feed (r)">⟳</button>
+      <button class="icon-btn" id="bell" title="Problems"><span>♪</span><b id="bell-count" hidden></b></button>
+      <button class="icon-btn" id="help" title="Keys">?</button>
+      <div class="operator"><div><div class="op-name">Caleb Jackson</div><div class="op-sub mono">REALTOR · KW First Choice</div></div><div class="avatar">CJ</div></div>
+    </div>
+  </header>
+
+  <main class="main" id="main"></main>
+
+  <footer class="bottom panel" style="--i:12">
+    <div class="foot-chips" id="foot-chips"></div>
+    <button class="talk" id="compose-next"><span class="wave small"></span><span class="talk-text"><b>COMPOSE NEXT</b><i id="talk-sub">reading the queue</i></span><span class="wave small"></span></button>
+    <button class="ghost-btn" id="brief">▣ Morning brief</button>
+  </footer>
+</div>
+
+<div id="drawer" class="drawer" hidden></div>
+<div id="modal" class="modal" hidden></div>
+<div id="toasts" class="toasts"></div>
+<script src="app.js"></script>
+</body>
+</html>
