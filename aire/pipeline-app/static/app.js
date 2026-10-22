@@ -26,7 +26,7 @@ async function load() {
 }
 async function act(path, body, okText) {
   const r = await api(path, body);
-  if (r.ok) { toast('ok', okText.tag, okText.text); await load(); return r; }
+  if (r.ok) { toast('ok', okText.tag, okText.text); tele(`${okText.tag.toLowerCase()}: ${okText.text}`); if (window.Core) Core.burst(); await load(); return r; }
   toast('err', 'REFUSED', r.error || 'no reason given');
   return null;
 }
@@ -58,17 +58,17 @@ function render() {
   const lvl = statusLevel();
   const chip = $('#status-chip'); chip.className = 'status-chip ' + lvl;
   $('#status-word').textContent = !d.feed_ok ? 'NO FEED' : lvl === 'stop' ? 'STOP' : lvl === 'warn' ? 'ATTENTION' : 'OPTIMAL';
+  S.systemWord = $('#status-word').textContent; S.systemLevel = lvl;
   const bc = $('#bell-count'); bc.hidden = !problems().length; bc.textContent = problems().length;
   // send status
   const mode = $('#mode'); mode.textContent = d.demo ? 'DEMO · DRY RUN' : d.sender === 'live' ? 'LIVE' : 'DRY RUN'; mode.className = 'mode mono' + (d.sender === 'live' && !d.demo ? ' live' : '');
   $('#mode-sub').textContent = d.demo ? 'made-up people, nothing is written' : d.sender === 'live' ? 'texts via Messages, email via Gmail' : 'set PIPELINE_SENDER=live to send';
   $('#caps-mini').innerHTML = `<div><b>${d.caps.sent_texts}/${d.caps.texts}</b>texts</div><div><b>${d.caps.sent_emails}/${d.caps.emails}</b>emails</div>`;
   const wave = $('#wave'); if (!wave.children.length) wave.innerHTML = Array.from({ length: 28 }, (_, i) => `<i style="--d:${(i * 37) % 900}"></i>`).join('');
-  wave.classList.toggle('quiet', !(d.sender === 'live' && !d.demo) && !d.demo);
   document.querySelectorAll('.wave.small').forEach(w => { if (!w.children.length) w.innerHTML = Array.from({ length: 9 }, (_, i) => `<i style="--d:${(i * 97) % 700}"></i>`).join(''); });
   // bottom
   const items = drafts(), replies = items.filter(i => i.reply).length;
-  $('#talk-sub').textContent = !items.length ? 'queue is clear' : `${replies ? replies + ' repl' + (replies === 1 ? 'y' : 'ies') + ' owed · ' : ''}${items.length - replies} draft${items.length - replies === 1 ? '' : 's'} ready`;
+  $('#compose-next').textContent = !items.length ? '✉ Queue clear' : `✉ Compose next · ${replies ? replies + ' owed, ' : ''}${items.length} ready`;
   const cmd = d.command || {};
   const age = d.feed_age_minutes;
   $('#foot-chips').innerHTML = [
@@ -85,6 +85,8 @@ function render() {
   if (!d.feed_ok) { main.innerHTML = `<div class="stop-screen"><div class="big">NO FEED</div><p>${esc((problems()[0] || {}).text || 'feed.json is missing.')}</p><div class="acts"><button class="primary" onclick="refresh()">Run the refresh</button></div></div>`; return; }
   const views = { cc: viewCC, touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent };
   main.innerHTML = (views[S.view] || viewCC)();
+  if (S.view === 'cc' && window.Core) { const cv = $('#core'); if (cv) Core.mount(cv, (f.counts || {}).by_band || {}); }
+  reflectVoice();
   // the hero's header is absolute, so the svg gets the whole panel
   // deferred animations: bars, gauges, counters
   requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -148,25 +150,15 @@ function viewCC() {
   return `<div class="cc">${row1}${row2}${row3}</div>`;
 }
 function hero(f) {
-  const blips = Array.from({ length: 26 }, (_, i) => { const a = (i * 137.5) % 360, r = 60 + ((i * 53) % 85); const x = 250 + r * Math.cos(a * Math.PI / 180) * 1.0, y = 150 + r * Math.sin(a * Math.PI / 180) * .75; return `<circle class="blip" style="--d:${(i * 173) % 2400}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="#19d3ff"/>`; }).join('');
-  const lat = [-80, -50, -20, 20, 50, 80].map(d => { const ry = Math.abs(d) > 70 ? 14 : Math.abs(d) > 40 ? 34 : 44; const cy = 150 + d * 1.35; return `<ellipse cx="250" cy="${cy}" rx="${(Math.cos(d * Math.PI / 180) * 120).toFixed(1)}" ry="${(Math.cos(d * Math.PI / 180) * 120 * .22).toFixed(1)}" fill="none" stroke="rgba(25,211,255,.35)" stroke-width="1"/>`; }).join('');
-  const lon = [0, 30, 60, 90, 120, 150].map(a => `<ellipse cx="250" cy="150" rx="${Math.max(2, Math.abs(Math.cos(a * Math.PI / 180)) * 120).toFixed(1)}" ry="120" fill="none" stroke="rgba(25,211,255,.28)" stroke-width="1" transform="rotate(${a * 0.0} 250 150)"/>`).join('');
-  return `<div class="scan"></div>
-  <svg viewBox="0 0 500 300" preserveAspectRatio="xMidYMid meet">
-    <defs><radialGradient id="gg" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#19d3ff" stop-opacity=".35"/><stop offset=".6" stop-color="#19d3ff" stop-opacity=".08"/><stop offset="1" stop-color="#19d3ff" stop-opacity="0"/></radialGradient></defs>
-    <circle cx="250" cy="150" r="150" fill="url(#gg)"/>
-    <g class="g-slow">${lon}</g>
-    <g class="g-mid"><circle cx="250" cy="150" r="138" fill="none" stroke="rgba(25,211,255,.5)" stroke-width="1" stroke-dasharray="2 6"/><circle cx="250" cy="150" r="138" fill="none" stroke="#35f0c8" stroke-width="2" stroke-dasharray="60 800" stroke-linecap="round"/></g>
-    <g class="g-fast"><circle cx="250" cy="150" r="124" fill="none" stroke="rgba(25,211,255,.25)" stroke-width="1" stroke-dasharray="1 4"/><circle cx="250" cy="150" r="124" fill="none" stroke="#19d3ff" stroke-width="2" stroke-dasharray="20 760" stroke-linecap="round"/></g>
-    <g class="lat">${lat}</g>
-    <circle cx="250" cy="150" r="120" fill="none" stroke="rgba(25,211,255,.55)" stroke-width="1.2"/>
-    ${blips}
-    <line x1="30" y1="150" x2="110" y2="150" stroke="rgba(25,211,255,.3)"/><line x1="390" y1="150" x2="470" y2="150" stroke="rgba(25,211,255,.3)"/>
-  </svg>
+  const v = Voice.state();
+  return `<div class="scan"></div><canvas id="core"></canvas>
   <div class="hero-text"><div><div class="hero-title">PIPELINE</div><div class="hero-sub">AIRE CORE</div><div class="hero-ver">as of ${esc(f.as_of || '')} · feed ${esc((f.generated_at || '').slice(11, 16))}</div></div></div>
-  <div class="hero-corner tl">CRM · ${esc(String((f.counts || {}).contacts || 0))} PEOPLE</div><div class="hero-corner tr">SIGNALS · ${f.signals && f.signals.file ? 'IMESSAGE' : 'NONE'}</div>
-  <div class="hero-corner bl">ENGINE · crm.py --client pipeline</div><div class="hero-corner br">${esc(S.data.demo ? 'DEMO DATA' : 'LIVE DATA')}</div>`;
+  <div class="hero-corner tl">CRM · ${esc(String((f.counts || {}).contacts || 0))} PEOPLE</div><div class="hero-corner tr">SIGNALS · ${f.signals && f.signals.file ? 'IMESSAGE' : 'NONE'} · VOICE · ${v.on ? v.state.toUpperCase() : v.supported ? 'OFF' : 'TYPE ONLY'}</div>
+  <div class="tele" id="tele">${teleHTML()}</div><div class="heard" id="heard">${esc(S.lastHeard || '')}</div>`;
 }
+const TELE = [];
+function tele(text, strong) { TELE.push({ at: new Date(), text, strong }); if (TELE.length > 30) TELE.shift(); const el = $('#tele'); if (el) el.innerHTML = teleHTML(); }
+function teleHTML() { return TELE.slice(-4).map(t => `<div>${t.at.toTimeString().slice(0, 8)} ${t.strong ? '<b>' + esc(t.text) + '</b>' : esc(t.text)}</div>`).join(''); }
 function liveFeed() {
   const f = feed(), items = [];
   (f.touches_due || []).filter(r => r.owes_reply).slice(0, 4).forEach(r => items.push({ cls: 'reply', ico: '↩', b: `${r.display} texted you`, s: (r.last_messages || [])[0] ? r.last_messages[r.last_messages.length - 1].replace(/^\d{4}-\d{2}-\d{2}: /, '') : 'owes a reply', tag: 'REPLY', tcls: 'reply', on: `openCompose('${r.person_id}')` }));
@@ -414,7 +406,7 @@ function openProblems() {
     () => (p.some(x => x.code.startsWith('command')) ? 'command' : true), p.some(x => x.code.startsWith('command')) ? 'Open Command' : 'OK').then(v => { if (v === 'command') window.open(S.data.links.command); });
 }
 function openHelp() {
-  modal('Keys', `<div class="brief"><ul><li><kbd>1</kbd> to <kbd>7</kbd> switch views</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
+  modal('Keys', `<div class="brief"><ul><li><kbd>1</kbd> to <kbd>7</kbd> switch views</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Every answer is read from the feed. Nothing is made up and nothing is sent by voice.</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
 }
 
 // ---------------------------------------------------------------- toasts, clock, keys, boot
@@ -425,10 +417,33 @@ document.addEventListener('keydown', e => {
   const views = ['cc', 'touches', 'tasks', 'deals', 'leads', 'queue', 'sent'];
   if (/^[1-7]$/.test(e.key)) go(views[Number(e.key) - 1]);
   else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
+  else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }
   else if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else closeDrawer(); }
 });
 $('#search').addEventListener('input', e => { S.q = e.target.value; if (S.view === 'cc' && S.q) S.view = 'touches'; render(); });
 $('#refresh').onclick = refresh; $('#bell').onclick = openProblems; $('#help').onclick = openHelp; $('#brief').onclick = openBrief; $('#compose-next').onclick = composeNext;
+
+// ---------------------------------------------------------------- voice
+function reflectVoice() {
+  const v = Voice.state(), st = v.on ? v.state : 'off';
+  const mic = $('#mic'); mic.className = 'orb ' + (v.on ? 'on ' + v.state : 'off');
+  const vs = $('#voice-state'); vs.className = 'voice-state mono ' + (v.on ? v.state : ''); vs.textContent = !v.supported ? 'no mic here · type below' : !v.on ? 'tap to talk' : v.state === 'idle' ? (v.awake ? 'listening' : 'say "hey Pipeline"') : v.state;
+  const talk = $('#talk'); talk.classList.toggle('on', v.on);
+  $('#talk-title').textContent = v.on ? (v.state === 'speaking' ? 'PIPELINE' : v.state === 'thinking' ? 'THINKING' : 'LISTENING') : 'TALK TO PIPELINE';
+  if (!v.on) $('#talk-sub').textContent = v.supported ? 'say "hey Pipeline", then brief, touches, deals, compose' : 'type a command in the sidebar';
+  else if (v.state === 'idle' && !S.lastHeard) $('#talk-sub').textContent = 'listening for "hey Pipeline"';
+  document.querySelectorAll('.wave').forEach(w => w.classList.toggle('quiet', !v.on || v.state === 'idle'));
+  const hero = $('.hero'); if (hero) hero.className = 'panel hero ' + (v.on ? v.state : '');
+  const chip = $('#status-chip');
+  if (v.on && v.state !== 'idle') { chip.className = 'status-chip ' + v.state; $('#status-word').textContent = v.state.toUpperCase(); }
+  else if (S.systemWord) { chip.className = 'status-chip ' + (S.systemLevel || ''); $('#status-word').textContent = S.systemWord; }
+}
+Voice.onChange(reflectVoice);
+window.onVoiceInterim = text => { if (text) { S.lastHeard = text; $('#talk-sub').textContent = '“' + text + '”'; const h = $('#heard'); if (h) { h.textContent = text; h.className = 'heard you'; } } };
+window.onVoiceLine = (who, text) => { S.lastHeard = text; tele((who === 'you' ? 'you: ' : 'pipeline: ') + text, who !== 'you'); $('#talk-sub').textContent = (who === 'you' ? '“' : '') + text + (who === 'you' ? '”' : ''); const h = $('#heard'); if (h) { h.textContent = text; h.className = 'heard ' + who; } };
+$('#mic').onclick = () => { if (!Voice.state().supported) { $('#type-cmd').focus(); toast('warn', 'VOICE', 'No speech recognition in this browser. Chrome on the Mac has it. Type a command instead.'); return; } const on = Voice.toggle(); if (on) { tele('voice loop on, wake word "hey Pipeline"', true); Voice.say('Pipeline online.'); } else tele('voice loop off'); reflectVoice(); };
+$('#talk').onclick = () => $('#mic').click();
+$('#type-form').addEventListener('submit', e => { e.preventDefault(); const v = $('#type-cmd').value; $('#type-cmd').value = ''; Voice.type(v); });
 $('#open-sheet').onclick = () => window.open(S.data.links.sheet);
 
 async function boot() {
@@ -437,6 +452,8 @@ async function boot() {
   const p = api('/api/state').catch(() => null);
   for (let i = 0; i < steps.length; i++) { sub.textContent = steps[i]; bar.style.width = `${((i + 1) / steps.length) * 100}%`; await new Promise(r => setTimeout(r, 220)); }
   S.data = await p;
+  if (S.data && S.data.feed) tele(`feed ${S.data.demo ? 'demo' : S.data.as_of} · ${(S.data.feed.counts || {}).contacts || 0} people · ${(S.data.feed.touches_due || []).length} due`, true);
+  if (S.data) tele(`drafts: ${((S.data.text_queue || {}).drafts || []).length} texts, ${((S.data.email_queue || {}).drafts || []).length} emails, ${((S.data.text_queue || {}).reply_first || []).length} replies owed`);
   tick(); setInterval(tick, 1000);
   $('#app').hidden = false;
   if (S.data) render(); else toast('err', 'SERVER', 'app.py is not answering.');

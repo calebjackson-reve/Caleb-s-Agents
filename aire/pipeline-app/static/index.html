@@ -22,9 +22,15 @@
       <div><div class="brand-name">PIPELINE</div><div class="brand-sub mono">AIRE DAILY</div></div>
     </div>
     <nav class="nav" id="nav"></nav>
+    <div class="voice-status" id="voice-status">
+      <div class="mini-h">VOICE <span class="chev">›</span></div>
+      <div class="wave" id="wave"></div>
+      <button class="orb" id="mic" title="Talk to Pipeline (v)"><i></i><i></i><span>🎙</span></button>
+      <div class="voice-state mono" id="voice-state">tap to talk</div>
+      <form class="type-cmd" id="type-form"><input id="type-cmd" placeholder="or type a command" autocomplete="off"></form>
+    </div>
     <div class="send-status">
       <div class="mini-h">SEND STATUS <span class="chev">›</span></div>
-      <div class="wave" id="wave"></div>
       <div class="mode mono" id="mode">DRY RUN</div>
       <div class="caps-mini" id="caps-mini"></div>
       <div class="mode-sub mono" id="mode-sub">set PIPELINE_SENDER=live to send</div>
@@ -48,14 +54,19 @@
 
   <footer class="bottom panel" style="--i:12">
     <div class="foot-chips" id="foot-chips"></div>
-    <button class="talk" id="compose-next"><span class="wave small"></span><span class="talk-text"><b>COMPOSE NEXT</b><i id="talk-sub">reading the queue</i></span><span class="wave small"></span></button>
-    <button class="ghost-btn" id="brief">▣ Morning brief</button>
+    <button class="talk" id="talk"><span class="wave small"></span><span class="talk-text"><b id="talk-title">TALK TO PIPELINE</b><i id="talk-sub">say "hey Pipeline"</i></span><span class="wave small"></span></button>
+    <div class="foot-right">
+      <button class="ghost-btn" id="compose-next">✉ Compose next</button>
+      <button class="ghost-btn" id="brief">▣ Morning brief</button>
+    </div>
   </footer>
 </div>
 
 <div id="drawer" class="drawer" hidden></div>
 <div id="modal" class="modal" hidden></div>
 <div id="toasts" class="toasts"></div>
+<script src="core.js"></script>
+<script src="voice.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

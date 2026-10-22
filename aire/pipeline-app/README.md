@@ -7,7 +7,7 @@ One screen, Jarvis style, that shows what the CRM engine in `aire/crm/` already 
 ## What it is
 
 - `app.py`: a Python server with no dependencies beyond the standard library. It reads the feed and the draft queues, serves the screen on `http://127.0.0.1:4747/`, and is the only thing that calls `crm.py`. It keeps the send log, runs the Do Not Contact check and enforces the daily cap.
-- `static/`: the screen. Plain HTML, CSS and JavaScript, no build step, no CDN, works offline. Boot sequence, rotating core, gauges, staggered panel reveals, a compose drawer that slides in from the right.
+- `static/`: the screen. Plain HTML, CSS and JavaScript, no build step, no CDN, works offline. Boot sequence, a particle core that reacts to the voice, gauges, staggered panel reveals, a compose drawer that slides in from the right. `core.js` draws the core, `voice.js` is the voice loop, `app.js` is everything else.
 - `predraft.py`: the step `aire/crm/refresh_feed.sh` runs after every feed rebuild. It turns `feed.json` into the text and email drafts the compose box shows, using the one drafting library in `aire/follow-up/`.
 - `fixtures/`: made-up people for `--demo`, so the app can be tried and screenshotted without the real CRM.
 - `launchd/` and `install.sh`: start the server at login and put a Pipeline app in the Dock that opens the screen as its own window.
@@ -90,11 +90,33 @@ After a real send the engine logs it with `touch`, so the person drops off tomor
 
 `followups.py --approve` stays a dry run unless `FOLLOWUP_SENDER=followups` is set on purpose, so nobody gets two messages from two places.
 
+## Voice
+
+Say **"hey Pipeline"** (or "hey Jarvis"), then a command. Pipeline answers out loud and moves the screen. Everything it says is read from the feed, so it never invents a number, and nothing is sent by voice.
+
+| Say | It does |
+|---|---|
+| brief, morning, rundown | Reads the morning brief: replies owed, overdue tasks, new leads, live deals, drafts ready |
+| who texted me, replies | Opens Touches due and reads who texted last and what the first one said |
+| touches, who's due | Opens Touches due and reads the top three |
+| tasks, overdue | Opens Tasks and reads the count and the first one |
+| deals, closings | Opens Deals and reads the first three with stage and next step |
+| leads | Opens New leads and reads them |
+| compose, next draft | Opens the next draft in the compose box |
+| refresh | Rebuilds the feed |
+| status, anything wrong | Reads the attention list, or says all is fine |
+| sent, log | Reads today's counts against the caps |
+| stop, quiet | Stops talking |
+
+How it works, all in the browser: Chrome's speech recognition listens (`webkitSpeechRecognition`, which sends audio to Google's speech service while the loop is on), `speechSynthesis` talks with a British voice when the Mac has one (Daniel), and the intents are plain word matching in `static/voice.js`. There is no LLM in the loop. Safari has no speech recognition, so use Chrome on the Mac; the Dock app from `install.sh` opens Chrome. Where there is no microphone the same commands can be typed in the sidebar's command box (`t`). The mic button (`v`) turns the loop on and off; after the wake word it stays awake for 25 seconds, so you can chain commands. The status chip shows LISTENING, THINKING or SPEAKING, the core fires streaks while it thinks, and the core panel shows the last thing heard and a telemetry ticker of what the app did.
+
+What the two reels Caleb sent have that this does not: an LLM answering open questions, a paid voice (ElevenLabs), and sub-agents per business tool. `REFERENCE.md` has the full notes on both reels with what is confirmed and what is inference.
+
 ## The screen
 
 | View | Key | What is on it |
 |---|---|---|
-| Command Center | `1` | CRM overview, the rotating core, live feed (replies owed, overdue, new leads, deal events, hot people), active deals with stage bars, today's timeline, quick commands, send gauges, band chart, sources. |
+| Command Center | `1` | CRM overview, the particle core with telemetry and the voice transcript, live feed (replies owed, overdue, new leads, deal events, hot people), active deals with stage bars, today's timeline, quick commands, send gauges, band chart, sources. |
 | Touches due | `2` | Every due row with band, reply flag, next action and their last text. Buttons: Compose, Touched, Task, Note, DNC. Filters: all, owe a reply, hot, warm. |
 | Tasks | `3` | Overdue first. Done on each. Next_Action rows are marked and synced on Done. |
 | Deals | `4` | Live deals by street with stage, price, close, next step and last event. Edit opens the deal editor. |
@@ -102,7 +124,7 @@ After a real send the engine logs it with `touch`, so the person drops off tomor
 | Drafts | `6` | The compose queue in order: replies owed first, then texts, then emails. |
 | Sent today | `7` | The send log for today. |
 
-`c` opens the next draft, `r` refreshes, `/` searches, `Esc` closes. The big COMPOSE NEXT pill at the bottom does what `c` does. Morning brief summarizes replies owed, overdue tasks, new leads, deals and today's draft counts, and starts the first reply.
+`c` opens the next draft, `r` refreshes, `v` toggles voice, `t` focuses the typed command box, `/` searches, `Esc` closes. The big TALK TO PIPELINE pill at the bottom is the voice toggle and shows the transcript; Compose next and Morning brief sit beside it. Morning brief summarizes replies owed, overdue tasks, new leads, deals and today's draft counts, and starts the first reply.
 
 ## Screenshots
 
@@ -116,6 +138,7 @@ Taken from `--demo` on 2026-10-22 at 1440 by 900. Every person in them is made u
 | [Compose, email draft](screenshots/06-compose-email.png) | [Command login warning](screenshots/07-command-login-warning.png) |
 | [Header changed stop screen](screenshots/08-header-not-ok.png) | [Drafts queue](screenshots/09-compose-queue.png) |
 | [Deal editor](screenshots/10-deal-edit.png) | [Morning brief](screenshots/11-morning-brief.png) |
+| [Voice: the brief, typed in the sandbox](screenshots/12-voice-brief.png) | |
 
 See `screenshots/README.md` for how they were made. Screenshots of the real feed never go in: run `python3 tools/check-no-client-data.py` before every push and look at every PNG by eye, the checker cannot see a name inside an image.
 
@@ -126,6 +149,7 @@ Built and tested in a Linux cloud session against the fixtures. These three path
 - `PIPELINE_SENDER=live` text sending through Messages. The AppleScript targets the iMessage account's participant by phone number. First real send: pick yourself.
 - `PIPELINE_SENDER=live` email sending through the Gmail token in `aire/follow-up/`.
 - Refresh from the screen, which runs `sh crm/refresh_feed.sh` and reads the last line of `~/.aire/logs/feed.log` for the toast.
+- The microphone half of the voice loop. Headless Chromium has no speech recognition, so the intents were exercised by typing the commands; the spoken half fell back to the transcript line. On the Mac, Chrome asks for the mic once.
 
 `install.sh` and the LaunchAgent follow the same pattern as `org.calebjackson.aire.feed` but were written here, not run on the Mac.
 

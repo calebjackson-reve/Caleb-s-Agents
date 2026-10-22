@@ -14,7 +14,11 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 - `aire/crm/refresh_feed.sh` runs `pipeline-app/predraft.py` with the venv Python; the Codex folder fallback stays only for `Sources/predraft.py`.
 - 27 offline checks pass (`app.py --test`). 12 screenshots from the demo in `pipeline-app/screenshots/`, no real people in them.
 
+**Added the same evening, from the reels**
+- A Claude session on the Mac watched the two reels in Chrome and wrote up what is in them; Caleb pasted the notes into the cloud session and they are saved as `pipeline-app/REFERENCE.md` (Blueprint, Proof, Unknowns). What went into Pipeline: a particle neural-network core in the center (five clusters by band, streaks, radar sweep, energy follows the voice state), a voice loop in the browser (`static/voice.js`: wake word "hey Pipeline", Chrome speech recognition, speechSynthesis with a British voice, intents matched by plain words against the feed, no LLM, nothing sent by voice), LISTENING / THINKING / SPEAKING on the status chip, a transcript line and telemetry ticker in the core panel, a mic orb and typed-command box in the sidebar, and the bottom pill is now TALK TO PIPELINE with Compose next beside it. The intents were exercised by typing in headless Chromium (the brief reads the right names and counts); the microphone half runs only in Chrome on the Mac.
+
 **Stubbed or not verified**
+- The microphone half of the voice loop and the spoken answers: headless Chromium has neither. First run on the Mac: open Chrome, press `v`, allow the mic, say "hey Pipeline, brief".
 - Live sending (Messages via `osascript`, Gmail via the follow-up token), refresh from the screen on the Mac, `install.sh` and the LaunchAgent: written for macOS, not run there. First real send should be to Caleb himself.
 - `stage` is served (`/api/stage`) but has no button.
 - The old Codex SwiftUI app is replaced, not copied. Its folder on the Mac and the Drive zip are not needed.

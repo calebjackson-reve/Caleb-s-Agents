@@ -16,6 +16,7 @@ Taken from `python3 app.py --demo` with the made-up people in `../fixtures/`, he
 | `09-compose-queue.png` | The Drafts view, the queue in send order |
 | `10-deal-edit.png` | The deal editor |
 | `11-morning-brief.png` | The morning brief |
+| `12-voice-brief.png` | The command center after "hey pipeline, give me the brief" was typed: the core lit up, the transcript and telemetry lines in the core panel |
 
 To retake them: start three demo servers and run a Playwright script against them.
 
