@@ -21,7 +21,12 @@ stamp() { date "+%Y-%m-%d %H:%M:%S"; }
     rm -f feed.json.tmp; echo "$(stamp) feed failed, previous feed.json kept"
   fi
   # Pre-written reply drafts for the Pipeline app (counts only in this log). Skipped when the app is not installed.
-  PANEL="${PIPELINE_PANEL:-$HOME/Documents/Codex/2026-10-19/task-3/PipelinePanel}"
+  # The app's source lives in this repo at aire/pipeline-app (see its README). PIPELINE_PANEL overrides the path.
+  # Until the copy lands there, the original Codex folder on the Mac is still used when it exists.
+  PANEL="${PIPELINE_PANEL:-$HERE/../pipeline-app}"
+  if [ -z "${PIPELINE_PANEL:-}" ] && [ ! -f "$PANEL/Sources/predraft.py" ] && [ -f "$HOME/Documents/Codex/2026-10-19/task-3/PipelinePanel/Sources/predraft.py" ]; then
+    PANEL="$HOME/Documents/Codex/2026-10-19/task-3/PipelinePanel"
+  fi
   if [ -f "$PANEL/Sources/predraft.py" ]; then
     /opt/homebrew/bin/python3 "$PANEL/Sources/predraft.py" && echo "$(stamp) predraft done" || echo "$(stamp) predraft failed"
   fi
