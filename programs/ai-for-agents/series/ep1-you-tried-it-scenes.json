@@ -1,0 +1,323 @@
+{
+ "about": "Weekly series Ep 1: You Tried It and It Was Bad. Script draft 2026-10-19, timings estimated at 176 wpm, no take yet.",
+ "look": "ivory",
+ "chrome": "AI for Agents · Weekly",
+ "text": "mask",
+ "scenes": [
+  {
+   "type": "talk",
+   "face": "full",
+   "exact": true,
+   "say": "If you tried ChatGPT once and it wrote you garbage, that wasn't you being bad at tech.",
+   "why": "Me too line. Names the exact experience most of the audience had.",
+   "motion": "Full frame face. Pills pop on 'garbage' and 'wasn't you'. Hard cut in, no title card.",
+   "pills": [
+    {
+     "t": "Tried it *once*",
+     "at": 0.8
+    },
+    {
+     "t": "Got *garbage*",
+     "at": 2.0
+    },
+    {
+     "t": "Not *you*",
+     "at": 3.6,
+     "hi": true
+    }
+   ],
+   "dur": 6.8
+  },
+  {
+   "type": "statement",
+   "face": "pip",
+   "kicker": "Here's what happened",
+   "text": "You gave it a *blank page.* It gave you a *blank answer.*",
+   "say": "Here's what actually happened. You gave it a blank page, and it gave you a blank answer back.",
+   "why": "Contrarian reframe. Moves the blame from the agent to the input.",
+   "motion": "Statement lights up word by word as he says it. Ember on 'blank page' and 'blank answer'.",
+   "dur": 7.1
+  },
+  {
+   "type": "title",
+   "face": "pip",
+   "kicker": "Hey, I'm",
+   "title": "Caleb *Jackson*",
+   "sub": "REALTOR with Keller Williams First Choice",
+   "tags": [
+    "Sells houses",
+    "Teaches AI from step 1"
+   ],
+   "say": "I'm Caleb Jackson, I'm a REALTOR with Keller Williams First Choice, and I teach agents AI from step one.",
+   "why": "Intro goes second, after the viewer has a reason to stay (caleb-lingo rule).",
+   "motion": "Name rises with mask effect. Rule draws left to right. Two pills pop. Brokerage name as text only, as policy allows.",
+   "dur": 7.5
+  },
+  {
+   "type": "chart",
+   "face": "pip",
+   "kicker": "You're not the only one",
+   "title": "AI *hurt* their business",
+   "suf": "%",
+   "bars": [
+    {
+     "x": "2025",
+     "v": 4
+    },
+    {
+     "x": "2026",
+     "v": 11,
+     "hi": true
+    }
+   ],
+   "source": "Share of agents who say AI hurt their business. NAR 2026 Technology Report, Sept 22, 2026, via Real Estate News",
+   "say": "And you're not alone. This year eleven percent of agents told the National Association of REALTORS that AI hurt their business. Last year it was four.",
+   "why": "Sourced stat that makes quitting feel normal, not shameful.",
+   "motion": "Two bars grow, 2026 bar in ember. Source line fades in under the chart and stays on screen.",
+   "dur": 9.9
+  },
+  {
+   "type": "prompt",
+   "face": "none",
+   "kicker": "What most people type",
+   "title": "The *blank page*",
+   "boxLabel": "ChatGPT",
+   "pill": "Fictional data",
+   "text": "Write a listing description for a 3 bedroom house.",
+   "cps": 30,
+   "say": "Here's what most of us typed the first time. Write a listing description for a three bedroom house. That's it.",
+   "why": "Quick before. The viewer recognizes their own first try.",
+   "motion": "Prompt card rises. Text types itself out at typing speed. Caret blinks.",
+   "dur": 7.8
+  },
+  {
+   "type": "prompt",
+   "face": "none",
+   "kicker": "What it gave back",
+   "title": "Sound *familiar?*",
+   "boxLabel": "ChatGPT reply",
+   "pill": "Generic",
+   "text": "Welcome to this stunning 3 bedroom home, nestled in a quiet neighborhood, perfect for families and entertaining...",
+   "cps": 55,
+   "say": "And here's what it gave back. Stunning. Nestled. Perfect for families. Every listing in America.",
+   "why": "Payoff of the before, with humor. Also sets up the Fair Housing point later.",
+   "motion": "Reply types fast. After it lands, ember underline sweeps 'stunning', 'nestled', 'perfect for families'. (New effect: add a strike-mark pass in kit.js, or do it in the edit.)",
+   "dur": 6.1
+  },
+  {
+   "type": "statement",
+   "face": "pip",
+   "kicker": "The real reason",
+   "text": "AI doesn't know *your* listing. You do.",
+   "say": "The problem isn't the tool. AI has never stood in that kitchen. You have.",
+   "why": "Psychology idea setup: the curse of knowledge.",
+   "motion": "Statement lights up word by word. Hold half a second on 'You do.'",
+   "dur": 5.8
+  },
+  {
+   "type": "cards",
+   "face": "pip",
+   "kicker": "Why clients decide, and why AI fails",
+   "title": "The *curse of knowledge*",
+   "stagger": 1.4,
+   "cards": [
+    {
+     "icon": "user",
+     "t": "You know the house",
+     "d": "Every detail, by heart"
+    },
+    {
+     "icon": "chat",
+     "t": "You forget what it doesn't",
+     "d": "So you skip the good part"
+    },
+    {
+     "icon": "spark",
+     "t": "It fills the gap",
+     "d": "With *stunning* and *nestled*"
+    }
+   ],
+   "say": "There's a name for this. The curse of knowledge. When you know something cold, you forget what the other person doesn't know. I learned it the hard way. I once lost a whole room of agents in five minutes because I started at step fifty. They needed step one.",
+   "why": "His story (true per FOUNDATION value 1). Plus the psychology idea, tied to how clients hear us too.",
+   "motion": "Three cards rise one at a time on his words. Icons draw in. Ember on 'stunning' and 'nestled'.",
+   "dur": 17.7
+  },
+  {
+   "type": "checklist",
+   "face": "pip",
+   "kicker": "The fix",
+   "title": "Give it *3 real details*",
+   "checkAt": [
+    2.0,
+    5.0,
+    8.5
+   ],
+   "items": [
+    "The *job*: what this is and where it goes",
+    "One *real detail* only you know",
+    "Your *voice*: how you sound, words you never use"
+   ],
+   "say": "So here's the fix. Every time, give it three things. The job, meaning what this is and where it's going. One real detail only you know. And your voice, how you sound and the words you never use.",
+   "why": "The core teaching. One rule the viewer can remember tomorrow.",
+   "motion": "Three items check off as he names each one. Ember check fill.",
+   "dur": 14.0
+  },
+  {
+   "type": "prompt",
+   "face": "none",
+   "kicker": "Same ask, with 3 details",
+   "title": "Now *watch*",
+   "boxLabel": "ChatGPT",
+   "pill": "Fictional data",
+   "cps": 48,
+   "text": "Write a listing description for the MLS. 3 bed, 2 bath in Zachary. Real detail: the back porch faces west, so you get the sunset, and the seller built the deck himself. Sound warm and plain. Never use stunning, nestled or perfect for. Describe the home, not who should live there.",
+   "say": "Same ask. Now the job is the MLS. The real detail is the porch faces west, so you get the sunset, and the seller built the deck himself. And the voice is warm and plain, no stunning, no nestled.",
+   "why": "Live before and after. The viewer sees the 3 details land in a real prompt.",
+   "motion": "Prompt types out. The 3 details highlight in ember as he names them (job, detail, voice). Fictional data flag top right.",
+   "dur": 14.3
+  },
+  {
+   "type": "prompt",
+   "face": "none",
+   "kicker": "What it gives back now",
+   "title": "That's *a house*",
+   "boxLabel": "ChatGPT reply",
+   "approve": "You read it first",
+   "cps": 55,
+   "text": "3 bed, 2 bath in Zachary with a west-facing back porch built by hand, so the sunset is part of every evening. Open kitchen, fenced yard, two car garage...",
+   "say": "And look what comes back. A west facing porch, built by hand, the sunset every evening. That's a house somebody can picture. You still read it and fix it before it goes anywhere.",
+   "why": "Payoff. Plus the 'AI drafts, you approve' value said out loud.",
+   "motion": "Reply types. Edit and Approve buttons rise. Approve button taps once.",
+   "dur": 12.2
+  },
+  {
+   "type": "thread",
+   "face": "none",
+   "kicker": "Works on everything",
+   "title": "Same 3 details, *a text*",
+   "gap": 0.8,
+   "threads": [
+    {
+     "name": "Before",
+     "role": "Blank page",
+     "msgs": [
+      {
+       "t": "Hey! Just checking in. Let me know if you need anything!",
+       "me": true
+      }
+     ],
+     "tag": "Skipped"
+    },
+    {
+     "name": "After",
+     "role": "Job, detail, voice",
+     "msgs": [
+      {
+       "t": "Hey Dana, saw the house on Elm with the big oak sold in 6 days. Made me think of the yard you wanted. Still thinking spring?",
+       "me": true
+      }
+     ],
+     "tag": "Answered",
+     "hi": true
+    }
+   ],
+   "flag": "Fictional data",
+   "say": "And it's not just listings. Same three details on a text to a past client. Blank page gets you just checking in. Three details gets you something about her, that she'll actually answer.",
+   "why": "Shows the rule travels. Quick before and after on a follow-up (fictional people, flagged). Previews Ep 4.",
+   "motion": "Two thread cards rise side by side. Bubbles land. 'Skipped' and 'Answered' stamps drop, Answered in ember. Fictional data flag.",
+   "dur": 12.2
+  },
+  {
+   "type": "beforeafter",
+   "face": "pip",
+   "kicker": "Side by side",
+   "title": "Blank page vs *3 details*",
+   "beforeLabel": "Blank page",
+   "afterLabel": "3 details",
+   "before": [
+    "Stunning",
+    "Nestled",
+    "Perfect for families"
+   ],
+   "after": [
+    "West-facing porch",
+    "Deck *built by hand*",
+    "Sunset every evening"
+   ],
+   "say": "Side by side. One sounds like every listing online. The other sounds like you walked through it. Same tool, same thirty seconds.",
+   "why": "Visual proof of the whole lesson in one frame.",
+   "motion": "Before card rises, items stack. After card rises a beat later, items stack with ember accents.",
+   "dur": 8.5
+  },
+  {
+   "type": "statement",
+   "face": "pip",
+   "kicker": "One rule while you're here",
+   "text": "Describe the *home*, not who should *live* there.",
+   "say": "One rule while we're here. Describe the home, never who should live there. 'Perfect for families' is a Fair Housing problem, and AI writes it all the time.",
+   "why": "Fair Housing on every lesson. Previews Ep 5 without teaching it here.",
+   "motion": "Statement lights up. 'home' and 'live' in ember. Small label under it: Fair Housing.",
+   "dur": 10.5
+  },
+  {
+   "type": "flow",
+   "face": "pip",
+   "kicker": "Don't stop at the first answer",
+   "title": "It's a *conversation*",
+   "step": 1.2,
+   "nodes": [
+    {
+     "icon": "chat",
+     "t": "Ask",
+     "d": "With 3 details"
+    },
+    {
+     "icon": "doc",
+     "t": "Read it"
+    },
+    {
+     "icon": "wrench",
+     "t": "Push back",
+     "d": "Shorter. More like me."
+    },
+    {
+     "icon": "check",
+     "t": "You approve",
+     "hi": true
+    }
+   ],
+   "say": "And the first answer is a first draft. Tell it, make it shorter. Make it sound more like me. Take out that last line. It's a conversation, not a vending machine.",
+   "why": "Contrarian line: 'not a vending machine'. Second most common mistake after the blank page (inference).",
+   "motion": "Four nodes draw in left to right, links drawing between them. Last node in ember.",
+   "dur": 11.6
+  },
+  {
+   "type": "title",
+   "face": "pip",
+   "kicker": "Your 10 minutes",
+   "title": "Redo the *one that failed*",
+   "sub": "Run the interview prompt first. Then ask again with the job, one real detail and your voice.",
+   "tags": [
+    "Free card in Skool",
+    "No client info"
+   ],
+   "tagAccent": true,
+   "say": "Here's your ten minutes. First, run the interview prompt in Skool. It asks you questions and writes your profile. Then go back to the one thing AI got wrong for you, and ask again with the job, one real detail and your voice. No client names or private info in it.",
+   "why": "One clear action, with the LREC privacy rule attached.",
+   "motion": "Headline rises with mask. Sub fades up. First pill in ember.",
+   "dur": 18.4
+  },
+  {
+   "type": "face",
+   "face": "full",
+   "exact": true,
+   "kicker": "Do it today",
+   "title": "Give it *3 real details.*",
+   "sub": "The 3 details card is free in Skool.",
+   "say": "Give it three real details and watch what comes back. The card's free in Skool.",
+   "why": "Last line, word for word, points to Skool.",
+   "motion": "Full face card on the right, headline left. Hold 1 second at the end.",
+   "dur": 6.1
+  }
+ ]
+}
