@@ -10,7 +10,7 @@ One screen, Jarvis style, that shows what the CRM engine in `aire/crm/` already 
 - `static/`: the screen. Plain HTML, CSS and JavaScript, no build step, no CDN, works offline. Boot sequence, a particle core that reacts to the voice, gauges, staggered panel reveals, a compose drawer that slides in from the right. `core.js` draws the core, `voice.js` is the voice loop, `app.js` is everything else.
 - `predraft.py`: the step `aire/crm/refresh_feed.sh` runs after every feed rebuild. It turns `feed.json` into the text and email drafts the compose box shows, using the one drafting library in `aire/follow-up/`.
 - `fixtures/`: made-up people for `--demo`, so the app can be tried and screenshotted without the real CRM.
-- `launchd/` and `install.sh`: start the server at login and put a Pipeline app in the Dock that opens the screen as its own window.
+- `launchd/` and `install.sh`: start the server at login and put a Pipeline app in the Dock that opens the screen as its own window, with the Pipeline mark as its icon (`static/logo.svg`, rendered to `static/logo-1024.png`; `install.sh` builds the `.icns` with the Mac's `sips` and `iconutil`).
 
 ## Build and run
 
