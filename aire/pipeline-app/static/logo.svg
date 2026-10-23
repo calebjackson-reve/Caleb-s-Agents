@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Pipeline mark: the core ring from the command center. Navy tile, cyan and teal orbit rings, one lit node. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1f3f"/>
+      <stop offset="1" stop-color="#040916"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#19d3ff" stop-opacity=".45"/>
+      <stop offset=".55" stop-color="#19d3ff" stop-opacity=".10"/>
+      <stop offset="1" stop-color="#19d3ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="node" cx="40%" cy="35%" r="60%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".45" stop-color="#19d3ff"/>
+      <stop offset="1" stop-color="#0a5c8a"/>
+    </radialGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="228" fill="url(#tile)"/>
+  <rect x="2" y="2" width="1020" height="1020" rx="226" fill="none" stroke="#19d3ff" stroke-opacity=".28" stroke-width="4"/>
+  <circle cx="512" cy="512" r="400" fill="url(#glow)"/>
+  <!-- faint grid, like the screen -->
+  <g stroke="#19d3ff" stroke-opacity=".07" stroke-width="2">
+    <path d="M0 256H1024M0 512H1024M0 768H1024M256 0V1024M512 0V1024M768 0V1024"/>
+  </g>
+  <!-- outer orbit, dotted -->
+  <circle cx="512" cy="512" r="330" fill="none" stroke="#19d3ff" stroke-opacity=".55" stroke-width="8" stroke-dasharray="6 22" stroke-linecap="round"/>
+  <!-- teal arc on the outer orbit -->
+  <path d="M512 182 A330 330 0 0 1 842 512" fill="none" stroke="#35f0c8" stroke-width="22" stroke-linecap="round"/>
+  <!-- middle ring -->
+  <circle cx="512" cy="512" r="236" fill="none" stroke="#19d3ff" stroke-opacity=".85" stroke-width="16"/>
+  <!-- cyan arc on the middle ring, opposite side -->
+  <path d="M276 512 A236 236 0 0 1 512 276" fill="none" stroke="#19d3ff" stroke-width="30" stroke-linecap="round"/>
+  <!-- inner ring, tilted ellipse for depth -->
+  <ellipse cx="512" cy="512" rx="150" ry="58" fill="none" stroke="#19d3ff" stroke-opacity=".5" stroke-width="8" transform="rotate(-24 512 512)"/>
+  <!-- core -->
+  <circle cx="512" cy="512" r="110" fill="#19d3ff" fill-opacity=".18" filter="url(#soft)"/>
+  <circle cx="512" cy="512" r="78" fill="url(#node)"/>
+  <!-- the lit node on the outer orbit, where the arc ends -->
+  <circle cx="842" cy="512" r="34" fill="#35f0c8" fill-opacity=".35" filter="url(#soft)"/>
+  <circle cx="842" cy="512" r="20" fill="#ffffff"/>
+</svg>
