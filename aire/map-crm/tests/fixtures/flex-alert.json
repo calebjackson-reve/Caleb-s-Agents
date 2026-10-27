@@ -1,0 +1,16 @@
+[
+ {
+  "id": "m1",
+  "subject": "New matches for Fixture South farm",
+  "from": "Flexmls <noreply@example.com>",
+  "date_iso": "2026-10-27T06:10:00-05:00",
+  "body": "Flexmls Listing Alert\nSaved search: Fixture South farm\n\nNew Listing\n4401 Fixture Lake Dr, Baton Rouge, LA 70810\n$325,000  4 bed 3 bath 2,450 sqft\nMLS # 2026123456\nListed 10/26/2026\n\nPrice Change\n7 Fixture Oaks Ct, Baton Rouge, LA 70815\nWas $289,900 now $279,900\nMLS # 2026111111\n\nPending\n902 Fixture Elm St, Zachary, LA 70791\n$198,500\nMLS # 2026100000\n\nManage this subscription in Flexmls.\n"
+ },
+ {
+  "id": "m2",
+  "subject": "Flexmls: your saved search settings",
+  "from": "Flexmls <noreply@example.com>",
+  "date_iso": "2026-10-27T06:11:00-05:00",
+  "body": "Your saved search was created. No listings match yet."
+ }
+]

@@ -6,11 +6,13 @@ contact and never shows anything on a screen: it reads the sheet, applies the sa
 gates the Mac's crm_client uses, and writes feed.json for the native Pipeline app.
 
 Tabs it reads: Contacts, Notes, Connector Log (all existed on 2026-10-16).
-Tabs it adds if missing: Tasks, Deals. No column is ever added to Contacts.
+Tabs it adds if missing: Tasks, Deals, Geo. No column is ever added to Contacts.
 
   python3 crm.py auth                      # one-time Google sign-in on the Mac (Sheets + Gmail read only)
   python3 crm.py check                     # live header matches what this file expects; nothing written
-  python3 crm.py feed [--out feed.json]    # touches due, tasks, deals, new leads for the Pipeline app
+  python3 crm.py feed [--out feed.json]    # touches due, tasks, deals, new leads, map pins, market rows for the Pipeline app
+  python3 crm.py geocode [--dry-run] [--report FILE]   # Contacts and Deals addresses -> Geo tab (Census geocoder, free)
+  python3 crm.py lead "Name" --source "Market Monitor permit 2026-10-26" [--phone] [--email]   # Make lead from the monitor
   python3 crm.py due                       # who is past their band's cadence
   python3 crm.py tasks                     # open tasks, overdue first
   python3 crm.py deals                     # live deals
@@ -48,6 +50,11 @@ from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
 AIRE = HERE.parent
+sys.path.insert(0, str(AIRE / "map-crm"))
+import geo  # noqa: E402  (aire/map-crm/geo.py: pure geometry and the Census geocoder, nothing Google)
+
+MARKET_CACHE = AIRE / "map-crm" / "cache" / "signals.json"   # written by aire/map-crm/monitor.py, stays on the Mac
+DISMISSED = AIRE / "map-crm" / "cache" / "dismissed.json"    # ids the Pipeline app dismissed, stays on the Mac
 SHEET_ID = os.getenv("AIRE_CRM_SHEET", "1w9izcliqmXlFR3_O3dnP2G5SGfCrua7mrCLCE7cdoDc")
 FEED = HERE / "feed.json"
 AUDIT = Path(os.getenv("AIRE_CRM_AUDIT", str(Path.home() / "aire" / "crm" / "audit.jsonl")))
@@ -88,8 +95,12 @@ SCHEMA = {
     "Tasks": ["task_id", "person_id", "display", "task", "due", "status", "source", "created_at", "done_at"],
     "Deals": ["deal_id", "person_id", "display", "address", "side", "stage", "price", "expected_close",
               "next_step", "last_event", "last_event_at", "source", "updated_at", "commission"],
+    # One row per geocoded Contacts or Deals address. key is 'person:<person_id>' or 'deal:<deal_id>'.
+    # match is match, tie or no_match; only match rows carry lat and lng. A tie or no_match row is kept so the
+    # next run skips it until the address in the sheet changes, and so the report can list it for Caleb to fix.
+    "Geo": ["key", "kind", "ref_id", "address", "lat", "lng", "match", "geocoded_at"],
 }
-ADDED_TABS = ["Tasks", "Deals"]
+ADDED_TABS = ["Tasks", "Deals", "Geo"]
 
 # Caleb's five-step scale (2026-10-20): the only band values. Days between touches by band.
 # Blank band is not on the touch list. Legacy values still read correctly through norm_band().
@@ -829,10 +840,166 @@ class CRM:
                             "next_action": c.get("Next_Action", "")})
         return sorted(out, key=lambda x: x["received"], reverse=True)
 
-    def feed(self, as_of: date | None = None, signals: dict | None = None, signals_file: str = "") -> dict:
+    # ---- geo: the Map page
+
+    def geo_rows(self) -> list[dict]:
+        return self._rows("Geo")
+
+    def wanted_addresses(self) -> list[dict]:
+        """Every Contacts row with a usable address plus every live deal, as the geocoder wants them.
+        Do_Not_Contact people are left out: they are never pinned or prospected."""
+        out = []
+        for c in self.contacts():
+            if (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
+            if not geo.usable_address(c.get("street", ""), c.get("city", ""), c.get("zip", "")):
+                continue
+            out.append({"id": f"person:{c['person_id']}", "kind": "person", "ref_id": c["person_id"],
+                        "street": c.get("street", "").strip(), "city": c.get("city", "").strip(),
+                        "state": (c.get("state", "").strip() or "LA"), "zip": str(c.get("zip", "")).strip()[:5]})
+        for d in self.live_deals():
+            street, city, state, zip_ = geo.split_address(d.get("address", ""))
+            if not street:
+                continue
+            out.append({"id": f"deal:{d['deal_id']}", "kind": "deal", "ref_id": d["deal_id"],
+                        "street": street, "city": city or "Baton Rouge", "state": state or "LA", "zip": zip_})
+        return out
+
+    def geocode(self, geocoder=None, as_of: date | None = None) -> dict:
+        """Contacts and Deals addresses into the Geo tab through the Census geocoder. Idempotent: a row whose
+        address is unchanged since its last run is skipped, matched or not. Unmatched and tied addresses are
+        kept with no coordinates and listed in the report for Caleb to fix in the sheet; nothing is guessed.
+        One audit line per run (the Geo rows themselves are the record), never one per contact."""
+        geocoder = geocoder or geo.census_batch_geocode
+        wanted = self.wanted_addresses()
+        existing = {r["key"]: r for r in self.geo_rows()}
+        todo, skipped = [], 0
+        for w in wanted:
+            key = geo.address_key(w["street"], w["city"], w["state"], w["zip"])
+            have = existing.get(w["id"])
+            if have and have.get("address") == key:
+                skipped += 1
+                continue
+            todo.append({**w, "_key": key, "_update": bool(have)})
+        results = geocoder([{k: t[k] for k in ("id", "street", "city", "state", "zip")} for t in todo]) if todo else {}
+        stamp = now_iso()
+        new_rows, updated, unmatched = [], 0, []
+        for t in todo:
+            r = results.get(t["id"], {"status": "no_match", "lat": None, "lng": None})
+            row = {"key": t["id"], "kind": t["kind"], "ref_id": t["ref_id"], "address": t["_key"],
+                   "lat": "" if r["lat"] is None else str(r["lat"]), "lng": "" if r["lng"] is None else str(r["lng"]),
+                   "match": r["status"], "geocoded_at": stamp}
+            if r["status"] != "match":
+                unmatched.append({"key": t["id"], "kind": t["kind"], "ref_id": t["ref_id"], "status": r["status"],
+                                  "address": f"{t['street']}, {t['city']}, {t['state']} {t['zip']}".strip(", ")})
+            if t["_update"]:
+                self.b.update_row("Geo", "key", t["id"], {k: v for k, v in row.items() if k != "key"})
+                updated += 1
+                if self._dry():
+                    existing[t["id"]].update(row)
+            else:
+                new_rows.append(row)
+        if new_rows:
+            self.b.append("Geo", new_rows)
+            if self._dry():
+                self._overlay.setdefault("Geo", []).extend(new_rows)
+        counts = {"wanted": len(wanted), "skipped_unchanged": skipped, "sent": len(todo),
+                  "matched": sum(1 for t in todo if results.get(t["id"], {}).get("status") == "match"),
+                  "tie": sum(1 for u in unmatched if u["status"] == "tie"),
+                  "no_match": sum(1 for u in unmatched if u["status"] == "no_match"),
+                  "new_rows": len(new_rows), "updated_rows": updated}
+        if todo:
+            self._audit("geocode", "", "geocode run: " + ", ".join(f"{k} {v}" for k, v in counts.items()))
+        return {"counts": counts, "unmatched": unmatched}
+
+    def map_pins(self, as_of: date | None = None, signals: dict | None = None) -> dict:
+        """Every geocoded contact and live deal as a pin. Read only. People who are Do_Not_Contact, or whose
+        Geo row has no coordinates, are not pins. Partners (agent, lender, vendor) are pins with their type so
+        the app can hide them by default."""
+        as_of = as_of or today()
+        signals = signals or {}
+        geo_by_key = {r["key"]: r for r in self.geo_rows() if r.get("match") == "match" and r.get("lat") and r.get("lng")}
+        new_lead_ids = {l["person_id"] for l in self.new_leads(as_of=as_of)}
+        pins, ungeocoded = [], 0
+        for c in self.contacts():
+            if (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
+            g = geo_by_key.get(f"person:{c['person_id']}")
+            if not g:
+                if geo.usable_address(c.get("street", ""), c.get("city", ""), c.get("zip", "")):
+                    ungeocoded += 1
+                continue
+            sig = signals.get(c["person_id"], {})
+            band = norm_band(sig.get("label")) or norm_band(c.get("band"))
+            last = parse_touch(c.get("Last_Touch", ""), as_of)
+            last_msg = max(sig.get("last_inbound", ""), sig.get("last_outbound", ""))[:10]
+            if last_msg and last_msg <= as_of.isoformat() and (not last or last_msg > last):
+                last = last_msg
+            pins.append({"key": f"person:{c['person_id']}", "kind": "person", "person_id": c["person_id"],
+                         "display": c.get("display", ""), "band": band, "stage": c.get("Stage", ""),
+                         "type": (c.get("Type") or "").lower(), "lat": float(g["lat"]), "lng": float(g["lng"]),
+                         "days_quiet": (as_of - date.fromisoformat(last)).days if last else None,
+                         "owes_reply": bool(sig.get("owes_reply")), "next_action": c.get("Next_Action", ""),
+                         "phone": c.get("primary_phone", ""), "email": c.get("email", ""),
+                         "new_lead": c["person_id"] in new_lead_ids})
+        for d in self.live_deals():
+            g = geo_by_key.get(f"deal:{d['deal_id']}")
+            if not g:
+                continue
+            pins.append({"key": f"deal:{d['deal_id']}", "kind": "deal", "deal_id": d["deal_id"],
+                         "person_id": d.get("person_id", ""), "display": d.get("display", ""), "address": d.get("address", ""),
+                         "stage": d.get("stage", "unknown"), "side": d.get("side", ""), "lat": float(g["lat"]), "lng": float(g["lng"]),
+                         "last_event": d.get("last_event", ""), "last_event_at": d.get("last_event_at", "")})
+        return {"pins": pins, "counts": {"persons": sum(1 for p in pins if p["kind"] == "person"),
+                                         "deals": sum(1 for p in pins if p["kind"] == "deal"),
+                                         "ungeocoded_contacts": ungeocoded}}
+
+    def market(self, rows: list[dict], farms: list[dict], pins: list[dict], dismissed: set[str] | None = None) -> dict:
+        """Market Monitor rows (from aire/map-crm/monitor.py) joined to the map: farm tag and nearest known
+        contact within two miles. Dismissed ids are dropped. Read only."""
+        dismissed = dismissed or set()
+        people = [p for p in pins if p["kind"] == "person"]
+        out = []
+        for r in rows:
+            if r.get("id") in dismissed:
+                continue
+            row = dict(r)
+            lat, lng = row.get("lat"), row.get("lng")
+            if lat is not None and lng is not None:
+                row["farm"] = row.get("farm") or geo.farm_for(lat, lng, farms)
+                near = geo.nearest(lat, lng, people)
+                row["nearest"] = {"person_id": near["person_id"], "display": near["display"], "band": near["band"],
+                                  "miles": near["miles"]} if near else {}
+            else:
+                row.setdefault("farm", "")
+                row["nearest"] = {}
+            out.append(row)
+        out.sort(key=lambda r: (r.get("date") or ""), reverse=True)
+        by_type: dict[str, int] = {}
+        by_farm: dict[str, int] = {}
+        for r in out:
+            by_type[r.get("type", "")] = by_type.get(r.get("type", ""), 0) + 1
+            by_farm[r.get("farm") or "(outside farms)"] = by_farm.get(r.get("farm") or "(outside farms)", 0) + 1
+        return {"rows": out, "counts": {"rows": len(out), "by_type": by_type, "by_farm": by_farm,
+                                        "dismissed": len(dismissed)}}
+
+    def farm_counts(self, farms: list[dict], pins: list[dict]) -> list[dict]:
+        """Each farm with how many known people sit inside it, by band."""
+        out = []
+        for f in farms:
+            inside = [p for p in pins if p["kind"] == "person" and geo.point_in_polygon(p["lat"], p["lng"], f["polygon"])]
+            out.append({"id": f["id"], "name": f["name"], "polygon": f["polygon"], "people": len(inside),
+                        "by_band": {b: sum(1 for p in inside if p["band"] == b) for b in list(BAND_ORDER) + [""]}})
+        return out
+
+    def feed(self, as_of: date | None = None, signals: dict | None = None, signals_file: str = "",
+             market_rows: list[dict] | None = None, farms: list[dict] | None = None,
+             dismissed: set[str] | None = None) -> dict:
         """Everything the Pipeline app shows. See FEED.md. Read only."""
         as_of = as_of or today()
         due = self.due(as_of, signals)
+        pins = self.map_pins(as_of, signals)
+        farms = farms or []
         tasks = self.open_tasks(as_of) + [{**t, "task_id": "", "status": "open", "overdue": t["due"] < as_of.isoformat()}
                                           for t in self.next_action_tasks(as_of)]
         deals = self.live_deals()
@@ -850,7 +1017,24 @@ class CRM:
             "new_leads": self.new_leads(as_of=as_of),
             "partners": self.partners(as_of),
             "cadence_days": CADENCE_DAYS,
+            "map": {**pins, "farms": self.farm_counts(farms, pins["pins"])},
+            "market": self.market(market_rows or [], farms, pins["pins"], dismissed),
         }
+
+
+def load_market(path: Path = MARKET_CACHE) -> list[dict]:
+    """cache/signals.json from aire/map-crm/monitor.py: {"rows": [...]} or a bare list. Missing file means []."""
+    if not path.exists():
+        return []
+    data = json.loads(path.read_text())
+    return data.get("rows", []) if isinstance(data, dict) else data
+
+
+def load_dismissed(path: Path = DISMISSED) -> set[str]:
+    if not path.exists():
+        return set()
+    data = json.loads(path.read_text())
+    return set(data.get("ids", data) if isinstance(data, dict) else data)
 
 
 def load_signals(path: Path, contacts: list[dict]) -> dict:
@@ -1284,9 +1468,9 @@ def run_tests() -> int:
     # header and tabs
     chk = crm.check()
     check("live header has every expected column", chk["contacts_header_ok"])
-    check("Tasks and Deals are the only tabs to add", chk["tabs_to_add"] == ["Tasks", "Deals"])
+    check("Tasks, Deals and Geo are the only tabs to add", chk["tabs_to_add"] == ["Tasks", "Deals", "Geo"])
     added = crm.ensure_tabs()
-    check("ensure_tabs adds exactly those two", added == ["Tasks", "Deals"] and crm.ensure_tabs() == [])
+    check("ensure_tabs adds exactly those three", added == ["Tasks", "Deals", "Geo"] and crm.ensure_tabs() == [])
     bad = LocalBackend(tmp / "bad.json")
     bad.data["header"] = [c for c in CONTACT_COLUMNS if c != "Do_Not_Contact"]
     check("missing column is reported", CRM(bad, audit).check()["missing_columns"] == ["Do_Not_Contact"])
@@ -1489,6 +1673,73 @@ def run_tests() -> int:
     check("dnc twice is a no-op", c2.set_do_not_contact("6", "again") is False)
     check("Do_Not_Contact cannot be written back through update_contact", raises(lambda: c2.update_contact("6", {"Do_Not_Contact": "NO"}, "x")))
     check("touch refuses a DNC person", raises(lambda: c2.touch("6", "called")))
+    # geocode and the map feed, on a fresh fixture with a fake geocoder (no network in tests)
+    db3 = tmp / "db3.json"
+    db3.write_text((HERE / "tests" / "fixtures" / "fake-crm.json").read_text())
+    c3 = CRM(LocalBackend(db3), audit_path=tmp / "audit3.jsonl")
+    c3.ensure_tabs()
+    c3.upsert_deal("9241 Fixture Tree Dr, Baton Rouge, LA 70810", "seeded", "2026-10-20", stage="active", side="listing")
+    wanted = c3.wanted_addresses()
+    check("wanted addresses: numbered street plus city or zip, never DNC, plus live deals",
+          {w["id"] for w in wanted} == {"person:1", "person:2", "person:3", "person:6", "deal:" + slug("9241 Fixture Tree Dr, Baton Rouge, LA 70810")})
+    sent = []
+    def fake_geocoder(items):
+        sent.append([i["id"] for i in items])
+        fixed = {"person:1": (30.40, -91.10), "person:2": (30.65, -91.15), "person:6": (30.58, -91.17)}
+        out = {}
+        for i in items:
+            if i["id"] in fixed:
+                out[i["id"]] = {"status": "match", "lat": fixed[i["id"]][0], "lng": fixed[i["id"]][1]}
+            elif i["id"] == "person:3":
+                out[i["id"]] = {"status": "tie", "lat": None, "lng": None}
+            else:
+                out[i["id"]] = {"status": "match", "lat": 30.41, "lng": -91.11}
+        return out
+    r = c3.geocode(fake_geocoder, as_of)
+    check("geocode sends every wanted address once and writes one Geo row each", sent and len(sent[0]) == 5 and len(c3.geo_rows()) == 5)
+    check("geocode counts matched, tie, no_match", r["counts"]["matched"] == 4 and r["counts"]["tie"] == 1 and r["counts"]["no_match"] == 0)
+    check("a tie is not pinned and is listed for Caleb", any(u["key"] == "person:3" and u["status"] == "tie" for u in r["unmatched"])
+          and next(g for g in c3.geo_rows() if g["key"] == "person:3")["lat"] == "")
+    check("geocode is one audit line, not one per row", sum(1 for x in c3.b.read("Connector Log") if x["Tool"] == "geocode") == 1)
+    r2 = c3.geocode(fake_geocoder, as_of)
+    check("geocode is idempotent: unchanged addresses are skipped, nothing sent", r2["counts"]["sent"] == 0 and r2["counts"]["skipped_unchanged"] == 5 and len(sent) == 1)
+    c3.b.data["Contacts"][2]["street"] = "303 Fixture Elm Street"; c3._contacts = None
+    r3 = c3.geocode(fake_geocoder, as_of)
+    check("a changed address is re-sent and updates its Geo row in place", r3["counts"]["sent"] == 1 and r3["counts"]["updated_rows"] == 1 and len(c3.geo_rows()) == 5)
+    m = c3.map_pins(as_of)
+    keys = {p["key"] for p in m["pins"]}
+    check("map pins only matched rows, never DNC, deals included", keys == {"person:1", "person:2", "person:6", "deal:" + slug("9241 Fixture Tree Dr, Baton Rouge, LA 70810")})
+    check("map counts the contacts still waiting on a geocode", m["counts"]["ungeocoded_contacts"] == 1)
+    check("partner pins carry their type so the app can hide them", next(p for p in m["pins"] if p["key"] == "person:6")["type"] == "vendor")
+    check("person pins carry band, days_quiet and float coordinates", all(isinstance(p["lat"], float) for p in m["pins"])
+          and next(p for p in m["pins"] if p["key"] == "person:1")["band"] == "hot")
+    farms = [{"id": "south", "name": "South", "polygon": [[30.45, -91.15], [30.45, -91.05], [30.35, -91.05], [30.35, -91.15]]}]
+    fc = c3.farm_counts(farms, m["pins"])
+    check("farm counts the known people inside by band", fc[0]["people"] == 1 and fc[0]["by_band"]["hot"] == 1)
+    rows = [{"id": "permit:1", "type": "permit", "date": "2026-10-19", "address": "1 Fixture Way", "lat": 30.401, "lng": -91.101, "value": 25000},
+            {"id": "permit:2", "type": "permit", "date": "2026-10-20", "address": "2 Fixture Way", "lat": 30.90, "lng": -91.50, "value": 1000},
+            {"id": "permit:3", "type": "permit", "date": "2026-10-18", "address": "3 Fixture Way", "lat": None, "lng": None, "value": 0},
+            {"id": "mls:x", "type": "new_listing", "date": "2026-10-21", "address": "4 Fixture Way", "lat": 30.402, "lng": -91.102, "price": 300000}]
+    mk = c3.market(rows, farms, m["pins"], dismissed={"permit:3"})
+    check("market drops dismissed rows and sorts newest first", [x["id"] for x in mk["rows"]] == ["mls:x", "permit:2", "permit:1"])
+    check("market tags the farm and the nearest known person within two miles", mk["rows"][2]["farm"] == "south"
+          and mk["rows"][2]["nearest"]["person_id"] == "1" and mk["rows"][2]["nearest"]["miles"] < 0.2)
+    check("market leaves nearest empty when nobody is within two miles", mk["rows"][1]["nearest"] == {} and mk["rows"][1]["farm"] == "")
+    check("market counts by type and farm", mk["counts"]["by_type"] == {"new_listing": 1, "permit": 2} and mk["counts"]["by_farm"]["south"] == 2)
+    f3 = c3.feed(as_of, market_rows=rows, farms=farms)
+    check("feed carries map and market", f3["map"]["counts"]["persons"] == 3 and f3["map"]["farms"][0]["id"] == "south" and f3["market"]["counts"]["rows"] == 4)
+    check("feed without a market cache still has empty map and market sections", c3.feed(as_of)["market"]["rows"] == [] and "pins" in c3.feed(as_of)["map"])
+    out = subprocess.run([sys.executable, __file__, "--local", str(db3), "--json", "lead", "Permit Person", "--source", "Market Monitor permit 2026-10-26", "--phone", "225-555-0177"], capture_output=True, text=True)
+    one = json.loads(out.stdout.strip().splitlines()[-1])
+    check("lead creates a warm new-lead contact through the app write path", out.returncode == 0 and one["ok"] and one["result"]["band"] == "warm" and one["result"]["Stage"] == "new lead")
+    out = subprocess.run([sys.executable, __file__, "--local", str(db3), "--json", "lead", "Permit Person", "--source", "Market Monitor permit 2026-10-26", "--phone", "225-555-0177"], capture_output=True, text=True)
+    check("lead refuses a duplicate", out.returncode == 1 and json.loads(out.stdout.strip().splitlines()[-1])["ok"] is False)
+    dry3 = CRM(LocalBackend(db3, dry_run=True), audit_path=tmp / "dry3.jsonl")
+    dry3.b.data["Contacts"][0]["street"] = "111 Fixture Oak Dr"
+    before3 = db3.read_text()
+    rd = dry3.geocode(fake_geocoder, as_of)
+    check("geocode dry run plans the write and changes nothing", rd["counts"]["sent"] == 1 and db3.read_text() == before3 and len(dry3.b.writes) >= 1)
+
     out = subprocess.run([sys.executable, __file__, "--local", str(db2), "--json", "note", "999", "x"], capture_output=True, text=True)
     one = out.stdout.strip().splitlines()
     check("--json prints exactly one JSON error object and exits 1", out.returncode == 1 and len(one) == 1 and json.loads(one[0])["ok"] is False)
@@ -1504,12 +1755,24 @@ def run_tests() -> int:
 # ---------------------------------------------------------------------- cli
 
 
-APP_WRITES = {"touch", "done", "task", "stage", "note", "dnc", "deal"}
+APP_WRITES = {"touch", "done", "task", "stage", "note", "dnc", "deal", "lead"}
 
 
 def run_app_write(crm: "CRM", a, as_of: date):
     if a.cmd == "touch":
         return crm.touch(a.person_id, a.what, day=as_of.isoformat())
+    if a.cmd == "lead":
+        # Market Monitor's "Make lead": a new contact through the same create path as a website lead.
+        # Refused when the name, phone or email already exists (update that person instead).
+        if not (a.name or "").strip():
+            raise GateError("a lead needs a name")
+        if not (a.source or "").strip():
+            raise GateError("a lead needs a source, like 'Market Monitor permit 2026-10-26'")
+        row = crm.create_contact(a.name.strip(), a.phone or "", a.email or "", band=a.band or "warm", stage="new lead",
+                                 source=a.source.strip(), next_action=a.next_action or "Reach out: market signal", type_="client")
+        if a.note:
+            crm.add_note(row["person_id"], a.note)
+        return {k: row[k] for k in ("person_id", "display", "band", "Stage", "Source")}
     if a.cmd == "done":
         if not crm.done(a.task_id):
             raise GateError("no such open task")
@@ -1546,6 +1809,14 @@ def main(argv=None) -> int:
     sub.add_parser("check")
     p = sub.add_parser("feed"); p.add_argument("--out", default=str(FEED))
     p.add_argument("--signals", help="enriched.csv or imessage-signals.json from aire/enrichment: rank by texts first")
+    p.add_argument("--market", default=str(MARKET_CACHE), help="cache/signals.json from aire/map-crm/monitor.py (skipped when missing)")
+    p.add_argument("--farms", default=str(geo.FARMS_LOCAL), help="farms.local.json drawn in the Pipeline app (skipped when missing)")
+    p = sub.add_parser("geocode", help="Contacts and Deals addresses into the Geo tab. Idempotent, free (Census geocoder)")
+    p.add_argument("--report", help="write the counts and the unmatched addresses here (client data: keep it on the Mac)")
+    p = sub.add_parser("lead", help="Make lead from the Market Monitor: a new contact, Stage new lead")
+    p.add_argument("name"); p.add_argument("--source", required=True); p.add_argument("--phone", default="")
+    p.add_argument("--email", default=""); p.add_argument("--band", default="warm", choices=sorted(CADENCE_DAYS))
+    p.add_argument("--next-action", default=""); p.add_argument("--note", default="")
     p = sub.add_parser("due"); p.add_argument("--signals")
     sub.add_parser("tasks")
     sub.add_parser("deals")
@@ -1598,10 +1869,26 @@ def main(argv=None) -> int:
         print(json.dumps(crm.check(), indent=1))
     elif a.cmd == "feed":
         sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
-        f = crm.feed(as_of, sig, a.signals or "")
+        f = crm.feed(as_of, sig, a.signals or "", market_rows=load_market(Path(a.market)), farms=geo.load_farms(Path(a.farms)),
+                     dismissed=load_dismissed())
         Path(a.out).write_text(json.dumps(f, indent=1, ensure_ascii=False))
         print(f"{a.out}: " + ", ".join(f"{k} {v}" for k, v in f["counts"].items() if not isinstance(v, dict))
-              + (f", signals for {f['signals']['people']} people, {f['signals']['owes_reply']} owe a reply" if sig else ""))
+              + (f", signals for {f['signals']['people']} people, {f['signals']['owes_reply']} owe a reply" if sig else "")
+              + f", map {f['map']['counts']['persons']} people + {f['map']['counts']['deals']} deals pinned"
+              + f" ({f['map']['counts']['ungeocoded_contacts']} addresses not geocoded yet), market {f['market']['counts']['rows']} rows")
+    elif a.cmd == "geocode":
+        crm.ensure_tabs()
+        r = crm.geocode(as_of=as_of)
+        print("geocode: " + ", ".join(f"{k} {v}" for k, v in r["counts"].items()))
+        if a.report:
+            L = [f"# Geocode run {as_of.isoformat()}", "", "Counts: " + ", ".join(f"{k} {v}" for k, v in r["counts"].items()), "",
+                 "## Not pinned (fix the address in the sheet, the next run retries it)", "",
+                 "| key | status | address |", "|---|---|---|"]
+            L += [f"| {u['key']} | {u['status']} | {u['address']} |" for u in r["unmatched"]]
+            Path(a.report).write_text("\n".join(L) + "\n")
+            print(f"{a.report}: {len(r['unmatched'])} unmatched listed (client data, keep it on the Mac)")
+        elif r["unmatched"]:
+            print(f"{len(r['unmatched'])} addresses not matched; pass --report FILE to list them")
     elif a.cmd == "due":
         sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
         for d in crm.due(as_of, sig):
@@ -1633,7 +1920,7 @@ def main(argv=None) -> int:
         print(crm.add_task(a.person_id, a.task, a.due))
     elif a.cmd == "done":
         print("done" if crm.done(a.task_id) else "no such open task")
-    elif a.cmd in ("stage", "note", "dnc", "deal"):
+    elif a.cmd in ("stage", "note", "dnc", "deal", "lead"):
         print(run_app_write(crm, a, as_of))
     elif a.cmd == "merge-hwc":
         hwc = json.loads(Path(a.hwc).read_text())
