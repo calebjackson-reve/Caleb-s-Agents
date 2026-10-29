@@ -168,14 +168,14 @@ function liveFeed() {
   (f.touches_due || []).filter(r => r.owes_reply).slice(0, 4).forEach(r => items.push({ cls: 'reply', ico: '↩', b: `${r.display} texted you`, s: (r.last_messages || [])[0] ? r.last_messages[r.last_messages.length - 1].replace(/^\d{4}-\d{2}-\d{2}: /, '') : 'owes a reply', tag: 'REPLY', tcls: 'reply', on: `openCompose('${r.person_id}')` }));
   (f.tasks || []).filter(t => t.overdue).slice(0, 2).forEach(t => items.push({ cls: 'task', ico: '!', b: `${t.task} is overdue`, s: `${t.display || 'no person'} · due ${t.due}`, tag: 'OVERDUE', tcls: 'stop', on: `go('tasks')` }));
   (f.new_leads || []).slice(0, 2).forEach(l => items.push({ cls: 'lead', ico: '✦', b: `New lead: ${l.display}`, s: `${l.source} · ${l.next_action || ''}`, tag: 'LEAD', tcls: 'live', on: `openCompose('${l.person_id}')` }));
-  (f.deals || []).slice().sort((a, b) => (b.last_event_at || '').localeCompare(a.last_event_at || '')).slice(0, 2).forEach(x => items.push({ cls: 'deal', ico: '⌂', b: x.address, s: x.last_event || x.next_step || x.stage, tag: x.stage.replace('_', ' ').toUpperCase(), tcls: 'violet', on: `openDeal('${esc(x.address)}')` }));
+  (f.deals || []).slice().sort((a, b) => (b.last_event_at || '').localeCompare(a.last_event_at || '')).slice(0, 2).forEach(x => items.push({ cls: 'deal', ico: '⌂', b: x.address, s: x.last_event || x.next_step || x.stage, tag: x.stage.replace('_', ' ').toUpperCase(), tcls: 'violet', on: `openDeal(${esc(JSON.stringify(x.address))})` }));
   (f.touches_due || []).filter(r => !r.owes_reply && r.band === 'hot').slice(0, 2).forEach(r => items.push({ cls: '', ico: '◎', b: `${r.display} is due`, s: r.next_action || quiet(r), tag: 'HOT', tcls: 'hot', on: `openCompose('${r.person_id}')` }));
   if (!items.length) return `<div class="empty"><b>All quiet</b>Nothing owes a reply, nothing overdue.</div>`;
   return items.slice(0, 8).map((x, i) => `<div class="feed-item" style="--i:${i}" onclick="${x.on}"><span class="ico ${x.cls}">${x.ico}</span><div class="body"><b>${esc(x.b)}</b><small>${esc(x.s)}</small></div><span class="tag ${x.tcls}">${x.tag}</span></div>`).join('');
 }
 function dealCard(x, i) {
   const stages = S.data.stages || [], pos = Math.max(0, stages.indexOf(x.stage)), pct = Math.round(((pos + 1) / 5) * 100);
-  return `<div class="card" style="--i:${i}" onclick="openDeal('${esc(x.address)}')"><span class="ico">${x.side === 'buyer' ? '◇' : '⌂'}</span><b>${esc(x.address)}</b><small>${esc([x.display, money(x.price), x.expected_close ? 'closes ' + x.expected_close : ''].filter(Boolean).join(' · ') || x.source)}</small><div class="bar"><i data-w="${Math.min(100, pct)}"></i></div><div class="stage">${esc(x.stage.replace('_', ' '))}${x.next_step ? ' · ' + esc(x.next_step) : ''}</div></div>`;
+  return `<div class="card" style="--i:${i}" onclick="openDeal(${esc(JSON.stringify(x.address))})"><span class="ico">${x.side === 'buyer' ? '◇' : '⌂'}</span><b>${esc(x.address)}</b><small>${esc([x.display, money(x.price), x.expected_close ? 'closes ' + x.expected_close : ''].filter(Boolean).join(' · ') || x.source)}</small><div class="bar"><i data-w="${Math.min(100, pct)}"></i></div><div class="stage">${esc(x.stage.replace('_', ' '))}${x.next_step ? ' · ' + esc(x.next_step) : ''}</div></div>`;
 }
 function timeline() {
   const t = (feed().tasks || []).slice(0, 7);
@@ -252,7 +252,7 @@ function viewDeals() {
     <span class="ico">${x.side === 'buyer' ? '◇' : '⌂'}</span>
     <div class="who"><b>${esc(x.address)}</b><small><span class="tag violet">${esc(x.stage.replace('_', ' '))}</span><span>${esc(x.side)}</span><span>${esc(x.display)}</span>${x.price ? `<span>${money(x.price)}</span>` : ''}${x.expected_close ? `<span>closes ${x.expected_close}</span>` : ''}</small></div>
     <div class="why"><b>${esc(x.next_step || 'no next step')}</b><span>${esc(x.last_event || '')}${x.last_event_at ? ' · ' + x.last_event_at.slice(0, 10) : ''} · ${esc(x.source)}</span></div>
-    <div class="acts"><button class="primary" onclick="openDeal('${esc(x.address)}')">✎ Edit</button>${x.person_id ? `<button onclick="openCompose('${x.person_id}')">✉</button>` : ''}</div>
+    <div class="acts"><button class="primary" onclick="openDeal(${esc(JSON.stringify(x.address))})">✎ Edit</button>${x.person_id ? `<button onclick="openCompose('${x.person_id}')">✉</button>` : ''}</div>
   </div>`).join('')}</div>` : `<div class="empty"><b>No live deals</b></div>`;
   const seg = `<div class="filters"><button class="${S.dealsMode === 'list' ? 'on' : ''}" onclick="S.dealsMode='list';render()">LIST</button><button class="${S.dealsMode === 'map' ? 'on' : ''}" onclick="S.dealsMode='map';render()">MAP</button></div>`;
   return `<div class="view ${S.dealsMode === 'map' ? 'map-view' : ''}">${panel(0, `Deals · ${rows.length}`, `${seg} <button class="link" onclick="openDeal()">＋ Add a deal</button>`, S.dealsMode === 'map' ? mapPanel(true) : body)}</div>`;
@@ -474,6 +474,6 @@ async function boot() {
   $('#app').hidden = false;
   if (S.data) render(); else toast('err', 'SERVER', 'app.py is not answering.');
   $('#boot').classList.add('out'); setTimeout(() => $('#boot').remove(), 600);
-  S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.view === 'cc') { /* keep the globe steady: update numbers only */ renderNav(feed().counts || {}); } else if (S.map) { /* keep the map where Caleb left it */ renderNav(feed().counts || {}); S.map.setData(mapData(S.mapDealsOnly)); renderMapSide(); } else render(); } catch (e) { } }, 30000);
+  S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.view === 'cc') { /* keep the globe steady: update numbers only */ renderNav(feed().counts || {}); } else if (S.map) { /* keep the map where Caleb left it */ renderNav(feed().counts || {}); mapUpdate(); } else render(); } catch (e) { } }, 30000);
 }
 boot();

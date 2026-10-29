@@ -44,6 +44,7 @@ import csv
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import threading
@@ -577,7 +578,9 @@ class State:
                 raise CRMError("a farm needs a name and at least three corners")
             if not all(-90 <= a <= 90 and -180 <= b <= 180 for a, b in poly):
                 raise CRMError("a farm corner is off the map")
-            fid = str(x.get("id") or "").strip() or "-".join(name.lower().split())[:40]
+            fid = re.sub(r"[^a-z0-9]+", "-", (str(x.get("id") or "").strip() or name).lower()).strip("-")[:40]
+            if not fid:
+                raise CRMError("a farm name needs at least one letter or number")
             clean.append({"id": fid, "name": name, "created": x.get("created") or today().isoformat(), "polygon": poly})
         if len({c["id"] for c in clean}) != len(clean):
             raise CRMError("two farms have the same name")
@@ -624,7 +627,7 @@ class State:
             keys = {(r.get("person_id") or "") + "|" + (r.get("address") or "").lower() for r in have}
             added = 0
             for r in rows or []:
-                r = {c: str(r.get(c) if r.get(c) is not None else "") for c in cols}
+                r = {c: csv_safe(str(r.get(c) if r.get(c) is not None else ""), c) for c in cols}
                 r["added"] = now().isoformat(timespec="seconds")
                 if kind == "call" and not r.get("phone"):
                     continue
@@ -714,6 +717,14 @@ class State:
 
         threading.Thread(target=work, daemon=True).start()
         return self.refresh
+
+
+def csv_safe(v: str, column: str = "") -> str:
+    """A cell that a spreadsheet would run as a formula gets a leading apostrophe. Addresses come from city
+    permit data, so this is not hypothetical. A phone number like +12255550142 stays as it is."""
+    if column == "phone" and re.fullmatch(r"\+?[\d ()-]+", v):
+        return v
+    return "'" + v if v[:1] in ("=", "+", "-", "@", "\t", "\r") else v
 
 
 def send_imessage(phone: str, body: str) -> str:
@@ -1039,6 +1050,12 @@ def run_tests() -> int:
     c2 = sm.add_to_list("call", people)
     p1 = sm.add_to_list("postcards", people + [{"kind": "market", "display": "Current resident", "address": "3 Fixture St", "city": "Zachary", "zip": "70791"}])
     check(c1["result"]["added"] == 1 and c2["result"]["added"] == 0 and p1["result"]["added"] == 3, "call list needs a phone, postcards need an address, nobody is added twice")
+    sm.add_to_list("postcards", [{"kind": "market", "display": "x", "address": '=HYPERLINK("http://x","a")', "city": "-1+1", "zip": "70808"}])
+    with Path(p1["result"]["file"]).open(newline="", encoding="utf-8") as fh:
+        last = list(csv.DictReader(fh))[-1]
+    check(last["address"].startswith("'=") and last["city"] == "'-1+1" and csv_safe("+12255550142", "phone") == "+12255550142", "list cells that look like formulas are neutralized, phones are not")
+    sm.save_farms([{"name": "St. Francisville's Core", "polygon": sq}])
+    check(sm.farms()[0]["id"] == "st-francisville-s-core", "farm ids are letters, numbers and dashes only")
     check(Path(c1["result"]["file"]).name == f"call-list-{today().isoformat()}.csv" and Path(c1["result"]["file"]).parent == tmp / "map" / "lists", "lists are dated CSVs next to the state, never in git")
 
     # the HTTP layer end to end on a free port

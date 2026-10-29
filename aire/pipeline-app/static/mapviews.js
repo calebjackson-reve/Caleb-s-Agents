@@ -5,6 +5,8 @@ S.mktF = { type: 'all', label: '', farm: '', near: false };
 S.dealsMode = 'list';
 S.mapView = null; S.pick = '';
 
+// A value inside an inline handler: JSON-quoted, then HTML-escaped, so an apostrophe or a quote stays inside the string.
+const jsa = v => esc(JSON.stringify(String(v ?? '')));
 const BAND_NAMES = ['hot', 'warm', 'lukewarm', 'cold', 'ice-cold', ''];
 const PARTNER = new Set(['agent', 'lender', 'vendor']);
 function mapFeed() { return feed().map || { pins: [], counts: {}, farms: [] }; }
@@ -95,13 +97,13 @@ function pinCard(p) {
       <dl><dt>Stage</dt><dd>${esc(p.stage || 'none')}</dd><dt>Type</dt><dd>${esc(p.type || 'unknown')}</dd><dt>Last touch</dt><dd>${esc(quiet(p))}</dd>
       <dt>Next action</dt><dd>${esc(p.next_action || 'none')}</dd><dt>Address</dt><dd>${esc([p.address, p.city, p.zip].filter(Boolean).join(', ') || 'none')}</dd>
       <dt>Phone</dt><dd>${p.phone ? `<a href="tel:${esc(p.phone)}">${esc(fmtPhone(p.phone))}</a>` : 'none'}</dd>${p.email ? `<dt>Email</dt><dd>${esc(p.email)}</dd>` : ''}</dl>
-      <div class="acts"><button class="primary" onclick="openCompose('${p.person_id}')">✉ Compose</button><button onclick="touched('${p.person_id}')">✓ Touched</button><button onclick="openTask('${p.person_id}')">＋ Task</button><button onclick="openNote('${p.person_id}')">✎ Note</button></div>
-      <div class="acts"><button onclick="addToList('call', [personListRow(pinByKey('${p.key}'))])">☎ Call list</button><button onclick="addToList('postcards', [personListRow(pinByKey('${p.key}'))])">✉ Postcards</button></div></div>`;
+      <div class="acts"><button class="primary" onclick="openCompose(${jsa(p.person_id)})">✉ Compose</button><button onclick="touched(${jsa(p.person_id)})">✓ Touched</button><button onclick="openTask(${jsa(p.person_id)})">＋ Task</button><button onclick="openNote(${jsa(p.person_id)})">✎ Note</button></div>
+      <div class="acts"><button onclick="addToList('call', [personListRow(pinByKey(${jsa(p.key)}))])">☎ Call list</button><button onclick="addToList('postcards', [personListRow(pinByKey(${jsa(p.key)}))])">✉ Postcards</button></div></div>`;
   }
   if (p.kind === 'deal') {
     return `<div class="pin-card"><div class="pc-h"><span class="ico">⌂</span><div><b>${esc(p.address)}</b><small><span class="tag violet">${esc((p.stage || '').replace('_', ' '))}</span><span>${esc(p.side || '')}</span></small></div>${x}</div>
       <dl><dt>Client</dt><dd>${esc(p.display || 'none')}</dd><dt>Last event</dt><dd>${esc(p.last_event || 'none')}${p.last_event_at ? ' · ' + esc(p.last_event_at.slice(0, 10)) : ''}</dd></dl>
-      <div class="acts"><button class="primary" onclick="openDeal('${esc(p.address)}')">✎ Edit deal</button>${p.person_id ? `<button onclick="openCompose('${p.person_id}')">✉ Compose</button>` : ''}</div></div>`;
+      <div class="acts"><button class="primary" onclick="openDeal(${jsa(p.address)})">✎ Edit deal</button>${p.person_id ? `<button onclick="openCompose(${jsa(p.person_id)})">✉ Compose</button>` : ''}</div></div>`;
   }
   return `<div class="pin-card"><div class="pc-h"><span class="ico">◆</span><div><b>${esc(p.address)}</b><small><span class="tag ${p.type === 'permit' ? 'warn' : 'live'}">${esc(p.label)}</span><span>${esc(p.city)}</span></small></div>${x}</div>
     ${marketDetail(p)}<div class="acts">${marketActs(p)}</div></div>`;
@@ -118,8 +120,8 @@ function inViewSummary() {
     const n = (mapFeed().pins || []).filter(p => p.kind === 'person' && PMap.inPolygon(p.lat, p.lng, f.polygon));
     const fb = {}; n.forEach(p => { fb[p.band || ''] = (fb[p.band || ''] || 0) + 1; });
     const sig = marketRows().filter(r => r.lat != null && PMap.inPolygon(r.lat, r.lng, f.polygon)).length;
-    return `<div class="farm ${S.mapF.farm === f.id ? 'on' : ''}"><button class="fname" onclick="mapSet('farm', S.mapF.farm === '${esc(f.id)}' ? '' : '${esc(f.id)}')">${esc(f.name)}</button><span>${n.length} known · ${sig} signals</span>
-      <div class="bands">${BAND_NAMES.filter(b => fb[b]).map(b => `<span class="tag ${b}">${b || 'none'} ${fb[b]}</span>`).join('')}</div><button class="x" title="Delete farm" onclick="deleteFarm('${esc(f.id)}')">×</button></div>`;
+    return `<div class="farm ${S.mapF.farm === f.id ? 'on' : ''}"><button class="fname" onclick="mapSet('farm', S.mapF.farm === ${jsa(f.id)} ? '' : ${jsa(f.id)})">${esc(f.name)}</button><span>${n.length} known · ${sig} signals</span>
+      <div class="bands">${BAND_NAMES.filter(b => fb[b]).map(b => `<span class="tag ${b}">${b || 'none'} ${fb[b]}</span>`).join('')}</div><button class="x" title="Delete farm" onclick="deleteFarm(${jsa(f.id)})">×</button></div>`;
   }).join('')}</div>` : '<p class="dim">No farms yet. Draw one around a neighborhood you work.</p>'}`;
   return `<div class="in-view"><h4>${esc(scope.toUpperCase())}</h4>
     <div class="iv-n"><div><b>${people.length.toLocaleString()}</b><small>people</small></div><div><b>${deals.length}</b><small>deals</small></div><div><b>${mkt.length}</b><small>signals</small></div></div>
@@ -170,12 +172,12 @@ async function addToList(kind, rows) {
 // ---------------------------------------------------------------- market monitor
 function marketDetail(r) {
   const amt = r.type === 'permit' ? (r.value ? `${money(r.value)} project` : 'no value given') : r.price ? money(r.price) + (r.price_was ? ` (was ${money(r.price_was)})` : '') : 'no price given';
-  const near = r.nearest && r.nearest.person_id ? `<a href="#" onclick="S.pick='person:${esc(r.nearest.person_id)}';S.mapView={center:[${r.lat},${r.lng}],zoom:15};go('map');return false">${esc(r.nearest.display)}</a> · ${esc(r.nearest.band || 'no band')} · ${r.nearest.miles} mi` : 'nobody you know within 2 miles';
+  const near = r.nearest && r.nearest.person_id ? `<a href="#" onclick="S.pick=${jsa('person:' + r.nearest.person_id)};S.mapView={center:[${r.lat},${r.lng}],zoom:15};go('map');return false">${esc(r.nearest.display)}</a> · ${esc(r.nearest.band || 'no band')} · ${r.nearest.miles} mi` : 'nobody you know within 2 miles';
   return `<dl><dt>When</dt><dd>${esc(r.date)} · ${esc(r.subtype || r.label)}</dd><dt>Amount</dt><dd>${amt}</dd>${r.description && r.description !== r.subtype ? `<dt>Detail</dt><dd>${esc(r.description)}</dd>` : ''}
     <dt>Farm</dt><dd>${esc(farmName(r.farm) || 'outside your farms')}</dd><dt>Nearest</dt><dd>${near}</dd><dt>Source</dt><dd>${esc(r.source)} · ${esc(r.source_date)}${r.source_ref ? ' · #' + esc(r.source_ref) : ''}</dd></dl>`;
 }
 function marketActs(r) {
-  return `<button class="primary" onclick="makeLead('${esc(r.key)}')">＋ Make lead</button><button onclick="makeDeal('${esc(r.key)}')">⌂ Make deal</button><button onclick="addToList('postcards', [marketListRow(mktByKey('${esc(r.key)}'))])">✉ Postcard</button>${r.lat != null && S.view !== 'map' ? `<button onclick="showOnMap('${esc(r.key)}')">◈ Map</button>` : ''}<button class="danger" title="Dismiss, never shown again" onclick="dismissRow('${esc(r.key)}')">✕</button>`;
+  return `<button class="primary" onclick="makeLead(${jsa(r.key)})">＋ Make lead</button><button onclick="makeDeal(${jsa(r.key)})">⌂ Make deal</button><button onclick="addToList('postcards', [marketListRow(mktByKey(${jsa(r.key)}))])">✉ Postcard</button>${r.lat != null && S.view !== 'map' ? `<button onclick="showOnMap(${jsa(r.key)})">◈ Map</button>` : ''}<button class="danger" title="Dismiss, never shown again" onclick="dismissRow(${jsa(r.key)})">✕</button>`;
 }
 function mktByKey(k) { return marketRows().find(r => r.key === k); }
 function viewMarket() {

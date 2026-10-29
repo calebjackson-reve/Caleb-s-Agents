@@ -14,7 +14,7 @@ What changed in `aire/pipeline-app/` on 2026-10-29 to meet `CONTRACT.md` steps 4
 | `app.py` | `POST /api/farms` (writes `map-crm/farms.local.json`, checks names and corners, then rebuilds the feed), `POST /api/dismiss` (`map-crm/cache/dismissed.json`), `POST /api/lead` (`crm.py lead`), `POST /api/list` (`map-crm/out/call-list-<date>.csv` or `postcards-<date>.csv`). `/api/state` carries `farms` and leaves dismissed rows out. Demo mode handles `lead`. 11 new offline checks. |
 | `fixtures/demo-feed.json` | `map` and `market` sections with made-up people and made-up addresses, so `--demo` shows both pages. |
 
-Engine side, same day: person pins carry `address`, `city` and `zip` so a map selection can become a postcard list (`crm.py`, `FEED.md`), and `monitor.py` reads the real Flexmls alert layout (0 to 73 listings on the live dry run).
+Engine side, same day: person pins carry `address`, `city` and `zip` so a map selection can become a postcard list (`crm.py`, `FEED.md`), and `monitor.py` reads the real Flexmls alert layout (0 to 73 rows on the live dry run: 22 new listings, 51 listing changes whose kind Flexmls does not state).
 
 ## Proof
 
@@ -27,3 +27,13 @@ Engine side, same day: person pins carry `address`, `city` and `zip` so a map se
 
 - A real touch, lead, deal or list from the map on the real CRM. Those are Caleb's clicks to make.
 - Tile servers under heavy use. OpenStreetMap's tile policy asks for light, attributed use, which one person's daily app is. If it ever gets throttled, a paid tile plan needs Caleb's yes.
+
+## Review
+
+A fresh-context reviewer read the diff against this contract on 2026-10-29 and failed it on three points, all fixed and re-tested the same day:
+
+- Values inside inline click handlers were only HTML-escaped, so an apostrophe ("12 O'Neal Ln", "St. Francisville's Core") broke the button, and a permit id from city data could have run script. Every handler value is now JSON-quoted (`jsa()` in `mapviews.js`), farm ids are letters, numbers and dashes. Checked in the browser with an apostrophe address, an apostrophe farm and a hostile permit id: every button worked, no script ran.
+- Call and postcard CSV cells that start with `= + - @` are neutralized with a leading apostrophe (phones excepted).
+- Flexmls "Active" listings with no event word were counted as new listings. They are now `listing_change`, and the MIME walk reaches nested HTML parts.
+
+Kept as specified: Make lead pre-fills "Owner at <address>" (CONTRACT.md and FEED.md name it), Caleb edits it before saving.

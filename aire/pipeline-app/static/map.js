@@ -10,7 +10,7 @@ window.PMap = (function () {
   };
   const BAND = { hot: '#ff5c7a', warm: '#ffb547', lukewarm: '#35f0c8', cold: '#4f9dff', 'ice-cold': '#9fb4cf', '': '#5d6b7c' };
   const STAGE = { lead: '#9fb4cf', consult: '#4f9dff', active: '#35f0c8', showing: '#19d3ff', under_contract: '#a78bfa' };
-  const MARKET = { permit: '#ffb547', new_listing: '#35f0c8', price_change: '#19d3ff', back_on_market: '#19d3ff', pending: '#a78bfa', sold: '#ff5c7a' };
+  const MARKET = { permit: '#ffb547', new_listing: '#35f0c8', price_change: '#19d3ff', back_on_market: '#19d3ff', pending: '#a78bfa', sold: '#ff5c7a', listing_change: '#9fb4cf' };
   const CLUSTER_PAST = 200, CELL = 54;
 
   const project = (lat, lng, z) => { const s = TILE * 2 ** z, sin = Math.sin(lat * Math.PI / 180); return [(lng + 180) / 360 * s, (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * s]; };

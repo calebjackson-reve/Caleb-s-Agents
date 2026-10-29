@@ -68,6 +68,8 @@ FLEX_TYPES = {"new listing": "new_listing", "price change": "price_change", "pri
               "price reduced": "price_change", "price increase": "price_change", "back on market": "back_on_market",
               "pending": "pending", "under contract": "pending", "sold": "sold", "closed": "sold",
               "withdrawn": "withdrawn", "expired": "expired"}
+# The label the screen shows for each type. listing_change is a Flexmls update with no event word.
+TYPE_LABELS = {"listing_change": "listing change"}
 
 
 def title(s: str) -> str:
@@ -151,7 +153,11 @@ def flex_messages(days: int) -> list[dict]:
         h = {x["name"]: x["value"] for x in full["payload"]["headers"]}
         when = datetime.fromtimestamp(int(full["internalDate"]) / 1000, tz=timezone.utc)
         body, html = "", ""
-        parts = [full["payload"]] + full["payload"].get("parts", [])
+        parts, stack = [], [full["payload"]]
+        while stack:  # the whole MIME tree: the HTML can sit inside multipart/related
+            node = stack.pop(0)
+            parts.append(node)
+            stack.extend(node.get("parts", []) or [])
         for p in parts:
             data = p.get("body", {}).get("data")
             if not data:
@@ -183,8 +189,9 @@ def flex_html_events(html: str) -> dict:
 
 def parse_flex_real(m: dict) -> list[dict]:
     """The layout Flexmls actually sends (see the note at FLEX_REAL_*). The event comes from the HTML label for
-    that MLS number, then from the status line (Pending, Sold...). An Active listing with no label is a
-    new listing, since the saved searches are new-listing alerts; subtype says "Active" so the screen shows it. Pure."""
+    that MLS number, then the status line (Pending, Sold...), then the subject. Flexmls prints "Active" under a
+    listing that changed without saying what changed (a change icon, no event word): that is a `listing_change`,
+    never guessed into a new listing or a price change. 51 of the first 73 rows looked like that on 2026-10-29. Pure."""
     lines = [l.strip() for l in (m.get("body") or "").splitlines() if l.strip()]
     events = flex_html_events(m.get("html", ""))
     day = (m.get("date_iso") or "")[:10]
@@ -196,16 +203,16 @@ def parse_flex_real(m: dict) -> list[dict]:
             continue
         status, mls = st.group(1).strip(), st.group(2)
         word = events.get(mls) or ""
-        ev = FLEX_EVENT.fullmatch(word) or FLEX_EVENT.search(status)
+        ev = FLEX_EVENT.fullmatch(word) or FLEX_EVENT.search(status) or FLEX_EVENT.search(subj)
         if ev:
             kind, subtype = FLEX_TYPES[ev.group(1).lower()], ev.group(1)
         elif status.lower() == "active":
-            kind, subtype = "new_listing", "Active"
+            kind, subtype = "listing_change", "Active, Flexmls did not say what changed"
         else:
             continue
         street = ad.group(1).strip()
         rows.append({
-            "id": f"mls:{kind}:{mls}:{day}", "type": kind, "label": kind.replace("_", " "), "subtype": subtype,
+            "id": f"mls:{kind}:{mls}:{day}", "type": kind, "label": TYPE_LABELS.get(kind, kind.replace("_", " ")), "subtype": subtype,
             "date": day, "address": street, "city": ad.group(2).strip(), "state": "LA", "zip": ad.group(3),
             "value": None, "price": int(pr.group(1).replace(",", "")), "price_was": None,
             "description": subj[:200], "subdivision": "", "sqft": 0, "owner": "", "contractor": "",
@@ -363,8 +370,11 @@ def run_tests() -> int:
           and rg[1]["address"] == "402 Fixture Lane, 2a" and rg[0]["city"] == "St. Francisville" and rg[0]["price"] == 1250000)
     check("real layout: the HTML label sets the event, the status line is the fallback",
           [g["type"] for g in rg] == ["new_listing", "price_change", "pending"] and rg[0]["subtype"] == "New Listing")
-    check("real layout: Active with no label is a new listing marked Active",
-          parse_flex_real({**real[0], "html": ""})[0]["type"] == "new_listing" and parse_flex_real({**real[0], "html": ""})[0]["subtype"] == "Active")
+    nolabel = parse_flex_real({**real[0], "html": ""})
+    check("real layout: Active with no event word is a listing change, never a guessed new listing",
+          nolabel[0]["type"] == "listing_change" and nolabel[0]["label"] == "listing change" and nolabel[2]["type"] == "pending")
+    check("real layout: the subject's event word is used when the HTML has none",
+          parse_flex_real({**real[0], "html": "", "subject": "Price Change alert"})[0]["type"] == "price_change")
     check("real layout: confirmation mail yields nothing", parse_flex_alert(real[1]) == [])
     calls = []
     def fake_geocoder(items):
