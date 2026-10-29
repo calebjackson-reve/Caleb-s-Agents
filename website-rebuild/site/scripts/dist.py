@@ -32,9 +32,13 @@ for r in sorted(refs):
     if src.exists():
         dst = out / r.lstrip('/'); dst.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(src, dst)
     else: print('missing', r)
-(out / '_redirects').write_text('/home-search https://search.calebjackson.org 301\n/about /about.html 301\n/sell /sell.html 301\n/contact /contact.html 301\n/communities /communities.html 301\n/search /search.html 301\n')
-# GitHub Pages ignores _redirects, so the one old LP path that matters gets a stub page too
+(out / '_redirects').write_text('/home-search https://search.calebjackson.org 301\n/about /about.html 301\n/sell /sell.html 301\n/contact /contact.html 301\n/communities /communities.html 301\n/search /search.html 301\n/profile /about.html 301\n/contact-us /contact.html 301\n')
+# GitHub Pages ignores _redirects, so old LP paths that matter get stub pages too
 (out / 'home-search').mkdir(); (out / 'home-search' / 'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Home Search</title><meta http-equiv="refresh" content="0;url=https://search.calebjackson.org"><link rel="canonical" href="https://search.calebjackson.org"><a href="https://search.calebjackson.org">Search homes</a>\n')
+# /profile and /contact-us are linked from old LP templates and 404 on the live site (2026-10-29 audit)
+for old, new in (('profile', 'about.html'), ('contact-us', 'contact.html')):
+    (out / old).mkdir()
+    (out / old / 'index.html').write_text(f'<!doctype html><meta charset="utf-8"><title>Moved</title><meta http-equiv="refresh" content="0;url=/{new}"><link rel="canonical" href="https://{host}/{new}"><a href="/{new}">Continue</a>\n')
 (out / '_headers').write_text('/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/media/*\n  Cache-Control: public, max-age=31536000, immutable\n/assets/*\n  Cache-Control: public, max-age=86400\n')
 (out / '404.html').write_text((out / 'index.html').read_text())
 (out / 'CNAME').write_text(host + '\n')
