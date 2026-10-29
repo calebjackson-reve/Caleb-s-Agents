@@ -97,7 +97,12 @@ PATHS = {
     "dismissed": AIRE / "map-crm" / "cache" / "dismissed.json",
     "lists": AIRE / "map-crm" / "out",
 }
-ASK_MODEL_DEFAULT = "claude-opus-5-5"
+# Sonnet 5.5: on 4 real questions (2026-10-29) it answered in 2.5 to 3.1 s with complete, accurate answers; Opus 5.5
+# took 3.4 to 5.7 s and cut one answer off; Haiku 5.5 was faster but miscounted and dropped an answer.
+ASK_MODEL_DEFAULT = "claude-sonnet-5-5"
+# Dollars per million tokens (input, output), Anthropic first-party prices as of 2026-10-06. Cache reads bill at a
+# tenth of input, cache writes at 1.25x.
+ASK_PRICES = {"claude-sonnet-5-5": (2.0, 10.0), "claude-opus-5-5": (4.0, 20.0), "claude-haiku-5-5": (0.10, 0.50)}
 ELEVEN_VOICE_DEFAULT = "onwK4e9ZLuTAKqWW03F9"   # ElevenLabs premade "Daniel", British
 ELEVEN_MODEL_DEFAULT = "eleven_flash_v2_5"
 ASK_SYSTEM = """You are Pipeline, the voice of Caleb Jackson's daily real estate tool. Caleb is a REALTOR with Keller Williams
@@ -305,6 +310,7 @@ class State:
         self.eleven_model = os.getenv("ELEVENLABS_MODEL", ELEVEN_MODEL_DEFAULT)
         self.speech_engine_id = "" if demo else os.getenv("ELEVENLABS_SPEECH_ENGINE_ID", "")
         self.lock = threading.Lock()
+        self._warm: dict = {}
         self._demo_cache: dict | None = None
         # Live texting needs macOS to let this Python control Messages. Ask once at start, so the Allow box shows
         # now and a missing permission is on screen before Caleb presses Send.
@@ -346,6 +352,7 @@ class State:
         if not isinstance(u, dict) or "_error" in u:
             u = {}
         return {"asked": int(u.get("asked", 0)), "input_tokens": int(u.get("input_tokens", 0)), "output_tokens": int(u.get("output_tokens", 0)),
+                "cache_read_tokens": int(u.get("cache_read_tokens", 0)), "cache_write_tokens": int(u.get("cache_write_tokens", 0)),
                 "spoken_chars": int(u.get("spoken_chars", 0)), "calls": int(u.get("calls", 0)), "last": u.get("last", "")}
 
     def _bump_usage(self, **delta) -> dict:
@@ -359,8 +366,10 @@ class State:
 
     def voice_info(self) -> dict:
         u = self.voice_usage()
-        # Rough spend, from the published per-token prices of the default model and ElevenLabs' per-character plans.
-        est = u["input_tokens"] / 1e6 * 4.0 + u["output_tokens"] / 1e6 * 20.0 if self.ask_model == ASK_MODEL_DEFAULT else None
+        # Rough spend from the published per-token prices of the Q&A model (ASK_PRICES); unknown model, no estimate.
+        price = ASK_PRICES.get(self.ask_model)
+        est = (u["input_tokens"] * price[0] + u.get("cache_read_tokens", 0) * price[0] * 0.1 + u.get("cache_write_tokens", 0) * price[0] * 1.25
+               + u["output_tokens"] * price[1]) / 1e6 if price else None
         return {"ask": bool(self.ask_key), "ask_model": self.ask_model, "tts": "elevenlabs" if self.eleven_key else "browser",
                 "voice_id": self.eleven_voice if self.eleven_key else "", "usage": u, "ask_cost_estimate_usd": round(est, 4) if est is not None else None,
                 "speech_engine": bool(self.eleven_key and self.speech_engine_id and self.ask_key), "speech_engine_id": self.speech_engine_id,
@@ -400,9 +409,20 @@ class State:
         deals = [{"address": d.get("address"), "who": d.get("display"), "side": d.get("side"), "stage": d.get("stage"), "price": d.get("price"),
                   "expected_close": d.get("expected_close"), "next_step": d.get("next_step"), "last_event": d.get("last_event")} for d in f.get("deals", [])[:15]]
         leads = [{"name": l.get("display"), "source": l.get("source"), "received": l.get("received"), "next_action": l.get("next_action")} for l in f.get("new_leads", [])[:15]]
+        # The whole due list is too big to send, so the people a question most often reaches past the top 25 for:
+        # hot and warm contacts quiet the longest, and everyone waiting on a reply.
+        allrows = f.get("touches_due", [])
+        quiet = sorted((r for r in allrows if r.get("band") in ("hot", "warm") and r.get("days_quiet") is not None), key=lambda r: -r["days_quiet"])[:10]
+        quiet = [{"name": r.get("display"), "band": r.get("band"), "days_quiet": r.get("days_quiet"), "next_action": r.get("next_action")} for r in quiet]
+        owes = [{"name": r.get("display") or "(no name)", "last_text": (r.get("last_messages") or [""])[-1][:160]} for r in allrows if r.get("owes_reply")][:40]
+        mkt = (f.get("market") or {}).get("counts") or {}
+        mp = (f.get("map") or {}).get("counts") or {}
         sent = self.sent_today()
         return {"today": today().isoformat(), "feed_as_of": f.get("as_of"), "counts": f.get("counts"), "cadence_days": f.get("cadence_days"),
-                "touches_due_top": due, "tasks": tasks, "live_deals": deals, "new_leads": leads,
+                "touches_due_top": due, "hot_warm_quiet_longest": quiet, "waiting_on_a_reply": owes,
+                "market_monitor": {"rows": mkt.get("rows"), "by_type": mkt.get("by_type"), "source": "EBR permits (data.brla.gov) and Flexmls alert mail"},
+                "map": {"people_pinned": mp.get("persons"), "deals_pinned": mp.get("deals"), "not_geocoded": mp.get("ungeocoded_contacts")},
+                "tasks": tasks, "live_deals": deals, "new_leads": leads,
                 "sent_today": sent, "caps": {"texts": self.max_texts, "emails": self.max_emails}, "sender_mode": self.sender,
                 "command_reader": read_json(self.paths["command_status"], {}).get("state", "unknown")}
 
@@ -421,9 +441,27 @@ class State:
         except ImportError:
             raise CRMError("the anthropic package is not installed in Pipeline's Python (pip install anthropic in ~/.aire/venv)")
         client = anthropic.Anthropic(api_key=self.ask_key)
-        messages = [{"role": "user", "content": "Today's pipeline data as JSON:\n" + json.dumps(self.ask_context(), ensure_ascii=False)
-                                                + "\n\nCaleb asked, by voice: " + question}]
-        kwargs = dict(model=self.ask_model, max_tokens=400, system=ASK_SYSTEM, messages=messages, output_config={"effort": "low"})
+        kwargs = self._ask_kwargs(question)
+        resp = self._ask_call(client, kwargs, anthropic)
+        if getattr(resp, "stop_reason", "") == "refusal":
+            raise CRMError("Claude declined that one")
+        answer = " ".join(b.text for b in resp.content if getattr(b, "type", "") == "text").strip()
+        if getattr(resp, "stop_reason", "") == "max_tokens" and answer:  # spoken out loud: end on a whole sentence
+            cut = max(answer.rfind(". "), answer.rfind("? "), answer.rfind("! "))
+            answer = answer[:cut + 1] if cut > 0 else answer
+        u = self._bump_ask_usage(resp.usage, asked=1)
+        return {"ok": True, "result": {"answer": answer or "I have nothing on that.", "model": getattr(resp, "model", self.ask_model)}, "usage": u}
+
+    def _ask_kwargs(self, question: str, max_tokens: int = 500) -> dict:
+        # The feed goes in a cached system block (sorted keys so the bytes repeat), the question after it, so a second
+        # question within five minutes reads the feed from cache: faster, and a tenth of the input price.
+        system = [{"type": "text", "text": ASK_SYSTEM},
+                  {"type": "text", "text": "Today's pipeline data as JSON:\n" + json.dumps(self.ask_context(), ensure_ascii=False, sort_keys=True),
+                   "cache_control": {"type": "ephemeral"}}]
+        messages = [{"role": "user", "content": "Caleb asked, by voice: " + question}]
+        return dict(model=self.ask_model, max_tokens=max_tokens, system=system, messages=messages, output_config={"effort": "low"})
+
+    def _ask_call(self, client, kwargs: dict, anthropic):
         try:
             try:  # refusal fallback on the current Opus and Fable models; older SDKs or models do not know the parameter
                 resp = client.beta.messages.create(betas=["server-side-fallback-2026-07-01"], fallbacks="default", **kwargs)
@@ -439,11 +477,29 @@ class State:
             raise CRMError(f"Claude had a problem, error {e.status_code}. Try again in a minute.")
         except anthropic.APIConnectionError:
             raise CRMError("could not reach Anthropic")
-        if getattr(resp, "stop_reason", "") == "refusal":
-            raise CRMError("Claude declined that one")
-        answer = " ".join(b.text for b in resp.content if getattr(b, "type", "") == "text").strip()
-        u = self._bump_usage(asked=1, input_tokens=int(getattr(resp.usage, "input_tokens", 0)), output_tokens=int(getattr(resp.usage, "output_tokens", 0)))
-        return {"ok": True, "result": {"answer": answer or "I have nothing on that.", "model": getattr(resp, "model", self.ask_model)}, "usage": u}
+        return resp
+
+    def _bump_ask_usage(self, uu, **extra) -> dict:
+        return self._bump_usage(input_tokens=int(getattr(uu, "input_tokens", 0) or 0), output_tokens=int(getattr(uu, "output_tokens", 0) or 0),
+                                cache_read_tokens=int(getattr(uu, "cache_read_input_tokens", 0) or 0),
+                                cache_write_tokens=int(getattr(uu, "cache_creation_input_tokens", 0) or 0), **extra)
+
+    def warm_ask(self) -> dict:
+        """Voice just turned on: write today's feed into Claude's prompt cache with a max_tokens 0 request (no output
+        billed, one cache write) so the first real question reads it from cache instead of waiting on the write.
+        Same model, system blocks and effort as a real question, or the real question would miss. Skipped when the
+        same feed was warmed under four minutes ago (the cache lives five)."""
+        if self.demo or not self.ask_key:
+            return {"ok": True, "result": {"warmed": False, "why": "Q&A is off"}}
+        kwargs = self._ask_kwargs("warmup", max_tokens=0)
+        key = hash(kwargs["system"][1]["text"])
+        if self._warm.get("key") == key and time.time() - self._warm.get("at", 0) < 240:
+            return {"ok": True, "result": {"warmed": False, "why": "warm already"}}
+        import anthropic
+        resp = self._ask_call(anthropic.Anthropic(api_key=self.ask_key), kwargs, anthropic)
+        self._warm = {"key": key, "at": time.time()}
+        self._bump_ask_usage(resp.usage, warmed=1)
+        return {"ok": True, "result": {"warmed": True, "cache_write_tokens": int(getattr(resp.usage, "cache_creation_input_tokens", 0) or 0)}}
 
     def speak(self, text: str) -> bytes:
         text = (text or "").strip()
@@ -930,6 +986,8 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.make_lead(body.get("name", ""), body.get("source", ""), body.get("phone", ""), body.get("email", ""), body.get("note", ""))
             elif u.path == "/api/list":
                 out = s.add_to_list(body.get("kind", ""), body.get("rows", []))
+            elif u.path == "/api/ask/warm":
+                out = s.warm_ask()
             elif u.path == "/api/ask":
                 out = s.ask(body.get("question", ""))
             elif u.path == "/api/speak":

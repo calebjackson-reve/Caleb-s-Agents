@@ -2,6 +2,23 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-29, afternoon: Claude Q&A on, faster and cheaper
+
+**Confirmed by Caleb**
+- Added Anthropic credits ("try now"). Earlier: "do a series of tests and Q and A with the voice command to improve its efficiency."
+
+**Measured on the real feed, the same 4 Claude-only questions each time**
+- Opus 5.5 (the old default), feed sent fresh each time: 3.4 to 5.7 s, about 4 cents a question, one answer cut off mid sentence at the 400-token cap.
+- Sonnet 5.5: 2.5 to 3.1 s, complete and accurate. Haiku 5.5: 2.3 to 2.7 s but miscounted tasks and returned "I have nothing on that" once. Sonnet 5.5 is the new default (Caleb's rule: fastest reliable).
+- With the feed in a cached system block: under 1 cent a question on Sonnet (8 questions, 6 cents). The first question after a pause still paid the cache write (8 to 23 s); after it, 1.8 to 2.3 s.
+
+**Done**
+- `ASK_MODEL_DEFAULT` is `claude-sonnet-5-5`, cost estimate per model (`ASK_PRICES`, Anthropic prices as of 2026-10-06, cache reads at a tenth).
+- Feed in a cached system block with sorted keys, question in the user turn. Answer cap 500 (the existing test's limit), trimmed to the last whole sentence if it is hit.
+- Claude now also sees the 10 hot and warm contacts quiet the longest, everyone waiting on a reply (up to 40, last text), and the market and map counts.
+- Voice on, or "hey Pipeline": `POST /api/ask/warm` writes the cache with a `max_tokens` 0 request (same model, system and effort as a real question), skipped when the same feed was warmed under 4 minutes ago. After a warm-up the first question took 2.2 s.
+- Removed `PIPELINE_ASK_MODEL=claude-opus-5-5` from `~/.aire/pipeline.env` (a template line from the morning, it pinned the old default). Only that line was touched.
+
 ## 2026-10-29, afternoon: live texting from Pipeline
 
 **Confirmed by Caleb**
