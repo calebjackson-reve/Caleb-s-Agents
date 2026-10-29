@@ -15,7 +15,10 @@ def fix(text):
     return text.replace('https://calebjackson.org/', 'https://' + host + '/')
 for f in site.glob('*.html'):
     if not f.name.startswith('_'): (out / f.name).write_text(fix(f.read_text()))
-lead = os.environ.get('LEAD_WEBHOOK', '')
+# The Apps Script web app deployed by Caleb on Oct 29 2026 (Website leads sheet). Not a secret:
+# it ships in the public site.js either way. LEAD_WEBHOOK still overrides it for a redeploy.
+DEFAULT_LEAD_WEBHOOK = 'https://script.google.com/macros/s/AKfycbyS494Eel5vQc0uNtdk2pLB4m-qAmKwyTM-htmhJ491RwGLpn2inLdJPwyEQo6WyII0Pg/exec'
+lead = os.environ.get('LEAD_WEBHOOK', '') or DEFAULT_LEAD_WEBHOOK
 for f in (site / 'assets').glob('*'):
     text = fix(f.read_text())
     if f.name == 'site.js' and lead: text = text.replace("var LEAD_URL = '/api/lead';", "var LEAD_URL = '" + lead.replace("'", '') + "';")
