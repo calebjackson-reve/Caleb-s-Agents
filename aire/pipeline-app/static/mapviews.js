@@ -65,8 +65,17 @@ function mountMap(dealsOnly) {
   S.mapDealsOnly = !!dealsOnly;
   S.map = PMap.create(el, { view: S.mapView, base: S.mapF.base, onMove: v => { S.mapView = v; renderMapSide(); }, onPick: p => { S.pick = p ? p.key : ''; S.map.setData({ selected: S.pick }); renderMapSide(); } });
   const d = mapData(dealsOnly); S.map.setData(d);
-  if (!S.mapView) { const pts = (dealsOnly ? d.deals : d.pins.concat(d.deals)).map(p => [p.lat, p.lng]); if (pts.length) S.map.fit(pts, 13); }
+  if (!S.mapView) { const pts = homeArea((dealsOnly ? d.deals : d.pins.concat(d.deals)).map(p => [p.lat, p.lng])); if (pts.length) S.map.fit(pts, 13); }
   renderMapSide();
+}
+// The first view frames where most people are: within about 100 miles of the median pin, so a handful of
+// out-of-state contacts do not zoom the map out to the whole country. FIT still shows everyone.
+function homeArea(pts) {
+  if (pts.length < 5) return pts;
+  const mid = a => a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)];
+  const lat = mid(pts.map(p => p[0])), lng = mid(pts.map(p => p[1]));
+  const near = pts.filter(p => Math.abs(p[0] - lat) < 1.5 && Math.abs(p[1] - lng) < 1.7);
+  return near.length >= pts.length / 2 ? near : pts;
 }
 function mapUpdate() {
   const tools = $('#map-tools'); if (tools) tools.innerHTML = mapTools();
