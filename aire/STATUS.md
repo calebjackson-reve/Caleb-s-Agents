@@ -2,19 +2,19 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
-## 2026-10-29: Pipeline rebuilt as a local web app and PWA (branch claude/pipeline-pwa, draft PR, not merged)
+## 2026-10-29: Pipeline rebuilt as a local web app and PWA (branch claude/pipeline-pwa, draft PR 72, not merged)
 
 **Asked by Caleb**
 - Replace the Codex-built native Pipeline panel with a local web app and installable PWA inside this repo, Jarvis HUD look pulled from his own Jarvis videos, feed.json the only data source, crm.py the only writer, approval gate on every send, Playwright proof at phone and desktop width.
 
 **Done**
 - `aire/pipeline-app/`: `server.py` (standard library, localhost by default, token required off localhost), HUD front end (`static/`), `engine/predraft.py` and `engine/conversation.py` (ported from the old app), `engine/send.py` (dry run unless `--live-send` plus Approve). Reads feed.json, the follow-up queue files and predrafts.json. Writes only through `crm.py touch` and `crm.py done`. 23 offline tests pass. Playwright click-through: 31 of 31 checks at 390 and 1280 px, screenshots in `aire/pipeline-app/tests/`.
-- Found why the last predraft runs failed 3 of 28 drafts (and drafted 0 fresh ones): Ollama was fine, the validators refused every hermes3 draft for "I'll", "I'm" and sentence-opening words read as names, and the prompt never told the model the rules. Fixed in the port: rules in the prompt, three tries with the exact refusal quoted, sentence starts are not names, stray sign-offs trimmed, refusal reasons counted in the log.
+- Found why the last predraft runs failed 3 of 28 drafts (and drafted 0 fresh ones): Ollama was fine, the validators refused every hermes3 draft for "I'll", "I'm" and sentence-opening words read as names, and the prompt never told the model the rules. Fixed in the port: rules in the prompt, three candidates per call and up to three calls with the exact refusal quoted, sentence starts are not names, stray sign-offs trimmed, refusal reasons counted in the log. Measured on the real feed: 3 fresh drafts per run where the old code made 0; 5 to 7 of 10 still refused, mostly first-person wording the model keeps using. Those people get an empty box plus their last three texts.
 - `aire/crm/refresh_feed.sh` and `ingest_hourly.sh`: no hardcoded Python or Codex path, `AIRE_HOME` and `AIRE_PYTHON`, a lock so the hourly ingest and the 15 minute timer no longer run two refreshes at :05. LaunchAgent plists are rendered from templates by `aire/crm/scheduling/install.sh`; cron line for Linux and a Task Scheduler note for Windows in `aire/crm/scheduling/README.md`.
 - Old app features inventoried in `aire/pipeline-app/README.md` with where each one went.
 
 **Needs Caleb**
-- `gh auth refresh -h github.com`: the keyring token is invalid, so the draft PR could not be opened from the session. The branch is pushed.
+- Review draft PR 72 (https://github.com/calebjackson-reve/Caleb-s-Agents/pull/72). Not merged.
 - The live LaunchAgents still point at `~/Caleb-s-Agents-enrich` (branch claude/gallant-lamport-c5mtmq, 14 commits ahead of main: `--client` tag, deal command, commission column, Command reader, follow-up pools). Decide whether to merge that branch into main, then run `sh aire/crm/scheduling/install.sh` from the checkout that should be live.
 - Say "live" to run the server with `--live-send`. Until then every Approve is a dry run.
 - Retire the old app's LaunchAgent `org.calebjackson.pipeline.receipts` (it polls Messages every 10 seconds for the retired panel).
