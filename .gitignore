@@ -1,1 +1,7 @@
 website-rebuild/dist/
+reports/
+out/
+briefs/
+cache/
+queue-*.md
+*.audit.jsonl
