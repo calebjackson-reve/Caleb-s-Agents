@@ -419,7 +419,9 @@ class State:
         except anthropic.RateLimitError:
             raise CRMError("Anthropic rate limit, try again in a minute")
         except anthropic.APIStatusError as e:
-            raise CRMError(f"Anthropic error {e.status_code}: {getattr(e, 'message', '')[:120]}")
+            if "credit balance" in str(getattr(e, "message", "") or e).lower():
+                raise CRMError("Claude is out of API credits. Top them up in the Anthropic console, then ask me again.")
+            raise CRMError(f"Claude had a problem, error {e.status_code}. Try again in a minute.")
         except anthropic.APIConnectionError:
             raise CRMError("could not reach Anthropic")
         if getattr(resp, "stop_reason", "") == "refusal":
