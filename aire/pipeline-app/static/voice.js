@@ -205,6 +205,9 @@ const Voice = (() => {
     return askClaude(text);
   }
   function askOn() { const st = appState(); return !!(st && st.data && st.data.voice && st.data.voice.ask); }
+  // Voice just woke up: have the server write today's feed into Claude's cache now, so the first question that
+  // goes to Claude is answered in about 2 s instead of 8 to 20. The server skips it when already warm.
+  function warmClaude() { if (askOn()) fetch('/api/ask/warm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => { }); }
   function askClaude(question) {
     if (!askOn()) return say("I didn't catch that. Say help to hear what I know.");
     setState('thinking');
@@ -229,12 +232,12 @@ const Voice = (() => {
       if (!heard) return;
       transcript('you', heard);
       const m = WAKE.exec(heard);
-      if (m) { awake = true; clearTimeout(awakeTimer); setState('listening'); const rest = heard.slice(m.index + m[0].length).trim(); if (rest.length > 2) handle(rest); else say('Yes?'); armSleep(); return; }
+      if (m) { awake = true; warmClaude(); clearTimeout(awakeTimer); setState('listening'); const rest = heard.slice(m.index + m[0].length).trim(); if (rest.length > 2) handle(rest); else say('Yes?'); armSleep(); return; }
       if (awake) { handle(heard); armSleep(); }
     };
     rec.onerror = e => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { on = false; rec = null; setState('idle'); transcript('pipeline', 'Microphone not allowed here. Type a command instead.'); } };
     rec.onend = () => { if (on) { try { rec.start(); } catch (e) { } } };
-    try { rec.start(); on = true; setState('idle'); emit(); return true; } catch (e) { rec = null; on = false; emit(); return false; }
+    try { rec.start(); on = true; setState('idle'); emit(); warmClaude(); return true; } catch (e) { rec = null; on = false; emit(); return false; }
   }
   function armSleep() { clearTimeout(awakeTimer); awakeTimer = setTimeout(() => { awake = false; if (state !== 'speaking') setState('idle'); emit(); }, 25000); }
   function stop() { on = false; awake = false; if (rec) { try { rec.onend = null; rec.stop(); } catch (e) { } rec = null; } speechSynthesis.cancel(); setState('idle'); }
