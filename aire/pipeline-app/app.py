@@ -59,6 +59,8 @@ from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
 AIRE = HERE.parent
+sys.path.insert(0, str(HERE))
+import jarvis  # noqa: E402  (the voice's tools and tool loop)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -386,7 +388,11 @@ class State:
                   "expected_close": d.get("expected_close"), "next_step": d.get("next_step"), "last_event": d.get("last_event")} for d in f.get("deals", [])[:15]]
         leads = [{"name": l.get("display"), "source": l.get("source"), "received": l.get("received"), "next_action": l.get("next_action")} for l in f.get("new_leads", [])[:15]]
         sent = self.sent_today()
+        review = [{"name": r.get("display"), "rule": r.get("rule"), "now": r.get("band") or r.get("type") or "blank",
+                   "suggest": r.get("suggest_band") or r.get("suggest_type"), "why": r.get("why")}
+                  for r in f.get("label_review", []) if (r.get("display") or "").strip()][:15]
         return {"today": today().isoformat(), "feed_as_of": f.get("as_of"), "counts": f.get("counts"), "cadence_days": f.get("cadence_days"),
+                "label_review_top": review,
                 "touches_due_top": due, "tasks": tasks, "live_deals": deals, "new_leads": leads,
                 "sent_today": sent, "caps": {"texts": self.max_texts, "emails": self.max_emails}, "sender_mode": self.sender,
                 "command_reader": read_json(self.paths["command_status"], {}).get("state", "unknown")}
@@ -406,14 +412,9 @@ class State:
         except ImportError:
             raise CRMError("the anthropic package is not installed in Pipeline's Python (pip install anthropic in ~/.aire/venv)")
         client = anthropic.Anthropic(api_key=self.ask_key)
-        messages = [{"role": "user", "content": "Today's pipeline data as JSON:\n" + json.dumps(self.ask_context(), ensure_ascii=False)
-                                                + "\n\nCaleb asked, by voice: " + question}]
-        kwargs = dict(model=self.ask_model, max_tokens=400, system=ASK_SYSTEM, messages=messages, output_config={"effort": "low"})
+        tools = jarvis.Tools(self.feed(), self.sent_today(), {"texts": self.max_texts, "emails": self.max_emails}, today().isoformat())
         try:
-            try:  # refusal fallback on the current Opus and Fable models; older SDKs or models do not know the parameter
-                resp = client.beta.messages.create(betas=["server-side-fallback-2026-07-01"], fallbacks="default", **kwargs)
-            except TypeError:
-                resp = client.messages.create(**kwargs)
+            r = jarvis.ask(client, self.ask_model, tools, question)
         except anthropic.AuthenticationError:
             raise CRMError("Anthropic refused the API key")
         except anthropic.RateLimitError:
@@ -422,11 +423,11 @@ class State:
             raise CRMError(f"Anthropic error {e.status_code}: {getattr(e, 'message', '')[:120]}")
         except anthropic.APIConnectionError:
             raise CRMError("could not reach Anthropic")
-        if getattr(resp, "stop_reason", "") == "refusal":
+        if r.get("refused"):
             raise CRMError("Claude declined that one")
-        answer = " ".join(b.text for b in resp.content if getattr(b, "type", "") == "text").strip()
-        u = self._bump_usage(asked=1, input_tokens=int(getattr(resp.usage, "input_tokens", 0)), output_tokens=int(getattr(resp.usage, "output_tokens", 0)))
-        return {"ok": True, "result": {"answer": answer or "I have nothing on that.", "model": getattr(resp, "model", self.ask_model)}, "usage": u}
+        u = self._bump_usage(asked=1, input_tokens=r["usage"]["input_tokens"], output_tokens=r["usage"]["output_tokens"])
+        return {"ok": True, "result": {"answer": r["answer"] or "I have nothing on that.", "model": r.get("model", self.ask_model),
+                                       "proposals": r["proposals"], "tools_used": [c["tool"] for c in r["calls"]]}, "usage": u}
 
     def speak(self, text: str) -> bytes:
         text = (text or "").strip()
@@ -556,6 +557,11 @@ class State:
     def stage(self, person_id: str, stage: str, expect: str = "") -> dict:
         args = ["stage", person_id, stage] + (["--expect", expect] if expect else [])
         return self.crm.run(args)
+
+    def relabel(self, person_id: str, band: str = "", type_: str = "", expect_band: str = "") -> dict:
+        """Caleb's yes on a Jarvis or label review card. Same crm.py write path, gates and audit as every button."""
+        args = ["relabel", person_id] + (["--band", band] if band else []) + (["--type", type_] if type_ else [])
+        return self.crm.run(args + ["--expect-band", expect_band])
 
     def dnc(self, person_id: str, reason: str) -> dict:
         if not reason.strip():
@@ -829,6 +835,8 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.note(body.get("person_id", ""), body.get("text", ""))
             elif u.path == "/api/stage":
                 out = s.stage(body.get("person_id", ""), body.get("stage", ""), body.get("expect", ""))
+            elif u.path == "/api/relabel":
+                out = s.relabel(body.get("person_id", ""), body.get("band", ""), body.get("type", ""), body.get("expect_band", ""))
             elif u.path == "/api/dnc":
                 out = s.dnc(body.get("person_id", ""), body.get("reason", ""))
             elif u.path == "/api/send":
@@ -978,9 +986,10 @@ def run_tests() -> int:
     sys.modules["anthropic"] = fake
     s3 = State(demo=True, send_log=tmp / "ask.json"); s3.demo = False; s3.ask_key = "sk-test"; s3.usage_path = tmp / "usage.json"
     r = s3.ask("who first")
-    check(r["ok"] and r["result"]["answer"].startswith("Call Taylor") and calls["model"] == ASK_MODEL_DEFAULT and calls["max_tokens"] <= 500
-          and calls.get("fallbacks") == "default" and "Caleb asked, by voice: who first" in calls["messages"][0]["content"],
-          "ask calls the SDK with the default model, a short answer cap, the fallback and the question")
+    check(r["ok"] and r["result"]["answer"].startswith("Call Taylor") and calls["model"] == ASK_MODEL_DEFAULT and calls["max_tokens"] <= 2000
+          and calls.get("fallbacks") == "default" and "Caleb asked, by voice: who first" in calls["messages"][0]["content"]
+          and {t["name"] for t in calls["tools"]} >= {"who_to_contact", "find_person", "label_review", "propose"},
+          "ask calls the SDK with the default model, a bounded cap, the fallback, the question and the Jarvis tools")
     check(s3.voice_usage()["input_tokens"] == 1200 and s3.voice_info()["ask_cost_estimate_usd"] > 0, "ask logs the tokens and estimates the spend")
     del sys.modules["anthropic"]
     try:
