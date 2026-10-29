@@ -304,8 +304,8 @@ class Tools:
             return {"error": f"no tool {name}"}
         try:
             return fn(**(args or {}))
-        except TypeError as e:
-            return {"error": f"bad input for {name}: {e}"}
+        except Exception as e:  # a bad argument from the model is an answerable error, never a dead question
+            return {"error": f"bad input for {name}: {type(e).__name__}: {e}"}
 
 
 def ask(client, model: str, tools: Tools, question: str, history: list[dict] | None = None, effort: str = "medium") -> dict:

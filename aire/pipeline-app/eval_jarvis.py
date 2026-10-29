@@ -125,6 +125,8 @@ def offline() -> int:
           and t.proposals[-1]["name"] == "Paul Landry")
     check("an unknown tool name is an error, not a crash", "error" in t.run("send_text", {}))
     check("bad tool input is an error, not a crash", "error" in t.run("tasks", {"nope": 1}))
+    check("a wrong-typed argument is an error, not a crash", "error" in t.run("who_to_contact", {"min_days_quiet": "a few"})
+          and "error" in t.run("count_people", {"band": 7}))
 
     # the loop, with a scripted model: look up, propose, answer
     script = [

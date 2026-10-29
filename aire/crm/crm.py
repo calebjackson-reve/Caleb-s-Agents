@@ -939,6 +939,8 @@ class CRM:
         out = []
         for c in self.contacts():
             m = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", c.get("Source", ""))
+            if (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
             if (c.get("Stage") or "") == "new lead" and m and m.group(1) >= cutoff:
                 out.append({"person_id": c["person_id"], "display": c.get("display", ""), "phone": c.get("primary_phone", ""),
                             "email": c.get("email", ""), "source": c.get("Source", ""), "received": m.group(1),

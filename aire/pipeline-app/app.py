@@ -332,8 +332,13 @@ class State:
         u = read_json(self.usage_path, {})
         if not isinstance(u, dict) or "_error" in u:
             u = {}
-        return {"asked": int(u.get("asked", 0)), "input_tokens": int(u.get("input_tokens", 0)), "output_tokens": int(u.get("output_tokens", 0)),
-                "spoken_chars": int(u.get("spoken_chars", 0)), "calls": int(u.get("calls", 0)), "last": u.get("last", "")}
+        out = {"asked": int(u.get("asked", 0)), "input_tokens": int(u.get("input_tokens", 0)), "output_tokens": int(u.get("output_tokens", 0)),
+               "cache_creation_input_tokens": int(u.get("cache_creation_input_tokens", 0)),
+               "cache_read_input_tokens": int(u.get("cache_read_input_tokens", 0)),
+               "spoken_chars": int(u.get("spoken_chars", 0)), "calls": int(u.get("calls", 0)), "last": u.get("last", "")}
+        if "cost_usd" in u:  # present once a call was logged with all four meters
+            out["cost_usd"] = float(u["cost_usd"])
+        return out
 
     def _bump_usage(self, **delta) -> dict:
         with self.lock:
@@ -1007,6 +1012,9 @@ def run_tests() -> int:
           and {t["name"] for t in calls["tools"]} >= {"who_to_contact", "find_person", "label_review", "propose"},
           "ask calls the SDK with the default model, a bounded cap, the fallback, the question and the Jarvis tools")
     check(s3.voice_usage()["input_tokens"] == 1200 and s3.voice_info()["ask_cost_estimate_usd"] > 0, "ask logs the tokens and estimates the spend")
+    c1 = s3.voice_info()["ask_cost_estimate_usd"]; s3.log_claude("ask", ASK_MODEL_DEFAULT, {"cache_read_input_tokens": 1_000_000})
+    check(abs(s3.voice_info()["ask_cost_estimate_usd"] - c1 - 0.20) < 1e-6 and s3.voice_usage()["cache_read_input_tokens"] >= 1_000_000,
+          "the running total keeps the cache meters and adds each call's exact cost")
     del sys.modules["anthropic"]
     try:
         s.speak("hello"); check(False, "speak refuses without a key")
