@@ -2,6 +2,20 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-29, afternoon: no group chats, Market Monitor twice a day
+
+**Confirmed by Caleb**
+- "No group chats." "I want a daily job to refresh twice a day at 8am and 3pm." Email stays live with texts.
+
+**Done**
+- `enrichment/execution/imessage_signals.py`: a chat with Caleb plus 2 or more others is a group and is left out (was 3 or more others, rule of 2026-10-20). 79 such chats had inbound texts in the last 90 days.
+- `crm/crm.py` `load_signals`: a broadcast sender is never "waiting on a reply": 10 or more texts in 30 days with Caleb answering fewer than one in ten over 90 days. On 2026-10-29 that took 3 of 51 off the owes-a-reply list (a daily Bible-study text sent one to one, an MLS link number, and a run of tapbacks); nobody in a live conversation.
+- `map-crm/refresh_market.sh` + LaunchAgent `org.calebjackson.aire.market` (8:00 and 15:00, through host-guard): permits and Flexmls mail into the cache, then the feed rebuild. `sh aire/map-crm/install.sh` installs it, `--remove` takes it out. Log `~/.aire/logs/market.log`.
+- Caleb's first farm (zachary) had been drawn in a test copy of Pipeline on port 4749 and saved in the test folder; copied to the live `map-crm/farms.local.json`.
+
+**Not done: the 52 unpinned contacts**
+- The addresses are well formed; the free geocoders do not know them (new subdivisions, rural highways, units, out of state). Census matched 0 (46 no match, 6 ties), OpenStreetMap Nominatim matched 1 of 52 by exact house number and ZIP, Census with spelling variants 1 more. Placing the rest needs a paid geocoder, Caleb's call.
+
 ## 2026-10-29, afternoon: Claude Q&A on, faster and cheaper
 
 **Confirmed by Caleb**

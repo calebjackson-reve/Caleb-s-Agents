@@ -88,7 +88,7 @@ def apple_ts(v) -> datetime | None:
     return APPLE_EPOCH + timedelta(seconds=v)
 
 
-GROUP_MIN_PEOPLE = 4  # a chat with this many people, Caleb included, is a group and is left out
+GROUP_MIN_PEOPLE = 3  # a chat with this many people, Caleb included, is a group and is left out (Caleb, 2026-10-29: "No group chats")
 
 
 def read_messages(db: Path, days: int) -> list[tuple[str, datetime, bool, str]]:
@@ -100,8 +100,8 @@ def read_messages(db: Path, days: int) -> list[tuple[str, datetime, bool, str]]:
             shutil.copy2(src, tmp.parent / extra)
     con = sqlite3.connect(f"file:{tmp}?mode=ro", uri=True)
     since = int((datetime.now(timezone.utc) - timedelta(days=days) - APPLE_EPOCH).total_seconds()) * 10**9
-    # Group chats of GROUP_MIN_PEOPLE or more (Caleb plus 3 others) never count as a conversation with that sender.
-    # Rule from Caleb, 2026-10-20. A message in no chat (rare) is kept as one to one.
+    # Group chats of GROUP_MIN_PEOPLE or more (Caleb plus 2 others) never count as a conversation with that sender.
+    # Rule from Caleb, 2026-10-20 (4 or more), tightened 2026-10-29 to any group. A message in no chat (rare) is kept as one to one.
     q = """select h.id, m.date, m.is_from_me, m.text, m.attributedBody
            from message m join handle h on h.ROWID = m.handle_id
            left join chat_message_join cmj on cmj.message_id = m.ROWID

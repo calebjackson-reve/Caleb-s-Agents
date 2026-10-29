@@ -1068,9 +1068,13 @@ def load_signals(path: Path, contacts: list[dict]) -> dict:
         ai = ask[:10]
         age = (today() - date.fromisoformat(ai)).days if ai else None
         recent = sig.get("recent_inbound", [])
+        # A broadcast sender (a daily group-style text sent one to one, automated MLS links) is never waiting on Caleb:
+        # 10 or more texts in 30 days with Caleb answering fewer than one in ten over 90 days (Caleb, 2026-10-29).
+        broadcast = int(sig.get("in_30", 0)) >= 10 and int(sig.get("out_90", 0)) * 10 < int(sig.get("in_90", 0))
         out[c["person_id"]] = {"label": "", "last_inbound": li, "last_outbound": lo,
                                # They texted last within 60 days, today included. A text from this morning is the most urgent one.
-                               "owes_reply": bool(ai) and ai > lo and age is not None and 0 <= age <= 60,
+                               "owes_reply": bool(ai) and ai > lo and age is not None and 0 <= age <= 60 and not broadcast,
+                               "broadcast": broadcast,
                                "last_inbound_at": ask,
                                "signal_score": int(sig.get("in_90", 0)),
                                # The last three things they actually said, so the Pipeline app can show them above the
@@ -1734,6 +1738,13 @@ def run_tests() -> int:
     ph2 = next(c for c in crm.contacts() if phone_key(c.get("primary_phone")))
     sigf2.write_text(json.dumps({"+1" + phone_key(ph2["primary_phone"]): {"last_inbound": today().isoformat() + "T08:00:00", "last_outbound": "2026-01-01T08:00:00", "in_90": 1, "recent_inbound": []}}))
     check("a text from today counts as owes_reply", load_signals(sigf2, crm.contacts())[ph2["person_id"]]["owes_reply"] is True)
+    sigf3 = tmp / "sig-broadcast.json"
+    base = json.loads(sigf2.read_text())
+    k2 = next(iter(base))
+    sigf3.write_text(json.dumps({k2: {**base[k2], "in_30": 27, "in_90": 79, "out_90": 1}}))
+    check("a broadcast sender (27 texts in 30 days, 1 reply in 90) is not waiting on a reply", load_signals(sigf3, crm.contacts())[ph2["person_id"]]["owes_reply"] is False)
+    sigf3.write_text(json.dumps({k2: {**base[k2], "in_30": 27, "in_90": 79, "out_90": 30}}))
+    check("someone who texts a lot and gets answers still is", load_signals(sigf3, crm.contacts())[ph2["person_id"]]["owes_reply"] is True)
 
     # stage, note, dnc: the Pipeline app's writes, on a fresh copy of the fixture
     db2 = tmp / "db2.json"
