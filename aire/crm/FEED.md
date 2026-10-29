@@ -95,3 +95,9 @@ Actions the app can send back, each one a shell call that goes through the write
 | "Done" on a Next_Action item | `python3 crm.py sync-tasks` first, then `done` on the new id, or edit Next_Action in the sheet |
 | New task | `python3 crm.py task <person_id> "<task>" --due YYYY-MM-DD` |
 | Refresh | `python3 crm.py ingest && python3 crm.py feed` |
+
+## label_review and people (2026-10-29)
+
+`label_review`: contacts whose band or Type looks wrong, one row each: `person_id, display, band, type, stage, rule, suggest_band, suggest_type, why` (plus `days_quiet` on hot_gone_quiet). Rules, in this order: `texting_but_cold` (texts both ways within 30 days, band cold, ice-cold or blank, suggest warm), `hot_gone_quiet` (hot or warm, no touch or text in 60+ days, suggest lukewarm), `past_client_no_band` (suggest cold), `pro_as_client` (name or email reads like an agent, lender or vendor, suggest that Type). Do_Not_Contact people never appear. The fix is `crm.py --json --client pipeline relabel <id> --band X --expect-band Y` or `--type agent|lender|vendor`, run only on Caleb's tap.
+
+`people`: everyone but Do_Not_Contact, compact (`person_id, display, band, stage, type, street, city, last_touch, next_action, last_inbound, last_outbound, has_phone, has_email`), so Pipeline's voice can find anyone, not only the people due.

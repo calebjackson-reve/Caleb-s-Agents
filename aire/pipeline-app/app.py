@@ -59,6 +59,8 @@ from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
 AIRE = HERE.parent
+sys.path.insert(0, str(HERE))
+import jarvis  # noqa: E402  (the voice's tools and tool loop)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -100,9 +102,7 @@ PATHS = {
 # Sonnet 5.5: on 4 real questions (2026-10-29) it answered in 2.5 to 3.1 s with complete, accurate answers; Opus 5.5
 # took 3.4 to 5.7 s and cut one answer off; Haiku 5.5 was faster but miscounted and dropped an answer.
 ASK_MODEL_DEFAULT = "claude-sonnet-5-5"
-# Dollars per million tokens (input, output), Anthropic first-party prices as of 2026-10-06. Cache reads bill at a
-# tenth of input, cache writes at 1.25x.
-ASK_PRICES = {"claude-sonnet-5-5": (2.0, 10.0), "claude-opus-5-5": (4.0, 20.0), "claude-haiku-5-5": (0.10, 0.50)}
+# Prices: jarvis.PRICES (all four token meters, read from the live pricing page 2026-10-29).
 ELEVEN_VOICE_DEFAULT = "onwK4e9ZLuTAKqWW03F9"   # ElevenLabs premade "Daniel", British
 ELEVEN_MODEL_DEFAULT = "eleven_flash_v2_5"
 ASK_SYSTEM = """You are Pipeline, the voice of Caleb Jackson's daily real estate tool. Caleb is a REALTOR with Keller Williams
@@ -351,9 +351,13 @@ class State:
         u = read_json(self.usage_path, {})
         if not isinstance(u, dict) or "_error" in u:
             u = {}
-        return {"asked": int(u.get("asked", 0)), "input_tokens": int(u.get("input_tokens", 0)), "output_tokens": int(u.get("output_tokens", 0)),
-                "cache_read_tokens": int(u.get("cache_read_tokens", 0)), "cache_write_tokens": int(u.get("cache_write_tokens", 0)),
-                "spoken_chars": int(u.get("spoken_chars", 0)), "calls": int(u.get("calls", 0)), "last": u.get("last", "")}
+        out = {"asked": int(u.get("asked", 0)), "input_tokens": int(u.get("input_tokens", 0)), "output_tokens": int(u.get("output_tokens", 0)),
+               "cache_creation_input_tokens": int(u.get("cache_creation_input_tokens", u.get("cache_write_tokens", 0))),
+               "cache_read_input_tokens": int(u.get("cache_read_input_tokens", u.get("cache_read_tokens", 0))),
+               "spoken_chars": int(u.get("spoken_chars", 0)), "calls": int(u.get("calls", 0)), "last": u.get("last", "")}
+        if "cost_usd" in u:  # present once a call was logged with all four meters
+            out["cost_usd"] = float(u["cost_usd"])
+        return out
 
     def _bump_usage(self, **delta) -> dict:
         with self.lock:
@@ -364,12 +368,25 @@ class State:
             write_json(self.usage_path, u)
             return u
 
+    def log_claude(self, route: str, model: str, usage: dict, **extra) -> dict:
+        """Every Claude call: the running totals in voice-usage.json, plus one line per request in
+        out/claude-usage.jsonl with all four token meters and the dollars (jarvis.PRICES). Tokens only, never the
+        question or the answer, so the log holds no client data."""
+        meters = {k: int(usage.get(k, 0) or 0) for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")}
+        cost = jarvis.cost_usd(model, meters)
+        line = {"at": now().isoformat(timespec="seconds"), "route": route, "model": model, **meters,
+                "cost_usd": round(cost, 6) if cost is not None else None, **extra}
+        try:
+            with (self.usage_path.parent / "claude-usage.jsonl").open("a") as f:
+                f.write(json.dumps(line) + "\n")
+        except OSError:
+            pass
+        return self._bump_usage(asked=0 if route == "warm" else 1, **meters, cost_usd=cost or 0.0)
+
     def voice_info(self) -> dict:
         u = self.voice_usage()
-        # Rough spend from the published per-token prices of the Q&A model (ASK_PRICES); unknown model, no estimate.
-        price = ASK_PRICES.get(self.ask_model)
-        est = (u["input_tokens"] * price[0] + u.get("cache_read_tokens", 0) * price[0] * 0.1 + u.get("cache_write_tokens", 0) * price[0] * 1.25
-               + u["output_tokens"] * price[1]) / 1e6 if price else None
+        # Exact once calls are logged with all four meters (cost_usd); older totals are priced from the four meters.
+        est = u["cost_usd"] if "cost_usd" in u else jarvis.cost_usd(self.ask_model, u)
         return {"ask": bool(self.ask_key), "ask_model": self.ask_model, "tts": "elevenlabs" if self.eleven_key else "browser",
                 "voice_id": self.eleven_voice if self.eleven_key else "", "usage": u, "ask_cost_estimate_usd": round(est, 4) if est is not None else None,
                 "speech_engine": bool(self.eleven_key and self.speech_engine_id and self.ask_key), "speech_engine_id": self.speech_engine_id,
@@ -418,7 +435,11 @@ class State:
         mkt = (f.get("market") or {}).get("counts") or {}
         mp = (f.get("map") or {}).get("counts") or {}
         sent = self.sent_today()
+        review = [{"name": r.get("display"), "rule": r.get("rule"), "now": r.get("band") or r.get("type") or "blank",
+                   "suggest": r.get("suggest_band") or r.get("suggest_type"), "why": r.get("why")}
+                  for r in f.get("label_review", []) if (r.get("display") or "").strip()][:15]
         return {"today": today().isoformat(), "feed_as_of": f.get("as_of"), "counts": f.get("counts"), "cadence_days": f.get("cadence_days"),
+                "label_review_top": review,
                 "touches_due_top": due, "hot_warm_quiet_longest": quiet, "waiting_on_a_reply": owes,
                 "market_monitor": {"rows": mkt.get("rows"), "by_type": mkt.get("by_type"), "source": "EBR permits (data.brla.gov) and Flexmls alert mail"},
                 "map": {"people_pinned": mp.get("persons"), "deals_pinned": mp.get("deals"), "not_geocoded": mp.get("ungeocoded_contacts")},
@@ -441,32 +462,18 @@ class State:
         except ImportError:
             raise CRMError("the anthropic package is not installed in Pipeline's Python (pip install anthropic in ~/.aire/venv)")
         client = anthropic.Anthropic(api_key=self.ask_key)
-        kwargs = self._ask_kwargs(question)
-        resp = self._ask_call(client, kwargs, anthropic)
-        if getattr(resp, "stop_reason", "") == "refusal":
+        tools = jarvis.Tools(self.feed(), self.sent_today(), {"texts": self.max_texts, "emails": self.max_emails}, today().isoformat())
+        r = self._ask_call(anthropic, lambda: jarvis.ask(client, self.ask_model, tools, question))
+        if r.get("refused"):
             raise CRMError("Claude declined that one")
-        answer = " ".join(b.text for b in resp.content if getattr(b, "type", "") == "text").strip()
-        if getattr(resp, "stop_reason", "") == "max_tokens" and answer:  # spoken out loud: end on a whole sentence
-            cut = max(answer.rfind(". "), answer.rfind("? "), answer.rfind("! "))
-            answer = answer[:cut + 1] if cut > 0 else answer
-        u = self._bump_ask_usage(resp.usage, asked=1)
-        return {"ok": True, "result": {"answer": answer or "I have nothing on that.", "model": getattr(resp, "model", self.ask_model)}, "usage": u}
+        u = self.log_claude("ask", r.get("model", self.ask_model), r["usage"], tool_calls=len(r["calls"]))
+        return {"ok": True, "result": {"answer": r["answer"] or "I have nothing on that.", "model": r.get("model", self.ask_model),
+                                       "proposals": r["proposals"], "tools_used": [c["tool"] for c in r["calls"]]}, "usage": u}
 
-    def _ask_kwargs(self, question: str, max_tokens: int = 500) -> dict:
-        # The feed goes in a cached system block (sorted keys so the bytes repeat), the question after it, so a second
-        # question within five minutes reads the feed from cache: faster, and a tenth of the input price.
-        system = [{"type": "text", "text": ASK_SYSTEM},
-                  {"type": "text", "text": "Today's pipeline data as JSON:\n" + json.dumps(self.ask_context(), ensure_ascii=False, sort_keys=True),
-                   "cache_control": {"type": "ephemeral"}}]
-        messages = [{"role": "user", "content": "Caleb asked, by voice: " + question}]
-        return dict(model=self.ask_model, max_tokens=max_tokens, system=system, messages=messages, output_config={"effort": "low"})
-
-    def _ask_call(self, client, kwargs: dict, anthropic):
+    def _ask_call(self, anthropic, call):
+        """Run one Claude call, turning SDK errors into sentences Pipeline can say out loud."""
         try:
-            try:  # refusal fallback on the current Opus and Fable models; older SDKs or models do not know the parameter
-                resp = client.beta.messages.create(betas=["server-side-fallback-2026-07-01"], fallbacks="default", **kwargs)
-            except TypeError:
-                resp = client.messages.create(**kwargs)
+            result = call()
         except anthropic.AuthenticationError:
             raise CRMError("Anthropic refused the API key")
         except anthropic.RateLimitError:
@@ -477,29 +484,22 @@ class State:
             raise CRMError(f"Claude had a problem, error {e.status_code}. Try again in a minute.")
         except anthropic.APIConnectionError:
             raise CRMError("could not reach Anthropic")
-        return resp
-
-    def _bump_ask_usage(self, uu, **extra) -> dict:
-        return self._bump_usage(input_tokens=int(getattr(uu, "input_tokens", 0) or 0), output_tokens=int(getattr(uu, "output_tokens", 0) or 0),
-                                cache_read_tokens=int(getattr(uu, "cache_read_input_tokens", 0) or 0),
-                                cache_write_tokens=int(getattr(uu, "cache_creation_input_tokens", 0) or 0), **extra)
+        return result
 
     def warm_ask(self) -> dict:
-        """Voice just turned on: write today's feed into Claude's prompt cache with a max_tokens 0 request (no output
-        billed, one cache write) so the first real question reads it from cache instead of waiting on the write.
-        Same model, system blocks and effort as a real question, or the real question would miss. Skipped when the
-        same feed was warmed under four minutes ago (the cache lives five)."""
+        """Voice just turned on: write Jarvis' tools and instructions into Claude's prompt cache with a max_tokens 0
+        request (no output billed, one cache write), so the first real question reads them from cache. Same model,
+        tools, system and effort as a real question, or it would miss. Skipped when warmed under four minutes ago."""
         if self.demo or not self.ask_key:
             return {"ok": True, "result": {"warmed": False, "why": "Q&A is off"}}
-        kwargs = self._ask_kwargs("warmup", max_tokens=0)
-        key = hash(kwargs["system"][1]["text"])
-        if self._warm.get("key") == key and time.time() - self._warm.get("at", 0) < 240:
+        if self._warm.get("model") == self.ask_model and time.time() - self._warm.get("at", 0) < 240:
             return {"ok": True, "result": {"warmed": False, "why": "warm already"}}
         import anthropic
-        resp = self._ask_call(anthropic.Anthropic(api_key=self.ask_key), kwargs, anthropic)
-        self._warm = {"key": key, "at": time.time()}
-        self._bump_ask_usage(resp.usage, warmed=1)
-        return {"ok": True, "result": {"warmed": True, "cache_write_tokens": int(getattr(resp.usage, "cache_creation_input_tokens", 0) or 0)}}
+        client = anthropic.Anthropic(api_key=self.ask_key)
+        usage = self._ask_call(anthropic, lambda: jarvis.warm(client, self.ask_model))
+        self._warm = {"model": self.ask_model, "at": time.time()}
+        self.log_claude("warm", self.ask_model, usage)
+        return {"ok": True, "result": {"warmed": True, "cache_write_tokens": usage.get("cache_creation_input_tokens", 0)}}
 
     def speak(self, text: str) -> bytes:
         text = (text or "").strip()
@@ -633,6 +633,11 @@ class State:
     def stage(self, person_id: str, stage: str, expect: str = "") -> dict:
         args = ["stage", person_id, stage] + (["--expect", expect] if expect else [])
         return self.crm.run(args)
+
+    def relabel(self, person_id: str, band: str = "", type_: str = "", expect_band: str = "") -> dict:
+        """Caleb's yes on a Jarvis or label review card. Same crm.py write path, gates and audit as every button."""
+        args = ["relabel", person_id] + (["--band", band] if band else []) + (["--type", type_] if type_ else [])
+        return self.crm.run(args + ["--expect-band", expect_band])
 
     def dnc(self, person_id: str, reason: str) -> dict:
         if not reason.strip():
@@ -971,6 +976,8 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.note(body.get("person_id", ""), body.get("text", ""))
             elif u.path == "/api/stage":
                 out = s.stage(body.get("person_id", ""), body.get("stage", ""), body.get("expect", ""))
+            elif u.path == "/api/relabel":
+                out = s.relabel(body.get("person_id", ""), body.get("band", ""), body.get("type", ""), body.get("expect_band", ""))
             elif u.path == "/api/dnc":
                 out = s.dnc(body.get("person_id", ""), body.get("reason", ""))
             elif u.path == "/api/send":
@@ -1122,10 +1129,14 @@ def run_tests() -> int:
     sys.modules["anthropic"] = fake
     s3 = State(demo=True, send_log=tmp / "ask.json"); s3.demo = False; s3.ask_key = "sk-test"; s3.usage_path = tmp / "usage.json"
     r = s3.ask("who first")
-    check(r["ok"] and r["result"]["answer"].startswith("Call Taylor") and calls["model"] == ASK_MODEL_DEFAULT and calls["max_tokens"] <= 500
-          and calls.get("fallbacks") == "default" and "Caleb asked, by voice: who first" in calls["messages"][0]["content"],
-          "ask calls the SDK with the default model, a short answer cap, the fallback and the question")
+    check(r["ok"] and r["result"]["answer"].startswith("Call Taylor") and calls["model"] == ASK_MODEL_DEFAULT and calls["max_tokens"] <= 2000
+          and calls.get("fallbacks") == "default" and "Caleb asked, by voice: who first" in calls["messages"][0]["content"]
+          and {t["name"] for t in calls["tools"]} >= {"who_to_contact", "find_person", "label_review", "propose"},
+          "ask calls the SDK with the default model, a bounded cap, the fallback, the question and the Jarvis tools")
     check(s3.voice_usage()["input_tokens"] == 1200 and s3.voice_info()["ask_cost_estimate_usd"] > 0, "ask logs the tokens and estimates the spend")
+    c1 = s3.voice_info()["ask_cost_estimate_usd"]; s3.log_claude("ask", ASK_MODEL_DEFAULT, {"cache_read_input_tokens": 1_000_000})
+    check(abs(s3.voice_info()["ask_cost_estimate_usd"] - c1 - jarvis.PRICES[ASK_MODEL_DEFAULT][2]) < 1e-6 and s3.voice_usage()["cache_read_input_tokens"] >= 1_000_000,
+          "the running total keeps the cache meters and adds each call's exact cost")
     del sys.modules["anthropic"]
     try:
         s.speak("hello"); check(False, "speak refuses without a key")

@@ -418,6 +418,21 @@ function openHelp() {
 }
 
 // ---------------------------------------------------------------- toasts, clock, keys, boot
+// Jarvis proposals: one card at a time, nothing is written until Caleb taps yes (same API and gates as every button)
+async function showProposals(list) {
+  for (const p of list || []) {
+    const what = p.action === 'relabel' ? (p.type ? `Type to ${p.type}` : `band ${p.expect_band || 'blank'} to ${p.band}`) : p.action === 'task' ? `task "${p.task}" due ${p.due}` : `note "${p.text}"`;
+    const ok = await modal('JARVIS SUGGESTS', `<div class="brief"><p><b>${esc(p.name)}</b>: ${esc(what)}</p><p>${esc(p.why)}</p></div>`, () => true, 'Yes, do it');
+    if (!ok) { toast('warn', 'JARVIS', `Skipped: ${p.name}`); continue; }
+    const path = p.action === 'relabel' ? '/api/relabel' : p.action === 'task' ? '/api/task' : '/api/note';
+    const body = p.action === 'relabel' ? { person_id: p.person_id, band: p.band, type: p.type, expect_band: p.expect_band }
+      : p.action === 'task' ? { person_id: p.person_id, task: p.task, due: p.due } : { person_id: p.person_id, text: p.text };
+    const r = await api(path, body);
+    toast(r.ok ? 'ok' : 'err', 'JARVIS', r.ok ? `Saved: ${p.name}` : (r.error || 'not saved'));
+  }
+  load();
+}
+window.showProposals = showProposals;
 function toast(kind, tag, text) { const t = document.createElement('div'); t.className = 'toast ' + (kind === 'ok' ? '' : kind); t.innerHTML = `<b>${esc(tag)}</b><span>${esc(text)}</span>`; $('#toasts').appendChild(t); setTimeout(() => t.remove(), 3700); }
 function tick() { const d = new Date(); $('#date').textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); $('#time').textContent = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).toLowerCase(); }
 document.addEventListener('keydown', e => {

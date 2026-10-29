@@ -106,6 +106,9 @@ const Voice = (() => {
     if (/^(ask|question|hey claude|claude)[ ,:]/i.test(q)) return askClaude(text.replace(/^(ask|question|hey claude|claude)[ ,:]+/i, ''));
     if (/^(stop|quiet|cancel|never ?mind|hush|shut up|that'?s enough|enough)\b/.test(q)) { if ('speechSynthesis' in window) speechSynthesis.cancel(); if (audioEl) { try { audioEl.pause(); } catch (e) { } } setState(on ? 'listening' : 'idle'); return; }
     if (/^(thanks|thank you|cheers|perfect|got it|great|awesome)\b/.test(q)) return say('Anytime.');
+    // Jarvis (Caleb, 2026-10-29): short commands stay on the instant shortcuts below; a real question or request
+    // longer than three words goes to Jarvis, which looks it up. Send, text and open-a-page commands never match.
+    if (askOn() && q.split(/\s+/).length > 3 && /^(who|whose|what|which|when|where|why|how|is|are|was|does|do|did|should|can|could|any|anyone|anybody|tell me|find|fix|remind me|show me who|give me|brief me|what's|who's|how's)\b/.test(q)) return askClaude(text);
     setState('thinking');
 
     // ---- things that would write or send: open the box, Caleb presses Save or Send
@@ -214,7 +217,7 @@ const Voice = (() => {
     if (window.Core) Core.burst();
     return fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) })
       .then(r => r.json())
-      .then(r => { if (!r.ok) return say(r.error || 'Claude did not answer.'); say(r.result.answer); })
+      .then(r => { if (!r.ok) return say(r.error || 'Claude did not answer.'); say(r.result.answer); if ((r.result.proposals || []).length && window.showProposals) showProposals(r.result.proposals); })
       .catch(() => say('Claude did not answer.'));
   }
   function hourWord() { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'; }
