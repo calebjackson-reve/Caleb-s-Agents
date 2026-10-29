@@ -57,6 +57,9 @@ All paths relative to `aire/`. Every one of these files is git-ignored and stays
 | `crm/feed.json` | `crm/refresh_feed.sh` (LaunchAgent `org.calebjackson.aire.feed`, every 15 minutes and at login), which runs `crm.py feed --signals ../enrichment/out/imessage-signals.json` | Touches due (owes-a-reply first, then hot, then signal score, then longest silence), open tasks, live deals, new leads of the last 14 days, counts, `header_ok`. Spec: `crm/FEED.md`. |
 | `follow-up/out/text-queue.json` | `pipeline-app/predraft.py` (run by `refresh_feed.sh`), or `follow-up/followups.py --queue` | Text drafts in the compose box, one per phone-only person who is due. `reply_first` entries carry the person's last three texts instead of a template. |
 | `follow-up/out/email-queue.json` | same | Email drafts in the compose box for people with an email. |
+| `map-crm/farms.local.json` | the Map page (DRAW FARM) | The farms Caleb drew. Saving one rebuilds the feed so `feed.map.farms` carries the counts; the screen counts them itself in the meantime. |
+| `map-crm/cache/dismissed.json` | the Market Monitor (Dismiss) | Ids hidden from the Market Monitor. Nothing in the sheet changes. |
+| `map-crm/out/call-list-<date>.csv`, `postcards-<date>.csv` | the Map page and the Market Monitor | Lists out. A call list row needs a phone, a postcard row needs an address, nobody is added twice in a day. |
 | `command-reader/out/status.json` | `command-reader/command_reader.py` (LaunchAgent `org.calebjackson.aire.command`, every 30 minutes) | `{"at", "state", "detail"}`. On `login needed` or `layout changed` the status chip turns amber, the bell counts it and the Sources panel names it. |
 
 When `feed.json` says `header_ok: false`, the app shows the HEADER CHANGED stop screen and nothing else, because the Contacts header lost a column the engine needs (`crm/FEED.md`). When `feed.json` is missing it says so and offers the refresh. When it is older than an hour the feed gauge turns red.
@@ -170,6 +173,10 @@ What the two reels Caleb sent have that this does not: sub-agents per business t
 | New leads | `5` | Last 14 days with source and next action. |
 | Drafts | `6` | The compose queue in order: replies owed first, then texts, then emails. |
 | Sent today | `7` | The send log for today. |
+| Map | `8` | Every geocoded contact as a pin colored by band (grey is no band), live deals as houses, new leads pulse, an amber ring means they owe a reply. Market rows as diamonds when MARKET is on. Partners (agent, lender, vendor) hidden until PARTNERS is on. Filters: band, owe a reply, quiet 30/90/180/365 days, stage, farm. Street or satellite. Past 200 pins in view they cluster; click a cluster to zoom in. Click a pin: the card with Compose, Touched, Task, Note, tap to call, and add to the call list or postcards. DRAW FARM: name it, click the corners, double-click to finish. The side panel counts what is in view and who you know inside each farm, and turns the view or a farm into a call list or postcard list. |
+| Market Monitor | `9` | `feed.market.rows`, newest first: EBR permits and Flexmls alert listings, each with source and source date, farm, and the nearest person you know within two miles. Filters: permits, listings, near someone I know, kind, farm. Row actions: Make lead, Make deal, Postcard, show on Map, Dismiss. |
+
+Deals has a LIST / MAP switch at the top right: the same live deals as houses on the map.
 
 `c` opens the next draft, `r` refreshes, `v` toggles voice, `t` focuses the typed command box, `/` searches, `Esc` closes. The big TALK TO PIPELINE pill at the bottom is the voice toggle and shows the transcript; Compose next and Morning brief sit beside it. Morning brief summarizes replies owed, overdue tasks, new leads, deals and today's draft counts, and starts the first reply.
 
@@ -185,7 +192,12 @@ Taken from `--demo` on 2026-10-22 at 1440 by 900. Every person in them is made u
 | [Compose, email draft](screenshots/06-compose-email.png) | [Command login warning](screenshots/07-command-login-warning.png) |
 | [Header changed stop screen](screenshots/08-header-not-ok.png) | [Drafts queue](screenshots/09-compose-queue.png) |
 | [Deal editor](screenshots/10-deal-edit.png) | [Morning brief](screenshots/11-morning-brief.png) |
-| [Voice: the brief, typed in the sandbox](screenshots/12-voice-brief.png) | |
+| [Voice: the brief, typed in the sandbox](screenshots/12-voice-brief.png) | [Map](screenshots/13-map.png) |
+| [Map, pin card](screenshots/14-map-card.png) | [Map, a farm just drawn](screenshots/15-map-farm.png) |
+| [Map, satellite with market rows](screenshots/16-map-satellite-market.png) | [Market Monitor](screenshots/17-market-monitor.png) |
+| [Deals as a map](screenshots/18-deals-map.png) | [3,600 pins clustered (load test)](screenshots/19-map-3600-clustered.png) |
+
+13 to 19 were taken from `--demo` on 2026-10-29 at 1600 by 1000 with made-up people and made-up addresses. Map tiles: OpenStreetMap (street) and USGS The National Map (satellite), both free, both credited on the map.
 
 See `screenshots/README.md` for how they were made. Screenshots of the real feed never go in: run `python3 tools/check-no-client-data.py` before every push and look at every PNG by eye, the checker cannot see a name inside an image.
 

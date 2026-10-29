@@ -2,6 +2,42 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-29: Map and Market Monitor are in Pipeline
+
+**Confirmed by Caleb**
+- "Build those other integrations and put them on there", after the engine dry runs: the Pipeline pages from the 2026-10-27 contract.
+
+**Done (on the Mac, tested)**
+- Pipeline has a Map page (`8`), a Market Monitor page (`9`) and a LIST / MAP switch on Deals. Farms are drawn on the map and saved to `map-crm/farms.local.json`. Make lead, Make deal, Dismiss, call list and postcard list all work through `app.py` and `crm.py`. Details and proof in `map-crm/PIPELINE-CHANGES.md`.
+- Flexmls alerts: `monitor.py` now reads the real layout of the "AIRE Farm - <town>" saved-search mail (price, address, "Status - MLS #" in text, the event word in the HTML). Live dry run went from 0 rows to 73 from 8 alerts: 22 new listings and 51 listing changes (Flexmls printed "Active" with a change icon and no event word, so the kind of change is shown as not stated rather than guessed). The 12 mails still skipped are account notices, not alerts.
+- Fixed a bug on `main`: every Pipeline dialog (Touched, Task, Note, Do Not Contact, deal editor) returned nothing on Save, so those writes never happened from the screen. Confirmed on the live app before the fix, fixed and re-tested.
+
+**Needs Caleb**
+- Draw the first real farms. Until then every signal reads "outside your farms".
+- Ascension and Livingston permits are still not in (no public permit source verified, open choice 1).
+
+## 2026-10-27: Map CRM and Market Monitor, engine built, Pipeline pages next
+
+**Confirmed by Caleb**
+- Wants the map CRM from an Instagram reel (alex.poplawskii, Tampa CRE broker, Claude Code CRM with a permit Market Monitor and a satellite map of every record) inside Pipeline. Use both data paths (Command and MLS through existing channels, plus parish public records), build both a Map page and a Market Monitor page, add a map toggle to the deals view. "Build it and push", defaults on every open choice.
+
+**Done**
+- `aire/map-crm/CONTRACT.md`: the prompt contract with Sol's review, modify, verify order and a status line on what is built.
+- `aire/crm/crm.py`: new Geo tab (added only when missing, like Tasks and Deals), `geocode` (Census batch geocoder, free, idempotent, ties resolved only when every candidate is one point, unmatched listed in a report and never pinned, one audit line per run), `lead` write for the Market Monitor's Make lead (same create path as a website lead, refuses duplicates), and `map` plus `market` sections in `feed.json` (pins by band with deals and farms, market rows with farm and nearest known person within two miles). 128 offline checks pass.
+- `aire/map-crm/geo.py`: geometry and the geocoder, 21 checks. `aire/map-crm/monitor.py`: EBR permits from the live SODA endpoint plus Flexmls alert mail, one row shape, farm tag, dry run by default, 15 checks.
+- Proof from the cloud: live SODA dry run returned 239 residential permits issued Oct 13 to 26 (70 roof, 57 minor, 54 moved in, 31 new build, 13 remodel), 238 with coordinates, the one without geocoded by Census. `crm.py geocode` run on a local snapshot through the real Census service pinned a public address and refused three made-up ones. `monitor.py pull --write` then `crm.py feed` on fixtures produced a feed with 8 market rows, farm tags and nearest-person joins. `FEED.md` documents the sections and the app's new calls.
+- Watched the reel through Chrome on the Mac mini. Audio not available, screens described in the contract.
+
+**Inference**
+- Louisiana is a non-disclosure state, so sold prices come only from MLS. Public records give permits, not prices.
+- Only East Baton Rouge has a public permit dataset found so far. Ascension and Livingston not verified.
+- ROAM MLS went live on Flexmls on 2026-10-26 (GBRAR mail). No saved-search alerts existed in aire@ yet, so the Flexmls parser follows the standard alert layout against a made-up fixture and reports what it cannot parse. It is unverified until the first real alert arrives.
+
+**Needs Caleb**
+- On the Mac: `git pull`, then the first-run steps in `aire/map-crm/README.md` (`crm.py geocode` creates the Geo tab and takes a few minutes for 3,600 contacts). The geocode report says which addresses to fix in the sheet.
+- Create one Flexmls saved-search alert per farm area to aire@ (new and changed listings, daily). Send the first alert's text with names removed so the parser can be checked against it.
+- Point Sol at `aire/map-crm/README.md`, section "What Sol builds in Pipeline".
+
 ## 2026-10-22, evening: Pipeline rebuilt from the ground up, Jarvis style
 
 **Confirmed by Caleb (this session)**

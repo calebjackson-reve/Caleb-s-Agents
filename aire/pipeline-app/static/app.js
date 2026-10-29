@@ -44,7 +44,7 @@ function drafts() {
   const sentIds = new Set((S.data.sent_today || []).map(s => s.person_id));
   return items.filter(i => !sentIds.has(i.person_id));
 }
-function personRow(id) { return (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || []).find(r => r.person_id === id); }
+function personRow(id) { return (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person')).find(r => r.person_id === id); }
 function matches(text) { return !S.q || text.toLowerCase().includes(S.q.toLowerCase()); }
 function problems() { return (S.data && S.data.problems) || []; }
 function statusLevel() { const p = problems(); return p.some(x => x.level === 'stop') ? 'stop' : p.length ? 'warn' : 'ok'; }
@@ -84,8 +84,10 @@ function render() {
   const main = $('#main');
   if (d.feed_ok && f.header_ok === false) { main.innerHTML = stopScreen(f); return; }
   if (!d.feed_ok) { main.innerHTML = `<div class="stop-screen"><div class="big">NO FEED</div><p>${esc((problems()[0] || {}).text || 'feed.json is missing.')}</p><div class="acts"><button class="primary" onclick="refresh()">Run the refresh</button></div></div>`; return; }
-  const views = { cc: viewCC, touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent };
+  const views = { cc: viewCC, touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent, map: viewMap, market: viewMarket };
+  if (S.map) { S.map.destroy(); S.map = null; }
   main.innerHTML = (views[S.view] || viewCC)();
+  if (S.view === 'map') mountMap(false); else if (S.view === 'deals' && S.dealsMode === 'map') mountMap(true);
   if (S.view === 'cc' && window.Core) { const cv = $('#core'); if (cv) Core.mount(cv, (f.counts || {}).by_band || {}); }
   reflectVoice();
   // the hero's header is absolute, so the svg gets the whole panel
@@ -110,6 +112,7 @@ function renderNav(c) {
     ['tasks', '☑', 'Tasks', (feed().tasks || []).length, c.tasks_overdue > 0], ['deals', '⌂', 'Deals', (feed().deals || []).length],
     ['leads', '✦', 'New leads', (feed().new_leads || []).length, (feed().new_leads || []).length > 0], ['queue', '✉', 'Drafts', dr.length],
     ['sent', '↗', 'Sent today', (S.data.sent_today || []).length],
+    ['map', '◈', 'Map', ((feed().map || {}).counts || {}).persons || 0], ['market', '◆', 'Market Monitor', ((feed().market || {}).rows || []).length],
   ];
   $('#nav').innerHTML = items.map(([k, ico, label, n, warn]) => `<button class="${S.view === k ? 'on' : ''}" onclick="go('${k}')"><span class="ico">${ico}</span>${label}${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`).join('');
 }
@@ -165,14 +168,14 @@ function liveFeed() {
   (f.touches_due || []).filter(r => r.owes_reply).slice(0, 4).forEach(r => items.push({ cls: 'reply', ico: '↩', b: `${r.display} texted you`, s: (r.last_messages || [])[0] ? r.last_messages[r.last_messages.length - 1].replace(/^\d{4}-\d{2}-\d{2}: /, '') : 'owes a reply', tag: 'REPLY', tcls: 'reply', on: `openCompose('${r.person_id}')` }));
   (f.tasks || []).filter(t => t.overdue).slice(0, 2).forEach(t => items.push({ cls: 'task', ico: '!', b: `${t.task} is overdue`, s: `${t.display || 'no person'} · due ${t.due}`, tag: 'OVERDUE', tcls: 'stop', on: `go('tasks')` }));
   (f.new_leads || []).slice(0, 2).forEach(l => items.push({ cls: 'lead', ico: '✦', b: `New lead: ${l.display}`, s: `${l.source} · ${l.next_action || ''}`, tag: 'LEAD', tcls: 'live', on: `openCompose('${l.person_id}')` }));
-  (f.deals || []).slice().sort((a, b) => (b.last_event_at || '').localeCompare(a.last_event_at || '')).slice(0, 2).forEach(x => items.push({ cls: 'deal', ico: '⌂', b: x.address, s: x.last_event || x.next_step || x.stage, tag: x.stage.replace('_', ' ').toUpperCase(), tcls: 'violet', on: `openDeal('${esc(x.address)}')` }));
+  (f.deals || []).slice().sort((a, b) => (b.last_event_at || '').localeCompare(a.last_event_at || '')).slice(0, 2).forEach(x => items.push({ cls: 'deal', ico: '⌂', b: x.address, s: x.last_event || x.next_step || x.stage, tag: x.stage.replace('_', ' ').toUpperCase(), tcls: 'violet', on: `openDeal(${esc(JSON.stringify(x.address))})` }));
   (f.touches_due || []).filter(r => !r.owes_reply && r.band === 'hot').slice(0, 2).forEach(r => items.push({ cls: '', ico: '◎', b: `${r.display} is due`, s: r.next_action || quiet(r), tag: 'HOT', tcls: 'hot', on: `openCompose('${r.person_id}')` }));
   if (!items.length) return `<div class="empty"><b>All quiet</b>Nothing owes a reply, nothing overdue.</div>`;
   return items.slice(0, 8).map((x, i) => `<div class="feed-item" style="--i:${i}" onclick="${x.on}"><span class="ico ${x.cls}">${x.ico}</span><div class="body"><b>${esc(x.b)}</b><small>${esc(x.s)}</small></div><span class="tag ${x.tcls}">${x.tag}</span></div>`).join('');
 }
 function dealCard(x, i) {
   const stages = S.data.stages || [], pos = Math.max(0, stages.indexOf(x.stage)), pct = Math.round(((pos + 1) / 5) * 100);
-  return `<div class="card" style="--i:${i}" onclick="openDeal('${esc(x.address)}')"><span class="ico">${x.side === 'buyer' ? '◇' : '⌂'}</span><b>${esc(x.address)}</b><small>${esc([x.display, money(x.price), x.expected_close ? 'closes ' + x.expected_close : ''].filter(Boolean).join(' · ') || x.source)}</small><div class="bar"><i data-w="${Math.min(100, pct)}"></i></div><div class="stage">${esc(x.stage.replace('_', ' '))}${x.next_step ? ' · ' + esc(x.next_step) : ''}</div></div>`;
+  return `<div class="card" style="--i:${i}" onclick="openDeal(${esc(JSON.stringify(x.address))})"><span class="ico">${x.side === 'buyer' ? '◇' : '⌂'}</span><b>${esc(x.address)}</b><small>${esc([x.display, money(x.price), x.expected_close ? 'closes ' + x.expected_close : ''].filter(Boolean).join(' · ') || x.source)}</small><div class="bar"><i data-w="${Math.min(100, pct)}"></i></div><div class="stage">${esc(x.stage.replace('_', ' '))}${x.next_step ? ' · ' + esc(x.next_step) : ''}</div></div>`;
 }
 function timeline() {
   const t = (feed().tasks || []).slice(0, 7);
@@ -249,9 +252,10 @@ function viewDeals() {
     <span class="ico">${x.side === 'buyer' ? '◇' : '⌂'}</span>
     <div class="who"><b>${esc(x.address)}</b><small><span class="tag violet">${esc(x.stage.replace('_', ' '))}</span><span>${esc(x.side)}</span><span>${esc(x.display)}</span>${x.price ? `<span>${money(x.price)}</span>` : ''}${x.expected_close ? `<span>closes ${x.expected_close}</span>` : ''}</small></div>
     <div class="why"><b>${esc(x.next_step || 'no next step')}</b><span>${esc(x.last_event || '')}${x.last_event_at ? ' · ' + x.last_event_at.slice(0, 10) : ''} · ${esc(x.source)}</span></div>
-    <div class="acts"><button class="primary" onclick="openDeal('${esc(x.address)}')">✎ Edit</button>${x.person_id ? `<button onclick="openCompose('${x.person_id}')">✉</button>` : ''}</div>
+    <div class="acts"><button class="primary" onclick="openDeal(${esc(JSON.stringify(x.address))})">✎ Edit</button>${x.person_id ? `<button onclick="openCompose('${x.person_id}')">✉</button>` : ''}</div>
   </div>`).join('')}</div>` : `<div class="empty"><b>No live deals</b></div>`;
-  return `<div class="view">${panel(0, `Deals · ${rows.length}`, `<button class="link" onclick="openDeal()">＋ Add a deal</button>`, body)}</div>`;
+  const seg = `<div class="filters"><button class="${S.dealsMode === 'list' ? 'on' : ''}" onclick="S.dealsMode='list';render()">LIST</button><button class="${S.dealsMode === 'map' ? 'on' : ''}" onclick="S.dealsMode='map';render()">MAP</button></div>`;
+  return `<div class="view ${S.dealsMode === 'map' ? 'map-view' : ''}">${panel(0, `Deals · ${rows.length}`, `${seg} <button class="link" onclick="openDeal()">＋ Add a deal</button>`, S.dealsMode === 'map' ? mapPanel(true) : body)}</div>`;
 }
 function viewLeads() {
   const rows = (feed().new_leads || []).filter(l => matches(`${l.display} ${l.source} ${l.email} ${l.phone}`));
@@ -353,7 +357,8 @@ function modal(title, bodyHTML, onOK, okLabel = 'Save') {
     const m = $('#modal'); m.hidden = false;
     m.innerHTML = `<section class="panel"><div class="dh"><div class="who"><b>${title}</b></div><button class="x" onclick="closeModal()">×</button></div><div class="dbody">${bodyHTML}</div><div class="dfoot"><button class="send-btn" id="m-ok">${okLabel}</button><button class="ghost-btn" onclick="closeModal()">Cancel</button></div></section>`;
     m._resolve = resolve;
-    $('#m-ok').onclick = async () => { const v = onOK(m); if (v === false) return; closeModal(); resolve(v); };
+    // resolve with the value first: closeModal() resolves whatever is still pending with null (that is Cancel)
+    $('#m-ok').onclick = async () => { const v = onOK(m); if (v === false) return; m._resolve = null; resolve(v); closeModal(); };
     const first = m.querySelector('input, textarea, select'); if (first) first.focus();
     m.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') $('#m-ok').click(); }));
   });
@@ -409,7 +414,7 @@ function openProblems() {
     () => (p.some(x => x.code.startsWith('command')) ? 'command' : true), p.some(x => x.code.startsWith('command')) ? 'Open Command' : 'OK').then(v => { if (v === 'command') window.open(S.data.links.command); });
 }
 function openHelp() {
-  modal('Keys', `<div class="brief"><ul><li><kbd>1</kbd> to <kbd>7</kbd> switch views</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Those answers are read straight from the feed. Anything else goes to Claude with today's feed when the Q&amp;A step is on (ANTHROPIC_API_KEY). Say "ask ..." to force it.</li><li>With the Speech Engine set up (README), the bottom pill starts a call: ElevenLabs listens and talks over WebRTC, Claude answers from the feed, you can interrupt it. Tap again to hang up.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li><li>The Sources panel shows whether Claude Q&amp;A and the ElevenLabs voice are on and what they have used.</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
+  modal('Keys', `<div class="brief"><ul><li><kbd>1</kbd> to <kbd>9</kbd> switch views (<kbd>8</kbd> Map, <kbd>9</kbd> Market Monitor)</li><li>On the map: drag to move, scroll or double-click to zoom, click a cluster to open it. Drawing a farm: click corners, double-click or Enter to finish, Backspace undoes a corner, Esc cancels.</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Those answers are read straight from the feed. Anything else goes to Claude with today's feed when the Q&amp;A step is on (ANTHROPIC_API_KEY). Say "ask ..." to force it.</li><li>With the Speech Engine set up (README), the bottom pill starts a call: ElevenLabs listens and talks over WebRTC, Claude answers from the feed, you can interrupt it. Tap again to hang up.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li><li>The Sources panel shows whether Claude Q&amp;A and the ElevenLabs voice are on and what they have used.</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
 }
 
 // ---------------------------------------------------------------- toasts, clock, keys, boot
@@ -417,8 +422,8 @@ function toast(kind, tag, text) { const t = document.createElement('div'); t.cla
 function tick() { const d = new Date(); $('#date').textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); $('#time').textContent = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).toLowerCase(); }
 document.addEventListener('keydown', e => {
   if (e.target.matches('input, textarea, select')) { if (e.key === 'Escape') e.target.blur(); return; }
-  const views = ['cc', 'touches', 'tasks', 'deals', 'leads', 'queue', 'sent'];
-  if (/^[1-7]$/.test(e.key)) go(views[Number(e.key) - 1]);
+  const views = ['cc', 'touches', 'tasks', 'deals', 'leads', 'queue', 'sent', 'map', 'market'];
+  if (/^[1-9]$/.test(e.key)) go(views[Number(e.key) - 1]);
   else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
   else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }
   else if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else closeDrawer(); }
@@ -469,6 +474,6 @@ async function boot() {
   $('#app').hidden = false;
   if (S.data) render(); else toast('err', 'SERVER', 'app.py is not answering.');
   $('#boot').classList.add('out'); setTimeout(() => $('#boot').remove(), 600);
-  S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.view === 'cc') { /* keep the globe steady: update numbers only */ renderNav(feed().counts || {}); } else render(); } catch (e) { } }, 30000);
+  S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.view === 'cc') { /* keep the globe steady: update numbers only */ renderNav(feed().counts || {}); } else if (S.map) { /* keep the map where Caleb left it */ renderNav(feed().counts || {}); mapUpdate(); } else render(); } catch (e) { } }, 30000);
 }
 boot();
