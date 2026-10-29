@@ -9,7 +9,10 @@ site = root / 'site'
 out = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'dist'
 if out.exists(): shutil.rmtree(out)
 (out / 'assets').mkdir(parents=True)
-def fix(text): return text.replace('../media/', '/media/').replace('<meta name="robots" content="noindex,nofollow">', '<meta name="robots" content="index,follow">')
+def fix(text):
+    text = text.replace('../media/', '/media/').replace('<meta name="robots" content="noindex,nofollow">', '<meta name="robots" content="index,follow">')
+    # canonical/og URLs are written for calebjackson.org by build.py; rewrite for a staging host
+    return text.replace('https://calebjackson.org/', 'https://' + host + '/')
 for f in site.glob('*.html'):
     if not f.name.startswith('_'): (out / f.name).write_text(fix(f.read_text()))
 lead = os.environ.get('LEAD_WEBHOOK', '')
@@ -32,13 +35,36 @@ for r in sorted(refs):
     if src.exists():
         dst = out / r.lstrip('/'); dst.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(src, dst)
     else: print('missing', r)
-(out / '_redirects').write_text('/home-search https://search.calebjackson.org 301\n/about /about.html 301\n/sell /sell.html 301\n/contact /contact.html 301\n/communities /communities.html 301\n/search /search.html 301\n/profile /about.html 301\n/contact-us /contact.html 301\n')
-# GitHub Pages ignores _redirects, so old LP paths that matter get stub pages too
-(out / 'home-search').mkdir(); (out / 'home-search' / 'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Home Search</title><meta http-equiv="refresh" content="0;url=https://search.calebjackson.org"><link rel="canonical" href="https://search.calebjackson.org"><a href="https://search.calebjackson.org">Search homes</a>\n')
-# /profile and /contact-us are linked from old LP templates and 404 on the live site (2026-10-29 audit)
-for old, new in (('profile', 'about.html'), ('contact-us', 'contact.html')):
-    (out / old).mkdir()
-    (out / old / 'index.html').write_text(f'<!doctype html><meta charset="utf-8"><title>Moved</title><meta http-equiv="refresh" content="0;url=/{new}"><link rel="canonical" href="https://{host}/{new}"><a href="/{new}">Continue</a>\n')
+# Old LP URLs (live sitemap-static.xml and sitemap-neighborhoods-dpages.xml, read Oct 29 2026)
+# mapped to the closest new page. GitHub Pages ignores _redirects, so each old path gets a
+# meta-refresh stub page; _redirects carries the same map for a host that honors it.
+# GitHub Pages serves /about from about.html on its own, so same-named pages need no stub.
+# Old blog posts are not stubbed: they fall to 404.html, which shows the home page.
+SEARCH = 'https://search.calebjackson.org'
+REDIRECTS = {
+    'home-search': SEARCH, 'home-search/listings': SEARCH,
+    'buy': '/search.html', 'properties': '/search.html',
+    'home-valuation': '/sell.html', 'seller-net-sheet': '/sell.html',
+    'true-payment-calculator': '/sell.html', 'tools': '/sell.html',
+    'market-report': '/sell.html',
+    # /profile and /contact-us are linked from old LP templates and 404 on the live site (2026-10-29 audit)
+    'profile': '/about.html', 'contact-us': '/contact.html',
+    'testimonials': '/about.html', 'video-gallery': '/about.html',
+    'relocate': '/communities.html', 'blog': '/',
+    'ai-showing-plan': '/', 'flood-zone-check': '/',
+    'neighborhood-match-quiz': '/', 'terms-and-conditions': '/',
+}
+for n in ['baton-rouge', 'false-river-waterfront', 'zachary-golf', 'historic-br', 'santa-maria',
+          'university-club-plantation', 'country-club-of-louisiana', 'new-roads',
+          'st-francisville', 'garden-district', 'bocage']:
+    REDIRECTS['neighborhoods/' + n] = '/communities.html'
+redirect_lines = []
+for old, new in REDIRECTS.items():
+    target = new if new.startswith('http') else 'https://' + host + new
+    redirect_lines.append('/' + old + ' ' + target + ' 301')
+    stub = out / old; stub.mkdir(parents=True, exist_ok=True)
+    (stub / 'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Moved</title><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0;url=' + target + '"><link rel="canonical" href="' + target + '"><a href="' + target + '">Continue</a>\n')
+(out / '_redirects').write_text('\n'.join(redirect_lines) + '\n')
 (out / '_headers').write_text('/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/media/*\n  Cache-Control: public, max-age=31536000, immutable\n/assets/*\n  Cache-Control: public, max-age=86400\n')
 (out / '404.html').write_text((out / 'index.html').read_text())
 (out / 'CNAME').write_text(host + '\n')

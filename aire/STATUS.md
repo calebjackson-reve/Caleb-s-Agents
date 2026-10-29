@@ -2,6 +2,64 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-22, evening: Pipeline rebuilt from the ground up, Jarvis style
+
+**Confirmed by Caleb (this session)**
+- "Build it from the ground up with only Claude Code as the main source", with the Jarvis command center look he sent (dark navy HUD, cyan glow, cut-corner panels, left nav, center core, live feed on the right, big action pill at the bottom), "change it up some" and "more animations". He also said he still wants the buttons, toggles, charts and systems of that reference. Two Instagram reels he sent as motion and voice references could not be opened from the cloud (Instagram shows a login wall), so the motion is from the still image only.
+
+**Done (cloud, tested against fixtures)**
+- `aire/pipeline-app/` now holds the whole app: `app.py` (standard-library Python server, the one caller of `crm.py`), `static/` (the screen, no build step, offline), `predraft.py` (drafts from the feed through `follow-up/pools.py` and `followups.build_feed_queue`), `fixtures/` (made-up people for `--demo`), `launchd/` and `install.sh` (server at login, Dock app in a Chrome app window). README has the build and run steps, every `crm.py` command the app calls, the three send gates and the screenshots.
+- What it does today: Command Center (overview counts, rotating core, live feed, active deals with stage bars, today's timeline, quick commands, send gauges, band chart, sources), Touches due, Tasks, Deals, New leads, Drafts queue, Sent today, compose drawer (text or email, their last three texts above the draft, send, skip, touched), deal editor, new task, note, Do Not Contact with reason, morning brief, problems list, keyboard shortcuts, search. Every write is `crm.py --json --client pipeline` with `touch`, `done` (with `sync-tasks` first for Next_Action rows), `task`, `deal`, `note`, `dnc`. Refresh runs `refresh_feed.sh` in the background.
+- Sends: Do Not Contact check through the engine's gate (dry-run touch), daily cap 25 texts and 25 emails from `out/send-log.json`, `PIPELINE_SENDER=live` or dry run. Dry run is the default and the screen says so.
+- `aire/crm/refresh_feed.sh` runs `pipeline-app/predraft.py` with the venv Python; the Codex folder fallback stays only for `Sources/predraft.py`.
+- 27 offline checks pass (`app.py --test`). 12 screenshots from the demo in `pipeline-app/screenshots/`, no real people in them.
+
+**Added the same evening, from the reels**
+- A Claude session on the Mac watched the two reels in Chrome and wrote up what is in them; Caleb pasted the notes into the cloud session and they are saved as `pipeline-app/REFERENCE.md` (Blueprint, Proof, Unknowns). What went into Pipeline: a particle neural-network core in the center (five clusters by band, streaks, radar sweep, energy follows the voice state), a voice loop in the browser (`static/voice.js`: wake word "hey Pipeline", Chrome speech recognition, speechSynthesis with a British voice, intents matched by plain words against the feed, no LLM, nothing sent by voice), LISTENING / THINKING / SPEAKING on the status chip, a transcript line and telemetry ticker in the core panel, a mic orb and typed-command box in the sidebar, and the bottom pill is now TALK TO PIPELINE with Compose next beside it. The intents were exercised by typing in headless Chromium (the brief reads the right names and counts); the microphone half runs only in Chrome on the Mac.
+
+- Caleb then asked for the Claude Q&A step and the ElevenLabs voice. Both added, both off until the key is in `~/.aire/pipeline.env`: a question the intents do not know goes to Claude (`claude-opus-5-5`, low effort, refusal fallback on, short spoken answer) with a compact view of today's feed (names, bands, next actions, last texts, tasks, deals, leads; no phones or emails), and everything Pipeline says goes through ElevenLabs (Daniel, `eleven_flash_v2_5`) with the browser voice as the fallback. Usage and a cost estimate in `out/voice-usage.json` and the Sources panel. Tested with the network faked; not yet called for real.
+
+- Calls through the ElevenLabs Speech Engine (Caleb: "create a Speech Engine instance, connect it to my own LLM through the transcript server protocol, stream speech back in real time"). `pipeline-app/speech_engine.py` is the transcript server on the ElevenLabs Python SDK: `create` makes the resource pointing at a public wss:// URL (ngrok), `serve` answers each transcript with Claude streamed (same feed view as the Q&A, cached in the system prompt, call rules on top), interruptions handled by the SDK. `app.py` mints the WebRTC token at `/api/voice/token`, the screen loads the pinned ElevenLabs client on demand and the bottom pill becomes CALL PIPELINE when all three keys are in `~/.aire/pipeline.env`. 9 offline checks for the server, 2 more in app.py. Not yet run against ElevenLabs for real.
+
+**Stubbed or not verified**
+- A real Speech Engine call: needs ngrok, the resource and the keys on the Mac. Steps in the README under "Calls".
+- The real Claude and ElevenLabs calls. The request shapes and counters are tested; the first real call happens on the Mac after the keys are in `~/.aire/pipeline.env`.
+- The microphone half of the voice loop and the spoken answers: headless Chromium has neither. First run on the Mac: open Chrome, press `v`, allow the mic, say "hey Pipeline, brief".
+- Live sending (Messages via `osascript`, Gmail via the follow-up token), refresh from the screen on the Mac, `install.sh` and the LaunchAgent: written for macOS, not run there. First real send should be to Caleb himself.
+- `stage` is served (`/api/stage`) but has no button.
+- The old Codex SwiftUI app is replaced, not copied. Its folder on the Mac and the Drive zip are not needed.
+
+**Needs Caleb**
+- On the Mac: `python3 aire/pipeline-app/app.py --demo` to see it, then `sh aire/crm/refresh_feed.sh` and `~/.aire/venv/bin/python aire/pipeline-app/app.py` for the real feed, then `sh aire/pipeline-app/install.sh` to keep it at login.
+- Say when to flip `PIPELINE_SENDER` to `live`, and whether 25 and 25 stay the caps.
+- Put `ANTHROPIC_API_KEY` and `ELEVENLABS_API_KEY` in `~/.aire/pipeline.env` on the Mac to turn on the Q&A step and the voice. Both spend per call; the screen shows the running count.
+- The Mac had no Homebrew and `~/.aire/venv` was on Python 3.9 (end of life). The Mac session is rebuilding it on 3.13 with uv; the LaunchAgent, `install.sh` and `refresh_feed.sh` only need `~/.aire/venv/bin/python`, so uv is fine. Full Disk Access must be granted to the real 3.13 binary (`readlink -f ~/.aire/venv/bin/python`), not the venv symlink.
+- For calls: `pip install elevenlabs` in the venv, run ngrok, `speech_engine.py create --ws-url wss://<ngrok host>/ws --save`, then `speech_engine.py serve`. Speech Engine minutes bill on the ElevenLabs plan on top of the Claude tokens.
+- The visual improvements list from before this rebuild was never found. Say what is still missing after seeing this version.
+- If the "Build, run and screenshot the Pipeline app" task card was started on the Mac, stop it: it would copy the Codex source into the same folder.
+
+## 2026-10-22: the Pipeline app gets a home in the repo
+
+**Confirmed (from the repo, not from running the app)**
+- The native Mac Pipeline app is Caleb's one daily tool and no parallel dashboard is built (`aire/STACK.md`, 2026-10-19). Codex built it on 2026-10-19 at `~/Documents/Codex/2026-10-19/task-3/PipelinePanel` on the Mac. Codex and ChatGPT were cancelled the same day, so Claude Code on the Mac maintains it now.
+- What it is wired to, from `aire/crm/FEED.md`, `crm.py` and `aire/follow-up/README.md`: it reads `crm/feed.json` (touches due, tasks, deals, new leads, counts, `header_ok`), `follow-up/out/text-queue.json` and `email-queue.json` (drafts for its compose box) and `command-reader/out/status.json` (the Command "login needed" warning). It writes back through `crm.py --json --client pipeline` with `touch`, `done`, `task`, `deal` (`stage`, `note`, `dnc` are also available), and refreshes with `ingest` then `feed`. Its `Sources/predraft.py` imports `follow-up/pools.py` and is run by `refresh_feed.sh` every 15 minutes.
+- The morning run of 2026-10-21 counted 7 touches logged by Pipeline the day before, so the `touch` path works on the real sheet (from the morning run log below).
+- A `pipeline-airdrop.zip` (230 MB) was uploaded to Caleb's Drive on 2026-10-22 at 2:30 pm Central. Inference: it is the app folder with build output. The cloud session could not unpack it (the Drive tool returns file bytes into the chat, and 230 MB does not fit).
+
+**Done (cloud)**
+- `aire/pipeline-app/` created: README with what the app reads, every `crm.py` command it calls back and the exact contract (`--json --client pipeline`, one JSON object out), a `.gitignore` for feed, queues, status, logs, audit files and build output, and `screenshots/README.md` naming the eight screenshots to take. No source yet.
+- `aire/crm/refresh_feed.sh`: `PIPELINE_PANEL` now defaults to `aire/pipeline-app`. The env override stays. Until the copy lands, it falls back to the Codex folder on the Mac when that folder still has `Sources/predraft.py`, so tonight's feed refresh does not lose the predraft step.
+- `aire/README.md` lists the new folder.
+
+**Not done, needs the Mac**
+- The copy itself, the build and run command, and the screenshots. A cloud session cannot read `~/Documents` on the Mac. Steps are in `aire/pipeline-app/README.md`, "Bringing the source into this folder", and in the suggested task card for this session.
+- What is stubbed and what broke in the app: unknown from here. The Mac session fills that in from the source and from running it.
+- The list of visual improvements Caleb asked for: not found in the repo, Slack, or Wispr Flow notes. Caleb, say them again in the Mac session or add them here.
+
+**Needs Caleb**
+- Start the "Copy the Pipeline app into aire/pipeline-app" task on the Mac (Claude Desktop or `claude remote-control` in `~/Caleb-s-Agents`).
+- Confirm the Drive zip is the app folder, or delete it if it was only for this session. It never gets committed.
+
 ## 2026-10-20: CRM engine, no more junk deals, feed ranks by texts first
 
 **Confirmed by Caleb (through the Mac session)**
