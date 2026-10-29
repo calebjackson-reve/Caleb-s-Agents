@@ -2,6 +2,20 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-29, afternoon: voice commands tested and rebuilt
+
+**Confirmed by Caleb**
+- "Go in and do a series of tests and Q and A with the voice command to improve its efficiency."
+
+**Done (on the Mac, tested on the real feed with sending in dry run and ElevenLabs off)**
+- 77 spoken-style commands typed through the same path the microphone uses (`Voice.type`), four rounds. Before: about 20 of 40 right, plurals missed ("tasks", "deals", "leads"), "what did I send" and "what's next" opened compose, "give me an update" rebuilt the feed, "who's gone quiet" stopped the voice, a contact with no name was read as a blank. After: 75 of 77 answered from the feed, median 7 ms; only weather and calendar go to Claude.
+- Root bug: `voice.js` read the app state as `window.S`, but the app keeps it in a top-level `const S`, so Claude Q&A, the ElevenLabs voice and calls were always off no matter the keys. Fixed.
+- New commands: who should I call first, which deal closes next, how many deals under contract, a deal by street ("tell me about Buffalo Hollow"), a person by name ("what did Josh say", "how is Marci"), hot or warm counts, permits by kind ("any roof permits", "new builds this week"), new listings, the map, CRM size, texts left today, open or go to any page. Commands that would write or send ("text Josh", "call Bryan", "log a call with Greg Bergeron", "remind me to call Marci tomorrow") only open the box; Caleb presses Send or Save. A first name that matches several people says so.
+- Spoken text drops emoji and line breaks. Claude errors are one plain sentence.
+
+**Needs Caleb**
+- The Anthropic API account behind Pipeline (and OmniRoute's anthropic route) is out of credits, so Claude Q&A cannot answer yet. Topping it up is Caleb's call.
+
 ## 2026-10-29: Map and Market Monitor are in Pipeline
 
 **Confirmed by Caleb**
