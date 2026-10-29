@@ -2,6 +2,20 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-29, afternoon: live texting from Pipeline
+
+**Confirmed by Caleb**
+- "I want to be able to send a text directly out of the pipeline app."
+
+**Done**
+- Texts go through Messages.app as iMessage first. Messages accepts an iMessage send even for a number that is not on iMessage and marks it failed later, so Pipeline reads the result back from `~/Library/Messages/chat.db` (read only, the venv Python already has Full Disk Access). On an error it sends once as SMS through the iPhone. Both failing shows NOT SENT, is logged as `failed` in `out/send-log.json`, and no touch is written. In the last 60 days 254 of Caleb's texts went as SMS, so the fallback matters.
+- In live mode Pipeline asks Messages a harmless question at start, so the macOS Allow box shows then, and a missing permission is a warning on screen.
+- `PIPELINE_SENDER=live` in the LaunchAgent. Every text still needs Caleb's press on Send, Do Not Contact is checked through the engine, the cap stays 25 texts a day.
+- 9 offline checks for the fallback, the chat.db read and the failed-send log. The chat.db read was checked against the real database (a text sent today reads as delivered).
+
+**Not verified**
+- A real send. The first one is Caleb's press.
+
 ## 2026-10-29, afternoon: voice commands tested and rebuilt
 
 **Confirmed by Caleb**
