@@ -2,6 +2,20 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-29: Map and Market Monitor are in Pipeline
+
+**Confirmed by Caleb**
+- "Build those other integrations and put them on there", after the engine dry runs: the Pipeline pages from the 2026-10-27 contract.
+
+**Done (on the Mac, tested)**
+- Pipeline has a Map page (`8`), a Market Monitor page (`9`) and a LIST / MAP switch on Deals. Farms are drawn on the map and saved to `map-crm/farms.local.json`. Make lead, Make deal, Dismiss, call list and postcard list all work through `app.py` and `crm.py`. Details and proof in `map-crm/PIPELINE-CHANGES.md`.
+- Flexmls alerts: `monitor.py` now reads the real layout of the "AIRE Farm - <town>" saved-search mail (price, address, "Status - MLS #" in text, the event word in the HTML). Live dry run went from 0 rows to 73 listings from 8 alerts; the 12 mails still skipped are account notices, not alerts.
+- Fixed a bug on `main`: every Pipeline dialog (Touched, Task, Note, Do Not Contact, deal editor) returned nothing on Save, so those writes never happened from the screen. Confirmed on the live app before the fix, fixed and re-tested.
+
+**Needs Caleb**
+- Draw the first real farms. Until then every signal reads "outside your farms".
+- Ascension and Livingston permits are still not in (no public permit source verified, open choice 1).
+
 ## 2026-10-27: Map CRM and Market Monitor, engine built, Pipeline pages next
 
 **Confirmed by Caleb**

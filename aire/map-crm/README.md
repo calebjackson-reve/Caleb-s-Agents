@@ -1,6 +1,6 @@
 # Map CRM and Market Monitor
 
-Map page, Market Monitor page and a deals map toggle inside the native Pipeline app, fed by the AIRE CRM engine (`aire/crm/crm.py`) and East Baton Rouge public records. The contract is `CONTRACT.md`. The engine side is built (2026-10-27). The Pipeline pages are Sol's, on the Mac.
+Map page, Market Monitor page and a deals map toggle inside the native Pipeline app, fed by the AIRE CRM engine (`aire/crm/crm.py`) and East Baton Rouge public records. The contract is `CONTRACT.md`. The engine side was built 2026-10-27, the Pipeline pages 2026-10-29 (`PIPELINE-CHANGES.md`).
 
 | File | What it is |
 |---|---|
@@ -9,7 +9,7 @@ Map page, Market Monitor page and a deals map toggle inside the native Pipeline 
 | `monitor.py` | Pulls EBR permits (data.brla.gov `7fq7-8j7r`) and Flexmls alert mail into `cache/signals.json`. Dry run by default, `--write` writes. `python3 monitor.py --test`. |
 | `farms.example.json` | The shape of a farm polygon file. The real one is `farms.local.json`, written by the Pipeline app, ignored by git. |
 | `tests/fixtures/` | Made-up permits in the dataset's real column shape, and a made-up Flexmls alert. |
-| `PIPELINE-CHANGES.md` | Not written yet. Sol's note on what changed in the Pipeline app on the Mac. |
+| `PIPELINE-CHANGES.md` | What changed in the Pipeline app for the Map, Market Monitor and deals map (2026-10-29). |
 
 Client data (`cache/`, `out/`, `farms.local.json`, geocode reports) stays on the Mac. `python3 tools/check-no-client-data.py` before every push.
 

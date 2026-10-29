@@ -40,6 +40,7 @@ Environment:
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import os
 import platform
@@ -91,6 +92,9 @@ PATHS = {
     "send_log": OUT / "send-log.json",
     "voice_usage": OUT / "voice-usage.json",
     "feed_log": Path.home() / ".aire" / "logs" / "feed.log",
+    "farms": AIRE / "map-crm" / "farms.local.json",
+    "dismissed": AIRE / "map-crm" / "cache" / "dismissed.json",
+    "lists": AIRE / "map-crm" / "out",
 }
 ASK_MODEL_DEFAULT = "claude-opus-5-5"
 ELEVEN_VOICE_DEFAULT = "onwK4e9ZLuTAKqWW03F9"   # ElevenLabs premade "Daniel", British
@@ -105,6 +109,9 @@ DEMO_PATHS = {
     "text_queue": FIXTURES / "demo-text-queue.json",
     "email_queue": FIXTURES / "demo-email-queue.json",
     "command_status": FIXTURES / "demo-status.json",
+    "farms": OUT / "demo-farms.json",
+    "dismissed": OUT / "demo-dismissed.json",
+    "lists": OUT / "demo-lists",
 }
 CRM_PY = AIRE / "crm" / "crm.py"
 REFRESH_SH = AIRE / "crm" / "refresh_feed.sh"
@@ -249,6 +256,16 @@ class DemoCRM:
                 feed["deals"] = [x for x in feed["deals"] if x is not d]
             feed["counts"]["deals_live"] = len(feed["deals"])
             return {"ok": True, "result": d}
+        if cmd == "lead":
+            name = args[1]
+            if any(r.get("display", "").lower() == name.lower() for r in feed.get("new_leads", [])):
+                raise CRMError(f"{name} already exists")
+            pid = str(9000 + len(self.log))
+            src = args[args.index("--source") + 1] if "--source" in args else "pipeline"
+            lead = {"person_id": pid, "display": name, "phone": "", "email": "", "source": src, "received": today().isoformat(),
+                    "next_action": "Reach out about the Market Monitor row"}
+            feed.setdefault("new_leads", []).insert(0, lead)
+            return {"ok": True, "result": {"person_id": pid, "display": name, "Stage": "new lead", "band": "warm"}}
         if cmd == "note":
             return {"ok": True, "result": {"person_id": args[1], "note": args[2]}}
         if cmd == "stage":
@@ -272,6 +289,8 @@ class State:
         self.demo = demo
         self.paths = dict(paths or (DEMO_PATHS if demo else PATHS))
         self.send_log_path = send_log or (OUT / ("demo-send-log.json" if demo else "send-log.json"))
+        if demo and send_log:  # tests: the map files land next to their send log, not in out/
+            self.paths.update(farms=send_log.parent / "farms.json", dismissed=send_log.parent / "dismissed.json", lists=send_log.parent / "lists")
         self.max_texts = int(os.getenv("PIPELINE_MAX_TEXTS", "25"))
         self.max_emails = int(os.getenv("PIPELINE_MAX_EMAILS", "25"))
         self.sender = "dry" if demo else (os.getenv("PIPELINE_SENDER", "dry").strip().lower() or "dry")
@@ -442,6 +461,10 @@ class State:
         feed_age = 0 if self.demo else file_age_minutes(self.paths["feed"])
         sent = self.sent_today()
         feed_ok = bool(feed) and "_error" not in feed
+        if feed_ok and isinstance(feed.get("market"), dict):
+            gone = self.dismissed()
+            if gone:
+                feed = {**feed, "market": {**feed["market"], "rows": [r for r in feed["market"].get("rows", []) if r.get("id") not in gone]}}
         problems = []
         if not feed:
             problems.append({"level": "warn", "code": "no_feed", "text": "No feed.json yet. Run the refresh."})
@@ -476,6 +499,7 @@ class State:
             "links": {"sheet": SHEET_URL.format(sheet_id=feed.get("sheet_id", "")) if feed.get("sheet_id") else "", "command": COMMAND_URL},
             "stages": DEAL_STAGES,
             "voice": self.voice_info(),
+            "farms": self.farms(),
         }
 
     # ---- writes
@@ -536,6 +560,89 @@ class State:
         if not reason.strip():
             raise CRMError("Do Not Contact needs a reason, it is one way")
         return self.crm.run(["dnc", person_id, "--reason", reason.strip()])
+
+    # ---- map and market monitor
+    def farms(self) -> list[dict]:
+        """The farms Caleb drew, as saved. The feed's map.farms has the people counts; this is the file itself,
+        so a farm drawn a minute ago shows before the next feed rebuild."""
+        f = read_json(self.paths["farms"], {})
+        return f.get("farms", []) if isinstance(f, dict) else []
+
+    def save_farms(self, farms: list) -> dict:
+        clean = []
+        for x in farms or []:
+            poly = [[float(a), float(b)] for a, b in (x.get("polygon") or [])]
+            name = str(x.get("name") or "").strip()
+            if len(poly) < 3 or not name:
+                raise CRMError("a farm needs a name and at least three corners")
+            if not all(-90 <= a <= 90 and -180 <= b <= 180 for a, b in poly):
+                raise CRMError("a farm corner is off the map")
+            fid = str(x.get("id") or "").strip() or "-".join(name.lower().split())[:40]
+            clean.append({"id": fid, "name": name, "created": x.get("created") or today().isoformat(), "polygon": poly})
+        if len({c["id"] for c in clean}) != len(clean):
+            raise CRMError("two farms have the same name")
+        with self.lock:
+            write_json(self.paths["farms"], {"version": 1, "farms": clean})
+        return {"ok": True, "result": {"farms": len(clean), "file": self.paths["farms"].name}, "refresh": self.start_refresh()}
+
+    def dismissed(self) -> set:
+        d = read_json(self.paths["dismissed"], {})
+        return set(d.get("ids", [])) if isinstance(d, dict) else set()
+
+    def dismiss(self, row_id: str) -> dict:
+        if not row_id:
+            raise CRMError("dismiss needs a row id")
+        with self.lock:
+            ids = sorted(self.dismissed() | {row_id})
+            write_json(self.paths["dismissed"], {"ids": ids})
+        return {"ok": True, "result": {"id": row_id, "dismissed": len(ids)}}
+
+    def make_lead(self, name: str, source: str, phone: str = "", email: str = "", note: str = "") -> dict:
+        if not name.strip() or not source.strip():
+            raise CRMError("a lead needs a name and a source")
+        args = ["lead", name.strip(), "--source", source.strip()]
+        for flag, v in (("--phone", phone), ("--email", email), ("--note", note)):
+            if v and v.strip():
+                args += [flag, v.strip()]
+        return self.crm.run(args)
+
+    LIST_COLUMNS = {"call": ["added", "kind", "person_id", "display", "phone", "email", "address", "city", "zip", "why"],
+                    "postcards": ["added", "kind", "person_id", "display", "address", "city", "state", "zip", "why"]}
+
+    def add_to_list(self, kind: str, rows: list) -> dict:
+        """out/call-list-<date>.csv or out/postcards-<date>.csv under aire/map-crm. Client data, git-ignored,
+        stays on the Mac. A row already on today's list is not added twice."""
+        if kind not in self.LIST_COLUMNS:
+            raise CRMError("list must be call or postcards")
+        cols = self.LIST_COLUMNS[kind]
+        path = self.paths["lists"] / f"{'call-list' if kind == 'call' else 'postcards'}-{today().isoformat()}.csv"
+        with self.lock:
+            have = []
+            if path.exists():
+                with path.open(newline="", encoding="utf-8") as fh:
+                    have = list(csv.DictReader(fh))
+            keys = {(r.get("person_id") or "") + "|" + (r.get("address") or "").lower() for r in have}
+            added = 0
+            for r in rows or []:
+                r = {c: str(r.get(c) if r.get(c) is not None else "") for c in cols}
+                r["added"] = now().isoformat(timespec="seconds")
+                if kind == "call" and not r.get("phone"):
+                    continue
+                if kind == "postcards" and not r.get("address"):
+                    continue
+                k = r["person_id"] + "|" + r["address"].lower()
+                if k in keys:
+                    continue
+                keys.add(k)
+                have.append(r)
+                added += 1
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("w", newline="", encoding="utf-8") as fh:
+                w = csv.DictWriter(fh, fieldnames=cols, extrasaction="ignore")
+                w.writeheader()
+                w.writerows(have)
+        return {"ok": True, "result": {"file": str(path), "added": added, "total": len(have),
+                                       "skipped": len(rows or []) - added}}
 
     # ---- sending
     def send(self, kind: str, person_id: str, to: str, body: str, subject: str = "", display: str = "") -> dict:
@@ -718,6 +825,14 @@ class Handler(BaseHTTPRequestHandler):
                              body.get("subject", ""), body.get("display", ""))
             elif u.path == "/api/refresh":
                 out = {"ok": True, "result": s.start_refresh()}
+            elif u.path == "/api/farms":
+                out = s.save_farms(body.get("farms", []))
+            elif u.path == "/api/dismiss":
+                out = s.dismiss(body.get("id", ""))
+            elif u.path == "/api/lead":
+                out = s.make_lead(body.get("name", ""), body.get("source", ""), body.get("phone", ""), body.get("email", ""), body.get("note", ""))
+            elif u.path == "/api/list":
+                out = s.add_to_list(body.get("kind", ""), body.get("rows", []))
             elif u.path == "/api/ask":
                 out = s.ask(body.get("question", ""))
             elif u.path == "/api/speak":
@@ -895,6 +1010,36 @@ def run_tests() -> int:
     s2 = State(demo=True, send_log=tmp / "x.json")
     s2._demo_cache = {**read_json(DEMO_PATHS["feed"], {}), "header_ok": False, "missing_columns": ["Last_Touch"]}
     check(any(p["level"] == "stop" for p in s2.snapshot()["problems"]), "header_ok false is a stop")
+
+    # map and market monitor
+    sm = State(demo=True, send_log=tmp / "map" / "send-log.json")
+    snap = sm.snapshot()
+    check(snap["feed"]["map"]["counts"]["persons"] > 0 and snap["feed"]["market"]["rows"] and snap["farms"] == [], "demo feed carries map pins and market rows, no farms yet")
+    sq = [[30.5, -91.3], [30.5, -91.0], [30.3, -91.0], [30.3, -91.3]]
+    r = sm.save_farms([{"name": "Fixture South", "polygon": sq}])
+    check(r["ok"] and sm.farms()[0]["id"] == "fixture-south" and len(sm.farms()[0]["polygon"]) == 4, "a drawn farm is saved with an id from its name")
+    for bad, why in (([{"name": "Two", "polygon": sq[:2]}], "two corners"), ([{"name": "", "polygon": sq}], "no name"),
+                     ([{"name": "A", "polygon": sq}, {"name": "a", "polygon": sq}], "same name twice"), ([{"name": "Off", "polygon": [[95, 0], [0, 0], [0, 1]]}], "off the map")):
+        try:
+            sm.save_farms(bad); check(False, f"a farm with {why} is refused")
+        except CRMError:
+            check(True, f"a farm with {why} is refused")
+    rid = snap["feed"]["market"]["rows"][0]["id"]
+    sm.dismiss(rid)
+    check(all(x["id"] != rid for x in sm.snapshot()["feed"]["market"]["rows"]) and rid in sm.dismissed(), "a dismissed market row leaves the screen and stays in dismissed.json")
+    lead = sm.make_lead("Owner at 1 Fixture Way", "Market Monitor permit 2026-10-26", note="roof permit")
+    check(lead["ok"] and sm.crm.log[-1][:4] == ["lead", "Owner at 1 Fixture Way", "--source", "Market Monitor permit 2026-10-26"] and "--note" in sm.crm.log[-1], "Make lead is one crm.py lead call with the source")
+    try:
+        sm.make_lead("Owner at 1 Fixture Way", "Market Monitor permit 2026-10-26"); check(False, "a duplicate lead is refused")
+    except CRMError:
+        check(True, "a duplicate lead is refused")
+    people = [{"kind": "person", "person_id": "1", "display": "A Fixture", "phone": "+12255550001", "address": "1 Fixture St", "city": "Baton Rouge", "zip": "70808"},
+              {"kind": "person", "person_id": "2", "display": "B Fixture", "phone": "", "address": "2 Fixture St", "city": "Baton Rouge", "zip": "70808"}]
+    c1 = sm.add_to_list("call", people)
+    c2 = sm.add_to_list("call", people)
+    p1 = sm.add_to_list("postcards", people + [{"kind": "market", "display": "Current resident", "address": "3 Fixture St", "city": "Zachary", "zip": "70791"}])
+    check(c1["result"]["added"] == 1 and c2["result"]["added"] == 0 and p1["result"]["added"] == 3, "call list needs a phone, postcards need an address, nobody is added twice")
+    check(Path(c1["result"]["file"]).name == f"call-list-{today().isoformat()}.csv" and Path(c1["result"]["file"]).parent == tmp / "map" / "lists", "lists are dated CSVs next to the state, never in git")
 
     # the HTTP layer end to end on a free port
     import socket
