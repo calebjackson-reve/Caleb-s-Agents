@@ -1,0 +1,19 @@
+# Client data and build output never leave the Mac. See aire/pipeline-app/README.md.
+feed.json
+*-queue.json
+status.json
+out/
+logs/
+cache/
+.build/
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.audit.jsonl
+*.log
+*.jsonl
+.DS_Store
+__pycache__/
+# the demo fixtures are made-up people and must ship, even though real queue files never do
+!fixtures/demo-*-queue.json

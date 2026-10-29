@@ -1,7 +1,8 @@
 #!/bin/sh
 # Rebuilds feed.json for the Pipeline app: iMessage signals, then the CRM feed with those signals.
 # Run by the LaunchAgent org.calebjackson.aire.feed every 15 minutes and at login.
-# The Homebrew Python already has Full Disk Access, so the Pipeline app never needs it.
+# The venv's Python (~/.aire/venv, built with uv or Homebrew, 3.10 or newer) has Full Disk Access for Messages,
+# so the Pipeline app never needs it. Grant it to the real binary: readlink -f ~/.aire/venv/bin/python.
 # Read only against Messages and the CRM. Writes only the gitignored feed.json and enrichment/out/.
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -20,9 +21,12 @@ stamp() { date "+%Y-%m-%d %H:%M:%S"; }
   else
     rm -f feed.json.tmp; echo "$(stamp) feed failed, previous feed.json kept"
   fi
-  # Pre-written reply drafts for the Pipeline app (counts only in this log). Skipped when the app is not installed.
-  PANEL="${PIPELINE_PANEL:-$HOME/Documents/Codex/2026-10-19/task-3/PipelinePanel}"
-  if [ -f "$PANEL/Sources/predraft.py" ]; then
+  # Pre-written reply drafts for the Pipeline app's compose box (counts only in this log).
+  # The app lives in this repo at aire/pipeline-app; PIPELINE_PANEL overrides the path.
+  PANEL="${PIPELINE_PANEL:-$HERE/../pipeline-app}"
+  if [ -f "$PANEL/predraft.py" ]; then
+    "$PY" "$PANEL/predraft.py" && echo "$(stamp) predraft done" || echo "$(stamp) predraft failed"
+  elif [ -f "$PANEL/Sources/predraft.py" ]; then
     /opt/homebrew/bin/python3 "$PANEL/Sources/predraft.py" && echo "$(stamp) predraft done" || echo "$(stamp) predraft failed"
   fi
 } >> "$LOG" 2>&1
