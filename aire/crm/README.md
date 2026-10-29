@@ -56,6 +56,8 @@ python3 crm.py --test               # offline checks
 python3 crm.py check                # live header vs expected, tabs present, tabs it would add. Reads only.
 python3 crm.py --dry-run ingest --hours 72   # what Gmail ingest would write. Nothing written.
 python3 crm.py ingest --hours 72    # website leads, showings, signatures into the sheet
+python3 crm.py --dry-run website-leads   # what the Website leads sheet import would write. Nothing written.
+python3 crm.py website-leads        # new form leads: note + call-today task, or a new hot contact. Each row imports once (crm_import column). DNC people get nothing.
 python3 crm.py sync-tasks           # one Tasks row per HOT/WARM Next_Action, idempotent
 python3 crm.py feed                 # writes feed.json for the Pipeline app (see FEED.md)
 python3 crm.py feed --signals ../enrichment/out/enriched.csv   # same, ranked by iMessage data first
