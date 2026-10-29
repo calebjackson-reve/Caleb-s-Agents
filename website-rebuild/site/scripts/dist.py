@@ -47,6 +47,8 @@ REDIRECTS = {
     'home-valuation': '/sell.html', 'seller-net-sheet': '/sell.html',
     'true-payment-calculator': '/sell.html', 'tools': '/sell.html',
     'market-report': '/sell.html',
+    # /profile and /contact-us are linked from old LP templates and 404 on the live site (2026-10-29 audit)
+    'profile': '/about.html', 'contact-us': '/contact.html',
     'testimonials': '/about.html', 'video-gallery': '/about.html',
     'relocate': '/communities.html', 'blog': '/',
     'ai-showing-plan': '/', 'flood-zone-check': '/',
