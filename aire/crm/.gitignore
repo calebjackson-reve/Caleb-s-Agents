@@ -4,3 +4,6 @@ audit.jsonl
 *.snapshot.json
 hwc.json
 __pycache__/
+# geocode and merge reports carry client addresses (crm.py geocode --report, merge-hwc --report)
+reports/
+*.report.md
