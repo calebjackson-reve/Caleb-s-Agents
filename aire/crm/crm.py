@@ -1441,6 +1441,101 @@ def hwc_report_md(report: dict, stamp: str, dry_run: bool = True) -> str:
     return "\n".join(L)
 
 
+# ------------------------------------------------------------ website leads
+# Bridge from the "Website leads" sheet (the Apps Script catcher behind the
+# calebjackson.org forms, see website-rebuild/functions/) into this CRM,
+# through the same gates as every other write. Leads stay in their own sheet;
+# only real people with a phone or email are promoted here.
+
+LEADS_SHEET_ID = os.getenv("AIRE_LEADS_SHEET", "16sasu66UttsPMXBmkGk9M-jDGlfuvDoZXv4ZOGW-p0A")
+LEAD_MARK = "crm_import"  # column this tool adds to the leads sheet so a row is imported once
+
+
+def lead_note(d: dict) -> str:
+    keep = ["kind", "address", "area", "max", "when", "slot", "message", "page"]
+    parts = [f"{k}: {d[k]}" for k in keep if (d.get(k) or "").strip()]
+    consent = "texting consent: yes" if (d.get("consent") or "").lower() in ("yes", "true", "1") else "texting consent: NO, do not text"
+    return "Website lead " + (d.get("at") or "") + ". " + consent + ". " + "; ".join(parts)
+
+
+def import_website_leads(crm: "CRM", rows: list[dict], as_of: date) -> dict:
+    """Each unimported lead row becomes a note and a call-today task on the matching contact,
+    or a new hot contact when nobody matches. A Do_Not_Contact match gets nothing. Returns the
+    report and, per processed row index, the mark to write back so the row is never redone."""
+    rep = {"created": 0, "matched": 0, "dnc": 0, "skipped": 0, "already": 0, "marks": {}, "events": []}
+    for i, d in enumerate(rows):
+        if (d.get(LEAD_MARK) or "").strip():
+            rep["already"] += 1
+            continue
+        name = (d.get("name") or "").strip()
+        email = (d.get("email") or "").strip()
+        phone = phone_key(d.get("phone") or "")
+        if not email and not phone:
+            rep["skipped"] += 1
+            rep["marks"][i] = "skipped: no phone or email"
+            rep["events"].append(f"row {i + 2}: skipped, no phone or email")
+            continue
+        hits = crm.find(name, email, phone)
+        if hits and (hits[0].get("Do_Not_Contact") or "").upper() == "YES":
+            rep["dnc"] += 1
+            rep["marks"][i] = f"dnc: person_id {hits[0]['person_id']} is Do_Not_Contact"
+            rep["events"].append(f"row {i + 2}: {name or email or phone} is Do_Not_Contact, nothing written")
+            continue
+        if hits:
+            pid = hits[0]["person_id"]
+            rep["matched"] += 1
+            action = f"matched person_id {pid} by {hits[0]['_match']}"
+        else:
+            row = crm.create_contact(display=name or email or phone, phone=(d.get("phone") or "").strip(),
+                                     email=email, band="hot", source="website",
+                                     next_action="Call website lead", type_="client")
+            pid = row["person_id"]
+            rep["created"] += 1
+            action = f"created person_id {pid}"
+        crm.add_note(pid, lead_note(d), by="website")
+        crm.add_task(pid, f"Call website lead ({(d.get('kind') or 'contact').strip()})", as_of.isoformat(), source="website")
+        rep["marks"][i] = f"{pid} {as_of.isoformat()}"
+        rep["events"].append(f"row {i + 2}: {action}, note + call task added")
+    return rep
+
+
+class LeadsSheet:
+    """The Website leads spreadsheet, first tab, read once. mark() writes the crm_import cell
+    so a row is only ever imported once. Uses the same Google token as the CRM backend."""
+
+    def __init__(self, sheet_id: str = LEADS_SHEET_ID, dry_run: bool = False):
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+        if not TOKEN.exists():
+            sys.exit(f"No Google token at {TOKEN}. Run: python3 crm.py auth")
+        self.svc = build("sheets", "v4", credentials=Credentials.from_authorized_user_file(str(TOKEN), SCOPES),
+                         cache_discovery=False)
+        self.sheet_id = sheet_id
+        self.dry_run = dry_run
+        meta = self.svc.spreadsheets().get(spreadsheetId=sheet_id, fields="sheets.properties.title").execute(num_retries=6)
+        self.tab = meta["sheets"][0]["properties"]["title"]
+        res = self.svc.spreadsheets().values().get(spreadsheetId=sheet_id, range=f"'{self.tab}'!A1:Z").execute(num_retries=6)
+        values = res.get("values", [])
+        self.header = values[0] if values else []
+        self._rows = pad(values[1:], self.header) if values else []
+
+    def rows(self) -> list[dict]:
+        return [dict(r) for r in self._rows]
+
+    def mark(self, index: int, value: str) -> None:
+        if self.dry_run:
+            return
+        if LEAD_MARK not in self.header:
+            self.svc.spreadsheets().values().update(
+                spreadsheetId=self.sheet_id, range=f"'{self.tab}'!{col_letter(len(self.header))}1",
+                valueInputOption="RAW", body={"values": [[LEAD_MARK]]}).execute(num_retries=6)
+            self.header.append(LEAD_MARK)
+        cell = f"'{self.tab}'!{col_letter(self.header.index(LEAD_MARK))}{index + 2}"
+        self.svc.spreadsheets().values().update(
+            spreadsheetId=self.sheet_id, range=cell, valueInputOption="RAW",
+            body={"values": [[value]]}).execute(num_retries=6)
+
+
 # -------------------------------------------------------------------- tests
 
 
@@ -1749,6 +1844,36 @@ def run_tests() -> int:
     check("--json dry run reports planned writes and performs none", out.returncode == 0 and len(one) == 1 and json.loads(one[0])["planned_writes"] >= 1
           and json.loads(db2.read_text())["Contacts"][2]["Stage"] == "past client")
 
+    # website leads: dedupe, DNC silence, creation, idempotence
+    db3 = tmp / "db3.json"
+    db3.write_text((HERE / "tests" / "fixtures" / "fake-crm.json").read_text())
+    c3 = CRM(LocalBackend(db3), audit_path=tmp / "audit3.jsonl")
+    c3.ensure_tabs()
+    known = next(c for c in c3.contacts() if (c.get("email") or "").strip())
+    dnc_pid = c3.contacts()[1]["person_id"]
+    c3.set_do_not_contact(dnc_pid, "fixture")
+    leads = [
+        {"at": "2026-10-29", "kind": "contact", "name": "Brand New Lead", "phone": "(225) 555-0199", "email": "", "message": "wants to sell", "consent": "yes"},
+        {"at": "2026-10-29", "kind": "sell", "name": "", "phone": "", "email": known["email"], "message": "net sheet question"},
+        {"at": "2026-10-29", "kind": "contact", "name": c3.contacts()[1]["display"], "phone": c3.contacts()[1]["primary_phone"], "email": ""},
+        {"at": "2026-10-29", "kind": "contact", "name": "Bot Row", "phone": "", "email": ""},
+        {"at": "2026-10-29", "kind": "contact", "name": "Done Before", "phone": "5551112222", "email": "", LEAD_MARK: "12 2026-10-28"},
+    ]
+    n_contacts = len(c3.contacts())
+    rep = import_website_leads(c3, leads, as_of)
+    check("website lead with no match creates one hot contact", rep["created"] == 1 and len(c3.contacts()) == n_contacts + 1
+          and c3.contacts()[-1]["band"] == "hot" and c3.contacts()[-1]["Source"] == "website")
+    check("website lead matching an email is a note and task, not a new row", rep["matched"] == 1
+          and any(n.get("person_id") == known["person_id"] and "Website lead" in n.get("Note", "") for n in c3.notes()))
+    check("website lead on a Do_Not_Contact person writes nothing", rep["dnc"] == 1
+          and not any(t["person_id"] == dnc_pid for t in c3.open_tasks(as_of)))
+    check("no phone or email is skipped, imported row is not redone", rep["skipped"] == 1 and rep["already"] == 1)
+    check("every processed row gets a mark so it never imports twice", set(rep["marks"]) == {0, 1, 2, 3})
+    check("texting consent lands in the note", any("consent: yes" in n.get("Note", "") for n in c3.notes())
+          and any("do not text" in n.get("Note", "") for n in c3.notes()))
+    rep2 = import_website_leads(c3, [dict(leads[i], **{LEAD_MARK: rep["marks"].get(i, "x")}) for i in range(len(leads))], as_of)
+    check("a second run over marked rows does nothing", rep2["created"] + rep2["matched"] + rep2["dnc"] + rep2["skipped"] == 0)
+
     print(f"\n{'ALL PASS' if not fails else str(len(fails)) + ' FAILED'}")
     return 1 if fails else 0
 
@@ -1836,6 +1961,9 @@ def main(argv=None) -> int:
     p.add_argument("--clear-close", action="store_true"); p.add_argument("--next-step"); p.add_argument("--person")
     p.add_argument("--event"); p.add_argument("--expect", help="refuse if the deal's stage differs")
     p.add_argument("--create", action="store_true"); p.add_argument("--side", choices=["buyer", "seller"])
+    p = sub.add_parser("website-leads", help="import new rows from the Website leads sheet: note + call task, or a new hot contact")
+    p.add_argument("--leads", help="JSON file of lead rows instead of the live leads sheet")
+    p.add_argument("--leads-sheet", default=LEADS_SHEET_ID)
     p = sub.add_parser("merge-hwc"); p.add_argument("--hwc", required=True); p.add_argument("--report", required=True)
     p.add_argument("--apply", action="store_true", help="only after Caleb has said yes to the report")
     a = ap.parse_args(argv)
@@ -1923,6 +2051,22 @@ def main(argv=None) -> int:
         print("done" if crm.done(a.task_id) else "no such open task")
     elif a.cmd in ("stage", "note", "dnc", "deal", "lead"):
         print(run_app_write(crm, a, as_of))
+    elif a.cmd == "website-leads":
+        crm.ensure_tabs()
+        src = None
+        if a.leads:
+            rows = json.loads(Path(a.leads).read_text())
+        else:
+            src = LeadsSheet(a.leads_sheet, dry_run=a.dry_run)
+            rows = src.rows()
+        rep = import_website_leads(crm, rows, as_of)
+        if src is not None:
+            for i, v in rep["marks"].items():
+                src.mark(i, v)
+        for e in rep.pop("events"):
+            print("  " + e)
+        rep.pop("marks")
+        print(", ".join(f"{k} {v}" for k, v in rep.items()))
     elif a.cmd == "merge-hwc":
         hwc = json.loads(Path(a.hwc).read_text())
         hwc = hwc.get("Contacts", hwc) if isinstance(hwc, dict) else hwc
