@@ -941,6 +941,7 @@ class CRM:
                          "days_quiet": (as_of - date.fromisoformat(last)).days if last else None,
                          "owes_reply": bool(sig.get("owes_reply")), "next_action": c.get("Next_Action", ""),
                          "phone": c.get("primary_phone", ""), "email": c.get("email", ""),
+                         "address": c.get("street", ""), "city": c.get("city", ""), "zip": c.get("zip", ""),
                          "new_lead": c["person_id"] in new_lead_ids})
         for d in self.live_deals():
             g = geo_by_key.get(f"deal:{d['deal_id']}")
