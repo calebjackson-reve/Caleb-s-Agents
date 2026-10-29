@@ -23,6 +23,7 @@ or Make deal in Pipeline, which calls `crm.py lead` or `crm.py deal`.
 from __future__ import annotations
 
 import argparse
+import html as htmllib
 import json
 import re
 import sys
@@ -52,11 +53,16 @@ PERMIT_LABELS = [
     (re.compile(r"gas|electrical|plumbing|mechanical|generator|fence|sign", re.I), "minor"),
 ]
 
-# Flexmls alert mail. The real format has not been seen yet (no alerts existed in aire@ on 2026-10-27, the
-# day after the ROAM cutover), so these patterns are the standard Flexmls subscription layout and the first
-# real alert gets saved, with names removed, as tests/fixtures/flex-alert.json. Unparsed mail is reported.
+# Flexmls alert mail. The real layout was read from the first "AIRE Farm - <town>" alerts on 2026-10-29 (one saved
+# search per farm, sender at flexmail.flexmls.com). The plain-text part has three lines per listing:
+#   $1,450,000.00 / 12233 Star Hill, St. Francisville, LA 70775 / Active - MLS #200HNN
+# and the HTML part carries the event word ("New Listing") under each MLS number. tests/fixtures/flex-alert-real.json
+# copies that layout with made-up addresses. The older guessed layout below stays as a fallback.
 FLEX_EVENT = re.compile(r"\b(New Listing|Price (?:Change|Decrease|Reduced|Increase)|Back on Market|Pending|Under Contract|Sold|Closed|Withdrawn|Expired)\b", re.I)
 FLEX_ADDRESS = re.compile(r"\b(\d{1,6} [A-Za-z0-9 .'#-]+?),\s*([A-Za-z .]+?),\s*LA\s*(\d{5})\b")
+FLEX_REAL_PRICE = re.compile(r"^\$\s?([\d,]+)(?:\.\d{2})?$")
+FLEX_REAL_ADDRESS = re.compile(r"^(.+?),\s*([A-Za-z .]+?),\s*LA\s*(\d{5})\b")
+FLEX_REAL_STATUS = re.compile(r"^(.+?)\s+-\s+MLS\s*#\s*([A-Za-z0-9]+)$")
 FLEX_PRICE = re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d{4,9})")
 FLEX_TYPES = {"new listing": "new_listing", "price change": "price_change", "price decrease": "price_change",
               "price reduced": "price_change", "price increase": "price_change", "back on market": "back_on_market",
@@ -144,22 +150,77 @@ def flex_messages(days: int) -> list[dict]:
         full = svc.users().messages().get(userId="me", id=m["id"], format="full").execute(num_retries=6)
         h = {x["name"]: x["value"] for x in full["payload"]["headers"]}
         when = datetime.fromtimestamp(int(full["internalDate"]) / 1000, tz=timezone.utc)
-        body = ""
+        body, html = "", ""
         parts = [full["payload"]] + full["payload"].get("parts", [])
         for p in parts:
-            if p.get("mimeType", "").startswith("text/plain") and p.get("body", {}).get("data"):
-                body = base64.urlsafe_b64decode(p["body"]["data"]).decode("utf-8", "ignore")
-                break
+            data = p.get("body", {}).get("data")
+            if not data:
+                continue
+            if p.get("mimeType", "").startswith("text/plain") and not body:
+                body = base64.urlsafe_b64decode(data).decode("utf-8", "ignore")
+            elif p.get("mimeType", "").startswith("text/html") and not html:
+                html = base64.urlsafe_b64decode(data).decode("utf-8", "ignore")
         if not body:
             body = full.get("snippet", "")
         out.append({"id": m["id"], "subject": h.get("Subject", ""), "from": h.get("From", ""),
-                    "date_iso": when.astimezone(engine.CENTRAL).replace(microsecond=0).isoformat(), "body": body})
+                    "date_iso": when.astimezone(engine.CENTRAL).replace(microsecond=0).isoformat(), "body": body, "html": html})
     return out
 
 
+def flex_html_events(html: str) -> dict:
+    """MLS number -> the event word printed under it in the HTML part ("New Listing"). Pure."""
+    text = htmllib.unescape(re.sub(r"<[^>]+>", "\n", re.sub(r"(?is)<(style|script).*?</\1>", "", html or "")))
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    out = {}
+    for i, line in enumerate(lines):
+        m = re.fullmatch(r"#\s*([A-Za-z0-9]+)", line)
+        if m and i + 1 < len(lines):
+            ev = FLEX_EVENT.fullmatch(lines[i + 1])
+            if ev:
+                out[m.group(1)] = ev.group(1)
+    return out
+
+
+def parse_flex_real(m: dict) -> list[dict]:
+    """The layout Flexmls actually sends (see the note at FLEX_REAL_*). The event comes from the HTML label for
+    that MLS number, then from the status line (Pending, Sold...). An Active listing with no label is a
+    new listing, since the saved searches are new-listing alerts; subtype says "Active" so the screen shows it. Pure."""
+    lines = [l.strip() for l in (m.get("body") or "").splitlines() if l.strip()]
+    events = flex_html_events(m.get("html", ""))
+    day = (m.get("date_iso") or "")[:10]
+    subj = m.get("subject", "") or ""
+    rows = []
+    for i in range(len(lines) - 2):
+        pr, ad, st = FLEX_REAL_PRICE.match(lines[i]), FLEX_REAL_ADDRESS.match(lines[i + 1]), FLEX_REAL_STATUS.match(lines[i + 2])
+        if not (pr and ad and st):
+            continue
+        status, mls = st.group(1).strip(), st.group(2)
+        word = events.get(mls) or ""
+        ev = FLEX_EVENT.fullmatch(word) or FLEX_EVENT.search(status)
+        if ev:
+            kind, subtype = FLEX_TYPES[ev.group(1).lower()], ev.group(1)
+        elif status.lower() == "active":
+            kind, subtype = "new_listing", "Active"
+        else:
+            continue
+        street = ad.group(1).strip()
+        rows.append({
+            "id": f"mls:{kind}:{mls}:{day}", "type": kind, "label": kind.replace("_", " "), "subtype": subtype,
+            "date": day, "address": street, "city": ad.group(2).strip(), "state": "LA", "zip": ad.group(3),
+            "value": None, "price": int(pr.group(1).replace(",", "")), "price_was": None,
+            "description": subj[:200], "subdivision": "", "sqft": 0, "owner": "", "contractor": "",
+            "lat": None, "lng": None, "farm": "",
+            "source": "Flexmls alert mail to aire@", "source_ref": mls, "source_date": day,
+        })
+    return rows
+
+
 def parse_flex_alert(m: dict) -> list[dict]:
-    """One alert mail -> zero or more signal rows. An address with no event word in the lines around it is
-    skipped; a listing with no price is kept with price None. Pure."""
+    """One alert mail -> zero or more signal rows. The real Flexmls layout first; the older guessed layout as a
+    fallback. An address with no event word in the lines around it is skipped. Pure."""
+    real = parse_flex_real(m)
+    if real:
+        return real
     body = m.get("body", "") or ""
     subj = m.get("subject", "") or ""
     day = (m.get("date_iso") or "")[:10]
@@ -295,6 +356,16 @@ def run_tests() -> int:
     check("price change carries the new price and the old one", pc["price"] == 279900 and pc["price_was"] == 289900)
     check("flex row id includes the MLS number when present", any(g["id"].startswith("mls:new_listing:2026") for g in got))
     check("mail with no address yields nothing", parse_flex_alert({"subject": "Your weekly Flexmls digest", "body": "Nothing here", "date_iso": "2026-10-27"}) == [])
+    real = json.loads((fx / "flex-alert-real.json").read_text())
+    rg = parse_flex_alert(real[0])
+    check("real Flexmls layout: one row per listing, letters in the MLS number, unit kept in the street",
+          [g["source_ref"] for g in rg] == ["200ZZZ", "2026099901", "2026099902"]
+          and rg[1]["address"] == "402 Fixture Lane, 2a" and rg[0]["city"] == "St. Francisville" and rg[0]["price"] == 1250000)
+    check("real layout: the HTML label sets the event, the status line is the fallback",
+          [g["type"] for g in rg] == ["new_listing", "price_change", "pending"] and rg[0]["subtype"] == "New Listing")
+    check("real layout: Active with no label is a new listing marked Active",
+          parse_flex_real({**real[0], "html": ""})[0]["type"] == "new_listing" and parse_flex_real({**real[0], "html": ""})[0]["subtype"] == "Active")
+    check("real layout: confirmation mail yields nothing", parse_flex_alert(real[1]) == [])
     calls = []
     def fake_geocoder(items):
         calls.append(items)
