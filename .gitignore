@@ -1,1 +1,9 @@
 website-rebuild/dist/
+
+# AIRE client data and local state (see tools/check-no-client-data.py)
+aire/crm/feed.json*
+aire/follow-up/out/
+aire/follow-up/queue-*.md
+aire/follow-up/texts-*.md
+aire/pipeline-app/tests/*.tmp
+**/__pycache__/

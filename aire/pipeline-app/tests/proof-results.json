@@ -1,0 +1,162 @@
+{
+ "ran_at": "2026-10-29T09:43:35-0500",
+ "passed": 31,
+ "total": 31,
+ "checks": [
+  {
+   "name": "phone: loads with cards",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: greeting computed from the feed",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: tiles show counts",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: owes-reply person is first with 3 texts above the compose box",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: model draft prefilled",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: Call is a tel: link",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: Keller Williams First Choice in the footer, no R\u00eave",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: Open in Messages carries the draft",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: final review shows exact body and dry run note",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: approve in dry run sends nothing",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: Called goes through crm.py touch and counts done today",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: Undo within 10 minutes reverses the local outcome",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: snooze and skip record locally",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: check-in line prefilled from the queue",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: Mark sent logs the touch",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: overdue task first",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: Done goes through crm.py done and removes the task",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: Next_Action item has no Done button, says sync-tasks",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: deals show close lines, passed date warning, missing price",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: new lead with call/text/email links",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: counts screen lists the send log with the dry run",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: light mode exists",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "pwa: manifest has standalone display and icons",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "pwa: service worker served",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "pwa: service worker registered",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "phone: no JavaScript errors",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "desktop: loads",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "desktop: header_ok false shows only the error",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "state: outcomes and sends recorded",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "state: file mode 0600",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "name": "state: send log never stores the recipient",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}

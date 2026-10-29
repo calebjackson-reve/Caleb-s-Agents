@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AIRE Pipeline</title>
+<meta name="description" content="Caleb Jackson's pipeline briefing. Keller Williams First Choice.">
+<meta name="theme-color" content="#04172c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f7fb" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pipeline">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="scan" aria-hidden="true"></div>
+<header class="top">
+  <div class="brand">
+    <span class="ring" aria-hidden="true"></span>
+    <div>
+      <div class="wordmark">A I R E</div>
+      <div class="sub">PIPELINE</div>
+    </div>
+  </div>
+  <div class="status" id="status" aria-live="polite">
+    <span class="dot" id="statusDot"></span><span id="statusText">connecting</span>
+  </div>
+  <button class="icon" id="themeBtn" title="Light or dark" aria-label="Toggle light mode">◐</button>
+  <button class="icon" id="privacyBtn" title="Hide names" aria-label="Hide names">◉</button>
+</header>
+
+<main id="app">
+  <section class="brief" id="brief">
+    <div class="hello mono" id="helloLine">…</div>
+    <div class="date mono" id="dateLine"></div>
+    <p class="line" id="briefLine"></p>
+  </section>
+
+  <section class="tiles" id="tiles" aria-label="Counts"></section>
+
+  <nav class="tabs" id="tabs" aria-label="Screens">
+    <button data-tab="touches" class="on">Touches</button>
+    <button data-tab="tasks">Tasks</button>
+    <button data-tab="deals">Deals</button>
+    <button data-tab="leads">Leads</button>
+    <button data-tab="counts">Counts</button>
+  </nav>
+
+  <section id="screen" class="screen" aria-live="polite"></section>
+</main>
+
+<div class="toast" id="toast" role="status" hidden>
+  <span id="toastText"></span>
+  <button id="toastUndo" hidden>Undo</button>
+  <button id="toastClose" aria-label="Dismiss">×</button>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-head"><h2 id="sheetTitle"></h2><button class="icon" id="sheetClose" aria-label="Close">×</button></div>
+    <div id="sheetBody"></div>
+  </div>
+</div>
+
+<footer class="foot mono">
+  <span>Caleb Jackson · REALTOR · Keller Williams First Choice · (225) 747-0303</span>
+  <span id="footFeed"></span>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

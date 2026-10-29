@@ -1,0 +1,56 @@
+{
+  "generated_at": "2026-10-29T08:51:43-05:00",
+  "as_of": "2026-10-29",
+  "sheet_id": "fixture",
+  "header_ok": true,
+  "missing_columns": [],
+  "signals": {"file": "../enrichment/out/imessage-signals.json", "people": 4, "owes_reply": 2},
+  "counts": {"contacts": 12, "touches_due": 6, "by_band": {"hot": 3, "warm": 2, "lukewarm": 0, "cold": 1, "ice-cold": 0},
+             "tasks_open": 3, "tasks_overdue": 1, "deals_live": 3},
+  "cadence_days": {"hot": 7, "warm": 14, "lukewarm": 30, "cold": 90, "ice-cold": 365},
+  "touches_due": [
+    {"person_id": "101", "display": "Taylor Sample", "band": "hot", "phone": "+12255550142", "email": "",
+     "days_quiet": 1, "last_touch": "2026-10-20", "last_inbound": "2026-10-28", "last_outbound": "2026-10-26",
+     "owes_reply": true, "signal_score": 80, "next_action": "", "stage": "past client", "opportunity_types": "mover", "type": "client",
+     "last_messages": ["2026-10-24: thanks for sending that over", "2026-10-27: are yall still doing open houses this weekend", "2026-10-28: and is the one on Pecan Tree still available?"]},
+    {"person_id": "102", "display": "Jordan Sample", "band": "warm", "phone": "+12255550177", "email": "jordan.sample@example.com",
+     "days_quiet": 2, "last_touch": "", "last_inbound": "2026-10-27", "last_outbound": "2026-10-25",
+     "owes_reply": true, "signal_score": 60, "next_action": "Call: short-sale plan", "stage": "", "opportunity_types": "", "type": "client",
+     "last_messages": ["2026-10-27: can you call me tomorrow afternoon?"]},
+    {"person_id": "103", "display": "Morgan Sample", "band": "hot", "phone": "+12255550133", "email": "",
+     "days_quiet": 19, "last_touch": "2026-10-10", "last_inbound": "", "last_outbound": "2026-10-10",
+     "owes_reply": false, "signal_score": 30, "next_action": "", "stage": "nurture", "opportunity_types": "equity_review", "type": "client", "last_messages": []},
+    {"person_id": "104", "display": "Riley Sample", "band": "hot", "phone": "", "email": "riley.sample@example.com",
+     "days_quiet": 9, "last_touch": "2026-10-20", "last_inbound": "", "last_outbound": "",
+     "owes_reply": false, "signal_score": 0, "next_action": "", "stage": "", "opportunity_types": "active_buyer", "type": "client", "last_messages": []},
+    {"person_id": "105", "display": "Casey Sample", "band": "warm", "phone": "+12255550155", "email": "casey.sample@example.com",
+     "days_quiet": null, "last_touch": "", "last_inbound": "", "last_outbound": "",
+     "owes_reply": false, "signal_score": 0, "next_action": "", "stage": "", "opportunity_types": "", "type": "household", "last_messages": []},
+    {"person_id": "106", "display": "Avery Sample", "band": "cold", "phone": "+12255550166", "email": "",
+     "days_quiet": 140, "last_touch": "2026-06-11", "last_inbound": "", "last_outbound": "",
+     "owes_reply": false, "signal_score": 0, "next_action": "", "stage": "past client", "opportunity_types": "past_client_review", "type": "client", "last_messages": []}
+  ],
+  "tasks": [
+    {"task_id": "a1b2c3d4", "person_id": "101", "display": "Taylor Sample", "task": "Sign BBA", "due": "2026-10-27",
+     "status": "open", "source": "Authentisign", "created_at": "2026-10-25T07:00:00-05:00", "done_at": "", "overdue": true},
+    {"task_id": "e5f6a7b8", "person_id": "104", "display": "Riley Sample", "task": "Send comps for Zachary", "due": "2026-10-30",
+     "status": "open", "source": "caleb", "created_at": "2026-10-28T07:00:00-05:00", "done_at": "", "overdue": false},
+    {"task_id": "", "person_id": "102", "display": "Jordan Sample", "task": "Call: short-sale plan", "due": "2026-10-29",
+     "status": "open", "source": "Next_Action", "band": "warm", "overdue": false}
+  ],
+  "deals": [
+    {"deal_id": "2179-s-turnberry-ave", "person_id": "103", "display": "Morgan Sample", "address": "2179 S Turnberry Ave", "side": "listing",
+     "stage": "under_contract", "price": "312000", "expected_close": "2026-11-02", "next_step": "Appraisal scheduled", "last_event": "showing confirmed Thu, 10/29 2:30 PM",
+     "last_event_at": "2026-10-29T08:08:40-05:00", "source": "ShowingTime", "updated_at": "2026-10-29T08:51:43-05:00", "commission": "9360"},
+    {"deal_id": "9241-pecan-tree-dr", "person_id": "101", "display": "Taylor Sample", "address": "9241 Pecan Tree Dr", "side": "buyer",
+     "stage": "under_contract", "price": "", "expected_close": "2026-10-20", "next_step": "", "last_event": "Inspection Response signed",
+     "last_event_at": "2026-10-21T10:00:00-05:00", "source": "Authentisign", "updated_at": "2026-10-21T10:00:00-05:00", "commission": ""},
+    {"deal_id": "14150-lockhart-ln", "person_id": "", "display": "", "address": "14150 Lockhart Ln", "side": "buyer",
+     "stage": "active", "price": "265000", "expected_close": "", "next_step": "Second showing", "last_event": "",
+     "last_event_at": "", "source": "Command", "updated_at": "2026-10-28T12:00:00-05:00", "commission": ""}
+  ],
+  "new_leads": [
+    {"person_id": "7301", "display": "Sam Newlead", "phone": "+12255550199", "email": "sam.newlead@example.com",
+     "source": "Luxury Presence 2026-10-28", "received": "2026-10-28", "next_action": "Call within the hour"}
+  ]
+}

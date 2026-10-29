@@ -1,0 +1,8 @@
+{
+  "generated_at": "2026-10-29T07:10:00-05:00",
+  "as_of": "2026-10-29",
+  "drafts": [
+    {"person_id": "104", "name": "Riley Sample", "email": "riley.sample@example.com", "pool": "active-buyer", "template": 1,
+     "subject": "Quick check-in", "body": "Hey Riley, anything new on the search? Happy to line up showings whenever you're ready.\n\nThanks,\nCaleb Jackson\nREALTOR, Keller Williams First Choice\n(225) 747-0303", "days_quiet": 9}
+  ]
+}

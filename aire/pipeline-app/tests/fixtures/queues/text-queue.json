@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-10-29T07:10:00-05:00",
+  "as_of": "2026-10-29",
+  "reply_first": [{"person_id": "101", "name": "Taylor Sample", "phone": "+12255550142", "email": "", "last_messages": ["2026-10-28: and is the one on Pecan Tree still available?"], "next_action": ""}],
+  "drafts": [
+    {"person_id": "103", "name": "Morgan Sample", "phone": "+12255550133", "pool": "seller-candidate", "template": 2,
+     "text": "Hi Morgan, quick check-in. Any questions I can answer about the market around you?", "days_quiet": 19},
+    {"person_id": "106", "name": "Avery Sample", "phone": "+12255550166", "pool": "past-client", "template": 1,
+     "text": "Hey Avery, thinking about you. How's the house treating you?", "days_quiet": 140}
+  ]
+}
