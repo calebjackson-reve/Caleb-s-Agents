@@ -101,8 +101,9 @@ class Brain:
         if getattr(final, "stop_reason", "") == "refusal":
             yield " I can't help with that one."
         usage = getattr(final, "usage", None)
-        self.state._bump_usage(asked=1, input_tokens=int(getattr(usage, "input_tokens", 0) or 0),
-                               output_tokens=int(getattr(usage, "output_tokens", 0) or 0))
+        self.state.log_claude("call", getattr(final, "model", self.model),
+                              {k: getattr(usage, k, 0) for k in ("input_tokens", "cache_creation_input_tokens",
+                                                                 "cache_read_input_tokens", "output_tokens")})
 
 
 def make_handlers(brain: Brain, log=print) -> dict:

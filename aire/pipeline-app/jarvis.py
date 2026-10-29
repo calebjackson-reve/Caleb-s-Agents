@@ -36,6 +36,19 @@ How you work:
   familial status or disability."""
 
 MAX_TURNS = 8
+# $ per million tokens: input, 5-minute cache write, cache read, output. From the live pricing page, read 2026-10-29
+# (https://platform.claude.com/docs/en/about-claude/pricing). Re-check when a price changes.
+PRICES = {"claude-opus-5-5": (4.0, 5.0, 0.20, 20.0), "claude-sonnet-5-5": (2.0, 2.50, 0.10, 10.0),
+          "claude-haiku-5-5": (0.10, 0.125, 0.01, 0.50)}
+
+
+def cost_usd(model: str, u: dict) -> float | None:
+    """Exact spend for one usage tally, all four meters at their own rate. None for a model not in PRICES."""
+    p = PRICES.get(model)
+    if not p:
+        return None
+    return (u.get("input_tokens", 0) * p[0] + u.get("cache_creation_input_tokens", 0) * p[1]
+            + u.get("cache_read_input_tokens", 0) * p[2] + u.get("output_tokens", 0) * p[3]) / 1e6
 BANDS = ["hot", "warm", "lukewarm", "cold", "ice-cold"]
 PRO_TYPES = ["agent", "lender", "vendor"]
 
@@ -298,8 +311,14 @@ def ask(client, model: str, tools: Tools, question: str, history: list[dict] | N
     """The tool loop. Returns answer, proposals, the tool calls made (for tests and the eval) and token usage.
     `client` is an anthropic.Anthropic (or a fake with the same shape)."""
     messages = list(history or []) + [{"role": "user", "content": f"Today is {tools.today}. Caleb asked, by voice: {question}"}]
-    used, calls = {"input_tokens": 0, "output_tokens": 0}, []
-    kwargs = dict(model=model, max_tokens=1500, system=SYSTEM, tools=TOOLS, output_config={"effort": effort})
+    used = {"input_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "output_tokens": 0}
+    calls = []
+    # Caching: tools + system are byte-stable, so one explicit breakpoint on system caches that prefix across every
+    # question, and top-level automatic caching covers the growing tool loop inside one question. Nothing volatile
+    # (today's date, the question) sits above the breakpoint.
+    kwargs = dict(model=model, max_tokens=1500, tools=TOOLS, output_config={"effort": effort},
+                  system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
+                  cache_control={"type": "ephemeral"})
     for _ in range(MAX_TURNS):
         try:  # refusal fallback on the current Opus and Fable models; older SDKs do not know the parameter
             resp = client.beta.messages.create(betas=["server-side-fallback-2026-07-01"], fallbacks="default", messages=messages, **kwargs)

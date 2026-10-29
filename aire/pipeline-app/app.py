@@ -344,10 +344,26 @@ class State:
             write_json(self.usage_path, u)
             return u
 
+    def log_claude(self, route: str, model: str, usage: dict, **extra) -> dict:
+        """Every Claude call: the running totals in voice-usage.json, plus one line per request in
+        out/claude-usage.jsonl with all four token meters and the dollars (jarvis.PRICES). Tokens only, never the
+        question or the answer, so the log holds no client data."""
+        meters = {k: int(usage.get(k, 0) or 0) for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")}
+        cost = jarvis.cost_usd(model, meters)
+        line = {"at": now().isoformat(timespec="seconds"), "route": route, "model": model, **meters,
+                "cost_usd": round(cost, 6) if cost is not None else None, **extra}
+        try:
+            with (self.usage_path.parent / "claude-usage.jsonl").open("a") as f:
+                f.write(json.dumps(line) + "\n")
+        except OSError:
+            pass
+        return self._bump_usage(asked=1, **meters, cost_usd=cost or 0.0)
+
     def voice_info(self) -> dict:
         u = self.voice_usage()
-        # Rough spend, from the published per-token prices of the default model and ElevenLabs' per-character plans.
-        est = u["input_tokens"] / 1e6 * 4.0 + u["output_tokens"] / 1e6 * 20.0 if self.ask_model == ASK_MODEL_DEFAULT else None
+        # Exact once calls are logged with all four meters (cost_usd); older totals fall back to input and output only.
+        est = u.get("cost_usd") if "cost_usd" in u else (u["input_tokens"] / 1e6 * 4.0 + u["output_tokens"] / 1e6 * 20.0
+                                                         if self.ask_model == ASK_MODEL_DEFAULT else None)
         return {"ask": bool(self.ask_key), "ask_model": self.ask_model, "tts": "elevenlabs" if self.eleven_key else "browser",
                 "voice_id": self.eleven_voice if self.eleven_key else "", "usage": u, "ask_cost_estimate_usd": round(est, 4) if est is not None else None,
                 "speech_engine": bool(self.eleven_key and self.speech_engine_id and self.ask_key), "speech_engine_id": self.speech_engine_id,
@@ -425,7 +441,7 @@ class State:
             raise CRMError("could not reach Anthropic")
         if r.get("refused"):
             raise CRMError("Claude declined that one")
-        u = self._bump_usage(asked=1, input_tokens=r["usage"]["input_tokens"], output_tokens=r["usage"]["output_tokens"])
+        u = self.log_claude("ask", r.get("model", self.ask_model), r["usage"], tool_calls=len(r["calls"]))
         return {"ok": True, "result": {"answer": r["answer"] or "I have nothing on that.", "model": r.get("model", self.ask_model),
                                        "proposals": r["proposals"], "tools_used": [c["tool"] for c in r["calls"]]}, "usage": u}
 
