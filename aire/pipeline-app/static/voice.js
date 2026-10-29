@@ -60,6 +60,8 @@ const Voice = (() => {
     const owes = (f.touches_due || []).filter(r => r.owes_reply), over = (f.tasks || []).filter(t => t.overdue);
     if (/^(ask|question|hey claude|claude)[ ,:]/i.test(q.trim())) return askClaude(text.replace(/^(ask|question|hey claude|claude)[ ,:]+/i, ''));
     if (/\b(stop|quiet|cancel|never ?mind|hush)\b/.test(q)) { if ('speechSynthesis' in window) speechSynthesis.cancel(); if (audioEl) { try { audioEl.pause(); } catch (e) { } } setState(on ? 'listening' : 'idle'); return; }
+    // With Jarvis on, the word shortcuts only take short commands. A real question goes to Jarvis, which looks it up.
+    if (askOn() && q.trim().split(/\s+/).length > 3 && !/^(compose|refresh|reload|stop|go to|open)\b/.test(q.trim())) return askClaude(text);
     setState('thinking');
     if (/\b(brief|morning|rundown|summary|how.?s (my|the) day)\b/.test(q)) {
       go('cc');
@@ -90,7 +92,7 @@ const Voice = (() => {
     if (window.Core) Core.burst();
     return fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }) })
       .then(r => r.json())
-      .then(r => { if (!r.ok) return say(r.error || 'Claude did not answer.'); if (window.load) load(); say(r.result.answer); })
+      .then(r => { if (!r.ok) return say(r.error || 'Claude did not answer.'); if (window.load) load(); say(r.result.answer); if ((r.result.proposals || []).length && window.showProposals) showProposals(r.result.proposals); })
       .catch(() => say('Claude did not answer.'));
   }
   function hourWord() { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'; }
