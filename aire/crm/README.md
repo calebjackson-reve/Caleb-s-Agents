@@ -17,7 +17,7 @@ Read from the live sheet on 2026-10-19, not assumed. `python3 crm.py check` comp
 | Deals | **added by this tool** (only when missing) | deal_id, person_id, display, address, side, stage, price, expected_close, next_step, last_event, last_event_at, source, updated_at |
 | Geo | **added by this tool** (only when missing, 2026-10-27) | key, kind, ref_id, address, lat, lng, match, geocoded_at |
 
-No column is added to Contacts. Geo holds one row per geocoded Contacts or Deals address (`key` is `person:<person_id>` or `deal:<deal_id>`), written only by `crm.py geocode`. A row with `match` tie or no_match has no coordinates and is kept so the next run skips it until the address in the sheet changes. Every column keeps its meaning. The only Contacts columns this tool writes are `Stage`, `Last_Touch`, `Next_Action` and `band`, plus `Do_Not_Contact` one way (to YES). The enrichment block (name_tier through provenance) and `Command_ID` are never written.
+No column is added to Contacts. Geo holds one row per geocoded Contacts or Deals address (`key` is `person:<person_id>` or `deal:<deal_id>`), written only by `crm.py geocode`. A row with `match` tie or no_match has no coordinates and is kept so the next run skips it until the address in the sheet changes. Every column keeps its meaning. The only Contacts columns this tool writes are `Stage`, `Last_Touch`, `Next_Action` and `band`, plus `Do_Not_Contact` one way (to YES). `Type` is written only by `relabel`, only to agent, lender or vendor, when Caleb taps yes on a label review in Pipeline (2026-10-29). The enrichment block (name_tier through provenance) and `Command_ID` are never written.
 
 Values the sheet actually uses (counted 2026-10-19): band is HOT 117, WARM 46, NURTURE 524, DORMANT 955, blank 1,984. Stage is blank 2,928, nurture 641, past client 57. Type is unknown, client, household, recruit, vendor, agent, lender. Last_Touch is filled on 4 rows and Next_Action on 1. That is why the first feed says "never logged" for nearly everyone, and why the Hot-Warm-Cold merge matters.
 
@@ -65,6 +65,8 @@ python3 crm.py feed --signals ../enrichment/out/enriched.csv   # same, ranked by
 python3 crm.py geocode --report reports/YYYY-MM-DD-geocode.report.md   # addresses -> Geo tab (Census geocoder, free), unmatched listed for Caleb
 python3 crm.py --json lead "Owner at 2135 Shady Oaks Dr" --source "Market Monitor permit 2026-10-26"   # Make lead from the Market Monitor
 python3 crm.py due                  # who is past their band's cadence (--signals works here too)
+python3 crm.py label-review --signals ../enrichment/out/imessage-signals.json   # who looks mislabeled, four rules. Read only
+python3 crm.py relabel 247 --band warm --expect-band cold   # Caleb's yes on one suggestion (or --type agent|lender|vendor)
 python3 crm.py rescale-band         # legacy HOT/WARM/NURTURE/DORMANT cells to the five-step scale, audited
 python3 crm.py tasks                # open tasks, overdue first, plus Next_Action items not yet synced
 python3 crm.py deals                # live deals

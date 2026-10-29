@@ -117,6 +117,27 @@ def norm_band(v: str | None) -> str:
         return v
     return LEGACY_BAND.get(v.upper(), "")
 NEVER_TOUCH_TYPES = {"vendor", "agent", "lender"}
+# Label review (Caleb, 2026-10-29): four ways a band or Type can be wrong. Suggestions only. A fix is written by
+# relabel, which the Pipeline app runs only when Caleb taps yes.
+REVIEW_TEXTING_DAYS = 30   # texts both ways this recently: the relationship is live, cold or blank is wrong
+REVIEW_QUIET_DAYS = 60     # hot or warm with no touch and no text this long is not hot
+PAST_CLIENT_BAND = "cold"  # a past client with no band never comes up; quarterly is the floor
+REVIEW_RULES = ["texting_but_cold", "hot_gone_quiet", "past_client_no_band", "pro_as_client"]
+PRO_PATTERNS = [  # checked against display and email; first match wins
+    ("lender", re.compile(r"\b(mortgage|lending|lender|loans?|home ?loans?)\b|@(rocketmortgage|guildmortgage|fairwaymc|movement|cmgfi|bankplus|b1bank|redriverbank)\.", re.I)),
+    ("agent", re.compile(r"\b(realty|realtors?|real estate|keller ?williams|re/?max|exp realty|coldwell|century ?21|latter ?& ?blum)\b|@(kw|kwrealty|remax|exprealty|cbrealty|latterblum|c21)\.", re.I)),
+    ("vendor", re.compile(r"\b(title|inspections?|inspector|insurance|appraisals?|roofing|plumbing|hvac|construction|builders?|pest)\b", re.I)),
+]
+
+
+def pro_kind(c: dict) -> str:
+    """'lender', 'agent' or 'vendor' when the contact's name or email says so, else ''. Deliberately narrow: a
+    business word in the name or a known brokerage or lender email domain. Never a guess from texts."""
+    text = f"{c.get('display', '')} {c.get('email', '')}"
+    for kind, pat in PRO_PATTERNS:
+        if pat.search(text):
+            return kind
+    return ""
 PARTNER_CADENCE_DAYS = 60  # agents, lenders, vendors: their own section in the feed, not the client touch list
 LIVE_DEAL_STAGES = {"lead", "consult", "active", "showing", "under_contract", "unknown"}
 DEAL_STAGES = LIVE_DEAL_STAGES | {"closed", "fell_through"}
@@ -494,7 +515,7 @@ class CRM:
         self.b.append("Connector Log", [{"At (CT)": now_sheet(), "Tool": tool, "Client": self.client,
                                          "person_id": str(person_id), "Detail": detail}])
 
-    def update_contact(self, person_id: str, fields: dict, reason: str) -> dict:
+    def update_contact(self, person_id: str, fields: dict, reason: str, allow_type: bool = False) -> dict:
         c = self.by_id(person_id)
         if not c:
             raise GateError(f"no contact with person_id {person_id}; writes are by person_id only")
@@ -503,7 +524,7 @@ class CRM:
             raise GateError(f"{sorted(bad)} is never written by this tool")
         if "Do_Not_Contact" in fields:
             raise GateError("Do_Not_Contact changes go through set_do_not_contact")
-        unknown = set(fields) - WRITABLE
+        unknown = set(fields) - WRITABLE - ({"Type"} if allow_type else set())
         if unknown:
             raise GateError(f"not a column this tool may write: {sorted(unknown)}")
         changes = {k: v for k, v in fields.items() if str(c.get(k, "")) != str(v)}
@@ -594,6 +615,29 @@ class CRM:
                 self._audit("task_done", t.get("person_id", ""), f"{t['task']} [{task_id}]")
                 return True
         return False
+
+    def relabel(self, person_id: str, band: str = "", type_: str = "", expect_band: str | None = None) -> dict:
+        """Caleb's yes on a label review suggestion: band to the five-step scale, or Type to agent, lender or vendor.
+        This is the only path that writes Type, and it only moves someone off the client list. expect_band guards
+        a stale review the same way set_stage's expect does."""
+        band, type_ = (band or "").strip().lower(), (type_ or "").strip().lower()
+        if not band and not type_:
+            raise GateError("relabel needs --band or --type")
+        if band and band not in CADENCE_DAYS:
+            raise GateError("band must be one of: " + ", ".join(CADENCE_DAYS))
+        if type_ and type_ not in NEVER_TOUCH_TYPES:
+            raise GateError("relabel only moves Type to: " + ", ".join(sorted(NEVER_TOUCH_TYPES)))
+        c = self.by_id(person_id)
+        if not c:
+            raise GateError(f"no contact with person_id {person_id}; writes are by person_id only")
+        before = {"band": norm_band(c.get("band")), "Type": (c.get("Type") or "").lower()}
+        if expect_band is not None and before["band"] != norm_band(expect_band):
+            raise GateError(f"band changed since you reviewed it (now {before['band'] or 'blank'}). Nothing written. Review again.")
+        fields = {**({"band": band} if band else {}), **({"Type": type_} if type_ else {})}
+        changes = self.update_contact(person_id, fields, "relabel", allow_type=bool(type_))
+        if changes:
+            self.add_note(person_id, "Label: " + ", ".join(f"{k} {before[k] or 'blank'} -> {v}" for k, v in changes.items()))
+        return {"person_id": str(person_id), "before": before, "changes": changes}
 
     def set_stage(self, person_id: str, stage: str, expect: str | None = None, day: str | None = None) -> dict:
         """Stage moves and Last_Touch moves forward, like the Mac's update_stage.py. expect guards a stale review."""
@@ -828,6 +872,67 @@ class CRM:
                             "last_touch": c.get("Last_Touch", ""), "next_action": nxt})
         return sorted(out, key=lambda x: -(x["days_quiet"] if x["days_quiet"] is not None else 99999))
 
+    def label_review(self, as_of: date | None = None, signals: dict | None = None) -> list[dict]:
+        """Contacts whose band or Type looks wrong next to their own record, one row per person with the rule, the
+        suggested fix and the reason in plain words. Do_Not_Contact people are skipped. Read only."""
+        as_of = as_of or today()
+        signals = signals or {}
+
+        def ago(d: str) -> int | None:
+            d = (d or "")[:10]
+            return (as_of - date.fromisoformat(d)).days if d and d <= as_of.isoformat() else None
+
+        out = []
+        for c in self.contacts():
+            if (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
+            sig = signals.get(c["person_id"], {})
+            band, typ = norm_band(c.get("band")), (c.get("Type") or "").lower()
+            row = {"person_id": c["person_id"], "display": c.get("display", ""), "band": band, "type": typ,
+                   "stage": c.get("Stage", ""), "suggest_band": "", "suggest_type": ""}
+            pro = pro_kind(c)
+            if pro and typ not in NEVER_TOUCH_TYPES:
+                out.append({**row, "rule": "pro_as_client", "suggest_type": pro,
+                            "why": f"name or email reads like a {pro}, but Type is {typ or 'blank'}, so they sit on the client touch list"})
+                continue
+            if typ in NEVER_TOUCH_TYPES:
+                continue
+            din, dout = ago(sig.get("last_inbound", "")), ago(sig.get("last_outbound", ""))
+            if band in ("", "cold", "ice-cold") and din is not None and dout is not None \
+                    and din <= REVIEW_TEXTING_DAYS and dout <= REVIEW_TEXTING_DAYS:
+                n = sig.get("in_30", 0)
+                out.append({**row, "rule": "texting_but_cold", "suggest_band": "warm",
+                            "why": f"texting both ways, last from them {din} days ago{f' ({n} texts in 30 days)' if n else ''}, but band is {band or 'blank'}"})
+                continue
+            if (c.get("Stage") or "").strip().lower() == "past client" and not band:
+                out.append({**row, "rule": "past_client_no_band", "suggest_band": PAST_CLIENT_BAND,
+                            "why": "past client with no band, so they never come up for a touch"})
+                continue
+            if band in ("hot", "warm"):
+                seen = [x for x in (ago(parse_touch(c.get("Last_Touch", ""), as_of)), din, dout) if x is not None]
+                quiet = min(seen) if seen else None
+                if quiet is None or quiet >= REVIEW_QUIET_DAYS:
+                    out.append({**row, "rule": "hot_gone_quiet", "suggest_band": "lukewarm", "days_quiet": quiet,
+                                "why": f"marked {band} but " + ("nothing logged or texted, ever" if quiet is None
+                                                                else f"no touch or text in {quiet} days") + ". Call them today or cool the band"})
+        return sorted(out, key=lambda r: (REVIEW_RULES.index(r["rule"]), r["display"]))
+
+    def people(self, signals: dict | None = None) -> list[dict]:
+        """Everyone Caleb may contact, compact, so Pipeline's voice can find anyone by name, street or town, not only
+        the people due today. Do_Not_Contact people are left out. Read only."""
+        signals = signals or {}
+        out = []
+        for c in self.contacts():
+            if (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
+            sig = signals.get(c["person_id"], {})
+            out.append({"person_id": c["person_id"], "display": c.get("display", ""), "band": norm_band(c.get("band")),
+                        "stage": c.get("Stage", ""), "type": (c.get("Type") or "").lower(), "street": c.get("street", ""),
+                        "city": c.get("city", ""), "last_touch": c.get("Last_Touch", ""), "next_action": c.get("Next_Action", ""),
+                        "last_inbound": sig.get("last_inbound", ""), "last_outbound": sig.get("last_outbound", ""),
+                        "has_phone": bool(c.get("primary_phone")), "has_email": bool(c.get("email"))})
+        return out
+
     def new_leads(self, days: int = 14, as_of: date | None = None) -> list[dict]:
         as_of = as_of or today()
         cutoff = (as_of - timedelta(days=days)).isoformat()
@@ -1017,6 +1122,8 @@ class CRM:
             "touches_due": due, "tasks": sorted(tasks, key=lambda t: t["due"] or "9999"), "deals": deals,
             "new_leads": self.new_leads(as_of=as_of),
             "partners": self.partners(as_of),
+            "label_review": self.label_review(as_of, signals),
+            "people": self.people(signals),
             "cadence_days": CADENCE_DAYS,
             "map": {**pins, "farms": self.farm_counts(farms, pins["pins"])},
             "market": self.market(market_rows or [], farms, pins["pins"], dismissed),
@@ -1073,6 +1180,7 @@ def load_signals(path: Path, contacts: list[dict]) -> dict:
                                "owes_reply": bool(ai) and ai > lo and age is not None and 0 <= age <= 60,
                                "last_inbound_at": ask,
                                "signal_score": int(sig.get("in_90", 0)),
+                               "in_30": int(sig.get("in_30", 0) or 0),
                                # The last three things they actually said, so the Pipeline app can show them above the
                                # compose box. Stays in feed.json on the Mac, never in the sheet or git.
                                "last_messages": recent[-3:]}
@@ -1874,6 +1982,36 @@ def run_tests() -> int:
     rep2 = import_website_leads(c3, [dict(leads[i], **{LEAD_MARK: rep["marks"].get(i, "x")}) for i in range(len(leads))], as_of)
     check("a second run over marked rows does nothing", rep2["created"] + rep2["matched"] + rep2["dnc"] + rep2["skipped"] == 0)
 
+    # label review and relabel (Caleb's four rules, 2026-10-29), on a fresh fixture
+    db4 = tmp / "db4.json"
+    db4.write_text((HERE / "tests" / "fixtures" / "fake-crm.json").read_text())
+    c4 = CRM(LocalBackend(db4), audit_path=tmp / "audit4.jsonl")
+    c4.ensure_tabs()
+    pro = c4.create_contact("Delta Title Co", "+12255550199", "", band="cold", source="test")
+    sig4 = {"3": {"last_inbound": "2026-10-15", "last_outbound": "2026-10-16", "in_30": 4}}
+    lr = {r["person_id"]: r for r in c4.label_review(as_of, sig4)}
+    check("texting both ways but cold: suggest warm", lr.get("3", {}).get("rule") == "texting_but_cold" and lr["3"]["suggest_band"] == "warm")
+    check("past client with no band: suggest the quarterly band", lr.get("4", {}).get("rule") == "past_client_no_band" and lr["4"]["suggest_band"] == PAST_CLIENT_BAND)
+    check("business name on a client: suggest the pro Type", lr.get(pro["person_id"], {}).get("suggest_type") == "vendor")
+    check("Do_Not_Contact and people already typed vendor are never reviewed", "5" not in lr and "6" not in lr)
+    check("recently touched hot and warm are not flagged", "1" not in lr and "2" not in lr)
+    late = {r["person_id"]: r for r in c4.label_review(date(2027, 1, 1), sig4)}
+    check("hot with no touch or text in 60+ days: flagged with the days", late.get("1", {}).get("rule") == "hot_gone_quiet" and late["1"]["days_quiet"] == 75)
+    check("old texts no longer count as texting", late.get("3", {}).get("rule") != "texting_but_cold")
+    ppl = {x["person_id"] for x in c4.people()}
+    check("people directory has everyone but Do_Not_Contact", "5" not in ppl and {"1", "4", "7", pro["person_id"]} <= ppl)
+    check("Type is still refused outside relabel", raises(lambda: c4.update_contact("1", {"Type": "agent"}, "t")))
+    check("relabel only moves Type to agent, lender or vendor", raises(lambda: c4.relabel("1", type_="client")))
+    check("relabel refuses an unknown band", raises(lambda: c4.relabel("1", band="lava")))
+    check("relabel refuses a stale review", raises(lambda: c4.relabel("3", band="warm", expect_band="hot")))
+    r = c4.relabel("3", band="warm", expect_band="NURTURE")
+    check("relabel writes the band and notes the before and after", r["changes"] == {"band": "warm"} and c4.by_id("3")["band"] == "warm"
+          and any(n["person_id"] == "3" and "band cold -> warm" in n["Note"] for n in c4.notes()))
+    r = c4.relabel(pro["person_id"], type_="vendor")
+    check("relabel writes Type and the audit log has it", c4.by_id(pro["person_id"])["Type"] == "vendor"
+          and any(x["Tool"] == "update_contact" and "Type='vendor'" in x["Detail"] for x in c4.b.read("Connector Log")))
+    check("feed carries label_review and people", {"label_review", "people"} <= set(c4.feed(as_of, sig4)))
+
     print(f"\n{'ALL PASS' if not fails else str(len(fails)) + ' FAILED'}")
     return 1 if fails else 0
 
@@ -1881,7 +2019,7 @@ def run_tests() -> int:
 # ---------------------------------------------------------------------- cli
 
 
-APP_WRITES = {"touch", "done", "task", "stage", "note", "dnc", "deal", "lead"}
+APP_WRITES = {"touch", "done", "task", "stage", "note", "dnc", "deal", "lead", "relabel"}
 
 
 def run_app_write(crm: "CRM", a, as_of: date):
@@ -1908,6 +2046,8 @@ def run_app_write(crm: "CRM", a, as_of: date):
         return crm.add_task(a.person_id, a.task, a.due)
     if a.cmd == "stage":
         return crm.set_stage(a.person_id, a.stage, expect=a.expect, day=as_of.isoformat())
+    if a.cmd == "relabel":
+        return crm.relabel(a.person_id, band=a.band or "", type_=a.type or "", expect_band=a.expect_band)
     if a.cmd == "note":
         return crm.note(a.person_id, a.text)
     if a.cmd == "dnc":
@@ -1954,6 +2094,9 @@ def main(argv=None) -> int:
     p = sub.add_parser("done"); p.add_argument("task_id")
     p = sub.add_parser("stage"); p.add_argument("person_id"); p.add_argument("stage"); p.add_argument("--expect", help="refuse if the current Stage differs")
     p = sub.add_parser("note"); p.add_argument("person_id"); p.add_argument("text")
+    p = sub.add_parser("relabel", help="Caleb's yes on a label review: --band to the five-step scale, or --type agent/lender/vendor")
+    p.add_argument("person_id"); p.add_argument("--band"); p.add_argument("--type"); p.add_argument("--expect-band", help="refuse if the band changed")
+    p = sub.add_parser("label-review", help="who looks mislabeled, by rule. Read only"); p.add_argument("--signals")
     p = sub.add_parser("dnc", help="Do_Not_Contact to YES. One way: there is no command to set it back to NO")
     p.add_argument("person_id"); p.add_argument("--reason", required=True)
     p = sub.add_parser("deal", help="Caleb's correction to one deal, matched by street")
@@ -2018,6 +2161,14 @@ def main(argv=None) -> int:
             print(f"{a.report}: {len(r['unmatched'])} unmatched listed (client data, keep it on the Mac)")
         elif r["unmatched"]:
             print(f"{len(r['unmatched'])} addresses not matched; pass --report FILE to list them")
+    elif a.cmd == "label-review":
+        sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
+        rows = crm.label_review(as_of, sig)
+        for rule in REVIEW_RULES:
+            print(f"{rule}: {sum(1 for r in rows if r['rule'] == rule)}")
+        for r in rows:
+            fix = r["suggest_band"] or r["suggest_type"]
+            print(f"  {r['rule']:20} #{r['person_id']:<5} {r['display']:30} {r['band'] or r['type'] or 'blank':9} -> {fix:9} {r['why']}")
     elif a.cmd == "due":
         sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
         for d in crm.due(as_of, sig):
@@ -2049,7 +2200,7 @@ def main(argv=None) -> int:
         print(crm.add_task(a.person_id, a.task, a.due))
     elif a.cmd == "done":
         print("done" if crm.done(a.task_id) else "no such open task")
-    elif a.cmd in ("stage", "note", "dnc", "deal", "lead"):
+    elif a.cmd in ("stage", "note", "dnc", "deal", "lead", "relabel"):
         print(run_app_write(crm, a, as_of))
     elif a.cmd == "website-leads":
         crm.ensure_tabs()
