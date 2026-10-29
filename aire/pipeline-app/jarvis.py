@@ -308,23 +308,37 @@ class Tools:
             return {"error": f"bad input for {name}: {type(e).__name__}: {e}"}
 
 
+def _create(client, **kw):
+    try:  # refusal fallback on the current Opus and Fable models; older SDKs do not know the parameter
+        return client.beta.messages.create(betas=["server-side-fallback-2026-07-01"], fallbacks="default", **kw)
+    except TypeError:
+        return client.messages.create(**kw)
+
+
+def _kwargs(model: str, effort: str, max_tokens: int = 1500) -> dict:
+    # Caching: tools + system are byte-stable, so one explicit breakpoint on system caches that prefix across every
+    # question, and top-level automatic caching covers the growing tool loop inside one question. Nothing volatile
+    # (today's date, the question) sits above the breakpoint.
+    return dict(model=model, max_tokens=max_tokens, tools=TOOLS, output_config={"effort": effort},
+                system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
+                cache_control={"type": "ephemeral"})
+
+
+def warm(client, model: str, effort: str = "medium") -> dict:
+    """Write the tools + system prefix into the cache with max_tokens 0 (no output billed). Returns the usage."""
+    resp = _create(client, messages=[{"role": "user", "content": "warm-up"}], **_kwargs(model, effort, max_tokens=0))
+    return {k: int(getattr(resp.usage, k, 0) or 0) for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")}
+
+
 def ask(client, model: str, tools: Tools, question: str, history: list[dict] | None = None, effort: str = "medium") -> dict:
     """The tool loop. Returns answer, proposals, the tool calls made (for tests and the eval) and token usage.
     `client` is an anthropic.Anthropic (or a fake with the same shape)."""
     messages = list(history or []) + [{"role": "user", "content": f"Today is {tools.today}. Caleb asked, by voice: {question}"}]
     used = {"input_tokens": 0, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0, "output_tokens": 0}
     calls = []
-    # Caching: tools + system are byte-stable, so one explicit breakpoint on system caches that prefix across every
-    # question, and top-level automatic caching covers the growing tool loop inside one question. Nothing volatile
-    # (today's date, the question) sits above the breakpoint.
-    kwargs = dict(model=model, max_tokens=1500, tools=TOOLS, output_config={"effort": effort},
-                  system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
-                  cache_control={"type": "ephemeral"})
+    kwargs = _kwargs(model, effort)
     for _ in range(MAX_TURNS):
-        try:  # refusal fallback on the current Opus and Fable models; older SDKs do not know the parameter
-            resp = client.beta.messages.create(betas=["server-side-fallback-2026-07-01"], fallbacks="default", messages=messages, **kwargs)
-        except TypeError:
-            resp = client.messages.create(messages=messages, **kwargs)
+        resp = _create(client, messages=messages, **kwargs)
         for k in used:
             used[k] += int(getattr(resp.usage, k, 0) or 0)
         if getattr(resp, "stop_reason", "") == "refusal":

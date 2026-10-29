@@ -2,6 +2,51 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-29, afternoon: Claude Q&A on, faster and cheaper
+
+**Confirmed by Caleb**
+- Added Anthropic credits ("try now"). Earlier: "do a series of tests and Q and A with the voice command to improve its efficiency."
+
+**Measured on the real feed, the same 4 Claude-only questions each time**
+- Opus 5.5 (the old default), feed sent fresh each time: 3.4 to 5.7 s, about 4 cents a question, one answer cut off mid sentence at the 400-token cap.
+- Sonnet 5.5: 2.5 to 3.1 s, complete and accurate. Haiku 5.5: 2.3 to 2.7 s but miscounted tasks and returned "I have nothing on that" once. Sonnet 5.5 is the new default (Caleb's rule: fastest reliable).
+- With the feed in a cached system block: under 1 cent a question on Sonnet (8 questions, 6 cents). The first question after a pause still paid the cache write (8 to 23 s); after it, 1.8 to 2.3 s.
+
+**Done**
+- `ASK_MODEL_DEFAULT` is `claude-sonnet-5-5`, cost estimate per model (`ASK_PRICES`, Anthropic prices as of 2026-10-06, cache reads at a tenth).
+- Feed in a cached system block with sorted keys, question in the user turn. Answer cap 500 (the existing test's limit), trimmed to the last whole sentence if it is hit.
+- Claude now also sees the 10 hot and warm contacts quiet the longest, everyone waiting on a reply (up to 40, last text), and the market and map counts.
+- Voice on, or "hey Pipeline": `POST /api/ask/warm` writes the cache with a `max_tokens` 0 request (same model, system and effort as a real question), skipped when the same feed was warmed under 4 minutes ago. After a warm-up the first question took 2.2 s.
+- Removed `PIPELINE_ASK_MODEL=claude-opus-5-5` from `~/.aire/pipeline.env` (a template line from the morning, it pinned the old default). Only that line was touched.
+
+## 2026-10-29, afternoon: live texting from Pipeline
+
+**Confirmed by Caleb**
+- "I want to be able to send a text directly out of the pipeline app."
+
+**Done**
+- Texts go through Messages.app as iMessage first. Messages accepts an iMessage send even for a number that is not on iMessage and marks it failed later, so Pipeline reads the result back from `~/Library/Messages/chat.db` (read only, the venv Python already has Full Disk Access). On an error it sends once as SMS through the iPhone. Both failing shows NOT SENT, is logged as `failed` in `out/send-log.json`, and no touch is written. In the last 60 days 254 of Caleb's texts went as SMS, so the fallback matters.
+- In live mode Pipeline asks Messages a harmless question at start, so the macOS Allow box shows then, and a missing permission is a warning on screen.
+- `PIPELINE_SENDER=live` in the LaunchAgent. Every text still needs Caleb's press on Send, Do Not Contact is checked through the engine, the cap stays 25 texts a day.
+- 9 offline checks for the fallback, the chat.db read and the failed-send log. The chat.db read was checked against the real database (a text sent today reads as delivered).
+
+**Not verified**
+- A real send. The first one is Caleb's press.
+
+## 2026-10-29, afternoon: voice commands tested and rebuilt
+
+**Confirmed by Caleb**
+- "Go in and do a series of tests and Q and A with the voice command to improve its efficiency."
+
+**Done (on the Mac, tested on the real feed with sending in dry run and ElevenLabs off)**
+- 77 spoken-style commands typed through the same path the microphone uses (`Voice.type`), four rounds. Before: about 20 of 40 right, plurals missed ("tasks", "deals", "leads"), "what did I send" and "what's next" opened compose, "give me an update" rebuilt the feed, "who's gone quiet" stopped the voice, a contact with no name was read as a blank. After: 75 of 77 answered from the feed, median 7 ms; only weather and calendar go to Claude.
+- Root bug: `voice.js` read the app state as `window.S`, but the app keeps it in a top-level `const S`, so Claude Q&A, the ElevenLabs voice and calls were always off no matter the keys. Fixed.
+- New commands: who should I call first, which deal closes next, how many deals under contract, a deal by street ("tell me about Buffalo Hollow"), a person by name ("what did Josh say", "how is Marci"), hot or warm counts, permits by kind ("any roof permits", "new builds this week"), new listings, the map, CRM size, texts left today, open or go to any page. Commands that would write or send ("text Josh", "call Bryan", "log a call with Greg Bergeron", "remind me to call Marci tomorrow") only open the box; Caleb presses Send or Save. A first name that matches several people says so.
+- Spoken text drops emoji and line breaks. Claude errors are one plain sentence.
+
+**Needs Caleb**
+- The Anthropic API account behind Pipeline (and OmniRoute's anthropic route) is out of credits, so Claude Q&A cannot answer yet. Topping it up is Caleb's call.
+
 ## 2026-10-29: Map and Market Monitor are in Pipeline
 
 **Confirmed by Caleb**

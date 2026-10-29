@@ -99,7 +99,10 @@ PATHS = {
     "dismissed": AIRE / "map-crm" / "cache" / "dismissed.json",
     "lists": AIRE / "map-crm" / "out",
 }
-ASK_MODEL_DEFAULT = "claude-opus-5-5"
+# Sonnet 5.5: on 4 real questions (2026-10-29) it answered in 2.5 to 3.1 s with complete, accurate answers; Opus 5.5
+# took 3.4 to 5.7 s and cut one answer off; Haiku 5.5 was faster but miscounted and dropped an answer.
+ASK_MODEL_DEFAULT = "claude-sonnet-5-5"
+# Prices: jarvis.PRICES (all four token meters, read from the live pricing page 2026-10-29).
 ELEVEN_VOICE_DEFAULT = "onwK4e9ZLuTAKqWW03F9"   # ElevenLabs premade "Daniel", British
 ELEVEN_MODEL_DEFAULT = "eleven_flash_v2_5"
 ASK_SYSTEM = """You are Pipeline, the voice of Caleb Jackson's daily real estate tool. Caleb is a REALTOR with Keller Williams
@@ -307,7 +310,13 @@ class State:
         self.eleven_model = os.getenv("ELEVENLABS_MODEL", ELEVEN_MODEL_DEFAULT)
         self.speech_engine_id = "" if demo else os.getenv("ELEVENLABS_SPEECH_ENGINE_ID", "")
         self.lock = threading.Lock()
+        self._warm: dict = {}
         self._demo_cache: dict | None = None
+        # Live texting needs macOS to let this Python control Messages. Ask once at start, so the Allow box shows
+        # now and a missing permission is on screen before Caleb presses Send.
+        self.messages = {"checked": False, "ok": None, "detail": ""}
+        if self.sender == "live" and not demo and platform.system() == "Darwin":
+            threading.Thread(target=self.check_messages, daemon=True).start()
         self.started = now().isoformat(timespec="seconds")
 
     # ---- reads
@@ -317,6 +326,16 @@ class State:
                 self._demo_cache = read_json(self.paths["feed"], {})
             return self._demo_cache
         return read_json(self.paths["feed"], {})
+
+    def check_messages(self) -> dict:
+        try:
+            p = subprocess.run(["osascript", "-e", 'tell application "Messages" to count accounts'], capture_output=True, text=True, timeout=90)
+            ok = p.returncode == 0
+            detail = "" if ok else (p.stderr.strip() or "no answer")[-200:]
+        except subprocess.TimeoutExpired:
+            ok, detail = False, "no answer from Messages (an Allow box may be waiting)"
+        self.messages = {"checked": True, "ok": ok, "detail": detail}
+        return self.messages
 
     def send_log(self) -> list[dict]:
         log = read_json(self.send_log_path, [])
@@ -333,8 +352,8 @@ class State:
         if not isinstance(u, dict) or "_error" in u:
             u = {}
         out = {"asked": int(u.get("asked", 0)), "input_tokens": int(u.get("input_tokens", 0)), "output_tokens": int(u.get("output_tokens", 0)),
-               "cache_creation_input_tokens": int(u.get("cache_creation_input_tokens", 0)),
-               "cache_read_input_tokens": int(u.get("cache_read_input_tokens", 0)),
+               "cache_creation_input_tokens": int(u.get("cache_creation_input_tokens", u.get("cache_write_tokens", 0))),
+               "cache_read_input_tokens": int(u.get("cache_read_input_tokens", u.get("cache_read_tokens", 0))),
                "spoken_chars": int(u.get("spoken_chars", 0)), "calls": int(u.get("calls", 0)), "last": u.get("last", "")}
         if "cost_usd" in u:  # present once a call was logged with all four meters
             out["cost_usd"] = float(u["cost_usd"])
@@ -362,13 +381,12 @@ class State:
                 f.write(json.dumps(line) + "\n")
         except OSError:
             pass
-        return self._bump_usage(asked=1, **meters, cost_usd=cost or 0.0)
+        return self._bump_usage(asked=0 if route == "warm" else 1, **meters, cost_usd=cost or 0.0)
 
     def voice_info(self) -> dict:
         u = self.voice_usage()
-        # Exact once calls are logged with all four meters (cost_usd); older totals fall back to input and output only.
-        est = u.get("cost_usd") if "cost_usd" in u else (u["input_tokens"] / 1e6 * 4.0 + u["output_tokens"] / 1e6 * 20.0
-                                                         if self.ask_model == ASK_MODEL_DEFAULT else None)
+        # Exact once calls are logged with all four meters (cost_usd); older totals are priced from the four meters.
+        est = u["cost_usd"] if "cost_usd" in u else jarvis.cost_usd(self.ask_model, u)
         return {"ask": bool(self.ask_key), "ask_model": self.ask_model, "tts": "elevenlabs" if self.eleven_key else "browser",
                 "voice_id": self.eleven_voice if self.eleven_key else "", "usage": u, "ask_cost_estimate_usd": round(est, 4) if est is not None else None,
                 "speech_engine": bool(self.eleven_key and self.speech_engine_id and self.ask_key), "speech_engine_id": self.speech_engine_id,
@@ -408,13 +426,24 @@ class State:
         deals = [{"address": d.get("address"), "who": d.get("display"), "side": d.get("side"), "stage": d.get("stage"), "price": d.get("price"),
                   "expected_close": d.get("expected_close"), "next_step": d.get("next_step"), "last_event": d.get("last_event")} for d in f.get("deals", [])[:15]]
         leads = [{"name": l.get("display"), "source": l.get("source"), "received": l.get("received"), "next_action": l.get("next_action")} for l in f.get("new_leads", [])[:15]]
+        # The whole due list is too big to send, so the people a question most often reaches past the top 25 for:
+        # hot and warm contacts quiet the longest, and everyone waiting on a reply.
+        allrows = f.get("touches_due", [])
+        quiet = sorted((r for r in allrows if r.get("band") in ("hot", "warm") and r.get("days_quiet") is not None), key=lambda r: -r["days_quiet"])[:10]
+        quiet = [{"name": r.get("display"), "band": r.get("band"), "days_quiet": r.get("days_quiet"), "next_action": r.get("next_action")} for r in quiet]
+        owes = [{"name": r.get("display") or "(no name)", "last_text": (r.get("last_messages") or [""])[-1][:160]} for r in allrows if r.get("owes_reply")][:40]
+        mkt = (f.get("market") or {}).get("counts") or {}
+        mp = (f.get("map") or {}).get("counts") or {}
         sent = self.sent_today()
         review = [{"name": r.get("display"), "rule": r.get("rule"), "now": r.get("band") or r.get("type") or "blank",
                    "suggest": r.get("suggest_band") or r.get("suggest_type"), "why": r.get("why")}
                   for r in f.get("label_review", []) if (r.get("display") or "").strip()][:15]
         return {"today": today().isoformat(), "feed_as_of": f.get("as_of"), "counts": f.get("counts"), "cadence_days": f.get("cadence_days"),
                 "label_review_top": review,
-                "touches_due_top": due, "tasks": tasks, "live_deals": deals, "new_leads": leads,
+                "touches_due_top": due, "hot_warm_quiet_longest": quiet, "waiting_on_a_reply": owes,
+                "market_monitor": {"rows": mkt.get("rows"), "by_type": mkt.get("by_type"), "source": "EBR permits (data.brla.gov) and Flexmls alert mail"},
+                "map": {"people_pinned": mp.get("persons"), "deals_pinned": mp.get("deals"), "not_geocoded": mp.get("ungeocoded_contacts")},
+                "tasks": tasks, "live_deals": deals, "new_leads": leads,
                 "sent_today": sent, "caps": {"texts": self.max_texts, "emails": self.max_emails}, "sender_mode": self.sender,
                 "command_reader": read_json(self.paths["command_status"], {}).get("state", "unknown")}
 
@@ -434,21 +463,43 @@ class State:
             raise CRMError("the anthropic package is not installed in Pipeline's Python (pip install anthropic in ~/.aire/venv)")
         client = anthropic.Anthropic(api_key=self.ask_key)
         tools = jarvis.Tools(self.feed(), self.sent_today(), {"texts": self.max_texts, "emails": self.max_emails}, today().isoformat())
-        try:
-            r = jarvis.ask(client, self.ask_model, tools, question)
-        except anthropic.AuthenticationError:
-            raise CRMError("Anthropic refused the API key")
-        except anthropic.RateLimitError:
-            raise CRMError("Anthropic rate limit, try again in a minute")
-        except anthropic.APIStatusError as e:
-            raise CRMError(f"Anthropic error {e.status_code}: {getattr(e, 'message', '')[:120]}")
-        except anthropic.APIConnectionError:
-            raise CRMError("could not reach Anthropic")
+        r = self._ask_call(anthropic, lambda: jarvis.ask(client, self.ask_model, tools, question))
         if r.get("refused"):
             raise CRMError("Claude declined that one")
         u = self.log_claude("ask", r.get("model", self.ask_model), r["usage"], tool_calls=len(r["calls"]))
         return {"ok": True, "result": {"answer": r["answer"] or "I have nothing on that.", "model": r.get("model", self.ask_model),
                                        "proposals": r["proposals"], "tools_used": [c["tool"] for c in r["calls"]]}, "usage": u}
+
+    def _ask_call(self, anthropic, call):
+        """Run one Claude call, turning SDK errors into sentences Pipeline can say out loud."""
+        try:
+            result = call()
+        except anthropic.AuthenticationError:
+            raise CRMError("Anthropic refused the API key")
+        except anthropic.RateLimitError:
+            raise CRMError("Anthropic rate limit, try again in a minute")
+        except anthropic.APIStatusError as e:
+            if "credit balance" in str(getattr(e, "message", "") or e).lower():
+                raise CRMError("Claude is out of API credits. Top them up in the Anthropic console, then ask me again.")
+            raise CRMError(f"Claude had a problem, error {e.status_code}. Try again in a minute.")
+        except anthropic.APIConnectionError:
+            raise CRMError("could not reach Anthropic")
+        return result
+
+    def warm_ask(self) -> dict:
+        """Voice just turned on: write Jarvis' tools and instructions into Claude's prompt cache with a max_tokens 0
+        request (no output billed, one cache write), so the first real question reads them from cache. Same model,
+        tools, system and effort as a real question, or it would miss. Skipped when warmed under four minutes ago."""
+        if self.demo or not self.ask_key:
+            return {"ok": True, "result": {"warmed": False, "why": "Q&A is off"}}
+        if self._warm.get("model") == self.ask_model and time.time() - self._warm.get("at", 0) < 240:
+            return {"ok": True, "result": {"warmed": False, "why": "warm already"}}
+        import anthropic
+        client = anthropic.Anthropic(api_key=self.ask_key)
+        usage = self._ask_call(anthropic, lambda: jarvis.warm(client, self.ask_model))
+        self._warm = {"model": self.ask_model, "at": time.time()}
+        self.log_claude("warm", self.ask_model, usage)
+        return {"ok": True, "result": {"warmed": True, "cache_write_tokens": usage.get("cache_creation_input_tokens", 0)}}
 
     def speak(self, text: str) -> bytes:
         text = (text or "").strip()
@@ -498,6 +549,10 @@ class State:
                              "text": "The Contacts header lost a column the engine needs: " + ", ".join(feed.get("missing_columns", []))})
         if feed_age is not None and feed_age > 60:
             problems.append({"level": "warn", "code": "feed_stale", "text": f"Feed is {feed_age // 60}h {feed_age % 60}m old."})
+        if self.messages.get("checked") and not self.messages.get("ok"):
+            problems.append({"level": "warn", "code": "messages_permission",
+                             "text": "Pipeline cannot control Messages yet, so texts will not send. System Settings, Privacy and Security, Automation: "
+                                     "turn on Messages for Pipeline's Python, then restart Pipeline. (" + self.messages.get("detail", "")[:80] + ")"})
         if command.get("state") == "login needed":
             problems.append({"level": "warn", "code": "command_login",
                              "text": "Command needs a login. " + (command.get("detail") or "Open the AIRE Chrome profile and sign in once.")})
@@ -695,10 +750,15 @@ class State:
         self.crm.run(["touch", person_id, "pre-send check"], dry_run=True)
         status, detail = "dry-run", "PIPELINE_SENDER is not live, nothing left the Mac"
         if self.sender == "live" and not self.demo:
-            if kind == "text":
-                detail = send_imessage(to.strip(), body)
-            else:
-                detail = send_gmail(to.strip(), subject.strip(), body)
+            try:
+                detail = send_imessage(to.strip(), body) if kind == "text" else send_gmail(to.strip(), subject.strip(), body)
+            except CRMError as e:  # the failed attempt is logged too, so every live send leaves a line
+                with self.lock:
+                    log = self.send_log()
+                    log.append({"at": now().isoformat(timespec="seconds"), "kind": kind, "person_id": person_id, "display": display,
+                                "to": to.strip(), "subject": subject.strip(), "chars": len(body), "status": "failed", "detail": str(e)[:200]})
+                    write_json(self.send_log_path, log)
+                raise
             status = "sent"
         entry = {"at": now().isoformat(timespec="seconds"), "kind": kind, "person_id": person_id, "display": display,
                  "to": to.strip(), "subject": subject.strip(), "chars": len(body), "status": status, "detail": detail}
@@ -754,23 +814,83 @@ def csv_safe(v: str, column: str = "") -> str:
     return "'" + v if v[:1] in ("=", "+", "-", "@", "\t", "\r") else v
 
 
-def send_imessage(phone: str, body: str) -> str:
-    """Messages.app on the Mac. The body goes in as an argument, never inside the script, so quotes are safe."""
-    if platform.system() != "Darwin":
-        raise CRMError("texts send through Messages on the Mac only")
-    script = '''on run argv
+CHAT_DB = Path.home() / "Library" / "Messages" / "chat.db"
+APPLE_EPOCH = 978307200  # chat.db dates are nanoseconds since 2001-01-01
+
+
+def _osascript_send(phone: str, body: str, service: str) -> None:
+    """One send through Messages.app. The body goes in as an argument, never inside the script, so quotes are safe."""
+    script = f'''on run argv
   set who to item 1 of argv
   set msg to item 2 of argv
   tell application "Messages"
-    set svc to 1st account whose service type = iMessage
+    set svc to 1st account whose service type = {service}
     set who to participant who of svc
     send msg to who
   end tell
 end run'''
-    p = subprocess.run(["osascript", "-e", script, phone, body], capture_output=True, text=True, timeout=60)
+    try:
+        p = subprocess.run(["osascript", "-e", script, phone, body], capture_output=True, text=True, timeout=45)
+    except subprocess.TimeoutExpired:
+        raise CRMError("Messages did not answer. If a box asked to let Pipeline control Messages, click OK and send again.")
     if p.returncode != 0:
-        raise CRMError("Messages refused: " + (p.stderr.strip() or "unknown")[-200:])
-    return "Messages accepted it"
+        err = (p.stderr.strip() or "unknown")[-200:]
+        if "-1743" in err or "not allowed" in err.lower():
+            raise CRMError("macOS has not allowed Pipeline to control Messages. System Settings, Privacy and Security, Automation: turn on Messages for Pipeline's Python.")
+        raise CRMError(f"Messages refused the {service} send: {err}")
+
+
+def delivery_state(phone: str, since: float, db: Path = CHAT_DB) -> str:
+    """What chat.db says about the newest message Caleb sent to this number after `since` (unix seconds):
+    error, delivered, sent, pending (in the database, not sent yet), or unknown (nothing there or unreadable).
+    Read only. Pipeline's Python has Full Disk Access for the iMessage signals, so it can read this file."""
+    import sqlite3
+    digits = "".join(ch for ch in phone if ch.isdigit())[-10:]
+    if len(digits) < 10:
+        return "unknown"
+    try:
+        con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=5)
+        row = con.execute(
+            "SELECT m.error, m.is_delivered, m.is_sent FROM message m JOIN handle h ON m.handle_id = h.ROWID "
+            "WHERE m.is_from_me = 1 AND h.id LIKE ? AND m.date >= ? ORDER BY m.date DESC LIMIT 1",
+            (f"%{digits}", int((since - 1 - APPLE_EPOCH) * 1e9))).fetchone()
+        con.close()
+    except Exception:
+        return "unknown"
+    if not row:
+        return "unknown"
+    error, delivered, sent = row
+    return "error" if error else "delivered" if delivered else "sent" if sent else "pending"
+
+
+def _wait_for_delivery(phone: str, since: float, seconds: float = 12, db: Path = CHAT_DB, sleep=time.sleep) -> str:
+    state = "unknown"
+    for _ in range(int(seconds / 0.5)):
+        state = delivery_state(phone, since, db)
+        if state in ("error", "delivered", "sent"):
+            return state
+        sleep(0.5)
+    return state
+
+
+def send_imessage(phone: str, body: str, sender=_osascript_send, wait=_wait_for_delivery, clock=time.time) -> str:
+    """A text through Messages.app on the Mac: iMessage first. Messages takes an iMessage send even when the
+    number is not on iMessage and then marks it failed, so the result is read back from chat.db. On an error
+    the same text goes once as SMS through the iPhone (Text Message Forwarding). Both failing is an error,
+    so the send is not logged as a touch."""
+    if platform.system() != "Darwin" and sender is _osascript_send:
+        raise CRMError("texts send through Messages on the Mac only")
+    t0 = clock()
+    sender(phone, body, "iMessage")
+    state = wait(phone, t0)
+    if state != "error":
+        return "iMessage " + ("delivered" if state == "delivered" else "sent" if state == "sent" else "handed to Messages, delivery not confirmed yet")
+    t1 = clock()
+    sender(phone, body, "SMS")
+    state = wait(phone, t1)
+    if state == "error":
+        raise CRMError("Messages could not deliver it as iMessage or as SMS. Check the number, and that your iPhone forwards texts to this Mac.")
+    return "not on iMessage, sent as SMS" + (" and delivered" if state == "delivered" else "")
 
 
 def send_gmail(to: str, subject: str, body: str) -> str:
@@ -873,6 +993,8 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.make_lead(body.get("name", ""), body.get("source", ""), body.get("phone", ""), body.get("email", ""), body.get("note", ""))
             elif u.path == "/api/list":
                 out = s.add_to_list(body.get("kind", ""), body.get("rows", []))
+            elif u.path == "/api/ask/warm":
+                out = s.warm_ask()
             elif u.path == "/api/ask":
                 out = s.ask(body.get("question", ""))
             elif u.path == "/api/speak":
@@ -1013,7 +1135,7 @@ def run_tests() -> int:
           "ask calls the SDK with the default model, a bounded cap, the fallback, the question and the Jarvis tools")
     check(s3.voice_usage()["input_tokens"] == 1200 and s3.voice_info()["ask_cost_estimate_usd"] > 0, "ask logs the tokens and estimates the spend")
     c1 = s3.voice_info()["ask_cost_estimate_usd"]; s3.log_claude("ask", ASK_MODEL_DEFAULT, {"cache_read_input_tokens": 1_000_000})
-    check(abs(s3.voice_info()["ask_cost_estimate_usd"] - c1 - 0.20) < 1e-6 and s3.voice_usage()["cache_read_input_tokens"] >= 1_000_000,
+    check(abs(s3.voice_info()["ask_cost_estimate_usd"] - c1 - jarvis.PRICES[ASK_MODEL_DEFAULT][2]) < 1e-6 and s3.voice_usage()["cache_read_input_tokens"] >= 1_000_000,
           "the running total keeps the cache meters and adds each call's exact cost")
     del sys.modules["anthropic"]
     try:
@@ -1054,6 +1176,49 @@ def run_tests() -> int:
     s2 = State(demo=True, send_log=tmp / "x.json")
     s2._demo_cache = {**read_json(DEMO_PATHS["feed"], {}), "header_ok": False, "missing_columns": ["Last_Touch"]}
     check(any(p["level"] == "stop" for p in s2.snapshot()["problems"]), "header_ok false is a stop")
+
+    # live texting: iMessage first, SMS when chat.db marks the iMessage failed, error when both fail
+    calls = []
+    fake_send = lambda phone, body, service: calls.append(service)
+    out = send_imessage("+12255550101", "hi", sender=fake_send, wait=lambda ph, t: "delivered")
+    check(calls == ["iMessage"] and "iMessage delivered" in out, "a delivered iMessage is sent once")
+    calls.clear(); states = iter(["error", "delivered"])
+    out = send_imessage("+12255550101", "hi", sender=fake_send, wait=lambda ph, t: next(states))
+    check(calls == ["iMessage", "SMS"] and "SMS" in out, "a failed iMessage goes again as SMS")
+    calls.clear(); states = iter(["pending"])
+    out = send_imessage("+12255550101", "hi", sender=fake_send, wait=lambda ph, t: next(states))
+    check(calls == ["iMessage"] and "not confirmed" in out, "an unconfirmed iMessage is not sent twice")
+    calls.clear()
+    try:
+        send_imessage("+12255550101", "hi", sender=fake_send, wait=lambda ph, t: "error"); check(False, "iMessage and SMS both failing is an error")
+    except CRMError:
+        check(calls == ["iMessage", "SMS"], "iMessage and SMS both failing is an error")
+    import sqlite3
+    db = tmp / "chat.db"
+    con = sqlite3.connect(db)
+    con.executescript("CREATE TABLE handle (ROWID INTEGER PRIMARY KEY, id TEXT); CREATE TABLE message (ROWID INTEGER PRIMARY KEY, handle_id INT, is_from_me INT, date INT, error INT, is_delivered INT, is_sent INT);")
+    con.execute("INSERT INTO handle VALUES (1, '+12255550101')")
+    t_now = time.time(); apple = lambda t: int((t - APPLE_EPOCH) * 1e9)
+    con.execute("INSERT INTO message VALUES (1, 1, 1, ?, 0, 1, 1)", (apple(t_now - 3600),))
+    con.commit()
+    check(delivery_state("(225) 555-0101", t_now, db) == "unknown", "chat.db: a message from before the send does not count")
+    con.execute("INSERT INTO message VALUES (2, 1, 1, ?, 22, 0, 0)", (apple(t_now + 1),)); con.commit()
+    check(delivery_state("2255550101", t_now, db) == "error", "chat.db: an error on the new message reads as error")
+    con.execute("INSERT INTO message VALUES (3, 1, 1, ?, 0, 1, 1)", (apple(t_now + 2),)); con.commit()
+    check(delivery_state("+1 225 555 0101", t_now, db) == "delivered", "chat.db: the newest message wins, matched on the last ten digits")
+    con.close()
+    check(delivery_state("+12255550101", t_now, tmp / "missing.db") == "unknown", "chat.db unreadable reads as unknown, never as sent")
+    sl = State(demo=True, send_log=tmp / "live" / "send-log.json"); sl.demo = False; sl.sender = "live"
+    orig = send_imessage.__defaults__
+    send_imessage.__defaults__ = (lambda ph, b, sv: None, lambda ph, t: "error", time.time)
+    try:
+        sl.send("text", "118", "+12255550101", "hello", display="Riley Quiet"); check(False, "a failed live text is logged as failed and not touched")
+    except CRMError:
+        last = sl.send_log()[-1]
+        check(last["status"] == "failed" and not any(a[0] == "touch" and "--dry-run" not in a and a[2:3] != ["pre-send check"] for a in sl.crm.log),
+              "a failed live text is logged as failed and not touched")
+    finally:
+        send_imessage.__defaults__ = orig
 
     # map and market monitor
     sm = State(demo=True, send_log=tmp / "map" / "send-log.json")
