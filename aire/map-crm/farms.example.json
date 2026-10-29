@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "farms": [
+    {
+      "id": "example-square",
+      "name": "Example farm (replace me)",
+      "created": "2026-10-27",
+      "polygon": [
+        [30.4500, -91.1500],
+        [30.4500, -91.1000],
+        [30.4200, -91.1000],
+        [30.4200, -91.1500]
+      ],
+      "notes": "lat, lng pairs, closed automatically. Made-up square over Baton Rouge for the fixture tests."
+    }
+  ]
+}

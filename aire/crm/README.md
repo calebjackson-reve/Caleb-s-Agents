@@ -15,8 +15,9 @@ Read from the live sheet on 2026-10-19, not assumed. `python3 crm.py check` comp
 | Connector Log | existed | At (CT), Tool, Client, person_id, Detail |
 | Tasks | **added by this tool** (only when missing) | task_id, person_id, display, task, due, status, source, created_at, done_at |
 | Deals | **added by this tool** (only when missing) | deal_id, person_id, display, address, side, stage, price, expected_close, next_step, last_event, last_event_at, source, updated_at |
+| Geo | **added by this tool** (only when missing, 2026-10-27) | key, kind, ref_id, address, lat, lng, match, geocoded_at |
 
-No column is added to Contacts. Every column keeps its meaning. The only Contacts columns this tool writes are `Stage`, `Last_Touch`, `Next_Action` and `band`, plus `Do_Not_Contact` one way (to YES). The enrichment block (name_tier through provenance) and `Command_ID` are never written.
+No column is added to Contacts. Geo holds one row per geocoded Contacts or Deals address (`key` is `person:<person_id>` or `deal:<deal_id>`), written only by `crm.py geocode`. A row with `match` tie or no_match has no coordinates and is kept so the next run skips it until the address in the sheet changes. Every column keeps its meaning. The only Contacts columns this tool writes are `Stage`, `Last_Touch`, `Next_Action` and `band`, plus `Do_Not_Contact` one way (to YES). The enrichment block (name_tier through provenance) and `Command_ID` are never written.
 
 Values the sheet actually uses (counted 2026-10-19): band is HOT 117, WARM 46, NURTURE 524, DORMANT 955, blank 1,984. Stage is blank 2,928, nurture 641, past client 57. Type is unknown, client, household, recruit, vendor, agent, lender. Last_Touch is filled on 4 rows and Next_Action on 1. That is why the first feed says "never logged" for nearly everyone, and why the Hot-Warm-Cold merge matters.
 
@@ -59,6 +60,8 @@ python3 crm.py ingest --hours 72    # website leads, showings, signatures into t
 python3 crm.py sync-tasks           # one Tasks row per HOT/WARM Next_Action, idempotent
 python3 crm.py feed                 # writes feed.json for the Pipeline app (see FEED.md)
 python3 crm.py feed --signals ../enrichment/out/enriched.csv   # same, ranked by iMessage data first
+python3 crm.py geocode --report reports/YYYY-MM-DD-geocode.report.md   # addresses -> Geo tab (Census geocoder, free), unmatched listed for Caleb
+python3 crm.py --json lead "Owner at 2135 Shady Oaks Dr" --source "Market Monitor permit 2026-10-26"   # Make lead from the Market Monitor
 python3 crm.py due                  # who is past their band's cadence (--signals works here too)
 python3 crm.py rescale-band         # legacy HOT/WARM/NURTURE/DORMANT cells to the five-step scale, audited
 python3 crm.py tasks                # open tasks, overdue first, plus Next_Action items not yet synced
@@ -84,7 +87,11 @@ Idempotent: the Connector Log is the memory of what was already ingested, so a r
 
 ### What `feed` writes
 
-`feed.json`: touches due, tasks (Tasks tab plus Next_Action items), live deals, new leads of the last 14 days, counts, and whether the live header passed. Spec in `FEED.md`. Codex wires the Pipeline app to read it. This tool never shows anything on a screen.
+`feed.json`: touches due, tasks (Tasks tab plus Next_Action items), live deals, new leads of the last 14 days, counts, whether the live header passed, plus `map` (pins from the Geo tab and the farms Caleb drew) and `market` (Market Monitor rows from `aire/map-crm/cache/signals.json`, joined to the nearest known person). Spec in `FEED.md`. The Pipeline app reads it. This tool never shows anything on a screen.
+
+### What `geocode` does
+
+Every Contacts row with a numbered street plus a city or zip, and every live deal, goes to the Census Bureau batch geocoder (free, no key, up to 10,000 per file). Results land in the Geo tab. A row whose address has not changed since its last run is skipped, matched or not, so a daily run sends only what is new or edited. A batch "Tie" is looked up once more one address at a time: when every candidate sits on the same point (two spellings of one street) it is a match, otherwise it stays unmatched. Nothing is pinned on a guess. `--report FILE` lists the unmatched addresses for Caleb to fix in the sheet (client data, keep the report on the Mac). One audit line per run.
 
 ## Hot-Warm-Cold merge
 
@@ -104,7 +111,7 @@ Note: PR 59 added empty Pipeline, Activity, Tasks and Leads tabs to the Hot-Warm
 
 ## Every day, on the Mac
 
-1. `python3 crm.py ingest --hours 26 && python3 crm.py sync-tasks && python3 crm.py feed`
+1. `python3 crm.py ingest --hours 26 && python3 crm.py sync-tasks && python3 crm.py geocode && python3 ../map-crm/monitor.py pull --write && python3 crm.py feed`
 2. The Pipeline app reads `feed.json`. Caleb works from there.
 3. A call, text or visit: `crm.py touch PERSON_ID "what happened"`. Finished a task: `crm.py done TASK_ID`. The Mac companion keeps using its own scripts for Command changes.
 
