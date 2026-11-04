@@ -2,6 +2,21 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-04, night: metric check and three dashboard variations (build paused)
+
+**Confirmed by Caleb**
+- "The farm looks good, that is going to be a subpage in the main dashboard. Look at all the tools AIRE is equipped with and build a dashboard without the world." Then the morning-screen reference (greeting, clock, calendar, schedule, weather, tasks with filters, focus timer, deadlines with priority, quick notes, habits, toggles on the right). Then: "Before you build anything, check every metric on my shortlist using my connected tools" with a six-column table, and "make 3 variations in one live artifact" under five rules (biggest metrics top left, minimal scrolling, no small text, visual, a one-line subtext under each metric).
+
+**Done**
+- Metric check against the connected tools, results in chat. Pulled live: AIRE CRM sheet (Deals now carries commission on 5 of 7 rows: pending $22,410 on the 2 under-contract deals with a figure, $24,748 more on the active listings), Google Calendar (5 blocks today, 4 deadlines and 2 KW classes in 30 days), Gmail counts (50+ inbox threads in 3 days, 10 ShowingTime, 11 website lead emails, 23 offer or counter threads in 30 days), Metricool (Instagram 2,477 followers, +35 and 20,352 reached in 30 days; Facebook 382 followers, 5,462 content views; Google Business Profile reports zeros for the period), Open-Meteo weather, GBRAR Sept 2026 from the repo.
+- Could not get: ChatSEO (no credits), FirstAnswer (plan has no MCP access), QuickBooks (needs a fresh sign-in), KW Command and Luxury Presence (no API, paste tabs), ShowingTime offers and showings as structured data (email counts only).
+- `aire/dashboard/variations-2026-11-04.html`, published at https://claude.ai/artifact/HkL6GUZ3N1gwhzMJ6BwpHp: A morning board (ink, greeting and live clock, calendar grid, schedule, weather, tasks, focus timer, deadlines, inbox, social, toggle rail), B ledger (ivory, money masthead, pipeline bars, deadline timeline, week strip, sphere, leads, inbox, market), C mission control (ink bento, commission ring, deadline countdown, sphere ring, leads bars, today, social, market, tools strip). All three on the same real numbers with a source line. Proof at 1440x900: no page scroll in any variation, no card overflow, no text under 12.5px, zero errors.
+- The Pipeline dashboard page build is paused until Caleb picks a variation. A half-started stylesheet was removed; app.py, app.js and index.html are unchanged from the World commit.
+
+**Needs Caleb**
+- Pick A, B or C (or mix), then the real page gets built in Pipeline on that layout.
+- Reconnect QuickBooks if spending should come from the books rather than the Spending tab. Add credits to ChatSEO if search clicks matter. FirstAnswer stays off the board until the workspace plan includes MCP.
+
 ## 2026-11-04, evening: AIRE World becomes a Pipeline page with a dashboard rail
 
 **Confirmed by Caleb**

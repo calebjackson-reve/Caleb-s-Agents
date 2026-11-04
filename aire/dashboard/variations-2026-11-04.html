@@ -1,0 +1,374 @@
+<meta charset="utf-8">
+<title>AIRE Dashboard Variations</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Three dashboards, one page. A: Morning board (ink). B: Ledger (ivory). C: Mission control (ink, bento).
+   Brand: ink #14100e, ivory #fbf8f3, ember #e87757 as the one accent. Numbers in Instrument Serif, text in Nunito, nothing under 12.5px. */
+:root{
+  --ink:#14100e; --ink-2:#221c18; --ink-3:#2e2722; --ivory:#fbf8f3; --ivory-2:#f1ebe2; --blush:#fbefe9; --ember:#e87757; --ember-2:#d4603f; --stone:#8d8578;
+  --ok:#5fb37a; --warn:#e2b23c; --bad:#e05a5a;
+  --display:'Instrument Serif',Georgia,serif; --body:Nunito,'Segoe UI',system-ui,sans-serif;
+  --gl:max(16px,env(safe-area-inset-left,0px)); --gr:max(16px,env(safe-area-inset-right,0px));
+  --bg:var(--ink); --fg:var(--ivory); --fg-2:rgba(251,248,243,.62); --card:rgba(251,248,243,.05); --line:rgba(251,248,243,.14);
+  color-scheme:dark;
+}
+body.light{ --bg:var(--ivory); --fg:var(--ink); --fg-2:rgba(20,16,14,.6); --card:#fff; --line:rgba(20,16,14,.12); color-scheme:light }
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.4;padding-left:var(--gl);padding-right:var(--gr);padding-block:0;overflow:hidden;transition:background .3s,color .3s}
+#top{display:flex;align-items:center;gap:14px;padding:10px 0 8px;border-bottom:1px solid var(--line)}
+#top .eyebrow{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-2);white-space:nowrap}
+#tabs{display:flex;gap:6px;margin-left:auto}
+#tabs button,#cmp{background:transparent;border:1px solid var(--line);color:var(--fg);font:600 13.5px var(--body);padding:8px 14px;cursor:pointer;border-radius:999px}
+#tabs button[aria-pressed="true"]{background:var(--ember);border-color:var(--ember);color:var(--ink)}
+#tabs button:hover,#cmp:hover{border-color:var(--ember)}
+#stage{height:calc(100% - 60px);min-height:0;position:relative}
+.v{position:absolute;inset:0;display:none;min-height:0}
+.v.on{display:grid}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0;min-height:0;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.card h3{margin:0;font:700 12.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--fg-2);display:flex;align-items:baseline;gap:8px}
+.card h3 small{margin-left:auto;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12.5px}
+.big{font-family:var(--display);font-weight:400;line-height:.95;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.sub{font-size:13px;color:var(--fg-2);margin:0;line-height:1.35}
+.sub b{color:var(--fg);font-weight:600}
+.ember{color:var(--ember)}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:5px;min-height:0;overflow:hidden}
+.list li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;font-size:13.5px;padding:5px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border-bottom:0}
+.list .t{font-variant-numeric:tabular-nums;color:var(--fg-2);font-size:12.5px;white-space:nowrap;min-width:60px}
+.list .t.now{color:var(--ember);font-weight:800}
+.list .m{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list .m small{display:block;color:var(--fg-2);font-size:12.5px}
+.chip{font-size:12.5px;font-weight:700;padding:2px 9px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.chip.high{color:var(--bad)} .chip.med{color:var(--warn)} .chip.low{color:var(--ok)} .chip.ember{color:var(--ember)}
+.bar{height:12px;border-radius:6px;background:rgba(127,127,127,.18);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ember);border-radius:6px}
+.row{display:flex;gap:10px;align-items:center}
+.foot{position:absolute;left:0;right:0;bottom:4px;font-size:12.5px;color:var(--fg-2);display:flex;gap:14px;flex-wrap:wrap;pointer-events:none}
+svg{display:block;overflow:visible}
+.ring{position:relative;display:grid;place-items:center}
+.ring svg{transform:rotate(-90deg)}
+.ring .in{position:absolute;text-align:center}
+.ring .in b{display:block;font-family:var(--display);font-weight:400;line-height:1}
+.ring .in small{color:var(--fg-2);font-size:12.5px}
+/* calendar grid */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;font-size:13px}
+.cal .dow{color:var(--fg-2);font-size:12.5px;padding:2px 0}
+.cal .d{position:relative;padding:5px 0;border-radius:8px}
+.cal .d.out{color:var(--fg-2);opacity:.5}
+.cal .d.today{background:var(--ember);color:var(--ink);font-weight:800}
+.cal .d i{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--warn)}
+.cal .d i.dl{background:var(--bad)} .cal .d.today i{background:var(--ink)}
+/* weather */
+.wx{text-align:center;justify-content:center}
+.wx .big{font-size:54px}
+.wx .days{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}
+.wx .days div{border:1px solid var(--line);border-radius:10px;padding:6px 4px;font-size:12.5px;color:var(--fg-2)}
+.wx .days b{display:block;color:var(--fg);font-weight:600;font-size:13.5px}
+/* tasks */
+.tk{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;font-size:13px;line-height:1.25;padding:3px 0;border-bottom:1px solid var(--line)}
+.tk:last-child{border-bottom:0}
+.tk .ck{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--fg-2);background:none;color:var(--ink);cursor:pointer;display:grid;place-items:center;font-size:12px}
+.tk .ck.on{background:var(--ember);border-color:var(--ember)}
+.tk small{color:var(--fg-2);font-size:12.5px}
+/* timer */
+.timer{align-items:center;justify-content:center}
+.timer .ctl{display:flex;gap:8px}
+.timer .ctl button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--fg);font-size:15px;cursor:pointer}
+.timer .ctl button.go{background:var(--ember);border-color:var(--ember);color:var(--ink)}
+/* rail (A) */
+.rail{display:grid;gap:6px;align-content:start}
+.rail button{width:70px;height:50px;border:1px solid var(--line);background:var(--card);color:var(--fg-2);border-radius:12px;display:grid;place-items:center;gap:1px;font-size:16px;line-height:1;cursor:pointer}
+.rail button span{font:700 12.5px var(--body);letter-spacing:.02em;text-transform:none}
+.rail button.on{color:var(--ember);border-color:var(--ember)}
+/* segmented */
+.seg{display:flex;height:16px;border-radius:8px;overflow:hidden;gap:2px}
+.seg i{display:block;height:100%}
+.lg{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--fg-2)}
+.lg span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--c);margin-right:5px;vertical-align:-1px}
+/* ---- A: morning board ---- */
+#va{grid-template-columns:1fr 72px;gap:10px;padding:8px 0 20px}
+#va .main{display:grid;grid-template-rows:auto 1.35fr 1.15fr .85fr;gap:10px;min-height:0}
+#va .head{display:flex;justify-content:space-between;align-items:flex-end;padding:2px 4px}
+#va .head h1{margin:0;font:800 26px/1 var(--body);letter-spacing:-.02em}
+#va .head h1 b{color:var(--ember)}
+#va .head .motto{color:var(--fg-2);font-size:13px;margin-top:5px}
+#va .clock b{display:block;font:400 40px/1 var(--display);text-align:right}
+#va .clock span{display:block;color:var(--fg-2);font-size:13px;text-align:right;margin-top:3px}
+#va .r{display:grid;gap:10px;min-height:0}
+#va .r1{grid-template-columns:1.3fr 1fr .8fr}
+#va .r2{grid-template-columns:1fr 1fr .8fr}
+#va .r3{grid-template-columns:1.1fr 1fr .9fr}
+#va .heroes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#va .hero{background:linear-gradient(135deg,rgba(232,119,87,.22),rgba(232,119,87,.06));border-color:rgba(232,119,87,.4)}
+#va .hero .big{font-size:40px}
+#va .heroes .card:not(.hero) .big{font-size:32px}
+#va .heroes .card{padding:10px 14px;gap:4px}
+#va .heroes .card .sub{font-size:12.5px}
+#va .sched .it{display:grid;grid-template-columns:62px 1fr;gap:10px;border-left:3px solid var(--ember);padding:2px 10px;font-size:13px;line-height:1.25}
+#va .sched .it small{color:var(--fg-2);font-size:12.5px}
+#va .sched .it.done{opacity:.5;border-left-color:var(--fg-2)}
+#va .sched .it.dl{border-left-color:var(--bad)}
+/* ---- B: ledger ---- */
+#vb{grid-template-rows:auto 1fr 1fr;gap:12px;padding:12px 0 22px}
+#vb .masthead{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr;gap:12px;align-items:stretch}
+#vb .masthead .card{background:transparent;border:0;border-top:2px solid var(--ink);border-radius:0;padding:10px 0 6px}
+#vb .masthead .lead .big{font-size:84px;color:var(--ember)}
+#vb .masthead .big{font-size:40px}
+#vb .r{display:grid;gap:12px;min-height:0}
+#vb .r2{grid-template-columns:1.2fr 1fr 1fr}
+#vb .r3{grid-template-columns:1fr 1fr 1fr 1fr}
+#vb .card{border-radius:4px}
+#vb .funnel{display:grid;gap:8px}
+#vb .funnel .f{display:grid;grid-template-columns:118px 1fr auto;gap:10px;align-items:center;font-size:13.5px}
+#vb .funnel .f i{display:block;height:18px;border-radius:3px;background:var(--ink)}
+#vb .funnel .f b{font-family:var(--display);font-weight:400;font-size:20px;white-space:nowrap}
+#vb .tl{display:grid;grid-template-columns:repeat(20,1fr);gap:0;align-items:end;height:100%;min-height:90px;position:relative}
+#vb .tl::before{content:"";position:absolute;left:0;right:0;bottom:30px;border-top:1px solid var(--line)}
+#vb .tl .pt{grid-row:1;text-align:center;font-size:12.5px;position:relative}
+#vb .tl .pt i{display:block;width:12px;height:12px;border-radius:50%;background:var(--bad);margin:0 auto 6px;border:3px solid var(--ivory)}
+#vb .tl .pt.cls i{background:var(--ok)} #vb .tl .pt.ev i{background:var(--ember)}
+#vb .tl .pt b{display:block;font-size:13px}
+#vb .week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center}
+#vb .week div{border:1px solid var(--line);border-radius:4px;padding:8px 4px;font-size:12.5px;color:var(--fg-2)}
+#vb .week div b{display:block;font:400 22px var(--display);color:var(--fg)}
+#vb .week div.today{background:var(--ink);color:var(--ivory)} #vb .week div.today b{color:var(--ivory)}
+#vb .week .dots{display:flex;gap:3px;justify-content:center;margin-top:4px;min-height:6px}
+#vb .week .dots i{width:6px;height:6px;border-radius:50%;background:var(--ember)} #vb .week .dots i.dl{background:var(--bad)}
+/* ---- C: mission control ---- */
+#vc{grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(3,1fr);gap:10px;padding:10px 0 22px}
+#vc .card{border-radius:18px;background:linear-gradient(180deg,rgba(251,248,243,.07),rgba(251,248,243,.03))}
+#vc .c1{grid-column:span 2;grid-row:span 2;background:linear-gradient(160deg,rgba(232,119,87,.3),rgba(232,119,87,.05));border-color:rgba(232,119,87,.45)}
+#vc .c2,#vc .c3{grid-column:span 2}
+#vc .c4{grid-column:span 2}
+#vc .c5{grid-column:span 2}
+#vc .c6{grid-column:span 2}
+#vc .c7{grid-column:span 2}
+#vc .c8{grid-column:span 2}
+#vc .big{font-size:44px}
+#vc .stat{display:flex;align-items:baseline;gap:10px}
+#vc .mini{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#vc .mini div{border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+#vc .mini b{display:block;font:400 26px/1 var(--display)}
+#vc .mini small{color:var(--fg-2);font-size:12.5px}
+#vc .tools{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+#vc .tools div{border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:12.5px;display:flex;gap:7px;align-items:center}
+#vc .tools i{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none} #vc .tools i.unk{background:var(--fg-2)}
+/* compare mode */
+body.compare #stage{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;overflow:hidden}
+body.compare .v{position:relative;display:grid!important;zoom:.46;height:200%}
+body.compare #va,body.compare #vc{background:var(--ink);color:var(--ivory);border-radius:18px;padding:12px}
+body.compare #vb{background:var(--ivory);color:var(--ink);border-radius:18px;padding:12px}
+@media (max-width:1100px){
+  body{overflow:auto}
+  #stage{height:auto}
+  .v{position:static;display:none}
+  .v.on{display:grid}
+  #va{grid-template-columns:1fr} #va .rail{display:flex;flex-wrap:wrap} #va .main{grid-template-rows:auto} #va .r{grid-template-columns:1fr!important}
+  #vb .masthead{grid-template-columns:1fr 1fr} #vb .r{grid-template-columns:1fr!important} #vb .masthead .lead .big{font-size:60px}
+  #vc{grid-template-columns:1fr 1fr;grid-template-rows:auto} #vc .c1{grid-row:span 1}
+  .foot{position:static}
+}
+@media (max-width:600px){ #vb .masthead,#vc{grid-template-columns:1fr} #va .head{flex-direction:column;align-items:flex-start;gap:8px} #va .clock b,#va .clock span{text-align:left} }
+</style>
+
+<header id="top">
+  <span class="eyebrow">Keller Williams First Choice · AIRE · three dashboards to compare</span>
+  <nav id="tabs" aria-label="Variations">
+    <button type="button" data-v="va" aria-pressed="true">A · Morning board</button>
+    <button type="button" data-v="vb" aria-pressed="false">B · Ledger</button>
+    <button type="button" data-v="vc" aria-pressed="false">C · Mission control</button>
+  </nav>
+  <button type="button" id="cmp" aria-pressed="false">Side by side</button>
+</header>
+
+<div id="stage">
+<!-- A -->
+<section id="va" class="v on" aria-label="Variation A, morning board">
+  <div class="main">
+    <div class="head">
+      <div><h1 id="a-greet">Good afternoon, <b>Caleb</b></h1><div class="motto">No paid leads, just service. · Keller Williams First Choice</div></div>
+      <div class="clock"><b id="a-clock">—</b><span id="a-date"></span></div>
+    </div>
+    <div class="r r1">
+      <div class="heroes">
+        <div class="card hero"><h3>Pending commission</h3><div class="big ember">$22,410</div><p class="sub">Commission waiting on your 2 under-contract deals that have a figure. Basil Lane still needs one.</p></div>
+        <div class="card hero"><h3>Under contract</h3><div class="big">$2.40M</div><p class="sub">3 deals in contract. Next closing Nov 20 (Lockhart Lane buyer).</p></div>
+        <div class="card"><h3>Hot · Warm</h3><div class="big">123 · 50</div><p class="sub">Of 3,656 contacts. 2 new leads this week, 30 this month.</p></div>
+        <div class="card"><h3>Deadlines</h3><div class="big ember">1 today</div><p class="sub">Inspection period ends today. 4 deadlines in the next 30 days.</p></div>
+      </div>
+      <div class="card"><h3>November 2026 <small>● deadline · ● event</small></h3><div class="cal" id="a-cal"></div><p class="sub">Dots are your TC's deadlines and the KW classes you accepted.</p></div>
+      <div class="card wx"><h3>Baton Rouge</h3><div class="big">79<sup style="font-size:22px;color:var(--fg-2)">°F</sup></div><p class="sub"><b>Clear</b>, wind 9 mph. High 80, low 60 today.</p><div class="days"><div>Thu<b>78° / 55°</b></div><div>Fri<b>81° / 56°</b></div><div>Sat<b>75° / 60°</b></div></div></div>
+    </div>
+    <div class="r r2">
+      <div class="card sched"><h3>Today's schedule <small>5 blocks</small></h3>
+        <div class="it done"><span>7:30 AM</span><div>Sales block 1<small>New leads and the follow-up queue</small></div></div>
+        <div class="it dl"><span>all day</span><div>Inspection period deadline<small>Turnberry listing, filed by the TC</small></div></div>
+        <div class="it done"><span>9:00 AM</span><div>Lead gen + follow-up<small>2 hours, focus time</small></div></div>
+        <div class="it done"><span>12:30 PM</span><div>Sales block 2<small>Inbox and replies, check ShowingTime</small></div></div>
+        <div class="it"><span>5:00 PM</span><div>Sales block 3<small>Close the day, note tomorrow's three must-calls</small></div></div>
+        <p class="sub">Google Calendar, today.</p>
+      </div>
+      <div class="card"><h3>My tasks <small>0 open · 421 next actions</small></h3>
+        <div class="tk"><button class="ck" type="button" aria-label="done"></button><div>Call the 2 new website leads<small>Luxury Presence, this week</small></div><span class="chip ember">today</span></div>
+        <div class="tk"><button class="ck" type="button" aria-label="done"></button><div>Confirm Lockhart amendatory clause<small>Lender item, closes Nov 20</small></div><span class="chip high">high</span></div>
+        <div class="tk"><button class="ck" type="button" aria-label="done"></button><div>Add a commission figure to Basil Lane<small>Deals tab, under contract</small></div><span class="chip med">medium</span></div>
+        <div class="tk"><button class="ck" type="button" aria-label="done"></button><div>10 personal touches<small>Hot and warm list, sales block 1</small></div><span class="chip low">daily</span></div>
+        <p class="sub">Tasks tab has nothing open. These are today's moves from the data.</p>
+      </div>
+      <div class="card timer"><h3 style="align-self:flex-start">Focus timer</h3>
+        <div class="ring"><svg width="118" height="118" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(127,127,127,.2)" stroke-width="8"/><circle id="a-arc" cx="75" cy="75" r="64" fill="none" stroke="#e87757" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="0"/></svg><div class="in"><b id="a-time" style="font-size:28px">25:00</b><small>Sales block</small></div></div>
+        <div class="ctl"><button type="button" class="go" id="a-go">▶</button><button type="button" id="a-reset">↺</button></div>
+        <p class="sub">25 minutes, the length of a sales block. Runs here, no data behind it.</p>
+      </div>
+    </div>
+    <div class="r r3">
+      <div class="card"><h3>Upcoming deadlines <small>4 in 30 days</small></h3>
+        <ul class="list">
+          <li><span class="t now">today</span><span class="m">Inspection period deadline<small>Turnberry listing</small></span><span class="chip high">high</span></li>
+          <li><span class="t">tomorrow</span><span class="m">Seller inspection response<small>72 hours after the buyer's response</small></span><span class="chip high">high</span></li>
+          <li><span class="t">Nov 20</span><span class="m">Act of sale<small>Lockhart Lane buyer, $515,000</small></span><span class="chip med">medium</span></li>
+          <li><span class="t">Nov 23</span><span class="m">Act of sale<small>Turnberry listing, $344,900</small></span><span class="chip med">medium</span></li>
+        </ul>
+        <p class="sub">Deadlines tab, matched to deals by address.</p>
+      </div>
+      <div class="card"><h3>Inbox and showings</h3>
+        <div class="row" style="gap:16px"><div><div class="big" style="font-size:40px">50+</div><p class="sub">inbox threads, 3 days</p></div><div><div class="big" style="font-size:40px">10</div><p class="sub">ShowingTime emails, 7 days</p></div><div><div class="big" style="font-size:40px">23</div><p class="sub">offer and counter threads, 30 days</p></div></div>
+        <p class="sub">Gmail counts. 11 website lead emails this week from Luxury Presence.</p>
+      </div>
+      <div class="card"><h3>Social <small>last 30 days</small></h3>
+        <div class="row" style="gap:16px"><div><div class="big" style="font-size:40px">2,477</div><p class="sub">Instagram followers, <b>+35</b> in 30 days</p></div><div><div class="big" style="font-size:40px">20.4k</div><p class="sub">accounts reached on Instagram</p></div></div>
+        <div class="bar" title="Facebook page views this month"><i style="width:68%"></i></div>
+        <p class="sub">Facebook 382 followers, 5,462 page content views. Google Business Profile shows zeros in Metricool this month.</p>
+      </div>
+    </div>
+  </div>
+  <div class="rail" aria-label="Toggles">
+    <button type="button" class="on" title="Dark or light">◐<span>theme</span></button>
+    <button type="button" class="on" title="Interface sounds">♪<span>sound</span></button>
+    <button type="button" title="Departments speak">🗣<span>voice</span></button>
+    <button type="button" class="on" title="Refresh every 5 minutes">↻<span>live</span></button>
+    <button type="button" title="Open the farm">⌂<span>farm</span></button>
+    <button type="button" title="Compact cards">▣<span>compact</span></button>
+  </div>
+  <div class="foot"><span>As of Nov 4, 2026 · AIRE CRM sheet, Google Calendar, Gmail, Metricool, Open-Meteo</span><span>Greeting, clock and timer run live. Everything else refreshes from the Mac sync.</span></div>
+</section>
+
+<!-- B -->
+<section id="vb" class="v" aria-label="Variation B, ledger">
+  <div class="masthead">
+    <div class="card lead"><h3>Pending commission</h3><div class="big">$22,410</div><p class="sub">Your cut on the 2 under-contract deals with a figure. Add Basil Lane's and this moves.</p></div>
+    <div class="card"><h3>Under contract</h3><div class="big">$2,397,000</div><p class="sub">3 deals. Next closing Nov 20.</p></div>
+    <div class="card"><h3>Active listings</h3><div class="big">3</div><p class="sub">$854,900 listed, $24,748 in commission if they close.</p></div>
+    <div class="card"><h3>Closed, 90 days</h3><div class="big">$425,000</div><p class="sub">1 closing, $12,750 commission (Oct 13).</p></div>
+    <div class="card"><h3>Since 2022</h3><div class="big">$25.1M</div><p class="sub">81 closed deals as of Oct 7, 2026.</p></div>
+  </div>
+  <div class="r r2">
+    <div class="card"><h3>Pipeline by stage <small>Deals tab</small></h3>
+      <div class="funnel">
+        <div class="f"><span>Active</span><i style="width:36%"></i><b>2 · $854,900</b></div>
+        <div class="f"><span>Showing</span><i style="width:6%;background:var(--stone)"></i><b>1 · no price yet</b></div>
+        <div class="f"><span>Under contract</span><i style="width:100%;background:var(--ember)"></i><b>3 · $2,397,000</b></div>
+        <div class="f"><span>Closed</span><i style="width:18%;background:var(--ok)"></i><b>1 · $425,000</b></div>
+      </div>
+      <p class="sub">Bar length is dollar volume. The Turnberry listing reads active in the sheet while its deadlines are filed; worth a look.</p>
+    </div>
+    <div class="card"><h3>Deadline timeline <small>next 30 days</small></h3>
+      <div class="tl">
+        <div class="pt" style="grid-column:1"><i></i><b>Nov 4</b>Inspection period</div>
+        <div class="pt" style="grid-column:3"><i></i><b>Nov 5</b>Seller response</div>
+        <div class="pt ev" style="grid-column:8"><i></i><b>Nov 10</b>CE class, 9 AM</div>
+        <div class="pt cls" style="grid-column:14"><i></i><b>Nov 20</b>Act of sale · closing</div>
+        <div class="pt" style="grid-column:18"><i></i><b>Nov 23</b>Act of sale</div>
+      </div>
+      <p class="sub">Red is a contract deadline, green a closing, ember a calendar event.</p>
+    </div>
+    <div class="card"><h3>This week</h3>
+      <div class="week" id="b-week"></div>
+      <p class="sub">Dots: ember for events, red for deadlines. Today is boxed.</p>
+    </div>
+  </div>
+  <div class="r r3">
+    <div class="card"><h3>The sphere <small>3,656 contacts</small></h3>
+      <div class="seg"><i style="width:3.4%;background:#b23b1c"></i><i style="width:1.4%;background:#e87757"></i><i style="width:14.3%;background:#ef8a6a"></i><i style="width:26.1%;background:#f6c4b3"></i><i style="width:54.8%;background:#e6ddd3"></i></div>
+      <div class="lg"><span style="--c:#b23b1c">Hot 123</span><span style="--c:#e87757">Warm 50</span><span style="--c:#ef8a6a">Cold 524</span><span style="--c:#f6c4b3">Ice cold 955</span><span style="--c:#e6ddd3">No band 2,004</span></div>
+      <p class="sub">32 touched in the last 30 days. 421 next actions waiting.</p>
+    </div>
+    <div class="card"><h3>Leads</h3><div class="big" style="font-size:40px">2 <span style="font-size:20px;color:var(--fg-2)">this week</span></div><p class="sub">30 in the last 30 days, both this week from Luxury Presence. 11 website lead emails came in.</p></div>
+    <div class="card"><h3>Inbox</h3><div class="big" style="font-size:40px">50+</div><p class="sub">Threads from the last 3 days you did not send. 10 ShowingTime, 23 offer or counter threads this month.</p></div>
+    <div class="card"><h3>Market <small>GBRAR, Sept 2026</small></h3><div class="big" style="font-size:40px">$269,000</div><p class="sub">Median sale price, Baton Rouge area. 79 days on market, 4.6 months of supply, 962 new listings.</p></div>
+  </div>
+  <div class="foot"><span>As of Nov 4, 2026 · AIRE CRM sheet (Deals, Contacts, Deadlines), Gmail, Google Calendar, GBRAR Monthly Indicators</span></div>
+</section>
+
+<!-- C -->
+<section id="vc" class="v" aria-label="Variation C, mission control">
+  <div class="card c1"><h3>Commission in play</h3>
+    <div class="ring" style="margin:4px auto"><svg width="210" height="210" viewBox="0 0 210 210"><circle cx="105" cy="105" r="90" fill="none" stroke="rgba(251,248,243,.12)" stroke-width="14"/><circle cx="105" cy="105" r="90" fill="none" stroke="#e87757" stroke-width="14" stroke-linecap="round" stroke-dasharray="565" stroke-dashoffset="297"/></svg><div class="in"><b style="font-size:46px">$22,410</b><small>pending, under contract</small></div></div>
+    <p class="sub"><b>$47,158</b> if the 3 active listings also close. Ring is pending over that total.</p>
+    <div class="mini"><div><b>$2.40M</b><small>under contract, 3 deals</small></div><div><b>Nov 20</b><small>next closing, Lockhart</small></div></div>
+  </div>
+  <div class="card c2"><h3>Deadlines <small>4 in 30 days</small></h3>
+    <div class="stat"><div class="big ember">0 days</div><p class="sub">until the next one: inspection period, today.</p></div>
+    <ul class="list"><li><span class="t">tomorrow</span><span class="m">Seller inspection response</span><span class="chip high">high</span></li><li><span class="t">Nov 20</span><span class="m">Act of sale, Lockhart</span><span class="chip med">medium</span></li><li><span class="t">Nov 23</span><span class="m">Act of sale, Turnberry</span><span class="chip med">medium</span></li></ul>
+  </div>
+  <div class="card c3"><h3>The sphere</h3>
+    <div class="row" style="gap:14px"><div class="ring"><svg width="96" height="96" viewBox="0 0 96 96"><circle cx="48" cy="48" r="40" fill="none" stroke="rgba(251,248,243,.12)" stroke-width="9"/><circle cx="48" cy="48" r="40" fill="none" stroke="#e87757" stroke-width="9" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="239"/></svg><div class="in"><b style="font-size:20px">4.7%</b></div></div><div><div class="big" style="font-size:34px">173</div><p class="sub">hot and warm of 3,656 contacts. 123 hot, 50 warm.</p></div></div>
+    <div class="bar"><i style="width:8%"></i></div><p class="sub">32 of 421 next actions touched in 30 days.</p>
+  </div>
+  <div class="card c4"><h3>New leads</h3>
+    <div class="stat"><div class="big">2</div><p class="sub">this week, both from Luxury Presence</p></div>
+    <svg width="100%" height="60" viewBox="0 0 300 60" aria-label="leads by week"><rect x="10" y="20" width="60" height="30" rx="4" fill="rgba(251,248,243,.25)"/><rect x="85" y="10" width="60" height="40" rx="4" fill="rgba(251,248,243,.25)"/><rect x="160" y="26" width="60" height="24" rx="4" fill="rgba(251,248,243,.25)"/><rect x="235" y="40" width="60" height="10" rx="4" fill="#e87757"/><text x="40" y="58" fill="#8d8578" font-size="13" text-anchor="middle" font-family="Nunito">4 wks</text><text x="265" y="58" fill="#e87757" font-size="13" text-anchor="middle" font-family="Nunito">now</text></svg>
+    <p class="sub">30 leads in 30 days. Weekly bars fill in as the daily history grows; only this week is real.</p>
+  </div>
+  <div class="card c5"><h3>Today <small>5 blocks</small></h3>
+    <ul class="list"><li><span class="t">7:30</span><span class="m">Sales block 1 · leads and queue</span><span></span></li><li><span class="t">9:00</span><span class="m">Lead gen + follow-up, 2h</span><span></span></li><li><span class="t">12:30</span><span class="m">Sales block 2 · inbox</span><span></span></li><li><span class="t">5:00</span><span class="m">Sales block 3 · close the day</span><span></span></li></ul>
+    <p class="sub">Google Calendar. Inbox 50+ threads in 3 days, 10 showing emails this week.</p>
+  </div>
+  <div class="card c6"><h3>Social reach <small>30 days</small></h3>
+    <div class="stat"><div class="big">20.4k</div><p class="sub">accounts reached on Instagram, 2,477 followers (+35)</p></div>
+    <div class="bar"><i style="width:100%"></i></div><div class="bar" style="margin-top:4px"><i style="width:27%;background:var(--stone)"></i></div>
+    <p class="sub">Top bar Instagram reach, bottom Facebook content views (5,462). GBP reports zeros this month.</p>
+  </div>
+  <div class="card c7"><h3>Market <small>GBRAR, Sept 2026</small></h3>
+    <div class="mini"><div><b>$269k</b><small>median sale price</small></div><div><b>79</b><small>days on market</small></div><div><b>4.6</b><small>months of supply</small></div><div><b>962</b><small>new listings</small></div></div>
+  </div>
+  <div class="card c8"><h3>AIRE tools <small>status from the Mac</small></h3>
+    <div class="tools"><div><i></i>CRM engine</div><div><i></i>Pipeline</div><div><i></i>World sync</div><div><i class="unk"></i>Command reader</div><div><i class="unk"></i>Market Monitor</div><div><i class="unk"></i>Speed to lead</div><div><i class="unk"></i>Follow-up</div><div><i class="unk"></i>Enrichment</div></div>
+    <p class="sub">Green ran today. Grey means the Mac has not reported yet. Click any tool for its log. The farm opens from here.</p>
+  </div>
+  <div class="foot"><span>As of Nov 4, 2026 · AIRE CRM sheet, Google Calendar, Gmail, Metricool, GBRAR</span></div>
+</section>
+</div>
+
+<script>
+(function(){
+  const $=s=>document.querySelector(s);
+  function show(v){ document.querySelectorAll('.v').forEach(e=>e.classList.toggle('on',e.id===v)); document.querySelectorAll('#tabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v))); document.body.classList.toggle('light',v==='vb'); if(location.hash!=='#'+v.slice(1)) history.replaceState(null,'','#'+v.slice(1)); }
+  document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{ document.body.classList.remove('compare'); $('#cmp').setAttribute('aria-pressed','false'); show(b.dataset.v); });
+  $('#cmp').onclick=()=>{ const on=!document.body.classList.contains('compare'); document.body.classList.toggle('compare',on); $('#cmp').setAttribute('aria-pressed',String(on)); if(on) document.body.classList.remove('light'); else show(document.querySelector('#tabs button[aria-pressed="true"]').dataset.v); };
+  addEventListener('keydown',e=>{ if(e.key==='1') show('va'); if(e.key==='2') show('vb'); if(e.key==='3') show('vc'); });
+  const h=(location.hash||'#a').slice(1); show({a:'va',b:'vb',c:'vc'}[h]||'va');
+  // live clock and greeting (A)
+  function tick(){ const d=new Date(); const hr=d.getHours(); $('#a-greet').innerHTML=(hr<12?'Good morning, ':hr<17?'Good afternoon, ':'Good evening, ')+'<b>Caleb</b>'; $('#a-clock').textContent=d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); $('#a-date').textContent=d.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric',year:'numeric'}); }
+  tick(); setInterval(tick,15000);
+  // month grid (A): November 2026 with the real deadline and class dates
+  (function(){ const cal=$('#a-cal'); const dls=new Set(['2026-11-04','2026-11-05','2026-11-20','2026-11-23']); const evs=new Set(['2026-11-06','2026-11-10','2026-11-18']); const y=2026,m=10; const first=new Date(y,m,1); const start=first.getDay(); const days=new Date(y,m+1,0).getDate(); const today='2026-11-04';
+    ['S','M','T','W','T','F','S'].forEach(d=>{ const e=document.createElement('div'); e.className='dow'; e.textContent=d; cal.appendChild(e); });
+    for(let i=0;i<start;i++){ const e=document.createElement('div'); e.className='d out'; e.textContent=String(new Date(y,m,0).getDate()-start+1+i); cal.appendChild(e); }
+    for(let d=1; d<=days; d++){ const iso=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); const e=document.createElement('div'); e.className='d'+(iso===today?' today':''); e.textContent=String(d); if(dls.has(iso)){ const i=document.createElement('i'); i.className='dl'; e.appendChild(i);} else if(evs.has(iso)){ e.appendChild(document.createElement('i')); } cal.appendChild(e); }
+  })();
+  // week strip (B)
+  (function(){ const w=$('#b-week'); const names=['Wed','Thu','Fri','Sat','Sun','Mon','Tue']; const dates=[4,5,6,7,8,9,10]; const dl={4:1,5:1}; const ev={4:4,5:4,6:5,9:4,10:5}; names.forEach((n,i)=>{ const d=document.createElement('div'); if(i===0) d.className='today'; d.innerHTML='<span></span><b></b><div class="dots"></div>'; d.children[0].textContent=n; d.children[1].textContent=dates[i]; const dots=d.children[2]; for(let k=0;k<(dl[dates[i]]||0);k++){ const x=document.createElement('i'); x.className='dl'; dots.appendChild(x);} for(let k=0;k<Math.min(3,ev[dates[i]]||0);k++){ dots.appendChild(document.createElement('i')); } w.appendChild(d); }); })();
+  // tasks checkboxes (A), visual only
+  document.querySelectorAll('.tk .ck').forEach(b=>b.onclick=()=>{ b.classList.toggle('on'); b.textContent=b.classList.contains('on')?'✓':''; });
+  // focus timer (A)
+  let left=1500, run=null; const total=1500; function draw(){ $('#a-time').textContent=String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0'); $('#a-arc').setAttribute('stroke-dashoffset',String(402*(1-left/total))); }
+  $('#a-go').onclick=()=>{ if(run){ clearInterval(run); run=null; $('#a-go').textContent='▶'; return;} $('#a-go').textContent='❚❚'; run=setInterval(()=>{ left=Math.max(0,left-1); draw(); if(!left){ clearInterval(run); run=null; $('#a-go').textContent='▶'; } },1000); };
+  $('#a-reset').onclick=()=>{ left=total; draw(); };
+  draw();
+})();
+</script>
