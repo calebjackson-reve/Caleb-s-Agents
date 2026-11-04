@@ -61,3 +61,15 @@ Written 2026-11-04 from the repo, a read of the live AIRE CRM sheet, and a read 
 
 1. Tags only (recommended), or also create Command custom fields (AIRE Band, Farm, Parish Value) knowing they would be filled one contact at a time.
 2. Allow `crm.py` to write `Command_ID` once the link report looks right.
+
+## First match, 2026-11-04 (read only, counts only)
+
+Matched in Caleb's Chrome: the live AIRE Contacts tab (3,655 people) against Command's 2,909 contacts in scope. Keys were hashed in the browser, nothing was written.
+
+- Linked one to one: 2,019 (1,823 by phone, 196 by email, 0 needed name plus street).
+- Left alone: 18 Command rows where two Command contacts point at one AIRE person (likely Command duplicates), 1 email shared by two AIRE people.
+- Command only: 871. Of these, 624 carry the `AIRE Append 4676` tag with a phone the AIRE sheet does not hold, 174 carry a past client tag, 153 have no email, phone or street at all.
+- AIRE only (not Do Not Contact): 1,636, most with no band yet.
+- Contacts that would get at least one tag: 1,310. Hot 99, Warm 41, Cold 451, Ice Cold 622, Homeowner 208, Verified Address 212, Active Buyer 96, Mover 55, Equity Review 115, Past Client Review 91.
+- One linked person is Do Not Contact and gets no tags.
+- Not covered from the cloud: farm tags (needs `farms.local.json` on the Mac) and the iMessage overrides to temperature (needs the Mac's signals file). Temperatures above are the sheet's own `band`.
