@@ -24,7 +24,7 @@ Inputs
 
 Outputs (client data, git-ignored, stays on the Mac)
   link-report.md        counts: matched by email, phone, name and street; ambiguous; Command only; AIRE only
-  command-tags.csv      one row per matched Command contact: tags to add and AIRE tags to remove
+  command-tags.csv      one row per matched Command contact: tags to add and bridge tags to remove
   aire-from-command.csv one row per matched AIRE person: Command id, tags, lead source, birthday,
                         home anniversary. A plan for crm.py, never applied here.
 
@@ -70,15 +70,23 @@ COLUMN_CANDIDATES = {
     "home_anniversary": ["home anniversary", "anniversary"],
 }
 
-# Tag names Caleb would see in Command. All start with "AIRE " so they group together next to the
-# existing "AIRE Append 4676" tag and can be removed in one sweep if he changes his mind.
-BAND_TAG = {"hot": "AIRE Hot", "warm": "AIRE Warm", "lukewarm": "AIRE Lukewarm", "cold": "AIRE Cold",
-            "ice-cold": "AIRE Ice Cold"}
-TAG_HOMEOWNER = "AIRE Homeowner"
-TAG_VERIFIED_ADDRESS = "AIRE Verified Address"
-OPPORTUNITY_TAG = {"mover": "AIRE Mover", "equity_review_candidate": "AIRE Equity Review",
-                   "active_buyer": "AIRE Active Buyer", "past_client_review": "AIRE Past Client Review"}
-FARM_PREFIX = "AIRE Farm "
+# Tag names Caleb sees in Command. Plain names, no "AIRE" prefix (his call, 2026-11-04: AIRE labels
+# had already cluttered his phone). Guesses stay apart from his real tags: Likely Buyer, not Buyer.
+# Past Client Review, not Past Client.
+BAND_TAG = {"hot": "Hot", "warm": "Warm", "lukewarm": "Lukewarm", "cold": "Cold", "ice-cold": "Ice Cold"}
+TAG_HOMEOWNER = "Homeowner"
+TAG_VERIFIED_ADDRESS = "Verified Address"
+OPPORTUNITY_TAG = {"mover": "Likely Mover", "equity_review_candidate": "Equity Review",
+                   "active_buyer": "Likely Buyer", "past_client_review": "Past Client Review"}
+FARM_PREFIX = "Farm "
+# Tags this bridge owns. Only these (and the old "AIRE ..." names) are ever listed for removal.
+MANAGED_TAGS = set(BAND_TAG.values()) | {TAG_HOMEOWNER, TAG_VERIFIED_ADDRESS} | set(OPPORTUNITY_TAG.values())
+# The August append tag and lead source, renamed in Command only on Caleb's yes.
+APPEND_TAG_OLD, APPEND_TAG_NEW = "AIRE Append 4676", "Aug 2026 Data Append"
+
+
+def is_managed(tag: str) -> bool:
+    return tag in MANAGED_TAGS or tag.startswith(FARM_PREFIX) or (tag.startswith("AIRE ") and tag != APPEND_TAG_OLD)
 PARTNER_TYPES = {"agent", "lender", "vendor"}
 
 
@@ -213,7 +221,7 @@ def build(crm: "engine.CRM", command_rows: list[dict], farms: list[dict], signal
         want = planned_tags(c, farm_of.get(c["person_id"], ""), signals)
         have = set(r["_tags"])
         add = [t for t in want if t not in have]
-        stale = [t for t in have if t.startswith("AIRE ") and t not in want and not t.startswith("AIRE Append")]
+        stale = [t for t in have if is_managed(t) and t not in want]
         if add or stale:
             tag_rows.append({"command_line": r["_line"], "command_id": r.get("command_id", ""), "name": r.get("name", ""),
                              "email": r.get("email", ""), "phone": r.get("phone", ""), "person_id": c["person_id"],
@@ -311,7 +319,7 @@ def run_tests() -> int:
     farms = [{"id": "south-br", "name": "South BR", "polygon": [[30.45, -91.15], [30.45, -91.10], [30.42, -91.10], [30.42, -91.15]]}]
     command_csv = (
         "Contact ID,Full Name,Primary Email,Primary Phone,Primary Address,Tags,Lead Source,Birthday,Home Anniversary\n"
-        "c1,Taylor Sample,TAYLOR.SAMPLE@example.com,,,\"sphere, AIRE Cold\",Referral,1980-05-01,2019-06-30\n"
+        "c1,Taylor Sample,TAYLOR.SAMPLE@example.com,,,\"sphere, Cold\",Referral,1980-05-01,2019-06-30\n"
         "c2,J Sample,,(225) 555-0102,,,,,\n"
         "c3,Casey Sample,shared.sample@example.com,,,,,,\n"
         "c5,Morgan Sample,,225-555-0105,,,,,\n"
@@ -335,15 +343,15 @@ def run_tests() -> int:
         check("shared email is ambiguous, no tags", "3" not in tag_by_pid and "4" not in tag_by_pid and res["counts"]["ambiguous"] == 1)
         t1 = tag_by_pid.get("1", {})
         check("hot, farm, homeowner, verified, mover tags",
-              t1.get("tags_to_add") == "AIRE Hot; AIRE Farm South BR; AIRE Homeowner; AIRE Verified Address; AIRE Mover")
-        check("stale AIRE band tag listed for removal", t1.get("aire_tags_to_remove") == "AIRE Cold")
+              t1.get("tags_to_add") == "Hot; Farm South BR; Homeowner; Verified Address; Likely Mover")
+        check("stale AIRE band tag listed for removal", t1.get("aire_tags_to_remove") == "Cold")
         check("Do Not Contact gets no tags and is listed", "5" not in tag_by_pid and res["counts"]["dnc_in_both"] == 1)
         check("partner gets no temperature tag", "6" not in tag_by_pid)
         check("Command-only row counted", res["counts"]["command_only"] == 1)
         check("birthday and anniversary carried to AIRE plan", aire_by_pid["1"]["birthday"] == "1980-05-01"
               and aire_by_pid["1"]["home_anniversary"] == "2019-06-30" and aire_by_pid["1"]["command_id"] == "c1")
         check("signals label wins over sheet band",
-              build(crm, rows, farms, {"1": {"label": "warm"}})["tag_rows"][0]["tags_to_add"].startswith("AIRE Warm"))
+              build(crm, rows, farms, {"1": {"label": "warm"}})["tag_rows"][0]["tags_to_add"].startswith("Warm"))
         check("no writes to the CRM", backend.writes == [])
         out = Path(td) / "out"
         write_outputs(res, cols, out, "2026-11-04")

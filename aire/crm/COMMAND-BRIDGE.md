@@ -40,14 +40,16 @@ Written 2026-11-04 from the repo, a read of the live AIRE CRM sheet, and a read 
 ## The merge plan
 
 1. **Link the records first.** Export Command contacts (KW documents bulk export at 50 a time, so about 84 exports for 4,174 contacts, or a read of the Contacts list in his Chrome, or the Command reader once its selectors are filled). `command_bridge.py` matches each Command row to one AIRE person by email, then 10-digit phone, then exact name plus the same street. Two-way ties are left alone. Output is a report and two CSVs under `out/`, nothing written.
-2. **AIRE into Command as tags**, since there are no custom fields. Every tag starts with "AIRE " so it can be found or removed in one sweep:
-   - temperature: AIRE Hot, AIRE Warm, AIRE Lukewarm, AIRE Cold, AIRE Ice Cold (one at a time, the old one is listed for removal)
-   - geography: AIRE Farm <farm name>
-   - property: AIRE Homeowner, AIRE Verified Address
-   - opportunity: AIRE Mover, AIRE Equity Review, AIRE Active Buyer, AIRE Past Client Review
+2. **AIRE into Command as tags**, since there are no custom fields. Plain names, no "AIRE" prefix (Caleb approved these names 2026-11-04):
+   - temperature: Hot, Warm, Cold, Ice Cold (one at a time, the old one is listed for removal)
+   - property: Homeowner, Verified Address
+   - opportunity: Likely Mover, Equity Review, Likely Buyer, Past Client Review
+   - geography: Farm <farm name> (needs the Mac's farm file)
+   - guesses stay apart from his real tags: Likely Buyer is not Buyer, Past Client Review is not Past Client
+   - the August tag `AIRE Append 4676` and the lead source `AIRE Max Append (2026-08-28)` get renamed to Aug 2026 Data Append, on his yes
    - never on Do Not Contact people, never a temperature tag on agents, lenders or vendors
    - things that change daily (owes a reply, last text) stay in AIRE and Pipeline, not as tags
-   These tags then drive SmartViews and the CJ plans. Trigger tags stay off until Caleb tests one contact.
+   These tags then drive SmartViews and the CJ plans. Each batch goes in only on Caleb's yes to that batch.
 3. **Command into AIRE**: Command id, tags, lead source, birthday, home anniversary, plan enrollment. This needs a small change to `crm.py` so it may write `Command_ID` (today it is a NEVER_WRITE column) and two new columns or a Notes row for the dates. Caleb's call.
 4. **Touch plans use both**: AIRE temperature and farm pick the plan and the order, Command runs the plan as tasks, Pipeline stays the only sender and skips anyone a CJ plan is touching that week.
 
@@ -59,7 +61,7 @@ Written 2026-11-04 from the repo, a read of the live AIRE CRM sheet, and a read 
 
 ## Open choices for Caleb
 
-1. Tags only (recommended), or also create Command custom fields (AIRE Band, Farm, Parish Value) knowing they would be filled one contact at a time.
+1. Tags only. Decided 2026-11-04: tags, plain names.
 2. Allow `crm.py` to write `Command_ID` once the link report looks right.
 
 ## First match, 2026-11-04 (read only, counts only)
@@ -70,6 +72,10 @@ Matched in Caleb's Chrome: the live AIRE Contacts tab (3,655 people) against Com
 - Left alone: 18 Command rows where two Command contacts point at one AIRE person (likely Command duplicates), 1 email shared by two AIRE people.
 - Command only: 871. Of these, 624 carry the `AIRE Append 4676` tag with a phone the AIRE sheet does not hold, 174 carry a past client tag, 153 have no email, phone or street at all.
 - AIRE only (not Do Not Contact): 1,636, most with no band yet.
-- Contacts that would get at least one tag: 1,310. Hot 99, Warm 41, Cold 451, Ice Cold 622, Homeowner 208, Verified Address 212, Active Buyer 96, Mover 55, Equity Review 115, Past Client Review 91.
+- Contacts that would get at least one tag: 1,310. Hot 99, Warm 41, Cold 451, Ice Cold 622, Homeowner 208, Verified Address 212, Likely Buyer 96, Likely Mover 55, Equity Review 115, Past Client Review 91.
 - One linked person is Do Not Contact and gets no tags.
 - Not covered from the cloud: farm tags (needs `farms.local.json` on the Mac) and the iMessage overrides to temperature (needs the Mac's signals file). Temperatures above are the sheet's own `band`.
+
+## iPhone contacts, 2026-11-04 (found, not touched)
+
+The AIRE labels on Caleb's iPhone come from Google Contacts, not Command. His calebjackson.org Google account holds 1,915 contacts from a CSV import on Aug 28, every one labeled `AIRE-Enriched-2026-08`. No code in this repo writes to Apple or Google contacts. Cleanup is his call: turn Contacts off for that account on the iPhone, or move the 1,915 to Google's trash after checking his real contacts live in iCloud.
