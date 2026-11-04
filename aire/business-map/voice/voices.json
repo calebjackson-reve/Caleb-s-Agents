@@ -1,0 +1,43 @@
+{
+  "model": "s2.1-pro",
+  "format": "mp3",
+  "center": {
+    "label": "Caleb",
+    "how": "Cloned from a clean 10 to 30 second clip of Caleb talking, no music, no room echo. Run: fishaudio.py clone --title Caleb --clip ~/Desktop/caleb-10s.wav --yes",
+    "greeting": "AIRE Business Map. Eight departments, two hundred fifty two jobs. Tap a department to hear from it, or ask me anything."
+  },
+  "departments": {
+    "leadgen": {
+      "instruction": "Quick, bright, friendly American voice in the late twenties, the first person a new lead hears. Clear diction, upbeat but not salesy, light Louisiana warmth.",
+      "reference_text": "Got it. I'll answer them inside a minute and tag the lead for you."
+    },
+    "nurture": {
+      "instruction": "Warm, patient, unhurried female voice around forty. Sounds like a trusted assistant who remembers everyone. Never pushy, soft consonants, gentle pace.",
+      "reference_text": "Three people are waiting on a reply. I've drafted the first touch for each."
+    },
+    "deals": {
+      "instruction": "Calm, exact, low male voice in the forties, reads a deadline the way a pilot reads a checklist. Even pace, no drama, every date crisp.",
+      "reference_text": "Inspection period ends Thursday. The TC has it. Nothing is overdue."
+    },
+    "market": {
+      "instruction": "Measured analyst voice, mid thirties, neutral American, slightly dry. Says numbers slowly and always names the source and the date.",
+      "reference_text": "Twenty two new listings and fifty one changes since the eight a.m. run. Source: Flexmls alerts, today."
+    },
+    "marketing": {
+      "instruction": "Upbeat creative director with an easy Louisiana cadence, mid thirties, playful energy, smiles while talking, a little musical.",
+      "reference_text": "The just-sold set is rendered and the reel is cut to the music. Want to hear the hook?"
+    },
+    "ops": {
+      "instruction": "Steady back-office lead, deep and unhurried male voice in the fifties, reassuring, plain spoken, the person who ran the overnight jobs.",
+      "reference_text": "The hourly ingest ran clean. The morning run finished at six forty. Nothing needs you."
+    },
+    "engine": {
+      "instruction": "The builder. Precise, quick, a little playful, gender neutral voice around thirty, sounds like a sharp engineer explaining something they enjoy.",
+      "reference_text": "One hundred and nine ways to build. Pick one and I'll scope it before we spend a token."
+    },
+    "offer": {
+      "instruction": "Coach on stage, generous and clear, warm baritone in the forties, encouraging without hype, the voice of a workshop host.",
+      "reference_text": "Here's what I'd teach first: the follow-up cadence, because it pays every week."
+    }
+  }
+}

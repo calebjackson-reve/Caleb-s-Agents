@@ -2,6 +2,32 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-04: AIRE Business Map, a 3D map of the business with voices
+
+**Confirmed by Caleb**
+- "I'm building this dashboard but I hate it. I want to build a 3D dashboard for my company and I want it to look like this" (Instagram post by alassafi.ai: a 3D map of a whole business, seven department branches, hundreds of job nodes, the center node answering in the owner's cloned voice through Fish Audio S2.1 Pro, each department in a designed voice). "Install these voice repo. We do have earshot to install into."
+
+**Done**
+- `aire/business-map/`: the map. Center is Caleb, 8 department branches, 252 real jobs from this repo (every SKILL.md plus a catalog of scripts, directives, schedules and pages), built by `build_map_data.py`. Three.js scene with orbit, zoom, fly-to, per-job cards, a dept chip rail, keyboard. Published at https://claude.ai/artifact/Q9qMZ5rAAcMR33CRq7c4GN (private to Caleb).
+- Live layer through claude.ai connectors as the viewer: today's calendar, inbox threads last 3 days not from Caleb, deadline events next 30 days. The Operations, Nurture and Deals hubs pulse with the counts. Each tile says exactly what to connect when it cannot load.
+- Ask the map: Claude (viewer's account) answers from the map and the live data, names the department, the camera flies there and that department speaks. Without Claude the page still answers from its own data. Quick questions: what is on today, what is blocking deals, who is waiting on a reply, what runs tonight, where a new lead goes, the morning brief.
+- Voices: browser speech with a distinct setting per department now. Fish Audio S2.1 Pro layer in `voice/`: `voices.json` (a designed voice per department, Caleb's own clone for the center) and `fishaudio.py` (design, clone, say, render-bank, each measured by earshot). Dry run unless `--yes`. Key only from `FISH_API_KEY`. The artifact reads the `voice/bank` document for clip urls; it is seeded empty.
+- earshot installed in the cloud session (model-free commands) and used for real: six interface sounds rendered from its code bank, measured (true peak at or under -0.6 dBTP, momentary LUFS between -22 and -10), encoded to 47 KB of mp3 data URIs. Numbers in `sfx/README.md`.
+- Headless render proof at 1440 and 400 px wide: zero console errors, no horizontal overflow, fly-to and ask loop work.
+
+**Inference**
+- The post links no repo. "Voice repo" was read as the Fish Audio S2.1 Pro API the post is an ad for; it is a service, not a repo. A dashboard artifact cannot call it directly (no outside network), so clips render on the Mac and upload as assets.
+- The old dashboard artifact (AIRE Command Center, F2kwnHvYFV3Mp3pmGP3ti7) is untouched. Delete it when the map has replaced it.
+
+**Not verified**
+- Fish Audio calls. No key in this session, and nothing is sent without Caleb's --yes.
+- The live tiles and Claude answers inside claude.ai with Caleb's own connectors: the page was published with those capabilities and the voice bank document was read back, but only Caleb's open of the page exercises the connector consent prompts.
+
+**Needs Caleb**
+- Open the map, allow Google Calendar, Gmail and Claude when asked, press a department, ask it something.
+- Record a clean 10 to 30 second clip of your voice for the center node, then run the clone step in `aire/business-map/README.md` with your Fish Audio key.
+- Say whether the Pipeline app's speech engine should move to Fish Audio too.
+
 ## 2026-10-29, afternoon: no group chats, Market Monitor twice a day
 
 **Confirmed by Caleb**

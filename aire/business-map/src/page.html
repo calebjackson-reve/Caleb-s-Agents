@@ -1,0 +1,600 @@
+<title>AIRE Business Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one full-bleed WebGL stage (the business as a constellation), with a thin HUD
+   pinned to the edges. Single dark theme by choice: the map lives in ink black. */
+:root{
+  --ink:#0d0b0a; --ink-2:#1a1512; --panel:rgba(26,21,18,.78); --line:rgba(251,248,243,.14);
+  --ivory:#fbf8f3; --ivory-2:#b9afa5; --coral:#e87757; --coral-2:#f0906f;
+  --ok:#8fcf9a; --warn:#f2c35b; --bad:#ef7a7a;
+  --display:'Instrument Serif',Georgia,serif; --body:Nunito,'Segoe UI',system-ui,sans-serif;
+  --gutter-l:max(16px,env(safe-area-inset-left,0px)); --gutter-r:max(16px,env(safe-area-inset-right,0px));
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{margin:0;background:var(--ink);color:var(--ivory);font-family:var(--body);font-size:14px;line-height:1.45;overflow:hidden;
+  padding-left:var(--gutter-l);padding-right:var(--gutter-r);padding-block:0}
+#stage{position:fixed;inset:0;display:block;touch-action:none;cursor:grab}
+#stage.drag{cursor:grabbing}
+#stage.pick{cursor:pointer}
+.hud{position:fixed;z-index:3;pointer-events:none}
+.hud > *{pointer-events:auto}
+#title{top:calc(env(safe-area-inset-top,0px) + 18px);left:var(--gutter-l);max-width:min(46vw,420px)}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ivory-2);margin:0 0 4px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(1.9rem,4vw,2.9rem);line-height:.98;letter-spacing:-.01em;margin:0;text-wrap:balance}
+#sub{margin:8px 0 0;color:var(--ivory-2);font-size:12.5px;font-variant-numeric:tabular-nums}
+#sub b{color:var(--ivory);font-weight:600}
+#live{top:calc(env(safe-area-inset-top,0px) + 18px);right:var(--gutter-r);display:flex;gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(10px);padding:10px 12px 9px;min-width:118px;display:grid;gap:1px}
+.tile .k{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ivory-2)}
+.tile .v{font-family:var(--display);font-size:1.9rem;line-height:1;font-variant-numeric:tabular-nums}
+.tile .s{font-size:11.5px;color:var(--ivory-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.tile[data-state="error"] .s{color:var(--warn)}
+.tile[data-state="ok"] .v{color:var(--ivory)}
+#depts{left:var(--gutter-l);top:50%;transform:translateY(-50%);display:grid;gap:6px}
+.chip{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(10px);
+  color:var(--ivory);font:inherit;font-size:12.5px;padding:7px 11px 7px 9px;cursor:pointer;text-align:left;transition:border-color .2s,transform .2s}
+.chip:hover,.chip:focus-visible{border-color:var(--c);outline:none;transform:translateX(2px)}
+.chip[aria-pressed="true"]{border-color:var(--c);background:rgba(26,21,18,.95)}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:none}
+.chip .n{margin-left:auto;color:var(--ivory-2);font-variant-numeric:tabular-nums;font-size:11.5px;padding-left:10px}
+#controls{left:var(--gutter-l);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:6px;flex-wrap:wrap}
+.btn{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(10px);color:var(--ivory);font:inherit;font-size:12px;padding:7px 11px;cursor:pointer;transition:border-color .2s}
+.btn:hover,.btn:focus-visible{border-color:var(--coral);outline:none}
+.btn[aria-pressed="false"]{color:var(--ivory-2);text-decoration:line-through;text-decoration-color:rgba(251,248,243,.4)}
+.btn.primary{background:var(--coral);border-color:var(--coral);color:var(--ink);font-weight:700}
+.btn.primary:hover{background:var(--coral-2)}
+#ask{left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);transform:translateX(-50%);width:min(620px,calc(100vw - 32px));display:grid;gap:8px}
+#answer{background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(12px);padding:12px 14px;display:none;gap:4px;border-left:3px solid var(--coral)}
+#answer.show{display:grid}
+#answer .who{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ivory-2);display:flex;align-items:center;gap:8px}
+#answer .who i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--coral));box-shadow:0 0 8px var(--c,var(--coral))}
+#answer .who .spk{margin-left:auto;display:none;gap:3px;align-items:flex-end;height:12px}
+#answer.speaking .who .spk{display:flex}
+#answer .who .spk b{width:3px;background:var(--coral);animation:eq .8s ease-in-out infinite;height:6px;display:block}
+#answer .who .spk b:nth-child(2){animation-delay:.15s}#answer .who .spk b:nth-child(3){animation-delay:.3s}
+@keyframes eq{0%,100%{height:4px}50%{height:12px}}
+#answer p{margin:0;font-size:14.5px;line-height:1.5}
+#answer .next{font-size:12.5px;color:var(--ivory-2)}
+#answer .next b{color:var(--ivory);font-weight:600}
+#askrow{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);backdrop-filter:blur(12px);padding:6px}
+#askrow:focus-within{border-color:var(--coral)}
+#q{flex:1;min-width:0;background:transparent;border:0;color:var(--ivory);font:inherit;font-size:14px;padding:6px 8px;outline:none}
+#q::placeholder{color:var(--ivory-2)}
+#chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+#chips::-webkit-scrollbar{display:none}
+.qchip{flex:none;background:rgba(26,21,18,.6);border:1px solid var(--line);color:var(--ivory-2);font:inherit;font-size:12px;padding:5px 10px;cursor:pointer;border-radius:999px}
+.qchip:hover,.qchip:focus-visible{color:var(--ivory);border-color:var(--coral);outline:none}
+#card{right:var(--gutter-r);top:50%;transform:translateY(-50%);width:min(340px,calc(100vw - 32px));max-height:min(70vh,560px);display:none;flex-direction:column;
+  background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--c,var(--coral));backdrop-filter:blur(14px)}
+#card.show{display:flex}
+#card header{padding:14px 16px 10px;display:grid;gap:4px}
+#card .kind{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--c,var(--coral))}
+#card h2{font-family:var(--display);font-weight:400;font-size:1.55rem;line-height:1.05;margin:0;text-wrap:balance}
+#card .about{color:var(--ivory);font-size:13.5px;margin:4px 0 0}
+#card .path{display:flex;gap:6px;align-items:center;margin-top:6px;min-width:0}
+#card .path code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--ivory-2);background:rgba(0,0,0,.35);padding:3px 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+#card .path button{flex:none}
+#card .actions{display:flex;gap:6px;padding:0 16px 12px;flex-wrap:wrap}
+#card ul{list-style:none;margin:0;padding:0 8px 10px;overflow:auto;border-top:1px solid var(--line);min-height:0}
+#card li button{width:100%;text-align:left;background:transparent;border:0;color:var(--ivory);font:inherit;font-size:12.5px;padding:6px 8px;cursor:pointer;display:flex;gap:8px;align-items:baseline}
+#card li button:hover,#card li button:focus-visible{background:rgba(251,248,243,.06);outline:none}
+#card li .k{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ivory-2);width:60px;flex:none}
+#card .x{position:absolute;top:8px;right:8px;background:transparent;border:0;color:var(--ivory-2);font-size:18px;cursor:pointer;line-height:1;padding:4px 8px}
+#card .x:hover{color:var(--ivory)}
+#card .kinds{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--ivory-2);font-variant-numeric:tabular-nums}
+#card .kinds b{color:var(--ivory);font-weight:600}
+.label{position:fixed;z-index:2;pointer-events:none;transform:translate(-50%,-50%);text-align:center;transition:opacity .2s;will-change:transform}
+.label .t{font-family:var(--display);font-size:17px;line-height:1;color:var(--ivory);text-shadow:0 0 14px rgba(0,0,0,.9),0 1px 2px #000}
+.label .c{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--c);font-variant-numeric:tabular-nums;text-shadow:0 0 10px #000}
+.label.center .t{font-size:22px}
+#tip{position:fixed;z-index:4;pointer-events:none;background:var(--ink-2);border:1px solid var(--line);padding:7px 10px;max-width:260px;display:none;transform:translate(14px,14px)}
+#tip.show{display:block}
+#tip .n{font-weight:600;font-size:13px}
+#tip .d{font-size:11.5px;color:var(--ivory-2)}
+#tip .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--c,var(--coral))}
+#help{position:fixed;inset:0;z-index:6;background:rgba(13,11,10,.86);display:none;place-items:center;padding:24px}
+#help.show{display:grid}
+#help .box{max-width:460px;background:var(--ink-2);border:1px solid var(--line);padding:20px 22px;display:grid;gap:10px}
+#help h3{font-family:var(--display);font-weight:400;font-size:1.6rem;margin:0}
+#help dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:13px}
+#help dt{color:var(--ivory-2)}#help dd{margin:0}
+#help kbd{font-family:ui-monospace,Menlo,monospace;background:rgba(0,0,0,.4);border:1px solid var(--line);padding:1px 5px;font-size:11.5px}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translateX(-50%);z-index:7;background:var(--ink-2);border:1px solid var(--coral);color:var(--ivory);padding:8px 14px;font-size:13px;display:none}
+#toast.show{display:block}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:860px){
+  #title{max-width:calc(100vw - 32px)}
+  #sub{font-size:12px}
+  #live{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 118px);left:var(--gutter-l);right:var(--gutter-r);overflow-x:auto;scrollbar-width:none}
+  .tile{min-width:100px;padding:8px 10px 7px}.tile .v{font-size:1.5rem}
+  #depts{top:calc(env(safe-area-inset-top,0px) + 150px);left:var(--gutter-l);right:var(--gutter-r);transform:none;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+  .chip{flex:none;font-size:12px}.chip .n{padding-left:6px}
+  #controls{bottom:calc(env(safe-area-inset-bottom,0px) + 16px);left:var(--gutter-l)}
+  #ask{bottom:calc(env(safe-area-inset-bottom,0px) + 60px);width:calc(100vw - 32px)}
+  #card{top:auto;bottom:0;right:var(--gutter-r);left:var(--gutter-l);transform:none;width:auto;max-height:56vh;border-top-width:3px}
+  .label .t{font-size:14px}.label.center .t{font-size:18px}
+  #controls .btn span{display:none}
+}
+@media (prefers-reduced-motion:reduce){#answer .who .spk b{animation:none}}
+</style>
+
+<canvas id="stage" aria-label="3D map of the AIRE business: a center node, eight department hubs and every job as a point of light"></canvas>
+
+<div id="title" class="hud">
+  <p class="eyebrow">Keller Williams First Choice · AIRE</p>
+  <h1>AIRE Business Map</h1>
+  <p id="sub">Loading the map…</p>
+</div>
+
+<div id="live" class="hud" aria-live="polite">
+  <div class="tile" id="t-today" data-state="loading"><span class="k">Today</span><span class="v">—</span><span class="s">Calendar</span></div>
+  <div class="tile" id="t-inbox" data-state="loading"><span class="k">Inbox · 3 days</span><span class="v">—</span><span class="s">Gmail</span></div>
+  <div class="tile" id="t-deadlines" data-state="loading"><span class="k">Deadlines · 30 days</span><span class="v">—</span><span class="s">Calendar</span></div>
+</div>
+
+<nav id="depts" class="hud" aria-label="Departments"></nav>
+
+<div id="controls" class="hud">
+  <button class="btn" id="b-sound" aria-pressed="true" title="Interface sounds, rendered with earshot">🔊 <span>Sound</span></button>
+  <button class="btn" id="b-voice" aria-pressed="true" title="Departments speak">🗣 <span>Voice</span></button>
+  <button class="btn" id="b-spin" aria-pressed="true" title="Slow orbit when idle">↻ <span>Orbit</span></button>
+  <button class="btn" id="b-reset" title="Back to the whole map">⌂ <span>Whole map</span></button>
+  <button class="btn" id="b-help" title="Keys and gestures">? <span>Help</span></button>
+</div>
+
+<div id="ask" class="hud">
+  <div id="answer" role="status">
+    <div class="who"><i></i><span id="a-who">AIRE</span><span class="spk" aria-hidden="true"><b></b><b></b><b></b></span></div>
+    <p id="a-text"></p>
+    <div class="next" id="a-next"></div>
+  </div>
+  <form id="askrow" autocomplete="off">
+    <input id="q" type="text" placeholder="Ask the map. What's blocking deals? What's on today?" aria-label="Ask the map">
+    <button class="btn primary" id="b-ask" type="submit">Ask</button>
+  </form>
+  <div id="chips" aria-label="Quick questions"></div>
+</div>
+
+<aside id="card" class="hud" aria-live="polite">
+  <button class="x" id="c-close" aria-label="Close">×</button>
+  <header>
+    <span class="kind" id="c-kind"></span>
+    <h2 id="c-title"></h2>
+    <p class="about" id="c-about"></p>
+    <div class="kinds" id="c-kinds" hidden></div>
+    <div class="path" id="c-path" hidden><code id="c-code"></code><button class="btn" id="c-copy" type="button">Copy</button></div>
+  </header>
+  <div class="actions" id="c-actions"></div>
+  <ul id="c-list" hidden></ul>
+</aside>
+
+<div id="tip" aria-hidden="true"><div class="k"></div><div class="n"></div><div class="d"></div></div>
+
+<div id="help" role="dialog" aria-modal="true" aria-labelledby="help-h">
+  <div class="box">
+    <h3 id="help-h">How to read the map</h3>
+    <p style="margin:0;color:var(--ivory-2);font-size:13px">The center is Caleb. Each branch is a department. Every point of light is a real job in the AIRE repo: a script, a skill, a directive, a schedule or a page. Live tiles read your own Google account through claude.ai connectors. Ask the map and the right department answers in its own voice.</p>
+    <dl>
+      <dt>Drag</dt><dd>Orbit</dd>
+      <dt>Wheel or pinch</dt><dd>Zoom</dd>
+      <dt>Click a hub</dt><dd>Fly to a department and hear its intro</dd>
+      <dt>Click a point</dt><dd>Open that job</dd>
+      <dt><kbd>1</kbd> to <kbd>8</kbd></dt><dd>Jump to a department</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close, then back to the whole map</dd>
+      <dt><kbd>Space</kbd></dt><dd>Pause or resume the orbit</dd>
+      <dt><kbd>/</kbd></dt><dd>Focus the ask box</dd>
+    </dl>
+    <div><button class="btn primary" id="help-close" type="button">Got it</button></div>
+  </div>
+</div>
+<div id="toast" role="status"></div>
+<div class="sr" id="sr" aria-live="polite"></div>
+
+<script id="map-data" type="application/json">__MAP_DATA__</script>
+<script id="sfx-data" type="application/json">__SFX__</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+const DATA = JSON.parse(document.getElementById('map-data').textContent);
+const SFX = JSON.parse(document.getElementById('sfx-data').textContent);
+const DEPTS = DATA.departments;
+const NODES = DATA.nodes;
+const COLORS = {leadgen:'#e87757',nurture:'#f2b27c',deals:'#e9d59a',market:'#7fc1c8',marketing:'#dc8fb8',ops:'#a3b0c2',engine:'#8ea9ec',offer:'#a9d48f'};
+const VOICE_STYLE = {center:{rate:1,pitch:1},leadgen:{rate:1.1,pitch:1.15},nurture:{rate:.93,pitch:1.02},deals:{rate:.96,pitch:.88},market:{rate:1,pitch:.95},marketing:{rate:1.08,pitch:1.08},ops:{rate:.9,pitch:.8},engine:{rate:1.04,pitch:1.0},offer:{rate:.98,pitch:1.05}};
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const byId = Object.fromEntries(DEPTS.map(d=>[d.id,d]));
+const nodesOf = {}; DEPTS.forEach(d=>nodesOf[d.id]=[]); NODES.forEach(n=>nodesOf[n.dept].push(n));
+const $ = s=>document.querySelector(s);
+
+// ---------- sound kit (earshot-rendered, mp3 data URIs) ----------
+const audio = {on:true, unlocked:false, el:{}};
+Object.keys(SFX).forEach(k=>{ const a=new Audio(SFX[k]); a.preload='auto'; audio.el[k]=a; });
+const GAIN = {hover:.22, select:.45, open:.5, fly:.4, bloom:.55, answer:.5};
+function sfx(name){ if(!audio.on||!audio.unlocked) return; const a=audio.el[name]; if(!a) return; try{ a.currentTime=0; a.volume=GAIN[name]; a.play().catch(()=>{}); }catch(e){} }
+
+// ---------- voice ----------
+const voice = {on:true, bank:null, synth:window.speechSynthesis||null, voices:[], current:null};
+function loadVoices(){ if(!voice.synth) return; const all=voice.synth.getVoices()||[]; const en=all.filter(v=>/^en/i.test(v.lang)); voice.voices = en.length?en:all; }
+if(voice.synth){ loadVoices(); voice.synth.addEventListener?.('voiceschanged',loadVoices); }
+function voiceFor(id){
+  const st = VOICE_STYLE[id]||VOICE_STYLE.center;
+  const vs = voice.voices; if(!vs.length) return {voice:null,...st};
+  const ids = ['center',...DEPTS.map(d=>d.id)];
+  const i = Math.max(0,ids.indexOf(id));
+  const locals = vs.filter(v=>v.localService); const pool = locals.length>=3?locals:vs;
+  return {voice: pool[(i*3)%pool.length], ...st};
+}
+let speakToken=0;
+function stopSpeaking(){ speakToken++; try{ voice.synth&&voice.synth.cancel(); }catch(e){} if(voice.current){ try{voice.current.pause();}catch(e){} voice.current=null; } $('#answer').classList.remove('speaking'); }
+function speak(text, id, opts){
+  opts=opts||{}; if(!voice.on||!audio.unlocked||!text) return;
+  stopSpeaking(); const my=++speakToken;
+  const clip = opts.clip || null;
+  const start=()=>{ $('#answer').classList.add('speaking'); }; const end=()=>{ if(my===speakToken) $('#answer').classList.remove('speaking'); };
+  if(clip){ const a=new Audio(clip); voice.current=a; a.onplay=start; a.onended=end; a.onerror=()=>{ if(my===speakToken) synthSpeak(text,id,start,end); }; a.play().catch(()=>{ if(my===speakToken) synthSpeak(text,id,start,end); }); return; }
+  synthSpeak(text,id,start,end);
+}
+function synthSpeak(text,id,start,end){
+  if(!voice.synth){ return; }
+  const u=new SpeechSynthesisUtterance(text.replace(/[*_#`]/g,''));
+  const v=voiceFor(id); if(v.voice) u.voice=v.voice; u.rate=v.rate; u.pitch=v.pitch; u.onstart=start; u.onend=end; u.onerror=end;
+  voice.synth.speak(u);
+}
+function bankClip(kind,id){ const b=voice.bank; if(!b) return null; if(kind==='intro') return b.depts&&b.depts[id]&&b.depts[id].intro||null; if(kind==='greeting') return b.center&&b.center.greeting||null; return null; }
+
+// ---------- three.js scene ----------
+const canvas=$('#stage');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+renderer.setClearColor(0x0d0b0a,1);
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x0d0b0a,0.0085);
+const camera=new THREE.PerspectiveCamera(50,1,0.1,400);
+const cam={theta:0.6,phi:1.12,radius:44,tTheta:0.6,tPhi:1.12,tRadius:44,target:new THREE.Vector3(),tTarget:new THREE.Vector3()};
+if(!reduced){ cam.radius=70; }
+
+function softTexture(size,inner,outer){
+  const c=document.createElement('canvas'); c.width=c.height=size; const g=c.getContext('2d');
+  const grd=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+  grd.addColorStop(0,'rgba(255,255,255,'+inner+')'); grd.addColorStop(.35,'rgba(255,255,255,'+(inner*.45)+')'); grd.addColorStop(1,'rgba(255,255,255,'+outer+')');
+  g.fillStyle=grd; g.fillRect(0,0,size,size); const t=new THREE.CanvasTexture(c); return t;
+}
+const glowTex=softTexture(128,1,0), dotTex=softTexture(64,1,0);
+
+// stars
+(function(){
+  const n=reduced?700:1500, pos=new Float32Array(n*3);
+  for(let i=0;i<n;i++){ const r=70+Math.random()*90, u=Math.random()*2-1, ph=Math.random()*Math.PI*2, s=Math.sqrt(1-u*u);
+    pos[i*3]=r*s*Math.cos(ph); pos[i*3+1]=r*u*0.6; pos[i*3+2]=r*s*Math.sin(ph); }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const m=new THREE.PointsMaterial({size:1.1,map:dotTex,color:0xfbf8f3,transparent:true,opacity:.35,depthWrite:false,sizeAttenuation:true,blending:THREE.AdditiveBlending});
+  const p=new THREE.Points(g,m); p.name='stars'; scene.add(p); scene.userData.stars=p;
+})();
+
+// layout
+const hubPos={}, nodePos=[], R=14, lift=[1.6,-2.2,2.6,-1.2,1.2,-2.6,2.1,-1.6];
+DEPTS.forEach((d,i)=>{ const a=(i/DEPTS.length)*Math.PI*2-Math.PI/2; hubPos[d.id]=new THREE.Vector3(Math.cos(a)*R,lift[i%lift.length],Math.sin(a)*R); });
+function hash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return ((h>>>0)%1000)/1000; }
+DEPTS.forEach(d=>{
+  const list=nodesOf[d.id], k=list.length, hub=hubPos[d.id], out=hub.clone().setY(0).normalize();
+  const rad=2.3+Math.sqrt(k)*0.46;
+  list.forEach((n,j)=>{
+    const y=1-2*(j+.5)/k, r=Math.sqrt(1-y*y), ph=j*2.399963+hash(n.id)*0.6;
+    const jit=0.78+hash(n.id+'r')*0.5;
+    const p=new THREE.Vector3(r*Math.cos(ph),y*0.78,r*Math.sin(ph)).multiplyScalar(rad*jit).add(hub).add(out.clone().multiplyScalar(1.1));
+    n.pos=p; nodePos.push(p);
+  });
+});
+
+// center
+const center=new THREE.Group(); scene.add(center);
+(function(){
+  const core=new THREE.Mesh(new THREE.SphereGeometry(1.05,48,48),new THREE.MeshBasicMaterial({color:0xfbf8f3})); center.add(core);
+  const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xe87757,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.95})); halo.scale.set(9,9,1); center.add(halo); center.userData.halo=halo;
+  const halo2=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xfbf8f3,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.6})); halo2.scale.set(3.4,3.4,1); center.add(halo2);
+  const ringMat=new THREE.MeshBasicMaterial({color:0xe87757,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+  const r1=new THREE.Mesh(new THREE.TorusGeometry(2.1,0.025,8,120),ringMat); r1.rotation.x=Math.PI/2*0.92; center.add(r1);
+  const r2=new THREE.Mesh(new THREE.TorusGeometry(2.9,0.018,8,140),ringMat.clone()); r2.material.opacity=.3; r2.rotation.x=Math.PI/2*1.25; r2.rotation.z=.4; center.add(r2);
+  center.userData.rings=[r1,r2];
+})();
+const centerMesh=center.children[0]; centerMesh.userData={type:'center'};
+
+// hubs, branches
+const hubMeshes=[], branchCurves={}, branchMeshes={};
+DEPTS.forEach(d=>{
+  const col=new THREE.Color(COLORS[d.id]); const p=hubPos[d.id];
+  const m=new THREE.Mesh(new THREE.SphereGeometry(0.62,32,32),new THREE.MeshBasicMaterial({color:col})); m.position.copy(p); m.userData={type:'dept',id:d.id}; scene.add(m); hubMeshes.push(m);
+  const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:col,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,opacity:.85})); halo.scale.set(5.2,5.2,1); halo.position.copy(p); scene.add(halo); m.userData.halo=halo; m.userData.pulse=0;
+  const mid=p.clone().multiplyScalar(.5); mid.y+=2.6+Math.abs(p.y)*.4;
+  const curve=new THREE.QuadraticBezierCurve3(p.clone(),mid,new THREE.Vector3(0,0,0)); branchCurves[d.id]=curve;
+  const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,40,0.045,6,false),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.75,blending:THREE.AdditiveBlending,depthWrite:false})); scene.add(tube);
+  const glow=new THREE.Mesh(new THREE.TubeGeometry(curve,40,0.22,8,false),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.09,blending:THREE.AdditiveBlending,depthWrite:false})); scene.add(glow);
+  branchMeshes[d.id]=[tube,glow];
+});
+
+// nodes: instanced spheres + halo points + lines to hub
+const N=NODES.length;
+const nodeGeo=new THREE.IcosahedronGeometry(0.17,1);
+const nodeMat=new THREE.MeshBasicMaterial({color:0xffffff});
+const nodeMesh=new THREE.InstancedMesh(nodeGeo,nodeMat,N); scene.add(nodeMesh);
+const pickMesh=new THREE.InstancedMesh(new THREE.SphereGeometry(0.52,8,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),N); scene.add(pickMesh);
+const baseScale=new Float32Array(N), curScale=new Float32Array(N), tgtScale=new Float32Array(N);
+const haloPos=new Float32Array(N*3), haloCol=new Float32Array(N*3), linePos=new Float32Array(N*6), lineCol=new Float32Array(N*6);
+const tmpM=new THREE.Matrix4(), tmpC=new THREE.Color();
+NODES.forEach((n,i)=>{
+  const s = n.kind==='skill'?0.78:(n.kind==='schedule'?1.25:(n.kind==='directive'?1.1:1));
+  baseScale[i]=s; curScale[i]=reduced?s:0.001; tgtScale[i]=s;
+  const c=new THREE.Color(COLORS[n.dept]); nodeMesh.setColorAt(i,c);
+  haloPos.set([n.pos.x,n.pos.y,n.pos.z],i*3); haloCol.set([c.r,c.g,c.b],i*3);
+  const h=hubPos[n.dept]; linePos.set([n.pos.x,n.pos.y,n.pos.z,h.x,h.y,h.z],i*6); lineCol.set([c.r,c.g,c.b,c.r,c.g,c.b],i*6);
+  tmpM.makeTranslation(n.pos.x,n.pos.y,n.pos.z); pickMesh.setMatrixAt(i,tmpM);
+});
+nodeMesh.instanceColor.needsUpdate=true;
+const haloGeo=new THREE.BufferGeometry(); haloGeo.setAttribute('position',new THREE.BufferAttribute(haloPos,3)); haloGeo.setAttribute('color',new THREE.BufferAttribute(haloCol,3));
+const haloPts=new THREE.Points(haloGeo,new THREE.PointsMaterial({size:1.6,map:glowTex,vertexColors:true,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending})); scene.add(haloPts);
+const lineGeo=new THREE.BufferGeometry(); lineGeo.setAttribute('position',new THREE.BufferAttribute(linePos,3)); lineGeo.setAttribute('color',new THREE.BufferAttribute(lineCol,3));
+const lines=new THREE.LineSegments(lineGeo,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.2,blending:THREE.AdditiveBlending,depthWrite:false})); scene.add(lines);
+
+// signals travelling along branches
+const SIG=reduced?0:56, sigPos=new Float32Array(Math.max(1,SIG)*3), sigCol=new Float32Array(Math.max(1,SIG)*3), sig=[];
+for(let i=0;i<SIG;i++){ const d=DEPTS[i%DEPTS.length]; const c=new THREE.Color(COLORS[d.id]); sigCol.set([c.r,c.g,c.b],i*3); sig.push({id:d.id,t:Math.random(),v:(0.08+Math.random()*0.1)*(Math.random()<.5?1:-1)}); }
+const sigGeo=new THREE.BufferGeometry(); sigGeo.setAttribute('position',new THREE.BufferAttribute(sigPos,3)); sigGeo.setAttribute('color',new THREE.BufferAttribute(sigCol,3));
+const sigPts=new THREE.Points(sigGeo,new THREE.PointsMaterial({size:0.9,map:glowTex,vertexColors:true,transparent:true,opacity:.95,depthWrite:false,blending:THREE.AdditiveBlending})); if(SIG) scene.add(sigPts);
+
+// ---------- labels ----------
+const labelEls={};
+function mkLabel(id,title,count,cls){ const el=document.createElement('div'); el.className='label '+(cls||''); el.style.setProperty('--c',COLORS[id]||'#e87757'); el.innerHTML='<div class="t"></div><div class="c"></div>'; el.children[0].textContent=title; el.children[1].textContent=count; document.body.appendChild(el); labelEls[id]=el; }
+mkLabel('center','Caleb','AIRE · '+NODES.length+' jobs','center');
+DEPTS.forEach(d=>mkLabel(d.id,d.label,d.count+' jobs'));
+const v3=new THREE.Vector3();
+function placeLabels(){
+  const w=innerWidth,h=innerHeight;
+  const put=(id,p,dy)=>{ const el=labelEls[id]; v3.copy(p).project(camera); if(v3.z>1||Math.abs(v3.x)>1.3||Math.abs(v3.y)>1.3){ el.style.opacity='0'; return; }
+    const dist=camera.position.distanceTo(p); const op=THREE.MathUtils.clamp(1.3-dist/70,0.25,1); el.style.opacity=String(op);
+    el.style.transform='translate(-50%,-50%) translate('+((v3.x+1)/2*w).toFixed(1)+'px,'+((1-v3.y)/2*h+dy).toFixed(1)+'px)'; };
+  put('center',new THREE.Vector3(0,-2.2,0),0);
+  DEPTS.forEach(d=>put(d.id,hubPos[d.id],-26));
+}
+
+// ---------- camera, input ----------
+function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+addEventListener('resize',resize); resize();
+let dragging=false, moved=0, lastX=0,lastY=0, pinch=null, idleT=0, spin=!reduced;
+const pointers=new Map();
+canvas.addEventListener('pointerdown',e=>{ unlock(); pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===1){ dragging=true; moved=0; lastX=e.clientX; lastY=e.clientY; canvas.classList.add('drag'); canvas.setPointerCapture(e.pointerId);} if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinch=Math.hypot(a.x-b.x,a.y-b.y); } idleT=0; });
+canvas.addEventListener('pointermove',e=>{
+  if(pointers.has(e.pointerId)) pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pointers.size===2&&pinch){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); cam.tRadius=THREE.MathUtils.clamp(cam.tRadius*(pinch/d),6,90); pinch=d; idleT=0; return; }
+  if(dragging){ const dx=e.clientX-lastX, dy=e.clientY-lastY; moved+=Math.abs(dx)+Math.abs(dy); lastX=e.clientX; lastY=e.clientY; cam.tTheta-=dx*0.0055; cam.tPhi=THREE.MathUtils.clamp(cam.tPhi-dy*0.0045,0.2,Math.PI-0.35); idleT=0; return; }
+  hover(e.clientX,e.clientY);
+});
+function endPointer(e){ pointers.delete(e.pointerId); if(pointers.size<2) pinch=null; if(pointers.size===0&&dragging){ dragging=false; canvas.classList.remove('drag'); if(moved<6) click(e.clientX,e.clientY); } }
+canvas.addEventListener('pointerup',endPointer); canvas.addEventListener('pointercancel',endPointer);
+canvas.addEventListener('wheel',e=>{ e.preventDefault(); cam.tRadius=THREE.MathUtils.clamp(cam.tRadius*(1+Math.sign(e.deltaY)*0.09),6,90); idleT=0; },{passive:false});
+canvas.addEventListener('pointerleave',()=>{ setHover(null); });
+
+const ray=new THREE.Raycaster(); const ndc=new THREE.Vector2();
+function pickAt(x,y){ ndc.set((x/innerWidth)*2-1,-(y/innerHeight)*2+1); ray.setFromCamera(ndc,camera); const hits=ray.intersectObjects([centerMesh,...hubMeshes,pickMesh],false); if(!hits.length) return null; const h=hits[0]; if(h.object===pickMesh) return {type:'node',i:h.instanceId}; return h.object.userData; }
+let hovered=null, hoverKey='';
+function setHover(h){ const key=h?(h.type+':'+(h.i??h.id??'')):''; if(key===hoverKey) return; hoverKey=key; hovered=h; const tip=$('#tip');
+  canvas.classList.toggle('pick',!!h);
+  if(!h){ tip.classList.remove('show'); return; }
+  sfx('hover');
+  if(h.type==='node'){ const n=NODES[h.i]; tip.style.setProperty('--c',COLORS[n.dept]); tip.children[0].textContent=n.kind+' · '+byId[n.dept].label; tip.children[1].textContent=n.name; tip.children[2].textContent=n.about; }
+  else if(h.type==='dept'){ const d=byId[h.id]; tip.style.setProperty('--c',COLORS[d.id]); tip.children[0].textContent=d.count+' jobs'; tip.children[1].textContent=d.label; tip.children[2].textContent=d.tagline; }
+  else { tip.style.setProperty('--c','#e87757'); tip.children[0].textContent='Center'; tip.children[1].textContent='Caleb'; tip.children[2].textContent='Ask anything. The right department answers.'; }
+  tip.classList.add('show');
+}
+let hoverRaf=false;
+function hover(x,y){ $('#tip').style.left=x+'px'; $('#tip').style.top=y+'px'; if(hoverRaf) return; hoverRaf=true; requestAnimationFrame(()=>{ hoverRaf=false; setHover(pickAt(x,y)); }); }
+function click(x,y){ const h=pickAt(x,y); if(!h){ return; } sfx('select'); if(h.type==='node') selectNode(h.i); else if(h.type==='dept') selectDept(h.id,true); else { clearSelection(); flyTo(new THREE.Vector3(0,0,0),22); speakGreeting(); } }
+
+// ---------- selection ----------
+const sel={dept:null,node:null};
+function flyTo(target,radius){ cam.tTarget.copy(target); cam.tRadius=radius; sfx('fly'); idleT=0; }
+function applyFocus(){
+  const f=sel.dept;
+  NODES.forEach((n,i)=>{ const on=!f||n.dept===f; tgtScale[i]=baseScale[i]*(on?1:0.45); const c=tmpC.set(COLORS[n.dept]); if(!on) c.multiplyScalar(0.35); nodeMesh.setColorAt(i,c); haloCol.set([c.r,c.g,c.b],i*3); lineCol.set([c.r,c.g,c.b,c.r,c.g,c.b],i*6); });
+  if(sel.node!=null) tgtScale[sel.node]=baseScale[sel.node]*2.1;
+  nodeMesh.instanceColor.needsUpdate=true; haloGeo.attributes.color.needsUpdate=true; lineGeo.attributes.color.needsUpdate=true;
+  DEPTS.forEach(d=>{ const on=!f||d.id===f; branchMeshes[d.id][0].material.opacity=on?.75:.18; branchMeshes[d.id][1].material.opacity=on?.09:.02; hubMeshes.find(m=>m.userData.id===d.id).userData.halo.material.opacity=on?.85:.25; });
+  document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.id===f)));
+}
+function selectDept(id,say){
+  sel.dept=id; sel.node=null; applyFocus(); const d=byId[id];
+  flyTo(hubPos[id],15+Math.sqrt(d.count)*0.9);
+  showDeptCard(d);
+  if(say) speak(d.label+'. '+d.count+' jobs. '+d.tagline, id, {clip:bankClip('intro',id)});
+  $('#sr').textContent=d.label+', '+d.count+' jobs';
+}
+function selectNode(i){ const n=NODES[i]; sel.dept=n.dept; sel.node=i; applyFocus(); flyTo(n.pos,8); showNodeCard(n); sfx('open'); $('#sr').textContent=n.name+', '+n.kind; }
+function clearSelection(){ sel.dept=null; sel.node=null; applyFocus(); $('#card').classList.remove('show'); }
+function resetView(){ clearSelection(); flyTo(new THREE.Vector3(0,0,0),44); }
+
+// ---------- cards ----------
+const KIND_LABEL={script:'Script',skill:'Skill',directive:'Directive',schedule:'Scheduled job',page:'Page',program:'Program',doc:'Document'};
+function showDeptCard(d){
+  const card=$('#card'); card.style.setProperty('--c',COLORS[d.id]);
+  $('#c-kind').textContent='Department · '+d.count+' jobs'; $('#c-title').textContent=d.label; $('#c-about').textContent=d.tagline;
+  const kinds={}; nodesOf[d.id].forEach(n=>kinds[n.kind]=(kinds[n.kind]||0)+1);
+  const kEl=$('#c-kinds'); kEl.hidden=false; kEl.innerHTML=''; Object.entries(kinds).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{ const s=document.createElement('span'); s.innerHTML='<b></b> '; s.children[0].textContent=v; s.append((KIND_LABEL[k]||k).toLowerCase()+(v>1?'s':'')); kEl.appendChild(s); });
+  $('#c-path').hidden=true;
+  const act=$('#c-actions'); act.innerHTML='';
+  const hear=document.createElement('button'); hear.className='btn primary'; hear.type='button'; hear.textContent='Hear it'; hear.onclick=()=>{ unlock(); speak(d.label+'. '+d.count+' jobs. '+d.tagline+' It speaks '+d.voice+'.', d.id, {clip:bankClip('intro',d.id)}); }; act.appendChild(hear);
+  const askb=document.createElement('button'); askb.className='btn'; askb.type='button'; askb.textContent='Ask it'; askb.onclick=()=>{ $('#q').value='What is '+d.label+' working on and what needs me?'; $('#q').focus(); }; act.appendChild(askb);
+  const ul=$('#c-list'); ul.hidden=false; ul.innerHTML='';
+  nodesOf[d.id].forEach(n=>{ const li=document.createElement('li'); const b=document.createElement('button'); b.type='button'; b.innerHTML='<span class="k"></span><span></span>'; b.children[0].textContent=KIND_LABEL[n.kind]||n.kind; b.children[1].textContent=n.name; b.onclick=()=>{ sfx('select'); selectNode(NODES.indexOf(n)); }; li.appendChild(b); ul.appendChild(li); });
+  card.classList.add('show'); card.scrollTop=0;
+}
+function showNodeCard(n){
+  const card=$('#card'); const d=byId[n.dept]; card.style.setProperty('--c',COLORS[n.dept]);
+  $('#c-kind').textContent=(KIND_LABEL[n.kind]||n.kind)+' · '+d.label; $('#c-title').textContent=n.name; $('#c-about').textContent=n.about;
+  $('#c-kinds').hidden=true; const p=$('#c-path'); p.hidden=false; $('#c-code').textContent=n.path; $('#c-code').title=n.path;
+  const act=$('#c-actions'); act.innerHTML='';
+  const back=document.createElement('button'); back.className='btn'; back.type='button'; back.textContent='← '+d.label; back.onclick=()=>{ sfx('select'); selectDept(n.dept,false); }; act.appendChild(back);
+  const hear=document.createElement('button'); hear.className='btn'; hear.type='button'; hear.textContent='Hear it'; hear.onclick=()=>{ unlock(); speak(n.name+'. '+n.about, n.dept); }; act.appendChild(hear);
+  $('#c-list').hidden=true; card.classList.add('show');
+}
+$('#c-close').onclick=()=>{ sfx('select'); clearSelection(); };
+$('#c-copy').onclick=async()=>{ const t=$('#c-code').textContent; try{ await navigator.clipboard.writeText(t); toast('Path copied'); }catch(e){ const r=document.createRange(); r.selectNodeContents($('#c-code')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('Select and copy the path'); } };
+
+// ---------- dept chips ----------
+(function(){ const nav=$('#depts'); DEPTS.forEach((d,i)=>{ const b=document.createElement('button'); b.className='chip'; b.type='button'; b.dataset.id=d.id; b.style.setProperty('--c',COLORS[d.id]); b.setAttribute('aria-pressed','false'); b.innerHTML='<i></i><span></span><span class="n"></span>'; b.children[1].textContent=d.label; b.children[2].textContent=d.count; b.title='Key '+(i+1); b.onclick=()=>{ unlock(); sfx('select'); selectDept(d.id,true); }; nav.appendChild(b); }); })();
+$('#sub').innerHTML='<b></b> departments · <b></b> jobs · built from the repo <b></b>';
+$('#sub').children[0].textContent=DEPTS.length; $('#sub').children[1].textContent=NODES.length; $('#sub').children[2].textContent=(DATA.built_at||'').slice(0,10);
+
+// ---------- controls ----------
+function toast(t){ const e=$('#toast'); e.textContent=t; e.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>e.classList.remove('show'),2200); }
+let greeted=false;
+function unlock(){ if(audio.unlocked) return; audio.unlocked=true; sfx('bloom'); }
+function speakGreeting(){ if(greeted) return; greeted=true; speak('AIRE Business Map. '+DEPTS.length+' departments, '+NODES.length+' jobs. Tap a department to hear from it, or ask me anything.', 'center', {clip:bankClip('greeting')}); }
+$('#b-sound').onclick=e=>{ audio.on=!audio.on; e.currentTarget.setAttribute('aria-pressed',String(audio.on)); unlock(); if(audio.on) sfx('select'); };
+$('#b-voice').onclick=e=>{ voice.on=!voice.on; e.currentTarget.setAttribute('aria-pressed',String(voice.on)); if(!voice.on) stopSpeaking(); else { unlock(); speak('Voice on.', 'center'); } };
+$('#b-spin').onclick=e=>{ spin=!spin; e.currentTarget.setAttribute('aria-pressed',String(spin)); };
+$('#b-reset').onclick=()=>{ unlock(); sfx('select'); resetView(); };
+$('#b-help').onclick=()=>{ $('#help').classList.add('show'); $('#help-close').focus(); };
+$('#help-close').onclick=()=>$('#help').classList.remove('show');
+$('#help').addEventListener('click',e=>{ if(e.target.id==='help') $('#help').classList.remove('show'); });
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'){ if(e.key==='Escape') e.target.blur(); return; }
+  if(e.key==='Escape'){ if($('#help').classList.contains('show')) $('#help').classList.remove('show'); else if(sel.node!=null||sel.dept){ clearSelection(); } else resetView(); }
+  else if(e.key===' '){ e.preventDefault(); spin=!spin; $('#b-spin').setAttribute('aria-pressed',String(spin)); }
+  else if(e.key==='/'){ e.preventDefault(); $('#q').focus(); }
+  else if(/^[1-8]$/.test(e.key)){ const d=DEPTS[+e.key-1]; if(d){ unlock(); sfx('select'); selectDept(d.id,true); } }
+});
+
+// ---------- live data (mcp) ----------
+const live={cal:null,calErr:null,inbox:null,inboxErr:null,dl:null,dlErr:null,mcp:null,hasMcp:null};
+function localIso(d){ const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
+function dayBounds(){ const s=new Date(); s.setHours(0,0,0,0); const e=new Date(s); e.setDate(e.getDate()+1); return [localIso(s),localIso(e)]; }
+function errCopy(code,server){ switch(code){
+  case 'server_not_connected': return 'Add '+server+' in claude.ai Settings → Connectors';
+  case 'needs_reauth': return 'Reconnect '+server+' in Settings → Connectors';
+  case 'selection_required': return 'Choose which '+server+' to use';
+  case 'not_in_manifest': return server+' not allowed for this view';
+  case 'blocked_by_policy': case 'approval_required': return 'Blocked by your org policy';
+  case 'server_unavailable': case 'upstream_error': return server+' did not answer. Retrying';
+  default: return 'Could not load ('+code+')'; } }
+function setTile(id,state,v,s){ const t=$(id); t.dataset.state=state; t.children[1].textContent=v; t.children[2].textContent=s; }
+function fmtTime(ev){ const st=ev.start||{}; if(st.date&&!st.dateTime) return 'all day'; const d=new Date(st.dateTime); return isNaN(d)?'':d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
+function stamp(res){ const at=res&&res.cache&&res.cache.storedAt; return at?('as of '+new Date(at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})):'live'; }
+function renderLive(){
+  const hub=id=>hubMeshes.find(m=>m.userData.id===id);
+  if(live.cal){ const evs=(live.cal.payload&&live.cal.payload.events)||[]; const real=evs.filter(e=>e.status!=='cancelled'&&e.transparency!=='transparent'); const now=new Date(); const next=real.find(e=>e.start&&e.start.dateTime&&new Date(e.start.dateTime)>now)||real[0];
+    setTile('#t-today','ok',String(real.length),next?('Next: '+fmtTime(next)+' '+(next.summary||'')):('Nothing left today · '+stamp(live.cal))); hub('ops').userData.pulse=Math.min(1,real.length/8); live.todayList=real; }
+  else if(live.calErr) setTile('#t-today','error','—',errCopy(live.calErr.code,'Google Calendar'));
+  if(live.inbox){ const th=(live.inbox.payload&&live.inbox.payload.threads)||[]; const est=live.inbox.payload&&live.inbox.payload.resultCountEstimate; const n=th.length; setTile('#t-inbox','ok',(est&&+est>n?n+'+':String(n)),(n?'threads you did not send · ':'quiet inbox · ')+stamp(live.inbox)); hub('nurture').userData.pulse=Math.min(1,n/25); live.inboxList=th; }
+  else if(live.inboxErr) setTile('#t-inbox','error','—',errCopy(live.inboxErr.code,'Gmail'));
+  if(live.dl){ const evs=((live.dl.payload&&live.dl.payload.events)||[]).filter(e=>e.status!=='cancelled'); const first=evs[0]; setTile('#t-deadlines','ok',String(evs.length),first?('First: '+(first.start.date||(first.start.dateTime||'').slice(0,10))+' '+(first.summary||'').replace(/deadline/i,'').trim()):('None filed · '+stamp(live.dl))); hub('deals').userData.pulse=Math.min(1,evs.length/10); live.dlList=evs; }
+  else if(live.dlErr) setTile('#t-deadlines','error','—',errCopy(live.dlErr.code,'Google Calendar'));
+}
+function watch(server,tool,input,key){
+  live.mcp.watchTool(server,tool,input,ev=>{ if(ev.type==='data'){ live[key]=ev.result; live[key+'Err']=null; } else { const c=ev.error.code; const authz=['needs_reauth','server_not_connected','blocked_by_policy','approval_required','not_in_manifest','selection_required','consent_required'].includes(c); if(authz||!live[key]) { live[key]=null; live[key+'Err']=ev.error; } } renderLive(); },{refetchInterval:300000,cache:{staleTime:60000}});
+}
+async function startLive(){
+  if(!window.claude||!window.claude.use){ live.hasMcp=false; ['#t-today','#t-inbox','#t-deadlines'].forEach(id=>setTile(id,'error','—','Open in claude.ai for live data')); return; }
+  const mcp=await claude.use('mcp'); live.mcp=mcp; live.hasMcp=!!mcp;
+  if(!mcp){ ['#t-today','#t-inbox','#t-deadlines'].forEach(id=>setTile(id,'error','—','Live data needs the claude.ai viewer')); return; }
+  const [ds,de]=dayBounds(); const now=new Date(); const m30=new Date(now); m30.setDate(m30.getDate()+30);
+  watch('Google Calendar','list_events',{startTime:ds,endTime:de,orderBy:'startTime',pageSize:100},'cal');
+  watch('Google Calendar','list_events',{startTime:localIso(now),endTime:localIso(m30),fullText:'Deadline',orderBy:'startTime',pageSize:100},'dl');
+  watch('Gmail','search_threads',{query:'in:inbox newer_than:3d -from:me',pageSize:50,view:'THREAD_VIEW_SUMMARY'},'inbox');
+}
+
+// ---------- voice bank (db) ----------
+async function startBank(){ if(!window.claude||!window.claude.use) return; const db=await claude.use('db'); if(!db) return; try{ const snap=await db.doc('voice/bank').get(); if(snap.exists){ voice.bank=snap.data(); const n=Object.keys((voice.bank.depts)||{}).length; if(n) $('#b-voice').title='Fish Audio voice bank: '+n+' departments'; } }catch(e){} }
+
+// ---------- ask ----------
+let sampleFn=null, askCtl=null;
+async function startSample(){ if(!window.claude||!window.claude.use) return; sampleFn=await claude.use('sample'); }
+const QUICK=['What is on today?','What is blocking deals?','Who is waiting on a reply?','What runs on its own tonight?','Where does a new lead go?','Give me the morning brief'];
+(function(){ const c=$('#chips'); QUICK.forEach(q=>{ const b=document.createElement('button'); b.className='qchip'; b.type='button'; b.textContent=q; b.onclick=()=>{ unlock(); $('#q').value=q; ask(q); }; c.appendChild(b); }); })();
+$('#askrow').addEventListener('submit',e=>{ e.preventDefault(); unlock(); ask($('#q').value.trim()); });
+function liveSummary(){
+  const out=[]; const fmt=e=>(e.start&&e.start.date&&!e.start.dateTime?'all day':fmtTime(e))+' '+(e.summary||'(no title)');
+  if(live.todayList) out.push('Today\'s calendar ('+live.todayList.length+'): '+(live.todayList.slice(0,14).map(fmt).join('; ')||'nothing scheduled')); else out.push('Today\'s calendar: not connected ('+(live.calErr?errCopy(live.calErr.code,'Google Calendar'):'loading')+')');
+  if(live.dlList) out.push('Deadlines next 30 days ('+live.dlList.length+'): '+(live.dlList.slice(0,14).map(e=>(e.start.date||(e.start.dateTime||'').slice(0,10))+' '+(e.summary||'')).join('; ')||'none filed')); else out.push('Deadlines: not connected');
+  if(live.inboxList) out.push('Inbox threads last 3 days not sent by Caleb ('+live.inboxList.length+'): '+(live.inboxList.slice(0,20).map(t=>{ const m=(t.messages&&t.messages[0])||{}; return (m.subject||'(no subject)')+' from '+(m.sender||'?'); }).join('; ')||'none')); else out.push('Inbox: not connected');
+  return out.join('\n');
+}
+function mapSummary(){ return DEPTS.map(d=>d.id+' = '+d.label+' ('+d.count+' jobs): '+d.tagline+' Jobs: '+nodesOf[d.id].map(n=>n.name).join(', ')).join('\n'); }
+const history=[];
+function buildPrompt(q){
+  return 'You are AIRE, the voice of Caleb Jackson\'s real estate business map. Caleb is a REALTOR with Keller Williams First Choice in the Baton Rouge area. Answer his question from the map and the live data below, in his voice: warm, direct, natural, no em dashes, no semicolons, no corporate polish, at most three short sentences. Never invent a number or a name that is not in the data. If the live data a question needs is not connected, say which connector to add in one clause.\n'
+  +'Reply with only JSON: {"department": "<one id from the list>", "answer": "<the spoken answer>", "next": "<one short next step for Caleb, or empty>"}\n\nDEPARTMENTS AND JOBS\n'+mapSummary()+'\n\nLIVE DATA (Caleb\'s own Google account, right now, local time)\n'+liveSummary()
+  +(history.length?'\n\nEARLIER IN THIS CONVERSATION\n'+history.slice(-3).map(h=>'Q: '+h.q+'\nA ('+h.d+'): '+h.a).join('\n'):'')+'\n\nQUESTION\n'+q;
+}
+function localAnswer(q){
+  const s=q.toLowerCase(); let d='ops', a='', next='';
+  const pick=()=>{ let best=null,score=0; DEPTS.forEach(x=>{ const words=(x.label+' '+x.tagline).toLowerCase().split(/\W+/); let n=0; words.forEach(w=>{ if(w.length>3&&s.includes(w)) n++; }); if(n>score){score=n;best=x;} }); return best; };
+  if(/today|calendar|schedule|morning/.test(s)){ d='ops'; if(live.todayList){ const l=live.todayList; a=l.length?('Today has '+l.length+' on the calendar. '+l.slice(0,3).map(e=>fmtTime(e)+' '+e.summary).join(', ')+'.'):'Nothing is on the calendar today.'; } else a='Connect Google Calendar in claude.ai and I can read today for you.'; }
+  else if(/deal|deadline|closing|contract|block/.test(s)){ d='deals'; if(live.dlList){ const l=live.dlList; a=l.length?(l.length+' deadlines in the next 30 days. First up: '+(l[0].start.date||'')+' '+l[0].summary+'.'):'No deadlines are filed for the next 30 days.'; next=l.length?'Open the first one and confirm the TC has it covered.':''; } else a='Connect Google Calendar and the Deals branch will read your deadlines.'; }
+  else if(/inbox|reply|email|waiting|quiet/.test(s)){ d='nurture'; if(live.inboxList){ const n=live.inboxList.length; a=n?(n+' inbox threads from the last three days are not from you. Pipeline\'s predraft can take the first pass.'):'The inbox is quiet for the last three days.'; } else a='Connect Gmail and the Nurture branch will count who is waiting.'; }
+  else if(/tonight|its own|automatic|runs|schedule/.test(s)){ d='ops'; const sch=NODES.filter(n=>n.kind==='schedule'); a=sch.length+' jobs run on their own: '+sch.map(n=>n.name).join(', ')+'.'; }
+  else if(/new lead|lead go|inquiry/.test(s)){ d='leadgen'; a='A new inquiry hits speed to lead first, then enrichment tags it, then the CRM engine writes it to the one sheet and Pipeline shows it to you.'; }
+  else { const b=pick(); if(b){ d=b.id; a=b.label+' has '+b.count+' jobs. '+b.tagline; } else a='I can answer from the map right now. Open this page in claude.ai and allow Claude for fuller answers.'; }
+  return {department:d,answer:a,next};
+}
+function showAnswer(r,q){
+  const d=byId[r.department]||byId.ops; const panel=$('#answer'); panel.style.setProperty('--c',COLORS[d.id]); $('#a-who').textContent=d.label+' answers'; $('#a-text').textContent=r.answer||''; const nx=$('#a-next'); nx.innerHTML=''; if(r.next){ nx.innerHTML='<b>Next:</b> '; nx.append(r.next); }
+  panel.classList.add('show');
+  sel.dept=d.id; sel.node=null; applyFocus(); flyTo(hubPos[d.id],15+Math.sqrt(d.count)*0.9);
+  sfx('answer'); setTimeout(()=>speak(r.answer+(r.next?' Next: '+r.next:''), d.id),350);
+  history.push({q,d:d.label,a:r.answer}); if(history.length>6) history.shift();
+}
+async function ask(q){
+  if(!q) return; const panel=$('#answer'); panel.classList.add('show'); panel.style.setProperty('--c','#e87757'); $('#a-who').textContent='AIRE'; $('#a-text').textContent='Thinking…'; $('#a-next').textContent=''; $('#b-ask').disabled=true; stopSpeaking();
+  if(askCtl) askCtl.abort(); askCtl=new AbortController();
+  try{
+    if(sampleFn){
+      const r=await sampleFn.json(buildPrompt(q),{modelTier:'quick',cache:false,signal:askCtl.signal});
+      if(r&&typeof r==='object'&&r.answer) showAnswer({department:String(r.department||''),answer:String(r.answer),next:r.next?String(r.next):''},q);
+      else showAnswer(localAnswer(q),q);
+    } else showAnswer(localAnswer(q),q);
+  }catch(e){
+    const code=e&&e.code;
+    if(code==='cancelled') return;
+    if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].includes(code)){ sampleFn=null; showAnswer(localAnswer(q),q); toast('Claude is off for this page. Answering from the map.'); }
+    else if(code==='rate_limited'){ $('#a-text').textContent='Too many questions at once. Give it a moment and ask again.'; }
+    else if(code==='invalid_json'||code==='empty_completion'){ showAnswer(localAnswer(q),q); }
+    else { showAnswer(localAnswer(q),q); toast('Claude did not answer ('+(code||'error')+'). Answered from the map.'); }
+  } finally { $('#b-ask').disabled=false; }
+}
+
+// ---------- animation ----------
+const clock=new THREE.Clock(); let t0=0;
+function frame(){
+  requestAnimationFrame(frame); if(document.hidden) return;
+  const dt=Math.min(clock.getDelta(),0.05); t0+=dt; idleT+=dt;
+  if(spin&&idleT>3.5&&!sel.dept) cam.tTheta+=dt*0.05;
+  const k=1-Math.pow(0.001,dt);
+  cam.theta+=(cam.tTheta-cam.theta)*k; cam.phi+=(cam.tPhi-cam.phi)*k; cam.radius+=(cam.tRadius-cam.radius)*k*0.8; cam.target.lerp(cam.tTarget,k*0.8);
+  camera.position.set(cam.target.x+cam.radius*Math.sin(cam.phi)*Math.cos(cam.theta), cam.target.y+cam.radius*Math.cos(cam.phi), cam.target.z+cam.radius*Math.sin(cam.phi)*Math.sin(cam.theta));
+  camera.lookAt(cam.target);
+  // node scale ease
+  let dirty=false; const ks=1-Math.pow(0.002,dt);
+  for(let i=0;i<N;i++){ const d=tgtScale[i]-curScale[i]; if(Math.abs(d)>0.002){ curScale[i]+=d*ks; dirty=true; const p=NODES[i].pos; const s=curScale[i]; tmpM.makeScale(s,s,s); tmpM.setPosition(p.x,p.y,p.z); nodeMesh.setMatrixAt(i,tmpM); } }
+  if(dirty) nodeMesh.instanceMatrix.needsUpdate=true;
+  // center breathing, rings
+  const b=1+Math.sin(t0*1.6)*0.06; center.userData.halo.scale.set(9*b,9*b,1); center.userData.rings[0].rotation.z+=dt*0.15; center.userData.rings[1].rotation.y+=dt*0.1;
+  hubMeshes.forEach((m,i)=>{ const pz=m.userData.pulse||0; const s=5.2*(1+Math.sin(t0*2.2+i)*0.08*(0.3+pz)); m.userData.halo.scale.set(s,s,1); });
+  // signals
+  if(SIG){ for(let i=0;i<SIG;i++){ const s=sig[i]; s.t+=s.v*dt; if(s.t>1){s.t=0;} if(s.t<0){s.t=1;} const p=branchCurves[s.id].getPoint(1-s.t); sigPos[i*3]=p.x; sigPos[i*3+1]=p.y; sigPos[i*3+2]=p.z; } sigGeo.attributes.position.needsUpdate=true; }
+  if(scene.userData.stars) scene.userData.stars.rotation.y+=dt*0.004;
+  renderer.render(scene,camera); placeLabels();
+}
+// intro: points bloom in department by department while the camera settles
+if(!reduced){ for(let i=0;i<N;i++) tgtScale[i]=0; let i=0; const batch=Math.ceil(N/40); const step=()=>{ for(let j=0;j<batch&&i<N;j++,i++) tgtScale[i]=baseScale[i]; if(i<N) setTimeout(step,28); }; setTimeout(step,250); }
+frame();
+addEventListener('visibilitychange',()=>{ if(!document.hidden){ clock.getDelta(); } });
+
+// capability start-up (resolves later, never blocks first paint)
+startLive(); startBank(); startSample();
+})();
+</script>

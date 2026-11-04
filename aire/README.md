@@ -11,7 +11,8 @@ AIRE is Caleb's AI real estate agent system. Read `STATUS.md` before touching an
 | `offer/` | What Caleb teaches or sells to agents, three tiers. Drafts. |
 | `rollout-2026-10/WEEK-3.md` | Week 3: dashboard proof, pipeline sheet, market update. |
 | `approvals/` | The page of decisions waiting on Caleb, one button each. |
-| `dashboard/` | Market and pipeline dashboard page. |
+| `business-map/` | The 3D map of the business: 8 departments, every job in the repo, live tiles, a center node that answers in each department's voice. Fish Audio voice layer in `business-map/voice/`. |
+| `dashboard/` | Market and pipeline dashboard page (older, flat). |
 | `market-data/` | Dated GBRAR market reports as JSON, with source. |
 | `market-update/` | Monthly market update scripts and Motion prompts. |
 | `crm/` | CRM engine on the one AIRE CRM sheet: Gmail ingest, cadence, tasks, deals, feed.json for the Pipeline app. |
