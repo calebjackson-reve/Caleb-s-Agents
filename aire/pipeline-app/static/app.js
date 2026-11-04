@@ -84,7 +84,7 @@ function render() {
   const main = $('#main');
   if (d.feed_ok && f.header_ok === false) { main.innerHTML = stopScreen(f); return; }
   if (!d.feed_ok) { main.innerHTML = `<div class="stop-screen"><div class="big">NO FEED</div><p>${esc((problems()[0] || {}).text || 'feed.json is missing.')}</p><div class="acts"><button class="primary" onclick="refresh()">Run the refresh</button></div></div>`; return; }
-  const views = { cc: viewCC, touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent, map: viewMap, market: viewMarket };
+  const views = { cc: viewCC, touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent, map: viewMap, market: viewMarket, world: viewWorld };
   if (S.map) { S.map.destroy(); S.map = null; }
   main.innerHTML = (views[S.view] || viewCC)();
   if (S.view === 'map') mountMap(false); else if (S.view === 'deals' && S.dealsMode === 'map') mountMap(true);
@@ -113,6 +113,7 @@ function renderNav(c) {
     ['leads', '✦', 'New leads', (feed().new_leads || []).length, (feed().new_leads || []).length > 0], ['queue', '✉', 'Drafts', dr.length],
     ['sent', '↗', 'Sent today', (S.data.sent_today || []).length],
     ['map', '◈', 'Map', ((feed().map || {}).counts || {}).persons || 0], ['market', '◆', 'Market Monitor', ((feed().market || {}).rows || []).length],
+    ['world', '◉', 'World'],
   ];
   $('#nav').innerHTML = items.map(([k, ico, label, n, warn]) => `<button class="${S.view === k ? 'on' : ''}" onclick="go('${k}')"><span class="ico">${ico}</span>${label}${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`).join('');
 }
@@ -287,6 +288,11 @@ function viewSent() {
   return `<div class="view">${panel(0, `Sent today · ${rows.length}`, 'out/send-log.json', body)}</div>`;
 }
 
+// ---- World: the 3D town with the dashboard rail (aire/world, served by app.py at /world/)
+function viewWorld() {
+  return `<section class="panel world-panel"><iframe id="world-frame" src="/world/" title="AIRE World" allow="clipboard-write"></iframe></section>`;
+}
+
 // ---------------------------------------------------------------- navigation
 function go(v) { S.view = v; S.filter = 'all'; render(); $('#main').scrollTop = 0; }
 function setFilter(k) { S.filter = k; render(); }
@@ -437,8 +443,8 @@ function toast(kind, tag, text) { const t = document.createElement('div'); t.cla
 function tick() { const d = new Date(); $('#date').textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); $('#time').textContent = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).toLowerCase(); }
 document.addEventListener('keydown', e => {
   if (e.target.matches('input, textarea, select')) { if (e.key === 'Escape') e.target.blur(); return; }
-  const views = ['cc', 'touches', 'tasks', 'deals', 'leads', 'queue', 'sent', 'map', 'market'];
-  if (/^[1-9]$/.test(e.key)) go(views[Number(e.key) - 1]);
+  const views = ['cc', 'touches', 'tasks', 'deals', 'leads', 'queue', 'sent', 'map', 'market', 'world'];
+  if (/^[0-9]$/.test(e.key)) go(views[e.key === '0' ? 9 : Number(e.key) - 1]);
   else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
   else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }
   else if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else closeDrawer(); }

@@ -11,3 +11,5 @@ aire/world/sync.log
 aire/world/data.json
 __pycache__/
 *.pyc
+aire/world/history.json
+aire/world/brief.json

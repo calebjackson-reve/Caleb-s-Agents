@@ -1,368 +1,442 @@
+<meta charset="utf-8">
 <title>AIRE World</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-/* Layout: a model town on a table, full bleed, with a thin HUD at the edges and a frosted card beside the clicked object.
-   One deliberate daylight look: warm paper table, KW First Choice coral for anything that needs Caleb. */
+/* Layout: the model town on the left, a dashboard rail on the right (brief, up next, calendar, to-dos, inbox, charts).
+   One deliberate daylight look on warm paper; Keller Williams First Choice coral marks anything that needs Caleb. */
 :root{
-  --paper:#f3ede3; --ink:#14100e; --ink-2:#6b625a; --ivory:#fbf8f3; --coral:#e87757; --coral-2:#d4603f;
-  --gold:#e9c46a; --sage:#9bbf8a; --line:rgba(20,16,14,.14); --glass:rgba(251,248,243,.74);
+  --paper:#f3ede3; --ink:#14100e; --ink-2:#6b625a; --ink-3:#9a908a; --ivory:#fbf8f3; --coral:#e87757; --coral-2:#d4603f;
+  --gold:#e9c46a; --sage:#9bbf8a; --line:rgba(20,16,14,.12); --glass:rgba(251,248,243,.78); --panel:#fbf8f3;
+  --c1:#d9532e; --c2:#2a78d6; --c3:#c98a00; --c4:#1baf7a; --c5:#6250d6; --c6:#e34948;
   --display:'Instrument Serif',Georgia,serif; --body:Nunito,'Segoe UI',system-ui,sans-serif;
   --gl:max(16px,env(safe-area-inset-left,0px)); --gr:max(16px,env(safe-area-inset-right,0px));
   color-scheme:light;
 }
 [hidden]{display:none!important}
 html,body{height:100%}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;overflow:hidden;padding-left:var(--gl);padding-right:var(--gr);padding-block:0}
-#stage{position:fixed;inset:0;display:block;touch-action:none;cursor:grab}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;overflow:hidden;padding:0}
+#app{display:grid;grid-template-columns:1fr minmax(340px,400px);height:100%;min-height:0}
+#stagewrap{position:relative;min-width:0;min-height:0}
+#stage{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
 #stage.drag{cursor:grabbing}#stage.pick{cursor:pointer}
-.hud{position:fixed;z-index:3;pointer-events:none}.hud>*{pointer-events:auto}
-#title{top:calc(env(safe-area-inset-top,0px) + 16px);left:var(--gl);max-width:min(46vw,440px)}
+.hud{position:absolute;z-index:3;pointer-events:none}.hud>*{pointer-events:auto}
+#title{top:calc(env(safe-area-inset-top,0px) + 16px);left:var(--gl);max-width:min(60%,440px)}
 .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);margin:0 0 3px}
-h1{font-family:var(--display);font-weight:400;font-size:clamp(1.9rem,4vw,2.8rem);line-height:.98;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:.98;margin:0;letter-spacing:-.01em;text-wrap:balance}
 #live{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
 #live i{width:9px;height:9px;border-radius:50%;background:var(--coral);box-shadow:0 0 0 3px rgba(232,119,87,.25);display:inline-block}
 #live i.stale{background:#a9a29a;box-shadow:none}
 #live b{color:var(--ink);font-weight:700;letter-spacing:.08em;font-size:11px}
-#bar{top:calc(env(safe-area-inset-top,0px) + 16px);right:var(--gr);display:flex;gap:8px}
-.tile{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(12px);padding:9px 12px 8px;min-width:108px;display:grid;gap:0}
-.tile .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
-.tile .v{font-family:var(--display);font-size:1.75rem;line-height:1.05;font-variant-numeric:tabular-nums}
-.tile .s{font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
-#legend{left:var(--gl);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:6px;flex-wrap:wrap;max-width:min(70vw,720px)}
-.chip{display:flex;align-items:center;gap:7px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(10px);color:var(--ink);font:inherit;font-size:12px;padding:6px 10px 6px 8px;cursor:pointer;transition:border-color .2s,transform .2s}
-.chip:hover,.chip:focus-visible{border-color:var(--coral);outline:none;transform:translateY(-1px)}
+#legend{left:var(--gl);right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:7px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(10px);color:var(--ink);font:inherit;font-size:12px;padding:6px 10px 6px 8px;cursor:pointer;transition:border-color .2s}
+.chip:hover,.chip:focus-visible{border-color:var(--coral);outline:none}
 .chip[aria-pressed="true"]{border-color:var(--coral);background:var(--ivory)}
 .chip i{width:8px;height:8px;border-radius:50%;background:var(--c,var(--coral));flex:none}
-#controls{right:var(--gr);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;gap:6px}
+#controls{right:16px;top:calc(env(safe-area-inset-top,0px) + 16px);display:flex;gap:6px}
 .btn{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(10px);color:var(--ink);font:inherit;font-size:12px;padding:6px 10px;cursor:pointer}
 .btn:hover,.btn:focus-visible{border-color:var(--coral);outline:none}
-.btn[aria-pressed="false"]{color:var(--ink-2)}
-#card{position:fixed;z-index:4;width:min(320px,calc(100vw - 32px));background:var(--glass);border:1px solid rgba(251,248,243,.9);box-shadow:0 18px 50px rgba(20,16,14,.18),0 1px 0 rgba(255,255,255,.6) inset;backdrop-filter:blur(16px) saturate(1.2);display:none;flex-direction:column;border-top:3px solid var(--c,var(--coral));max-height:min(70vh,560px);overflow:auto;overscroll-behavior:contain}
+.btn[aria-pressed="true"]{border-color:var(--coral);background:var(--ivory)}
+.label{position:absolute;z-index:2;pointer-events:none;transform:translate(-50%,-100%);font-family:var(--display);font-size:14px;color:var(--ink);background:rgba(251,248,243,.7);padding:1px 7px;border-radius:3px;white-space:nowrap;transition:opacity .25s;will-change:transform}
+#tip{position:absolute;z-index:4;pointer-events:none;background:var(--ivory);border:1px solid var(--line);padding:6px 9px;display:none;transform:translate(14px,14px);font-size:12.5px;box-shadow:0 4px 14px rgba(20,16,14,.12);max-width:240px}
+#tip.show{display:block}#tip small{display:block;color:var(--ink-2);font-size:11px}
+/* rail */
+#rail{min-height:0;overflow:auto;overscroll-behavior:contain;background:var(--ivory);border-left:1px solid var(--line);padding:14px 16px calc(env(safe-area-inset-bottom,0px) + 20px) 16px;display:grid;gap:14px;align-content:start;scrollbar-width:thin}
+.sec{display:grid;gap:8px}
+.sec h2{font-family:var(--display);font-weight:400;font-size:1.25rem;margin:0;line-height:1.1;display:flex;align-items:baseline;gap:8px}
+.sec h2 small{font-family:var(--body);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin-left:auto;font-variant-numeric:tabular-nums;text-align:right}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{border:1px solid var(--line);padding:9px 11px 8px;display:grid;gap:0;background:var(--paper);min-width:0}
+.tile .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.tile .v{font-family:var(--display);font-size:1.6rem;line-height:1.05;font-variant-numeric:tabular-nums}
+.tile .v.bump{color:var(--coral-2)}
+.tile .s{font-size:11px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brief{font-size:13.5px;line-height:1.5;margin:0}
+.list{display:grid;gap:4px;margin:0;padding:0;list-style:none}
+.list li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:baseline;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--line);min-width:0}
+.list li:last-child{border-bottom:0}
+.list .t{font-variant-numeric:tabular-nums;color:var(--ink-2);font-size:11.5px;white-space:nowrap;min-width:64px}
+.list .t.now{color:var(--coral-2);font-weight:700}
+.list .t.over{color:var(--c6);font-weight:700}
+.list .m{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list .m small{display:block;color:var(--ink-2);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list .pill{font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border:1px solid var(--line);border-radius:999px;color:var(--ink-2);margin-left:6px;vertical-align:1px}
+.list .pill.hot{border-color:var(--coral);color:var(--coral-2)}
+.empty{font-size:12.5px;color:var(--ink-2);border:1px dashed var(--line);padding:10px 12px;margin:0}
+.empty code{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:var(--paper);padding:1px 4px}
+.chart{display:grid;gap:4px}
+.chart h3{font-family:var(--display);font-weight:400;font-size:1.05rem;margin:0}
+.chart svg{width:100%;height:auto;display:block;overflow:visible;font-family:var(--body)}
+.chart .lg{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--ink-2)}
+.chart .lg span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--c);margin-right:5px;vertical-align:-1px}
+.chart .cap{font-size:11px;color:var(--ink-2);margin:0}
+#ctip{position:fixed;z-index:9;pointer-events:none;background:var(--ink);color:var(--ivory);font-size:12px;padding:5px 8px;border-radius:3px;display:none;white-space:nowrap;font-variant-numeric:tabular-nums}
+#ctip.show{display:block}
+/* docked card */
+#card{display:none;flex-direction:column;background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--c,var(--coral))}
 #card.show{display:flex}
-#card header{padding:12px 14px 8px;display:grid;gap:2px}
+#card header{padding:10px 12px 6px;display:grid;gap:2px;position:relative}
 #card .kind{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--c,var(--coral))}
-#card h2{font-family:var(--display);font-weight:400;font-size:1.5rem;line-height:1.05;margin:0}
-#card .sub{font-size:12.5px;color:var(--ink-2);margin:0}
-#card .x{position:sticky;top:6px;align-self:flex-end;margin:0 6px -30px 0;z-index:1;background:transparent;border:0;color:var(--ink-2);font-size:18px;cursor:pointer;line-height:1;padding:4px 8px}
-#card dl{margin:0;padding:4px 14px 10px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:baseline;flex:none}
-#card dt{font-size:12.5px;color:var(--ink);min-width:0}
-#card dt small{display:block;font-size:10.5px;color:var(--ink-2)}
-#card dd{margin:0;font-family:var(--display);font-size:1.35rem;line-height:1;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
-#card dd.txt{font-family:var(--body);font-size:12.5px;white-space:normal;max-width:150px}
+#card h2{font-family:var(--display);font-weight:400;font-size:1.4rem;line-height:1.05;margin:0;padding-right:28px}
+#card .sub{font-size:12px;color:var(--ink-2);margin:0}
+#card .x{position:absolute;top:6px;right:6px;background:transparent;border:0;color:var(--ink-2);font-size:18px;cursor:pointer;line-height:1;padding:2px 6px}
+#card dl{margin:0;padding:2px 12px 8px;display:grid;grid-template-columns:1fr auto;gap:5px 12px;align-items:baseline}
+#card dt{font-size:12px;color:var(--ink);min-width:0}#card dt small{display:block;font-size:10.5px;color:var(--ink-2)}
+#card dd{margin:0;font-family:var(--display);font-size:1.25rem;line-height:1;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+#card dd.txt{font-family:var(--body);font-size:12px;white-space:normal;max-width:150px}
 #card dd.bump{color:var(--coral-2)}
-#card .src{font-size:10.5px;color:var(--ink-2);padding:0 14px 12px;border-top:1px solid var(--line);padding-top:8px}
-#card .list{padding:0 14px 8px;font-size:12px;display:grid;gap:3px}
-#card .list div{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums}
-#card .list span:last-child{color:var(--ink-2)}
-.label{position:fixed;z-index:2;pointer-events:none;transform:translate(-50%,-100%);font-family:var(--display);font-size:14px;color:var(--ink);background:rgba(251,248,243,.65);padding:1px 7px;border-radius:3px;white-space:nowrap;transition:opacity .2s;will-change:transform}
-#tip{position:fixed;z-index:4;pointer-events:none;background:var(--ivory);border:1px solid var(--line);padding:6px 9px;display:none;transform:translate(14px,14px);font-size:12.5px;box-shadow:0 4px 14px rgba(20,16,14,.12)}
-#tip.show{display:block}
-#tip small{display:block;color:var(--ink-2);font-size:11px}
-#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);transform:translateX(-50%);z-index:7;background:var(--ink);color:var(--ivory);padding:7px 14px;font-size:13px;display:none}
+#card .src{font-size:10.5px;color:var(--ink-2);padding:6px 12px 10px;border-top:1px solid var(--line)}
+#card .clist{padding:0 12px 6px;font-size:12px;display:grid;gap:3px}
+#card .clist div{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums}
+#card .clist span:last-child{color:var(--ink-2)}
+#toast{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:7;background:var(--ink);color:var(--ivory);padding:7px 14px;font-size:13px;display:none}
 #toast.show{display:block}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-@media (max-width:860px){
-  #title{max-width:calc(100vw - 32px)}
-  #bar{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 64px);left:var(--gl);right:var(--gr);overflow-x:auto;scrollbar-width:none}
-  .tile{min-width:96px}.tile .v{font-size:1.4rem}
-  #legend{max-width:calc(100vw - 32px);flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;right:var(--gr)}
-  .chip{flex:none}
-  #controls{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 16px);right:var(--gr)}
+@media (max-width:900px){
+  #app{grid-template-columns:1fr;grid-template-rows:52vh 1fr}
+  #rail{border-left:0;border-top:1px solid var(--line);padding-left:var(--gl);padding-right:var(--gr)}
+  #title{max-width:calc(100% - 120px)}h1{font-size:1.6rem}
+  #legend{display:none}
   #controls .btn span{display:none}
-  #card{left:var(--gl)!important;right:var(--gr)!important;top:auto!important;bottom:0!important;width:auto;max-height:52vh}
   .label{font-size:12px}
 }
 </style>
 
-<canvas id="stage" aria-label="3D model of Caleb's real estate business as a small town: office, street of homes with signs, lead cars, courthouse clock, post office, billboard and a construction site"></canvas>
-
-<div id="title" class="hud">
-  <p class="eyebrow">Keller Williams First Choice · AIRE</p>
-  <h1>AIRE World</h1>
-  <div id="live"><i id="dot"></i><b>LIVE</b><span id="upd">loading…</span></div>
+<div id="app">
+<div id="stagewrap">
+  <canvas id="stage" aria-label="3D model of Caleb's real estate business as a small town: office, street of homes with signs, lead cars, courthouse clock, post office, billboard and a construction site"></canvas>
+  <div id="title" class="hud">
+    <p class="eyebrow">Keller Williams First Choice · AIRE</p>
+    <h1>AIRE World</h1>
+    <div id="live"><i id="dot"></i><b>LIVE</b><span id="upd">loading…</span></div>
+  </div>
+  <div id="controls" class="hud">
+    <button class="btn" id="b-spin" aria-pressed="false" title="Slow turn when idle">↻ <span>Turn</span></button>
+    <button class="btn" id="b-reset" title="Whole town">⌂ <span>Whole town</span></button>
+  </div>
+  <nav id="legend" class="hud" aria-label="Places"></nav>
+  <div id="tip" aria-hidden="true"></div>
 </div>
 
-<div id="bar" class="hud" aria-live="polite">
-  <div class="tile"><span class="k">Under contract</span><span class="v" data-n="deals.under_contract_volume" data-fmt="money">—</span><span class="s" id="s-uc">—</span></div>
-  <div class="tile"><span class="k">Pending commission</span><span class="v" data-n="deals.pending_commission" data-fmt="money">—</span><span class="s" id="s-pc">—</span></div>
-  <div class="tile"><span class="k">Hot · Warm</span><span class="v" id="hw">—</span><span class="s" id="s-hw">—</span></div>
-  <div class="tile"><span class="k">Deadlines · 30d</span><span class="v" data-n="calendar.deadlines_30d">—</span><span class="s" id="s-dl">—</span></div>
-</div>
+<aside id="rail" aria-label="Dashboard">
+  <section id="card" aria-live="polite">
+    <header><button class="x" id="c-close" aria-label="Close">×</button><span class="kind" id="c-kind"></span><h2 id="c-title"></h2><p class="sub" id="c-sub"></p></header>
+    <dl id="c-stats"></dl>
+    <div class="clist" id="c-list" hidden></div>
+    <div class="src" id="c-src"></div>
+  </section>
 
-<nav id="legend" class="hud" aria-label="Places"></nav>
-<div id="controls" class="hud">
-  <button class="btn" id="b-spin" aria-pressed="true" title="Slow turn when idle">↻ <span>Turn</span></button>
-  <button class="btn" id="b-reset" title="Whole town">⌂ <span>Whole town</span></button>
-</div>
+  <section class="sec" id="s-brief"><h2>Brief <small id="brief-when"></small></h2>
+    <div class="tiles">
+      <div class="tile"><span class="k">Under contract</span><span class="v" data-n="deals.under_contract_volume" data-fmt="money">—</span><span class="s" id="s-uc">—</span></div>
+      <div class="tile"><span class="k">Pending commission</span><span class="v" data-n="deals.pending_commission" data-fmt="money">—</span><span class="s" id="s-pc">—</span></div>
+      <div class="tile"><span class="k">Hot · Warm</span><span class="v" id="hw">—</span><span class="s" id="s-hw">—</span></div>
+      <div class="tile"><span class="k">Spent · 30 days</span><span class="v" data-n="spending.last_30d" data-fmt="money">—</span><span class="s" id="s-sp">—</span></div>
+    </div>
+    <p class="brief" id="brief-text">Loading…</p>
+  </section>
 
-<aside id="card" aria-live="polite">
-  <button class="x" id="c-close" aria-label="Close">×</button>
-  <header><span class="kind" id="c-kind"></span><h2 id="c-title"></h2><p class="sub" id="c-sub"></p></header>
-  <dl id="c-stats"></dl>
-  <div class="list" id="c-list" hidden></div>
-  <div class="src" id="c-src"></div>
+  <section class="sec" id="s-next"><h2>Up next <small id="next-n"></small></h2><ul class="list" id="next-list"></ul></section>
+  <section class="sec" id="s-cal"><h2>Today <small id="cal-n"></small></h2><ul class="list" id="cal-list"></ul></section>
+  <section class="sec" id="s-todo"><h2>To-dos <small id="todo-n"></small></h2><ul class="list" id="todo-list"></ul></section>
+  <section class="sec" id="s-inbox"><h2>Inbox <small id="inbox-n"></small></h2><ul class="list" id="inbox-list"></ul></section>
+
+  <section class="sec" id="s-charts"><h2>Charts</h2>
+    <div class="chart" id="ch-stage"></div>
+    <div class="chart" id="ch-band"></div>
+    <div class="chart" id="ch-leads"></div>
+    <div class="chart" id="ch-spend"></div>
+  </section>
 </aside>
-<div id="tip" aria-hidden="true"></div>
+</div>
+<div id="ctip" aria-hidden="true"></div>
 <div id="toast" role="status"></div>
 <div class="sr" id="sr" aria-live="polite"></div>
 
-<script id="seed" type="application/json">{"sync":{"at":"2026-11-04T12:44:35-06:00","ok":true,"by":"connector exports","warnings":[]},"sources":{"crm":"AIRE CRM Google Sheet, read only: Contacts, Deals, Tasks, Deadlines, Command export, LP leads","market":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","report":"aire/world/reports/merge-<date>.md (on the Mac, git-ignored)"},"match":{"deals":7,"deadlines_matched":4,"command_opportunities":0,"command_opportunities_matched":0,"command_contacts":0,"command_contacts_matched":0,"lp_leads":0,"lp_leads_matched":0,"unmatched":0},"people":{"contacts":{"value":3656,"period":"now","source":"AIRE CRM sheet"},"hot":{"value":123,"period":"now","source":"AIRE CRM sheet, band"},"warm":{"value":50,"period":"now","source":"AIRE CRM sheet, band"},"cold":{"value":524,"period":"now","source":"AIRE CRM sheet, band"},"ice_cold":{"value":955,"period":"now","source":"AIRE CRM sheet, band"},"unbanded":{"value":2004,"period":"now","source":"AIRE CRM sheet, band"},"new_leads_7d":{"value":2,"period":"last 7 days","source":"Contacts Source dates + Command export + LP leads created dates"},"new_leads_7d_by_source":{"Luxury Presence":2},"new_leads_30d":{"value":30,"period":"last 30 days","source":"AIRE CRM sheet, Source column date"},"touched_30d":{"value":32,"period":"last 30 days","source":"AIRE CRM sheet, Last_Touch"},"next_actions":{"value":421,"period":"now","source":"AIRE CRM sheet, Next_Action"},"past_clients":{"value":57,"period":"now","source":"AIRE CRM sheet, Stage"},"nurture":{"value":641,"period":"now","source":"AIRE CRM sheet, Stage"},"fmv_median":{"value":293750.0,"period":"now","source":"AIRE CRM sheet, fair_market_value, 240 homes"},"by_type":{"client":1086,"household":657,"recruit":75,"vendor":54,"agent":38,"lender":7,"unknown":1739},"by_city":[{"city":"Baton Rouge","n":182},{"city":"Zachary","n":84},{"city":"Denham Springs","n":59},{"city":"Prairieville","n":40},{"city":"Saint Francisville","n":36},{"city":"Lafayette","n":24},{"city":"Clinton","n":23},{"city":"Gonzales","n":21}]},"deals":{"live":{"value":6,"period":"now","source":"AIRE CRM sheet, Deals"},"by_stage":{"under_contract":3,"showing":1,"active":2,"closed":1},"under_contract":{"value":3,"period":"now","source":"AIRE CRM sheet, Deals"},"under_contract_volume":{"value":2397000.0,"period":"now","source":"AIRE CRM sheet, Deals price"},"pending_commission":{"value":null,"period":"now","source":"AIRE CRM sheet, Deals commission column, else Command opportunities commission (3 of 3 under-contract deals have no commission figure yet)"},"active_listings":{"value":3,"period":"now","source":"AIRE CRM sheet, Deals"},"active_buyers":{"value":0,"period":"now","source":"AIRE CRM sheet, Deals"},"active_volume":{"value":854900.0,"period":"now","source":"AIRE CRM sheet, Deals price"},"days_on_market_median":{"value":null,"period":"now","source":"Command opportunities list date or days on market (no list dates yet: paste the Opportunities export, or add a list date)"},"closed_90d":{"value":1,"period":"last 90 days","source":"AIRE CRM sheet, Deals"},"closed_90d_volume":{"value":425000.0,"period":"last 90 days","source":"AIRE CRM sheet, Deals price"},"next_close":{"value":"2026-11-20","period":"next","source":"AIRE CRM sheet, expected_close"},"houses":[{"side":"listing","stage":"under_contract","price":1650000.0,"close":"","dom":null,"deadlines":0,"next_deadline":""},{"side":"listing","stage":"showing","price":0,"close":"","dom":null,"deadlines":0,"next_deadline":""},{"side":"listing","stage":"active","price":510000.0,"close":"","dom":null,"deadlines":0,"next_deadline":""},{"side":"buyer","stage":"under_contract","price":232000.0,"close":"2026-10-30","dom":null,"deadlines":0,"next_deadline":""},{"side":"listing","stage":"active","price":344900.0,"close":"2026-11-29","dom":null,"deadlines":3,"next_deadline":"2026-11-04"},{"side":"buyer","stage":"closed","price":425000.0,"close":"2026-10-13","dom":null,"deadlines":0,"next_deadline":""},{"side":"buyer","stage":"under_contract","price":515000.0,"close":"2026-11-20","dom":null,"deadlines":1,"next_deadline":"2026-11-20"}]},"calendar":{"deadlines_30d":{"value":4,"period":"next 30 days","source":"AIRE CRM sheet, Deadlines tab"},"deadlines_today":{"value":1,"period":"today","source":"AIRE CRM sheet, Deadlines tab"},"deadlines":[{"kind":"Inspection Period Deadline","date":"2026-11-04","stage":"active"},{"kind":"Seller Inspection Response Deadline","date":"2026-11-05","stage":"active"},{"kind":"Act of Sale Deadline","date":"2026-11-20","stage":"under_contract"},{"kind":"Act of Sale Deadline","date":"2026-11-23","stage":"active"}]},"engine":{"tasks_open":{"value":0,"period":"now","source":"AIRE CRM sheet, Tasks"},"tasks_overdue":{"value":0,"period":"now","source":"AIRE CRM sheet, Tasks"},"tasks_done_7d":{"value":4,"period":"last 7 days","source":"AIRE CRM sheet, Tasks"}},"market":{"gbrar":{"median_price":{"value":269000,"prior":270000,"yoy":-0.4,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Median sale price"},"closed_sales":{"value":737,"prior":736,"yoy":0.1,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Closed sales"},"days_on_market":{"value":79,"prior":61,"yoy":29.5,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Days on market"},"homes_for_sale":{"value":3524,"prior":3417,"yoy":3.1,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Homes for sale"},"months_supply":{"value":4.6,"prior":4.5,"yoy":2.2,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Months of supply"},"new_listings":{"value":962,"prior":997,"yoy":-3.5,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"New listings"},"pending_sales":{"value":664,"prior":722,"yoy":-8.0,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Pending sales"},"month":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","source_url":"https://gbrar-public.stats.showingtime.com/docs/mmi/x/report"}}}</script>
+<script id="seed" type="application/json">{"sync":{"at":"2026-11-04T12:49:37-06:00","ok":true,"by":"connector exports","warnings":[]},"sources":{"crm":"AIRE CRM Google Sheet, read only: Contacts, Deals, Tasks, Deadlines, Command export, LP leads","market":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","report":"aire/world/reports/merge-<date>.md (on the Mac, git-ignored)"},"match":{"deals":7,"deadlines_matched":4,"command_opportunities":0,"command_opportunities_matched":0,"command_contacts":0,"command_contacts_matched":0,"lp_leads":0,"lp_leads_matched":0,"unmatched":0},"people":{"contacts":{"value":3656,"period":"now","source":"AIRE CRM sheet"},"hot":{"value":123,"period":"now","source":"AIRE CRM sheet, band"},"warm":{"value":50,"period":"now","source":"AIRE CRM sheet, band"},"cold":{"value":524,"period":"now","source":"AIRE CRM sheet, band"},"ice_cold":{"value":955,"period":"now","source":"AIRE CRM sheet, band"},"unbanded":{"value":2004,"period":"now","source":"AIRE CRM sheet, band"},"new_leads_7d":{"value":2,"period":"last 7 days","source":"Contacts Source dates + Command export + LP leads created dates"},"new_leads_7d_by_source":{"Luxury Presence":2},"new_leads_30d":{"value":30,"period":"last 30 days","source":"AIRE CRM sheet, Source column date"},"touched_30d":{"value":32,"period":"last 30 days","source":"AIRE CRM sheet, Last_Touch"},"next_actions":{"value":421,"period":"now","source":"AIRE CRM sheet, Next_Action"},"past_clients":{"value":57,"period":"now","source":"AIRE CRM sheet, Stage"},"nurture":{"value":641,"period":"now","source":"AIRE CRM sheet, Stage"},"fmv_median":{"value":293750.0,"period":"now","source":"AIRE CRM sheet, fair_market_value, 240 homes"},"by_type":{"client":1086,"household":657,"recruit":75,"vendor":54,"agent":38,"lender":7,"unknown":1739},"by_city":[{"city":"Baton Rouge","n":182},{"city":"Zachary","n":84},{"city":"Denham Springs","n":59},{"city":"Prairieville","n":40},{"city":"Saint Francisville","n":36},{"city":"Lafayette","n":24},{"city":"Clinton","n":23},{"city":"Gonzales","n":21}]},"deals":{"live":{"value":6,"period":"now","source":"AIRE CRM sheet, Deals"},"by_stage":{"under_contract":3,"showing":1,"active":2,"closed":1},"under_contract":{"value":3,"period":"now","source":"AIRE CRM sheet, Deals"},"under_contract_volume":{"value":2397000.0,"period":"now","source":"AIRE CRM sheet, Deals price"},"pending_commission":{"value":null,"period":"now","source":"AIRE CRM sheet, Deals commission column, else Command opportunities commission (3 of 3 under-contract deals have no commission figure yet)"},"active_listings":{"value":3,"period":"now","source":"AIRE CRM sheet, Deals"},"active_buyers":{"value":0,"period":"now","source":"AIRE CRM sheet, Deals"},"active_volume":{"value":854900.0,"period":"now","source":"AIRE CRM sheet, Deals price"},"days_on_market_median":{"value":null,"period":"now","source":"Command opportunities list date or days on market (no list dates yet: paste the Opportunities export, or add a list date)"},"closed_90d":{"value":1,"period":"last 90 days","source":"AIRE CRM sheet, Deals"},"closed_90d_volume":{"value":425000.0,"period":"last 90 days","source":"AIRE CRM sheet, Deals price"},"next_close":{"value":"2026-11-20","period":"next","source":"AIRE CRM sheet, expected_close"},"houses":[{"side":"listing","stage":"under_contract","price":1650000.0,"close":"","dom":null,"deadlines":0,"next_deadline":""},{"side":"listing","stage":"showing","price":0,"close":"","dom":null,"deadlines":0,"next_deadline":""},{"side":"listing","stage":"active","price":510000.0,"close":"","dom":null,"deadlines":0,"next_deadline":""},{"side":"buyer","stage":"under_contract","price":232000.0,"close":"2026-10-30","dom":null,"deadlines":0,"next_deadline":""},{"side":"listing","stage":"active","price":344900.0,"close":"2026-11-29","dom":null,"deadlines":3,"next_deadline":"2026-11-04"},{"side":"buyer","stage":"closed","price":425000.0,"close":"2026-10-13","dom":null,"deadlines":0,"next_deadline":""},{"side":"buyer","stage":"under_contract","price":515000.0,"close":"2026-11-20","dom":null,"deadlines":1,"next_deadline":"2026-11-20"}]},"calendar":{"deadlines_30d":{"value":4,"period":"next 30 days","source":"AIRE CRM sheet, Deadlines tab"},"deadlines_today":{"value":1,"period":"today","source":"AIRE CRM sheet, Deadlines tab"},"deadlines":[{"kind":"Inspection Period Deadline","date":"2026-11-04","stage":"active"},{"kind":"Seller Inspection Response Deadline","date":"2026-11-05","stage":"active"},{"kind":"Act of Sale Deadline","date":"2026-11-20","stage":"under_contract"},{"kind":"Act of Sale Deadline","date":"2026-11-23","stage":"active"}]},"engine":{"tasks_open":{"value":0,"period":"now","source":"AIRE CRM sheet, Tasks"},"tasks_overdue":{"value":0,"period":"now","source":"AIRE CRM sheet, Tasks"},"tasks_done_7d":{"value":4,"period":"last 7 days","source":"AIRE CRM sheet, Tasks"}},"market":{"gbrar":{"median_price":{"value":269000,"prior":270000,"yoy":-0.4,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Median sale price"},"closed_sales":{"value":737,"prior":736,"yoy":0.1,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Closed sales"},"days_on_market":{"value":79,"prior":61,"yoy":29.5,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Days on market"},"homes_for_sale":{"value":3524,"prior":3417,"yoy":3.1,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Homes for sale"},"months_supply":{"value":4.6,"prior":4.5,"yoy":2.2,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Months of supply"},"new_listings":{"value":962,"prior":997,"yoy":-3.5,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"New listings"},"pending_sales":{"value":664,"prior":722,"yoy":-8.0,"period":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","label":"Pending sales"},"month":"2026-09","source":"Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.","source_url":"https://gbrar-public.stats.showingtime.com/docs/mmi/x/report"}},"spending":{"last_30d":{"value":0,"period":"last 30 days","source":"AIRE CRM sheet, Spending tab"},"last_7d":{"value":0,"period":"last 7 days","source":"AIRE CRM sheet, Spending tab"},"rows_30d":{"value":0,"period":"last 30 days","source":"AIRE CRM sheet, Spending tab"},"by_category_30d":[],"by_week":[{"week_of":"2026-09-10","total":0},{"week_of":"2026-09-17","total":0},{"week_of":"2026-09-24","total":0},{"week_of":"2026-10-01","total":0},{"week_of":"2026-10-08","total":0},{"week_of":"2026-10-15","total":0},{"week_of":"2026-10-22","total":0},{"week_of":"2026-10-29","total":0}],"recent":[],"columns":["amount","category","created","price","source","vendor"]},"history_days":1}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script>
 (function(){
 'use strict';
 const $=s=>document.querySelector(s);
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-let DATA=JSON.parse(document.getElementById('seed').textContent);
+let DATA=JSON.parse(document.getElementById('seed').textContent); let BRIEF=null; let HIST=[];
 const C={ink:0x14100e,ivory:0xfbf8f3,coral:0xe87757,gold:0xe9c46a,sage:0x9bbf8a,brick:0xb5563f,oak:0x4f7d4a,oak2:0x6b9a5e,lawn:0xb7d394,asphalt:0x5c5856,blue:0x8fb6c9,paper:0xf3ede3,wood:0xc9a27a,roof:0x6b5a52,trunk:0x7c5a3e,moss:0xa9bf8c,glass:0xbfe1ea};
 const HEX={office:'#e87757',street:'#d4603f',cars:'#8fb6c9',post:'#4f7d4a',square:'#e9c46a',court:'#6b625a',market:'#b5563f',site:'#c9a27a'};
+const CAT=['#d9532e','#2a78d6','#c98a00','#1baf7a','#6250d6','#e34948']; // validated 2026-11-04 against #f3ede3; every bar carries a direct label
+const BANDRAMP={hot:'#b23b1c',warm:'#d9532e',cold:'#ef8a6a','ice-cold':'#f6c4b3',unbanded:'#e6ddd3'};
 
 // ---------- helpers ----------
 const get=(o,p)=>p.split('.').reduce((a,k)=>(a==null?undefined:a[k]),o);
 const val=p=>{ const v=get(DATA,p); return v&&typeof v==='object'&&'value' in v?v.value:v; };
 const money=n=>n==null?'—':('$'+Math.round(n).toLocaleString('en-US'));
 const fmt=(v,f)=>v==null?'—':(f==='money'?money(v):(typeof v==='number'?v.toLocaleString('en-US'):String(v)));
-const plus=(p)=>{ const v=val(p); const s=get(DATA,p)&&get(DATA,p).source||''; return (v===50&&/50 means/.test(s))?'50+':fmt(v); };
+const todayISO=()=>{ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const dayLabel=iso=>{ if(!iso) return ''; const t=todayISO(); if(iso===t) return 'today'; const d=new Date(iso+'T12:00:00'); const diff=Math.round((d-new Date(t+'T12:00:00'))/86400000); if(diff===1) return 'tomorrow'; if(diff<0) return Math.abs(diff)+'d ago'; return d.toLocaleDateString([],{month:'short',day:'numeric'}); };
 
 // ---------- three ----------
-const canvas=$('#stage');
+const wrap=$('#stagewrap'), canvas=$('#stage');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,2)); renderer.setClearColor(C.paper,1);
-renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.NoToneMapping;
-const scene=new THREE.Scene(); scene.fog=new THREE.Fog(C.paper,70,140);
-const camera=new THREE.PerspectiveCamera(32,1,0.5,400);
-const cam={theta:0.78,phi:0.95,radius:92,tTheta:0.78,tPhi:0.95,tRadius:92,target:new THREE.Vector3(0,0,1),tTarget:new THREE.Vector3(0,0,1)};
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap; renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.NoToneMapping;
+const scene=new THREE.Scene(); scene.fog=new THREE.Fog(C.paper,80,150);
+const camera=new THREE.PerspectiveCamera(30,1,0.5,400);
+const cam={theta:0.78,phi:0.92,radius:92,tTheta:0.78,tPhi:0.92,tRadius:92,target:new THREE.Vector3(0,0,1),tTarget:new THREE.Vector3(0,0,1)};
 scene.add(new THREE.HemisphereLight(0xfff4e6,0x9fb08a,0.55));
-const sun=new THREE.DirectionalLight(0xfff1dc,1.0); sun.position.set(-28,46,22); sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-42; sun.shadow.camera.right=42; sun.shadow.camera.top=42; sun.shadow.camera.bottom=-42; sun.shadow.camera.near=5; sun.shadow.camera.far=130; sun.shadow.bias=-0.0006; sun.shadow.radius=4; scene.add(sun);
+const sun=new THREE.DirectionalLight(0xfff1dc,1.0); sun.position.set(-28,46,22); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-42; sun.shadow.camera.right=42; sun.shadow.camera.top=42; sun.shadow.camera.bottom=-42; sun.shadow.camera.near=5; sun.shadow.camera.far=130; sun.shadow.bias=-0.0006; sun.shadow.radius=4; scene.add(sun);
 const fill=new THREE.DirectionalLight(0xdde9ff,0.35); fill.position.set(30,20,-30); scene.add(fill);
-
 const mats={};
 function mat(color,o){ const k=color+'|'+JSON.stringify(o||{}); if(!mats[k]) mats[k]=new THREE.MeshStandardMaterial(Object.assign({color,roughness:.92,metalness:0},o||{})); return mats[k]; }
-function rbox(w,h,d,r,color,o){ // rounded box: extruded rounded rect with a bevel for soft edges
-  r=Math.min(r,w/2-0.01,d/2-0.01); const s=new THREE.Shape(); const x=-w/2,y=-d/2;
-  s.moveTo(x+r,y); s.lineTo(x+w-r,y); s.quadraticCurveTo(x+w,y,x+w,y+r); s.lineTo(x+w,y+d-r); s.quadraticCurveTo(x+w,y+d,x+w-r,y+d); s.lineTo(x+r,y+d); s.quadraticCurveTo(x,y+d,x,y+d-r); s.lineTo(x,y+r); s.quadraticCurveTo(x,y,x+r,y);
-  const g=new THREE.ExtrudeGeometry(s,{depth:Math.max(0.02,h-2*0.08),bevelEnabled:true,bevelThickness:0.08,bevelSize:0.08,bevelSegments:2,curveSegments:6}); g.rotateX(-Math.PI/2); g.translate(0,0.08,0);
-  const m=new THREE.Mesh(g,mat(color,o)); m.castShadow=true; m.receiveShadow=true; return m; }
+function rbox(w,h,d,r,color,o){ r=Math.min(r,w/2-0.01,d/2-0.01); const s=new THREE.Shape(); const x=-w/2,y=-d/2; s.moveTo(x+r,y); s.lineTo(x+w-r,y); s.quadraticCurveTo(x+w,y,x+w,y+r); s.lineTo(x+w,y+d-r); s.quadraticCurveTo(x+w,y+d,x+w-r,y+d); s.lineTo(x+r,y+d); s.quadraticCurveTo(x,y+d,x,y+d-r); s.lineTo(x,y+r); s.quadraticCurveTo(x,y,x+r,y);
+  const g=new THREE.ExtrudeGeometry(s,{depth:Math.max(0.02,h-0.16),bevelEnabled:true,bevelThickness:0.08,bevelSize:0.08,bevelSegments:2,curveSegments:6}); g.rotateX(-Math.PI/2); g.translate(0,0.08,0); const m=new THREE.Mesh(g,mat(color,o)); m.castShadow=true; m.receiveShadow=true; return m; }
 function box(w,h,d,color,o){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color,o)); m.position.y=h/2; m.castShadow=true; m.receiveShadow=true; return m; }
 function cyl(rt,rb,h,color,seg){ const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||14),mat(color)); m.position.y=h/2; m.castShadow=true; m.receiveShadow=true; return m; }
 function cone(r,h,color,seg){ const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,seg||4),mat(color)); m.position.y=h/2; m.castShadow=true; m.receiveShadow=true; return m; }
 function sph(r,color){ const m=new THREE.Mesh(new THREE.SphereGeometry(r,14,12),mat(color)); m.castShadow=true; return m; }
 function grp(x,y,z){ const g=new THREE.Group(); g.position.set(x,y||0,z); return g; }
-function textTex(lines,w,h,opts){ opts=opts||{}; const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); g.fillStyle=opts.bg||'#fbf8f3'; g.fillRect(0,0,w,h); if(opts.border){ g.strokeStyle=opts.border; g.lineWidth=w*0.02; g.strokeRect(w*0.02,w*0.02,w-w*0.04,h-w*0.04); }
-  let y=opts.top||h*0.22; lines.forEach(l=>{ g.fillStyle=l.color||'#14100e'; g.font=(l.weight||'600')+' '+(l.size||h*0.18)+'px '+(l.serif?"'Instrument Serif',Georgia,serif":"Nunito,'Segoe UI',sans-serif"); g.textAlign=l.align||'center'; g.textBaseline='middle'; g.fillText(l.text,l.x!=null?l.x:w/2,y); y+=(l.gap!=null?l.gap:(l.size||h*0.18)*1.35); });
-  const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t; }
+function textTex(lines,w,h,opts){ opts=opts||{}; const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); g.fillStyle=opts.bg||'#fbf8f3'; g.fillRect(0,0,w,h); let y=opts.top||h*0.22; lines.forEach(l=>{ g.fillStyle=l.color||'#14100e'; g.font=(l.weight||'600')+' '+(l.size||h*0.18)+'px '+(l.serif?"'Instrument Serif',Georgia,serif":"Nunito,'Segoe UI',sans-serif"); g.textAlign=l.align||'center'; g.textBaseline='middle'; g.fillText(l.text,l.x!=null?l.x:w/2,y); y+=(l.gap!=null?l.gap:(l.size||h*0.18)*1.35); }); const t=new THREE.CanvasTexture(c); t.encoding=THREE.sRGBEncoding; t.anisotropy=4; return t; }
 function signPlane(tex,w,h){ const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:tex,roughness:.8,side:THREE.DoubleSide})); m.castShadow=true; return m; }
 
-// ---------- ground, roads ----------
 const world=new THREE.Group(); scene.add(world);
-(function(){
-  const table=rbox(64,1.2,48,3,0xe3d7c2); table.position.y=-1.3; table.receiveShadow=true; world.add(table);
-  const lawn=rbox(62,0.5,46,2.6,C.lawn); lawn.position.y=-0.3; world.add(lawn);
-  // ring road: rounded rectangle, drawn as a flat extruded ring
+(function(){ const table=rbox(64,1.2,48,3,0xe3d7c2); table.position.y=-1.3; world.add(table); const lawn=rbox(62,0.5,46,2.6,C.lawn); lawn.position.y=-0.3; world.add(lawn);
   const outer=new THREE.Shape(); const rr=(s,x,y,w,h,r)=>{ s.moveTo(x+r,y); s.lineTo(x+w-r,y); s.quadraticCurveTo(x+w,y,x+w,y+r); s.lineTo(x+w,y+h-r); s.quadraticCurveTo(x+w,y+h,x+w-r,y+h); s.lineTo(x+r,y+h); s.quadraticCurveTo(x,y+h,x,y+h-r); s.lineTo(x,y+r); s.quadraticCurveTo(x,y,x+r,y); };
   rr(outer,-25,-18.5,50,37,7); const hole=new THREE.Path(); rr(hole,-21.5,-15,43,30,5); outer.holes.push(hole);
   const road=new THREE.Mesh(new THREE.ShapeGeometry(outer,12),mat(C.asphalt,{roughness:.98})); road.rotation.x=-Math.PI/2; road.position.y=0.02; road.receiveShadow=true; world.add(road);
-  // main street north-south through the square
   const ms=new THREE.Mesh(new THREE.PlaneGeometry(3.2,30),mat(C.asphalt,{roughness:.98})); ms.rotation.x=-Math.PI/2; ms.position.set(0,0.021,0); ms.receiveShadow=true; world.add(ms);
-  // dashes
   const dash=mat(0xf3ede3); for(let i=-13;i<=13;i+=2.4){ const d=new THREE.Mesh(new THREE.PlaneGeometry(0.16,1.1),dash); d.rotation.x=-Math.PI/2; d.position.set(0,0.03,i); world.add(d); }
-  // square plaza
-  const plaza=new THREE.Mesh(new THREE.CircleGeometry(6.2,40),mat(0xe8dcc6)); plaza.rotation.x=-Math.PI/2; plaza.position.y=0.025; plaza.receiveShadow=true; world.add(plaza);
-})();
+  const plaza=new THREE.Mesh(new THREE.CircleGeometry(6.2,40),mat(0xe8dcc6)); plaza.rotation.x=-Math.PI/2; plaza.position.y=0.025; plaza.receiveShadow=true; world.add(plaza); })();
 const ROAD=new THREE.CatmullRomCurve3([[-23.2,-16.7],[0,-16.7],[23.2,-16.7],[23.2,0],[23.2,16.7],[0,16.7],[-23.2,16.7],[-23.2,0]].map(p=>new THREE.Vector3(p[0],0.12,p[1])),true,'catmullrom',0.6);
+function tree(x,z,s){ s=s||1; const g=grp(x,0,z); g.add(cyl(0.22*s,0.3*s,1.6*s,C.trunk,8)); const c1=sph(1.5*s,C.oak); c1.position.y=2.3*s; g.add(c1); const c2=sph(1.1*s,C.oak2); c2.position.set(0.9*s,2.9*s,0.3*s); g.add(c2); const c3=sph(1.0*s,C.oak2); c3.position.set(-0.8*s,2.7*s,-0.5*s); g.add(c3); world.add(g); return g; }
+[[-20,-13],[-12,-13.5],[12,-13.5],[20,-12.5],[-20,13.5],[20,13.5],[-9,2],[9,2],[-14,8],[14,8],[-26,-8],[26,8],[27,-10],[-27,10]].forEach((p,i)=>tree(p[0],p[1],0.85+((i*37)%10)/25));
+function fence(x,z,len){ const g=grp(x,0,z); for(let i=0;i<len;i+=0.6){ const p=box(0.12,0.75,0.08,C.ivory); p.position.x=i-len/2; g.add(p); } const rail=box(len,0.08,0.06,C.ivory); rail.position.y=0.5; g.add(rail); world.add(g); }
+(function(){ const g=grp(-26,0,-16); for(let i=0;i<4;i++){ const l=cyl(0.09,0.12,6.5,C.ink,6); l.position.set(Math.cos(i*Math.PI/2+Math.PI/4)*0.9,0,Math.sin(i*Math.PI/2+Math.PI/4)*0.9); g.add(l);} const tank=cyl(1.3,1.3,2.2,C.ivory,18); tank.position.y=7.7; g.add(tank); const cap=cone(1.45,0.9,C.coral,18); cap.position.y=9.25; g.add(cap); const lab=signPlane(textTex([{text:'ZACHARY',size:40,weight:'700'}],256,96),2.4,0.9); lab.position.set(0,7.7,1.32); g.add(lab); world.add(g); })();
 
-// ---------- scenery ----------
-function tree(x,z,s){ s=s||1; const g=grp(x,0,z); const t=cyl(0.22*s,0.3*s,1.6*s,C.trunk,8); g.add(t); const c1=sph(1.5*s,C.oak); c1.position.y=2.3*s; g.add(c1); const c2=sph(1.1*s,C.oak2); c2.position.set(0.9*s,2.9*s,0.3*s); g.add(c2); const c3=sph(1.0*s,C.oak2); c3.position.set(-0.8*s,2.7*s,-0.5*s); g.add(c3); g.userData.sway=Math.random()*6; world.add(g); return g; }
-[[-20,-13],[-12,-13.5],[12,-13.5],[20,-12.5],[-20,13.5],[20,13.5],[-9,2],[9,2],[-14,8],[14,8],[-26,-8],[26,8],[27,-10],[-27,10]].forEach(p=>tree(p[0],p[1],0.8+Math.random()*0.5));
-function fence(x,z,len,rotY){ const g=grp(x,0,z); g.rotation.y=rotY||0; for(let i=0;i<len;i+=0.6){ const p=box(0.12,0.75,0.08,C.ivory); p.position.x=i-len/2; g.add(p); } const rail=box(len,0.08,0.06,C.ivory); rail.position.y=0.5; g.add(rail); world.add(g); }
-// water tower
-(function(){ const g=grp(-26,0,-16); for(let i=0;i<4;i++){ const l=cyl(0.09,0.12,6.5,C.ink,6); l.position.set(Math.cos(i*Math.PI/2+Math.PI/4)*0.9,0,Math.sin(i*Math.PI/2+Math.PI/4)*0.9); l.rotation.z=(i<2?-1:1)*0.06; g.add(l);} const tank=cyl(1.3,1.3,2.2,C.ivory,18); tank.position.y=6.6+1.1; g.add(tank); const cap=cone(1.45,0.9,C.coral,18); cap.position.y=8.8+0.45; g.add(cap); const lab=signPlane(textTex([{text:'ZACHARY',size:40,color:'#14100e',weight:'700'}],256,96,{bg:'#fbf8f3'}),2.4,0.9); lab.position.set(0,7.7,1.32); g.add(lab); world.add(g); })();
-// birds
-const birds=[]; for(let i=0;i<3;i++){ const b=grp(0,9+i,0); const w1=box(0.5,0.05,0.12,C.ink), w2=box(0.5,0.05,0.12,C.ink); w1.position.x=-0.25; w2.position.x=0.25; b.add(w1,w2); b.userData={w1,w2,t:i*2.1,r:14+i*4}; world.add(b); birds.push(b); }
-
-// ---------- clickable objects ----------
 const OBJ={}; const pickables=[];
 function register(key,group,label,anchorY){ group.userData.key=key; group.traverse(o=>{ if(o.isMesh){ o.userData.key=key; pickables.push(o);} }); OBJ[key]={group,label,anchorY:anchorY||4}; world.add(group); }
-
-// 1 office
-(function(){ const g=grp(-13.5,0,-6); const b=rbox(9,5.4,6.5,0.3,C.brick); g.add(b);
-  const base=rbox(9.6,0.5,7.1,0.3,C.ivory); g.add(base);
-  const roof=rbox(9.4,0.5,6.9,0.2,C.ivory); roof.position.y=5.4; g.add(roof);
-  for(let f=0;f<2;f++) for(let i=0;i<4;i++){ const w=box(1.1,1.2,0.1,C.glass,{roughness:.3,metalness:.1}); w.position.set(-3.1+i*2.05,1.4+f*2.4,3.3); g.add(w); const w2=w.clone(); w2.position.z=-3.3; g.add(w2);}
-  const door=box(1.4,2.2,0.12,C.ink); door.position.set(0,0,3.32); g.add(door);
-  const sign=signPlane(textTex([{text:'KELLER WILLIAMS',size:42,weight:'700',color:'#fbf8f3'},{text:'FIRST CHOICE',size:42,weight:'700',color:'#fbf8f3',gap:0},{text:'',size:10},{text:'AIRE',size:34,serif:true,color:'#14100e'}],512,256,{bg:'#e87757'}),5.2,2.6); sign.position.set(0,5.9+1.3,0.2); g.add(sign); const back=sign.clone(); back.rotation.y=Math.PI; back.position.z=-0.2; g.add(back);
-  const post=box(0.18,1.4,0.18,C.ink); post.position.set(0,5.6,0); g.add(post);
-  const pole=cyl(0.06,0.06,6,C.ivory,8); pole.position.set(5.6,0,2.6); g.add(pole); const flag=box(1.6,1,0.04,C.coral); flag.position.set(6.4,5.4,2.6); g.add(flag); g.userData.flag=flag;
-  register('office',g,'KW First Choice',8.2); })();
-
-// 2 street of houses (built from data)
-const street=grp(0,0,13.2); register('street',street,'The street',3.6);
-const houses=[]; const SIGN={active:{bg:'#e87757',txt:'FOR SALE'},showing:{bg:'#e87757',txt:'SHOWING'},under_contract:{bg:'#e9c46a',txt:'UNDER CONTRACT'},pending:{bg:'#e9c46a',txt:'PENDING'},closed:{bg:'#9bbf8a',txt:'SOLD'},lead:{bg:'#fbf8f3',txt:'COMING SOON'},lost:{bg:'#a9a29a',txt:'WITHDRAWN'}};
-const SIDING=[0xf2e6d0,0xdfe7ea,0xf4d9c8,0xe6eedc,0xf7efd9,0xe2d7ea,0xfbf8f3];
-function buildStreet(){
-  houses.forEach(h=>street.remove(h.g)); houses.length=0; pickables.splice(0,pickables.length,...pickables.filter(m=>m.userData.key!=='street'));
+(function(){ const g=grp(-13.5,0,-6); g.add(rbox(9,5.4,6.5,0.3,C.brick)); g.add(rbox(9.6,0.5,7.1,0.3,C.ivory)); const roof=rbox(9.4,0.5,6.9,0.2,C.ivory); roof.position.y=5.4; g.add(roof);
+  for(let f=0;f<2;f++) for(let i=0;i<4;i++){ const w=box(1.1,1.2,0.1,C.glass,{roughness:.3,metalness:.1}); w.position.set(-3.1+i*2.05,1.4+f*2.4,3.3); g.add(w); const w2=w.clone(); w2.position.z=-3.3; g.add(w2);} const door=box(1.4,2.2,0.12,C.ink); door.position.set(0,0,3.32); g.add(door);
+  const sign=signPlane(textTex([{text:'KELLER WILLIAMS',size:42,weight:'700',color:'#fbf8f3'},{text:'FIRST CHOICE',size:42,weight:'700',color:'#fbf8f3',gap:0},{text:'',size:10},{text:'AIRE',size:34,serif:true,color:'#14100e'}],512,256,{bg:'#e87757'}),5.2,2.6); sign.position.set(0,7.2,0.2); g.add(sign); const back=sign.clone(); back.rotation.y=Math.PI; back.position.z=-0.2; g.add(back); const post=box(0.18,1.4,0.18,C.ink); post.position.set(0,5.6,0); g.add(post);
+  const pole=cyl(0.06,0.06,6,C.ivory,8); pole.position.set(5.6,0,2.6); g.add(pole); const flag=box(1.6,1,0.04,C.coral); flag.position.set(6.4,5.4,2.6); g.add(flag); g.userData.flag=flag; register('office',g,'KW First Choice',8.2); })();
+const street=grp(0,0,13.2); register('street',street,'The street',3.6); const houses=[];
+const SIGN={active:{bg:'#e87757',txt:'FOR SALE'},showing:{bg:'#e87757',txt:'SHOWING'},under_contract:{bg:'#e9c46a',txt:'UNDER CONTRACT'},pending:{bg:'#e9c46a',txt:'PENDING'},closed:{bg:'#9bbf8a',txt:'SOLD'},lead:{bg:'#fbf8f3',txt:'COMING SOON'},lost:{bg:'#a9a29a',txt:'WITHDRAWN'}};
+const SIDING=[0xf2e6d0,0xdfe7ea,0xf4d9c8,0xe6eedc,0xf7efd9,0xe2d7ea,0xfbf8f3]; let fenceBuilt=false;
+function buildStreet(){ houses.forEach(h=>street.remove(h.g)); houses.length=0; pickables.splice(0,pickables.length,...pickables.filter(m=>m.userData.key!=='street'));
   const hs=(DATA.deals&&DATA.deals.houses)||[]; const n=Math.max(1,hs.length); const span=Math.min(34,n*4.8); const step=n>1?span/(n-1):0;
-  hs.forEach((h,i)=>{ const g=grp(-span/2+i*step,0,0); const w=3.2,d=3; const body=rbox(w,2.3,d,0.18,SIDING[i%SIDING.length]); g.add(body);
-    const roof=cone(2.45,1.5,C.roof,4); roof.rotation.y=Math.PI/4; roof.position.y=2.3+0.75; roof.scale.set(1,1,0.95); g.add(roof);
-    const door=box(0.6,1.1,0.08,C.ink); door.position.set(0.5,0,d/2+0.02); g.add(door); const win=box(0.7,0.6,0.08,C.glass,{roughness:.3}); win.position.set(-0.7,1.1,d/2+0.02); g.add(win);
-    const chim=box(0.4,0.9,0.4,C.brick); chim.position.set(0.9,2.6,-0.5); g.add(chim);
+  hs.forEach((h,i)=>{ const g=grp(-span/2+i*step,0,0); const d=3; g.add(rbox(3.2,2.3,d,0.18,SIDING[i%SIDING.length])); const roof=cone(2.45,1.5,C.roof,4); roof.rotation.y=Math.PI/4; roof.position.y=3.05; roof.scale.set(1,1,0.95); g.add(roof);
+    const door=box(0.6,1.1,0.08,C.ink); door.position.set(0.5,0,d/2+0.02); g.add(door); const win=box(0.7,0.6,0.08,C.glass,{roughness:.3}); win.position.set(-0.7,1.1,d/2+0.02); g.add(win); const chim=box(0.4,0.9,0.4,C.brick); chim.position.set(0.9,2.6,-0.5); g.add(chim);
     const st=SIGN[h.stage]||SIGN.lead; const post=box(0.08,1.3,0.08,C.ink); post.position.set(-1.1,0,d/2+1.2); g.add(post);
-    const sg=signPlane(textTex([{text:st.txt,size:34,weight:'700',color:st.bg==='#fbf8f3'?'#14100e':'#fbf8f3'},{text:h.side==='listing'?'Listing':'Buyer',size:26,color:st.bg==='#fbf8f3'?'#6b625a':'#fbf8f3',gap:0}],320,160,{bg:st.bg}),1.3,0.65); sg.position.set(-1.1,1.25,d/2+1.2); g.add(sg); g.userData.sign=sg; g.userData.swing=Math.random()*5;
+    const dark=st.bg==='#fbf8f3'; const sg=signPlane(textTex([{text:st.txt,size:34,weight:'700',color:dark?'#14100e':'#fbf8f3'},{text:h.side==='listing'?'Listing':'Buyer',size:26,color:dark?'#6b625a':'#fbf8f3',gap:0}],320,160,{bg:st.bg}),1.3,0.65); sg.position.set(-1.1,1.25,d/2+1.2); g.add(sg); g.userData.sign=sg; g.userData.swing=(i*1.7)%5;
     if(h.stage==='closed'){ const tr=grp(1.6,0,d/2+1.9); const cab=box(0.9,0.8,0.7,C.ivory); cab.position.x=-0.7; tr.add(cab); const bx=box(1.5,1.1,0.8,C.sage); bx.position.x=0.5; tr.add(bx); [[-0.9,0.3],[0.8,0.3],[-0.9,-0.3],[0.8,-0.3]].forEach(p=>{ const wh=cyl(0.18,0.18,0.12,C.ink,10); wh.rotation.x=Math.PI/2; wh.position.set(p[0],0.18,p[1]); tr.add(wh); }); g.add(tr); }
-    g.traverse(o=>{ if(o.isMesh){ o.userData.key='street'; o.userData.house=i; pickables.push(o);} });
-    street.add(g); houses.push({g,i}); });
-  fence(0,-2.4,span+4,0);
-}
+    g.traverse(o=>{ if(o.isMesh){ o.userData.key='street'; o.userData.house=i; pickables.push(o);} }); street.add(g); houses.push({g,i}); });
+  if(!fenceBuilt){ fence(0,10.8,38); fenceBuilt=true; } }
 buildStreet();
-
-// 3 showing cars
 const carsG=grp(0,0,0); register('cars',carsG,'Lead traffic',2.6); const cars=[]; const CARC=[C.ivory,C.coral,C.ink,C.blue,C.gold];
 function buildCars(){ cars.forEach(c=>carsG.remove(c.g)); cars.length=0; pickables.splice(0,pickables.length,...pickables.filter(m=>m.userData.key!=='cars'));
-  const n=Math.min(8,Math.max(1,val('people.new_leads_7d')||0)); for(let i=0;i<n;i++){ const g=grp(0,0,0); const col=CARC[i%CARC.length]; const body=rbox(1.9,0.6,0.95,0.2,col); body.position.y=0.3; g.add(body); const cab=rbox(1.0,0.5,0.85,0.18,col===C.ink?C.ivory:C.glass,{roughness:.4}); cab.position.set(-0.1,0.9,0); g.add(cab); [[-0.6,0.5],[0.6,0.5],[-0.6,-0.5],[0.6,-0.5]].forEach(p=>{ const w=cyl(0.2,0.2,0.16,C.ink,10); w.rotation.x=Math.PI/2; w.position.set(p[0],0.2,p[1]); g.add(w); }); g.traverse(o=>{ if(o.isMesh){ o.userData.key='cars'; pickables.push(o);} }); carsG.add(g); cars.push({g,t:i/n,v:(0.016+Math.random()*0.012)*(reduced?0:1)}); } }
+  const n=Math.min(8,Math.max(1,val('people.new_leads_7d')||0)); for(let i=0;i<n;i++){ const g=grp(0,0,0); const col=CARC[i%CARC.length]; const body=rbox(1.9,0.6,0.95,0.2,col); body.position.y=0.3; g.add(body); const cab=rbox(1.0,0.5,0.85,0.18,col===C.ink?C.ivory:C.glass,{roughness:.4}); cab.position.set(-0.1,0.9,0); g.add(cab); [[-0.6,0.5],[0.6,0.5],[-0.6,-0.5],[0.6,-0.5]].forEach(p=>{ const w=cyl(0.2,0.2,0.16,C.ink,10); w.rotation.x=Math.PI/2; w.position.set(p[0],0.2,p[1]); g.add(w); }); g.traverse(o=>{ if(o.isMesh){ o.userData.key='cars'; pickables.push(o);} }); carsG.add(g); cars.push({g,t:i/n,v:(0.010+((i*7)%5)*0.0015)*(reduced?0:1)}); } }
 buildCars();
-
-// 4 post office
-(function(){ const g=grp(13.5,0,-6); const b=rbox(6,3.4,5,0.25,C.ivory); g.add(b); const roof=cone(4.5,1.6,C.blue,4); roof.rotation.y=Math.PI/4; roof.position.y=3.4+0.8; roof.scale.set(1,1,0.85); g.add(roof); const door=box(1.1,2,0.1,C.ink); door.position.set(0,0,2.55); g.add(door); const sign=signPlane(textTex([{text:'POST OFFICE',size:40,weight:'700'}],384,96),3,0.75); sign.position.set(0,2.6,2.56); g.add(sign);
-  const mb=box(0.5,0.9,0.5,C.blue); mb.position.set(-3.4,0,2.4); g.add(mb); const mbTop=rbox(0.52,0.3,0.52,0.2,C.blue); mbTop.position.set(-3.4,0.9,2.4); g.add(mbTop); const flag=box(0.06,0.5,0.25,C.coral); flag.position.set(-3.12,0.9,2.4); g.add(flag); g.userData.mflag=flag;
-  const truck=grp(0,0,4.6); const cab=box(1,0.9,0.9,C.ivory); cab.position.x=-0.9; truck.add(cab); const bx=box(1.6,1.2,0.95,C.ivory); bx.position.x=0.5; truck.add(bx); const stripe=box(1.62,0.18,0.97,C.coral); stripe.position.set(0.5,0.75,0); truck.add(stripe); [[-1.1,0.35],[0.9,0.35],[-1.1,-0.35],[0.9,-0.35]].forEach(p=>{ const w=cyl(0.2,0.2,0.14,C.ink,10); w.rotation.x=Math.PI/2; w.position.set(p[0],0.2,p[1]); truck.add(w); }); g.add(truck); g.userData.truck=truck;
-  register('post',g,'Post office',6.2); })();
-
-// 5 town square: fountain, live oak, walkers
+(function(){ const g=grp(13.5,0,-6); g.add(rbox(6,3.4,5,0.25,C.ivory)); const roof=cone(4.5,1.6,C.blue,4); roof.rotation.y=Math.PI/4; roof.position.y=4.2; roof.scale.set(1,1,0.85); g.add(roof); const door=box(1.1,2,0.1,C.ink); door.position.set(0,0,2.55); g.add(door); const sign=signPlane(textTex([{text:'POST OFFICE',size:40,weight:'700'}],384,96),3,0.75); sign.position.set(0,2.6,2.56); g.add(sign);
+  const mb=box(0.5,0.9,0.5,C.blue); mb.position.set(-3.4,0,2.4); g.add(mb); const flag=box(0.06,0.5,0.25,C.coral); flag.position.set(-3.12,0.9,2.4); g.add(flag); g.userData.mflag=flag;
+  const truck=grp(0,0,4.6); const cab=box(1,0.9,0.9,C.ivory); cab.position.x=-0.9; truck.add(cab); const bx=box(1.6,1.2,0.95,C.ivory); bx.position.x=0.5; truck.add(bx); const stripe=box(1.62,0.18,0.97,C.coral); stripe.position.set(0.5,0.75,0); truck.add(stripe); [[-1.1,0.35],[0.9,0.35],[-1.1,-0.35],[0.9,-0.35]].forEach(p=>{ const w=cyl(0.2,0.2,0.14,C.ink,10); w.rotation.x=Math.PI/2; w.position.set(p[0],0.2,p[1]); truck.add(w); }); g.add(truck); g.userData.truck=truck; register('post',g,'Post office',6.2); })();
 const square=grp(0,0,0); register('square',square,'Town square',5.4);
-(function(){ const basin=cyl(2.3,2.5,0.5,C.ivory,24); square.add(basin); const water=cyl(2.05,2.05,0.42,C.blue,24); water.position.y=0.15; square.add(water); const col=cyl(0.25,0.35,1.4,C.ivory,10); col.position.y=0.5; square.add(col); const bowl=cyl(0.9,0.6,0.25,C.ivory,16); bowl.position.y=1.9; square.add(bowl); const jet=sph(0.3,C.blue); jet.position.y=2.4; square.add(jet); square.userData.jet=jet;
-  const oak=grp(3.8,0,-2.6); const t=cyl(0.5,0.7,2.4,C.trunk,10); oak.add(t); [[0,3.6,0,2.4],[1.8,3.9,0.6,1.7],[-1.7,3.5,-0.4,1.6],[0.4,4.6,-1.2,1.4]].forEach(p=>{ const s=sph(p[3],C.oak); s.position.set(p[0],p[1],p[2]); oak.add(s); }); for(let i=0;i<6;i++){ const m=box(0.08,1.2+Math.random()*0.8,0.08,C.moss); m.position.set(-1.6+i*0.7,2.4,0.8-Math.random()); m.userData.moss=true; oak.add(m);} square.add(oak); square.userData.oak=oak;
-  [[-4.5,2.6],[4.5,2.8]].forEach(p=>{ const b=box(1.6,0.12,0.5,C.wood); b.position.set(p[0],0.55,p[1]); square.add(b); [[-0.6],[0.6]].forEach(q=>{ const l=box(0.1,0.5,0.4,C.ink); l.position.set(p[0]+q[0],0,p[1]); square.add(l);}); });
-})();
+(function(){ square.add(cyl(2.3,2.5,0.5,C.ivory,24)); const water=cyl(2.05,2.05,0.42,C.blue,24); water.position.y=0.15; square.add(water); const col=cyl(0.25,0.35,1.4,C.ivory,10); col.position.y=0.5; square.add(col); const bowl=cyl(0.9,0.6,0.25,C.ivory,16); bowl.position.y=1.9; square.add(bowl); const jet=sph(0.3,C.blue); jet.position.y=2.4; square.add(jet); square.userData.jet=jet;
+  const oak=grp(3.8,0,-2.6); oak.add(cyl(0.5,0.7,2.4,C.trunk,10)); [[0,3.6,0,2.4],[1.8,3.9,0.6,1.7],[-1.7,3.5,-0.4,1.6],[0.4,4.6,-1.2,1.4]].forEach(p=>{ const s=sph(p[3],C.oak); s.position.set(p[0],p[1],p[2]); oak.add(s); }); for(let i=0;i<6;i++){ const m=box(0.08,1.2+(i%3)*0.3,0.08,C.moss); m.position.set(-1.6+i*0.7,2.4,0.8-(i%2)*0.6); m.userData.moss=true; oak.add(m);} square.add(oak); square.userData.oak=oak;
+  [[-4.5,2.6],[4.5,2.8]].forEach(p=>{ const b=box(1.6,0.12,0.5,C.wood); b.position.set(p[0],0.55,p[1]); square.add(b); [-0.6,0.6].forEach(q=>{ const l=box(0.1,0.5,0.4,C.ink); l.position.set(p[0]+q,0,p[1]); square.add(l);}); }); })();
 const walkers=[]; const WCOL=[C.coral,C.ink,C.blue,C.gold,C.sage,C.brick];
 function buildWalkers(){ walkers.forEach(w=>square.remove(w.g)); walkers.length=0; pickables.splice(0,pickables.length,...pickables.filter(m=>!m.userData.walker));
-  const n=Math.min(12,2+Math.floor((val('people.hot')||0)/15)); for(let i=0;i<n;i++){ const g=grp(0,0,0); const body=rbox(0.5,0.9,0.36,0.18,WCOL[i%WCOL.length]); body.position.y=0.45; g.add(body); const head=sph(0.22,0xf1cfb3); head.position.y=1.2; g.add(head); const legs=box(0.38,0.45,0.3,C.ink); g.add(legs); g.traverse(o=>{ if(o.isMesh){ o.userData.key='square'; o.userData.walker=true; pickables.push(o);} }); square.add(g);
-    const from=new THREE.Vector3(-3.5+Math.random()*7,0,-2+Math.random()*6), to=new THREE.Vector3(-9.5,0,-2.3+Math.random()*1.4); walkers.push({g,from,to,t:Math.random(),v:(0.08+Math.random()*0.06)*(reduced?0:1),dir:1}); } }
+  const n=Math.min(10,2+Math.floor((val('people.hot')||0)/15)); for(let i=0;i<n;i++){ const g=grp(0,0,0); const body=rbox(0.5,0.9,0.36,0.18,WCOL[i%WCOL.length]); body.position.y=0.45; g.add(body); const head=sph(0.22,0xf1cfb3); head.position.y=1.2; g.add(head); g.add(box(0.38,0.45,0.3,C.ink)); g.traverse(o=>{ if(o.isMesh){ o.userData.key='square'; o.userData.walker=true; pickables.push(o);} }); square.add(g);
+    const from=new THREE.Vector3(-3.5+((i*53)%70)/10,0,-2+((i*31)%60)/10), to=new THREE.Vector3(-9.5,0,-2.3+((i*17)%14)/10); walkers.push({g,from,to,t:((i*29)%100)/100,v:(0.05+((i*11)%4)*0.01)*(reduced?0:1),dir:1}); } }
 buildWalkers();
-
-// 6 courthouse with clock
 let clockHands;
-(function(){ const g=grp(0,0,-13.5); const b=rbox(12,4.2,6,0.25,C.ivory); g.add(b); const steps=rbox(6,0.6,2.2,0.2,0xe8dcc6); steps.position.z=3.6; g.add(steps); for(let i=0;i<5;i++){ const c=cyl(0.22,0.26,4.2,C.ivory,10); c.position.set(-4+i*2,0,3.2); g.add(c);} const ped=rbox(12.6,0.6,6.6,0.2,C.ivory); ped.position.y=4.2; g.add(ped);
-  const tower=rbox(3,5,3,0.15,C.ivory); tower.position.y=4.8; g.add(tower); const roofc=cone(2.4,2.2,C.roof,4); roofc.rotation.y=Math.PI/4; roofc.position.y=9.8+1.1; g.add(roofc);
+(function(){ const g=grp(0,0,-13.5); g.add(rbox(12,4.2,6,0.25,C.ivory)); const steps=rbox(6,0.6,2.2,0.2,0xe8dcc6); steps.position.z=3.6; g.add(steps); for(let i=0;i<5;i++){ const c=cyl(0.22,0.26,4.2,C.ivory,10); c.position.set(-4+i*2,0,3.2); g.add(c);} const ped=rbox(12.6,0.6,6.6,0.2,C.ivory); ped.position.y=4.2; g.add(ped);
+  const tower=rbox(3,5,3,0.15,C.ivory); tower.position.y=4.8; g.add(tower); const roofc=cone(2.4,2.2,C.roof,4); roofc.rotation.y=Math.PI/4; roofc.position.y=10.9; g.add(roofc);
   const face=new THREE.Mesh(new THREE.CircleGeometry(1,32),mat(C.ivory)); face.position.set(0,8,1.52); g.add(face); const rim=new THREE.Mesh(new THREE.RingGeometry(1,1.12,32),mat(C.ink)); rim.position.set(0,8,1.525); g.add(rim);
-  const hh=box(0.12,0.6,0.04,C.ink); hh.position.set(0,0,0); hh.geometry.translate(0,0.3,0); const mh=box(0.08,0.85,0.04,C.ink); mh.geometry.translate(0,0.42,0); const pivot=grp(0,8,1.56); pivot.add(hh,mh); g.add(pivot); clockHands={h:hh,m:mh};
-  const lamp=sph(0.35,C.coral); lamp.position.set(0,12.2,0); g.add(lamp); g.userData.lamp=lamp; lamp.material=new THREE.MeshStandardMaterial({color:C.coral,emissive:C.coral,emissiveIntensity:0.2,roughness:.6});
-  register('court',g,'Courthouse',13); })();
-
-// 7 market billboard
+  const hh=box(0.12,0.6,0.04,C.ink); hh.geometry.translate(0,0.3,0); const mh=box(0.08,0.85,0.04,C.ink); mh.geometry.translate(0,0.42,0); const pivot=grp(0,8,1.56); pivot.add(hh,mh); g.add(pivot); clockHands={h:hh,m:mh};
+  const lamp=new THREE.Mesh(new THREE.SphereGeometry(0.35,14,12),new THREE.MeshStandardMaterial({color:C.coral,emissive:C.coral,emissiveIntensity:0.15,roughness:.6})); lamp.position.set(0,12.2,0); g.add(lamp); g.userData.lamp=lamp; register('court',g,'Courthouse',13); })();
 let board;
-(function(){ const g=grp(17,0,10.5); g.rotation.y=-0.55; [[-3.2],[3.2]].forEach(p=>{ const post=box(0.25,4.2,0.25,C.ink); post.position.x=p[0]; g.add(post); }); board=signPlane(textTex([{text:'loading',size:40}],768,384),8,4); board.position.set(0,6.1,0); g.add(board); const frame=box(8.3,4.3,0.12,C.ink); frame.position.set(0,6.1-2.15,-0.08); g.add(frame); const back=signPlane(textTex([{text:'calebjackson.org',size:52,serif:true}],768,384,{bg:'#e87757'}),8,4); back.rotation.y=Math.PI; back.position.set(0,6.1,-0.17); g.add(back);
-  register('market',g,'Market billboard',8.8); })();
-function paintBoard(){ const gb=get(DATA,'market.gbrar'); const lines=[]; if(gb){ lines.push({text:'BATON ROUGE MARKET · '+(gb.month||''),size:30,color:'#e87757',weight:'700',gap:56}); const row=(a,b)=>{ lines.push({text:a,size:40,serif:true,align:'left',x:40,gap:0}); lines.push({text:b,size:40,serif:true,align:'right',x:728,gap:60}); };
-    row('Median price',money(gb.median_price.value)); row('Days on market',String(gb.days_on_market.value)); row('Months of supply',String(gb.months_supply.value)); row('New listings',String(gb.new_listings.value)); lines.push({text:'GBRAR MLS Monthly Indicators',size:22,color:'#6b625a',gap:0}); }
-  else lines.push({text:'Market report not synced',size:40});
-  board.material.map=textTex(lines,768,384,{bg:'#fbf8f3',top:44}); board.material.needsUpdate=true; }
-
-// 8 construction site with crane
+(function(){ const g=grp(17,0,10.5); g.rotation.y=-0.55; [-3.2,3.2].forEach(x=>{ const post=box(0.25,4.2,0.25,C.ink); post.position.x=x; g.add(post); }); board=signPlane(textTex([{text:'loading',size:40}],768,384),8,4); board.position.set(0,6.1,0); g.add(board); const frame=box(8.3,4.3,0.12,C.ink); frame.position.set(0,3.95,-0.08); g.add(frame); const back=signPlane(textTex([{text:'calebjackson.org',size:52,serif:true}],768,384,{bg:'#e87757'}),8,4); back.rotation.y=Math.PI; back.position.set(0,6.1,-0.17); g.add(back); register('market',g,'Market billboard',8.8); })();
+function paintBoard(){ const gb=get(DATA,'market.gbrar'); const lines=[]; if(gb){ lines.push({text:'BATON ROUGE MARKET · '+(gb.month||''),size:30,color:'#e87757',weight:'700',gap:56}); const row=(a,b)=>{ lines.push({text:a,size:40,serif:true,align:'left',x:40,gap:0}); lines.push({text:b,size:40,serif:true,align:'right',x:728,gap:60}); }; row('Median price',money(gb.median_price.value)); row('Days on market',String(gb.days_on_market.value)); row('Months of supply',String(gb.months_supply.value)); row('New listings',String(gb.new_listings.value)); lines.push({text:'GBRAR MLS Monthly Indicators',size:22,color:'#6b625a',gap:0}); } else lines.push({text:'Market report not synced',size:40}); board.material.map=textTex(lines,768,384,{bg:'#fbf8f3',top:44}); board.material.needsUpdate=true; }
 let crane;
-(function(){ const g=grp(-17,0,10.5); const pad=rbox(9,0.3,7,0.3,0xd9c9a8); g.add(pad); const frame=grp(1.5,0.3,0.5); for(let i=0;i<4;i++) for(let j=0;j<3;j++){ const s=box(0.12,2.4,0.12,C.wood); s.position.set(-1.5+i,0,-1+j); frame.add(s);} const top=box(3.3,0.14,2.3,C.wood); top.position.y=2.4; frame.add(top); g.add(frame);
-  for(let i=0;i<3;i++){ const l=box(2.2,0.25,0.25,C.wood); l.position.set(-3,0.3+i*0.26,2+(i%2)*0.1); g.add(l);}
-  crane=grp(-2.8,0.3,-1.8); const mast=box(0.5,8,0.5,C.gold); crane.add(mast); const arm=grp(0,7.6,0); const jib=box(7,0.35,0.35,C.gold); jib.position.x=2.5; arm.add(jib); const cw=box(1.4,0.6,0.6,C.ink); cw.position.x=-1.6; arm.add(cw); const cable=cyl(0.02,0.02,3.2,C.ink,6); cable.position.set(5,-1.8,0); arm.add(cable); const hook=box(0.5,0.4,0.5,C.brick); hook.position.set(5,-3.6,0); arm.add(hook); crane.add(arm); crane.userData.arm=arm; g.add(crane);
-  const sign=signPlane(textTex([{text:'MARKET MONITOR',size:34,weight:'700',color:'#fbf8f3'},{text:'permits · new listings',size:26,color:'#fbf8f3',gap:0}],384,160,{bg:'#14100e'}),2.8,1.15); sign.position.set(2.8,1.5,3.6); g.add(sign); const sp=box(0.1,1,0.1,C.ink); sp.position.set(2.8,0.3,3.6); g.add(sp);
-  register('site',g,'Construction site',8.6); })();
+(function(){ const g=grp(-17,0,10.5); g.add(rbox(9,0.3,7,0.3,0xd9c9a8)); const frame=grp(1.5,0.3,0.5); for(let i=0;i<4;i++) for(let j=0;j<3;j++){ const s=box(0.12,2.4,0.12,C.wood); s.position.set(-1.5+i,0,-1+j); frame.add(s);} const top=box(3.3,0.14,2.3,C.wood); top.position.y=2.4; frame.add(top); g.add(frame); for(let i=0;i<3;i++){ const l=box(2.2,0.25,0.25,C.wood); l.position.set(-3,0.3+i*0.26,2+(i%2)*0.1); g.add(l);}
+  crane=grp(-2.8,0.3,-1.8); crane.add(box(0.5,8,0.5,C.gold)); const arm=grp(0,7.6,0); const jib=box(7,0.35,0.35,C.gold); jib.position.x=2.5; arm.add(jib); const cw=box(1.4,0.6,0.6,C.ink); cw.position.x=-1.6; arm.add(cw); const cable=cyl(0.02,0.02,3.2,C.ink,6); cable.position.set(5,-1.8,0); arm.add(cable); const hook=box(0.5,0.4,0.5,C.brick); hook.position.set(5,-3.6,0); arm.add(hook); crane.add(arm); crane.userData.arm=arm; g.add(crane);
+  const sign=signPlane(textTex([{text:'ENGINE ROOM',size:34,weight:'700',color:'#fbf8f3'},{text:'sync · tasks · matches',size:26,color:'#fbf8f3',gap:0}],384,160,{bg:'#14100e'}),2.8,1.15); sign.position.set(2.8,1.5,3.6); g.add(sign); const sp=box(0.1,1,0.1,C.ink); sp.position.set(2.8,0.3,3.6); g.add(sp); register('site',g,'Construction site',8.6); })();
 
-// ---------- labels ----------
-const labelEls={}; Object.keys(OBJ).forEach(k=>{ const el=document.createElement('div'); el.className='label'; el.textContent=OBJ[k].label; document.body.appendChild(el); labelEls[k]=el; });
-const v3=new THREE.Vector3(); const anchorOf=k=>{ const o=OBJ[k]; const p=new THREE.Vector3(); o.group.getWorldPosition(p); p.y+=o.anchorY; if(k==='cars'&&cars.length) cars[0].g.getWorldPosition(p).add(new THREE.Vector3(0,1.6,0)); return p; };
-function placeLabels(){ const w=innerWidth,h=innerHeight; Object.keys(OBJ).forEach(k=>{ const el=labelEls[k]; v3.copy(anchorOf(k)).project(camera); if(v3.z>1||Math.abs(v3.x)>1.2||Math.abs(v3.y)>1.2){ el.style.opacity='0'; return;} el.style.opacity=cam.radius<40?'0':'0.9'; el.style.transform='translate(-50%,-100%) translate('+((v3.x+1)/2*w).toFixed(1)+'px,'+((1-v3.y)/2*h).toFixed(1)+'px)'; }); if(sel) placeCard(); }
-
-// ---------- input ----------
-let sel=null;
-function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); fitWhole(); }
-function fitWhole(){ const asp=innerWidth/innerHeight; cam.tRadius=Math.max(58,(asp<1?118:92)/Math.min(asp,1.8)*1.0); if(!sel){ cam.tTarget.set(0,0,1); } }
-addEventListener('resize',resize); resize(); cam.radius=cam.tRadius+40;
-let dragging=false,moved=0,lastX=0,lastY=0,pinch=null,idleT=0,spin=!reduced; const pointers=new Map();
+// ---------- labels, camera, input (calm) ----------
+const labelEls={}; Object.keys(OBJ).forEach(k=>{ const el=document.createElement('div'); el.className='label'; el.textContent=OBJ[k].label; wrap.appendChild(el); labelEls[k]=el; });
+const v3=new THREE.Vector3(); const anchorOf=k=>{ const o=OBJ[k]; const p=new THREE.Vector3(); o.group.getWorldPosition(p); p.y+=o.anchorY; if(k==='cars'&&cars.length) cars[0].g.getWorldPosition(p).add(new THREE.Vector3(0,2.2,0)); return p; };
+let W=1,H=1; let sel=null; let dragging=false;
+function placeLabels(){ Object.keys(OBJ).forEach(k=>{ const el=labelEls[k]; v3.copy(anchorOf(k)).project(camera); if(v3.z>1||Math.abs(v3.x)>0.96||Math.abs(v3.y)>0.96){ el.style.opacity='0'; return;} el.style.opacity=(dragging||cam.radius<40)?'0':'0.92'; el.style.transform='translate(-50%,-100%) translate('+((v3.x+1)/2*W).toFixed(1)+'px,'+((1-v3.y)/2*H).toFixed(1)+'px)'; }); }
+function resize(){ const r=wrap.getBoundingClientRect(); W=Math.max(1,r.width); H=Math.max(1,r.height); renderer.setSize(W,H,false); camera.aspect=W/H; camera.updateProjectionMatrix(); if(!sel) fitWhole(); }
+function fitWhole(){ const asp=W/H; cam.tRadius=asp<1?THREE.MathUtils.clamp(74/asp,60,120):THREE.MathUtils.clamp(96/Math.min(asp,1.8),60,140); cam.tTarget.set(0,0,1); }
+addEventListener('resize',resize); resize(); cam.radius=cam.tRadius+30;
+let moved=0,lastX=0,lastY=0,pinch=null,idleT=0,spin=false; const pointers=new Map();
+const localXY=e=>{ const r=wrap.getBoundingClientRect(); return [e.clientX-r.left,e.clientY-r.top]; };
 canvas.addEventListener('pointerdown',e=>{ pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===1){ dragging=true; moved=0; lastX=e.clientX; lastY=e.clientY; canvas.classList.add('drag'); canvas.setPointerCapture(e.pointerId);} if(pointers.size===2){ const [a,b]=[...pointers.values()]; pinch=Math.hypot(a.x-b.x,a.y-b.y);} idleT=0; });
-canvas.addEventListener('pointermove',e=>{ if(pointers.has(e.pointerId)) pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===2&&pinch){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); cam.tRadius=THREE.MathUtils.clamp(cam.tRadius*(pinch/d),18,160); pinch=d; idleT=0; return;} if(dragging){ const dx=e.clientX-lastX,dy=e.clientY-lastY; moved+=Math.abs(dx)+Math.abs(dy); lastX=e.clientX; lastY=e.clientY; cam.tTheta-=dx*0.0055; cam.tPhi=THREE.MathUtils.clamp(cam.tPhi-dy*0.004,0.35,1.35); idleT=0; return;} hover(e.clientX,e.clientY); });
-function endPointer(e){ pointers.delete(e.pointerId); if(pointers.size<2) pinch=null; if(pointers.size===0&&dragging){ dragging=false; canvas.classList.remove('drag'); if(moved<6) click(e.clientX,e.clientY);} }
+canvas.addEventListener('pointermove',e=>{ if(pointers.has(e.pointerId)) pointers.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(pointers.size===2&&pinch){ const [a,b]=[...pointers.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); cam.tRadius=THREE.MathUtils.clamp(cam.tRadius*(pinch/d),26,140); pinch=d; idleT=0; return;} if(dragging){ const dx=e.clientX-lastX,dy=e.clientY-lastY; moved+=Math.abs(dx)+Math.abs(dy); lastX=e.clientX; lastY=e.clientY; cam.tTheta-=dx*0.0035; cam.tPhi=THREE.MathUtils.clamp(cam.tPhi-dy*0.0025,0.55,1.15); idleT=0; return;} const [x,y]=localXY(e); hover(x,y); });
+function endPointer(e){ pointers.delete(e.pointerId); if(pointers.size<2) pinch=null; if(pointers.size===0&&dragging){ dragging=false; canvas.classList.remove('drag'); if(moved<6){ const [x,y]=localXY(e); click(x,y);} } }
 canvas.addEventListener('pointerup',endPointer); canvas.addEventListener('pointercancel',endPointer);
-canvas.addEventListener('wheel',e=>{ e.preventDefault(); cam.tRadius=THREE.MathUtils.clamp(cam.tRadius*(1+Math.sign(e.deltaY)*0.09),18,160); idleT=0; },{passive:false});
+canvas.addEventListener('wheel',e=>{ e.preventDefault(); cam.tRadius=THREE.MathUtils.clamp(cam.tRadius*(1+Math.sign(e.deltaY)*0.05),26,140); idleT=0; },{passive:false});
 canvas.addEventListener('pointerleave',()=>setHover(null));
 const ray=new THREE.Raycaster(); const ndc=new THREE.Vector2();
-function pickAt(x,y){ ndc.set((x/innerWidth)*2-1,-(y/innerHeight)*2+1); ray.setFromCamera(ndc,camera); const hits=ray.intersectObjects(pickables,false); if(!hits.length) return null; const o=hits[0].object; return {key:o.userData.key,house:o.userData.house}; }
+function pickAt(x,y){ ndc.set((x/W)*2-1,-(y/H)*2+1); ray.setFromCamera(ndc,camera); const hits=ray.intersectObjects(pickables,false); if(!hits.length) return null; const o=hits[0].object; return {key:o.userData.key,house:o.userData.house}; }
 let hovered=null,hoverKey='';
-function setHover(h){ const key=h?h.key+':'+(h.house??''):''; if(key===hoverKey) return; if(hovered) glow(hovered.key,false); hoverKey=key; hovered=h; canvas.classList.toggle('pick',!!h); const tip=$('#tip'); if(!h){ tip.classList.remove('show'); return;} glow(h.key,true); tip.innerHTML=''; const b=document.createElement('b'); b.textContent=h.house!=null?('House '+(h.house+1)+' of '+houses.length):OBJ[h.key].label; const s=document.createElement('small'); s.textContent=hint(h); tip.append(b,s); tip.classList.add('show'); }
-function hint(h){ switch(h.key){ case 'office': return money(val('deals.under_contract_volume'))+' under contract · '+money(val('deals.pending_commission'))+' pending'; case 'street': { const hs=get(DATA,'deals.houses')||[]; const x=hs[h.house]; return x?((SIGN[x.stage]||SIGN.lead).txt.toLowerCase()+(x.price?' · '+money(x.price):'')):'the deals'; } case 'cars': return fmt(val('people.new_leads_7d'))+' new leads this week'; case 'post': return fmt(val('people.next_actions'))+' next actions waiting'; case 'square': return fmt(val('people.contacts'))+' contacts, '+fmt(val('people.hot'))+' hot'; case 'court': return fmt(val('calendar.deadlines_30d'))+' deadlines in 30 days, '+fmt(val('calendar.deadlines_today'))+' today'; case 'market': return 'GBRAR '+(get(DATA,'market.gbrar.month')||''); case 'site': return fmt(val('engine.tasks_open'))+' tasks open · '+fmt(get(DATA,'match.unmatched'))+' unmatched records'; } return ''; }
+function setHover(h){ const key=h?h.key+':'+(h.house??''):''; if(key===hoverKey) return; if(hovered&&(!sel||hovered.key!==sel.key)) glow(hovered.key,false); hoverKey=key; hovered=h; canvas.classList.toggle('pick',!!h); const tip=$('#tip'); if(!h){ tip.classList.remove('show'); return;} glow(h.key,true); tip.innerHTML=''; const b=document.createElement('b'); b.textContent=h.house!=null?('House '+(h.house+1)+' of '+houses.length):OBJ[h.key].label; const s=document.createElement('small'); s.textContent=hint(h); tip.append(b,s); tip.classList.add('show'); }
+function hint(h){ switch(h.key){ case 'office': return money(val('deals.under_contract_volume'))+' under contract · '+money(val('deals.pending_commission'))+' pending'; case 'street': { const hs=get(DATA,'deals.houses')||[]; const x=hs[h.house]; return x?((SIGN[x.stage]||SIGN.lead).txt.toLowerCase()+(x.price?' · '+money(x.price):'')):'the deals'; } case 'cars': return fmt(val('people.new_leads_7d'))+' new leads this week'; case 'post': return fmt(val('people.next_actions'))+' next actions waiting'; case 'square': return fmt(val('people.contacts'))+' contacts, '+fmt(val('people.hot'))+' hot'; case 'court': return fmt(val('calendar.deadlines_30d'))+' deadlines in 30 days, '+fmt(val('calendar.deadlines_today'))+' today'; case 'market': return 'GBRAR '+(get(DATA,'market.gbrar.month')||''); case 'site': return fmt(val('engine.tasks_open'))+' tasks open · '+fmt(get(DATA,'match.unmatched'))+' unmatched'; } return ''; }
 let hoverRaf=false; function hover(x,y){ const t=$('#tip'); t.style.left=x+'px'; t.style.top=y+'px'; if(hoverRaf) return; hoverRaf=true; requestAnimationFrame(()=>{ hoverRaf=false; setHover(pickAt(x,y)); }); }
-function glow(key,on){ const g=OBJ[key]; if(!g) return; g.group.traverse(o=>{ if(o.isMesh&&o.material&&o.material.emissive){ if(on){ if(!o.userData.m0){ o.userData.m0=o.material; o.material=o.material.clone(); o.material.emissive=new THREE.Color(0xe87757); o.material.emissiveIntensity=0.18; } } else if(o.userData.m0){ o.material=o.userData.m0; o.userData.m0=null; } } }); }
+function glow(key,on){ const g=OBJ[key]; if(!g) return; g.group.traverse(o=>{ if(o.isMesh&&o.material&&o.material.emissive){ if(on){ if(!o.userData.m0){ o.userData.m0=o.material; o.material=o.material.clone(); o.material.emissive=new THREE.Color(0xe87757); o.material.emissiveIntensity=0.16; } } else if(o.userData.m0){ o.material=o.userData.m0; o.userData.m0=null; } } }); }
 function click(x,y){ const h=pickAt(x,y); if(!h){ clearSel(); return;} select(h.key,h.house); }
-
-// ---------- selection and cards ----------
-function select(key,house){ if(sel) glow(sel.key,false); sel={key,house}; glow(key,true); const p=anchorOf(key); cam.tTarget.copy(p).setY(1.5); cam.tRadius=Math.min(cam.tRadius,key==='street'?34:30); idleT=0; document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.key===key))); renderCard(); $('#card').classList.add('show'); placeCard(); $('#sr').textContent=OBJ[key].label+' opened'; }
+function select(key,house){ if(sel) glow(sel.key,false); sel={key,house}; glow(key,true); const p=anchorOf(key); cam.tTarget.copy(p).setY(1.5); cam.tRadius=Math.max(34,Math.min(cam.tRadius,key==='street'?44:40)); idleT=0; document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.key===key))); renderCard(); $('#card').classList.add('show'); $('#rail').scrollTop=0; $('#sr').textContent=OBJ[key].label+' opened'; }
 function clearSel(){ if(!sel) return; glow(sel.key,false); sel=null; $('#card').classList.remove('show'); document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed','false')); }
-function placeCard(){ if(!sel) return; const card=$('#card'); if(innerWidth<=860) return; v3.copy(anchorOf(sel.key)).project(camera); const sx=(v3.x+1)/2*innerWidth, sy=(1-v3.y)/2*innerHeight; const cw=card.offsetWidth||320, ch=card.offsetHeight||300; let left=sx+28; if(left+cw>innerWidth-16) left=sx-28-cw; left=Math.max(16,Math.min(left,innerWidth-cw-16)); let top=sy-ch/2; top=Math.max(80,Math.min(top,innerHeight-ch-70)); card.style.left=left+'px'; card.style.top=top+'px'; }
-const S=(p)=>get(DATA,p)||{};
+const S=p=>get(DATA,p)||{};
 const CARDS={
-  office:()=>({kind:'Office · deals and money',title:'Keller Williams First Choice',sub:'Caleb Jackson, REALTOR. Every figure is from the Deals tab of the AIRE CRM.',stats:[['Under contract',S('deals.under_contract_volume'),'money'],['Pending commission',S('deals.pending_commission'),'money'],['Live deals',S('deals.live')],['Closed, last 90 days',S('deals.closed_90d')],['Closed volume, 90 days',S('deals.closed_90d_volume'),'money'],['Next closing',S('deals.next_close'),'txt']]}),
+  office:()=>({kind:'Office · deals and money',title:'Keller Williams First Choice',sub:'From the Deals tab of the AIRE CRM.',stats:[['Under contract',S('deals.under_contract_volume'),'money'],['Pending commission',S('deals.pending_commission'),'money'],['Live deals',S('deals.live')],['Closed, last 90 days',S('deals.closed_90d')],['Closed volume, 90 days',S('deals.closed_90d_volume'),'money'],['Next closing',S('deals.next_close'),'txt']]}),
   street:(house)=>{ const hs=get(DATA,'deals.houses')||[]; const h=hs[house]; const st=[]; if(h){ st.push(['This house',{value:(SIGN[h.stage]||SIGN.lead).txt.toLowerCase(),period:h.side},'txt']); if(h.price) st.push(['Price',{value:h.price,period:'Deals tab'},'money']); if(h.close) st.push(['Expected close',{value:h.close,period:'Deals tab'},'txt']); if(h.dom!=null) st.push(['Days on market',{value:h.dom,period:'Command export'}]); st.push(['Deadlines filed',{value:h.deadlines,period:'Deadlines tab'}]); if(h.next_deadline) st.push(['Next deadline',{value:h.next_deadline,period:'Deadlines tab'},'txt']); } st.push(['Active listings',S('deals.active_listings')],['Under contract',S('deals.under_contract')],['Days on market, median',S('deals.days_on_market_median')],['Next closing',S('deals.next_close'),'txt']); return {kind:h?('House '+(house+1)+' of '+hs.length):'The street',title:h?((h.side==='listing'?'Listing':'Buyer')+', '+(h.stage||'').replace('_',' ')):'The street',sub:'One house per Deals row. Stage, price and dates only, never the address.',stats:st}; },
-  cars:()=>({kind:'New leads',title:'Lead traffic',sub:'One car per new lead this week, up to eight. Sources merged from the Contacts column, the Command export and the LP leads paste.',stats:[['New leads, 7 days',S('people.new_leads_7d')],['New leads, 30 days',S('people.new_leads_30d')],['LP leads matched',{value:get(DATA,'match.lp_leads_matched'),period:'of '+fmt(get(DATA,'match.lp_leads'))+' pasted'}],['Command contacts matched',{value:get(DATA,'match.command_contacts_matched'),period:'of '+fmt(get(DATA,'match.command_contacts'))+' pasted'}]],list:Object.entries(get(DATA,'people.new_leads_7d_by_source')||{}).map(([k,v])=>[k,v+' this week'])}),
-  post:()=>({kind:'Follow-up',title:'Post office',sub:'Who is owed a touch, straight from the Contacts tab. The truck runs more often when the pile grows.',stats:[['Next actions waiting',S('people.next_actions')],['Touched, last 30 days',S('people.touched_30d')],['Nurture stage',S('people.nurture')],['Past clients',S('people.past_clients')]]}),
-  square:()=>({kind:'The sphere',title:'Town square',sub:'Everyone in the one CRM sheet. Walkers: two plus one per fifteen hot contacts.',stats:[['Contacts',S('people.contacts')],['Hot',S('people.hot')],['Warm',S('people.warm')],['Cold',S('people.cold')],['Ice cold',S('people.ice_cold')],['No band yet',S('people.unbanded')],['Known home value, median',S('people.fmv_median'),'money']],list:(get(DATA,'people.by_city')||[]).map(c=>[c.city,c.n+' people'])}),
-  court:()=>({kind:'Deadlines',title:'Courthouse clock',sub:'From the Deadlines tab, matched to a deal by address. Kind and date only. The bell glows coral on a deadline day.',stats:[['Deadlines today',S('calendar.deadlines_today')],['Deadlines, 30 days',S('calendar.deadlines_30d')],['Tasks open',S('engine.tasks_open')],['Tasks overdue',S('engine.tasks_overdue')]],list:(get(DATA,'calendar.deadlines')||[]).map(d=>[d.kind,d.date+' · '+(d.stage||'').replace('_',' ')])}),
-  market:()=>{ const gb=get(DATA,'market.gbrar'); const st=gb?[['Median sale price',gb.median_price,'money'],['Days on market',gb.days_on_market],['Months of supply',gb.months_supply],['New listings',gb.new_listings],['Closed sales',gb.closed_sales],['Homes for sale',gb.homes_for_sale]]:[]; return {kind:'Market',title:'Market billboard',sub:gb?(gb.source||''):'No GBRAR report synced.',stats:st,src:gb?('Period '+gb.month+'. Prior month and year over year are in data.json.'):''}; },
-  site:()=>({kind:'Engine room',title:'Construction site',sub:'The sync itself: what matched, what did not, what is still open. Unmatched records are listed in the merge report on the Mac, never guessed.',stats:[['Tasks open',S('engine.tasks_open')],['Tasks done, 7 days',S('engine.tasks_done_7d')],['Deals in the spine',{value:get(DATA,'match.deals'),period:'Deals tab'}],['Deadlines matched',{value:get(DATA,'match.deadlines_matched'),period:'by address'}],['Command opportunities matched',{value:get(DATA,'match.command_opportunities_matched'),period:'of '+fmt(get(DATA,'match.command_opportunities'))+' pasted'}],['Unmatched records',{value:get(DATA,'match.unmatched'),period:'read the report'}]],src:'Synced '+((DATA.sync||{}).at||'').replace('T',' ').slice(0,16)+' by '+((DATA.sync||{}).by||'sync.py')}),
+  cars:()=>({kind:'New leads',title:'Lead traffic',sub:'One car per new lead this week, up to eight.',stats:[['New leads, 7 days',S('people.new_leads_7d')],['New leads, 30 days',S('people.new_leads_30d')],['LP leads matched',{value:get(DATA,'match.lp_leads_matched'),period:'of '+fmt(get(DATA,'match.lp_leads'))+' pasted'}],['Command contacts matched',{value:get(DATA,'match.command_contacts_matched'),period:'of '+fmt(get(DATA,'match.command_contacts'))+' pasted'}]],list:Object.entries(get(DATA,'people.new_leads_7d_by_source')||{}).map(([k,v])=>[k,v+' this week'])}),
+  post:()=>({kind:'Follow-up',title:'Post office',sub:'Who is owed a touch, from the Contacts tab.',stats:[['Next actions waiting',S('people.next_actions')],['Touched, last 30 days',S('people.touched_30d')],['Nurture stage',S('people.nurture')],['Past clients',S('people.past_clients')]]}),
+  square:()=>({kind:'The sphere',title:'Town square',sub:'Everyone in the one CRM sheet.',stats:[['Contacts',S('people.contacts')],['Hot',S('people.hot')],['Warm',S('people.warm')],['Cold',S('people.cold')],['Ice cold',S('people.ice_cold')],['No band yet',S('people.unbanded')],['Known home value, median',S('people.fmv_median'),'money']],list:(get(DATA,'people.by_city')||[]).map(c=>[c.city,c.n+' people'])}),
+  court:()=>({kind:'Deadlines',title:'Courthouse clock',sub:'From the Deadlines tab, matched to a deal by address.',stats:[['Deadlines today',S('calendar.deadlines_today')],['Deadlines, 30 days',S('calendar.deadlines_30d')],['Tasks open',S('engine.tasks_open')],['Tasks overdue',S('engine.tasks_overdue')]],list:(get(DATA,'calendar.deadlines')||[]).map(d=>[d.kind,d.date+' · '+(d.stage||'').replace('_',' ')])}),
+  market:()=>{ const gb=get(DATA,'market.gbrar'); const st=gb?[['Median sale price',gb.median_price,'money'],['Days on market',gb.days_on_market],['Months of supply',gb.months_supply],['New listings',gb.new_listings],['Closed sales',gb.closed_sales],['Homes for sale',gb.homes_for_sale]]:[]; return {kind:'Market',title:'Market billboard',sub:gb?(gb.source||''):'No GBRAR report synced.',stats:st,src:gb?('Period '+gb.month+'.'):''}; },
+  site:()=>({kind:'Engine room',title:'Construction site',sub:'The sync itself. Unmatched records are in the merge report on the Mac.',stats:[['Tasks open',S('engine.tasks_open')],['Tasks done, 7 days',S('engine.tasks_done_7d')],['Deals in the spine',{value:get(DATA,'match.deals'),period:'Deals tab'}],['Deadlines matched',{value:get(DATA,'match.deadlines_matched'),period:'by address'}],['Command opportunities matched',{value:get(DATA,'match.command_opportunities_matched'),period:'of '+fmt(get(DATA,'match.command_opportunities'))+' pasted'}],['Unmatched records',{value:get(DATA,'match.unmatched'),period:'read the report'}]],src:'Synced '+((DATA.sync||{}).at||'').replace('T',' ').slice(0,16)+' by '+((DATA.sync||{}).by||'sync.py')}),
 };
 function renderCard(){ if(!sel) return; const c=CARDS[sel.key](sel.house); const card=$('#card'); card.style.setProperty('--c',HEX[sel.key]); $('#c-kind').textContent=c.kind; $('#c-title').textContent=c.title; $('#c-sub').textContent=c.sub; const dl=$('#c-stats'); dl.innerHTML=''; const srcs=new Set();
-  c.stats.forEach(([label,st,f])=>{ st=st||{}; const dt=document.createElement('dt'); dt.textContent=label; const sm=document.createElement('small'); sm.textContent=st.period||''; dt.appendChild(sm); const dd=document.createElement('dd'); const v=st.value; const isTxt=f==='txt'||(typeof v==='string'&&!/^\d/.test(v)); dd.className=isTxt?'txt':''; dd.dataset.key=sel.key+'|'+label; const shown=(v===50&&/50 means/.test(st.source||''))?'50+':fmt(v,f); dd.textContent=shown==null?'—':shown; dd.dataset.v=String(v); if(st.source) srcs.add(st.source); dl.append(dt,dd); });
+  c.stats.forEach(([label,st,f])=>{ st=st||{}; const dt=document.createElement('dt'); dt.textContent=label; const sm=document.createElement('small'); sm.textContent=st.period||''; dt.appendChild(sm); const dd=document.createElement('dd'); const v=st.value; const isTxt=f==='txt'||(typeof v==='string'&&!/^\d/.test(v)); dd.className=isTxt?'txt':''; dd.dataset.key=sel.key+'|'+label; dd.textContent=fmt(v,f); dd.dataset.v=String(v); if(st.source) srcs.add(st.source); dl.append(dt,dd); });
   const list=$('#c-list'); list.innerHTML=''; if(c.list&&c.list.length){ list.hidden=false; c.list.forEach(([a,b])=>{ const d=document.createElement('div'); const s1=document.createElement('span'); s1.textContent=a; const s2=document.createElement('span'); s2.textContent=b; d.append(s1,s2); list.appendChild(d); }); } else list.hidden=true;
   $('#c-src').textContent=c.src||('Sources: '+[...srcs].join(' · ')); }
 $('#c-close').onclick=clearSel;
-
-// ---------- legend, controls, keys ----------
 (function(){ const nav=$('#legend'); Object.keys(OBJ).forEach((k,i)=>{ const b=document.createElement('button'); b.className='chip'; b.type='button'; b.dataset.key=k; b.style.setProperty('--c',HEX[k]); b.setAttribute('aria-pressed','false'); b.innerHTML='<i></i><span></span>'; b.children[1].textContent=OBJ[k].label; b.title='Key '+(i+1); b.onclick=()=>select(k); nav.appendChild(b); }); })();
 $('#b-spin').onclick=e=>{ spin=!spin; e.currentTarget.setAttribute('aria-pressed',String(spin)); };
-$('#b-reset').onclick=()=>{ clearSel(); fitWhole(); cam.tTarget.set(0,0,1); };
-addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(sel) clearSel(); else { fitWhole(); cam.tTarget.set(0,0,1);} } else if(e.key===' '){ e.preventDefault(); spin=!spin; $('#b-spin').setAttribute('aria-pressed',String(spin)); } else if(/^[1-8]$/.test(e.key)){ const k=Object.keys(OBJ)[+e.key-1]; if(k) select(k); } });
-function toast(t){ const e=$('#toast'); e.textContent=t; e.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(()=>e.classList.remove('show'),2600); }
+$('#b-reset').onclick=()=>{ clearSel(); fitWhole(); };
+addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT') return; if(e.key==='Escape'){ if(sel) clearSel(); else fitWhole(); } else if(e.key===' '){ e.preventDefault(); spin=!spin; $('#b-spin').setAttribute('aria-pressed',String(spin)); } else if(/^[1-8]$/.test(e.key)){ const k=Object.keys(OBJ)[+e.key-1]; if(k) select(k); } });
+
+// ---------- rail: brief, up next, today, to-dos, inbox ----------
+function li(t,main,sub,cls){ const el=document.createElement('li'); const a=document.createElement('span'); a.className='t'+(cls?' '+cls:''); a.textContent=t; const m=document.createElement('span'); m.className='m'; m.textContent=main; if(sub){ const s=document.createElement('small'); s.textContent=sub; m.appendChild(s); } el.append(a,m); return el; }
+function pill(el,text,cls){ const p=document.createElement('span'); p.className='pill'+(cls?' '+cls:''); p.textContent=text; const m=el.querySelector('.m'); m.insertBefore(p,m.querySelector('small')); }
+function emptyMsg(ul,text,code){ ul.innerHTML=''; const p=document.createElement('p'); p.className='empty'; p.textContent=text+' '; if(code){ const c=document.createElement('code'); c.textContent=code; p.appendChild(c);} ul.appendChild(p); }
+function renderRail(){
+  const t=todayISO(); const now=new Date();
+  const dls=get(DATA,'calendar.deadlines')||[]; const todayDl=dls.filter(d=>d.date===t);
+  const parts=[]; parts.push('Under contract: '+money(val('deals.under_contract_volume'))+' across '+fmt(val('deals.under_contract'))+' deals'+(val('deals.pending_commission')!=null?(', '+money(val('deals.pending_commission'))+' pending commission'):'')+'.');
+  parts.push(todayDl.length?(todayDl.length+' deadline'+(todayDl.length>1?'s':'')+' today ('+todayDl.map(d=>d.kind.replace(/ deadline$/i,'')).join(', ')+'), '+fmt(val('calendar.deadlines_30d'))+' in 30 days.'):(fmt(val('calendar.deadlines_30d'))+' deadlines in the next 30 days, none today.'));
+  const cal=BRIEF&&BRIEF.calendar; if(cal){ const left=cal.filter(e=>e.all_day||new Date(e.at)>now); parts.push(cal.length+' on the calendar today'+(left.length?(', next: '+left[0].time+' '+left[0].title):', all done')+'.'); }
+  parts.push(fmt(val('people.new_leads_7d'))+' new leads this week, '+fmt(val('people.next_actions'))+' next actions waiting, '+fmt(val('engine.tasks_open'))+' tasks open'+(val('engine.tasks_overdue')?(' ('+fmt(val('engine.tasks_overdue'))+' overdue)'):'')+'.');
+  $('#brief-text').textContent=parts.join(' ');
+  $('#brief-when').textContent=(BRIEF&&BRIEF.at?('as of '+BRIEF.at.slice(11,16)):((DATA.sync||{}).at?('synced '+DATA.sync.at.slice(11,16)):''));
+  // up next
+  const items=[];
+  if(cal) cal.forEach(e=>{ if(e.all_day||new Date(e.at)>now) items.push({when:e.all_day?(t+'T00:00'):e.at.slice(0,16),label:e.title,sub:'calendar',t:e.all_day?'all day':e.time,kind:'cal'}); });
+  dls.forEach(d=>{ if(d.date>=t) items.push({when:d.date+'T23:58',label:d.kind,sub:'deadline · '+(d.stage||'').replace('_',' '),t:dayLabel(d.date),kind:d.date===t?'now':'dl'}); });
+  if(BRIEF&&BRIEF.tasks) BRIEF.tasks.forEach(x=>{ if(x.due) items.push({when:(x.overdue?'0000':x.due)+'T23:57',label:x.task,sub:x.who,t:x.overdue?'overdue':dayLabel(x.due),kind:x.overdue?'over':'task'}); });
+  const nc=val('deals.next_close'); if(nc) items.push({when:nc+'T23:59',label:'Next closing',sub:'Deals tab, expected close',t:dayLabel(nc),kind:'close'});
+  items.sort((a,b)=>a.when.localeCompare(b.when)); const ul=$('#next-list'); ul.innerHTML=''; items.slice(0,8).forEach(x=>ul.appendChild(li(x.t,x.label,x.sub,x.kind==='now'?'now':(x.kind==='over'?'over':'')))); $('#next-n').textContent=items.length?items.length+' items':''; if(!items.length) emptyMsg(ul,'Nothing queued. Deadlines, to-dos and today\'s calendar land here.');
+  // today
+  const cul=$('#cal-list'); cul.innerHTML='';
+  if(cal){ $('#cal-n').textContent=cal.length+' events'; if(!cal.length) emptyMsg(cul,'Nothing on the calendar today.'); cal.forEach(e=>{ const past=!e.all_day&&new Date(e.at)<now; const el=li(e.time,e.title,''); if(past) el.style.opacity='.55'; cul.appendChild(el); }); }
+  else { $('#cal-n').textContent=''; emptyMsg(cul, live.calMsg||'Calendar comes from brief.json on the Mac. Once:', live.calMsg?'':'/usr/bin/python3 aire/world/sync.py auth'); }
+  // to-dos
+  const tul=$('#todo-list'); tul.innerHTML='';
+  if(BRIEF&&BRIEF.tasks){ const tasks=BRIEF.tasks||[], nas=BRIEF.next_actions||[]; $('#todo-n').textContent=tasks.length+' tasks · '+fmt(val('people.next_actions'))+' next actions';
+    tasks.slice(0,6).forEach(x=>{ tul.appendChild(li(x.overdue?'overdue':dayLabel(x.due)||'no date',x.task,x.who,x.overdue?'over':'')); });
+    nas.slice(0,6).forEach(x=>{ const el=li(x.days_quiet!=null?(x.days_quiet+'d quiet'):'never',x.who,x.action); if(x.band) pill(el,x.band,x.band==='hot'?'hot':''); tul.appendChild(el); });
+    if(!tasks.length&&!nas.length) emptyMsg(tul,'No open tasks and no next actions. Quiet day.'); }
+  else { $('#todo-n').textContent=fmt(val('engine.tasks_open'))+' open · '+fmt(val('people.next_actions'))+' next actions'; emptyMsg(tul,'Names stay on the Mac. Run the sync there and this fills with the open tasks and the top next actions:','/usr/bin/python3 aire/world/sync.py'); }
+  // inbox
+  const iul=$('#inbox-list'); iul.innerHTML='';
+  const inbox=BRIEF&&BRIEF.inbox;
+  if(inbox){ $('#inbox-n').textContent=inbox.length+(inbox.length>=25?'+':'')+' threads · 3 days'; if(!inbox.length) emptyMsg(iul,'Quiet inbox.'); inbox.slice(0,10).forEach(m=>{ const el=li((m.when||'').replace(/^\w+,\s*/,'').slice(0,11),m.subject,m.from+(m.count>1?' · '+m.count+' messages':'')); if(m.unread) el.querySelector('.m').style.fontWeight='700'; iul.appendChild(el); }); }
+  else if(live.inbox){ const th=live.inbox; $('#inbox-n').textContent=th.length+(th.length>=25?'+':'')+' threads · 3 days'; if(!th.length) emptyMsg(iul,'Quiet inbox.'); th.slice(0,10).forEach(m=>iul.appendChild(li('', m.subject||'(no subject)', m.sender||''))); }
+  else { $('#inbox-n').textContent=''; emptyMsg(iul, live.inboxMsg||'Inbox comes from brief.json on the Mac, or from your Gmail connector when this page is opened in claude.ai.'); }
+  renderCharts();
+}
+
+// ---------- charts (inline SVG, validated palette, direct labels, hover tooltips) ----------
+const ctip=$('#ctip');
+function tipOn(e,text){ ctip.textContent=text; ctip.classList.add('show'); tipMove(e); }
+function tipMove(e){ const x=Math.min(innerWidth-ctip.offsetWidth-8,e.clientX+12), y=Math.max(8,e.clientY-30); ctip.style.left=x+'px'; ctip.style.top=y+'px'; }
+function tipOff(){ ctip.classList.remove('show'); }
+function svgEl(tag,attrs){ const el=document.createElementNS('http://www.w3.org/2000/svg',tag); for(const k in attrs) el.setAttribute(k,attrs[k]); return el; }
+function chartHead(host,title){ host.innerHTML=''; const h3=document.createElement('h3'); h3.textContent=title; host.appendChild(h3); }
+function hbars(host,title,rows,opts){ opts=opts||{}; chartHead(host,title);
+  if(!rows.length||rows.every(r=>!r.value)){ const p=document.createElement('p'); p.className='empty'; p.textContent=opts.empty||'No data yet.'; host.appendChild(p); return; }
+  const w=360, rowH=22, pad=4, lw=opts.labelW||118, vw=opts.valueW||74, h=rows.length*rowH+pad; const max=Math.max(...rows.map(r=>r.value||0),1);
+  const svg=svgEl('svg',{viewBox:'0 0 '+w+' '+h,role:'img','aria-label':title});
+  rows.forEach((r,i)=>{ const y=i*rowH+pad; const bw=Math.max(2,(r.value||0)/max*(w-lw-vw-8));
+    const lab=svgEl('text',{x:lw-8,y:y+13,'text-anchor':'end','font-size':'11.5',fill:'#14100e'}); lab.textContent=r.label; svg.appendChild(lab);
+    svg.appendChild(svgEl('rect',{x:lw,y:y+3,width:bw,height:rowH-8,rx:4,fill:r.color}));
+    const vt=svgEl('text',{x:lw+bw+6,y:y+13,'font-size':'11.5',fill:'#14100e'}); vt.textContent=r.text||fmt(r.value); svg.appendChild(vt);
+    const hit=svgEl('rect',{x:0,y:y,width:w,height:rowH,fill:'transparent'}); hit.addEventListener('mousemove',e=>tipOn(e,(r.hint||r.label)+': '+(r.text||fmt(r.value)))); hit.addEventListener('mouseleave',tipOff); svg.appendChild(hit); });
+  host.appendChild(svg); if(opts.cap){ const p=document.createElement('p'); p.className='cap'; p.textContent=opts.cap; host.appendChild(p); } }
+function segbar(host,title,segs,cap){ chartHead(host,title);
+  const total=segs.reduce((a,s)=>a+(s.value||0),0); if(!total){ const p=document.createElement('p'); p.className='empty'; p.textContent='No contacts yet.'; host.appendChild(p); return; }
+  const w=360,h=26; const svg=svgEl('svg',{viewBox:'0 0 '+w+' '+h,role:'img','aria-label':title}); let x=0; segs.forEach(s=>{ const sw=Math.max(0,(s.value||0)/total*w-2); if(sw<=0) return; const r=svgEl('rect',{x:x,y:4,width:sw,height:18,rx:3,fill:s.color}); r.addEventListener('mousemove',e=>tipOn(e,s.label+': '+fmt(s.value)+' ('+Math.round(s.value/total*100)+'%)')); r.addEventListener('mouseleave',tipOff); svg.appendChild(r); if(sw>44){ const tt=svgEl('text',{x:x+6,y:17,'font-size':'11',fill:s.dark?'#14100e':'#fbf8f3','pointer-events':'none'}); tt.textContent=fmt(s.value); svg.appendChild(tt);} x+=sw+2; }); host.appendChild(svg);
+  const lg=document.createElement('div'); lg.className='lg'; segs.forEach(s=>{ const sp=document.createElement('span'); sp.style.setProperty('--c',s.color); sp.textContent=s.label+' '+fmt(s.value); lg.appendChild(sp); }); host.appendChild(lg); if(cap){ const p=document.createElement('p'); p.className='cap'; p.textContent=cap; host.appendChild(p);} }
+function spark(host,title,series,opts){ opts=opts||{}; chartHead(host,title);
+  const pts=series.filter(p=>p.value!=null); if(pts.length<2){ const p=document.createElement('p'); p.className='empty'; p.textContent=opts.empty||('History starts today: '+(pts.length?fmt(pts[0].value,opts.fmt)+' on '+pts[0].label:'no rows yet')+'. The line draws itself from tomorrow.'); host.appendChild(p); return; }
+  const w=360,h=90,pl=8,pr=46,pt=10,pb=18; const max=Math.max(...pts.map(p=>p.value),1); const X=i=>pl+i/(pts.length-1)*(w-pl-pr), Y=v=>pt+(1-v/max)*(h-pt-pb);
+  const svg=svgEl('svg',{viewBox:'0 0 '+w+' '+h,role:'img','aria-label':title});
+  [0,0.5,1].forEach(f=>{ const y=pt+f*(h-pt-pb); svg.appendChild(svgEl('line',{x1:pl,x2:w-pr,y1:y,y2:y,stroke:'rgba(20,16,14,.1)','stroke-width':1})); });
+  const d=pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.value).toFixed(1)).join(' ');
+  svg.appendChild(svgEl('path',{d:d+' L'+X(pts.length-1).toFixed(1)+' '+(h-pb)+' L'+pl+' '+(h-pb)+' Z',fill:opts.color||CAT[0],opacity:.12}));
+  svg.appendChild(svgEl('path',{d,fill:'none',stroke:opts.color||CAT[0],'stroke-width':2,'stroke-linejoin':'round'}));
+  const last=pts[pts.length-1]; svg.appendChild(svgEl('circle',{cx:X(pts.length-1),cy:Y(last.value),r:4,fill:opts.color||CAT[0],stroke:'#fbf8f3','stroke-width':2}));
+  const vt=svgEl('text',{x:X(pts.length-1)+8,y:Y(last.value)+4,'font-size':'11.5',fill:'#14100e'}); vt.textContent=fmt(last.value,opts.fmt); svg.appendChild(vt);
+  const l0=svgEl('text',{x:pl,y:h-4,'font-size':'10.5',fill:'#6b625a'}); l0.textContent=pts[0].label; svg.appendChild(l0); const l1=svgEl('text',{x:w-pr,y:h-4,'font-size':'10.5',fill:'#6b625a','text-anchor':'end'}); l1.textContent=last.label; svg.appendChild(l1);
+  pts.forEach((p,i)=>{ const cw=(w-pl-pr)/(pts.length-1); const hit=svgEl('rect',{x:X(i)-cw/2,y:0,width:cw,height:h,fill:'transparent'}); hit.addEventListener('mousemove',e=>tipOn(e,p.label+': '+fmt(p.value,opts.fmt))); hit.addEventListener('mouseleave',tipOff); svg.appendChild(hit); });
+  host.appendChild(svg); if(opts.cap){ const p=document.createElement('p'); p.className='cap'; p.textContent=opts.cap; host.appendChild(p);} }
+function renderCharts(){
+  const bs=get(DATA,'deals.by_stage')||{}; const order=[['active','Active',CAT[0]],['showing','Showing',CAT[1]],['under_contract','Under contract',CAT[2]],['closed','Closed',CAT[3]]];
+  const hs=get(DATA,'deals.houses')||[]; const volume=k=>hs.filter(h=>h.stage===k).reduce((a,h)=>a+(h.price||0),0);
+  const rows=order.map(([k,l,c])=>({label:l,value:volume(k)||((bs[k]||0)?1:0),color:c,text:(bs[k]||0)+' · '+money(volume(k)),hint:l})).concat(Object.keys(bs).filter(k=>!order.some(o=>o[0]===k)).map(k=>({label:k.replace('_',' '),value:volume(k),color:CAT[4],text:(bs[k]||0)+' · '+money(volume(k))})));
+  hbars($('#ch-stage'),'Pipeline by stage',rows,{cap:'Deals tab. Count and dollar volume per stage.',labelW:106,valueW:122});
+  segbar($('#ch-band'),'The sphere by band',[['hot','Hot'],['warm','Warm'],['cold','Cold'],['ice_cold','Ice cold'],['unbanded','No band']].map(([k,l])=>({label:l,value:val('people.'+k)||0,color:BANDRAMP[k==='ice_cold'?'ice-cold':k],dark:k!=='hot'&&k!=='warm'})),'Contacts tab, band column. Hot to cold, one hue.');
+  spark($('#ch-leads'),'New leads, last 14 days',HIST.slice(-14).map(h=>({label:h.date.slice(5),value:h.new_leads_7d})),{color:CAT[1],cap:'Rolling 7-day count, one point per day the sync ran.'});
+  const sp=get(DATA,'spending')||{}; const cats=(sp.by_category_30d||[]).slice(0,6);
+  if(cats.length) hbars($('#ch-spend'),'Spending by category, 30 days',cats.map((c,i)=>({label:c.category,value:c.total,color:CAT[i%CAT.length],text:money(c.total)})),{cap:'Spending tab. '+money(sp.last_30d&&sp.last_30d.value)+' in 30 days, '+money(sp.last_7d&&sp.last_7d.value)+' this week.',labelW:106,valueW:80});
+  else hbars($('#ch-spend'),'Spending by category, 30 days',[],{empty:'Add rows to the Spending tab in the CRM sheet (date, vendor, amount, category) and the chart draws on the next sync.'});
+  $('#s-sp').textContent=(sp.rows_30d&&sp.rows_30d.value)?(sp.rows_30d.value+' rows · '+money(sp.last_7d&&sp.last_7d.value)+' this week'):'Spending tab is empty';
+}
 
 // ---------- live data ----------
-function tween(el,from,to,f){ if(reduced||typeof to!=='number'||typeof from!=='number'){ el.textContent=fmt(to,f); return; } const t0=performance.now(); const d=900; const step=now=>{ const k=Math.min(1,(now-t0)/d); const e=1-Math.pow(1-k,3); el.textContent=fmt(from+(to-from)*e,f); if(k<1) requestAnimationFrame(step); else el.textContent=fmt(to,f); }; requestAnimationFrame(step); el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),1400); }
+const live={inbox:null,inboxMsg:'',calMsg:''};
+function tween(el,from,to,f){ if(reduced||typeof to!=='number'||typeof from!=='number'){ el.textContent=fmt(to,f); return; } const t0=performance.now(), d=900; const step=now=>{ const k=Math.min(1,(now-t0)/d); const e=1-Math.pow(1-k,3); el.textContent=fmt(from+(to-from)*e,f); if(k<1) requestAnimationFrame(step); else el.textContent=fmt(to,f); }; requestAnimationFrame(step); el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),1400); }
 function applyData(fresh,first){ const old=DATA; DATA=fresh;
-  document.querySelectorAll('[data-n]').forEach(el=>{ const p=el.dataset.n; const nv=val(p), ov=p.split('.').reduce((a,k)=>(a==null?undefined:a[k]),old); const ovv=ov&&typeof ov==='object'?ov.value:ov; if(first||nv!==ovv) tween(el,typeof ovv==='number'?ovv:nv,nv,el.dataset.fmt); });
+  document.querySelectorAll('[data-n]').forEach(el=>{ const p=el.dataset.n; const nv=val(p); const ov=get(old,p); const ovv=ov&&typeof ov==='object'?ov.value:ov; if(first||nv!==ovv) tween(el,typeof ovv==='number'?ovv:nv,nv,el.dataset.fmt); });
   $('#hw').textContent=fmt(val('people.hot'))+' · '+fmt(val('people.warm'));
   $('#s-uc').textContent=fmt(val('deals.under_contract'))+' deals · next close '+(val('deals.next_close')||'—');
-  const pcs=(get(DATA,'deals.pending_commission')||{}).source||''; $('#s-pc').textContent=val('deals.pending_commission')==null?(/no commission/.test(pcs)?'no figures in the sheet yet':'not synced'):(fmt(val('deals.live'))+' live deals');
+  const pcs=(get(DATA,'deals.pending_commission')||{}).source||''; const m=pcs.match(/\((\d+ of \d+)/); $('#s-pc').textContent=val('deals.pending_commission')==null?(/no commission/.test(pcs)?'no figures in the sheet yet':'not synced'):(m?m[1]+' deals still need a figure':fmt(val('deals.live'))+' live deals');
   $('#s-hw').textContent='of '+fmt(val('people.contacts'))+' contacts · '+fmt(val('people.new_leads_7d'))+' new this week';
-  const dls=get(DATA,'calendar.deadlines')||[]; $('#s-dl').textContent=dls.length?('next: '+dls[0].kind.replace(/ deadline$/i,'')+' · '+dls[0].date.slice(5)):'none filed';
-  const changedHouses=JSON.stringify(get(old,'deals.houses'))!==JSON.stringify(get(DATA,'deals.houses')); if(first||changedHouses) buildStreet();
+  if(first||JSON.stringify(get(old,'deals.houses'))!==JSON.stringify(get(DATA,'deals.houses'))) buildStreet();
   if(first||val('people.new_leads_7d')!==(get(old,'people.new_leads_7d')||{}).value) buildCars();
   if(first||val('people.hot')!==(get(old,'people.hot')||{}).value) buildWalkers();
-  paintBoard(); if(sel){ const prev=[...document.querySelectorAll('#c-stats dd')].map(d=>[d.dataset.key,d.dataset.v,d.textContent]); renderCard(); document.querySelectorAll('#c-stats dd').forEach(d=>{ const p=prev.find(x=>x[0]===d.dataset.key); if(p&&p[1]!==d.dataset.v&&!d.classList.contains('txt')){ const a=+p[1],b=+d.dataset.v; if(!isNaN(a)&&!isNaN(b)) tween(d,a,b,/\$/.test(d.textContent)?'money':undefined); } }); }
-  liveDot(); }
+  paintBoard(); if(sel){ const prev=[...document.querySelectorAll('#c-stats dd')].map(d=>[d.dataset.key,d.dataset.v]); renderCard(); document.querySelectorAll('#c-stats dd').forEach(d=>{ const p=prev.find(x=>x[0]===d.dataset.key); if(p&&p[1]!==d.dataset.v&&!d.classList.contains('txt')){ const a=+p[1],b=+d.dataset.v; if(!isNaN(a)&&!isNaN(b)) tween(d,a,b,/\$/.test(d.textContent)?'money':undefined); } }); }
+  renderRail(); liveDot(); }
 function liveDot(){ const s=DATA.sync||{}; const at=s.at?new Date(s.at):null; const min=at?Math.max(0,Math.round((Date.now()-at)/60000)):null; const dot=$('#dot'); const stale=min==null||min>30||s.ok===false; dot.classList.toggle('stale',stale);
   $('#upd').textContent=min==null?'no sync yet':((s.ok===false?'last good sync ':'updated ')+(min<1?'just now':min+' min ago')+(s.ok===false?' · last sync failed':'')); }
-async function refresh(){ try{ const r=await fetch('data.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(r.status); const j=await r.json(); if(j&&j.sync) applyData(j,false); }catch(e){ /* file:// or offline: keep the seed */ } liveDot(); }
-applyData(DATA,true); setInterval(refresh,60000); setInterval(liveDot,30000); setTimeout(refresh,1500);
+async function getJSON(name){ const r=await fetch(name+'?t='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error(String(r.status)); return r.json(); }
+async function refresh(){ try{ const j=await getJSON('data.json'); if(j&&j.sync) applyData(j,false); }catch(e){} try{ const h=await getJSON('history.json'); if(Array.isArray(h)) HIST=h; }catch(e){} try{ const b=await getJSON('brief.json'); if(b&&b.at) BRIEF=b; }catch(e){} renderRail(); liveDot(); }
+// claude.ai preview: calendar and inbox through the viewer's own connectors when there is no brief.json
+async function startMcp(){ if(!window.claude||!window.claude.use) return; const mcp=await claude.use('mcp'); if(!mcp||BRIEF) return;
+  const errCopy=(code,server)=>({server_not_connected:'Add '+server+' in claude.ai Settings → Connectors',needs_reauth:'Reconnect '+server+' in Settings → Connectors',not_in_manifest:server+' not allowed for this view',selection_required:'Choose which '+server+' to use'})[code]||(server+' could not load ('+code+')');
+  const p=n=>String(n).padStart(2,'0'); const d0=new Date(); d0.setHours(0,0,0,0); const d1=new Date(d0); d1.setDate(d1.getDate()+1); const iso=d=>d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+  mcp.watchTool('Google Calendar','list_events',{startTime:iso(d0),endTime:iso(d1),orderBy:'startTime',pageSize:100},ev=>{ if(BRIEF&&BRIEF.tasks) return; if(ev.type==='data'){ const evs=((ev.result.payload||{}).events||[]).filter(e=>e.status!=='cancelled'&&e.transparency!=='transparent'); BRIEF=Object.assign(BRIEF||{at:new Date().toISOString(),tasks:null,next_actions:null,inbox:null},{calendar:evs.map(e=>{ const st=e.start||{}; const dt=st.dateTime?new Date(st.dateTime):null; return {time:dt?dt.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'all day',at:dt?dt.toISOString():d0.toISOString(),title:e.summary||'(no title)',all_day:!dt}; })}); } else live.calMsg=errCopy(ev.error.code,'Google Calendar'); renderRail(); },{refetchInterval:300000,cache:{staleTime:60000}});
+  mcp.watchTool('Gmail','search_threads',{query:'in:inbox newer_than:3d -from:me',pageSize:25,view:'THREAD_VIEW_SUMMARY'},ev=>{ if(ev.type==='data'){ live.inbox=((ev.result.payload||{}).threads||[]).map(t=>{ const m=(t.messages&&t.messages[0])||{}; return {subject:m.subject,sender:(m.sender||'').replace(/<.*>/,'').trim()}; }); } else live.inboxMsg=errCopy(ev.error.code,'Gmail'); renderRail(); },{refetchInterval:300000,cache:{staleTime:60000}}); }
+applyData(DATA,true); setInterval(refresh,60000); setInterval(liveDot,30000); setTimeout(refresh,800); setTimeout(startMcp,1200);
 
-// ---------- animation ----------
+// ---------- animation (calm) ----------
 const clock=new THREE.Clock(); let T=0;
 function frame(){ requestAnimationFrame(frame); if(document.hidden) return; const dt=Math.min(clock.getDelta(),0.05); T+=dt; idleT+=dt;
-  if(spin&&idleT>4&&!sel) cam.tTheta+=dt*0.04;
-  const k=1-Math.pow(0.0015,dt); cam.theta+=(cam.tTheta-cam.theta)*k; cam.phi+=(cam.tPhi-cam.phi)*k; cam.radius+=(cam.tRadius-cam.radius)*k*0.8; cam.target.lerp(cam.tTarget,k*0.8);
+  if(spin&&idleT>4&&!sel) cam.tTheta+=dt*0.03;
+  const k=1-Math.pow(0.004,dt); cam.theta+=(cam.tTheta-cam.theta)*k; cam.phi+=(cam.tPhi-cam.phi)*k; cam.radius+=(cam.tRadius-cam.radius)*k*0.7; cam.target.lerp(cam.tTarget,k*0.7);
   camera.position.set(cam.target.x+cam.radius*Math.sin(cam.phi)*Math.cos(cam.theta),cam.target.y+cam.radius*Math.cos(cam.phi),cam.target.z+cam.radius*Math.sin(cam.phi)*Math.sin(cam.theta)); camera.lookAt(cam.target);
-  // cars on the ring road
-  const tmp=new THREE.Vector3(); cars.forEach(c=>{ c.t=(c.t+c.v*dt*(0.8+0.2*Math.sin(c.t*Math.PI*8)))%1; const p=ROAD.getPointAt(c.t); const q=ROAD.getPointAt((c.t+0.01)%1); c.g.position.copy(p); c.g.lookAt(q.x,p.y,q.z); c.g.rotateY(Math.PI/2); });
-  // walkers
-  walkers.forEach(w=>{ w.t+=w.v*dt*w.dir; if(w.t>1){w.t=1;w.dir=-1;} if(w.t<0){w.t=0;w.dir=1;} tmp.lerpVectors(w.from,w.to,w.t); w.g.position.copy(tmp); w.g.position.y=Math.abs(Math.sin(w.t*40))*0.08; w.g.lookAt(w.dir>0?w.to:w.from); });
-  // office flag, mailbox flag, truck, fountain, moss, crane, signs, trees, birds, clock
-  const of=OBJ.office.group.userData.flag; of.rotation.y=Math.sin(T*3)*0.15; of.scale.x=1+Math.sin(T*6)*0.05;
-  const po=OBJ.post.group.userData; const per=Math.max(12,30-Math.min(18,(val('people.next_actions')||0)/30)); const cyc=(T%per)*(24/per); po.truck.position.x=cyc<6?-14+cyc*2.4:(cyc<14?0.4:(cyc<20?0.4+(cyc-14)*2.4:14.8)); po.truck.visible=cyc<20; po.mflag.rotation.z=cyc>6&&cyc<14?-Math.PI/2:0;
-  const sq=OBJ.square.group.userData; sq.jet.position.y=2.4+Math.sin(T*4)*0.12; sq.jet.scale.setScalar(1+Math.sin(T*4)*0.15); sq.oak.children.forEach(m=>{ if(m.userData.moss) m.rotation.z=Math.sin(T*1.3+m.position.x)*0.12; });
-  if(crane){ const busy=(val('engine.tasks_open')||0)>0||(get(DATA,'match.unmatched')||0)>0; crane.userData.arm.rotation.y+= (busy?Math.cos(T*0.35)*0.35*0.016:0); }
-  houses.forEach(h=>{ h.g.userData.sign.rotation.y=Math.sin(T*2+h.g.userData.swing)*0.08; });
-  world.children.forEach(o=>{ if(o.userData.sway!=null) o.rotation.z=Math.sin(T*0.8+o.userData.sway)*0.02; });
-  birds.forEach(b=>{ b.userData.t+=dt*0.5; const r=b.userData.r; b.position.set(Math.cos(b.userData.t)*r,10+Math.sin(b.userData.t*2)*0.6,Math.sin(b.userData.t)*r*0.6); b.rotation.y=-b.userData.t+Math.PI/2; const f=Math.sin(T*12)*0.5; b.userData.w1.rotation.z=f; b.userData.w2.rotation.z=-f; });
+  const tmp=new THREE.Vector3(); cars.forEach(c=>{ c.t=(c.t+c.v*dt)%1; const p=ROAD.getPointAt(c.t); const q=ROAD.getPointAt((c.t+0.01)%1); c.g.position.copy(p); c.g.lookAt(q.x,p.y,q.z); c.g.rotateY(Math.PI/2); });
+  walkers.forEach(w=>{ w.t+=w.v*dt*w.dir; if(w.t>1){w.t=1;w.dir=-1;} if(w.t<0){w.t=0;w.dir=1;} tmp.lerpVectors(w.from,w.to,w.t); w.g.position.copy(tmp); w.g.position.y=Math.abs(Math.sin(w.t*40))*0.05; w.g.lookAt(w.dir>0?w.to:w.from); });
+  const of=OBJ.office.group.userData.flag; of.rotation.y=Math.sin(T*2)*0.1;
+  const po=OBJ.post.group.userData; const per=Math.max(20,48-Math.min(26,(val('people.next_actions')||0)/20)); const cyc=(T%per)*(24/per); po.truck.position.x=cyc<6?-14+cyc*2.4:(cyc<14?0.4:(cyc<20?0.4+(cyc-14)*2.4:14.8)); po.truck.visible=cyc<20; po.mflag.rotation.z=cyc>6&&cyc<14?-Math.PI/2:0;
+  const sq=OBJ.square.group.userData; sq.jet.position.y=2.4+Math.sin(T*3)*0.1; sq.oak.children.forEach(m=>{ if(m.userData.moss) m.rotation.z=Math.sin(T*1.1+m.position.x)*0.08; });
+  if(crane){ const busy=(val('engine.tasks_open')||0)>0||(get(DATA,'match.unmatched')||0)>0; if(busy&&!reduced) crane.userData.arm.rotation.y=Math.sin(T*0.25)*0.8+0.6; }
+  houses.forEach(h=>{ h.g.userData.sign.rotation.y=Math.sin(T*1.6+h.g.userData.swing)*0.05; });
   if(clockHands){ const now=new Date(); clockHands.m.rotation.z=-(now.getMinutes()/60)*Math.PI*2; clockHands.h.rotation.z=-((now.getHours()%12)/12+now.getMinutes()/720)*Math.PI*2; }
-  const lamp=OBJ.court.group.userData.lamp; const dls=get(DATA,'calendar.deadlines')||[]; const todayS=new Date().toISOString().slice(0,10); const hot=dls.some(d=>d.date===todayS); lamp.material.emissiveIntensity=hot?0.6+Math.sin(T*5)*0.5:0.15;
+  const lamp=OBJ.court.group.userData.lamp; const hot=(get(DATA,'calendar.deadlines')||[]).some(d=>d.date===todayISO()); lamp.material.emissiveIntensity=hot?0.5+Math.sin(T*3)*0.35:0.15;
   renderer.render(scene,camera); placeLabels(); }
 frame();
 })();

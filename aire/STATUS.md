@@ -2,6 +2,26 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-04, evening: AIRE World becomes a Pipeline page with a dashboard rail
+
+**Confirmed by Caleb**
+- "Fix the scroll, toggle, animations, it's a little too all over the place. I want this to be a page on our main app we can use and play on. I like the earlier setup with a real dashboard: brief, calendar, to-dos, emails." Then: "charts, graphs, visuals, recent spendings, upcoming notifications."
+
+**Done**
+- Calmer 3D: the idle turn is off by default (Turn button), wheel and pinch zoom in 5 percent steps with a floor, drag sensitivity down and the tilt clamped, fly-to never closer than the chip view, cards dock at the top of the rail instead of floating by the object, labels hide while dragging, birds gone, walkers and cars slower, crane only swings while something is open.
+- Dashboard rail beside the town: Brief (four tiles plus three sentences written from the data), Up next (calendar after now, deadlines, tasks due, next closing, sorted), Today, To-dos (open tasks and the top next actions by band and silence), Inbox (last 3 days), and four charts: pipeline by stage, the sphere by band, new leads over 14 days, spending by category.
+- `Spending` tab added to the CRM sheet (date, vendor, amount, category). `sync.py` totals it (30 days, 7 days, by category, by week, last 8 rows), keeps `history.json` (one row of totals per day) and writes `brief.json` on the Mac only (today's calendar, inbox, open tasks, next actions, with names). `sync.py auth` creates the World's own Google token with Calendar read added; the CRM token is untouched.
+- Pipeline: `/world/` route in `app.py` (read-only allow-list: index.html, data.json, brief.json, history.json), World in the nav, key `0`, the page in an iframe. `app.py --test` still holds; the static-files test is untouched.
+- Preview artifact republished with calendar and inbox through the viewer's connectors when there is no brief.json. Chart palette validated with the dataviz script against the page surface.
+- Proof: served render at 1440x900 and 400x820, zero errors, no overflow in the page or the rail, brief and up-next text read back right, spending chart drew from a made-up scratch file (never committed).
+
+**Not verified**
+- `sync.py auth` and `brief.json` on the Mac (needs the browser sign-in there). The Pipeline route and nav ran only as a syntax check here; press `0` in Pipeline to see it.
+
+**Needs Caleb**
+- `/usr/bin/python3 aire/world/sync.py auth` once, then pull and restart Pipeline (`sh aire/pipeline-app/install.sh`).
+- Log a few rows in the Spending tab so the chart has something to draw.
+
 ## 2026-11-04, evening: AIRE World loop live on the Mac, outage bug fixed
 
 **Confirmed by Caleb** (pasted from the Mac session)

@@ -953,7 +953,32 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"ok": False, "error": str(e)})
         if u.path in ("/", "/index.html"):
             return self._file("index.html")
+        if u.path == "/world" or u.path.startswith("/world/"):
+            return self._world(u.path)
         return self._file(u.path)
+
+    def _world(self, path: str) -> None:
+        """The AIRE World page (aire/world) inside Pipeline. Read only, a short allow-list of files."""
+        name = path[len("/world"):].lstrip("/") or "index.html"
+        allowed = {"index.html": "text/html; charset=utf-8", "data.json": "application/json; charset=utf-8",
+                   "brief.json": "application/json; charset=utf-8", "history.json": "application/json; charset=utf-8"}
+        if name not in allowed:
+            self.send_error(404)
+            return
+        f = (HERE.parent / "world" / name).resolve()
+        if not f.is_file():
+            if name == "index.html":
+                self.send_error(404, "aire/world/index.html is missing: run python3 aire/world/build.py")
+            else:
+                self._json(404, {"ok": False, "error": f"{name} not written yet: run /usr/bin/python3 aire/world/sync.py"})
+            return
+        raw = f.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", allowed[name])
+        self.send_header("Content-Length", str(len(raw)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(raw)
 
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
