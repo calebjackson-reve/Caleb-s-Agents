@@ -1,0 +1,54 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch *)",
+      "Bash(git checkout *)",
+      "Bash(git pull *)",
+      "Bash(git status)",
+      "Bash(git log *)",
+      "Bash(launchctl kickstart *)",
+      "Bash(launchctl list *)",
+      "Bash(sh aire/pipeline-app/install.sh)",
+      "Bash(sh aire/world/install.sh)",
+      "Bash(/usr/bin/python3 aire/world/sync.py auth)",
+      "Bash(/usr/bin/python3 aire/world/sync.py)",
+      "Bash(/usr/bin/python3 aire/world/sync.py table)",
+      "Bash(/usr/bin/python3 aire/ai-visibility/check.py --test)",
+      "Bash(/usr/bin/python3 aire/ai-visibility/check.py --dry-run)",
+      "Bash(/usr/bin/python3 -m pip install anthropic)",
+      "Bash(/usr/bin/python3 -c \"import anthropic\")",
+      "Bash(python3 aire/lp-webhook/register.py --test)",
+      "Bash(python3 aire/lp-webhook/register.py list)",
+      "Bash(python3 aire/pipeline-app/app.py --test)",
+      "Bash(python3 tools/check-no-client-data.py)",
+      "Bash(ls *)",
+      "Bash(cat aire/world/sync.log)",
+      "Bash(tail *)",
+      "Bash(curl -s http://127.0.0.1:4747/api/dash)",
+      "Bash(curl -s http://127.0.0.1:4747/api/state)",
+      "Read(~/.aire/logs/**)"
+    ],
+    "ask": [
+      "Bash(python3 aire/lp-webhook/register.py create *)",
+      "Bash(python3 aire/lp-webhook/register.py delete *)",
+      "Bash(/usr/bin/python3 aire/ai-visibility/check.py)",
+      "Bash(/usr/bin/python3 aire/ai-visibility/check.py --group *)",
+      "Bash(git push *)"
+    ]
+  },
+  "sandbox": {
+    "excludedCommands": [
+      "git fetch *",
+      "git checkout *",
+      "git pull *",
+      "launchctl *",
+      "sh aire/pipeline-app/install.sh",
+      "sh aire/world/install.sh",
+      "/usr/bin/python3 aire/world/sync.py*",
+      "/usr/bin/python3 aire/ai-visibility/check.py*",
+      "/usr/bin/python3 -m pip install anthropic",
+      "python3 aire/lp-webhook/register.py*",
+      "curl -s http://127.0.0.1:4747/*"
+    ]
+  }
+}
