@@ -8,3 +8,4 @@ queue-*.md
 *.local.json
 aire/world/reports/
 aire/world/sync.log
+aire/world/data.json

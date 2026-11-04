@@ -14,7 +14,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 def main():
     page = open(os.path.join(HERE, "src", "page.html"), encoding="utf-8").read()
-    data = json.load(open(os.path.join(HERE, "data.json"), encoding="utf-8"))
+    live = os.path.join(HERE, "data.json")
+    src = live if os.path.exists(live) else os.path.join(HERE, "data.sample.json")
+    data = json.load(open(src, encoding="utf-8"))
     seed = json.dumps(data, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     out = page.replace("__DATA__", seed)
     path = os.path.join(HERE, "index.html")

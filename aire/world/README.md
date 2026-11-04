@@ -13,12 +13,14 @@ Built 2026-11-04 from the nocode.joshua five-step guide, tailored to real estate
 
 ```
 cd ~/Caleb-s-Agents
-python3 aire/world/sync.py            # one sync: prints the merged table, the unmatched list and every number with its source
+/usr/bin/python3 aire/world/sync.py   # one sync: prints the merged table, the unmatched list and every number with its source
 sh aire/world/install.sh              # sync every 5 minutes and a page server on http://localhost:4751, both start at login
 open http://localhost:4751
 ```
 
-The sync uses the CRM's own Google token at `~/.aire/google-token.json` (Sheets scope, the same one `aire/crm/crm.py auth` created). It needs `google-api-python-client` and `google-auth`, already installed for the CRM engine.
+The sync uses the CRM's own Google token at `~/.aire/google-token.json` (Sheets scope, the same one `aire/crm/crm.py auth` created). Use `/usr/bin/python3`, the system Python that has `google-api-python-client` and `google-auth` installed for the CRM engine; the LaunchAgents use it too. A Homebrew `python3` on PATH does not have them and fails at once.
+
+If the sheet cannot be read at all (no network, token expired), the sync logs `FAILED`, keeps the last good `data.json`, and the page shows the last good time with a grey dot. It never writes zeros and calls it ok. A single input tab that fails (one you have not created yet) is a warning in `sync.log` and in `data.json` under `sync.warnings`; the rest syncs.
 
 Stop: `sh aire/world/install.sh --remove`. Restart: run `install.sh` again. Check: the LIVE label on the page, `aire/world/sync.log` (one line per sync, `ok` or `FAILED` with the error type), and `~/.aire/logs/world.log`. A failed sync keeps the last good `data.json` and the page shows the last good time.
 
@@ -26,14 +28,17 @@ Fill the input tabs: paste the KW Command Contacts export, then the Opportunitie
 
 ## Rebuild the page
 
-`src/page.html` is the source. `python3 aire/world/build.py` writes `index.html` with the current `data.json` as the first frame. Republish `index.html` and `data.json` to the preview artifact after a rebuild.
+`src/page.html` is the source. `python3 aire/world/build.py` writes `index.html` with the current `data.json` as the first frame (or `data.sample.json` when no live file exists). Republish `index.html` and the data file to the preview artifact after a rebuild.
+
+`data.json` is the live file the Mac rewrites every 5 minutes, so it is git-ignored. `data.sample.json` is a committed snapshot (totals only) for builds and the preview.
 
 ## Files
 
 | File | What it is |
 |---|---|
 | `sync.py` | The sync. `--loop` every 5 minutes, `--from-exports DIR` for a Claude session with connector exports, `table` to print the numbers. |
-| `data.json` | Totals only, with period and source on every number, and the match counts. |
+| `data.json` | The live file, totals only, with period and source on every number, and the match counts. Git-ignored. |
+| `data.sample.json` | Committed snapshot of the same shape, for build.py and the preview. |
 | `plan.md` | The eight objects, what each shows, how each moves. |
 | `src/page.html`, `build.py`, `index.html` | The page source, the assembler, the built page. |
 | `install.sh`, `launchd/` | The two LaunchAgents. |

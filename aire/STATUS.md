@@ -2,6 +2,21 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-04, evening: AIRE World loop live on the Mac, outage bug fixed
+
+**Confirmed by Caleb** (pasted from the Mac session)
+- Sync ran on the sheet: 3,656 contacts, 6 live deals, 3 under contract worth $2,397,000, $22,410 pending commission (one contract still without a figure), next close Nov 20, 4 deadlines in 30 days, one today, nothing unmatched. Both LaunchAgents installed, the server answered on localhost:4751, the background sync ran once on its own.
+- Two problems found there: plain `python3` lacks the Google libraries (`/usr/bin/python3` has them), and a sandboxed run where every tab failed still logged ok and wrote zeros.
+
+**Done**
+- `sync.py`: a sync that cannot read Contacts or Deals (or gets an empty Contacts tab) now fails, keeps the last good data.json, marks `sync.ok` false with the error type, and logs FAILED. A single optional tab that fails is a warning in `sync.warnings`. Tested: an empty exports folder failed and kept 3,656 contacts; the next good run cleared it.
+- README and the script's own help say `/usr/bin/python3`.
+- `data.json` is the live file the Mac rewrites every 5 minutes, so it is git-ignored now. `data.sample.json` is the committed snapshot; `build.py` uses the live file when present, the sample otherwise.
+
+**Needs Caleb**
+- On the Mac, before pulling: `git checkout -- aire/world/data.json` (the loop rewrites it within 5 minutes), then `git pull`.
+- Add the missing commission figure to the third under-contract deal in the Deals tab when you have it.
+
 ## 2026-11-04, evening: AIRE World wired and published
 
 **Confirmed by Caleb**

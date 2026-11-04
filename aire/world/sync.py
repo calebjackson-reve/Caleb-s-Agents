@@ -22,9 +22,10 @@ Matching, in this order, never guessed
   2. email, lower-cased
   Anything else is listed as unmatched.
 
-Run on the Mac (the CRM's own token, ~/.aire/google-token.json, Sheets scope only):
-    python3 aire/world/sync.py             # one sync, prints the merged table and the unmatched list
-    python3 aire/world/sync.py --loop      # every 5 minutes while the Mac is awake
+Run on the Mac (the CRM's own token, ~/.aire/google-token.json, Sheets scope only). Use the
+system Python, which has the Google libraries; a Homebrew python3 may not:
+    /usr/bin/python3 aire/world/sync.py          # one sync, prints the merged table and the unmatched list
+    /usr/bin/python3 aire/world/sync.py --loop   # every 5 minutes while the Mac is awake
 From a Claude session with connector exports (get_values JSON per tab):
     python3 -I aire/world/sync.py --from-exports DIR
 """
@@ -41,7 +42,8 @@ from zoneinfo import ZoneInfo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
-OUT = os.path.join(HERE, "data.json")
+OUT = os.path.join(HERE, "data.json")          # live file, written every sync, git-ignored
+SAMPLE = os.path.join(HERE, "data.sample.json")  # committed snapshot for build.py and the preview
 LOG = os.path.join(HERE, "sync.log")
 REPORTS = os.path.join(HERE, "reports")
 SHEET_ID = os.getenv("AIRE_CRM_SHEET", "1w9izcliqmXlFR3_O3dnP2G5SGfCrua7mrCLCE7cdoDc")
@@ -439,7 +441,7 @@ def summarize(raw, now=None):
                            "pending_sales": g2("pending_sales", "Pending sales"), "month": gb.get("month"), "source": gb.get("source"), "source_url": gb.get("source_url")}
 
     data = {
-        "sync": {"at": now.isoformat(timespec="seconds"), "ok": True, "by": raw.get("by", "sync.py")},
+        "sync": {"at": now.isoformat(timespec="seconds"), "ok": True, "by": raw.get("by", "sync.py"), "warnings": raw.get("warnings", [])},
         "sources": {"crm": "AIRE CRM Google Sheet, read only: Contacts, Deals, Tasks, Deadlines, Command export, LP leads",
                     "market": (gb or {}).get("source"), "report": "aire/world/reports/merge-<date>.md (on the Mac, git-ignored)"},
         "match": mcounts,
@@ -480,8 +482,11 @@ def read_exports(d):
     def j(name):
         p = os.path.join(d, name)
         return json.load(open(p, encoding="utf-8")).get("values", []) if os.path.exists(p) else []
-    return {"contacts": j("contacts.json"), "deals": j("deals.json"), "tasks": j("tasks.json"), "deadlines": j("deadlines.json"),
-            "command": j("command.json"), "lp": j("lp.json"), "by": "connector exports"}
+    raw = {"contacts": j("contacts.json"), "deals": j("deals.json"), "tasks": j("tasks.json"), "deadlines": j("deadlines.json"),
+           "command": j("command.json"), "lp": j("lp.json"), "by": "connector exports", "warnings": []}
+    if len(raw["contacts"]) < 2 or len(raw["deals"]) < 1:
+        raise RuntimeError("exports missing Contacts or Deals rows")
+    return raw
 
 
 def read_google():
@@ -491,13 +496,22 @@ def read_google():
         sys.exit(f"No Google token at {TOKEN}. Run: cd aire/crm && python3 crm.py auth")
     creds = Credentials.from_authorized_user_file(TOKEN, SCOPES)
     svc = build("sheets", "v4", credentials=creds, cache_discovery=False).spreadsheets().values()
-    raw = {"by": "sync.py on the Mac"}
+    raw = {"by": "sync.py on the Mac", "warnings": []}
+    failed = {}
     for k, rng in TABS.items():
         try:
             raw[k] = svc.get(spreadsheetId=SHEET_ID, range=rng).execute().get("values", [])
-        except Exception as e:  # a tab Caleb has not created yet
-            log(f"tab {rng} not read: {type(e).__name__}")
+        except Exception as e:
+            failed[k] = f"{type(e).__name__}: {str(e)[:120]}"
             raw[k] = []
+    # Contacts and Deals are the spine. If either could not be read, this sync is a failure:
+    # the caller keeps the last good data.json instead of writing zeros and calling it ok.
+    required = [k for k in ("contacts", "deals") if k in failed]
+    if required or len(raw["contacts"]) < 2:
+        raise RuntimeError("could not read " + ", ".join(f"{k} ({failed[k]})" for k in required) if required else "Contacts came back empty")
+    for k, why in failed.items():  # an input tab Caleb has not created yet, or a passing error on one tab
+        raw["warnings"].append(f"{TABS[k].split('!')[0].strip(chr(39))} not read: {why}")
+        log(f"warning: {raw['warnings'][-1]}")
     return raw
 
 
@@ -529,7 +543,7 @@ def run_once(exports=None, quiet=False):
             print(text)
         return True
     except Exception as e:
-        log(f"FAILED {type(e).__name__}: {e}")
+        log(f"FAILED {type(e).__name__}: {e}  (last good data.json kept)")
         if os.path.exists(OUT):
             try:
                 data = json.load(open(OUT, encoding="utf-8"))
