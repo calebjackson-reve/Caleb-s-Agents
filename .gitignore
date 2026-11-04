@@ -9,3 +9,5 @@ queue-*.md
 aire/world/reports/
 aire/world/sync.log
 aire/world/data.json
+__pycache__/
+*.pyc
