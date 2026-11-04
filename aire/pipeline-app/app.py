@@ -682,6 +682,27 @@ class State:
             write_json(self.paths["dismissed"], {"ids": ids})
         return {"ok": True, "result": {"id": row_id, "dismissed": len(ids)}}
 
+    def geocode_place(self, q: str, single=None) -> dict:
+        """The map's search box: one typed address to a point, through the free Census one-line geocoder
+        (the same service crm.py geocode uses, no key). Nothing is written. A tie that is one place spelled
+        two ways is a match, any other tie or no match says so."""
+        q = " ".join(str(q or "").split())
+        if not (5 <= len(q) <= 200) or not re.search(r"\d", q) or not re.search(r"[A-Za-z]", q):
+            raise CRMError("type a street address with a house number")
+        sys.path.insert(0, str(AIRE / "map-crm"))
+        import geo
+        single = single or geo._census_single
+        if not re.search(r"\b(LA|Louisiana)\b|\b7\d{4}\b", q, re.I):
+            q += ", LA"
+        try:
+            cands = single(q)
+        except Exception as e:
+            raise CRMError(f"the Census geocoder did not answer ({type(e).__name__})")
+        if not cands:
+            return {"ok": True, "result": {"status": "no_match", "query": q}}
+        r = geo.resolve_tie(cands) if len(cands) > 1 else {"status": "match", "lat": round(cands[0]["lat"], 6), "lng": round(cands[0]["lng"], 6), "matched": cands[0].get("matched", "")}
+        return {"ok": True, "result": {**r, "query": q}}
+
     def make_lead(self, name: str, source: str, phone: str = "", email: str = "", note: str = "") -> dict:
         if not name.strip() or not source.strip():
             raise CRMError("a lead needs a name and a source")
@@ -989,6 +1010,8 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.save_farms(body.get("farms", []))
             elif u.path == "/api/dismiss":
                 out = s.dismiss(body.get("id", ""))
+            elif u.path == "/api/geocode":
+                out = s.geocode_place(body.get("q", ""))
             elif u.path == "/api/lead":
                 out = s.make_lead(body.get("name", ""), body.get("source", ""), body.get("phone", ""), body.get("email", ""), body.get("note", ""))
             elif u.path == "/api/list":
@@ -1254,6 +1277,22 @@ def run_tests() -> int:
     check(last["address"].startswith("'=") and last["city"] == "'-1+1" and csv_safe("+12255550142", "phone") == "+12255550142", "list cells that look like formulas are neutralized, phones are not")
     sm.save_farms([{"name": "St. Francisville's Core", "polygon": sq}])
     check(sm.farms()[0]["id"] == "st-francisville-s-core", "farm ids are letters, numbers and dashes only")
+
+    # map search box: an address goes to the Census one-line geocoder, nothing is written
+    seen = []
+    def fake_single(q):
+        seen.append(q)
+        return [{"lat": 30.4512345, "lng": -91.1876543, "matched": "100 MADE UP ST, BATON ROUGE, LA, 70801"}] if "100" in q else []
+    g = sm.geocode_place("100 Made Up St Baton Rouge", single=fake_single)
+    check(g["ok"] and g["result"]["status"] == "match" and abs(g["result"]["lat"] - 30.451234) < 2e-6 and seen[-1].endswith(", LA"), "map search finds a typed address and adds LA when the state is missing")
+    check(sm.geocode_place("9 Nowhere Rd, Zachary, LA 70791", single=fake_single)["result"]["status"] == "no_match" and not seen[-1].endswith(", LA, LA"), "map search says no match and keeps a typed state")
+    two = lambda q: [{"lat": 30.1, "lng": -91.1, "matched": "a"}, {"lat": 30.6, "lng": -91.6, "matched": "b"}]
+    check(sm.geocode_place("12 Twin Oaks Dr", single=two)["result"]["status"] == "tie", "map search refuses to guess between two places")
+    for bad in ("", "Main St", "12345", "x" * 300):
+        try:
+            sm.geocode_place(bad, single=fake_single); check(False, f"map search refuses {bad[:12]!r}")
+        except CRMError:
+            check(True, f"map search refuses {bad[:12]!r}")
     check(Path(c1["result"]["file"]).name == f"call-list-{today().isoformat()}.csv" and Path(c1["result"]["file"]).parent == tmp / "map" / "lists", "lists are dated CSVs next to the state, never in git")
 
     # the HTTP layer end to end on a free port

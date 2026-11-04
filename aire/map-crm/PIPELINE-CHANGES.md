@@ -37,3 +37,24 @@ A fresh-context reviewer read the diff against this contract on 2026-10-29 and f
 - Flexmls "Active" listings with no event word were counted as new listings. They are now `listing_change`, and the MIME walk reaches nested HTML parts.
 
 Kept as specified: Make lead pre-fills "Owner at <address>" (CONTRACT.md and FEED.md name it), Caleb edits it before saving.
+
+## 2026-11-04: Google Maps style restyle
+
+Caleb asked for the map to work like a Google-style map product, black and coral with tan only as an accent. Branch `claude/map-google-style`, built by Claude Code in the cloud.
+
+| File | Change |
+|---|---|
+| `static/gmap.css` | New. Every style scoped to `.gm`: full-bleed map, search pill, suggestion list, place panel with a colored hero and round actions, filter chips, layer swatches, zoom. Black and coral tokens, tan as the accent. |
+| `static/map.js` | Dark base by default (OSM tiles under a CSS filter, no new tile source), Map and Satellite as before. Coral and tan palette. Teardrop pins for the selected pin and a searched address, white-edged dots, black clusters with a band ring. Smooth wheel and pinch zoom, gliding buttons and double-click, `flyTo`. |
+| `static/mapviews.js` | Search box with suggestions over people (name, address, city, phone, email), deals, market rows and farms, arrow keys and Esc. Place card for people, deals and market rows (Compose, Touched, Task, Note, Directions to Google Maps in a new tab, call list, postcards, Make lead, Make deal, Dismiss). In-view summary when nothing is picked. Band chips plus a Filters popover for last touch, stage and area. Dark, Map and Satellite swatches. The deals map uses the same map and only searches deals. |
+| `app.py` | `POST /api/geocode`: one typed address through the free Census one-line geocoder already in `geo.py` (no key, no cost). Needs a house number, adds ", LA" when no state or ZIP is typed, refuses ties. A searched address shows a "Not in your CRM" card with Make lead. 2 new offline checks. |
+| `static/index.html` | Loads `gmap.css`. |
+
+Proof:
+- `python3 aire/pipeline-app/app.py --test`: 0 failures.
+- Click-through on the demo fixtures in jsdom, 26 checks, all pass: search to place card, Touched posts `/api/touch` for that person, close back to the summary, Hot chip, Filters popover, Satellite switch, smooth wheel zoom, address search to a "Not in your CRM" card, market card keeps Make lead and Make deal, deals map, Market Monitor, no script errors.
+- Screenshots of a private preview with made-up people, taken in Caleb's Chrome.
+
+Not verified from the cloud:
+- The street and satellite tile images (the cloud proxy blocks the tile hosts and the preview page blocks outside images).
+- A live Census lookup through `/api/geocode` (the cloud proxy refused it; the same call worked from the cloud on 2026-10-27). The error path shows a plain message.

@@ -2,6 +2,22 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-04: Map restyled like Google Maps (branch, not merged)
+
+**Confirmed by Caleb**
+- Picked "Map CRM view", then "Restyle it". Wants it to work like a Google-style map product, mostly black and coral, tan only as an accent.
+
+**Done (branch `claude/map-google-style`)**
+- Map page and deals map rebuilt as a full-bleed dark map with a search box, suggestions, a place card with round actions and Directions to Google Maps, filter chips, a Filters popover, and Dark, Map and Satellite layers. Smooth zoom and fly-to. Details in `map-crm/PIPELINE-CHANGES.md`.
+- Typed street addresses can be found on the map through the free Census geocoder (no key, no cost), with a "Not in your CRM" card and Make lead.
+- `app.py --test` 0 failures, jsdom click-through 26 of 26.
+
+**Not verified**
+- Tile images and a live Census lookup, both blocked from the cloud. Check on the Mac with `--demo`.
+
+**Needs Caleb**
+- Look at it on the Mac and merge the PR, or say what to change. The 52 unpinned contacts still need a paid geocoder, his call.
+
 ## 2026-10-29, afternoon: no group chats, Market Monitor twice a day
 
 **Confirmed by Caleb**
