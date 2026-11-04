@@ -33,6 +33,7 @@ Two optional paid services, each off until its key is present (env, or ~/.aire/p
 
 Environment:
   PIPELINE_PORT      default 4747
+  PIPELINE_BIND      127.0.0.1 (default, this Mac only) | tailscale (also Caleb's Tailscale devices, the mini host)
   PIPELINE_PYTHON    Python for crm.py, default ~/.aire/venv/bin/python when it exists, else this interpreter
   PIPELINE_SENDER    live | dry (default dry)
   PIPELINE_MAX_TEXTS, PIPELINE_MAX_EMAILS   default 25
@@ -53,6 +54,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date, datetime, timezone
+import ipaddress
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -1032,6 +1034,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def do_GET(self):
+        if not allowed(self.client_address[0]):
+            return self._json(403, {"ok": False, "error": "not this Mac or Caleb's Tailscale"})
         u = urllib.parse.urlparse(self.path)
         if u.path == "/api/state":
             return self._json(200, self.state.snapshot())
@@ -1074,6 +1078,8 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def do_POST(self):
+        if not allowed(self.client_address[0]):
+            return self._json(403, {"ok": False, "error": "not this Mac or Caleb's Tailscale"})
         u = urllib.parse.urlparse(self.path)
         n = int(self.headers.get("Content-Length") or 0)
         try:
@@ -1133,9 +1139,22 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": False, "error": f"{type(e).__name__}: {e}"[:300]})
 
 
+TAILNET = ipaddress.ip_network("100.64.0.0/10")  # Tailscale's address range
+
+
+def allowed(ip: str) -> bool:
+    """Loopback always. Tailscale addresses only when PIPELINE_BIND=tailscale. Everyone else on the LAN: no."""
+    try:
+        a = ipaddress.ip_address(ip.removeprefix("::ffff:"))
+    except ValueError:
+        return False
+    return a.is_loopback or (os.getenv("PIPELINE_BIND") == "tailscale" and a in TAILNET)
+
+
 def serve(state: State, port: int, open_browser: bool) -> None:
     Handler.state = state
-    httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    bind = "0.0.0.0" if os.getenv("PIPELINE_BIND") == "tailscale" else "127.0.0.1"
+    httpd = ThreadingHTTPServer((bind, port), Handler)
     url = f"http://127.0.0.1:{port}/"
     v = state.voice_info()
     print(f"Pipeline {'(demo) ' if state.demo else ''}on {url}  sender={state.sender}  crm python={getattr(state.crm, 'python', 'demo')}  "
