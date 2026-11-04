@@ -6,3 +6,5 @@ cache/
 queue-*.md
 *.audit.jsonl
 *.local.json
+aire/world/reports/
+aire/world/sync.log

@@ -2,6 +2,28 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-04, afternoon: AIRE World sync, the sheet as the single source
+
+**Confirmed by Caleb**
+- "Use my Google Sheets CRM as the single data source for the dashboard. Read it read-only. Add three input tabs: Command export, LP leads, and my existing deals and deadlines tabs. Match by property address first, then email. Show me any record that doesn't match instead of guessing. Never put client names, emails or phones in data.json. Show me the merged table and the unmatched list before you wire it into the 3D world."
+- Earlier today: the nocode.joshua five-step guide (sync script, data file, Three.js world, 5-minute loop, optional share), tailored to real estate.
+
+**Done**
+- Three tabs added to the AIRE CRM sheet: `Command export` (paste the KW Command Contacts and/or Opportunities CSV, header rows included, the sync finds each header by its column names), `LP leads` (paste the Luxury Presence export), `Deadlines` (address, kind, date, deal_id, source, notes), seeded with the four deadlines the TC filed on the calendar. No existing tab or column was touched.
+- `aire/world/sync.py`: reads Contacts, Deals, Tasks, Deadlines, Command export and LP leads read-only with the CRM's own token (Sheets scope only), matches by normalized address (2179 S Turnberry Ave = 2179 South Turnberry Avenue) then by email, writes totals to `aire/world/data.json` and the merged table plus every unmatched record to `aire/world/reports/merge-<date>.md` (git-ignored). Column aliases cover the usual export headers; the report lists which columns it recognized and ignored on every paste. A Command stage that disagrees with the Deals tab is noted, the Deals tab wins.
+- First run on today's tabs: 7 deals, 4 deadlines all matched by address, 0 unmatched. Leak check on data.json: 0 emails, 0 phones, 0 street-like strings. A made-up Command paste in the scratchpad proved the block parser, both match paths and the unmatched list.
+- `aire/world/plan.md`: the town as eight clickable objects, each stat tied to a data.json field. `src/page.html` is the Three.js draft, not yet wired to the new data shape (held for Caleb's go, per his instruction).
+
+**Not yet in the numbers**
+- Pending commission: no under-contract deal has a commission figure in the Deals `commission` column or a Command opportunity yet.
+- Days on market: no list dates yet. Comes from the Command Opportunities export (list date or days on market).
+- New leads by source this week: only the Contacts Source column today (2, Luxury Presence). The LP leads and Command pastes add their sources.
+
+**Needs Caleb**
+- Review the merged table and unmatched list (in chat, and on the Mac at aire/world/reports/).
+- Paste the two exports into the new tabs, then run `python3 aire/world/sync.py` on the Mac and read the unmatched list.
+- Say go to wire data.json into the 3D world.
+
 ## 2026-11-04: AIRE Business Map, a 3D map of the business with voices
 
 **Confirmed by Caleb**
