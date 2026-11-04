@@ -42,3 +42,12 @@ Research done 2026-11-04 from Luxury Presence's public developer docs and help c
    python3 aire/lp-webhook/register.py create --url "<web app url>?k=<LP_SECRET>" --yes
    ```
 4. Submit a test form on the Luxury Presence site. A row should land in the Website leads sheet and an email should reach aire@calebjackson.org. Then `python3 aire/crm/crm.py import-website-leads --dry-run` shows it as a lead.
+
+## Live path (2026-11-04): Cloudflare buffer, hourly pull
+
+The one registered webhook ("AIRE Relationship Brain", 2026-08-26) posts to the aire-hooks Cloudflare worker, which holds events 14 days. Nothing pulled them after the Relationship Brain stopped on 2026-09-22, so the Apps Script receiver was not deployed and no second webhook was added.
+
+- `pull.py` pulls the buffer, checks each x-lp-signature (Keychain `com.caleb.aire.lp` / `webhook-secret`), writes lead events to the `Leads` tab and everything else to `LP activity`, and acks only what it wrote. Instagram events are left for their own reader. Bad signatures go to `~/.aire/lp-quarantine.jsonl`.
+- `pull_hourly.sh` runs it hourly via the LaunchAgent `org.calebjackson.aire.lp-pull`, then `crm.py website-leads` when a new lead row landed. Plain Python, no model calls, no tokens. Log: `~/.aire/logs/lp-pull.log`, counts only.
+- Install: `cp aire/lp-webhook/org.calebjackson.aire.lp-pull.plist ~/Library/LaunchAgents/ && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/org.calebjackson.aire.lp-pull.plist`
+- Checks: `python3 pull.py --test` (made-up leads), `python3 pull.py` (live dry run, writes and acks nothing).
