@@ -17,7 +17,8 @@
   clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); animation: rise .5s cubic-bezier(.2, .8, .2, 1) both; }
 .dcard.dhero { border-color: var(--line); box-shadow: inset 0 0 0 1px rgba(25, 211, 255, .08); }
 .dcard .dch { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.dcard .dch h3 { margin: 0; font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cyan); }
+.dcard .dch h3 { margin: 0; font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cyan); display: flex; align-items: center; gap: 8px; }
+.ico-chip { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; flex: none; } .ico-chip svg { width: 14px; height: 14px; stroke: #061020; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .dcard .dch small { font: 12px var(--mono); color: var(--muted); letter-spacing: .06em; white-space: nowrap; }
 .dcard .big { font: 500 34px/1.05 var(--sans); letter-spacing: -.02em; color: var(--text); font-variant-numeric: tabular-nums; }
 .dcard.dhero .big { font-size: 42px; }

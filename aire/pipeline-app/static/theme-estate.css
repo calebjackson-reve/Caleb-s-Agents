@@ -1,0 +1,120 @@
+/* Estate: the luxury skin. Deep ink with a warm glow, frosted-glass cards, serif numbers, solid-color icon chips.
+   Applies when <html data-theme="estate">. The HUD skin in app.css stays underneath and is one toggle away. */
+html[data-theme="estate"] {
+  --bg0: #0d1017; --bg1: #141927; --bg2: #1b2133;
+  --panel: rgba(255, 255, 255, .055); --panel2: rgba(255, 255, 255, .08);
+  --line: rgba(255, 255, 255, .18); --line-soft: rgba(255, 255, 255, .10);
+  --cyan: #d9b97c; --teal: #9ccfa9; --amber: #e9a86a; --red: #e58b8b; --violet: #c0a9e6;
+  --text: #f4efe6; --muted: #b9b1a4; --dim: #7f786e;
+  --glow: 0 0 0 rgba(0, 0, 0, 0);
+  --sans: -apple-system, "SF Pro Text", "Helvetica Neue", Inter, Segoe UI, Roboto, sans-serif;
+  --mono: -apple-system, "SF Pro Text", "Helvetica Neue", Inter, Segoe UI, Roboto, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+  --gold: #d9b97c; --coral: #e8846b; --sage: #8fbf9f; --sky: #7fb3d5; --lavender: #b59bd9; --rose: #e39ab0; --ivory: #f4efe6;
+  --cut: 0px;
+}
+html[data-theme="estate"] body {
+  background: #0d1017;
+  background-image:
+    radial-gradient(900px 600px at 12% 0%, rgba(217, 185, 124, .16), transparent 60%),
+    radial-gradient(700px 500px at 100% 20%, rgba(181, 155, 217, .13), transparent 60%),
+    radial-gradient(900px 700px at 60% 110%, rgba(127, 179, 213, .12), transparent 60%),
+    linear-gradient(180deg, #0f1320, #0d1017 60%, #11141c);
+  background-size: auto; font-size: 13.5px;
+}
+html[data-theme="estate"] .mono { letter-spacing: .02em; }
+/* glass panels everywhere: no cut corners, no border layer */
+html[data-theme="estate"] .panel { background: var(--panel); clip-path: none; border-radius: 18px; border: 1px solid var(--line-soft); box-shadow: 0 18px 48px rgba(0, 0, 0, .35), inset 0 1px 0 rgba(255, 255, 255, .06); backdrop-filter: blur(18px) saturate(120%); -webkit-backdrop-filter: blur(18px) saturate(120%); }
+html[data-theme="estate"] .panel::before, html[data-theme="estate"] .panel::after, html[data-theme="estate"] .side::after, html[data-theme="estate"] .top::after, html[data-theme="estate"] .bottom::after { display: none; }
+html[data-theme="estate"] .app { gap: 12px; padding: 12px; }
+html[data-theme="estate"] .side { padding: 18px 14px; }
+html[data-theme="estate"] .brand { border-bottom-color: var(--line-soft); padding-bottom: 12px; }
+html[data-theme="estate"] .brand-name { font: 500 20px/1 var(--serif); letter-spacing: .12em; color: var(--ivory); text-shadow: none; }
+html[data-theme="estate"] .brand-sub { font-size: 11px; color: var(--gold); letter-spacing: .18em; }
+html[data-theme="estate"] .brand-ring i:nth-child(1) { border-top-color: var(--gold); border-right-color: var(--gold); }
+html[data-theme="estate"] .brand-ring i:nth-child(2) { border-bottom-color: var(--rose); border-left-color: var(--rose); }
+html[data-theme="estate"] .brand-ring i:nth-child(3) { background: radial-gradient(circle, #fff 0 20%, var(--gold) 45%, transparent 70%); }
+html[data-theme="estate"] .nav button { border-radius: 12px; border-left: 0; padding: 9px 10px; font-size: 13.5px; color: var(--muted); gap: 10px; }
+html[data-theme="estate"] .nav button .ico { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; font-size: 13px; opacity: 1; color: #1a1612; background: var(--gold); flex: none; }
+html[data-theme="estate"] .nav button:nth-child(2) .ico { background: var(--sky); } html[data-theme="estate"] .nav button:nth-child(3) .ico { background: var(--coral); }
+html[data-theme="estate"] .nav button:nth-child(4) .ico { background: var(--sage); } html[data-theme="estate"] .nav button:nth-child(5) .ico { background: var(--lavender); }
+html[data-theme="estate"] .nav button:nth-child(6) .ico { background: var(--rose); } html[data-theme="estate"] .nav button:nth-child(7) .ico { background: var(--sky); }
+html[data-theme="estate"] .nav button:nth-child(8) .ico { background: var(--sage); } html[data-theme="estate"] .nav button:nth-child(9) .ico { background: var(--coral); }
+html[data-theme="estate"] .nav button:nth-child(10) .ico { background: var(--lavender); } html[data-theme="estate"] .nav button:nth-child(11) .ico { background: var(--rose); }
+html[data-theme="estate"] .nav button.on { color: var(--ivory); background: rgba(255, 255, 255, .08); border-left-color: transparent; }
+html[data-theme="estate"] .nav button:hover { background: rgba(255, 255, 255, .06); }
+html[data-theme="estate"] .nav button .cnt { background: rgba(255, 255, 255, .1); color: var(--ivory); font-size: 11px; }
+html[data-theme="estate"] .nav button .cnt.warn { background: rgba(232, 132, 107, .25); color: #ffd9cf; }
+html[data-theme="estate"] .send-status, html[data-theme="estate"] .voice-status { border-radius: 14px; border-color: var(--line-soft); background: rgba(255, 255, 255, .04); }
+html[data-theme="estate"] .mini-h { font-size: 11px; color: var(--gold); letter-spacing: .14em; }
+html[data-theme="estate"] .mode { color: var(--ivory); } html[data-theme="estate"] .mode.live { color: var(--sage); }
+html[data-theme="estate"] .ghost-btn { border-radius: 12px; background: rgba(255, 255, 255, .06); border-color: var(--line-soft); }
+html[data-theme="estate"] .ghost-btn:hover { border-color: var(--gold); box-shadow: none; background: rgba(217, 185, 124, .12); }
+html[data-theme="estate"] .top { padding: 0 20px; }
+html[data-theme="estate"] .status-chip { clip-path: none; border-radius: 999px; padding: 7px 14px; font-size: 11px; background: rgba(255, 255, 255, .05); }
+html[data-theme="estate"] .status-chip b { color: var(--sage); font-size: 11px; letter-spacing: .1em; } html[data-theme="estate"] .dot { background: var(--sage); box-shadow: none; }
+html[data-theme="estate"] .date { color: var(--muted); font-size: 12px; }
+html[data-theme="estate"] .time { font: 400 24px/1.1 var(--serif); color: var(--ivory); text-shadow: none; letter-spacing: .02em; }
+html[data-theme="estate"] .search { border-radius: 999px; background: rgba(255, 255, 255, .06); padding: 7px 14px; } html[data-theme="estate"] .search:focus-within { border-color: var(--gold); box-shadow: none; }
+html[data-theme="estate"] .icon-btn { border-radius: 10px; background: rgba(255, 255, 255, .06); width: 36px; height: 34px; } html[data-theme="estate"] .icon-btn:hover { border-color: var(--gold); box-shadow: none; }
+html[data-theme="estate"] .icon-btn b { background: var(--coral); color: #fff; }
+html[data-theme="estate"] .operator { background: rgba(255, 255, 255, .05); border-color: var(--line-soft); }
+html[data-theme="estate"] .avatar { background: linear-gradient(135deg, var(--gold), var(--coral)); color: #1a1612; border: 0; }
+html[data-theme="estate"] .op-sub { color: var(--gold); font-size: 10.5px; }
+html[data-theme="estate"] .bottom { padding: 0 20px; }
+html[data-theme="estate"] .chip { clip-path: none; border-radius: 999px; background: rgba(255, 255, 255, .05); font-size: 11px; padding: 6px 14px; } html[data-theme="estate"] .chip span.ico { color: var(--gold); }
+html[data-theme="estate"] .talk { border-radius: 999px; border-color: rgba(217, 185, 124, .5); background: linear-gradient(90deg, rgba(217, 185, 124, .14), rgba(227, 154, 176, .12)); box-shadow: 0 10px 30px rgba(0, 0, 0, .3); }
+html[data-theme="estate"] .talk:hover { box-shadow: 0 12px 34px rgba(0, 0, 0, .4); }
+html[data-theme="estate"] .talk-text b { font: 500 14px var(--serif); letter-spacing: .14em; color: var(--ivory); }
+html[data-theme="estate"] .talk.on { border-color: var(--sage); box-shadow: 0 0 0 4px rgba(156, 207, 169, .18); }
+html[data-theme="estate"] .orb { background: radial-gradient(circle at 50% 50%, rgba(217, 185, 124, .4), rgba(217, 185, 124, .08) 60%, transparent 70%); }
+html[data-theme="estate"] .orb i { border-color: rgba(217, 185, 124, .55); } html[data-theme="estate"] .orb i:nth-child(2) { border-color: rgba(227, 154, 176, .55); }
+html[data-theme="estate"] .orb span { filter: none; }
+html[data-theme="estate"] .wave i { background: var(--gold); }
+html[data-theme="estate"] .boot { background: #0d1017; } html[data-theme="estate"] .boot-title { font: 500 36px var(--serif); letter-spacing: .3em; text-shadow: none; }
+html[data-theme="estate"] .boot-sub { color: var(--gold); } html[data-theme="estate"] .boot-bar i { background: linear-gradient(90deg, var(--gold), var(--rose)); box-shadow: none; }
+/* other views: headers and cards soften */
+html[data-theme="estate"] .ph h3 { font: 600 12px var(--sans); letter-spacing: .12em; color: var(--gold); }
+html[data-theme="estate"] .card { border-radius: 14px; background: rgba(255, 255, 255, .04); } html[data-theme="estate"] .card:hover { border-color: var(--gold); box-shadow: none; }
+html[data-theme="estate"] .tag { font-size: 10px; border-radius: 999px; }
+html[data-theme="estate"] .drawer .panel, html[data-theme="estate"] .modal .panel { border-radius: 20px; }
+/* the dashboard */
+html[data-theme="estate"] .dhead h1 { font: 400 40px/1.05 var(--serif); letter-spacing: 0; color: var(--ivory); }
+html[data-theme="estate"] .dhead h1 b { font-weight: 400; font-style: italic; color: var(--gold); }
+html[data-theme="estate"] .dhead .motto { font-size: 14px; color: var(--muted); }
+html[data-theme="estate"] .dhead .asof { font: 12px var(--sans); color: var(--muted); } html[data-theme="estate"] .dhead .asof small { font-size: 13.5px; }
+html[data-theme="estate"] .dcard { clip-path: none; border-radius: 20px; padding: 16px 18px 14px; gap: 8px; background: var(--panel); border: 1px solid var(--line-soft); box-shadow: 0 18px 48px rgba(0, 0, 0, .32), inset 0 1px 0 rgba(255, 255, 255, .07); backdrop-filter: blur(18px) saturate(120%); -webkit-backdrop-filter: blur(18px) saturate(120%); }
+html[data-theme="estate"] .dcard.dhero { background: linear-gradient(160deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .04)); border-color: rgba(217, 185, 124, .35); box-shadow: 0 22px 56px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .12); }
+html[data-theme="estate"] .dcard .dch { gap: 10px; align-items: center; }
+html[data-theme="estate"] .dcard .dch h3 { font: 600 12.5px var(--sans); letter-spacing: .06em; text-transform: none; color: var(--ivory); display: flex; align-items: center; gap: 10px; }
+html[data-theme="estate"] .dcard .dch small { font: 12px var(--sans); color: var(--muted); letter-spacing: 0; }
+html[data-theme="estate"] .dcard .big { font: 400 40px/1.05 var(--serif); letter-spacing: -.01em; color: var(--ivory); }
+html[data-theme="estate"] .dcard.dhero .big { font-size: 50px; } html[data-theme="estate"] .dcard .big.amber { color: var(--gold); } html[data-theme="estate"] .dcard .big sup { font-size: 20px; }
+html[data-theme="estate"] .dcard .sub { color: var(--muted); font-size: 13px; }
+html[data-theme="estate"] .dcard code { color: var(--gold); font-family: var(--sans); font-weight: 600; }
+html[data-theme="estate"] .dash .mini b { font: 400 28px/1.1 var(--serif); }
+html[data-theme="estate"] .ico-chip { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; flex: none; box-shadow: 0 6px 14px rgba(0, 0, 0, .25); }
+html[data-theme="estate"] .ico-chip svg { width: 16px; height: 16px; stroke: #1a1612; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+html[data-theme="estate"] .grid7 .dow { color: var(--dim); } html[data-theme="estate"] .grid7 .d { border-radius: 8px; }
+html[data-theme="estate"] .grid7 .d.today { outline: 0; background: var(--gold); color: #1a1612; } html[data-theme="estate"] .grid7 .d i { background: var(--coral); }
+html[data-theme="estate"] .sched .it span { color: var(--gold); } html[data-theme="estate"] .pill { border-radius: 999px; font-family: var(--sans); font-size: 12px; letter-spacing: .03em; }
+html[data-theme="estate"] .pill.high { color: #ffd1cf; background: rgba(229, 139, 139, .22); border-color: transparent; }
+html[data-theme="estate"] .pill.med, html[data-theme="estate"] .pill.soon { color: #ffe3c2; background: rgba(233, 168, 106, .22); border-color: transparent; }
+html[data-theme="estate"] .pill.low, html[data-theme="estate"] .pill.later { color: var(--muted); background: rgba(255, 255, 255, .07); border-color: transparent; }
+html[data-theme="estate"] .tk .ck { border-radius: 50%; border-color: var(--line); } html[data-theme="estate"] .tk .ck.on { background: var(--sage); color: #1a1612; }
+html[data-theme="estate"] .dcard.timer .arc { stroke: var(--gold); } html[data-theme="estate"] .dcard.timer .in b { font: 400 28px var(--serif); }
+html[data-theme="estate"] .dcard.timer .ctl button { border-radius: 999px; } html[data-theme="estate"] .dcard.timer .ctl .go { background: var(--gold); color: #1a1612; border-color: var(--gold); }
+html[data-theme="estate"] .dash .list .t.now { color: var(--gold); } html[data-theme="estate"] .mail.unread b { color: var(--gold); }
+html[data-theme="estate"] .funnel .f i { border-radius: 999px; height: 12px; }
+html[data-theme="estate"] .recs li { background: rgba(255, 255, 255, .06); border-color: transparent; }
+html[data-theme="estate"] .tool.ok i { background: var(--sage); box-shadow: 0 0 0 3px rgba(156, 207, 169, .18); } html[data-theme="estate"] .tool.warn i { background: var(--amber); } html[data-theme="estate"] .tool i { background: #4b463f; }
+html[data-theme="estate"] .drail button { border-radius: 14px; background: var(--panel); border-color: var(--line-soft); color: var(--muted); backdrop-filter: blur(14px); box-shadow: 0 10px 24px rgba(0, 0, 0, .25); }
+html[data-theme="estate"] .drail button.on { color: var(--ivory); border-color: rgba(217, 185, 124, .45); background: rgba(217, 185, 124, .12); box-shadow: 0 10px 24px rgba(0, 0, 0, .25); }
+html[data-theme="estate"] .drail button span { font-family: var(--sans); font-size: 12px; letter-spacing: 0; }
+html[data-theme="estate"] .drail button.farm { color: var(--sage); border-color: rgba(156, 207, 169, .4); }
+html[data-theme="estate"] .drail button.theme { color: var(--gold); border-color: rgba(217, 185, 124, .4); }
+html[data-theme="estate"] .dfoot { color: var(--dim); }
+html[data-theme="estate"] .empty b { color: var(--ivory); }
+html[data-theme="estate"] .toast { border-radius: 14px; }
+html[data-theme="estate"] .dcard.wx .days { gap: 4px; } html[data-theme="estate"] .dcard.wx .days b { white-space: nowrap; font-size: 12.5px; }
+html[data-theme="estate"] .grid7 .d i { bottom: 1px; width: 5px; height: 5px; }

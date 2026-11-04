@@ -2,6 +2,20 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-04, night: the Estate look
+
+**Confirmed by Caleb**
+- "I want it to look a little more luxury and not as techy. I like colorful icons and either glassy look or solid colors and not as robotic. Create a vision and go with best option."
+
+**Done**
+- Vision chosen and built: Estate. Deep ink background with a warm gold, lavender and sky glow; frosted-glass panels with soft shadows and 18 to 20px corners; serif greeting and numbers (Iowan Old Style or Palatino, on the Mac, no downloads); warm ivory text; a solid-color icon chip on every dashboard card and nav item. The whole Pipeline shell takes the skin, not only the dashboard, so Command Center and the other views match. `aire/pipeline-app/static/theme-estate.css`, loaded after the HUD stylesheet and applied through `html[data-theme="estate"]`; the HUD look is the `hud` button on the dashboard rail and the choice is remembered.
+- Proof: headless 1440x900, Estate on by default, 16 cards with 16 icon chips, backdrop blur active, serif on the numbers, no text under 12px, no horizontal overflow, no page errors; theme toggle persists across a reload and switches back. Command Center rendered under Estate with no errors. Pipeline checks: 70 pass.
+- QuickBooks: the Intuit QuickBooks Labs connector appeared during the session, but the sign-in has no company attached yet, so the year's profit and loss could not be read.
+
+**Needs Caleb**
+- Open Pipeline on the Mac and say what to push further: more color, lighter cards, a light ivory version, different serif.
+- QuickBooks: attach the company to the Intuit sign-in (or sign in with the account that owns it) so the dashboard can show commission and spend.
+
 ## 2026-11-04, late: dashboard built into Pipeline, 4x plan
 
 **Confirmed by Caleb**

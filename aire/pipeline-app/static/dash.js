@@ -6,7 +6,27 @@ const Dash = (() => {
   const KEY = 'aire.dash.toggles';
   const DEF = { calendar: true, schedule: true, tasks: true, timer: true, deadlines: true, inbox: true, stages: true, leads: true, market: true, ai: true, tools: true, live: true, compact: false };
   const LABELS = { calendar: 'month', schedule: 'today', tasks: 'tasks', timer: 'timer', deadlines: 'due', inbox: 'inbox', stages: 'stages', leads: 'leads', market: 'market', ai: 'AI', tools: 'tools', live: 'live', compact: 'tight' };
+  const THEME_KEY = 'aire.theme';
   const ICONS = { calendar: '▦', schedule: '◷', tasks: '☑', timer: '◔', deadlines: '⚑', inbox: '✉', stages: '▤', leads: '✦', market: '◆', ai: '◎', tools: '⚙', live: '↻', compact: '▣' };
+  // Solid-color icon chips, inline SVG so they work offline. Color per card, one glyph each.
+  const CHIP = {
+    commission: ['var(--gold)', '<path d="M12 3v18M8 7.5h6a2.5 2.5 0 0 1 0 5H9.5a2.5 2.5 0 0 0 0 5H16"/>'],
+    contract: ['var(--sky)', '<path d="M4 20V9l8-6 8 6v11H4z"/><path d="M10 20v-6h4v6"/>'],
+    people: ['var(--coral)', '<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.3c2.9.3 5.5 2.6 5.5 5.7"/>'],
+    deadlines: ['var(--rose)', '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>'],
+    calendar: ['var(--lavender)', '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'],
+    weather: ['var(--gold)', '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>'],
+    schedule: ['var(--sky)', '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'],
+    tasks: ['var(--sage)', '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8 12.5l2.8 2.8L16.5 9.5"/>'],
+    timer: ['var(--coral)', '<circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.5 1.5M9.5 3h5M12 3v2.5"/>'],
+    inbox: ['var(--lavender)', '<path d="M3.5 13l2.3-7h12.4l2.3 7v5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-5z"/><path d="M3.5 13h5l1.5 2.5h4l1.5-2.5h5"/>'],
+    stages: ['var(--gold)', '<path d="M4 19h16M6 15V9M11 15V5M16 15v-3"/>'],
+    leads: ['var(--rose)', '<path d="M12 3l2.2 5.6L20 9.4l-4.4 3.9L17 19l-5-3-5 3 1.4-5.7L4 9.4l5.8-.8z"/>'],
+    market: ['var(--sage)', '<path d="M3.5 17l5-6 4 3.5 8-8.5"/><path d="M15.5 6h5v5"/>'],
+    ai: ['var(--sky)', '<path d="M12 4l1.5 4 4 1.5-4 1.5L12 15l-1.5-4-4-1.5 4-1.5z"/><path d="M5 16l.8 2 2 .8-2 .8L5 21.5l-.8-1.9-2-.8 2-.8z"/>'],
+    tools: ['var(--coral)', '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>'],
+  };
+  const chip = k => CHIP[k] ? `<span class="ico-chip" style="background:${CHIP[k][0]}"><svg viewBox="0 0 24 24" aria-hidden="true">${CHIP[k][1]}</svg></span>` : '';
   let T = load(), D = null, at = 0, loading = false, clock = null, poll = null;
   let left = 1500, run = null; const TOTAL = 1500;
 
@@ -33,9 +53,9 @@ const Dash = (() => {
   }
 
   // ---- cards. Each returns '' when its toggle is off.
-  function card(key, cls, title, right, body, sub) {
+  function card(key, cls, title, right, body, sub, icon) {
     if (key && T[key] === false) return '';
-    return `<section class="dcard ${cls}"><div class="dch"><h3>${title}</h3>${right ? `<small>${right}</small>` : ''}</div>${body}${sub ? `<p class="sub">${sub}</p>` : ''}</section>`;
+    return `<section class="dcard ${cls}"><div class="dch"><h3>${chip(icon || key)}${title}</h3>${right ? `<small>${right}</small>` : ''}</div>${body}${sub ? `<p class="sub">${sub}</p>` : ''}</section>`;
   }
   function heroes(w, f) {
     const c = f.counts || {};
@@ -46,16 +66,16 @@ const Dash = (() => {
     const dToday = w ? n(w.calendar.deadlines_today) : 0, d30 = w ? n(w.calendar.deadlines_30d) : 0;
     const pendSub = pend == null ? `No commission figure on the under-contract deals yet. Add one in the Deals tab and this fills in.` : `Your cut waiting on the ${uc} under-contract deal${uc === 1 ? '' : 's'}. Paid at closing.`;
     return `<div class="heroes">
-      ${card('', 'dhero', 'Pending commission', 'now', `<div class="big ${pend == null ? 'dim' : 'amber'}">${pend == null ? '—' : usd(pend)}</div>`, pendSub)}
-      ${card('', 'dhero', 'Under contract', 'now', `<div class="big">${ucVol == null ? uc : usdShort(ucVol)}</div>`, `${uc} deal${uc === 1 ? '' : 's'} in contract${next ? `. Next closing ${day(next)}.` : '.'}`)}
-      ${card('', '', 'Hot · Warm', 'sphere', `<div class="big">${num(hot)} <span class="dot">·</span> ${num(warm)}</div>`, `Of ${num(contacts)} contacts. ${l7 ?? 0} new lead${l7 === 1 ? '' : 's'} this week${l30 != null ? `, ${l30} this month` : ''}.`)}
-      ${card('', '', 'Deadlines', '30 days', `<div class="big ${dToday ? 'amber' : ''}">${dToday} today</div>`, `${d30} contract deadline${d30 === 1 ? '' : 's'} in the next 30 days, from the Deadlines tab.`)}
+      ${card('', 'dhero', 'Pending commission', 'now', `<div class="big ${pend == null ? 'dim' : 'amber'}">${pend == null ? '—' : usd(pend)}</div>`, pendSub, 'commission')}
+      ${card('', 'dhero', 'Under contract', 'now', `<div class="big">${ucVol == null ? uc : usdShort(ucVol)}</div>`, `${uc} deal${uc === 1 ? '' : 's'} in contract${next ? `. Next closing ${day(next)}.` : '.'}`, 'contract')}
+      ${card('', '', 'Hot · Warm', 'sphere', `<div class="big">${num(hot)} <span class="dot">·</span> ${num(warm)}</div>`, `Of ${num(contacts)} contacts. ${l7 ?? 0} new lead${l7 === 1 ? '' : 's'} this week${l30 != null ? `, ${l30} this month` : ''}.`, 'people')}
+      ${card('', '', 'Deadlines', '30 days', `<div class="big ${dToday ? 'amber' : ''}">${dToday} today</div>`, `${d30} contract deadline${d30 === 1 ? '' : 's'} in the next 30 days, from the Deadlines tab.`, 'deadlines')}
     </div>`;
   }
   function weather(wx) {
-    if (!wx) return card('', 'wx', 'Baton Rouge', 'weather', `<div class="big dim">—</div>`, 'Weather needs the network. Open-Meteo, free, no key.');
+    if (!wx) return card('', 'wx', 'Baton Rouge', 'weather', `<div class="big dim">—</div>`, 'Weather needs the network. Open-Meteo, free, no key.', 'weather');
     return card('', 'wx', 'Baton Rouge', wx.source === 'demo' ? 'demo' : 'Open-Meteo', `<div class="big">${wx.temp}<sup>°F</sup></div><p class="sub"><b>${esc(wx.word)}</b>, wind ${wx.wind} mph${wx.hi != null ? `. High ${wx.hi}, low ${wx.lo}.` : ''}</p>
-      <div class="days">${(wx.days || []).map(d => `<div>${esc(d.day)}<b>${d.hi}° / ${d.lo}°</b></div>`).join('')}</div>`);
+      <div class="days">${(wx.days || []).map(d => `<div>${esc(d.day)}<b>${d.hi}° / ${d.lo}°</b></div>`).join('')}</div>`, '', 'weather');
   }
   function month(w) {
     const dl = new Set((w && w.calendar.deadlines || []).map(d => d.date));
@@ -131,6 +151,7 @@ const Dash = (() => {
   function rail() {
     const keys = ['calendar', 'schedule', 'tasks', 'timer', 'deadlines', 'inbox', 'stages', 'leads', 'market', 'ai', 'tools', 'live', 'compact'];
     return `<div class="drail" aria-label="Dashboard toggles">${keys.map(k => `<button type="button" class="${T[k] ? 'on' : ''}" onclick="Dash.toggle('${k}')" title="${LABELS[k]}">${ICONS[k]}<span>${LABELS[k]}</span></button>`).join('')}
+      <button type="button" class="theme" onclick="Dash.theme()" title="Switch the look: Estate or HUD">◐<span>${document.documentElement.dataset.theme === 'estate' ? 'estate' : 'hud'}</span></button>
       <button type="button" class="farm" onclick="go('world')" title="Open the farm (World)">⌂<span>farm</span></button></div>`;
   }
 
@@ -154,10 +175,13 @@ const Dash = (() => {
     poll = setInterval(() => { if (S.view === 'dash' && T.live) fetchDash(true); }, 300000);
   }
   function toggle(k) { T[k] = !T[k]; save(); render(); }
+  function applyTheme() { let t = 'estate'; try { t = localStorage.getItem(THEME_KEY) || 'estate'; } catch (e) { /* private window */ } document.documentElement.dataset.theme = t; }
+  function theme() { const t = document.documentElement.dataset.theme === 'estate' ? 'hud' : 'estate'; try { localStorage.setItem(THEME_KEY, t); } catch (e) { /* private window */ } document.documentElement.dataset.theme = t; render(); }
+  applyTheme();
   function drawTimer() { const t = $('#dash-time'), a = $('#dash-arc'); if (t) t.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0'); if (a) a.setAttribute('stroke-dashoffset', String(402 * (1 - left / TOTAL))); }
   function toggleTimer() { if (run) { clearInterval(run); run = null; } else { run = setInterval(() => { left = Math.max(0, left - 1); drawTimer(); if (!left) { clearInterval(run); run = null; render(); } }, 1000); } render(); }
   function resetTimer() { left = TOTAL; drawTimer(); if (run) { clearInterval(run); run = null; } render(); }
-  return { view, mount, toggle, toggleTimer, resetTimer, refresh: () => fetchDash(true), state: () => ({ toggles: { ...T }, loaded: !!D }) };
+  return { view, mount, toggle, theme, toggleTimer, resetTimer, refresh: () => fetchDash(true), state: () => ({ toggles: { ...T }, loaded: !!D, theme: document.documentElement.dataset.theme }) };
 })();
 window.Dash = Dash;
 function viewDash() { return Dash.view(); }
