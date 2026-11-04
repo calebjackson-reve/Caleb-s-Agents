@@ -2,6 +2,26 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-04, late: Luxury Presence webhook and the AI visibility engine
+
+**Confirmed by Caleb**
+- "Research Luxury Presence backend and look for any API connections." Command and Luxury Presence can also be driven from a logged-in browser on the always-on Mac Mini. "AI visibility: act like FirstAnswer and do what they do as far as reverse-engineering how they look up, search and revitalize people's SEO with AI searches, so you can help be the engine for that."
+
+**Done**
+- Luxury Presence has an API (`api.luxurypresence.com`, `x-api-key`, admin-made keys) and a lead webhook: one `leads` event per activity with the lead fields, listing fields and an HMAC signature. Research with Blueprint, Proof and Unknowns in `aire/lp-webhook/README.md`.
+- Built the receiver `website-rebuild/functions/lp-webhook.gs` (standalone Apps Script, writes the Website leads sheet in the columns `crm.py import-website-leads` already reads, URL token check, dedupe on lead id + activity + time, activity tab for searches and favorites) and `aire/lp-webhook/register.py` (list, create, delete, sign; dry run until `--yes`; key from `LP_API_KEY` only). Mapping proven in node, 9 offline checks pass.
+- Built `aire/ai-visibility/`: `prompts.json` (brand, competitors, 12 prompts in 4 groups) and `check.py` (Claude Opus 5.5 with web search located in Baton Rouge, fresh session per prompt, scores mention, citation, search surface, position, competitors, sentiment, tallies cited domains into recommendations, writes a report, `history.json` and `summary.json`). 7 offline checks pass, dry run lists the prompts and a cost ceiling of about $1.44 a run. Not yet run live: no API key in the cloud session.
+- KW Command: no public API, the logged-in-browser reader in `aire/command-reader/` stays the way in. Same pattern is the fallback for Luxury Presence.
+
+**Inference**
+- An older Luxury Presence FAQ says no webhooks; the developer docs published after it say yes. Took the docs as current.
+- Hand-raise events (sign-up, contact inquiry, home value, showing or info request, any new lead) are treated as leads; searches, favorites and views are activity, not a call task.
+
+**Needs Caleb**
+- Luxury Presence: confirm the plan has API keys, make one (Profile, API keys), then the 4 setup steps in `aire/lp-webhook/README.md`.
+- AI visibility: run `check.py` once on the Mac with Pipeline's key, read the first report, say whether to schedule it weekly (Mac launchd or a cloud task).
+- Still waiting: pick dashboard variation A, B or C; allow the push of the two local commits.
+
 ## 2026-11-04, night: metric check and three dashboard variations (build paused)
 
 **Confirmed by Caleb**

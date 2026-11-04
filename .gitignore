@@ -13,3 +13,5 @@ __pycache__/
 *.pyc
 aire/world/history.json
 aire/world/brief.json
+aire/ai-visibility/reports/
+aire/ai-visibility/history.json
