@@ -2,6 +2,24 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-04, late: dashboard built into Pipeline, 4x plan
+
+**Confirmed by Caleb**
+- "Push, and go get all the things and connectors you recommend and let's build it. We want to quadruple our sales for this year next year."
+
+**Done**
+- Pushed the branch (PR #88 updated). The dashboard is now a page inside Pipeline and the view it opens on: `aire/pipeline-app/static/dash.js` and `dash.css`, route `/api/dash` in `app.py` (world totals, Mac brief, 14-day history, AI visibility summary, tools board, Open-Meteo weather cached 15 minutes). Layout is variation A's morning board with C's tools board, in Pipeline's own dark theme: biggest numbers top left, month with deadline dots, weather, schedule, tasks, sales-block timer, deadlines, inbox, pipeline by stage, leads sparkline, market, AI visibility, tools. Right rail toggles each card and persists; `farm` opens World. Key `0`.
+- Proof: headless Chromium 1440x900 and 1180x820, 16 cards, no text under 12px, no horizontal overflow, no page errors (one expected 404: World's brief.json in demo). Toggles persist across reload, keys 1 and 0 switch views, the timer counts, farm opens World. Pipeline's checks: 70 pass, 0 failures.
+- `aire/4x/PLAN.md`: the baseline with sources, the 68-closing target from the 17-a-year average, the conversation math per source with assumed conversion rates marked as assumptions, seven levers tied to what is built, the connector table with click paths and costs, the order of work.
+
+**Inference**
+- Caleb did not pick A, B or C. I built A's layout with C's tools board because A matched his reference screenshot and C's tools board was the one thing missing from A. Easy to reshuffle.
+- "This year" closings are not in the repo, so the plan uses the 2022-2026 average and says so.
+
+**Needs Caleb**
+- The 2026 closed count and volume (Command or the brokerage report) to set the real 4x number.
+- The connector table in `aire/4x/PLAN.md`: Luxury Presence API key, QuickBooks sign-in, Google Business Profile in Metricool, `sync.py auth` on the Mac. None can be authorized from a cloud session.
+
 ## 2026-11-04, late: Luxury Presence webhook and the AI visibility engine
 
 **Confirmed by Caleb**
