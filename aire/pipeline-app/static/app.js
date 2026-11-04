@@ -1,7 +1,7 @@
 /* Pipeline front end. Vanilla JS, no build step. Talks to app.py over /api. */
 'use strict';
 
-const S = { data: null, view: 'dash', q: '', filter: 'all', queueIdx: 0, pollTimer: null, bootDone: false };
+const S = { data: null, view: (new URLSearchParams(location.search).get('view') || 'dash'), q: '', filter: 'all', queueIdx: 0, pollTimer: null, bootDone: false };
 const $ = (sel, el = document) => el.querySelector(sel);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const initials = n => (n || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -272,9 +272,9 @@ function viewLeads() {
 function viewQueue() {
   const items = drafts().filter(d => matches(`${d.name} ${d.body} ${d.subject}`));
   const body = items.length ? `<div class="rows">${items.map((d, i) => `<div class="row ${d.reply ? 'reply' : ''}" style="--i:${i}">
-    <span class="ico">${d.kind === 'text' ? '▭' : '✉'}</span>
+    <span class="ico" title="${d.kind === 'text' ? 'text' : 'email'}">${esc(initials(d.name))}</span>
     <div class="who"><b>${esc(d.name)}</b><small>${d.reply ? '<span class="tag reply">REPLY FIRST</span>' : `<span class="tag info">${esc(d.pool || '')}</span>`}<span>${esc(d.kind === 'text' ? fmtPhone(d.to) : d.to)}</span></small></div>
-    <div class="why"><b>${esc(d.reply ? 'No template. Read what they said and answer.' : d.subject || d.body.split('\n')[0])}</b><span class="msg">${esc(d.reply ? (d.last_messages.slice(-1)[0] || '').replace(/^\d{4}-\d{2}-\d{2}: /, '') : d.body.slice(0, 110))}</span></div>
+    <div class="why">${d.reply ? `<span class="msg said">${esc((d.last_messages.slice(-1)[0] || '').replace(/^\d{4}-\d{2}-\d{2}: /, '') || 'They wrote last. Open to read and answer.')}</span>` : `<b>${esc(d.subject || d.body.split('\n')[0])}</b><span class="msg">${esc(d.body.slice(0, 110))}</span>`}</div>
     <div class="acts"><button class="primary" onclick="openCompose('${d.person_id}', ${i})">✉ Open</button></div>
   </div>`).join('')}</div>` : `<div class="empty"><b>Queue is clear</b>Drafts come from follow-up/out/*.json after the refresh.</div>`;
   return `<div class="view">${panel(0, `Compose queue · ${items.length}`, `${S.data.caps.sent_texts}/${S.data.caps.texts} texts · ${S.data.caps.sent_emails}/${S.data.caps.emails} emails today`, body)}</div>`;

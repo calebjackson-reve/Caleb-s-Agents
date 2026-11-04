@@ -41,6 +41,8 @@ const Dash = (() => {
   const todayISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
   const daysUntil = iso => Math.round((new Date(iso + 'T12:00:00') - new Date(todayISO() + 'T12:00:00')) / 864e5);
   const when = iso => { const k = daysUntil(iso); return k === 0 ? 'today' : k === 1 ? 'tomorrow' : k < 0 ? `${-k}d ago` : day(iso); };
+  const ago = s => { const t = Date.parse(String(s).replace(/:$/, '')); if (isNaN(t)) return ''; const m = Math.max(0, Math.round((Date.now() - t) / 6e4));
+    return m < 1 ? 'now' : m < 60 ? m + 'm' : m < 1440 ? Math.round(m / 60) + 'h' : Math.round(m / 1440) + 'd'; };
   const greet = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; };
 
   async function fetchDash(force) {
@@ -55,7 +57,8 @@ const Dash = (() => {
   // ---- cards. Each returns '' when its toggle is off.
   function card(key, cls, title, right, body, sub, icon) {
     if (key && T[key] === false) return '';
-    return `<section class="dcard ${cls}"><div class="dch"><h3>${chip(icon || key)}${title}</h3>${right ? `<small>${right}</small>` : ''}</div>${body}${sub ? `<p class="sub">${sub}</p>` : ''}</section>`;
+    const tip = sub ? ` title="${esc(String(sub).replace(/<[^>]*>/g, ''))}"` : '';
+    return `<section class="dcard ${cls}"${tip}><div class="dch"><h3>${chip(icon || key)}${title}</h3>${right ? `<small>${right}</small>` : ''}</div>${body}${sub ? `<p class="sub">${sub}</p>` : ''}</section>`;
   }
   function heroes(w, f) {
     const c = f.counts || {};
@@ -115,7 +118,8 @@ const Dash = (() => {
     const items = b && b.inbox;
     const body = items == null ? `<div class="empty"><b>Inbox not synced yet</b>The Mac sync reads Gmail with the World token.</div>`
       : !items.length ? `<div class="empty"><b>Inbox clear</b></div>`
-      : items.slice(0, 5).map(m => `<div class="mail${m.unread ? ' unread' : ''}"><b>${esc(m.from)}</b><span>${esc(m.subject)}</span><small>${m.count > 1 ? m.count + ' msgs' : ''}</small></div>`).join('');
+      : items.slice(0, 5).map(m => { const ini = String(m.from || '?').replace(/[^A-Za-z ]/g, '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+          return `<div class="mail${m.unread ? ' unread' : ''}"><span class="av">${esc(ini)}</span><span class="ln"><b>${esc(m.from)}</b><span>${esc(m.subject)}</span></span><small>${m.when ? esc(ago(m.when)) : m.count > 1 ? m.count + ' msgs' : ''}</small></div>`; }).join('');
     return card('inbox', 'inbox', 'Inbox', items ? `${items.length} thread${items.length === 1 ? '' : 's'}` : '', body, 'Threads from the last 3 days you did not send, newest first.');
   }
   function stages(w, f) {
