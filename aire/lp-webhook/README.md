@@ -1,6 +1,6 @@
 # Luxury Presence leads, pushed to the CRM
 
-Research done 2026-11-04 from Luxury Presence's public developer docs and help center. The build: Luxury Presence pushes every lead event to a Google Apps Script receiver that writes the Website leads sheet, and `crm.py import-website-leads` turns each one into a contact, a note and a call task in the AIRE CRM. No new database, no new account, nothing polls.
+Research done 2026-11-04 from Luxury Presence's public developer docs and help center. The build: Luxury Presence pushes every lead event to a Google Apps Script receiver that writes the Website leads sheet, and `crm.py import-website-leads` turns each one into a contact, a note and a call task in the AIRE CRM. No new database or account, and nothing polls.
 
 ## Blueprint
 
