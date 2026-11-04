@@ -2,6 +2,24 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-04, evening: AIRE World wired and published
+
+**Confirmed by Caleb**
+- "Go", after reading the merged table and the empty unmatched list.
+
+**Done**
+- `aire/world/src/page.html` wired to the sheet-only `data.json`: eight clickable objects (KW First Choice office, the street with one house per Deals row and a sign per stage, lead cars on the ring road one per new lead this week, post office for next actions, town square for the sphere, courthouse clock for deadlines, market billboard for GBRAR, construction site as the engine room with match counts). Every card number carries its period and source. The page re-reads data.json every 60 seconds, animates changes, and shows the LIVE dot with "updated X min ago", grey past 30 minutes or after a failed sync.
+- Published preview at https://claude.ai/artifact/XQEjY6Y2L3F7BCHeRxGY71 (private), with data.json alongside so the page fetches it. The preview shows the last synced numbers; the live loop is the Mac.
+- Step 4 of the guide: `install.sh` plus two LaunchAgents (`org.calebjackson.aire.world.sync` every 5 minutes, `org.calebjackson.aire.world.serve` on http://localhost:4751), README with open, stop, restart and check.
+- Proof: headless Chromium at 1440x900 and 400x820, zero page errors, office, street and courthouse cards read back the synced numbers, phone card scrolls. Two visible fixes made from the look: tone mapping washed the model out (removed), the phone card list overlapped its stats (card scrolls as one).
+
+**Not verified**
+- The 5-minute loop on the Mac (LaunchAgents written, not run here). The first `sync.py` run there also needs the CRM token's Sheets scope, which crm.py auth already granted.
+
+**Needs Caleb**
+- `sh aire/world/install.sh` on the Mac, open http://localhost:4751, watch the LIVE label reset.
+- Paste the Command and LP exports, read the unmatched list in aire/world/reports/.
+
 ## 2026-11-04, afternoon: AIRE World sync, the sheet as the single source
 
 **Confirmed by Caleb**

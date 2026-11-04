@@ -40,14 +40,14 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(1.9rem,4vw,2.8rem)
 .btn{background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(10px);color:var(--ink);font:inherit;font-size:12px;padding:6px 10px;cursor:pointer}
 .btn:hover,.btn:focus-visible{border-color:var(--coral);outline:none}
 .btn[aria-pressed="false"]{color:var(--ink-2)}
-#card{position:fixed;z-index:4;width:min(320px,calc(100vw - 32px));background:var(--glass);border:1px solid rgba(251,248,243,.9);box-shadow:0 18px 50px rgba(20,16,14,.18),0 1px 0 rgba(255,255,255,.6) inset;backdrop-filter:blur(16px) saturate(1.2);display:none;flex-direction:column;border-top:3px solid var(--c,var(--coral));max-height:min(70vh,560px)}
+#card{position:fixed;z-index:4;width:min(320px,calc(100vw - 32px));background:var(--glass);border:1px solid rgba(251,248,243,.9);box-shadow:0 18px 50px rgba(20,16,14,.18),0 1px 0 rgba(255,255,255,.6) inset;backdrop-filter:blur(16px) saturate(1.2);display:none;flex-direction:column;border-top:3px solid var(--c,var(--coral));max-height:min(70vh,560px);overflow:auto;overscroll-behavior:contain}
 #card.show{display:flex}
 #card header{padding:12px 14px 8px;display:grid;gap:2px}
 #card .kind{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--c,var(--coral))}
 #card h2{font-family:var(--display);font-weight:400;font-size:1.5rem;line-height:1.05;margin:0}
 #card .sub{font-size:12.5px;color:var(--ink-2);margin:0}
-#card .x{position:absolute;top:6px;right:6px;background:transparent;border:0;color:var(--ink-2);font-size:18px;cursor:pointer;line-height:1;padding:4px 8px}
-#card dl{margin:0;padding:4px 14px 10px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:baseline;overflow:auto;min-height:0}
+#card .x{position:sticky;top:6px;align-self:flex-end;margin:0 6px -30px 0;z-index:1;background:transparent;border:0;color:var(--ink-2);font-size:18px;cursor:pointer;line-height:1;padding:4px 8px}
+#card dl{margin:0;padding:4px 14px 10px;display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:baseline;flex:none}
 #card dt{font-size:12.5px;color:var(--ink);min-width:0}
 #card dt small{display:block;font-size:10.5px;color:var(--ink-2)}
 #card dd{margin:0;font-family:var(--display);font-size:1.35rem;line-height:1;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
@@ -77,7 +77,7 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(1.9rem,4vw,2.8rem)
 }
 </style>
 
-<canvas id="stage" aria-label="3D model of Caleb's real estate business as a small town: office, street of homes with signs, showing cars, courthouse clock, post office, billboard and a construction site"></canvas>
+<canvas id="stage" aria-label="3D model of Caleb's real estate business as a small town: office, street of homes with signs, lead cars, courthouse clock, post office, billboard and a construction site"></canvas>
 
 <div id="title" class="hud">
   <p class="eyebrow">Keller Williams First Choice · AIRE</p>
@@ -87,7 +87,7 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(1.9rem,4vw,2.8rem)
 
 <div id="bar" class="hud" aria-live="polite">
   <div class="tile"><span class="k">Under contract</span><span class="v" data-n="deals.under_contract_volume" data-fmt="money">—</span><span class="s" id="s-uc">—</span></div>
-  <div class="tile"><span class="k">Live deals</span><span class="v" data-n="deals.live">—</span><span class="s" id="s-live">—</span></div>
+  <div class="tile"><span class="k">Pending commission</span><span class="v" data-n="deals.pending_commission" data-fmt="money">—</span><span class="s" id="s-pc">—</span></div>
   <div class="tile"><span class="k">Hot · Warm</span><span class="v" id="hw">—</span><span class="s" id="s-hw">—</span></div>
   <div class="tile"><span class="k">Deadlines · 30d</span><span class="v" data-n="calendar.deadlines_30d">—</span><span class="s" id="s-dl">—</span></div>
 </div>
@@ -117,7 +117,7 @@ h1{font-family:var(--display);font-weight:400;font-size:clamp(1.9rem,4vw,2.8rem)
 const $=s=>document.querySelector(s);
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
 let DATA=JSON.parse(document.getElementById('seed').textContent);
-const C={ink:0x14100e,ivory:0xfbf8f3,coral:0xe87757,gold:0xe9c46a,sage:0x9bbf8a,brick:0xb5563f,oak:0x4f7d4a,oak2:0x6b9a5e,lawn:0xcfe3b4,asphalt:0x5c5856,blue:0x8fb6c9,paper:0xf3ede3,wood:0xc9a27a,roof:0x7a6a62,trunk:0x7c5a3e,moss:0xa9bf8c,glass:0xbfe1ea};
+const C={ink:0x14100e,ivory:0xfbf8f3,coral:0xe87757,gold:0xe9c46a,sage:0x9bbf8a,brick:0xb5563f,oak:0x4f7d4a,oak2:0x6b9a5e,lawn:0xb7d394,asphalt:0x5c5856,blue:0x8fb6c9,paper:0xf3ede3,wood:0xc9a27a,roof:0x6b5a52,trunk:0x7c5a3e,moss:0xa9bf8c,glass:0xbfe1ea};
 const HEX={office:'#e87757',street:'#d4603f',cars:'#8fb6c9',post:'#4f7d4a',square:'#e9c46a',court:'#6b625a',market:'#b5563f',site:'#c9a27a'};
 
 // ---------- helpers ----------
@@ -132,12 +132,12 @@ const canvas=$('#stage');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,2)); renderer.setClearColor(C.paper,1);
 renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.NoToneMapping;
 const scene=new THREE.Scene(); scene.fog=new THREE.Fog(C.paper,70,140);
 const camera=new THREE.PerspectiveCamera(32,1,0.5,400);
 const cam={theta:0.78,phi:0.95,radius:92,tTheta:0.78,tPhi:0.95,tRadius:92,target:new THREE.Vector3(0,0,1),tTarget:new THREE.Vector3(0,0,1)};
-scene.add(new THREE.HemisphereLight(0xfff4e6,0xb9c7a0,0.85));
-const sun=new THREE.DirectionalLight(0xfff1dc,1.35); sun.position.set(-28,46,22); sun.castShadow=true;
+scene.add(new THREE.HemisphereLight(0xfff4e6,0x9fb08a,0.55));
+const sun=new THREE.DirectionalLight(0xfff1dc,1.0); sun.position.set(-28,46,22); sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048); sun.shadow.camera.left=-42; sun.shadow.camera.right=42; sun.shadow.camera.top=42; sun.shadow.camera.bottom=-42; sun.shadow.camera.near=5; sun.shadow.camera.far=130; sun.shadow.bias=-0.0006; sun.shadow.radius=4; scene.add(sun);
 const fill=new THREE.DirectionalLight(0xdde9ff,0.35); fill.position.set(30,20,-30); scene.add(fill);
 
@@ -212,7 +212,7 @@ function buildStreet(){
     const door=box(0.6,1.1,0.08,C.ink); door.position.set(0.5,0,d/2+0.02); g.add(door); const win=box(0.7,0.6,0.08,C.glass,{roughness:.3}); win.position.set(-0.7,1.1,d/2+0.02); g.add(win);
     const chim=box(0.4,0.9,0.4,C.brick); chim.position.set(0.9,2.6,-0.5); g.add(chim);
     const st=SIGN[h.stage]||SIGN.lead; const post=box(0.08,1.3,0.08,C.ink); post.position.set(-1.1,0,d/2+1.2); g.add(post);
-    const sg=signPlane(textTex([{text:st.txt,size:34,weight:'700',color:st.bg==='#fbf8f3'?'#14100e':'#fbf8f3'},{text:h.side==='listing'?'Listing':'Buyer',size:26,color:st.bg==='#fbf8f3'?'#6b625a':'#fbf8f3',gap:0}],320,160,{bg:st.bg})),1.3,0.65); sg.position.set(-1.1,1.25,d/2+1.2); g.add(sg); g.userData.sign=sg; g.userData.swing=Math.random()*5;
+    const sg=signPlane(textTex([{text:st.txt,size:34,weight:'700',color:st.bg==='#fbf8f3'?'#14100e':'#fbf8f3'},{text:h.side==='listing'?'Listing':'Buyer',size:26,color:st.bg==='#fbf8f3'?'#6b625a':'#fbf8f3',gap:0}],320,160,{bg:st.bg}),1.3,0.65); sg.position.set(-1.1,1.25,d/2+1.2); g.add(sg); g.userData.sign=sg; g.userData.swing=Math.random()*5;
     if(h.stage==='closed'){ const tr=grp(1.6,0,d/2+1.9); const cab=box(0.9,0.8,0.7,C.ivory); cab.position.x=-0.7; tr.add(cab); const bx=box(1.5,1.1,0.8,C.sage); bx.position.x=0.5; tr.add(bx); [[-0.9,0.3],[0.8,0.3],[-0.9,-0.3],[0.8,-0.3]].forEach(p=>{ const wh=cyl(0.18,0.18,0.12,C.ink,10); wh.rotation.x=Math.PI/2; wh.position.set(p[0],0.18,p[1]); tr.add(wh); }); g.add(tr); }
     g.traverse(o=>{ if(o.isMesh){ o.userData.key='street'; o.userData.house=i; pickables.push(o);} });
     street.add(g); houses.push({g,i}); });
@@ -221,9 +221,9 @@ function buildStreet(){
 buildStreet();
 
 // 3 showing cars
-const carsG=grp(0,0,0); register('cars',carsG,'Showing cars',1.6); const cars=[]; const CARC=[C.ivory,C.coral,C.ink,C.blue,C.gold];
+const carsG=grp(0,0,0); register('cars',carsG,'Lead traffic',2.6); const cars=[]; const CARC=[C.ivory,C.coral,C.ink,C.blue,C.gold];
 function buildCars(){ cars.forEach(c=>carsG.remove(c.g)); cars.length=0; pickables.splice(0,pickables.length,...pickables.filter(m=>m.userData.key!=='cars'));
-  const n=Math.min(8,Math.max(1,val('showings.emails_7d')||0)); for(let i=0;i<n;i++){ const g=grp(0,0,0); const col=CARC[i%CARC.length]; const body=rbox(1.9,0.6,0.95,0.2,col); body.position.y=0.3; g.add(body); const cab=rbox(1.0,0.5,0.85,0.18,col===C.ink?C.ivory:C.glass,{roughness:.4}); cab.position.set(-0.1,0.9,0); g.add(cab); [[-0.6,0.5],[0.6,0.5],[-0.6,-0.5],[0.6,-0.5]].forEach(p=>{ const w=cyl(0.2,0.2,0.16,C.ink,10); w.rotation.x=Math.PI/2; w.position.set(p[0],0.2,p[1]); g.add(w); }); g.traverse(o=>{ if(o.isMesh){ o.userData.key='cars'; pickables.push(o);} }); carsG.add(g); cars.push({g,t:i/n,v:(0.016+Math.random()*0.012)*(reduced?0:1)}); } }
+  const n=Math.min(8,Math.max(1,val('people.new_leads_7d')||0)); for(let i=0;i<n;i++){ const g=grp(0,0,0); const col=CARC[i%CARC.length]; const body=rbox(1.9,0.6,0.95,0.2,col); body.position.y=0.3; g.add(body); const cab=rbox(1.0,0.5,0.85,0.18,col===C.ink?C.ivory:C.glass,{roughness:.4}); cab.position.set(-0.1,0.9,0); g.add(cab); [[-0.6,0.5],[0.6,0.5],[-0.6,-0.5],[0.6,-0.5]].forEach(p=>{ const w=cyl(0.2,0.2,0.16,C.ink,10); w.rotation.x=Math.PI/2; w.position.set(p[0],0.2,p[1]); g.add(w); }); g.traverse(o=>{ if(o.isMesh){ o.userData.key='cars'; pickables.push(o);} }); carsG.add(g); cars.push({g,t:i/n,v:(0.016+Math.random()*0.012)*(reduced?0:1)}); } }
 buildCars();
 
 // 4 post office
@@ -276,6 +276,7 @@ const v3=new THREE.Vector3(); const anchorOf=k=>{ const o=OBJ[k]; const p=new TH
 function placeLabels(){ const w=innerWidth,h=innerHeight; Object.keys(OBJ).forEach(k=>{ const el=labelEls[k]; v3.copy(anchorOf(k)).project(camera); if(v3.z>1||Math.abs(v3.x)>1.2||Math.abs(v3.y)>1.2){ el.style.opacity='0'; return;} el.style.opacity=cam.radius<40?'0':'0.9'; el.style.transform='translate(-50%,-100%) translate('+((v3.x+1)/2*w).toFixed(1)+'px,'+((1-v3.y)/2*h).toFixed(1)+'px)'; }); if(sel) placeCard(); }
 
 // ---------- input ----------
+let sel=null;
 function resize(){ renderer.setSize(innerWidth,innerHeight,false); camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); fitWhole(); }
 function fitWhole(){ const asp=innerWidth/innerHeight; cam.tRadius=Math.max(58,(asp<1?118:92)/Math.min(asp,1.8)*1.0); if(!sel){ cam.tTarget.set(0,0,1); } }
 addEventListener('resize',resize); resize(); cam.radius=cam.tRadius+40;
@@ -290,26 +291,25 @@ const ray=new THREE.Raycaster(); const ndc=new THREE.Vector2();
 function pickAt(x,y){ ndc.set((x/innerWidth)*2-1,-(y/innerHeight)*2+1); ray.setFromCamera(ndc,camera); const hits=ray.intersectObjects(pickables,false); if(!hits.length) return null; const o=hits[0].object; return {key:o.userData.key,house:o.userData.house}; }
 let hovered=null,hoverKey='';
 function setHover(h){ const key=h?h.key+':'+(h.house??''):''; if(key===hoverKey) return; if(hovered) glow(hovered.key,false); hoverKey=key; hovered=h; canvas.classList.toggle('pick',!!h); const tip=$('#tip'); if(!h){ tip.classList.remove('show'); return;} glow(h.key,true); tip.innerHTML=''; const b=document.createElement('b'); b.textContent=h.house!=null?('House '+(h.house+1)+' of '+houses.length):OBJ[h.key].label; const s=document.createElement('small'); s.textContent=hint(h); tip.append(b,s); tip.classList.add('show'); }
-function hint(h){ switch(h.key){ case 'office': return money(val('deals.under_contract_volume'))+' under contract'; case 'street': { const hs=get(DATA,'deals.houses')||[]; const x=hs[h.house]; return x?((SIGN[x.stage]||SIGN.lead).txt.toLowerCase()+(x.price?' · '+money(x.price):'')):'the deals'; } case 'cars': return plus('showings.emails_7d')+' ShowingTime emails this week'; case 'post': return plus('inbox.threads_3d')+' inbox threads in 3 days'; case 'square': return fmt(val('people.contacts'))+' contacts, '+fmt(val('people.hot'))+' hot'; case 'court': return fmt(val('calendar.deadlines_30d'))+' deadlines in 30 days'; case 'market': return 'GBRAR '+(get(DATA,'market.gbrar.month')||''); case 'site': return get(DATA,'market.monitor')?(fmt(get(DATA,'market.monitor.rows.value'))+' Market Monitor rows'):'Market Monitor: sync on the Mac to fill'; } return ''; }
+function hint(h){ switch(h.key){ case 'office': return money(val('deals.under_contract_volume'))+' under contract · '+money(val('deals.pending_commission'))+' pending'; case 'street': { const hs=get(DATA,'deals.houses')||[]; const x=hs[h.house]; return x?((SIGN[x.stage]||SIGN.lead).txt.toLowerCase()+(x.price?' · '+money(x.price):'')):'the deals'; } case 'cars': return fmt(val('people.new_leads_7d'))+' new leads this week'; case 'post': return fmt(val('people.next_actions'))+' next actions waiting'; case 'square': return fmt(val('people.contacts'))+' contacts, '+fmt(val('people.hot'))+' hot'; case 'court': return fmt(val('calendar.deadlines_30d'))+' deadlines in 30 days, '+fmt(val('calendar.deadlines_today'))+' today'; case 'market': return 'GBRAR '+(get(DATA,'market.gbrar.month')||''); case 'site': return fmt(val('engine.tasks_open'))+' tasks open · '+fmt(get(DATA,'match.unmatched'))+' unmatched records'; } return ''; }
 let hoverRaf=false; function hover(x,y){ const t=$('#tip'); t.style.left=x+'px'; t.style.top=y+'px'; if(hoverRaf) return; hoverRaf=true; requestAnimationFrame(()=>{ hoverRaf=false; setHover(pickAt(x,y)); }); }
 function glow(key,on){ const g=OBJ[key]; if(!g) return; g.group.traverse(o=>{ if(o.isMesh&&o.material&&o.material.emissive){ if(on){ if(!o.userData.m0){ o.userData.m0=o.material; o.material=o.material.clone(); o.material.emissive=new THREE.Color(0xe87757); o.material.emissiveIntensity=0.18; } } else if(o.userData.m0){ o.material=o.userData.m0; o.userData.m0=null; } } }); }
 function click(x,y){ const h=pickAt(x,y); if(!h){ clearSel(); return;} select(h.key,h.house); }
 
 // ---------- selection and cards ----------
-let sel=null;
 function select(key,house){ if(sel) glow(sel.key,false); sel={key,house}; glow(key,true); const p=anchorOf(key); cam.tTarget.copy(p).setY(1.5); cam.tRadius=Math.min(cam.tRadius,key==='street'?34:30); idleT=0; document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',String(c.dataset.key===key))); renderCard(); $('#card').classList.add('show'); placeCard(); $('#sr').textContent=OBJ[key].label+' opened'; }
 function clearSel(){ if(!sel) return; glow(sel.key,false); sel=null; $('#card').classList.remove('show'); document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed','false')); }
 function placeCard(){ if(!sel) return; const card=$('#card'); if(innerWidth<=860) return; v3.copy(anchorOf(sel.key)).project(camera); const sx=(v3.x+1)/2*innerWidth, sy=(1-v3.y)/2*innerHeight; const cw=card.offsetWidth||320, ch=card.offsetHeight||300; let left=sx+28; if(left+cw>innerWidth-16) left=sx-28-cw; left=Math.max(16,Math.min(left,innerWidth-cw-16)); let top=sy-ch/2; top=Math.max(80,Math.min(top,innerHeight-ch-70)); card.style.left=left+'px'; card.style.top=top+'px'; }
 const S=(p)=>get(DATA,p)||{};
 const CARDS={
-  office:()=>({kind:'Office · deals and money',title:'Keller Williams First Choice',sub:'Caleb Jackson, REALTOR',stats:[['Under contract',S('deals.under_contract_volume'),'money'],['Live deals',S('deals.live')],['Closed, last 90 days',S('deals.closed_90d')],['Closed volume, 90 days',S('deals.closed_90d_volume'),'money'],['Commission mail, 120 days',S('inbox.commission_mail_120d')]]}),
-  street:(house)=>{ const hs=get(DATA,'deals.houses')||[]; const h=hs[house]; const st=[]; if(h){ st.push(['This house',{value:(SIGN[h.stage]||SIGN.lead).txt.toLowerCase(),period:h.side},'txt']); if(h.price) st.push(['Price',{value:h.price,period:'Deals tab'},'money']); if(h.close) st.push(['Expected close',{value:h.close,period:'Deals tab'},'txt']); } st.push(['Active listings',S('deals.active_listings')],['Under contract',S('deals.under_contract')],['Next closing',S('deals.next_close'),'txt']); return {kind:h?('House '+(house+1)+' of '+hs.length):'The street',title:h?((h.side==='listing'?'Listing':'Buyer')+', '+(h.stage||'').replace('_',' ')):'The street',sub:'One house per deal in the Deals tab. Stage and price only, never the address.',stats:st}; },
-  cars:()=>({kind:'Showings',title:'Showing cars',sub:'One car per ShowingTime email this week, up to eight.',stats:[['ShowingTime mail, 7 days',S('showings.emails_7d')],['ShowingTime mail, 30 days',S('showings.emails_30d')],['Active listings',S('deals.active_listings')],['Next on the calendar',S('calendar.next_event'),'txt']]}),
-  post:()=>({kind:'Inbox',title:'Post office',sub:'What came in, counted from Gmail. Nothing is read here.',stats:[['Inbox threads, 3 days',S('inbox.threads_3d')],['Website lead mail, 7 days',S('inbox.website_leads_7d')],['Signatures, 30 days',S('engine.signatures_30d')],['Commission mail, 120 days',S('inbox.commission_mail_120d')]]}),
-  square:()=>({kind:'The sphere',title:'Town square',sub:'Everyone in the one CRM sheet. Walkers: two plus one per fifteen hot contacts.',stats:[['Contacts',S('people.contacts')],['Hot',S('people.hot')],['Warm',S('people.warm')],['New leads, 7 days',S('people.new_leads_7d')],['New leads, 30 days',S('people.new_leads_30d')],['Touched, 30 days',S('people.touched_30d')],['Next actions waiting',S('people.next_actions')],['Past clients',S('people.past_clients')]],list:(get(DATA,'people.by_city')||[]).map(c=>[c.city,c.n+' people'])}),
-  court:()=>({kind:'Calendar',title:'Courthouse clock',sub:'Today and the deadlines your TC filed. Kind and date only.',stats:[['Events today',S('calendar.events_today')],['Next event',S('calendar.next_event'),'txt'],['Deadlines, 30 days',S('calendar.deadlines_30d')],['Tasks open',S('engine.tasks_open')],['Tasks overdue',S('engine.tasks_overdue')]],list:(get(DATA,'calendar.deadlines')||[]).map(d=>[d.kind,d.date])}),
-  market:()=>{ const gb=get(DATA,'market.gbrar'); const st=gb?[['Median sale price',gb.median_price,'money'],['Days on market',gb.days_on_market],['Months of supply',gb.months_supply],['New listings',gb.new_listings],['Closed sales',gb.closed_sales],['Homes for sale',gb.homes_for_sale]]:[]; return {kind:'Market',title:'Market billboard',sub:gb?(gb.source||''):'No GBRAR report synced.',stats:st,src:gb?('Period '+gb.month+'. Prior and year over year are in data.json.'):''}; },
-  site:()=>{ const m=get(DATA,'market.monitor'); const st=[]; if(m){ st.push(['Monitor rows',m.rows]); Object.entries(m.by_type||{}).slice(0,5).forEach(([k,v])=>st.push([k.replace('_',' '),{value:v,period:'cached'}])); st.push(['Touches due today',S('engine.touches_due')],['Owe a reply',S('engine.owes_reply')]); } st.push(['Tasks open',S('engine.tasks_open')],['Tasks done, 7 days',S('engine.tasks_done_7d')]); return {kind:'Market Monitor',title:'Construction site',sub:m?'Permits and listing changes around your farms, from the Mac cache.':'The Market Monitor fills in when sync.py runs on the Mac next to feed.json. Until then this card shows the task engine.',stats:st}; },
+  office:()=>({kind:'Office · deals and money',title:'Keller Williams First Choice',sub:'Caleb Jackson, REALTOR. Every figure is from the Deals tab of the AIRE CRM.',stats:[['Under contract',S('deals.under_contract_volume'),'money'],['Pending commission',S('deals.pending_commission'),'money'],['Live deals',S('deals.live')],['Closed, last 90 days',S('deals.closed_90d')],['Closed volume, 90 days',S('deals.closed_90d_volume'),'money'],['Next closing',S('deals.next_close'),'txt']]}),
+  street:(house)=>{ const hs=get(DATA,'deals.houses')||[]; const h=hs[house]; const st=[]; if(h){ st.push(['This house',{value:(SIGN[h.stage]||SIGN.lead).txt.toLowerCase(),period:h.side},'txt']); if(h.price) st.push(['Price',{value:h.price,period:'Deals tab'},'money']); if(h.close) st.push(['Expected close',{value:h.close,period:'Deals tab'},'txt']); if(h.dom!=null) st.push(['Days on market',{value:h.dom,period:'Command export'}]); st.push(['Deadlines filed',{value:h.deadlines,period:'Deadlines tab'}]); if(h.next_deadline) st.push(['Next deadline',{value:h.next_deadline,period:'Deadlines tab'},'txt']); } st.push(['Active listings',S('deals.active_listings')],['Under contract',S('deals.under_contract')],['Days on market, median',S('deals.days_on_market_median')],['Next closing',S('deals.next_close'),'txt']); return {kind:h?('House '+(house+1)+' of '+hs.length):'The street',title:h?((h.side==='listing'?'Listing':'Buyer')+', '+(h.stage||'').replace('_',' ')):'The street',sub:'One house per Deals row. Stage, price and dates only, never the address.',stats:st}; },
+  cars:()=>({kind:'New leads',title:'Lead traffic',sub:'One car per new lead this week, up to eight. Sources merged from the Contacts column, the Command export and the LP leads paste.',stats:[['New leads, 7 days',S('people.new_leads_7d')],['New leads, 30 days',S('people.new_leads_30d')],['LP leads matched',{value:get(DATA,'match.lp_leads_matched'),period:'of '+fmt(get(DATA,'match.lp_leads'))+' pasted'}],['Command contacts matched',{value:get(DATA,'match.command_contacts_matched'),period:'of '+fmt(get(DATA,'match.command_contacts'))+' pasted'}]],list:Object.entries(get(DATA,'people.new_leads_7d_by_source')||{}).map(([k,v])=>[k,v+' this week'])}),
+  post:()=>({kind:'Follow-up',title:'Post office',sub:'Who is owed a touch, straight from the Contacts tab. The truck runs more often when the pile grows.',stats:[['Next actions waiting',S('people.next_actions')],['Touched, last 30 days',S('people.touched_30d')],['Nurture stage',S('people.nurture')],['Past clients',S('people.past_clients')]]}),
+  square:()=>({kind:'The sphere',title:'Town square',sub:'Everyone in the one CRM sheet. Walkers: two plus one per fifteen hot contacts.',stats:[['Contacts',S('people.contacts')],['Hot',S('people.hot')],['Warm',S('people.warm')],['Cold',S('people.cold')],['Ice cold',S('people.ice_cold')],['No band yet',S('people.unbanded')],['Known home value, median',S('people.fmv_median'),'money']],list:(get(DATA,'people.by_city')||[]).map(c=>[c.city,c.n+' people'])}),
+  court:()=>({kind:'Deadlines',title:'Courthouse clock',sub:'From the Deadlines tab, matched to a deal by address. Kind and date only. The bell glows coral on a deadline day.',stats:[['Deadlines today',S('calendar.deadlines_today')],['Deadlines, 30 days',S('calendar.deadlines_30d')],['Tasks open',S('engine.tasks_open')],['Tasks overdue',S('engine.tasks_overdue')]],list:(get(DATA,'calendar.deadlines')||[]).map(d=>[d.kind,d.date+' · '+(d.stage||'').replace('_',' ')])}),
+  market:()=>{ const gb=get(DATA,'market.gbrar'); const st=gb?[['Median sale price',gb.median_price,'money'],['Days on market',gb.days_on_market],['Months of supply',gb.months_supply],['New listings',gb.new_listings],['Closed sales',gb.closed_sales],['Homes for sale',gb.homes_for_sale]]:[]; return {kind:'Market',title:'Market billboard',sub:gb?(gb.source||''):'No GBRAR report synced.',stats:st,src:gb?('Period '+gb.month+'. Prior month and year over year are in data.json.'):''}; },
+  site:()=>({kind:'Engine room',title:'Construction site',sub:'The sync itself: what matched, what did not, what is still open. Unmatched records are listed in the merge report on the Mac, never guessed.',stats:[['Tasks open',S('engine.tasks_open')],['Tasks done, 7 days',S('engine.tasks_done_7d')],['Deals in the spine',{value:get(DATA,'match.deals'),period:'Deals tab'}],['Deadlines matched',{value:get(DATA,'match.deadlines_matched'),period:'by address'}],['Command opportunities matched',{value:get(DATA,'match.command_opportunities_matched'),period:'of '+fmt(get(DATA,'match.command_opportunities'))+' pasted'}],['Unmatched records',{value:get(DATA,'match.unmatched'),period:'read the report'}]],src:'Synced '+((DATA.sync||{}).at||'').replace('T',' ').slice(0,16)+' by '+((DATA.sync||{}).by||'sync.py')}),
 };
 function renderCard(){ if(!sel) return; const c=CARDS[sel.key](sel.house); const card=$('#card'); card.style.setProperty('--c',HEX[sel.key]); $('#c-kind').textContent=c.kind; $('#c-title').textContent=c.title; $('#c-sub').textContent=c.sub; const dl=$('#c-stats'); dl.innerHTML=''; const srcs=new Set();
   c.stats.forEach(([label,st,f])=>{ st=st||{}; const dt=document.createElement('dt'); dt.textContent=label; const sm=document.createElement('small'); sm.textContent=st.period||''; dt.appendChild(sm); const dd=document.createElement('dd'); const v=st.value; const isTxt=f==='txt'||(typeof v==='string'&&!/^\d/.test(v)); dd.className=isTxt?'txt':''; dd.dataset.key=sel.key+'|'+label; const shown=(v===50&&/50 means/.test(st.source||''))?'50+':fmt(v,f); dd.textContent=shown==null?'—':shown; dd.dataset.v=String(v); if(st.source) srcs.add(st.source); dl.append(dt,dd); });
@@ -330,11 +330,11 @@ function applyData(fresh,first){ const old=DATA; DATA=fresh;
   document.querySelectorAll('[data-n]').forEach(el=>{ const p=el.dataset.n; const nv=val(p), ov=p.split('.').reduce((a,k)=>(a==null?undefined:a[k]),old); const ovv=ov&&typeof ov==='object'?ov.value:ov; if(first||nv!==ovv) tween(el,typeof ovv==='number'?ovv:nv,nv,el.dataset.fmt); });
   $('#hw').textContent=fmt(val('people.hot'))+' · '+fmt(val('people.warm'));
   $('#s-uc').textContent=fmt(val('deals.under_contract'))+' deals · next close '+(val('deals.next_close')||'—');
-  $('#s-live').textContent=fmt(val('deals.active_listings'))+' listings active · '+fmt(val('deals.closed_90d'))+' closed in 90d';
+  const pcs=(get(DATA,'deals.pending_commission')||{}).source||''; $('#s-pc').textContent=val('deals.pending_commission')==null?(/no commission/.test(pcs)?'no figures in the sheet yet':'not synced'):(fmt(val('deals.live'))+' live deals');
   $('#s-hw').textContent='of '+fmt(val('people.contacts'))+' contacts · '+fmt(val('people.new_leads_7d'))+' new this week';
   const dls=get(DATA,'calendar.deadlines')||[]; $('#s-dl').textContent=dls.length?('next: '+dls[0].kind.replace(/ deadline$/i,'')+' · '+dls[0].date.slice(5)):'none filed';
   const changedHouses=JSON.stringify(get(old,'deals.houses'))!==JSON.stringify(get(DATA,'deals.houses')); if(first||changedHouses) buildStreet();
-  if(first||val('showings.emails_7d')!==(get(old,'showings.emails_7d')||{}).value) buildCars();
+  if(first||val('people.new_leads_7d')!==(get(old,'people.new_leads_7d')||{}).value) buildCars();
   if(first||val('people.hot')!==(get(old,'people.hot')||{}).value) buildWalkers();
   paintBoard(); if(sel){ const prev=[...document.querySelectorAll('#c-stats dd')].map(d=>[d.dataset.key,d.dataset.v,d.textContent]); renderCard(); document.querySelectorAll('#c-stats dd').forEach(d=>{ const p=prev.find(x=>x[0]===d.dataset.key); if(p&&p[1]!==d.dataset.v&&!d.classList.contains('txt')){ const a=+p[1],b=+d.dataset.v; if(!isNaN(a)&&!isNaN(b)) tween(d,a,b,/\$/.test(d.textContent)?'money':undefined); } }); }
   liveDot(); }
@@ -355,9 +355,9 @@ function frame(){ requestAnimationFrame(frame); if(document.hidden) return; cons
   walkers.forEach(w=>{ w.t+=w.v*dt*w.dir; if(w.t>1){w.t=1;w.dir=-1;} if(w.t<0){w.t=0;w.dir=1;} tmp.lerpVectors(w.from,w.to,w.t); w.g.position.copy(tmp); w.g.position.y=Math.abs(Math.sin(w.t*40))*0.08; w.g.lookAt(w.dir>0?w.to:w.from); });
   // office flag, mailbox flag, truck, fountain, moss, crane, signs, trees, birds, clock
   const of=OBJ.office.group.userData.flag; of.rotation.y=Math.sin(T*3)*0.15; of.scale.x=1+Math.sin(T*6)*0.05;
-  const po=OBJ.post.group.userData; const cyc=(T%24); po.truck.position.x=cyc<6?-14+cyc*2.4:(cyc<14?0.4:(cyc<20?0.4+(cyc-14)*2.4:14.8)); po.truck.visible=cyc<20; po.mflag.rotation.z=cyc>6&&cyc<14?-Math.PI/2:0;
+  const po=OBJ.post.group.userData; const per=Math.max(12,30-Math.min(18,(val('people.next_actions')||0)/30)); const cyc=(T%per)*(24/per); po.truck.position.x=cyc<6?-14+cyc*2.4:(cyc<14?0.4:(cyc<20?0.4+(cyc-14)*2.4:14.8)); po.truck.visible=cyc<20; po.mflag.rotation.z=cyc>6&&cyc<14?-Math.PI/2:0;
   const sq=OBJ.square.group.userData; sq.jet.position.y=2.4+Math.sin(T*4)*0.12; sq.jet.scale.setScalar(1+Math.sin(T*4)*0.15); sq.oak.children.forEach(m=>{ if(m.userData.moss) m.rotation.z=Math.sin(T*1.3+m.position.x)*0.12; });
-  if(crane) crane.userData.arm.rotation.y=Math.sin(T*0.35)*0.9+0.6;
+  if(crane){ const busy=(val('engine.tasks_open')||0)>0||(get(DATA,'match.unmatched')||0)>0; crane.userData.arm.rotation.y+= (busy?Math.cos(T*0.35)*0.35*0.016:0); }
   houses.forEach(h=>{ h.g.userData.sign.rotation.y=Math.sin(T*2+h.g.userData.swing)*0.08; });
   world.children.forEach(o=>{ if(o.userData.sway!=null) o.rotation.z=Math.sin(T*0.8+o.userData.sway)*0.02; });
   birds.forEach(b=>{ b.userData.t+=dt*0.5; const r=b.userData.r; b.position.set(Math.cos(b.userData.t)*r,10+Math.sin(b.userData.t*2)*0.6,Math.sin(b.userData.t)*r*0.6); b.rotation.y=-b.userData.t+Math.PI/2; const f=Math.sin(T*12)*0.5; b.userData.w1.rotation.z=f; b.userData.w2.rotation.z=-f; });
