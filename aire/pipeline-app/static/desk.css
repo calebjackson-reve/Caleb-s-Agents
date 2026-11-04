@@ -1,0 +1,103 @@
+/* Desk: black and coral, tan only as an accent. Scoped to .desk so the rest of Pipeline keeps its own look. No web fonts. */
+.desk {
+  --ink: #0d0c0b; --panel: #171513; --raise: #201d1a; --line: #2e2a26;
+  --coral: #e87757; --coral-soft: rgba(232, 119, 87, .16); --tan: #c8b596;
+  --text: #f4f0ea; --muted: #a19a91;
+  --serif: "New York", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  background: var(--ink); color: var(--text); border: 1px solid var(--line); border-radius: 18px;
+  padding: 22px 24px 18px; min-height: 100%; font: 14px/1.5 var(--sans);
+}
+.desk .dk-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.desk .dk-eyebrow { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--coral); }
+.desk h2 { font: 500 30px/1.15 var(--serif); margin: 4px 0 6px; }
+.desk .dk-head p { margin: 0; color: var(--muted); max-width: 62ch; }
+.desk .dk-head-acts { display: flex; gap: 8px; align-items: center; }
+
+.desk .dk-btn { background: var(--coral); color: #1a0f0b; border: 0; border-radius: 999px; padding: 7px 14px; font-weight: 600; font-size: 13px; text-decoration: none; display: inline-block; }
+.desk .dk-btn:hover { filter: brightness(1.08); }
+.desk .dk-btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 500; }
+.desk .dk-btn.ghost:hover { border-color: var(--coral); color: var(--coral); }
+.desk .dk-toggle { display: inline-flex; align-items: center; gap: 8px; background: var(--raise); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px 6px 6px; color: var(--text); }
+.desk .dk-toggle i { width: 30px; height: 18px; border-radius: 999px; background: var(--line); position: relative; transition: background .2s; }
+.desk .dk-toggle i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: transform .2s, background .2s; }
+.desk .dk-toggle[aria-pressed="true"] i { background: var(--coral-soft); }
+.desk .dk-toggle[aria-pressed="true"] i::after { transform: translateX(12px); background: var(--coral); }
+.desk.focus .dk-nonfocus { display: none; }
+
+.desk .dk-tabs { display: flex; gap: 4px; margin: 18px 0 14px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.desk .dk-tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 14px; color: var(--muted); font-size: 14px; white-space: nowrap; }
+.desk .dk-tabs button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--coral); }
+.desk .dk-tabs em { font-style: normal; background: var(--coral); color: #1a0f0b; border-radius: 999px; font-size: 11px; padding: 0 6px; margin-left: 6px; }
+
+.desk .dk-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.desk .dk-tile { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; }
+.desk .dk-tile b { font: 500 30px/1.1 var(--serif); }
+.desk .dk-tile span { font-size: 13px; }
+.desk .dk-tile small { color: var(--muted); font-size: 12px; }
+.desk .dk-tile.hot { border-color: var(--coral); background: linear-gradient(var(--coral-soft), var(--coral-soft)), var(--panel); }
+.desk .dk-tile.hot b { color: var(--coral); }
+.desk .dk-tile.tan b { color: var(--tan); font-size: 26px; }
+
+.desk .dk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.desk .dk-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; min-width: 0; margin-bottom: 12px; }
+.desk .dk-grid .dk-card { margin-bottom: 0; }
+.desk .dk-card > header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+.desk .dk-card h4 { margin: 0; font: 500 18px var(--serif); }
+.desk .dk-card > header > div { color: var(--muted); font-size: 12px; }
+.desk .dk-now { border-color: var(--coral); }
+.desk .dk-now-title { font: 500 22px/1.2 var(--serif); }
+.desk .dk-notes { color: var(--muted); margin: 8px 0 0; }
+.desk .dk-muted { color: var(--muted); font-size: 12.5px; display: block; }
+.desk .dk-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+.desk .dk-chip { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.desk .dk-chip.hot { border-color: var(--coral); color: var(--coral); background: var(--coral-soft); }
+.desk .dk-chip.warm { border-color: var(--coral); color: var(--coral); }
+.desk .dk-chip.tan { border-color: var(--tan); color: var(--tan); }
+
+.desk .dk-line { list-style: none; margin: 0; padding: 0; }
+.desk .dk-line li { display: grid; grid-template-columns: 72px 14px 1fr auto; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.desk .dk-line li:last-child { border-bottom: 0; }
+.desk .dk-line time { color: var(--muted); font-size: 12.5px; }
+.desk .dk-line .dk-dot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--line); }
+.desk .dk-line li.cur .dk-dot { background: var(--coral); border-color: var(--coral); box-shadow: 0 0 0 4px var(--coral-soft); }
+.desk .dk-line li.past { opacity: .45; }
+.desk .dk-line b, .desk .dk-rows b { font-weight: 500; margin-right: 8px; }
+.desk .dk-line .dk-btn, .desk .dk-rows .dk-btn, .desk .dk-table .dk-btn { padding: 3px 10px; font-size: 12px; }
+
+.desk .dk-rows { list-style: none; margin: 0; padding: 0; }
+.desk .dk-rows li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.desk .dk-rows li:last-child { border-bottom: 0; }
+
+.desk .dk-bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; height: 150px; align-items: end; }
+.desk .dk-bar { display: grid; grid-template-rows: 1fr auto auto; height: 100%; text-align: center; font-size: 11.5px; color: var(--muted); }
+.desk .dk-bar i { align-self: end; display: block; background: var(--tan); opacity: .55; border-radius: 6px 6px 2px 2px; min-height: 2px; }
+.desk .dk-bar.today i { background: var(--coral); opacity: 1; }
+.desk .dk-bar b { color: var(--text); font-weight: 500; font-size: 12px; }
+
+.desk .dk-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.desk .dk-table th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 0 8px 6px 0; }
+.desk .dk-table td { padding: 8px 8px 8px 0; border-top: 1px solid var(--line); vertical-align: top; }
+.desk .dk-table td small { display: block; color: var(--muted); font-size: 11.5px; }
+
+.desk .dk-jarvis { display: flex; gap: 14px; align-items: center; }
+.desk .dk-jarvis p { margin: 0; }
+.desk .dk-orb { flex: none; width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f3a58c, var(--coral) 55%, #7a3524); box-shadow: 0 0 22px var(--coral-soft); animation: dk-pulse 3.2s ease-in-out infinite; }
+@keyframes dk-pulse { 50% { box-shadow: 0 0 34px rgba(232, 119, 87, .35); transform: scale(1.04); } }
+.desk .dk-links { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; font-size: 12.5px; }
+.desk .dk-links a { color: var(--tan); text-decoration: none; }
+.desk .dk-links a:hover { color: var(--coral); }
+
+.desk .dk-empty { color: var(--muted); padding: 10px 0; }
+.desk .dk-empty.big { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding: 30px 4px; }
+.desk .dk-empty.big b { color: var(--text); font: 500 20px var(--serif); }
+.desk .dk-foot, .desk .dk-asof { color: var(--muted); font-size: 12px; margin: 6px 2px 0; }
+.desk .dk-asof { text-align: right; }
+
+@media (max-width: 700px) {
+  .desk { padding: 16px; border-radius: 14px; }
+  .desk .dk-grid { grid-template-columns: 1fr; }
+  .desk .dk-line li { grid-template-columns: 60px 14px 1fr; }
+  .desk .dk-line li .dk-btn { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .desk .dk-orb { animation: none; } }

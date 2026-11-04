@@ -84,10 +84,11 @@ function render() {
   const main = $('#main');
   if (d.feed_ok && f.header_ok === false) { main.innerHTML = stopScreen(f); return; }
   if (!d.feed_ok) { main.innerHTML = `<div class="stop-screen"><div class="big">NO FEED</div><p>${esc((problems()[0] || {}).text || 'feed.json is missing.')}</p><div class="acts"><button class="primary" onclick="refresh()">Run the refresh</button></div></div>`; return; }
-  const views = { cc: viewCC, touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent, map: viewMap, market: viewMarket };
+  const views = { cc: viewCC, desk: () => (window.viewDesk ? viewDesk() : ''), touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent, map: viewMap, market: viewMarket };
   if (S.map) { S.map.destroy(); S.map = null; }
   main.innerHTML = (views[S.view] || viewCC)();
   if (S.view === 'map') mountMap(false); else if (S.view === 'deals' && S.dealsMode === 'map') mountMap(true);
+  if (S.view === 'desk' && window.Desk) Desk.mounted();
   if (S.view === 'cc' && window.Core) { const cv = $('#core'); if (cv) Core.mount(cv, (f.counts || {}).by_band || {}); }
   reflectVoice();
   // the hero's header is absolute, so the svg gets the whole panel
@@ -108,7 +109,7 @@ function countUp(el) {
 function renderNav(c) {
   const dr = drafts();
   const items = [
-    ['cc', '⌂', 'Command Center'], ['touches', '◎', 'Touches due', (feed().touches_due || []).length, (feed().touches_due || []).some(r => r.owes_reply)],
+    ['cc', '⌂', 'Command Center'], ['desk', '◷', 'Desk', window.Desk ? Desk.navCount() : 0, window.Desk ? Desk.navWarn() : false], ['touches', '◎', 'Touches due', (feed().touches_due || []).length, (feed().touches_due || []).some(r => r.owes_reply)],
     ['tasks', '☑', 'Tasks', (feed().tasks || []).length, c.tasks_overdue > 0], ['deals', '⌂', 'Deals', (feed().deals || []).length],
     ['leads', '✦', 'New leads', (feed().new_leads || []).length, (feed().new_leads || []).length > 0], ['queue', '✉', 'Drafts', dr.length],
     ['sent', '↗', 'Sent today', (S.data.sent_today || []).length],
@@ -489,6 +490,6 @@ async function boot() {
   $('#app').hidden = false;
   if (S.data) render(); else toast('err', 'SERVER', 'app.py is not answering.');
   $('#boot').classList.add('out'); setTimeout(() => $('#boot').remove(), 600);
-  S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.view === 'cc') { /* keep the globe steady: update numbers only */ renderNav(feed().counts || {}); } else if (S.map) { /* keep the map where Caleb left it */ renderNav(feed().counts || {}); mapUpdate(); } else render(); } catch (e) { } }, 30000);
+  S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.view === 'cc') { /* keep the globe steady: update numbers only */ renderNav(feed().counts || {}); } else if (S.view === 'desk') { /* the Desk keeps its own five minute clock */ renderNav(feed().counts || {}); } else if (S.map) { /* keep the map where Caleb left it */ renderNav(feed().counts || {}); mapUpdate(); } else render(); } catch (e) { } }, 30000);
 }
 boot();

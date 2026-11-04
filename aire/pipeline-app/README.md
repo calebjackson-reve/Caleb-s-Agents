@@ -48,6 +48,25 @@ Checks: `python3 aire/pipeline-app/app.py --test` runs 27 offline checks (demo w
 
 `install.sh` writes these into the LaunchAgent with `PIPELINE_SENDER=dry`. Flip it to `live` in `~/Library/LaunchAgents/org.calebjackson.aire.pipeline.plist` and reload when you are ready to send from the app.
 
+## Desk: Today, Deadlines, Commission, Bank
+
+The Desk page (◷ in the nav, or say "open deadlines") is Caleb's day and money view in black and coral. It is read only: `desk.py` reads Google Calendar and Gmail and never writes, sends, moves or deletes anything, and the page has no input fields.
+
+| Tab | What it shows | Where it comes from |
+|---|---|---|
+| Today | New lead emails (3 days), contract deadlines (7 days), deal emails, hours booked, what is on right now, today's timeline, the week's booked hours, the inbox sorted Lead, Deal, Other, and a Jarvis card | Calendar today and the next 7 days, Gmail `in:inbox newer_than:3d -from:me` |
+| Deadlines | Every Deadline event in the next 30 days, grouped by deal (title before " - "), with Today, Tomorrow, In N days | Calendar events with "Deadline" in the title or made by the TC |
+| Commission | Commission emails (120 days), Not Processed flagged, acts of sale coming, the 70/30 split until cap (cap year starts Nov 1). No dollar amounts until a sheet or KW Command is the source | Gmail `subject:(commission OR disbursement OR CDA OR "closing statement") newer_than:120d` |
+| Bank | Chase alert emails sorted Deposit, Balance, Alert | Gmail `from:(chase.com) newer_than:30d`. No bank sign-in, no account numbers, nothing moves |
+
+One time on the Mac, a read-only Google sign-in (Calendar and Gmail read scopes only, kept apart from the CRM token):
+
+```
+~/.aire/venv/bin/python aire/pipeline-app/desk.py auth
+```
+
+That uses the same OAuth client as `crm.py auth` (`~/.aire/credentials.json`) and writes `~/.aire/desk-token.json`. Until it exists the Desk says so and the rest of Pipeline is unchanged. Reads are cached five minutes, so the 30 second poll never hits Google; Refresh on the page reads again. `--demo` shows `fixtures/demo-desk.json` (made-up people). Checks: `python3 aire/pipeline-app/desk.py --test`.
+
 ## What the app reads
 
 All paths relative to `aire/`. Every one of these files is git-ignored and stays on the Mac: they hold client names, phones and message text.

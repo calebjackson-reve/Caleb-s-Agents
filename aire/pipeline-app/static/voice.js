@@ -96,7 +96,7 @@ const Voice = (() => {
   }
   const shortAddr = a => (a || '').split(',')[0];
   const alsoMatched = r => r && r._others ? ` ${plural(r._others, 'other person matches', 'other people match')} that name, so say the last name if that is the wrong one.` : '';
-  const VIEWS = [[/\bmap\b/, 'map', 'The map.'], [/\bmarket|monitor|permits?\b/, 'market', 'Market Monitor.'], [/\bdeals?\b/, 'deals', 'Deals.'],
+  const VIEWS = [[/\bdesk\b|\bdeadlines?\b|\bcommission\b|\bbank\b|\bchase\b/, 'desk', 'Your desk.'], [/\bmap\b/, 'map', 'The map.'], [/\bmarket|monitor|permits?\b/, 'market', 'Market Monitor.'], [/\bdeals?\b/, 'deals', 'Deals.'],
     [/\btasks?\b|\bto.?dos?\b/, 'tasks', 'Tasks.'], [/\bleads?\b/, 'leads', 'New leads.'], [/\bdrafts?\b|\bqueue\b/, 'queue', 'Drafts.'],
     [/\btouch(es)?\b|\bdue\b/, 'touches', 'Touches due.'], [/\bsent\b/, 'sent', 'Sent today.'], [/\bhome\b|\bcommand cent(er|re)\b|\bdashboard\b|\boverview\b/, 'cc', 'Command center.']];
 

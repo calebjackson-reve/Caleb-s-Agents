@@ -946,6 +946,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, self.state.snapshot())
         if u.path == "/api/refresh":
             return self._json(200, self.state.refresh)
+        if u.path == "/api/desk":  # Today, Deadlines, Commission, Bank. Read only, see desk.py
+            if not getattr(self.state, "desk", None):
+                import desk
+                self.state.desk = desk.Desk(demo=self.state.demo)
+            return self._json(200, self.state.desk.snapshot(force="refresh=1" in (u.query or "")))
         if u.path == "/api/voice/token":
             try:
                 return self._json(200, self.state.call_token())
@@ -1267,6 +1272,8 @@ def run_tests() -> int:
     check("<title>Pipeline" in html, "GET / serves the screen")
     st = json.loads(urllib.request.urlopen(base + "/api/state").read())
     check(st["feed"]["counts"]["contacts"] > 0, "GET /api/state")
+    dk = json.loads(urllib.request.urlopen(base + "/api/desk").read())
+    check(dk["ok"] and dk["demo"] and dk["result"]["counts"]["deadlines_30d"] > 0 and "desk.js" in html, "GET /api/desk serves the demo Desk and the screen loads desk.js")
     req = urllib.request.Request(base + "/api/touch", data=json.dumps({"person_id": "118", "what": "test"}).encode(),
                                  headers={"Content-Type": "application/json"})
     check(json.loads(urllib.request.urlopen(req).read())["ok"], "POST /api/touch")
