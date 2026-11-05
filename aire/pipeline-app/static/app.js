@@ -45,6 +45,47 @@ function drafts() {
   return items.filter(i => !sentIds.has(i.person_id));
 }
 function personRow(id) { return (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person')).find(r => r.person_id === id); }
+// ---- texting from a card: one button opens the text, SEND sends it, then the card shows what happened
+const firstName = n => (String(n || '').trim().split(/\s+/)[0] || '');
+function lastText(id) { return ((S.data && S.data.last_texts) || {})[id]; }
+function textBtn(id, row) {
+  row = row || personRow(id) || {};
+  if (!row.phone) return `<button class="primary" onclick="openCompose('${id}')">✉ Compose</button>`;
+  const n = firstName(row.display);
+  return `<button class="primary text-btn" onclick="textNow('${id}')" title="Opens the text. Nothing goes until you press SEND.">▭ Text${n ? ' ' + esc(n) : ''}</button>`;
+}
+function textWhen(at) {
+  const d = new Date(at); if (isNaN(d)) return '';
+  const t = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return iso === todayISO() ? t : `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${t}`;
+}
+const TEXT_STATES = { delivered: ['ok', 'Texted', 'delivered'], sent: ['ok', 'Texted', 'sent'], pending: ['wait', 'Texted', 'checking delivery'], unknown: ['wait', 'Texted', 'checking delivery'], error: ['bad', 'Text failed', 'not delivered'], 'dry-run': ['dry', 'Dry run', 'nothing sent'] };
+function textStatus(id) {
+  const t = lastText(id); if (!t) return '';
+  const [cls, lead, tail] = TEXT_STATES[t.delivery] || TEXT_STATES.sent;
+  return `<span class="txs ${cls}${S.justTexted === id ? ' flash' : ''}" title="${esc(t.detail || '')}"><i></i>${lead} ${esc(textWhen(t.at))} · ${tail}</span>`;
+}
+function textPending() {
+  const now = Date.now();
+  return Object.values((S.data && S.data.last_texts) || {}).some(t => { const age = now - new Date(t.at); return ((t.delivery === 'pending' || t.delivery === 'unknown') && age < 30 * 60e3) || (t.delivery === 'sent' && age < 3 * 60e3); });
+}
+function watchDelivery() {
+  if (S.deliveryTimer || !textPending()) return;
+  let n = 0;
+  S.deliveryTimer = setInterval(async () => {
+    if (++n > 120 || !textPending()) { clearInterval(S.deliveryTimer); S.deliveryTimer = null; return; }
+    if (S.compose || !$('#modal').hidden) return;
+    try { S.data = await api('/api/state'); if (S.view !== 'cc' && !S.map) render(); } catch (e) { }
+  }, 4000);
+}
+function textNow(id) {
+  const row = personRow(id) || {};
+  openCompose(id);
+  if (!S.compose) return;
+  if (row.phone && S.compose.kind !== 'text') setKind('text');
+  S.compose.fromCard = true;
+}
 function matches(text) { return !S.q || text.toLowerCase().includes(S.q.toLowerCase()); }
 function problems() { return (S.data && S.data.problems) || []; }
 function statusLevel() { const p = problems(); return p.some(x => x.level === 'stop') ? 'stop' : p.length ? 'warn' : 'ok'; }
@@ -167,9 +208,9 @@ function liveFeed() {
   const f = feed(), items = [];
   (f.touches_due || []).filter(r => r.owes_reply).slice(0, 4).forEach(r => items.push({ cls: 'reply', ico: '↩', b: `${r.display} texted you`, s: (r.last_messages || [])[0] ? r.last_messages[r.last_messages.length - 1].replace(/^\d{4}-\d{2}-\d{2}: /, '') : 'owes a reply', tag: 'REPLY', tcls: 'reply', on: `openCompose('${r.person_id}')` }));
   (f.tasks || []).filter(t => t.overdue).slice(0, 2).forEach(t => items.push({ cls: 'task', ico: '!', b: `${t.task} is overdue`, s: `${t.display || 'no person'} · due ${t.due}`, tag: 'OVERDUE', tcls: 'stop', on: `go('tasks')` }));
-  (f.new_leads || []).slice(0, 2).forEach(l => items.push({ cls: 'lead', ico: '✦', b: `New lead: ${l.display}`, s: `${l.source} · ${l.next_action || ''}`, tag: 'LEAD', tcls: 'live', on: `openCompose('${l.person_id}')` }));
+  (f.new_leads || []).slice(0, 2).forEach(l => items.push({ cls: 'lead', ico: '✦', b: `New lead: ${l.display}`, s: `${l.source} · ${l.next_action || ''}`, tag: 'LEAD', tcls: 'live', on: `textNow('${l.person_id}')` }));
   (f.deals || []).slice().sort((a, b) => (b.last_event_at || '').localeCompare(a.last_event_at || '')).slice(0, 2).forEach(x => items.push({ cls: 'deal', ico: '⌂', b: x.address, s: x.last_event || x.next_step || x.stage, tag: x.stage.replace('_', ' ').toUpperCase(), tcls: 'violet', on: `openDeal(${esc(JSON.stringify(x.address))})` }));
-  (f.touches_due || []).filter(r => !r.owes_reply && r.band === 'hot').slice(0, 2).forEach(r => items.push({ cls: '', ico: '◎', b: `${r.display} is due`, s: r.next_action || quiet(r), tag: 'HOT', tcls: 'hot', on: `openCompose('${r.person_id}')` }));
+  (f.touches_due || []).filter(r => !r.owes_reply && r.band === 'hot').slice(0, 2).forEach(r => items.push({ cls: '', ico: '◎', b: `${r.display} is due`, s: r.next_action || quiet(r), tag: 'HOT', tcls: 'hot', on: `textNow('${r.person_id}')` }));
   if (!items.length) return `<div class="empty"><b>All quiet</b>Nothing owes a reply, nothing overdue.</div>`;
   return items.slice(0, 8).map((x, i) => `<div class="feed-item" style="--i:${i}" onclick="${x.on}"><span class="ico ${x.cls}">${x.ico}</span><div class="body"><b>${esc(x.b)}</b><small>${esc(x.s)}</small></div><span class="tag ${x.tcls}">${x.tag}</span></div>`).join('');
 }
@@ -229,9 +270,9 @@ function touchRow(r, i) {
   const last = (r.last_messages || []).slice(-1)[0];
   return `<div class="row ${r.owes_reply ? 'reply' : ''}" style="--i:${i}">
     <span class="ico ${r.band}">${initials(r.display)}</span>
-    <div class="who"><b>${esc(r.display || r.phone)}</b><small><span class="tag ${r.band}">${esc(r.band)}</span>${r.owes_reply ? '<span class="tag reply">REPLY</span>' : ''}<span>${esc(r.stage || '')}</span><span>${esc(fmtPhone(r.phone) || r.email || '')}</span></small></div>
+    <div class="who"><b>${esc(r.display || r.phone)}</b><small><span class="tag ${r.band}">${esc(r.band)}</span>${r.owes_reply ? '<span class="tag reply">REPLY</span>' : ''}<span>${esc(r.stage || '')}</span><span>${esc(fmtPhone(r.phone) || r.email || '')}</span>${textStatus(r.person_id)}</small></div>
     <div class="why"><b>${esc(r.next_action || (r.owes_reply ? 'They texted last. Answer first.' : 'Time for a touch'))}</b>${last ? `<span class="msg">“${esc(last.replace(/^\d{4}-\d{2}-\d{2}: /, ''))}”</span>` : `<span>${quiet(r)}${r.signal_score ? ' · score ' + r.signal_score : ''}</span>`}</div>
-    <div class="acts"><button class="primary" onclick="openCompose('${r.person_id}')">✉ Compose</button><button onclick="touched('${r.person_id}')">✓ Touched</button><button onclick="openTask('${r.person_id}')">＋ Task</button><button onclick="openNote('${r.person_id}')">✎ Note</button><button class="danger" onclick="openDNC('${r.person_id}')">⊘</button></div>
+    <div class="acts">${textBtn(r.person_id, r)}<button onclick="touched('${r.person_id}')">✓ Touched</button><button onclick="openTask('${r.person_id}')">＋ Task</button><button onclick="openNote('${r.person_id}')">✎ Note</button><button class="danger" onclick="openDNC('${r.person_id}')">⊘</button></div>
   </div>`;
 }
 function viewTasks() {
@@ -261,9 +302,9 @@ function viewLeads() {
   const rows = (feed().new_leads || []).filter(l => matches(`${l.display} ${l.source} ${l.email} ${l.phone}`));
   const body = rows.length ? `<div class="rows">${rows.map((l, i) => `<div class="row" style="--i:${i}">
     <span class="ico">${initials(l.display)}</span>
-    <div class="who"><b>${esc(l.display)}</b><small><span class="tag live">NEW</span><span>${esc(fmtPhone(l.phone) || l.email || '')}</span></small></div>
+    <div class="who"><b>${esc(l.display)}</b><small><span class="tag live">NEW</span><span>${esc(fmtPhone(l.phone) || l.email || '')}</span>${textStatus(l.person_id)}</small></div>
     <div class="why"><b>${esc(l.next_action || 'Reach out')}</b><span>${esc(l.source)} · received ${esc(l.received)}</span></div>
-    <div class="acts"><button class="primary" onclick="openCompose('${l.person_id}')">✉ Compose</button><button onclick="touched('${l.person_id}')">✓ Touched</button><button onclick="openTask('${l.person_id}')">＋ Task</button></div>
+    <div class="acts">${textBtn(l.person_id, l)}<button onclick="touched('${l.person_id}')">✓ Touched</button><button onclick="openTask('${l.person_id}')">＋ Task</button></div>
   </div>`).join('')}</div>` : `<div class="empty"><b>No new leads in the last 14 days</b></div>`;
   return `<div class="view">${panel(0, `New leads · ${rows.length}`, 'last 14 days', body)}</div>`;
 }
@@ -281,7 +322,7 @@ function viewSent() {
   const rows = (S.data.sent_today || []).slice().reverse();
   const body = rows.length ? `<div class="rows">${rows.map((s, i) => `<div class="row" style="--i:${i}">
     <span class="ico">${s.kind === 'text' ? '▭' : '✉'}</span>
-    <div class="who"><b>${esc(s.display || s.person_id)}</b><small><span class="tag ${s.status === 'sent' ? 'live' : 'warn'}">${esc(s.status.toUpperCase())}</span><span>${esc(s.kind === 'text' ? fmtPhone(s.to) : s.to)}</span></small></div>
+    <div class="who"><b>${esc(s.display || s.person_id)}</b><small><span class="tag ${s.status === 'sent' ? 'live' : 'warn'}">${esc(s.status.toUpperCase())}</span>${s.kind === 'text' && s.delivery ? `<span>${esc(s.delivery)}</span>` : ''}<span>${esc(s.kind === 'text' ? fmtPhone(s.to) : s.to)}</span></small></div>
     <div class="why"><b>${esc(s.subject || `${s.chars} characters`)}</b><span>${esc(s.at.slice(11, 16))} · ${esc(s.detail || '')}</span></div><div></div>
   </div>`).join('')}</div>` : `<div class="empty"><b>Nothing sent today</b></div>`;
   return `<div class="view">${panel(0, `Sent today · ${rows.length}`, 'out/send-log.json', body)}</div>`;
@@ -346,7 +387,10 @@ async function sendNow() {
   btn.disabled = false; btn.classList.remove('charging');
   if (!r.ok) { toast('err', 'NOT SENT', r.error); return; }
   toast(r.result.status === 'sent' ? 'ok' : 'warn', r.result.status === 'sent' ? 'SENT' : 'DRY RUN', `${c.kind} to ${c.name} ${r.result.status === 'sent' ? 'is on its way and logged in the CRM' : 'logged, nothing left the Mac'}`);
+  if (c.kind === 'text') S.justTexted = c.person_id;
   await load();
+  watchDelivery();
+  if (c.fromCard) { closeDrawer(); setTimeout(() => { if (S.justTexted === c.person_id) { S.justTexted = null; } }, 4000); return; }
   const items = drafts(); if (items.length) openCompose(items[Math.min(S.queueIdx, items.length - 1)].person_id, Math.min(S.queueIdx, items.length - 1)); else closeDrawer();
 }
 async function touchFromCompose() { const c = S.compose; const what = await ask('Touched', `What happened with ${c.name}?`, 'Called'); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${c.name}` }); if (r) nextInQueue(); }
@@ -487,7 +531,7 @@ async function boot() {
   if (S.data) tele(`drafts: ${((S.data.text_queue || {}).drafts || []).length} texts, ${((S.data.email_queue || {}).drafts || []).length} emails, ${((S.data.text_queue || {}).reply_first || []).length} replies owed`);
   tick(); setInterval(tick, 1000);
   $('#app').hidden = false;
-  if (S.data) render(); else toast('err', 'SERVER', 'app.py is not answering.');
+  if (S.data) { render(); watchDelivery(); } else toast('err', 'SERVER', 'app.py is not answering.');
   $('#boot').classList.add('out'); setTimeout(() => $('#boot').remove(), 600);
   S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.view === 'cc') { /* keep the globe steady: update numbers only */ renderNav(feed().counts || {}); } else if (S.map) { /* keep the map where Caleb left it */ renderNav(feed().counts || {}); mapUpdate(); } else render(); } catch (e) { } }, 30000);
 }

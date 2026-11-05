@@ -2,6 +2,23 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-05: Text button on each card, delivery shows on its own
+
+**Confirmed by Caleb**
+- Wants to click a lead's Text button in the dashboard and have the text go from there, "visibly updating on its own every time I send a text." Picked sending in the app, then "Yes, build it" for Pipeline on his own number through Messages, no new line, no cost.
+
+**Done (branch `claude/text-button-auto-log`, not merged)**
+- Touches due and New leads cards: `Text <first name>` button when a phone is on file. Opens the compose box set to text. SEND is still his press, through the Do Not Contact, cap and live gates.
+- After a send the drawer closes and the card shows `Texted 9:42 AM · delivered` (or sending, failed, dry run). `app.py` `last_texts()` re-reads `chat.db` for unconfirmed live texts for 30 minutes and saves the result in the send log as `delivery`. The screen polls every 4 seconds while one is unconfirmed.
+- 8 new offline checks, 65 in all, 0 failures (`python3 aire/pipeline-app/app.py --test`).
+
+**Not verified**
+- Not run on the Mac yet. No screenshot from the cloud session (no browser there). A real send, still Caleb's first press, to his own number first.
+
+**Needs Caleb**
+- Review and merge the PR. Then the first live test text to his own number, on his yes.
+- KW Command still does not see texts sent from Pipeline until the DevHub API is approved.
+
 ## 2026-10-29, afternoon: no group chats, Market Monitor twice a day
 
 **Confirmed by Caleb**
