@@ -2,6 +2,22 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-05, afternoon: ffmpeg confirmed on the Mac mini
+
+**Confirmed by Caleb**
+- Pasted the Terminal result: FFmpeg 9.0.2 installed through Homebrew, with x264, x265, SVT-AV1, VP8 and VP9, VideoToolbox and AudioToolbox hardware encoding, Opus and MP3, libvmaf, ffplay and ffprobe. Dynamically linked.
+
+**Done**
+- `research.md` Track 4: ffmpeg setup score 3 to 4, total 26 to 27. Proof row added with the feature list. Unknowns now name only the Python side (torch and Silero VAD requirements). Recommendations: the ffmpeg check is off Caleb's list, and a VMAF quality gate is noted as an option for candidate A.
+
+**Not verified**
+- Python, torch and the Silero VAD requirements on the Mac mini.
+
+**Needs Caleb**
+- Resend the Instagram post link he wants torn down.
+- Confirm the Higgsfield Plus price he pays and whether invideo is paid or free.
+- Say go for the designer round, then the blind judge round 1.
+
 ## 2026-11-05: hub created, research round 1 done
 
 **Confirmed by Caleb**
