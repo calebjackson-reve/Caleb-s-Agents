@@ -1,0 +1,30 @@
+{
+  "_note": "Made-up people and addresses for --demo. Dates are relative to today: '+2d 14:00' is two days out at 2 PM Central.",
+  "events": [
+    {"title": "Working hours", "start": "+0d 08:00", "end": "+0d 17:00"},
+    {"title": "Sales block", "start": "+0d 08:30", "end": "+0d 10:00", "event_type": "focusTime"},
+    {"title": "Oak Hollow Dr - Inspection Deadline", "start": "+0d 11:00", "end": "+0d 11:15", "creator": "tc@example.com"},
+    {"title": "Coffee with Pat Example", "start": "+0d 12:30", "end": "+0d 13:30", "notes": "Talk about listing in the spring."},
+    {"title": "Showing: 12 Sample Ct", "start": "+0d 15:00", "end": "+0d 16:00"},
+    {"title": "Maple Bend - Seller Response Deadline", "start": "+1d 11:15", "end": "+1d 11:30"},
+    {"title": "Sales block", "start": "+1d 08:30", "end": "+1d 10:00", "event_type": "focusTime"},
+    {"title": "Listing appointment, Sam Sample", "start": "+2d 16:00", "end": "+2d 17:30"},
+    {"title": "Oak Hollow Dr - Appraisal Deadline", "start": "+6d 17:00", "end": "+6d 17:15"},
+    {"title": "Maple Bend - Act of Sale Deadline", "start": "+16d 10:00", "end": "+16d 11:00"},
+    {"title": "Oak Hollow Dr - Act of Sale Deadline", "start": "+19d 14:00", "end": "+19d 15:00"}
+  ],
+  "inbox": [
+    {"from": "Website", "subject": "Newsletter from a vendor", "snippet": "", "date": "-1d 07:10", "thread_id": "aaa111bbb222"},
+    {"from": "Website", "subject": "New Lead: Jordan Placeholder", "snippet": "Looking in Zachary, 3 bed", "date": "+0d 07:42", "thread_id": "aaa111bbb333"},
+    {"from": "Example Title Co (title.com)", "subject": "Closing docs for Maple Bend", "snippet": "", "date": "-1d 16:05", "thread_id": "aaa111bbb444"},
+    {"from": "Riley Testcase", "subject": "Counter offer signed", "snippet": "", "date": "-2d 09:30", "thread_id": "aaa111bbb555"}
+  ],
+  "commission": [
+    {"from": "Brokerage Accounting", "subject": "Commission Not Processed - 9 Sample Ct", "snippet": "", "date": "-3d 10:00", "thread_id": "ccc111ddd222"},
+    {"from": "Brokerage Accounting", "subject": "Commission disbursement - 40 Example Ave", "snippet": "", "date": "-20d 10:00", "thread_id": "ccc111ddd333"}
+  ],
+  "bank": [
+    {"from": "Chase", "subject": "You have a direct deposit", "snippet": "A deposit posted to your account", "date": "-2d 06:00", "thread_id": "eee111fff222"},
+    {"from": "Chase", "subject": "Your balance alert", "snippet": "", "date": "-5d 06:00", "thread_id": "eee111fff333"}
+  ]
+}
