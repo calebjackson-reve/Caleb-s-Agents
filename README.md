@@ -40,6 +40,7 @@ cd skills/nick-saraev/<course> && zip -r <skill-name>.zip <skill-name>
 |---|---|
 | [**SKOOL AI FOR AGENTS**](SKOOL-AI-FOR-AGENTS/README.md) | Project hub for the free Skool community: status log, shot board for every video, and links to the plan, scripts and research. Start here for anything Skool. |
 | [**AIRE**](aire/README.md) | Project hub: status log, stack memory, the October 2026 rollout plan, weekly AI briefs, and the speed to lead responder. Start here for anything AIRE. |
+| [**VIDEO STUDIO**](video-studio/README.md) | Project hub for the AI video workflow: status log, round 1 research plan and scored tool report, the blind judge procedure, and the four video agents. Start here for anything video. |
 | `global-claude-md/` | The global CLAUDE.md for Caleb's machine, with the install line. |
 
 ## Programs
