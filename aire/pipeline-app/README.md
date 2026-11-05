@@ -91,6 +91,14 @@ Pipeline is the one sender (Caleb, 2026-10-20). Every send from the compose box 
 
 After a real send the engine logs it with `touch`, so the person drops off tomorrow's list. The Sent today view and the Send monitor gauges read the same log. A person already in today's log is hidden from the queue.
 
+### The Text button on a card
+
+Every Touches due and New leads card with a phone on file has a **Text <first name>** button (Caleb, 2026-11-05: click a lead's Text button and the text goes from the app, with the card updating on its own). It opens the compose box set to text, with the queued draft if there is one. Nothing goes until Caleb presses SEND, and the send runs the same three gates. A card with no phone keeps ✉ Compose.
+
+After the send the drawer closes so the card is in view, and the card shows one line from the send log: `Texted 9:42 AM · delivered`, `· sent`, `· checking delivery`, `Text failed 9:42 AM · not delivered`, or `Dry run 9:42 AM · nothing sent`. The newest text in the last 30 days counts. While a live text is not confirmed yet, `last_texts()` in `app.py` reads `chat.db` again (read only) on every state read for 30 minutes after it went, writes a change back to `out/send-log.json` as `delivery`, and the screen asks for the state every 4 seconds until it settles, so the line flips on its own. An SMS that macOS never marks delivered stays at `sent`.
+
+The touch in the AIRE CRM is written the moment the send succeeds, as before. KW Command does not get the text until Command has an API Pipeline can write to (DevHub application pending).
+
 `followups.py --approve` stays a dry run unless `FOLLOWUP_SENDER=followups` is set on purpose, so nobody gets two messages from two places.
 
 ## Voice

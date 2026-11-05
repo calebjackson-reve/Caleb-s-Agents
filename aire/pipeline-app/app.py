@@ -415,6 +415,41 @@ class State:
         rows = [r for r in self.send_log() if r.get("at", "").startswith(d) and r.get("status") in ("sent", "dry-run")]
         return {"texts": sum(1 for r in rows if r["kind"] == "text"), "emails": sum(1 for r in rows if r["kind"] == "email")}
 
+    def last_texts(self, days: int = 30, recheck_minutes: int = 30, db: Path | None = None) -> dict:
+        """The newest text to each person in the last `days`, for the "Texted 9:42 AM · delivered" line on their card.
+        A live text that Messages had not confirmed yet is read again from chat.db (read only) for `recheck_minutes`
+        after it went, and a change is written back to the send log, so the card flips to delivered or failed on
+        its own. Nothing is ever sent from here."""
+        cutoff = now().timestamp() - days * 86400
+        log, out, changed = self.send_log(), {}, False
+        live = self.sender == "live" and not self.demo and (db is not None or platform.system() == "Darwin")
+        for r in log:
+            if r.get("kind") != "text" or not r.get("person_id"):
+                continue
+            try:
+                t = datetime.fromisoformat(r["at"]).timestamp()
+            except (KeyError, ValueError, TypeError):
+                continue
+            if t < cutoff:
+                continue
+            if "delivery" not in r:
+                r["delivery"] = delivery_from_detail(r.get("status", ""), r.get("detail", ""))
+            if live and r.get("status") == "sent" and r["delivery"] in ("pending", "sent", "unknown") and now().timestamp() - t < recheck_minutes * 60:
+                st = delivery_state(r.get("to", ""), t, db or CHAT_DB)
+                if st in ("delivered", "error", "sent") and st != r["delivery"]:
+                    r["delivery"], changed = st, True
+            out[r["person_id"]] = {k: r.get(k, "") for k in ("at", "status", "delivery", "detail", "display")}
+        if changed:
+            with self.lock:
+                fresh = self.send_log()  # merge onto the newest copy so a send that landed meanwhile is kept
+                by_key = {(r.get("at"), r.get("person_id"), r.get("kind")): r.get("delivery") for r in log if r.get("delivery")}
+                for r in fresh:
+                    k = (r.get("at"), r.get("person_id"), r.get("kind"))
+                    if by_key.get(k):
+                        r["delivery"] = by_key[k]
+                write_json(self.send_log_path, fresh)
+        return out
+
     # ---- voice services
     def voice_usage(self) -> dict:
         u = read_json(self.usage_path, {})
@@ -641,6 +676,7 @@ class State:
             "command": command if "_error" not in command else {},
             "caps": {"texts": self.max_texts, "emails": self.max_emails, "sent_texts": sent["texts"], "sent_emails": sent["emails"]},
             "sent_today": [r for r in self.send_log() if r.get("at", "").startswith(today().isoformat())][-50:],
+            "last_texts": self.last_texts(),
             "refresh": self.refresh,
             "problems": problems,
             "links": {"sheet": SHEET_URL.format(sheet_id=feed.get("sheet_id", "")) if feed.get("sheet_id") else "", "command": COMMAND_URL},
@@ -849,12 +885,14 @@ class State:
                 with self.lock:
                     log = self.send_log()
                     log.append({"at": now().isoformat(timespec="seconds"), "kind": kind, "person_id": person_id, "display": display,
-                                "to": to.strip(), "subject": subject.strip(), "chars": len(body), "status": "failed", "detail": str(e)[:200]})
+                                "to": to.strip(), "subject": subject.strip(), "chars": len(body), "status": "failed", "detail": str(e)[:200],
+                                "delivery": "error"})
                     write_json(self.send_log_path, log)
                 raise
             status = "sent"
         entry = {"at": now().isoformat(timespec="seconds"), "kind": kind, "person_id": person_id, "display": display,
-                 "to": to.strip(), "subject": subject.strip(), "chars": len(body), "status": status, "detail": detail}
+                 "to": to.strip(), "subject": subject.strip(), "chars": len(body), "status": status, "detail": detail,
+                 "delivery": delivery_from_detail(status, detail)}
         with self.lock:
             log = self.send_log()
             log.append(entry)
@@ -954,6 +992,17 @@ def delivery_state(phone: str, since: float, db: Path = CHAT_DB) -> str:
         return "unknown"
     error, delivered, sent = row
     return "error" if error else "delivered" if delivered else "sent" if sent else "pending"
+
+
+def delivery_from_detail(status: str, detail: str) -> str:
+    """The delivery word for a send-log line, from what send_imessage said at the time: delivered, sent,
+    pending (handed to Messages, not confirmed), error, or dry-run."""
+    if status == "dry-run":
+        return "dry-run"
+    if status == "failed":
+        return "error"
+    d = (detail or "").lower()
+    return "delivered" if "delivered" in d else "pending" if "not confirmed" in d else "sent"
 
 
 def _wait_for_delivery(phone: str, since: float, seconds: float = 12, db: Path = CHAT_DB, sleep=time.sleep) -> str:
@@ -1370,6 +1419,31 @@ def run_tests() -> int:
               "a failed live text is logged as failed and not touched")
     finally:
         send_imessage.__defaults__ = orig
+
+    # the "Texted · delivered" line on a person's card
+    check(delivery_from_detail("sent", "iMessage delivered") == "delivered" and delivery_from_detail("sent", "not on iMessage, sent as SMS") == "sent"
+          and delivery_from_detail("sent", "iMessage handed to Messages, delivery not confirmed yet") == "pending"
+          and delivery_from_detail("dry-run", "") == "dry-run" and delivery_from_detail("failed", "x") == "error", "send detail maps to a delivery word")
+    lt = State(demo=True, send_log=tmp / "lt" / "send-log.json"); lt.demo = False; lt.sender = "live"
+    at_old = datetime.fromtimestamp(t_now - 40 * 86400, CENTRAL).isoformat(timespec="seconds")
+    at_new = datetime.fromtimestamp(t_now - 5, CENTRAL).isoformat(timespec="seconds")
+    at_dry = datetime.fromtimestamp(t_now - 60, CENTRAL).isoformat(timespec="seconds")
+    write_json(lt.send_log_path, [
+        {"at": at_old, "kind": "text", "person_id": "old", "to": "+12255550199", "status": "sent", "detail": "iMessage delivered"},
+        {"at": at_dry, "kind": "text", "person_id": "118", "to": "+12255550101", "status": "dry-run", "detail": "not live"},
+        {"at": at_new, "kind": "text", "person_id": "118", "to": "+12255550101", "status": "sent", "detail": "iMessage handed to Messages, delivery not confirmed yet"},
+        {"at": at_new, "kind": "email", "person_id": "120", "to": "a@example.com", "status": "sent", "detail": "gmail"}])
+    got = lt.last_texts(db=tmp / "missing.db")
+    check(set(got) == {"118"} and got["118"]["delivery"] == "pending", "last text per person: newest wins, emails and texts older than 30 days left out")
+    check(lt.last_texts(db=db)["118"]["delivery"] == "delivered", "an unconfirmed live text flips to delivered when chat.db confirms it")
+    check(next(r for r in lt.send_log() if r["at"] == at_new and r["kind"] == "text")["delivery"] == "delivered", "the confirmed delivery is written back to the send log")
+    lt.sender = "dry"
+    write_json(lt.send_log_path, [{"at": at_new, "kind": "text", "person_id": "118", "to": "+12255550101", "status": "sent", "detail": "iMessage sent"}])
+    check(lt.last_texts(db=db)["118"]["delivery"] == "sent", "chat.db is only read when Pipeline is live")
+    sd = State(demo=True, send_log=tmp / "lt2" / "send-log.json")
+    sd.send("text", "118", "+12255550101", "hello", display="Riley Quiet")
+    snap_lt = sd.snapshot()["last_texts"]
+    check(snap_lt.get("118", {}).get("delivery") == "dry-run" and snap_lt["118"]["display"] == "Riley Quiet", "a demo send shows on the card as a dry run")
 
     # map and market monitor
     sm = State(demo=True, send_log=tmp / "map" / "send-log.json")
