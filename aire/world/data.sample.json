@@ -1,0 +1,378 @@
+{
+ "sync": {
+  "at": "2026-11-04T11:57:30-06:00",
+  "ok": true,
+  "by": "connector exports"
+ },
+ "sources": {
+  "crm": "AIRE CRM Google Sheet, read only: Contacts, Deals, Tasks, Deadlines, Command export, LP leads",
+  "market": "Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.",
+  "report": "aire/world/reports/merge-<date>.md (on the Mac, git-ignored)"
+ },
+ "match": {
+  "deals": 7,
+  "deadlines_matched": 4,
+  "command_opportunities": 0,
+  "command_opportunities_matched": 0,
+  "command_contacts": 0,
+  "command_contacts_matched": 0,
+  "lp_leads": 0,
+  "lp_leads_matched": 0,
+  "unmatched": 0
+ },
+ "people": {
+  "contacts": {
+   "value": 3656,
+   "period": "now",
+   "source": "AIRE CRM sheet"
+  },
+  "hot": {
+   "value": 123,
+   "period": "now",
+   "source": "AIRE CRM sheet, band"
+  },
+  "warm": {
+   "value": 50,
+   "period": "now",
+   "source": "AIRE CRM sheet, band"
+  },
+  "cold": {
+   "value": 524,
+   "period": "now",
+   "source": "AIRE CRM sheet, band"
+  },
+  "ice_cold": {
+   "value": 955,
+   "period": "now",
+   "source": "AIRE CRM sheet, band"
+  },
+  "unbanded": {
+   "value": 2004,
+   "period": "now",
+   "source": "AIRE CRM sheet, band"
+  },
+  "new_leads_7d": {
+   "value": 2,
+   "period": "last 7 days",
+   "source": "Contacts Source dates + Command export + LP leads created dates"
+  },
+  "new_leads_7d_by_source": {
+   "Luxury Presence": 2
+  },
+  "new_leads_30d": {
+   "value": 30,
+   "period": "last 30 days",
+   "source": "AIRE CRM sheet, Source column date"
+  },
+  "touched_30d": {
+   "value": 32,
+   "period": "last 30 days",
+   "source": "AIRE CRM sheet, Last_Touch"
+  },
+  "next_actions": {
+   "value": 421,
+   "period": "now",
+   "source": "AIRE CRM sheet, Next_Action"
+  },
+  "past_clients": {
+   "value": 57,
+   "period": "now",
+   "source": "AIRE CRM sheet, Stage"
+  },
+  "nurture": {
+   "value": 641,
+   "period": "now",
+   "source": "AIRE CRM sheet, Stage"
+  },
+  "fmv_median": {
+   "value": 293750.0,
+   "period": "now",
+   "source": "AIRE CRM sheet, fair_market_value, 240 homes"
+  },
+  "by_type": {
+   "client": 1086,
+   "household": 657,
+   "recruit": 75,
+   "vendor": 54,
+   "agent": 38,
+   "lender": 7,
+   "unknown": 1739
+  },
+  "by_city": [
+   {
+    "city": "Baton Rouge",
+    "n": 182
+   },
+   {
+    "city": "Zachary",
+    "n": 84
+   },
+   {
+    "city": "Denham Springs",
+    "n": 59
+   },
+   {
+    "city": "Prairieville",
+    "n": 40
+   },
+   {
+    "city": "Saint Francisville",
+    "n": 36
+   },
+   {
+    "city": "Lafayette",
+    "n": 24
+   },
+   {
+    "city": "Clinton",
+    "n": 23
+   },
+   {
+    "city": "Gonzales",
+    "n": 21
+   }
+  ]
+ },
+ "deals": {
+  "live": {
+   "value": 6,
+   "period": "now",
+   "source": "AIRE CRM sheet, Deals"
+  },
+  "by_stage": {
+   "under_contract": 3,
+   "showing": 1,
+   "active": 2,
+   "closed": 1
+  },
+  "under_contract": {
+   "value": 3,
+   "period": "now",
+   "source": "AIRE CRM sheet, Deals"
+  },
+  "under_contract_volume": {
+   "value": 2397000.0,
+   "period": "now",
+   "source": "AIRE CRM sheet, Deals price"
+  },
+  "pending_commission": {
+   "value": null,
+   "period": "now",
+   "source": "AIRE CRM sheet, Deals commission column, else Command opportunities commission (3 of 3 under-contract deals have no commission figure yet)"
+  },
+  "active_listings": {
+   "value": 3,
+   "period": "now",
+   "source": "AIRE CRM sheet, Deals"
+  },
+  "active_buyers": {
+   "value": 0,
+   "period": "now",
+   "source": "AIRE CRM sheet, Deals"
+  },
+  "active_volume": {
+   "value": 854900.0,
+   "period": "now",
+   "source": "AIRE CRM sheet, Deals price"
+  },
+  "days_on_market_median": {
+   "value": null,
+   "period": "now",
+   "source": "Command opportunities list date or days on market (no list dates yet: paste the Opportunities export, or add a list date)"
+  },
+  "closed_90d": {
+   "value": 1,
+   "period": "last 90 days",
+   "source": "AIRE CRM sheet, Deals"
+  },
+  "closed_90d_volume": {
+   "value": 425000.0,
+   "period": "last 90 days",
+   "source": "AIRE CRM sheet, Deals price"
+  },
+  "next_close": {
+   "value": "2026-11-20",
+   "period": "next",
+   "source": "AIRE CRM sheet, expected_close"
+  },
+  "houses": [
+   {
+    "side": "listing",
+    "stage": "under_contract",
+    "price": 1650000.0,
+    "close": "",
+    "dom": null,
+    "deadlines": 0,
+    "next_deadline": ""
+   },
+   {
+    "side": "listing",
+    "stage": "showing",
+    "price": 0,
+    "close": "",
+    "dom": null,
+    "deadlines": 0,
+    "next_deadline": ""
+   },
+   {
+    "side": "listing",
+    "stage": "active",
+    "price": 510000.0,
+    "close": "",
+    "dom": null,
+    "deadlines": 0,
+    "next_deadline": ""
+   },
+   {
+    "side": "buyer",
+    "stage": "under_contract",
+    "price": 232000.0,
+    "close": "2026-10-30",
+    "dom": null,
+    "deadlines": 0,
+    "next_deadline": ""
+   },
+   {
+    "side": "listing",
+    "stage": "active",
+    "price": 344900.0,
+    "close": "2026-11-29",
+    "dom": null,
+    "deadlines": 3,
+    "next_deadline": "2026-11-04"
+   },
+   {
+    "side": "buyer",
+    "stage": "closed",
+    "price": 425000.0,
+    "close": "2026-10-13",
+    "dom": null,
+    "deadlines": 0,
+    "next_deadline": ""
+   },
+   {
+    "side": "buyer",
+    "stage": "under_contract",
+    "price": 515000.0,
+    "close": "2026-11-20",
+    "dom": null,
+    "deadlines": 1,
+    "next_deadline": "2026-11-20"
+   }
+  ]
+ },
+ "calendar": {
+  "deadlines_30d": {
+   "value": 4,
+   "period": "next 30 days",
+   "source": "AIRE CRM sheet, Deadlines tab"
+  },
+  "deadlines_today": {
+   "value": 1,
+   "period": "today",
+   "source": "AIRE CRM sheet, Deadlines tab"
+  },
+  "deadlines": [
+   {
+    "kind": "Inspection Period Deadline",
+    "date": "2026-11-04",
+    "stage": "active"
+   },
+   {
+    "kind": "Seller Inspection Response Deadline",
+    "date": "2026-11-05",
+    "stage": "active"
+   },
+   {
+    "kind": "Act of Sale Deadline",
+    "date": "2026-11-20",
+    "stage": "under_contract"
+   },
+   {
+    "kind": "Act of Sale Deadline",
+    "date": "2026-11-23",
+    "stage": "active"
+   }
+  ]
+ },
+ "engine": {
+  "tasks_open": {
+   "value": 0,
+   "period": "now",
+   "source": "AIRE CRM sheet, Tasks"
+  },
+  "tasks_overdue": {
+   "value": 0,
+   "period": "now",
+   "source": "AIRE CRM sheet, Tasks"
+  },
+  "tasks_done_7d": {
+   "value": 4,
+   "period": "last 7 days",
+   "source": "AIRE CRM sheet, Tasks"
+  }
+ },
+ "market": {
+  "gbrar": {
+   "median_price": {
+    "value": 269000,
+    "prior": 270000,
+    "yoy": -0.4,
+    "period": "2026-09",
+    "source": "Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.",
+    "label": "Median sale price"
+   },
+   "closed_sales": {
+    "value": 737,
+    "prior": 736,
+    "yoy": 0.1,
+    "period": "2026-09",
+    "source": "Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.",
+    "label": "Closed sales"
+   },
+   "days_on_market": {
+    "value": 79,
+    "prior": 61,
+    "yoy": 29.5,
+    "period": "2026-09",
+    "source": "Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.",
+    "label": "Days on market"
+   },
+   "homes_for_sale": {
+    "value": 3524,
+    "prior": 3417,
+    "yoy": 3.1,
+    "period": "2026-09",
+    "source": "Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.",
+    "label": "Homes for sale"
+   },
+   "months_supply": {
+    "value": 4.6,
+    "prior": 4.5,
+    "yoy": 2.2,
+    "period": "2026-09",
+    "source": "Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.",
+    "label": "Months of supply"
+   },
+   "new_listings": {
+    "value": 962,
+    "prior": 997,
+    "yoy": -3.5,
+    "period": "2026-09",
+    "source": "Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.",
+    "label": "New listings"
+   },
+   "pending_sales": {
+    "value": 664,
+    "prior": 722,
+    "yoy": -8.0,
+    "period": "2026-09",
+    "source": "Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.",
+    "label": "Pending sales"
+   },
+   "month": "2026-09",
+   "source": "Greater Baton Rouge Association of REALTORS MLS, Monthly Indicators, September 2026. Current as of October 6, 2026. Single-family, townhomes and condos combined.",
+   "source_url": "https://gbrar-public.stats.showingtime.com/docs/mmi/x/report"
+  }
+ }
+}

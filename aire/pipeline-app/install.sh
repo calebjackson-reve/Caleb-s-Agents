@@ -31,7 +31,9 @@ echo "server: launchctl loaded $LABEL (log: ~/.aire/logs/pipeline.log)"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cat > "$APP/Contents/MacOS/Pipeline" <<'EOF'
 #!/bin/sh
-URL="http://127.0.0.1:${PIPELINE_PORT:-4747}/"
+# ~/.aire/pipeline-url points this window at another Mac (the mini host over Tailscale). No file: this Mac.
+URL=$(head -1 "$HOME/.aire/pipeline-url" 2>/dev/null)
+[ -n "$URL" ] || URL="http://127.0.0.1:${PIPELINE_PORT:-4747}/"
 if [ -d "/Applications/Google Chrome.app" ]; then
   exec open -na "Google Chrome" --args --app="$URL" --window-size=1440,900
 else

@@ -1,7 +1,7 @@
 /* Pipeline front end. Vanilla JS, no build step. Talks to app.py over /api. */
 'use strict';
 
-const S = { data: null, view: 'cc', q: '', filter: 'all', queueIdx: 0, pollTimer: null, bootDone: false };
+const S = { data: null, view: (new URLSearchParams(location.search).get('view') || 'dash'), q: '', filter: 'all', queueIdx: 0, pollTimer: null, bootDone: false };
 const $ = (sel, el = document) => el.querySelector(sel);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const initials = n => (n || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -125,10 +125,11 @@ function render() {
   const main = $('#main');
   if (d.feed_ok && f.header_ok === false) { main.innerHTML = stopScreen(f); return; }
   if (!d.feed_ok) { main.innerHTML = `<div class="stop-screen"><div class="big">NO FEED</div><p>${esc((problems()[0] || {}).text || 'feed.json is missing.')}</p><div class="acts"><button class="primary" onclick="refresh()">Run the refresh</button></div></div>`; return; }
-  const views = { cc: viewCC, touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent, map: viewMap, market: viewMarket };
+  const views = { dash: viewDash, cc: viewCC, touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent, map: viewMap, market: viewMarket, world: viewWorld };
   if (S.map) { S.map.destroy(); S.map = null; }
   main.innerHTML = (views[S.view] || viewCC)();
   if (S.view === 'map') mountMap(false); else if (S.view === 'deals' && S.dealsMode === 'map') mountMap(true);
+  if (S.view === 'dash' && window.Dash) Dash.mount();
   if (S.view === 'cc' && window.Core) { const cv = $('#core'); if (cv) Core.mount(cv, (f.counts || {}).by_band || {}); }
   reflectVoice();
   // the hero's header is absolute, so the svg gets the whole panel
@@ -149,11 +150,12 @@ function countUp(el) {
 function renderNav(c) {
   const dr = drafts();
   const items = [
-    ['cc', '⌂', 'Command Center'], ['touches', '◎', 'Touches due', (feed().touches_due || []).length, (feed().touches_due || []).some(r => r.owes_reply)],
+    ['dash', '▦', 'Dashboard'], ['cc', '⌂', 'Command Center'], ['touches', '◎', 'Touches due', (feed().touches_due || []).length, (feed().touches_due || []).some(r => r.owes_reply)],
     ['tasks', '☑', 'Tasks', (feed().tasks || []).length, c.tasks_overdue > 0], ['deals', '⌂', 'Deals', (feed().deals || []).length],
     ['leads', '✦', 'New leads', (feed().new_leads || []).length, (feed().new_leads || []).length > 0], ['queue', '✉', 'Drafts', dr.length],
     ['sent', '↗', 'Sent today', (S.data.sent_today || []).length],
     ['map', '◈', 'Map', ((feed().map || {}).counts || {}).persons || 0], ['market', '◆', 'Market Monitor', ((feed().market || {}).rows || []).length],
+    ['world', '◉', 'World'],
   ];
   $('#nav').innerHTML = items.map(([k, ico, label, n, warn]) => `<button class="${S.view === k ? 'on' : ''}" onclick="go('${k}')"><span class="ico">${ico}</span>${label}${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`).join('');
 }
@@ -311,9 +313,9 @@ function viewLeads() {
 function viewQueue() {
   const items = drafts().filter(d => matches(`${d.name} ${d.body} ${d.subject}`));
   const body = items.length ? `<div class="rows">${items.map((d, i) => `<div class="row ${d.reply ? 'reply' : ''}" style="--i:${i}">
-    <span class="ico">${d.kind === 'text' ? '▭' : '✉'}</span>
+    <span class="ico" title="${d.kind === 'text' ? 'text' : 'email'}">${esc(initials(d.name))}</span>
     <div class="who"><b>${esc(d.name)}</b><small>${d.reply ? '<span class="tag reply">REPLY FIRST</span>' : `<span class="tag info">${esc(d.pool || '')}</span>`}<span>${esc(d.kind === 'text' ? fmtPhone(d.to) : d.to)}</span></small></div>
-    <div class="why"><b>${esc(d.reply ? 'No template. Read what they said and answer.' : d.subject || d.body.split('\n')[0])}</b><span class="msg">${esc(d.reply ? (d.last_messages.slice(-1)[0] || '').replace(/^\d{4}-\d{2}-\d{2}: /, '') : d.body.slice(0, 110))}</span></div>
+    <div class="why">${d.reply ? `<span class="msg said">${esc((d.last_messages.slice(-1)[0] || '').replace(/^\d{4}-\d{2}-\d{2}: /, '') || 'They wrote last. Open to read and answer.')}</span>` : `<b>${esc(d.subject || d.body.split('\n')[0])}</b><span class="msg">${esc(d.body.slice(0, 110))}</span>`}</div>
     <div class="acts"><button class="primary" onclick="openCompose('${d.person_id}', ${i})">✉ Open</button></div>
   </div>`).join('')}</div>` : `<div class="empty"><b>Queue is clear</b>Drafts come from follow-up/out/*.json after the refresh.</div>`;
   return `<div class="view">${panel(0, `Compose queue · ${items.length}`, `${S.data.caps.sent_texts}/${S.data.caps.texts} texts · ${S.data.caps.sent_emails}/${S.data.caps.emails} emails today`, body)}</div>`;
@@ -326,6 +328,11 @@ function viewSent() {
     <div class="why"><b>${esc(s.subject || `${s.chars} characters`)}</b><span>${esc(s.at.slice(11, 16))} · ${esc(s.detail || '')}</span></div><div></div>
   </div>`).join('')}</div>` : `<div class="empty"><b>Nothing sent today</b></div>`;
   return `<div class="view">${panel(0, `Sent today · ${rows.length}`, 'out/send-log.json', body)}</div>`;
+}
+
+// ---- World: the 3D town with the dashboard rail (aire/world, served by app.py at /world/)
+function viewWorld() {
+  return `<section class="panel world-panel"><iframe id="world-frame" src="/world/" title="AIRE World" allow="clipboard-write"></iframe></section>`;
 }
 
 // ---------------------------------------------------------------- navigation
@@ -458,7 +465,7 @@ function openProblems() {
     () => (p.some(x => x.code.startsWith('command')) ? 'command' : true), p.some(x => x.code.startsWith('command')) ? 'Open Command' : 'OK').then(v => { if (v === 'command') window.open(S.data.links.command); });
 }
 function openHelp() {
-  modal('Keys', `<div class="brief"><ul><li><kbd>1</kbd> to <kbd>9</kbd> switch views (<kbd>8</kbd> Map, <kbd>9</kbd> Market Monitor)</li><li>On the map: drag to move, scroll or double-click to zoom, click a cluster to open it. Drawing a farm: click corners, double-click or Enter to finish, Backspace undoes a corner, Esc cancels.</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Those answers are read straight from the feed. Anything else goes to Claude with today's feed when the Q&amp;A step is on (ANTHROPIC_API_KEY). Say "ask ..." to force it.</li><li>With the Speech Engine set up (README), the bottom pill starts a call: ElevenLabs listens and talks over WebRTC, Claude answers from the feed, you can interrupt it. Tap again to hang up.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li><li>The Sources panel shows whether Claude Q&amp;A and the ElevenLabs voice are on and what they have used.</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
+  modal('Keys', `<div class="brief"><ul><li><kbd>0</kbd> Dashboard, <kbd>1</kbd> to <kbd>9</kbd> the other views (<kbd>8</kbd> Map, <kbd>9</kbd> Market Monitor). World opens from the nav or the farm button on the dashboard.</li><li>On the map: drag to move, scroll or double-click to zoom, click a cluster to open it. Drawing a farm: click corners, double-click or Enter to finish, Backspace undoes a corner, Esc cancels.</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Those answers are read straight from the feed. Anything else goes to Claude with today's feed when the Q&amp;A step is on (ANTHROPIC_API_KEY). Say "ask ..." to force it.</li><li>With the Speech Engine set up (README), the bottom pill starts a call: ElevenLabs listens and talks over WebRTC, Claude answers from the feed, you can interrupt it. Tap again to hang up.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li><li>The Sources panel shows whether Claude Q&amp;A and the ElevenLabs voice are on and what they have used.</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
 }
 
 // ---------------------------------------------------------------- toasts, clock, keys, boot
@@ -481,8 +488,8 @@ function toast(kind, tag, text) { const t = document.createElement('div'); t.cla
 function tick() { const d = new Date(); $('#date').textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); $('#time').textContent = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).toLowerCase(); }
 document.addEventListener('keydown', e => {
   if (e.target.matches('input, textarea, select')) { if (e.key === 'Escape') e.target.blur(); return; }
-  const views = ['cc', 'touches', 'tasks', 'deals', 'leads', 'queue', 'sent', 'map', 'market'];
-  if (/^[1-9]$/.test(e.key)) go(views[Number(e.key) - 1]);
+  const views = ['cc', 'touches', 'tasks', 'deals', 'leads', 'queue', 'sent', 'map', 'market', 'dash'];
+  if (/^[0-9]$/.test(e.key)) go(views[e.key === '0' ? 9 : Number(e.key) - 1]);
   else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
   else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }
   else if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else closeDrawer(); }

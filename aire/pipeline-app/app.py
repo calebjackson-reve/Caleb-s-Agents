@@ -33,6 +33,7 @@ Two optional paid services, each off until its key is present (env, or ~/.aire/p
 
 Environment:
   PIPELINE_PORT      default 4747
+  PIPELINE_BIND      127.0.0.1 (default, this Mac only) | tailscale (also Caleb's Tailscale devices, the mini host)
   PIPELINE_PYTHON    Python for crm.py, default ~/.aire/venv/bin/python when it exists, else this interpreter
   PIPELINE_SENDER    live | dry (default dry)
   PIPELINE_MAX_TEXTS, PIPELINE_MAX_EMAILS   default 25
@@ -52,7 +53,8 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import date, datetime
+from datetime import date, datetime, timezone
+import ipaddress
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -120,6 +122,68 @@ DEMO_PATHS = {
     "lists": OUT / "demo-lists",
 }
 CRM_PY = AIRE / "crm" / "crm.py"
+
+# ---- the dashboard page (static/dash.js). Everything it shows comes from files the Mac already writes plus one weather call.
+WORLD = AIRE / "world"
+AI_VIS_SUMMARY = AIRE / "ai-visibility" / "summary.json"
+WEATHER_URL = ("https://api.open-meteo.com/v1/forecast?latitude=30.4515&longitude=-91.1871"
+               "&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,weather_code"
+               "&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FChicago&forecast_days=4")
+WEATHER_WORDS = {0: "Clear", 1: "Mostly clear", 2: "Partly cloudy", 3: "Overcast", 45: "Fog", 48: "Fog", 51: "Drizzle", 53: "Drizzle", 55: "Drizzle",
+                 61: "Light rain", 63: "Rain", 65: "Heavy rain", 66: "Freezing rain", 67: "Freezing rain", 71: "Snow", 73: "Snow", 75: "Snow",
+                 80: "Showers", 81: "Showers", 82: "Heavy showers", 95: "Thunderstorm", 96: "Thunderstorm", 99: "Thunderstorm"}
+DEMO_WEATHER = {"temp": 79, "word": "Clear", "wind": 9, "days": [{"day": "Thu", "hi": 78, "lo": 55, "word": "Clear"}, {"day": "Fri", "hi": 81, "lo": 56, "word": "Partly cloudy"},
+                                                                 {"day": "Sat", "hi": 75, "lo": 60, "word": "Showers"}], "source": "demo", "at": ""}
+
+
+def fetch_weather(opener=None) -> dict | None:
+    """Baton Rouge from Open-Meteo (free, no key). None when the network says no; the page then hides the card."""
+    import urllib.request
+    opener = opener or urllib.request.urlopen
+    try:
+        with opener(WEATHER_URL, timeout=4) as r:
+            w = json.loads(r.read().decode())
+        cur, d = w["current"], w["daily"]
+        days = [{"day": datetime.fromisoformat(d["time"][i]).strftime("%a"), "hi": round(d["temperature_2m_max"][i]), "lo": round(d["temperature_2m_min"][i]),
+                 "word": WEATHER_WORDS.get(d["weather_code"][i], "")} for i in range(1, min(4, len(d["time"])))]
+        return {"temp": round(cur["temperature_2m"]), "word": WEATHER_WORDS.get(cur["weather_code"], ""), "wind": round(cur["wind_speed_10m"]),
+                "hi": round(d["temperature_2m_max"][0]), "lo": round(d["temperature_2m_min"][0]), "days": days, "source": "Open-Meteo", "at": now_iso()}
+    except Exception:
+        return None
+
+
+def tool_rows(paths: dict, world: dict, command: dict, feed_age, sent_today: int, ai: dict, demo: bool) -> list:
+    """One row per AIRE job the dashboard can see from the Mac's files: ok ran recently, warn is stale or failed, off never reported."""
+    def age_state(minutes, fresh):
+        if minutes is None:
+            return "off"
+        return "ok" if minutes <= fresh else "warn"
+
+    def ago(minutes):
+        if minutes is None:
+            return "never"
+        return f"{minutes} min ago" if minutes < 60 else f"{minutes // 60}h ago" if minutes < 1440 else f"{minutes // 1440}d ago"
+
+    rows = [{"key": "crm", "name": "CRM engine", "state": "ok" if demo else age_state(feed_age, 180), "detail": "demo feed" if demo else "feed " + ago(feed_age)}]
+    sync = (world or {}).get("sync") or {}
+    if sync:
+        try:
+            wmin = int((datetime.now(timezone.utc) - datetime.fromisoformat(sync["at"]).astimezone(timezone.utc)).total_seconds() // 60)
+        except Exception:
+            wmin = None
+        rows.append({"key": "world", "name": "World sync", "state": "warn" if sync.get("ok") is False else age_state(wmin, 30), "detail": ("failed, " if sync.get("ok") is False else "") + ago(wmin)})
+    else:
+        rows.append({"key": "world", "name": "World sync", "state": "off", "detail": "not run yet"})
+    st = (command or {}).get("state")
+    rows.append({"key": "command", "name": "Command reader", "state": "ok" if st == "ok" else "warn" if st else "off", "detail": st or "no status"})
+    tq = file_age_minutes(paths["text_queue"]) if not demo else 0
+    rows.append({"key": "followup", "name": "Follow-up", "state": age_state(tq, 1440), "detail": "queue " + ago(tq)})
+    rows.append({"key": "sent", "name": "Sender", "state": "ok" if sent_today else "warn", "detail": f"{sent_today} sent today"})
+    latest = (ai or {}).get("latest") or {}
+    rows.append({"key": "ai", "name": "AI visibility", "state": "ok" if latest else "off", "detail": f"run {latest['date']}" if latest else "not run yet"})
+    rows.append({"key": "market", "name": "Market Monitor", "state": "ok" if world and (world.get("market") or {}).get("gbrar") else "off", "detail": "GBRAR loaded" if world and (world.get("market") or {}).get("gbrar") else "no data"})
+    rows.append({"key": "lp", "name": "Luxury Presence webhook", "state": "off", "detail": "register it (aire/lp-webhook)"})
+    return rows
 REFRESH_SH = AIRE / "crm" / "refresh_feed.sh"
 SHEET_URL = "https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
 COMMAND_URL = "https://agent.kw.com/command"
@@ -156,6 +220,10 @@ def write_json(path: Path, data) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(data, indent=1, ensure_ascii=False), encoding="utf-8")
     tmp.replace(path)
+
+
+def now_iso() -> str:
+    return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
 def file_age_minutes(path: Path) -> int | None:
@@ -293,6 +361,7 @@ class DemoCRM:
 class State:
     def __init__(self, demo: bool = False, paths: dict | None = None, send_log: Path | None = None):
         self.demo = demo
+        self._weather, self._weather_at = None, 0.0
         self.paths = dict(paths or (DEMO_PATHS if demo else PATHS))
         self.send_log_path = send_log or (OUT / ("demo-send-log.json" if demo else "send-log.json"))
         if demo and send_log:  # tests: the map files land next to their send log, not in out/
@@ -615,6 +684,30 @@ class State:
             "voice": self.voice_info(),
             "farms": self.farms(),
         }
+
+    def dash(self) -> dict:
+        """Everything the dashboard page needs in one read: world totals, the Mac-only brief, the 14-day history,
+        the AI visibility summary, the tools board and the weather. Missing files are nulls, never errors."""
+        snap = self.snapshot()
+        world = read_json(WORLD / "data.json", None) or (read_json(WORLD / "data.sample.json", None) if self.demo else None)
+        brief = None if self.demo else read_json(WORLD / "brief.json", None)
+        hist = read_json(WORLD / "history.json", []) if not self.demo else []
+        ai = read_json(AI_VIS_SUMMARY, None)
+        now = time.time()
+        if self.demo:
+            weather = DEMO_WEATHER
+        else:
+            if not self._weather or now - self._weather_at > 900:
+                self._weather, self._weather_at = fetch_weather(), now
+            weather = self._weather
+        sent = snap["caps"]["sent_texts"] + snap["caps"]["sent_emails"]
+        return {"ok": True, "at": now_iso(), "world": world, "brief": brief, "history": hist[-14:] if isinstance(hist, list) else [],
+                "ai_visibility": ai, "weather": weather,
+                "tools": tool_rows(self.paths, world, snap.get("command") or {}, snap.get("feed_age_minutes"), sent, ai, self.demo),
+                "feed": {"counts": (snap.get("feed") or {}).get("counts") or {}, "tasks": ((snap.get("feed") or {}).get("tasks") or [])[:8],
+                         "deals": ((snap.get("feed") or {}).get("deals") or [])[:12], "new_leads": ((snap.get("feed") or {}).get("new_leads") or [])[:8],
+                         "as_of": (snap.get("feed") or {}).get("as_of")},
+                "demo": self.demo, "sender": snap.get("sender"), "problems": snap.get("problems") or []}
 
     # ---- writes
     def touch(self, person_id: str, what: str) -> dict:
@@ -990,11 +1083,15 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def do_GET(self):
+        if not allowed(self.client_address[0]):
+            return self._json(403, {"ok": False, "error": "not this Mac or Caleb's Tailscale"})
         u = urllib.parse.urlparse(self.path)
         if u.path == "/api/state":
             return self._json(200, self.state.snapshot())
         if u.path == "/api/refresh":
             return self._json(200, self.state.refresh)
+        if u.path == "/api/dash":
+            return self._json(200, self.state.dash())
         if u.path == "/api/voice/token":
             try:
                 return self._json(200, self.state.call_token())
@@ -1002,9 +1099,36 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"ok": False, "error": str(e)})
         if u.path in ("/", "/index.html"):
             return self._file("index.html")
+        if u.path == "/world" or u.path.startswith("/world/"):
+            return self._world(u.path)
         return self._file(u.path)
 
+    def _world(self, path: str) -> None:
+        """The AIRE World page (aire/world) inside Pipeline. Read only, a short allow-list of files."""
+        name = path[len("/world"):].lstrip("/") or "index.html"
+        allowed = {"index.html": "text/html; charset=utf-8", "data.json": "application/json; charset=utf-8",
+                   "brief.json": "application/json; charset=utf-8", "history.json": "application/json; charset=utf-8"}
+        if name not in allowed:
+            self.send_error(404)
+            return
+        f = (HERE.parent / "world" / name).resolve()
+        if not f.is_file():
+            if name == "index.html":
+                self.send_error(404, "aire/world/index.html is missing: run python3 aire/world/build.py")
+            else:
+                self._json(404, {"ok": False, "error": f"{name} not written yet: run /usr/bin/python3 aire/world/sync.py"})
+            return
+        raw = f.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", allowed[name])
+        self.send_header("Content-Length", str(len(raw)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(raw)
+
     def do_POST(self):
+        if not allowed(self.client_address[0]):
+            return self._json(403, {"ok": False, "error": "not this Mac or Caleb's Tailscale"})
         u = urllib.parse.urlparse(self.path)
         n = int(self.headers.get("Content-Length") or 0)
         try:
@@ -1064,9 +1188,22 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": False, "error": f"{type(e).__name__}: {e}"[:300]})
 
 
+TAILNET = ipaddress.ip_network("100.64.0.0/10")  # Tailscale's address range
+
+
+def allowed(ip: str) -> bool:
+    """Loopback always. Tailscale addresses only when PIPELINE_BIND=tailscale. Everyone else on the LAN: no."""
+    try:
+        a = ipaddress.ip_address(ip.removeprefix("::ffff:"))
+    except ValueError:
+        return False
+    return a.is_loopback or (os.getenv("PIPELINE_BIND") == "tailscale" and a in TAILNET)
+
+
 def serve(state: State, port: int, open_browser: bool) -> None:
     Handler.state = state
-    httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    bind = "0.0.0.0" if os.getenv("PIPELINE_BIND") == "tailscale" else "127.0.0.1"
+    httpd = ThreadingHTTPServer((bind, port), Handler)
     url = f"http://127.0.0.1:{port}/"
     v = state.voice_info()
     print(f"Pipeline {'(demo) ' if state.demo else ''}on {url}  sender={state.sender}  crm python={getattr(state.crm, 'python', 'demo')}  "
@@ -1099,6 +1236,20 @@ def run_tests() -> int:
     check(snap["demo"] and snap["feed_ok"] and snap["feed"]["counts"]["contacts"] > 0, "demo snapshot reads the fixtures")
     check(all(k in snap for k in ("caps", "problems", "text_queue", "email_queue", "command")), "snapshot has every section")
     check(snap["feed"]["touches_due"][0]["owes_reply"] is True, "fixture feed keeps owes-reply rows first")
+    dsh = s.dash()
+    check(all(k in dsh for k in ("world", "brief", "history", "ai_visibility", "weather", "tools", "feed")), "dash has every section")
+    check(dsh["weather"]["source"] == "demo" and dsh["world"] and dsh["world"]["deals"]["under_contract"]["value"] >= 0, "dash in demo reads the world sample and demo weather")
+    check({r["key"] for r in dsh["tools"]} >= {"crm", "world", "command", "followup", "sent", "ai", "market", "lp"} and all(r["state"] in ("ok", "warn", "off") for r in dsh["tools"]), "tools board has every job with a known state")
+    check(fetch_weather(opener=lambda *a, **k: (_ for _ in ()).throw(OSError("no network"))) is None, "weather fetch failure is None, not an error")
+
+    class _FakeWx:
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+        def read(self): return json.dumps({"current": {"temperature_2m": 78.6, "weather_code": 2, "wind_speed_10m": 8.4},
+                                           "daily": {"time": ["2026-11-04", "2026-11-05", "2026-11-06"], "temperature_2m_max": [80, 78, 81], "temperature_2m_min": [60, 55, 56], "weather_code": [0, 1, 61]}}).encode()
+    wx = fetch_weather(opener=_FakeWx)
+    check(wx and wx["temp"] == 79 and wx["word"] == "Partly cloudy" and wx["days"][0]["day"] == "Thu" and wx["days"][1]["word"] == "Light rain", "weather parses Open-Meteo into the card shape")
     s_login = State(demo=True, paths={**DEMO_PATHS, "command_status": FIXTURES / "demo-status-login-needed.json"}, send_log=tmp / "l.json")
     check(any(p["code"] == "command_login" for p in s_login.snapshot()["problems"]), "login needed in status.json becomes a problem row")
 

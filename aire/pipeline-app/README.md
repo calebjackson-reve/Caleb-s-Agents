@@ -172,6 +172,11 @@ What the two reels Caleb sent have that this does not: sub-agents per business t
 
 ## The screen
 
+**Dashboard** (key `0`, the view Pipeline opens on since 2026-11-04). The morning board: greeting, the biggest numbers top left (pending commission, under-contract volume, hot and warm, deadlines today), the month with deadline dots, weather, today's schedule, tasks, a 25-minute sales-block timer, upcoming deadlines, inbox, pipeline by stage, new leads with a 14-day sparkline, the GBRAR market line, the AI visibility summary and the AIRE tools board. Every number carries a one-line meaning under it. The rail on the right toggles each card and persists in the browser (`aire.dash.toggles`); `tight` hides the sub lines, `live` refreshes every 5 minutes, `farm` opens World. Data: `/api/dash` reads `aire/world/data.json` (totals), `brief.json` (Mac only: calendar, inbox, next actions), `history.json`, `aire/ai-visibility/summary.json`, the command reader status and Open-Meteo (cached 15 minutes, hidden when offline). In demo mode it reads `data.sample.json` and a fixed weather card. Source: `static/dash.js`, `static/dash.css`.
+
+**Two looks.** Estate (default since 2026-11-04): deep ink with a warm glow, frosted-glass panels, serif numbers and greeting, warm ivory text, a solid-color icon chip on every card and nav item (gold, coral, sage, sky, lavender, rose). HUD: the original cyan cut-corner skin. The `estate` / `hud` button on the dashboard rail switches and remembers (`aire.theme` in the browser); `static/theme-estate.css` is the whole skin, applied through `html[data-theme="estate"]`, so the HUD stays intact underneath. No external fonts: the serif is the Mac's Iowan Old Style or Palatino.
+
+
 | View | Key | What is on it |
 |---|---|---|
 | Command Center | `1` | CRM overview, the particle core with telemetry and the voice transcript, live feed (replies owed, overdue, new leads, deal events, hot people), active deals with stage bars, today's timeline, quick commands, send gauges, band chart, sources. |

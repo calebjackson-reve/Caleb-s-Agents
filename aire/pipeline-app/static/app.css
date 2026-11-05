@@ -430,6 +430,10 @@ kbd { font: 10px var(--mono); border: 1px solid var(--line-soft); border-radius:
 .view > .panel > .filters { padding: 0 16px 10px; flex-wrap: wrap; }
 @media (max-width: 900px) { .map-wrap { grid-template-columns: 1fr; height: auto; } .pmap { height: 60vh; } }
 
+/* World page: the 3D town in an iframe, full height of the main column */
+.world-panel { padding: 0; overflow: hidden; height: calc(100vh - 150px); min-height: 520px; display: flex; }
+.world-panel iframe { border: 0; width: 100%; height: 100%; background: #f3ede3; }
+
 /* the "Texted 9:42 AM · delivered" line on a person's card */
 .txs { display: inline-flex; align-items: center; gap: 5px; font: 600 10px var(--mono); letter-spacing: .04em; padding: 1px 7px; border-radius: 9px; border: 1px solid currentColor; }
 .txs i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }

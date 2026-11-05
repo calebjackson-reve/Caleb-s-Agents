@@ -5,3 +5,13 @@ briefs/
 cache/
 queue-*.md
 *.audit.jsonl
+*.local.json
+aire/world/reports/
+aire/world/sync.log
+aire/world/data.json
+__pycache__/
+*.pyc
+aire/world/history.json
+aire/world/brief.json
+aire/ai-visibility/reports/
+aire/ai-visibility/history.json

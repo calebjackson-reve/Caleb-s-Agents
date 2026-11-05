@@ -18,6 +18,173 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 **Needs Caleb**
 - Review and merge the PR. Then the first live test text to his own number, on his yes.
 - KW Command still does not see texts sent from Pipeline until the DevHub API is approved.
+## 2026-11-04, night: the Estate look
+
+**Confirmed by Caleb**
+- "I want it to look a little more luxury and not as techy. I like colorful icons and either glassy look or solid colors and not as robotic. Create a vision and go with best option."
+
+**Done**
+- Vision chosen and built: Estate. Deep ink background with a warm gold, lavender and sky glow; frosted-glass panels with soft shadows and 18 to 20px corners; serif greeting and numbers (Iowan Old Style or Palatino, on the Mac, no downloads); warm ivory text; a solid-color icon chip on every dashboard card and nav item. The whole Pipeline shell takes the skin, not only the dashboard, so Command Center and the other views match. `aire/pipeline-app/static/theme-estate.css`, loaded after the HUD stylesheet and applied through `html[data-theme="estate"]`; the HUD look is the `hud` button on the dashboard rail and the choice is remembered.
+- Proof: headless 1440x900, Estate on by default, 16 cards with 16 icon chips, backdrop blur active, serif on the numbers, no text under 12px, no horizontal overflow, no page errors; theme toggle persists across a reload and switches back. Command Center rendered under Estate with no errors. Pipeline checks: 70 pass.
+- QuickBooks: the Intuit QuickBooks Labs connector appeared during the session, but the sign-in has no company attached yet, so the year's profit and loss could not be read.
+
+**Needs Caleb**
+- Open Pipeline on the Mac and say what to push further: more color, lighter cards, a light ivory version, different serif.
+- QuickBooks: attach the company to the Intuit sign-in (or sign in with the account that owns it) so the dashboard can show commission and spend.
+
+## 2026-11-04, late: dashboard built into Pipeline, 4x plan
+
+**Confirmed by Caleb**
+- "Push, and go get all the things and connectors you recommend and let's build it. We want to quadruple our sales for this year next year."
+
+**Done**
+- Pushed the branch (PR #88 updated). The dashboard is now a page inside Pipeline and the view it opens on: `aire/pipeline-app/static/dash.js` and `dash.css`, route `/api/dash` in `app.py` (world totals, Mac brief, 14-day history, AI visibility summary, tools board, Open-Meteo weather cached 15 minutes). Layout is variation A's morning board with C's tools board, in Pipeline's own dark theme: biggest numbers top left, month with deadline dots, weather, schedule, tasks, sales-block timer, deadlines, inbox, pipeline by stage, leads sparkline, market, AI visibility, tools. Right rail toggles each card and persists; `farm` opens World. Key `0`.
+- Proof: headless Chromium 1440x900 and 1180x820, 16 cards, no text under 12px, no horizontal overflow, no page errors (one expected 404: World's brief.json in demo). Toggles persist across reload, keys 1 and 0 switch views, the timer counts, farm opens World. Pipeline's checks: 70 pass, 0 failures.
+- `aire/4x/PLAN.md`: the baseline with sources, the 68-closing target from the 17-a-year average, the conversation math per source with assumed conversion rates marked as assumptions, seven levers tied to what is built, the connector table with click paths and costs, the order of work.
+
+**Inference**
+- Caleb did not pick A, B or C. I built A's layout with C's tools board because A matched his reference screenshot and C's tools board was the one thing missing from A. Easy to reshuffle.
+- "This year" closings are not in the repo, so the plan uses the 2022-2026 average and says so.
+
+**Needs Caleb**
+- The 2026 closed count and volume (Command or the brokerage report) to set the real 4x number.
+- The connector table in `aire/4x/PLAN.md`: Luxury Presence API key, QuickBooks sign-in, Google Business Profile in Metricool, `sync.py auth` on the Mac. None can be authorized from a cloud session.
+
+## 2026-11-04, late: Luxury Presence webhook and the AI visibility engine
+
+**Confirmed by Caleb**
+- "Research Luxury Presence backend and look for any API connections." Command and Luxury Presence can also be driven from a logged-in browser on the always-on Mac Mini. "AI visibility: act like FirstAnswer and do what they do as far as reverse-engineering how they look up, search and revitalize people's SEO with AI searches, so you can help be the engine for that."
+
+**Done**
+- Luxury Presence has an API (`api.luxurypresence.com`, `x-api-key`, admin-made keys) and a lead webhook: one `leads` event per activity with the lead fields, listing fields and an HMAC signature. Research with Blueprint, Proof and Unknowns in `aire/lp-webhook/README.md`.
+- Built the receiver `website-rebuild/functions/lp-webhook.gs` (standalone Apps Script, writes the Website leads sheet in the columns `crm.py import-website-leads` already reads, URL token check, dedupe on lead id + activity + time, activity tab for searches and favorites) and `aire/lp-webhook/register.py` (list, create, delete, sign; dry run until `--yes`; key from `LP_API_KEY` only). Mapping proven in node, 9 offline checks pass.
+- Built `aire/ai-visibility/`: `prompts.json` (brand, competitors, 12 prompts in 4 groups) and `check.py` (Claude Opus 5.5 with web search located in Baton Rouge, fresh session per prompt, scores mention, citation, search surface, position, competitors, sentiment, tallies cited domains into recommendations, writes a report, `history.json` and `summary.json`). 7 offline checks pass, dry run lists the prompts and a cost ceiling of about $1.44 a run. Not yet run live: no API key in the cloud session.
+- KW Command: no public API, the logged-in-browser reader in `aire/command-reader/` stays the way in. Same pattern is the fallback for Luxury Presence.
+
+**Inference**
+- An older Luxury Presence FAQ says no webhooks; the developer docs published after it say yes. Took the docs as current.
+- Hand-raise events (sign-up, contact inquiry, home value, showing or info request, any new lead) are treated as leads; searches, favorites and views are activity, not a call task.
+
+**Needs Caleb**
+- Luxury Presence: confirm the plan has API keys, make one (Profile, API keys), then the 4 setup steps in `aire/lp-webhook/README.md`.
+- AI visibility: run `check.py` once on the Mac with Pipeline's key, read the first report, say whether to schedule it weekly (Mac launchd or a cloud task).
+- Still waiting: pick dashboard variation A, B or C; allow the push of the two local commits.
+
+## 2026-11-04, night: metric check and three dashboard variations (build paused)
+
+**Confirmed by Caleb**
+- "The farm looks good, that is going to be a subpage in the main dashboard. Look at all the tools AIRE is equipped with and build a dashboard without the world." Then the morning-screen reference (greeting, clock, calendar, schedule, weather, tasks with filters, focus timer, deadlines with priority, quick notes, habits, toggles on the right). Then: "Before you build anything, check every metric on my shortlist using my connected tools" with a six-column table, and "make 3 variations in one live artifact" under five rules (biggest metrics top left, minimal scrolling, no small text, visual, a one-line subtext under each metric).
+
+**Done**
+- Metric check against the connected tools, results in chat. Pulled live: AIRE CRM sheet (Deals now carries commission on 5 of 7 rows: pending $22,410 on the 2 under-contract deals with a figure, $24,748 more on the active listings), Google Calendar (5 blocks today, 4 deadlines and 2 KW classes in 30 days), Gmail counts (50+ inbox threads in 3 days, 10 ShowingTime, 11 website lead emails, 23 offer or counter threads in 30 days), Metricool (Instagram 2,477 followers, +35 and 20,352 reached in 30 days; Facebook 382 followers, 5,462 content views; Google Business Profile reports zeros for the period), Open-Meteo weather, GBRAR Sept 2026 from the repo.
+- Could not get: ChatSEO (no credits), FirstAnswer (plan has no MCP access), QuickBooks (needs a fresh sign-in), KW Command and Luxury Presence (no API, paste tabs), ShowingTime offers and showings as structured data (email counts only).
+- `aire/dashboard/variations-2026-11-04.html`, published at https://claude.ai/artifact/HkL6GUZ3N1gwhzMJ6BwpHp: A morning board (ink, greeting and live clock, calendar grid, schedule, weather, tasks, focus timer, deadlines, inbox, social, toggle rail), B ledger (ivory, money masthead, pipeline bars, deadline timeline, week strip, sphere, leads, inbox, market), C mission control (ink bento, commission ring, deadline countdown, sphere ring, leads bars, today, social, market, tools strip). All three on the same real numbers with a source line. Proof at 1440x900: no page scroll in any variation, no card overflow, no text under 12.5px, zero errors.
+- The Pipeline dashboard page build is paused until Caleb picks a variation. A half-started stylesheet was removed; app.py, app.js and index.html are unchanged from the World commit.
+
+**Needs Caleb**
+- Pick A, B or C (or mix), then the real page gets built in Pipeline on that layout.
+- Reconnect QuickBooks if spending should come from the books rather than the Spending tab. Add credits to ChatSEO if search clicks matter. FirstAnswer stays off the board until the workspace plan includes MCP.
+
+## 2026-11-04, evening: AIRE World becomes a Pipeline page with a dashboard rail
+
+**Confirmed by Caleb**
+- "Fix the scroll, toggle, animations, it's a little too all over the place. I want this to be a page on our main app we can use and play on. I like the earlier setup with a real dashboard: brief, calendar, to-dos, emails." Then: "charts, graphs, visuals, recent spendings, upcoming notifications."
+
+**Done**
+- Calmer 3D: the idle turn is off by default (Turn button), wheel and pinch zoom in 5 percent steps with a floor, drag sensitivity down and the tilt clamped, fly-to never closer than the chip view, cards dock at the top of the rail instead of floating by the object, labels hide while dragging, birds gone, walkers and cars slower, crane only swings while something is open.
+- Dashboard rail beside the town: Brief (four tiles plus three sentences written from the data), Up next (calendar after now, deadlines, tasks due, next closing, sorted), Today, To-dos (open tasks and the top next actions by band and silence), Inbox (last 3 days), and four charts: pipeline by stage, the sphere by band, new leads over 14 days, spending by category.
+- `Spending` tab added to the CRM sheet (date, vendor, amount, category). `sync.py` totals it (30 days, 7 days, by category, by week, last 8 rows), keeps `history.json` (one row of totals per day) and writes `brief.json` on the Mac only (today's calendar, inbox, open tasks, next actions, with names). `sync.py auth` creates the World's own Google token with Calendar read added; the CRM token is untouched.
+- Pipeline: `/world/` route in `app.py` (read-only allow-list: index.html, data.json, brief.json, history.json), World in the nav, key `0`, the page in an iframe. `app.py --test` still holds; the static-files test is untouched.
+- Preview artifact republished with calendar and inbox through the viewer's connectors when there is no brief.json. Chart palette validated with the dataviz script against the page surface.
+- Proof: served render at 1440x900 and 400x820, zero errors, no overflow in the page or the rail, brief and up-next text read back right, spending chart drew from a made-up scratch file (never committed).
+
+**Not verified**
+- `sync.py auth` and `brief.json` on the Mac (needs the browser sign-in there). The Pipeline route and nav ran only as a syntax check here; press `0` in Pipeline to see it.
+
+**Needs Caleb**
+- `/usr/bin/python3 aire/world/sync.py auth` once, then pull and restart Pipeline (`sh aire/pipeline-app/install.sh`).
+- Log a few rows in the Spending tab so the chart has something to draw.
+
+## 2026-11-04, evening: AIRE World loop live on the Mac, outage bug fixed
+
+**Confirmed by Caleb** (pasted from the Mac session)
+- Sync ran on the sheet: 3,656 contacts, 6 live deals, 3 under contract worth $2,397,000, $22,410 pending commission (one contract still without a figure), next close Nov 20, 4 deadlines in 30 days, one today, nothing unmatched. Both LaunchAgents installed, the server answered on localhost:4751, the background sync ran once on its own.
+- Two problems found there: plain `python3` lacks the Google libraries (`/usr/bin/python3` has them), and a sandboxed run where every tab failed still logged ok and wrote zeros.
+
+**Done**
+- `sync.py`: a sync that cannot read Contacts or Deals (or gets an empty Contacts tab) now fails, keeps the last good data.json, marks `sync.ok` false with the error type, and logs FAILED. A single optional tab that fails is a warning in `sync.warnings`. Tested: an empty exports folder failed and kept 3,656 contacts; the next good run cleared it.
+- README and the script's own help say `/usr/bin/python3`.
+- `data.json` is the live file the Mac rewrites every 5 minutes, so it is git-ignored now. `data.sample.json` is the committed snapshot; `build.py` uses the live file when present, the sample otherwise.
+
+**Needs Caleb**
+- On the Mac, before pulling: `git checkout -- aire/world/data.json` (the loop rewrites it within 5 minutes), then `git pull`.
+- Add the missing commission figure to the third under-contract deal in the Deals tab when you have it.
+
+## 2026-11-04, evening: AIRE World wired and published
+
+**Confirmed by Caleb**
+- "Go", after reading the merged table and the empty unmatched list.
+
+**Done**
+- `aire/world/src/page.html` wired to the sheet-only `data.json`: eight clickable objects (KW First Choice office, the street with one house per Deals row and a sign per stage, lead cars on the ring road one per new lead this week, post office for next actions, town square for the sphere, courthouse clock for deadlines, market billboard for GBRAR, construction site as the engine room with match counts). Every card number carries its period and source. The page re-reads data.json every 60 seconds, animates changes, and shows the LIVE dot with "updated X min ago", grey past 30 minutes or after a failed sync.
+- Published preview at https://claude.ai/artifact/XQEjY6Y2L3F7BCHeRxGY71 (private), with data.json alongside so the page fetches it. The preview shows the last synced numbers; the live loop is the Mac.
+- Step 4 of the guide: `install.sh` plus two LaunchAgents (`org.calebjackson.aire.world.sync` every 5 minutes, `org.calebjackson.aire.world.serve` on http://localhost:4751), README with open, stop, restart and check.
+- Proof: headless Chromium at 1440x900 and 400x820, zero page errors, office, street and courthouse cards read back the synced numbers, phone card scrolls. Two visible fixes made from the look: tone mapping washed the model out (removed), the phone card list overlapped its stats (card scrolls as one).
+
+**Not verified**
+- The 5-minute loop on the Mac (LaunchAgents written, not run here). The first `sync.py` run there also needs the CRM token's Sheets scope, which crm.py auth already granted.
+
+**Needs Caleb**
+- `sh aire/world/install.sh` on the Mac, open http://localhost:4751, watch the LIVE label reset.
+- Paste the Command and LP exports, read the unmatched list in aire/world/reports/.
+
+## 2026-11-04, afternoon: AIRE World sync, the sheet as the single source
+
+**Confirmed by Caleb**
+- "Use my Google Sheets CRM as the single data source for the dashboard. Read it read-only. Add three input tabs: Command export, LP leads, and my existing deals and deadlines tabs. Match by property address first, then email. Show me any record that doesn't match instead of guessing. Never put client names, emails or phones in data.json. Show me the merged table and the unmatched list before you wire it into the 3D world."
+- Earlier today: the nocode.joshua five-step guide (sync script, data file, Three.js world, 5-minute loop, optional share), tailored to real estate.
+
+**Done**
+- Three tabs added to the AIRE CRM sheet: `Command export` (paste the KW Command Contacts and/or Opportunities CSV, header rows included, the sync finds each header by its column names), `LP leads` (paste the Luxury Presence export), `Deadlines` (address, kind, date, deal_id, source, notes), seeded with the four deadlines the TC filed on the calendar. No existing tab or column was touched.
+- `aire/world/sync.py`: reads Contacts, Deals, Tasks, Deadlines, Command export and LP leads read-only with the CRM's own token (Sheets scope only), matches by normalized address (2179 S Turnberry Ave = 2179 South Turnberry Avenue) then by email, writes totals to `aire/world/data.json` and the merged table plus every unmatched record to `aire/world/reports/merge-<date>.md` (git-ignored). Column aliases cover the usual export headers; the report lists which columns it recognized and ignored on every paste. A Command stage that disagrees with the Deals tab is noted, the Deals tab wins.
+- First run on today's tabs: 7 deals, 4 deadlines all matched by address, 0 unmatched. Leak check on data.json: 0 emails, 0 phones, 0 street-like strings. A made-up Command paste in the scratchpad proved the block parser, both match paths and the unmatched list.
+- `aire/world/plan.md`: the town as eight clickable objects, each stat tied to a data.json field. `src/page.html` is the Three.js draft, not yet wired to the new data shape (held for Caleb's go, per his instruction).
+
+**Not yet in the numbers**
+- Pending commission: no under-contract deal has a commission figure in the Deals `commission` column or a Command opportunity yet.
+- Days on market: no list dates yet. Comes from the Command Opportunities export (list date or days on market).
+- New leads by source this week: only the Contacts Source column today (2, Luxury Presence). The LP leads and Command pastes add their sources.
+
+**Needs Caleb**
+- Review the merged table and unmatched list (in chat, and on the Mac at aire/world/reports/).
+- Paste the two exports into the new tabs, then run `python3 aire/world/sync.py` on the Mac and read the unmatched list.
+- Say go to wire data.json into the 3D world.
+
+## 2026-11-04: AIRE Business Map, a 3D map of the business with voices
+
+**Confirmed by Caleb**
+- "I'm building this dashboard but I hate it. I want to build a 3D dashboard for my company and I want it to look like this" (Instagram post by alassafi.ai: a 3D map of a whole business, seven department branches, hundreds of job nodes, the center node answering in the owner's cloned voice through Fish Audio S2.1 Pro, each department in a designed voice). "Install these voice repo. We do have earshot to install into."
+
+**Done**
+- `aire/business-map/`: the map. Center is Caleb, 8 department branches, 252 real jobs from this repo (every SKILL.md plus a catalog of scripts, directives, schedules and pages), built by `build_map_data.py`. Three.js scene with orbit, zoom, fly-to, per-job cards, a dept chip rail, keyboard. Published at https://claude.ai/artifact/Q9qMZ5rAAcMR33CRq7c4GN (private to Caleb).
+- Live layer through claude.ai connectors as the viewer: today's calendar, inbox threads last 3 days not from Caleb, deadline events next 30 days. The Operations, Nurture and Deals hubs pulse with the counts. Each tile says exactly what to connect when it cannot load.
+- Ask the map: Claude (viewer's account) answers from the map and the live data, names the department, the camera flies there and that department speaks. Without Claude the page still answers from its own data. Quick questions: what is on today, what is blocking deals, who is waiting on a reply, what runs tonight, where a new lead goes, the morning brief.
+- Voices: browser speech with a distinct setting per department now. Fish Audio S2.1 Pro layer in `voice/`: `voices.json` (a designed voice per department, Caleb's own clone for the center) and `fishaudio.py` (design, clone, say, render-bank, each measured by earshot). Dry run unless `--yes`. Key only from `FISH_API_KEY`. The artifact reads the `voice/bank` document for clip urls; it is seeded empty.
+- earshot installed in the cloud session (model-free commands) and used for real: six interface sounds rendered from its code bank, measured (true peak at or under -0.6 dBTP, momentary LUFS between -22 and -10), encoded to 47 KB of mp3 data URIs. Numbers in `sfx/README.md`.
+- Headless render proof at 1440 and 400 px wide: zero console errors, no horizontal overflow, fly-to and ask loop work.
+
+**Inference**
+- The post links no repo. "Voice repo" was read as the Fish Audio S2.1 Pro API the post is an ad for; it is a service, not a repo. A dashboard artifact cannot call it directly (no outside network), so clips render on the Mac and upload as assets.
+- The old dashboard artifact (AIRE Command Center, F2kwnHvYFV3Mp3pmGP3ti7) is untouched. Delete it when the map has replaced it.
+
+**Not verified**
+- Fish Audio calls. No key in this session, and nothing is sent without Caleb's --yes.
+- The live tiles and Claude answers inside claude.ai with Caleb's own connectors: the page was published with those capabilities and the voice bank document was read back, but only Caleb's open of the page exercises the connector consent prompts.
+
+**Needs Caleb**
+- Open the map, allow Google Calendar, Gmail and Claude when asked, press a department, ask it something.
+- Record a clean 10 to 30 second clip of your voice for the center node, then run the clone step in `aire/business-map/README.md` with your Fish Audio key.
+- Say whether the Pipeline app's speech engine should move to Fish Audio too.
 
 ## 2026-10-29, afternoon: no group chats, Market Monitor twice a day
 
