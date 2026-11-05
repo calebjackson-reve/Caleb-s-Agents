@@ -429,3 +429,12 @@ kbd { font: 10px var(--mono); border: 1px solid var(--line-soft); border-radius:
 .rows.mkt .acts { flex-wrap: wrap; justify-content: flex-end; }
 .view > .panel > .filters { padding: 0 16px 10px; flex-wrap: wrap; }
 @media (max-width: 900px) { .map-wrap { grid-template-columns: 1fr; height: auto; } .pmap { height: 60vh; } }
+
+/* the "Texted 9:42 AM · delivered" line on a person's card */
+.txs { display: inline-flex; align-items: center; gap: 5px; font: 600 10px var(--mono); letter-spacing: .04em; padding: 1px 7px; border-radius: 9px; border: 1px solid currentColor; }
+.txs i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.txs.ok { color: var(--teal); } .txs.wait { color: var(--amber); } .txs.bad { color: var(--red); } .txs.dry { color: var(--dim); }
+.txs.wait i { animation: pulse 1s ease-in-out infinite; }
+.txs.flash { animation: txflash 1.2s ease-out 2; }
+@keyframes txflash { 0% { box-shadow: 0 0 0 0 currentColor; } 100% { box-shadow: 0 0 0 8px transparent; } }
+.acts .text-btn { white-space: nowrap; }
