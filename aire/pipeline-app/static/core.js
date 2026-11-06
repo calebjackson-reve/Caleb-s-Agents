@@ -3,7 +3,7 @@
    idle breathes, listening tightens, thinking fires streaks, speaking pulses with the words. */
 'use strict';
 const Core = (() => {
-  const COLORS = { hot: [255, 92, 122], warm: [255, 181, 71], lukewarm: [53, 240, 200], cold: [25, 211, 255], 'ice-cold': [120, 160, 200] };
+  const COLORS = { hot: [255, 92, 122], warm: [255, 181, 71], lukewarm: [200, 181, 150], cold: [232, 119, 87], 'ice-cold': [120, 160, 200] };
   const ORDER = ['hot', 'warm', 'lukewarm', 'cold', 'ice-cold'];
   let canvas, ctx, W, H, nodes = [], edges = [], streaks = [], raf = 0, t0 = performance.now();
   let state = 'idle', energy = 0.25, target = 0.25, sweep = 0, reduced = false, lastKey = '';
@@ -40,15 +40,15 @@ const Core = (() => {
     const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.42;
     // radial glow
     const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.1);
-    g.addColorStop(0, `rgba(25,211,255,${0.10 + energy * 0.12})`); g.addColorStop(0.6, 'rgba(25,211,255,0.03)'); g.addColorStop(1, 'rgba(25,211,255,0)');
+    g.addColorStop(0, `rgba(232, 119, 87,${0.10 + energy * 0.12})`); g.addColorStop(0.6, 'rgba(232, 119, 87,0.03)'); g.addColorStop(1, 'rgba(232, 119, 87,0)');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     // orbit rings and radar sweep
     ctx.lineWidth = 1;
-    [1.0, 0.86].forEach((k, i) => { ctx.beginPath(); ctx.ellipse(cx, cy, R * k, R * k * 0.78, 0, 0, Math.PI * 2); ctx.strokeStyle = `rgba(25,211,255,${0.22 - i * 0.08})`; ctx.setLineDash(i ? [2, 6] : [1, 4]); ctx.stroke(); });
+    [1.0, 0.86].forEach((k, i) => { ctx.beginPath(); ctx.ellipse(cx, cy, R * k, R * k * 0.78, 0, 0, Math.PI * 2); ctx.strokeStyle = `rgba(232, 119, 87,${0.22 - i * 0.08})`; ctx.setLineDash(i ? [2, 6] : [1, 4]); ctx.stroke(); });
     ctx.setLineDash([]);
     if (!reduced) sweep += 0.004 + energy * 0.012;
     const sg = ctx.createConicGradient ? ctx.createConicGradient(sweep, cx, cy) : null;
-    if (sg) { sg.addColorStop(0, 'rgba(53,240,200,0.0)'); sg.addColorStop(0.08, 'rgba(53,240,200,0.14)'); sg.addColorStop(0.1, 'rgba(53,240,200,0)'); sg.addColorStop(1, 'rgba(53,240,200,0)'); ctx.save(); ctx.beginPath(); ctx.ellipse(cx, cy, R, R * 0.78, 0, 0, Math.PI * 2); ctx.clip(); ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+    if (sg) { sg.addColorStop(0, 'rgba(200, 181, 150,0.0)'); sg.addColorStop(0.08, 'rgba(200, 181, 150,0.14)'); sg.addColorStop(0.1, 'rgba(200, 181, 150,0)'); sg.addColorStop(1, 'rgba(200, 181, 150,0)'); ctx.save(); ctx.beginPath(); ctx.ellipse(cx, cy, R, R * 0.78, 0, 0, Math.PI * 2); ctx.clip(); ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H); ctx.restore(); }
     // node drift
     const jitter = reduced ? 0 : 1.5 + energy * 4;
     nodes.forEach(n => { n.ox = Math.sin(t * n.sp + n.ph) * jitter; n.oy = Math.cos(t * n.sp * 0.8 + n.ph) * jitter * 0.8; });
@@ -83,7 +83,7 @@ const Core = (() => {
     // speaking ring: a breathing circle around the center when it talks
     if (state === 'speaking' || state === 'listening') {
       const k = state === 'speaking' ? 0.5 + 0.5 * Math.sin(t * 9) : 0.5 + 0.5 * Math.sin(t * 2.5);
-      ctx.strokeStyle = state === 'speaking' ? `rgba(53,240,200,${0.25 + k * 0.5})` : `rgba(25,211,255,${0.2 + k * 0.4})`;
+      ctx.strokeStyle = state === 'speaking' ? `rgba(200, 181, 150,${0.25 + k * 0.5})` : `rgba(232, 119, 87,${0.2 + k * 0.4})`;
       ctx.lineWidth = 1.5 + k * 1.5; ctx.beginPath(); ctx.ellipse(cx, cy, R * (0.3 + k * 0.08), R * (0.3 + k * 0.08) * 0.78, 0, 0, Math.PI * 2); ctx.stroke();
     }
   }

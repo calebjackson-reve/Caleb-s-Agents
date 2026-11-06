@@ -8,9 +8,9 @@ window.PMap = (function () {
     street: { url: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`, max: 19, attr: '© OpenStreetMap contributors' },
     sat: { url: (z, x, y) => `https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/${z}/${y}/${x}`, max: 16, attr: 'Imagery: USGS The National Map' },
   };
-  const BAND = { hot: '#ff5c7a', warm: '#ffb547', lukewarm: '#35f0c8', cold: '#4f9dff', 'ice-cold': '#9fb4cf', '': '#5d6b7c' };
-  const STAGE = { lead: '#9fb4cf', consult: '#4f9dff', active: '#35f0c8', showing: '#19d3ff', under_contract: '#a78bfa' };
-  const MARKET = { permit: '#ffb547', new_listing: '#35f0c8', price_change: '#19d3ff', back_on_market: '#19d3ff', pending: '#a78bfa', sold: '#ff5c7a', listing_change: '#9fb4cf' };
+  const BAND = { hot: '#ff5c7a', warm: '#ffb547', lukewarm: '#c8b596', cold: '#4f9dff', 'ice-cold': '#bdb4a9', '': '#5d6b7c' };
+  const STAGE = { lead: '#bdb4a9', consult: '#4f9dff', active: '#c8b596', showing: '#e87757', under_contract: '#d9a98c' };
+  const MARKET = { permit: '#ffb547', new_listing: '#c8b596', price_change: '#e87757', back_on_market: '#e87757', pending: '#d9a98c', sold: '#ff5c7a', listing_change: '#bdb4a9' };
   const CLUSTER_PAST = 200, CELL = 54;
 
   const project = (lat, lng, z) => { const s = TILE * 2 ** z, sin = Math.sin(lat * Math.PI / 180); return [(lng + 180) / 360 * s, (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * s]; };
@@ -64,18 +64,18 @@ window.PMap = (function () {
         const pts = f.polygon.map(([a, b]) => toScreen(a, b));
         ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath();
         const on = st.data.farm === f.id;
-        ctx.fillStyle = on ? 'rgba(25,211,255,.14)' : 'rgba(25,211,255,.07)'; ctx.fill();
-        ctx.setLineDash([6, 4]); ctx.lineWidth = on ? 2.4 : 1.6; ctx.strokeStyle = '#19d3ff'; ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = on ? 'rgba(232, 119, 87,.14)' : 'rgba(232, 119, 87,.07)'; ctx.fill();
+        ctx.setLineDash([6, 4]); ctx.lineWidth = on ? 2.4 : 1.6; ctx.strokeStyle = '#e87757'; ctx.stroke(); ctx.setLineDash([]);
         const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
         ctx.font = '600 11px ' + getComputedStyle(document.body).getPropertyValue('--mono'); ctx.textAlign = 'center';
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(4,9,22,.85)'; ctx.strokeText(f.name.toUpperCase(), cx, cy); ctx.fillStyle = '#d9f3ff'; ctx.fillText(f.name.toUpperCase(), cx, cy);
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(4,9,22,.85)'; ctx.strokeText(f.name.toUpperCase(), cx, cy); ctx.fillStyle = '#f3eee6'; ctx.fillText(f.name.toUpperCase(), cx, cy);
       }
       if (st.draw) {
         const pts = st.draw.pts.map(([a, b]) => toScreen(a, b));
         if (st.draw.hover && pts.length) pts.push(st.draw.hover);
         ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
-        ctx.lineWidth = 2; ctx.strokeStyle = '#35f0c8'; ctx.stroke(); ctx.fillStyle = 'rgba(53,240,200,.08)'; ctx.fill();
-        st.draw.pts.forEach(([a, b], i) => { const [x, y] = toScreen(a, b); dot(x, y, i === 0 ? 6 : 4, '#35f0c8'); });
+        ctx.lineWidth = 2; ctx.strokeStyle = '#c8b596'; ctx.stroke(); ctx.fillStyle = 'rgba(200, 181, 150,.08)'; ctx.fill();
+        st.draw.pts.forEach(([a, b], i) => { const [x, y] = toScreen(a, b); dot(x, y, i === 0 ? 6 : 4, '#c8b596'); });
       }
     }
 
@@ -99,13 +99,13 @@ window.PMap = (function () {
           const top = ['hot', 'warm', 'lukewarm', 'cold', 'ice-cold'].find(b => list.some(o => o.p.band === b)) || '';
           const r = Math.min(26, 10 + Math.sqrt(list.length) * 2.2);
           ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(8,22,46,.86)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = BAND[top]; ctx.stroke();
-          ctx.font = '700 11px ' + getComputedStyle(document.body).getPropertyValue('--mono'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#d9f3ff'; ctx.fillText(String(list.length), x, y + .5); ctx.textBaseline = 'alphabetic';
+          ctx.font = '700 11px ' + getComputedStyle(document.body).getPropertyValue('--mono'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#f3eee6'; ctx.fillText(String(list.length), x, y + .5); ctx.textBaseline = 'alphabetic';
           st.hits.push({ x, y, r: r + 2, cluster: list.map(o => o.p) });
         }
       } else {
         for (const o of people) {
           const sel = o.p.key === st.data.selected;
-          if (o.p.new_lead) { pulsing = true; const k = (st.pulse % 60) / 60; ctx.beginPath(); ctx.arc(o.s[0], o.s[1], 6 + k * 14, 0, Math.PI * 2); ctx.strokeStyle = `rgba(53,240,200,${1 - k})`; ctx.lineWidth = 2; ctx.stroke(); }
+          if (o.p.new_lead) { pulsing = true; const k = (st.pulse % 60) / 60; ctx.beginPath(); ctx.arc(o.s[0], o.s[1], 6 + k * 14, 0, Math.PI * 2); ctx.strokeStyle = `rgba(200, 181, 150,${1 - k})`; ctx.lineWidth = 2; ctx.stroke(); }
           if (o.p.owes_reply) { ctx.beginPath(); ctx.arc(o.s[0], o.s[1], 9, 0, Math.PI * 2); ctx.strokeStyle = '#ffb547'; ctx.lineWidth = 1.5; ctx.stroke(); }
           dot(o.s[0], o.s[1], sel ? 7.5 : 5.5, BAND[o.p.band || ''] || BAND[''], sel ? '#ffffff' : null);
           st.hits.push({ x: o.s[0], y: o.s[1], r: 8, pin: o.p });
@@ -120,7 +120,7 @@ window.PMap = (function () {
       for (const d of st.data.deals) {
         const s = toScreen(d.lat, d.lng); if (!inView(s)) continue;
         const sel = d.key === st.data.selected;
-        house(s[0], s[1], sel ? 11 : 8.5, STAGE[d.stage] || '#a78bfa', sel ? '#ffffff' : null);
+        house(s[0], s[1], sel ? 11 : 8.5, STAGE[d.stage] || '#d9a98c', sel ? '#ffffff' : null);
         st.hits.push({ x: s[0], y: s[1], r: 11, pin: d });
       }
       cancelAnimationFrame(st.raf);
