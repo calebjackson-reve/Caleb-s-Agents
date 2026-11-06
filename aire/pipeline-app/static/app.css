@@ -451,7 +451,7 @@ kbd { font: 10px var(--mono); border: 1px solid var(--line-soft); border-radius:
   .side .brand-sub, .voice-status, .send-status, #open-sheet { display: none; }
   .brand { flex: none; } .brand-name { font-size: 13px; }
   .nav { flex-direction: row; gap: 4px; }
-  .nav button { white-space: nowrap; flex: none; min-height: 40px; padding: 8px 12px; }
+  .nav button { white-space: nowrap; flex: none; width: auto; min-height: 40px; padding: 8px 12px; }
   .top { flex-wrap: wrap; gap: 8px; padding: 8px 12px; height: auto; }
   .top .status-chip, .operator div, .top .clock .date { display: none; }
   .search { width: 100%; order: 3; }

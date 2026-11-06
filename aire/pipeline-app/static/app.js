@@ -162,7 +162,8 @@ function renderNav(c) {
     ['map', '◈', 'Map', ((feed().map || {}).counts || {}).persons || 0], ['market', '◆', 'Market Monitor', ((feed().market || {}).rows || []).length],
   ];
   $('#nav').innerHTML = items.map(([k, ico, label, n, warn]) => `<button class="${S.view === k ? 'on' : ''}" onclick="go('${k}')"><span class="ico">${ico}</span>${label}${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`).join('');
-  const on = $('#nav .on'); if (on && innerWidth <= 720) on.scrollIntoView({ inline: 'center', block: 'nearest' });
+  const on = $('#nav .on'), side = $('.side');
+  if (on && side && innerWidth <= 720) { const a = on.getBoundingClientRect(), b = side.getBoundingClientRect(); side.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2); }
 }
 function panel(i, title, right, body, extra = '') { return `<section class="panel ${extra}" style="--i:${i}"><div class="ph"><h3>${title}</h3><div class="ph-right">${right || ''}</div></div>${body}</section>`; }
 
