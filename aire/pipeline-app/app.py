@@ -65,6 +65,7 @@ import jarvis  # noqa: E402  (the voice's tools and tool loop)
 import cc  # noqa: E402  (Command Center numbers)
 import auth  # noqa: E402  (the login for anything but this Mac)
 import push  # noqa: E402  (phone alerts)
+import cc_ask  # noqa: E402  (Ask Claude on every Command Center page)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -327,6 +328,7 @@ class State:
             threading.Thread(target=self.check_messages, daemon=True).start()
         self.started = now().isoformat(timespec="seconds")
         # Command Center reads: out/cc/ on the Mac (written by the sync), made-up fixtures in demo.
+        self.ask_log = (send_log.parent / "ask-usage.json") if send_log else OUT / ("demo-ask-usage.json" if demo else "ask-usage.json")
         self.push_subs = (send_log.parent if send_log else OUT) / ("demo-push-subs.json" if demo else "push-subs.json")
         self.push_key = (send_log.parent / "push-keys.json") if send_log else (OUT / "demo-push-keys.json" if demo else push.KEY_FILE)
         self.auth = auth.Auth((send_log.parent if send_log else OUT) / ("demo-sessions.json" if demo else "sessions.json"),
@@ -518,6 +520,27 @@ class State:
         u = self.log_claude("ask", r.get("model", self.ask_model), r["usage"], tool_calls=len(r["calls"]))
         return {"ok": True, "result": {"answer": r["answer"] or "I have nothing on that.", "model": r.get("model", self.ask_model),
                                        "proposals": r["proposals"], "tools_used": [c["tool"] for c in r["calls"]]}, "usage": u}
+
+    def cc_ask(self, page: str, question: str, private: bool) -> dict:
+        """Ask Claude about one Command Center page. Sonnet 5.5, low effort, a daily dollar cap (cc_ask.py)."""
+        if self.demo:
+            return {"ok": True, "answer": "Demo mode: on the Mac, with the Anthropic key set, Claude answers from this page's numbers. "
+                    "You asked: " + question[:160], "cost": 0, "spent": 0, "cap": cc_ask.CAP}
+        if not self.ask_key:
+            raise CRMError("Ask Claude is off: set ANTHROPIC_API_KEY in Pipeline's key file and restart Pipeline")
+        try:
+            import anthropic
+        except ImportError:
+            raise CRMError("the anthropic package is not installed in Pipeline's Python")
+        f = self.feed() or {}
+        p = cc.build(self.cc_dir)
+        p["leads"] = cc.attach_crm(p["leads"], (f.get("new_leads") or []) + (f.get("touches_due") or []))
+        client = anthropic.Anthropic(api_key=self.ask_key, timeout=60.0)
+        try:
+            r = self._ask_call(anthropic, lambda: cc_ask.ask(client, p, page, question, private, self.ask_log, now()))
+        except ValueError as e:
+            raise CRMError(str(e))
+        return {"ok": True, **r}
 
     def _ask_call(self, anthropic, call):
         """Run one Claude call, turning SDK errors into sentences Pipeline can say out loud."""
@@ -1030,6 +1053,8 @@ class Handler(BaseHTTPRequestHandler):
             p = cc.build(self.state.cc_dir)
             f = self.state.feed() or {}
             p["leads"] = cc.attach_crm(p["leads"], (f.get("new_leads") or []) + (f.get("touches_due") or []))
+            p["ask"] = {"on": bool(self.state.ask_key) or self.state.demo, "cap": cc_ask.CAP, "model": cc_ask.MODEL,
+                        "spent": cc_ask.spent_today(self.state.ask_log, now())}
             return self._json(200, {**p, "demo": self.state.demo})
         if u.path == "/api/voice/token":
             try:
@@ -1093,7 +1118,9 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": True}, cookie=auth.Auth.cookie("", False, clear=True))
         s = self.state
         try:
-            if u.path == "/api/push/subscribe":
+            if u.path == "/api/cc/ask":
+                out = s.cc_ask(str(body.get("page", "dash")), str(body.get("question", "")), body.get("private", True) is not False)
+            elif u.path == "/api/push/subscribe":
                 out = {"ok": True, "phones": push.subscribe(body.get("subscription") or {}, s.push_subs)}
             elif u.path == "/api/push/test":
                 rows = [{"kind": "test", "title": "Pipeline alerts are on", "body": "This is a test from your Mac.", "page": "sources", "at": now().isoformat(timespec="seconds")}]
@@ -1467,6 +1494,10 @@ def run_tests() -> int:
     rq = urllib.request.Request(base + "/api/push/test", data=b"{}", headers={"Content-Type": "application/json"})
     urllib.request.urlopen(rq)
     check(json.loads(urllib.request.urlopen(base + "/api/alerts").read())["rows"][0]["kind"] == "test", "a test alert shows in /api/alerts")
+    rq = urllib.request.Request(base + "/api/cc/ask", data=json.dumps({"page": "ccleads", "question": "Any new leads?"}).encode(), headers={"Content-Type": "application/json"})
+    r = json.loads(urllib.request.urlopen(rq).read())
+    check(r["ok"] and "Demo mode" in r["answer"] and r["cap"] == cc_ask.CAP, "POST /api/cc/ask answers in demo without calling Claude")
+    check(json.loads(urllib.request.urlopen(base + "/api/cc").read())["ask"]["on"], "/api/cc says Ask Claude is on")
     # the login: anything that is not this Mac needs a passcode session
     host = f"pipeline-mac.tail1234.ts.net"
     def remote(path, data=None, cookie=None):

@@ -36,7 +36,28 @@
   const tile = (label, value, sub, sources, go) => `<${go ? `button type="button" onclick="go('${go}')"` : 'div'} class="cc-tile">
       <span class="cc-tile-l">${label}</span><b class="cc-num">${value}</b><span class="cc-sub">${sub || ''}</span>${src(sources, true)}</${go ? 'button' : 'div'}>`;
   const empty = t => `<p class="cc-empty">${t}</p>`;
-  const head = (h, p) => `<header class="cc-head"><div><h1>${h}</h1><p>${p}</p></div>${privBtn()}</header>`;
+  const head = (h, p) => `<header class="cc-head"><div><h1>${h}</h1><p>${p}</p></div>${privBtn()}</header>${askBox()}`;
+  // Ask Claude about the page you are on. Only this page's numbers go, no phones or emails; with money hidden, no amounts or names.
+  C.asks = {};
+  function askBox() {
+    const a = (C.data && C.data.ask) || {}, page = S.view, st = C.asks[page] || {};
+    if (!a.on) return '';
+    return `<details class="cc-ask" ${st.open ? 'open' : ''} ontoggle="CC.asks['${page}']=Object.assign(CC.asks['${page}']||{},{open:this.open})">
+      <summary>Ask Claude about this page</summary>
+      <form onsubmit="CC.ask(event)"><label class="sr" for="cc-ask-q">Question</label><input id="cc-ask-q" name="q" maxlength="500" required placeholder="What needs my attention here?" value="${esc(st.q || '')}">
+      <button type="submit" class="cc-primary" ${st.busy ? 'disabled' : ''}>${st.busy ? 'Asking…' : 'Ask'}</button></form>
+      ${st.answer ? `<div class="cc-answer" aria-live="polite">${esc(st.answer).split('\n').join('<br>')}</div>` : ''}${st.error ? `<p class="cc-warn" role="alert">${esc(st.error)}</p>` : ''}
+      <p class="cc-note">Sends this page's numbers to Claude ${esc(a.model || '')}, never phones or emails${C.priv ? ', and no amounts or names while money is hidden' : ''}. About 1 cent a question. $${Number(a.spent || 0).toFixed(2)} of $${Number(a.cap || 1).toFixed(2)} used today.</p></details>`;
+  }
+  C.ask = async e => {
+    e.preventDefault();
+    const page = S.view, q = new FormData(e.target).get('q');
+    C.asks[page] = { open: true, q, busy: true }; render();
+    const r = await api('/api/cc/ask', { page, question: q, private: C.priv }).catch(() => ({ ok: false, error: 'Pipeline did not answer' }));
+    C.asks[page] = { open: true, q, answer: r.ok ? r.answer : '', error: r.ok ? '' : r.error };
+    if (r.ok && C.data && C.data.ask) C.data.ask.spent = r.spent;
+    render();
+  };
   const privBtn = () => `<button type="button" class="cc-priv" aria-pressed="${!C.priv}" onclick="CC.togglePriv()">${C.priv ? 'Show money and contacts' : 'Hide money and contacts'}</button>`;
 
   C.togglePriv = function () {

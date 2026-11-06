@@ -251,6 +251,17 @@ Pipeline still listens only on 127.0.0.1. `tailscale serve` puts it on a private
 
 Checks: `push_test.py` (4), `vapid_test.py` (2), and the login and push routes in `app.py --test`.
 
+### Ask Claude on every page (`cc_ask.py`)
+
+Every Command Center page has an **Ask Claude about this page** box under its title. Caleb approved this on 2026-11-05: Claude Sonnet 5.5 with a $1-a-day cap.
+
+- **What goes**: only the numbers of the page you are on, with their sources and as-of times, plus your question. Phone numbers, email addresses, senders and links never go. While money and contacts are hidden, amounts go as "hidden" and lead names are left out.
+- **Model**: `claude-sonnet-5-5` at low effort, at most 1,200 output tokens, with the server-side refusal fallback on. The instructions are byte-stable and cached. `PIPELINE_CC_ASK_MODEL` changes the model.
+- **Cost**: about 4,000 tokens in and 300 out, so about 1.1 cents a question at $2 in and $10 out per million, or roughly $3 to $10 a month at 10 to 30 questions a day. Every question's exact cost goes to `out/ask-usage.json`.
+- **Cap**: `PIPELINE_ASK_CAP`, default `1.00` dollars a day, Central time. Once it is reached, questions are refused before they reach Claude, until midnight. The box shows today's spend against the cap.
+- **Needs** `ANTHROPIC_API_KEY` in Pipeline's key file (the same key the voice Q&A uses) and the `anthropic` package in Pipeline's Python. Without them the box says Ask Claude is off. Claude can't send, save or change anything from here.
+- Checks: `cc_ask_test.py` (4, Claude faked) and the demo route in `app.py --test`.
+
 **Security.** Every POST must come from Pipeline's own page: a foreign `Origin` or `Host` gets 403, which stops a web page on another site from pressing Pipeline's buttons. `PIPELINE_HOSTS` (comma separated, `host:port`) adds a name Pipeline may be reached under.
 
 ## The screen

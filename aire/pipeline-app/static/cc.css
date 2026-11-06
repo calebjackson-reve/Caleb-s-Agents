@@ -1,3 +1,10 @@
+/* Ask Claude box, under every page title */
+.cc-ask { background: var(--cc-panel, #141215); border: 1px solid rgba(255, 255, 255, .09); border-left: 3px solid #e87757; border-radius: 12px; padding: 10px 14px; }
+.cc-ask summary { cursor: pointer; font-weight: 600; color: #e87757; min-height: 32px; display: flex; align-items: center; }
+.cc-ask form { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+.cc-ask input { flex: 1 1 16rem; font: inherit; color: #f3eee6; background: #0a0a0b; border: 1px solid rgba(255, 255, 255, .09); border-radius: 10px; padding: 9px 11px; min-height: 40px; }
+.cc-answer { padding: 12px 14px; border-radius: 10px; background: #1d1a1f; line-height: 1.55; margin-bottom: 8px; }
+
 /* Command Center pages. Keller Williams First Choice: black and coral, tan only as an accent.
    Text pairs are WCAG AA on the panel color: --cc-text 15.9:1, --cc-muted 7.3:1, coral 6.4:1, tan 9.6:1. */
 :root {
