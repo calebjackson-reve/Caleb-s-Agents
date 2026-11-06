@@ -89,17 +89,21 @@ def load_env_file(path: Path = ENV_FILE) -> int:
     return n
 
 
+# PIPELINE_DATA_ROOT points the CRM views at another checkout's aire/ folder (a branch preview reading the live
+# feed, drafts, map files and engine). The send log never moves: a preview's dry runs must not count against the
+# live daily caps.
+DATA = Path(os.getenv("PIPELINE_DATA_ROOT") or AIRE).expanduser()
 PATHS = {
-    "feed": AIRE / "crm" / "feed.json",
-    "text_queue": AIRE / "follow-up" / "out" / "text-queue.json",
-    "email_queue": AIRE / "follow-up" / "out" / "email-queue.json",
-    "command_status": AIRE / "command-reader" / "out" / "status.json",
+    "feed": DATA / "crm" / "feed.json",
+    "text_queue": DATA / "follow-up" / "out" / "text-queue.json",
+    "email_queue": DATA / "follow-up" / "out" / "email-queue.json",
+    "command_status": DATA / "command-reader" / "out" / "status.json",
     "send_log": OUT / "send-log.json",
     "voice_usage": OUT / "voice-usage.json",
     "feed_log": Path.home() / ".aire" / "logs" / "feed.log",
-    "farms": AIRE / "map-crm" / "farms.local.json",
-    "dismissed": AIRE / "map-crm" / "cache" / "dismissed.json",
-    "lists": AIRE / "map-crm" / "out",
+    "farms": DATA / "map-crm" / "farms.local.json",
+    "dismissed": DATA / "map-crm" / "cache" / "dismissed.json",
+    "lists": DATA / "map-crm" / "out",
 }
 # Sonnet 5.5: on 4 real questions (2026-10-29) it answered in 2.5 to 3.1 s with complete, accurate answers; Opus 5.5
 # took 3.4 to 5.7 s and cut one answer off; Haiku 5.5 was faster but miscounted and dropped an answer.
@@ -121,8 +125,8 @@ DEMO_PATHS = {
     "dismissed": OUT / "demo-dismissed.json",
     "lists": OUT / "demo-lists",
 }
-CRM_PY = AIRE / "crm" / "crm.py"
-REFRESH_SH = AIRE / "crm" / "refresh_feed.sh"
+CRM_PY = DATA / "crm" / "crm.py"
+REFRESH_SH = DATA / "crm" / "refresh_feed.sh"
 SHEET_URL = "https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
 COMMAND_URL = "https://agent.kw.com/command"
 DEAL_STAGES = ["lead", "consult", "active", "showing", "under_contract", "closed", "lost"]
