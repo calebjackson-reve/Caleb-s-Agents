@@ -210,3 +210,11 @@ button.cc-tile:hover { background: var(--cc-raise); }
 .cc-big { margin: 0; font: 400 30px/1.1 "Iowan Old Style", Palatino, Georgia, serif; }
 .cc-goals select { font: inherit; color: var(--cc-text); background: var(--cc-ink); border: 1px solid var(--cc-line); border-radius: 10px; padding: 9px 11px; min-height: 40px; color-scheme: dark; }
 @media (max-width: 900px) { .cc-week { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Today list */
+.cc-today-card { border-color: rgba(232, 119, 87, .45); }
+.cc-today { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.cc-today .cc-ev { grid-template-columns: 9.5rem minmax(0, 1fr) auto; }
+.cc-today-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.cc-today-acts button { font: inherit; font-size: 12px; min-height: 32px; }
+@media (max-width: 560px) { .cc-today .cc-ev { grid-template-columns: minmax(0, 1fr); } .cc-today .cc-ev .cc-chip { display: inline-block; justify-self: start; } .cc-today-acts { justify-content: flex-start; } }

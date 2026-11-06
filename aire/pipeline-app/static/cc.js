@@ -96,8 +96,9 @@
         ${tile('Booked today', n(wk.hours) + '<small>h</small>', `${n(wk.events)} timed events`, 'calendar', 'calendar')}
         ${tile('Not processed', n(np), np ? 'Commission emails to chase' : 'Nothing waiting at KW', 'commission_mail', 'commission')}
       </div>
+      ${C.todayCard ? C.todayCard() : ''}
       <div class="cc-grid">
-        ${card('Today', today.length ? `<ul class="cc-list">${today.map(evRow).join('')}</ul>` : empty('Nothing on the calendar today.'), 'calendar')}
+        ${card('On the calendar today', today.length ? `<ul class="cc-list">${today.map(evRow).join('')}</ul>` : empty('Nothing on the calendar today.'), 'calendar')}
         ${card('Deadlines, next 7 days', deadlineList(d.deadlines.d7), 'calendar')}
         ${card('Inbox, leads first', d.inbox.length ? `<ul class="cc-list">${d.inbox.slice(0, 6).map(inboxRow).join('')}</ul>` : empty('Inbox is clear for the last 3 days.'), ['inbox', 'leads'])}
       </div>${C.dashMore ? C.dashMore() : ''}</div>`;
@@ -116,5 +117,5 @@
   function addDays(k, x) { const t = new Date(k + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + x); return t.toISOString().slice(0, 10); }
 
   C.views = { dash };
-  Object.assign(C, { m, mk, contact, day, time, n, src, card, tile, empty, head, guard, evRow, inboxRow, deadlineList, addDays, KIND, senderName });
+  Object.assign(C, { m, mk, contact, day, time, n, src, card, tile, empty, head, guard, evRow, inboxRow, deadlineList, addDays, KIND, senderName, esc: s => esc(s) });
 })();
