@@ -46,7 +46,7 @@
   };
   C.rerender = function () { if (C.views[S.view]) render(); };
   C.load = async function () {
-    try { C.data = await api('/api/cc'); C.err = null; } catch (e) { C.err = 'Pipeline did not answer /api/cc'; }
+    try { const d = await api('/api/cc'); if (d && d.fresh) { C.data = d; C.err = null; } else if (!C.data) C.err = d && d.error === 'offline' ? "can't reach the Mac and there is no saved copy on this device yet" : (d && d.error) || 'no answer'; } catch (e) { if (!C.data) C.err = 'Pipeline did not answer /api/cc'; }
     C.rerender();
   };
 
