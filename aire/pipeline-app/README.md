@@ -170,6 +170,31 @@ Tests: `python3 aire/pipeline-app/speech_engine.py --test` (history mapping, the
 
 What the two reels Caleb sent have that this does not: sub-agents per business tool. `REFERENCE.md` has the full notes on both reels with what is confirmed and what is inference.
 
+## Command Center pages
+
+Six pages at the top of the nav, Dashboard first (key `0`, or a link such as `http://127.0.0.1:4747/#commission`):
+
+| Page | Link | What it shows |
+|---|---|---|
+| Dashboard | `#dash` | Pending commission, GCI this year against goal, deadlines in 7 days, new leads in 7 days, under contract volume, appointments, hours booked today, commission emails KW has not processed. Today, deadlines and inbox below. Each tile opens its page. |
+| Commission | `#commission` | GCI paid, paid plus pending, pending, toward cap (30% company dollar from the cap year start), not processed, your deals, paydays in 30 days, commission mail in 120 days. |
+| Deadlines | `#deadlines` | Contract dates in the next 3 and 30 days, by deal, and act of sale dates. |
+| Calendar | `#calendar` | Day, week or month, filters by kind (closing, deadline, inspection, showing, listing, client, work block, personal), hours booked per day. |
+| Leads | `#ccleads` | Website leads, newest first, with a ready text to copy and Add to CRM (through `crm.py` and its Do Not Contact check). Nothing sends from this page. |
+| Scorecard | `#scorecard` | GCI, closings, leads and appointments a week against your goals, with even pace, 7 and 30 day changes and a daily history chart. Cap progress. The goals form. |
+
+**Privacy.** Money and contact details show as dots until **Show money and contacts** is pressed, and hide again after two minutes. Every page opens hidden.
+
+**Data trust.** Every tile and card ends with its source and as-of time. A read past its limit turns amber (out of date), a failed read turns red and says why while the last good numbers stay. Limits: calendar 2 hours, inbox and leads 1 hour, Deals sheet 6 hours, commission mail 24 hours.
+
+**Where the numbers come from.** `cc.py` works out every number from the reads cached in `out/cc/` (git-ignored, holds client data): `deals.json` (the AIRE Deals sheet), `calendar.json`, `inbox.json`, `leads.json`, `commission_mail.json`, `goals.json`, `history.json` and `config.json` (the coordinator's email domain and, when known, the KW paid figure). Each file is `{"at", "source", "rows", "error"}`. The rules match the Claude page Command Center, so the two agree. In `--demo` the same pages run on `fixtures/cc/`, made-up deals with dates moved to today.
+
+**Goals** are saved from the Scorecard form to `out/cc/goals.json` on this Mac until the sheet sync carries them to a Goals tab. Only known goals are accepted, numbers zero or more, dates as dates, a low end never above its high end.
+
+**Checks.** `python3 aire/pipeline-app/cc_test.py` (every calculation, made-up deals) and `python3 aire/pipeline-app/app.py --test` (the HTTP layer, including the goals save and the refusal of a POST from another site).
+
+**Security.** Every POST must come from Pipeline's own page: a foreign `Origin` or `Host` gets 403, which stops a web page on another site from pressing Pipeline's buttons. `PIPELINE_HOSTS` (comma separated, `host:port`) adds a name Pipeline may be reached under.
+
 ## The screen
 
 | View | Key | What is on it |
