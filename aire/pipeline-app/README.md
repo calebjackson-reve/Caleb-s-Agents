@@ -233,6 +233,24 @@ Check: `cc_sync.py --status` prints the last pass. `cc_sync.py --all` reads ever
 - **Writes**: the Add, Done today, habit check and Log it buttons queue one row in `out/cc/outbox.json` through `POST /api/cc/row`. Only the Life, Life log and Workout log tabs are accepted, and only their own columns. A cell starting with `=`, `+`, `-` or `@` is stored as text. The row shows at once, marked saving, and the sync appends it on its next pass. The sync never writes Contacts, Deals, Tasks or any other tab of the CRM sheet. `config.json` holds `crm_sheet_id`.
 - **Health** has no source: Caleb chose to skip it on 2026-11-05. The page lists the three ways to add one: a free Apple Shortcut, Health Auto Export ($6.99 a year) or typing the numbers in.
 
+### On the iPhone: Tailscale, the login, the Home Screen icon and alerts
+
+Pipeline still listens only on 127.0.0.1. `tailscale serve` puts it on a private HTTPS address only your own Tailscale devices can open, and Pipeline asks for the passcode on every request that did not come straight from this Mac. Everything here is free.
+
+1. **Passcode, once**, in Terminal on the Mac (type it yourself, it is never shown): `python3 aire/pipeline-app/app.py --set-passcode`. It is stored only as a scrypt hash, as `pipeline-login.json` in the AIRE key folder. Setting it again signs every phone out.
+2. **Tailscale**: open the Tailscale app on the Mac and sign in. Install Tailscale on the iPhone and sign in with the same account. In the Tailscale admin console, under DNS, turn on MagicDNS and HTTPS Certificates.
+3. **Serve Pipeline** on the tailnet: `/Applications/Tailscale.app/Contents/MacOS/Tailscale serve --bg 4747` (or the port of the Pipeline that runs this code). `... serve status` shows the address, `https://<mac name>.<tailnet>.ts.net`, and `... serve reset` stops it.
+4. **On the iPhone**: open that address in Safari, sign in with the passcode, then Share, Add to Home Screen. Open Pipeline from the new icon.
+5. **Alerts**: in the icon's Pipeline, open Sources, then Turn on alerts on this device, then Send a test alert.
+
+**What the login does.** No session means the API answers 401 and pages go to `/login`. The login page, manifest, icons and service worker hold no data and stay open. Sessions last 30 days, are kept as hashes in `out/sessions.json` and use HttpOnly, Secure, SameSite=Strict cookies. Five wrong passcodes in 10 minutes lock that device out for 10 minutes. A request carrying a proxy header (`X-Forwarded-For`, `Tailscale-User-Login`) is never treated as local. A `*.ts.net` Host is accepted for POSTs only when the Origin matches it.
+
+**Offline.** The service worker keeps the app shell and the last answer from `/api/cc`, `/api/state` and `/api/alerts`. When the Mac can't be reached, the pages show that copy under "Can't reach the Mac" with its time. Sends and saves are never cached or replayed.
+
+**Alerts** (`push.py`): a new website lead, a contract deadline within 24 hours, a read that fails. Each fires once. The first run only learns the leads already there. The sync checks after every pass. The push is empty and signed with VAPID (`vapid.py`, standard library, checked against the RFC 6979 test vector), so no alert text passes through Apple: the icon wakes, fetches `/api/alerts` behind the login and shows it. The lock screen never shows a client's name. Keys: `pipeline-push.json` in the AIRE key folder. Phones: `out/push-subs.json`. A phone that turned alerts off is dropped.
+
+Checks: `push_test.py` (4), `vapid_test.py` (2), and the login and push routes in `app.py --test`.
+
 **Security.** Every POST must come from Pipeline's own page: a foreign `Origin` or `Host` gets 403, which stops a web page on another site from pressing Pipeline's buttons. `PIPELINE_HOSTS` (comma separated, `host:port`) adds a name Pipeline may be reached under.
 
 ## The screen
