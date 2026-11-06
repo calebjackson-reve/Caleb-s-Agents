@@ -1,0 +1,123 @@
+/* Command Center pages. Keller Williams First Choice: black and coral, tan only as an accent.
+   Text pairs are WCAG AA on the panel color: --cc-text 15.9:1, --cc-muted 7.3:1, coral 6.4:1, tan 9.6:1. */
+:root {
+  --cc-ink: #0a0a0b; --cc-panel: #141215; --cc-raise: #1d1a1f; --cc-line: rgba(255, 255, 255, .09);
+  --cc-coral: #e87757; --cc-coral-soft: rgba(232, 119, 87, .14); --cc-tan: #c8b596;
+  --cc-text: #f3eee6; --cc-muted: #aaa298; --cc-ok: #7fd0a0; --cc-warn: #ffb547; --cc-bad: #ff8a70;
+}
+.cc-page { display: grid; gap: 18px; padding: 4px 2px 24px; color: var(--cc-text); font-size: 14px; }
+.cc-head { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: flex-end; justify-content: space-between; }
+.cc-head h1 { margin: 0; font: 400 clamp(26px, 3vw, 36px)/1.1 "Iowan Old Style", Palatino, Georgia, serif; }
+.cc-head p { margin: 4px 0 0; color: var(--cc-muted); font-size: 13px; }
+.cc-priv, .cc-acts button, .cc-seg button, .cc-filter, .cc-primary {
+  font: inherit; font-size: 13px; color: var(--cc-text); background: var(--cc-raise); border: 1px solid var(--cc-line);
+  border-radius: 999px; padding: 9px 16px; min-height: 40px; cursor: pointer;
+}
+.cc-priv[aria-pressed="true"], .cc-seg button[aria-pressed="true"], .cc-primary { background: var(--cc-coral); border-color: var(--cc-coral); color: #160c08; font-weight: 600; }
+.cc-page button:hover { border-color: var(--cc-coral); }
+.cc-page :focus-visible { outline: 2px solid var(--cc-coral); outline-offset: 2px; }
+.cc-page button:disabled { opacity: .4; cursor: default; }
+
+.cc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr)); gap: 12px; }
+.cc-tile { display: grid; gap: 6px; align-content: start; text-align: left; font: inherit; color: inherit;
+  background: var(--cc-panel); border: 1px solid var(--cc-line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+button.cc-tile { cursor: pointer; transition: border-color .15s, background .15s; }
+button.cc-tile:hover { background: var(--cc-raise); }
+.cc-tile-l { font-size: 13px; font-weight: 600; color: var(--cc-muted); }
+.cc-num { font: 400 clamp(30px, 3vw, 40px)/1.05 "Iowan Old Style", Palatino, Georgia, serif; font-variant-numeric: tabular-nums; color: var(--cc-text); overflow-wrap: anywhere; }
+.cc-num small { font-size: .45em; color: var(--cc-muted); margin-left: 3px; }
+.cc-sub { font-size: 13px; color: var(--cc-muted); line-height: 1.35; }
+.cc-sub em, .cc-page em { font-style: normal; color: var(--cc-warn); }
+
+.cc-src { display: flex; gap: 6px; align-items: baseline; font-size: 12px; line-height: 1.35; color: var(--cc-muted); overflow-wrap: anywhere; }
+.cc-src i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--cc-ok); transform: translateY(-1px); }
+.cc-src.is-stale i, .cc-src.is-missing i { background: var(--cc-warn); }
+.cc-src.is-stale, .cc-src.is-missing { color: var(--cc-warn); }
+.cc-src.is-failed i { background: var(--cc-bad); }
+.cc-src.is-failed { color: var(--cc-bad); }
+.cc-src b { font-weight: 600; }
+
+.cc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 14px; align-items: start; }
+.cc-card { background: var(--cc-panel); border: 1px solid var(--cc-line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 12px; min-width: 0; }
+.cc-card.is-hot { border-color: rgba(232, 119, 87, .5); }
+.cc-card h2 { margin: 0; font-size: 15px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.cc-card footer { display: grid; gap: 3px; border-top: 1px solid var(--cc-line); padding-top: 10px; }
+.cc-count { font-size: 12px; color: var(--cc-muted); background: var(--cc-raise); border-radius: 999px; padding: 2px 9px; }
+.cc-sub-h { margin: 6px 0 0; font-size: 13px; color: var(--cc-tan); font-weight: 600; }
+.cc-empty, .cc-none, .cc-note { margin: 0; color: var(--cc-muted); font-size: 13px; line-height: 1.5; }
+.cc-warn { margin: 0; color: var(--cc-warn); font-size: 13px; }
+
+.cc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.cc-ev { display: grid; grid-template-columns: 5.4rem minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 8px; border-radius: 10px; border-left: 3px solid transparent; }
+.cc-list.tight .cc-ev { grid-template-columns: 1fr; gap: 2px; padding: 6px; }
+.cc-ev:hover { background: var(--cc-raise); }
+.cc-ev.is-soon { background: var(--cc-coral-soft); }
+.cc-ev.k-deadline, .cc-ev.k-closing { border-left-color: var(--cc-coral); }
+.cc-ev.k-showing, .cc-ev.k-listing, .cc-ev.k-client { border-left-color: var(--cc-tan); }
+.cc-when { font-size: 13px; color: var(--cc-muted); font-variant-numeric: tabular-nums; }
+.cc-what { min-width: 0; overflow-wrap: anywhere; display: grid; gap: 1px; }
+.cc-what small, .cc-table small { display: block; font-size: 12px; color: var(--cc-muted); }
+.cc-amt { font-variant-numeric: tabular-nums; }
+.cc-chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--cc-line); color: var(--cc-muted); white-space: nowrap; justify-self: start; }
+.cc-chip.c-Lead, .cc-chip.s-Notprocessed { border-color: var(--cc-coral); color: var(--cc-coral); }
+.cc-chip.c-Deal, .cc-chip.s-Resolved { border-color: var(--cc-tan); color: var(--cc-tan); }
+
+.cc-tablewrap { overflow-x: auto; }
+.cc-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.cc-table th, .cc-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--cc-line); vertical-align: top; }
+.cc-table thead th { font-size: 12px; font-weight: 600; color: var(--cc-muted); }
+.cc-table tbody th { font-weight: 600; }
+.cc-table .r { text-align: right; font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.cc-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
+.cc-seg { display: inline-flex; gap: 4px; align-items: center; }
+.cc-range { min-width: 11rem; text-align: center; font-variant-numeric: tabular-nums; }
+.cc-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.cc-filter[aria-pressed="false"] { opacity: .6; text-decoration: line-through; }
+.cc-filter b { font-weight: 500; color: var(--cc-muted); margin-left: 4px; }
+.cc-days { display: grid; gap: 8px; }
+.cc-days.week { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cc-days.month { grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
+.cc-day { background: var(--cc-raise); border-radius: 10px; padding: 8px; min-height: 110px; min-width: 0; border: 1px solid transparent; }
+.cc-day.is-today { border-color: var(--cc-coral); }
+.cc-day h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--cc-muted); display: grid; }
+.cc-day.is-today h3 { color: var(--cc-coral); }
+.cc-day h3 small { font-weight: 400; font-size: 12px; }
+.cc-bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; height: 140px; }
+.cc-bars div { display: grid; grid-template-rows: 1fr auto auto; height: 100%; text-align: center; gap: 3px; font-size: 12px; color: var(--cc-muted); }
+.cc-bars i { align-self: end; background: var(--cc-coral); border-radius: 6px 6px 2px 2px; min-height: 2px; }
+.cc-bars b { color: var(--cc-text); font-weight: 500; }
+
+.cc-leads { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.cc-lead { border: 1px solid var(--cc-line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; background: var(--cc-raise); }
+.cc-lead-h { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; justify-content: space-between; }
+.cc-lead-h h3 { margin: 0; font: 400 20px/1.2 "Iowan Old Style", Palatino, Georgia, serif; }
+.cc-lead-h small, .cc-lead-meta { font-size: 13px; color: var(--cc-muted); margin: 0; }
+.cc-lead-msg { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--cc-ink); border: 1px solid var(--cc-line); line-height: 1.5; }
+.cc-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.cc-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 14px; }
+.cc-kbar { position: relative; height: 10px; border-radius: 999px; background: var(--cc-raise); overflow: visible; }
+.cc-kbar i { display: block; height: 100%; border-radius: 999px; background: var(--cc-coral); }
+.cc-kbar s { position: absolute; top: -4px; width: 2px; height: 18px; background: var(--cc-tan); }
+.cc-pace { margin: 0; font-size: 13px; }
+.cc-pace.is-ahead { color: var(--cc-ok); }
+.cc-pace.is-behind { color: var(--cc-warn); }
+.cc-delta { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--cc-muted); }
+.cc-delta b { color: var(--cc-text); font-weight: 500; }
+.cc-spark { width: 100%; height: 48px; }
+.cc-spark polyline { fill: none; stroke: var(--cc-coral); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.cc-goals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 12px; }
+.cc-goals label { display: grid; gap: 5px; font-size: 13px; color: var(--cc-muted); }
+.cc-goals input { font: inherit; color: var(--cc-text); background: var(--cc-ink); border: 1px solid var(--cc-line); border-radius: 10px; padding: 9px 11px; min-height: 40px; color-scheme: dark; }
+.cc-goals .cc-note, .cc-goals .cc-primary { grid-column: 1 / -1; justify-self: start; }
+
+@media (max-width: 900px) { .cc-days.week { grid-template-columns: 1fr; } .cc-day { min-height: 0; } }
+@media (max-width: 560px) {
+  .cc-ev { grid-template-columns: 4.4rem minmax(0, 1fr); } .cc-ev .cc-chip { display: none; }
+  .cc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .cc-tile { padding: 12px; } .cc-num { font-size: 28px; }
+  .cc-table thead { display: none; } .cc-table tr { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--cc-line); padding: 6px 0; }
+  .cc-table th, .cc-table td { border: 0; padding: 4px 6px; } .cc-table .r { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) { .cc-page * { transition: none !important; animation: none !important; } }
