@@ -42,22 +42,27 @@ function mapPanel() {
 }
 function mapTools() {
   const f = S.mapF, stages = [...new Set((mapFeed().pins || []).filter(p => p.kind === 'person').map(p => p.stage || ''))].filter(Boolean).sort();
-  const t = (on, label, js, cls = '') => `<button class="${on ? 'on' : ''} ${cls}" onclick="${js}">${label}</button>`;
+  const t = (on, label, js) => `<button type="button" class="cc-filter" aria-pressed="${on}" onclick="${js}">${label}</button>`;
+  const cap = b => (b ? b[0].toUpperCase() + b.slice(1) : 'No band');
   return `<div class="map-tools">
-    <div class="filters">${BAND_NAMES.map(b => t(f.bands.includes(b), (b || 'no band').toUpperCase(), `mapBand('${b}')`, 'b-' + (b || 'none'))).join('')}</div>
-    <div class="filters">${t(f.people, 'PEOPLE', "mapFlag('people')")}${t(f.deals, '⌂ DEALS', "mapFlag('deals')")}${t(f.market, '◆ MARKET', "mapFlag('market')")}${t(f.partners, 'PARTNERS', "mapFlag('partners')")}${t(f.owes, 'OWE A REPLY', "mapFlag('owes')")}</div>
-    <div class="filters">
-      <select onchange="mapSet('quiet', Number(this.value))">${[[0, 'any quiet'], [30, 'quiet 30d+'], [90, 'quiet 90d+'], [180, 'quiet 180d+'], [365, 'quiet 1y+']].map(([v, l]) => `<option value="${v}" ${f.quiet === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
-      <select onchange="mapSet('stage', this.value)"><option value="">any stage</option>${stages.map(s => `<option ${f.stage === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>
-      <select onchange="mapSet('farm', this.value)"><option value="">all areas</option>${farmsList().map(x => `<option value="${esc(x.id)}" ${f.farm === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+    <div class="cc-filters" role="group" aria-label="Bands">${BAND_NAMES.map(b => t(f.bands.includes(b), cap(b), `mapBand('${b}')`)).join('')}</div>
+    <div class="cc-filters" role="group" aria-label="Layers">${t(f.people, 'People', "mapFlag('people')")}${t(f.deals, 'Deals', "mapFlag('deals')")}${t(f.market, 'Market signals', "mapFlag('market')")}${t(f.partners, 'Partners', "mapFlag('partners')")}${t(f.owes, 'Owe a reply', "mapFlag('owes')")}</div>
+    <div class="cc-selects">
+      <label>Quiet <select onchange="mapSet('quiet', Number(this.value))">${[[0, 'Any'], [30, '30 days or more'], [90, '90 days or more'], [180, '180 days or more'], [365, 'A year or more']].map(([v, l]) => `<option value="${v}" ${f.quiet === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label>Stage <select onchange="mapSet('stage', this.value)"><option value="">Any</option>${stages.map(s => `<option ${f.stage === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></label>
+      <label>Area <select onchange="mapSet('farm', this.value)"><option value="">All areas</option>${farmsList().map(x => `<option value="${esc(x.id)}" ${f.farm === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
     </div>
-    <div class="filters">${t(f.base === 'street', 'STREET', "mapBase('street')")}${t(f.base === 'sat', 'SATELLITE', "mapBase('sat')")}<button onclick="mapFit()">⤢ FIT</button><button class="draw" onclick="drawFarm()">✎ DRAW FARM</button></div>
+    <div class="cc-filters" role="group" aria-label="Map">${t(f.base === 'street', 'Street', "mapBase('street')")}${t(f.base === 'sat', 'Satellite', "mapBase('sat')")}<button type="button" class="cc-filter" onclick="mapFit()">Fit everyone</button><button type="button" class="cc-filter" onclick="drawFarm()">Draw a farm</button></div>
   </div>`;
 }
 function viewMap() {
   const c = mapFeed().counts || {};
-  const right = `${(c.persons || 0).toLocaleString()} people · ${c.deals || 0} deals pinned${c.ungeocoded_contacts ? ` · ${c.ungeocoded_contacts.toLocaleString()} not geocoded yet` : ''}`;
-  return `<div class="view map-view">${panel(0, 'Map', right, `<div id="map-tools">${mapTools()}</div>${mapPanel(false)}`)}</div>`;
+  const right = `${(c.persons || 0).toLocaleString()} people and ${c.deals || 0} deals placed${c.ungeocoded_contacts ? `, ${c.ungeocoded_contacts.toLocaleString()} addresses not placed yet` : ''}`;
+  return CC.crmPage('Map', 'Your people, deals and market signals by address. ' + right + '.', `${mapPanel(false)}`, ['crm'], `<div id="map-tools">${mapTools()}</div>`).replace('class="cc-page"', 'class="cc-page cc-wide"');
+}
+function viewDealMap() {
+  return CC.crmPage('Deals on the map', 'Deals placed by their street address from the CRM Deals tab. The Deals page has the numbers, from the Deals sheet.',
+    mapPanel(true), ['crm'], '<div class="cc-acts"><button type="button" onclick="go(\'deals\')">Back to the deal list</button></div>').replace('class="cc-page"', 'class="cc-page cc-wide"');
 }
 function mountMap(dealsOnly) {
   const el = $('#pmap'); if (!el) return;
@@ -102,16 +107,16 @@ function renderMapSide() {
 function pinCard(p) {
   const x = `<button class="x" onclick="S.pick='';S.map&&S.map.setData({selected:''});renderMapSide()">×</button>`;
   if (p.kind === 'person') {
-    return `<div class="pin-card"><div class="pc-h"><span class="ico ${p.band}">${initials(p.display)}</span><div><b>${esc(p.display)}</b><small>${p.band ? `<span class="tag ${p.band}">${esc(p.band)}</span>` : '<span class="tag">NO BAND</span>'}${p.owes_reply ? '<span class="tag reply">REPLY</span>' : ''}${p.new_lead ? '<span class="tag live">NEW</span>' : ''}</small></div>${x}</div>
+    return `<div class="pin-card"><div class="pc-h"><span class="ico ${p.band}">${CC.ini(p.display)}</span><div><b>${CC.who(p.display)}</b><small>${p.band ? `<span class="tag ${p.band}">${esc(p.band)}</span>` : '<span class="tag">NO BAND</span>'}${p.owes_reply ? '<span class="tag reply">REPLY</span>' : ''}${p.new_lead ? '<span class="tag live">NEW</span>' : ''}</small></div>${x}</div>
       <dl><dt>Stage</dt><dd>${esc(p.stage || 'none')}</dd><dt>Type</dt><dd>${esc(p.type || 'unknown')}</dd><dt>Last touch</dt><dd>${esc(quiet(p))}</dd>
-      <dt>Next action</dt><dd>${esc(p.next_action || 'none')}</dd><dt>Address</dt><dd>${esc([p.address, p.city, p.zip].filter(Boolean).join(', ') || 'none')}</dd>
-      <dt>Phone</dt><dd>${p.phone ? `<a href="tel:${esc(p.phone)}">${esc(fmtPhone(p.phone))}</a>` : 'none'}</dd>${p.email ? `<dt>Email</dt><dd>${esc(p.email)}</dd>` : ''}</dl>
+      <dt>Next action</dt><dd>${CC.scrub(p.next_action || 'none', [p.display])}</dd><dt>Address</dt><dd>${CC.priv ? '<span class="cc-hid">hidden</span>' : esc([p.address, p.city, p.zip].filter(Boolean).join(', ') || 'none')}</dd>
+      <dt>Phone</dt><dd>${p.phone ? (CC.priv ? CC.ph(p.phone) : `<a href="tel:${esc(p.phone)}">${esc(fmtPhone(p.phone))}</a>`) : 'none'}</dd>${p.email ? `<dt>Email</dt><dd>${CC.em(p.email)}</dd>` : ''}</dl>
       <div class="acts"><button class="primary" onclick="openCompose(${jsa(p.person_id)})">✉ Compose</button><button onclick="touched(${jsa(p.person_id)})">✓ Touched</button><button onclick="openTask(${jsa(p.person_id)})">＋ Task</button><button onclick="openNote(${jsa(p.person_id)})">✎ Note</button></div>
       <div class="acts"><button onclick="addToList('call', [personListRow(pinByKey(${jsa(p.key)}))])">☎ Call list</button><button onclick="addToList('postcards', [personListRow(pinByKey(${jsa(p.key)}))])">✉ Postcards</button></div></div>`;
   }
   if (p.kind === 'deal') {
     return `<div class="pin-card"><div class="pc-h"><span class="ico">⌂</span><div><b>${esc(p.address)}</b><small><span class="tag violet">${esc((p.stage || '').replace('_', ' '))}</span><span>${esc(p.side || '')}</span></small></div>${x}</div>
-      <dl><dt>Client</dt><dd>${esc(p.display || 'none')}</dd><dt>Last event</dt><dd>${esc(p.last_event || 'none')}${p.last_event_at ? ' · ' + esc(p.last_event_at.slice(0, 10)) : ''}</dd></dl>
+      <dl><dt>Client</dt><dd>${p.display ? CC.who(p.display) : 'none'}</dd><dt>Last event</dt><dd>${esc(p.last_event || 'none')}${p.last_event_at ? ' · ' + esc(p.last_event_at.slice(0, 10)) : ''}</dd></dl>
       <div class="acts"><button class="primary" onclick="openDeal(${jsa(p.address)})">✎ Edit deal</button>${p.person_id ? `<button onclick="openCompose(${jsa(p.person_id)})">✉ Compose</button>` : ''}</div></div>`;
   }
   return `<div class="pin-card"><div class="pc-h"><span class="ico">◆</span><div><b>${esc(p.address)}</b><small><span class="tag ${p.type === 'permit' ? 'warn' : 'live'}">${esc(p.label)}</span><span>${esc(p.city)}</span></small></div>${x}</div>
@@ -136,7 +141,7 @@ function inViewSummary() {
     <div class="iv-n"><div><b>${people.length.toLocaleString()}</b><small>people</small></div><div><b>${deals.length}</b><small>deals</small></div><div><b>${mkt.length}</b><small>signals</small></div></div>
     <div class="bands">${BAND_NAMES.filter(b => by[b]).map(b => `<span class="tag ${b}">${b || 'none'} ${by[b]}</span>`).join('')}</div>
     ${`<div class="acts"><button onclick="listFromView('call')">☎ Call list · ${people.filter(p => p.phone).length}</button><button onclick="listFromView('postcards')">✉ Postcards · ${people.filter(p => p.address).length + mkt.length}</button></div>
-    <p class="dim">Lists take the people ${S.mapF.farm ? 'in this farm' : 'in view'} with the filters above, and write a CSV in aire/map-crm/out on this Mac.</p>`}
+    <p class="dim">Lists take the people ${S.mapF.farm ? 'in this farm' : 'in view'} with the filters above. The list file stays on the Mac.</p>`}
     ${farms}
     <p class="dim">Click a pin for the card. Clusters zoom in. Partners are hidden until you turn them on.</p></div>`;
 }
@@ -180,13 +185,13 @@ async function addToList(kind, rows) {
 
 // ---------------------------------------------------------------- market monitor
 function marketDetail(r) {
-  const amt = r.type === 'permit' ? (r.value ? `${money(r.value)} project` : 'no value given') : r.price ? money(r.price) + (r.price_was ? ` (was ${money(r.price_was)})` : '') : 'no price given';
-  const near = r.nearest && r.nearest.person_id ? `<a href="#" onclick="S.pick=${jsa('person:' + r.nearest.person_id)};S.mapView={center:[${r.lat},${r.lng}],zoom:15};go('map');return false">${esc(r.nearest.display)}</a> · ${esc(r.nearest.band || 'no band')} · ${r.nearest.miles} mi` : 'nobody you know within 2 miles';
+  const amt = r.type === 'permit' ? (r.value ? `${CC.m(r.value)} project` : 'no value given') : r.price ? CC.m(r.price) + (r.price_was ? ` (was ${CC.m(r.price_was)})` : '') : 'no price given';
+  const near = r.nearest && r.nearest.person_id ? `<a href="#" onclick="S.pick=${jsa('person:' + r.nearest.person_id)};S.mapView={center:[${r.lat},${r.lng}],zoom:15};go('map');return false">${CC.who(r.nearest.display)}</a> · ${esc(r.nearest.band || 'no band')} · ${r.nearest.miles} mi` : 'nobody you know within 2 miles';
   return `<dl><dt>When</dt><dd>${esc(r.date)} · ${esc(r.subtype || r.label)}</dd><dt>Amount</dt><dd>${amt}</dd>${r.description && r.description !== r.subtype ? `<dt>Detail</dt><dd>${esc(r.description)}</dd>` : ''}
     <dt>Farm</dt><dd>${esc(farmName(r.farm) || 'outside your farms')}</dd><dt>Nearest</dt><dd>${near}</dd><dt>Source</dt><dd>${esc(r.source)} · ${esc(r.source_date)}${r.source_ref ? ' · #' + esc(r.source_ref) : ''}</dd></dl>`;
 }
 function marketActs(r) {
-  return `<button class="primary" onclick="makeLead(${jsa(r.key)})">＋ Make lead</button><button onclick="makeDeal(${jsa(r.key)})">⌂ Make deal</button><button onclick="addToList('postcards', [marketListRow(mktByKey(${jsa(r.key)}))])">✉ Postcard</button>${r.lat != null && S.view !== 'map' ? `<button onclick="showOnMap(${jsa(r.key)})">◈ Map</button>` : ''}<button class="danger" title="Dismiss, never shown again" onclick="dismissRow(${jsa(r.key)})">✕</button>`;
+  return `<button type="button" class="cc-primary" onclick="makeLead(${jsa(r.key)})">＋ Make lead</button><button type="button" onclick="makeDeal(${jsa(r.key)})">Make deal</button><button type="button" onclick="addToList('postcards', [marketListRow(mktByKey(${jsa(r.key)}))])">Postcard</button>${r.lat != null && S.view !== 'map' ? `<button type="button" onclick="showOnMap(${jsa(r.key)})">Map</button>` : ''}<button type="button" class="cc-danger" title="Dismiss, never shown again" onclick="dismissRow(${jsa(r.key)})">Dismiss</button>`;
 }
 function mktByKey(k) { return marketRows().find(r => r.key === k); }
 function viewMarket() {
@@ -197,19 +202,21 @@ function viewMarket() {
   if (f.label) rows = rows.filter(r => r.label === f.label);
   if (f.farm === '_in') rows = rows.filter(r => r.farm); else if (f.farm) rows = rows.filter(r => r.farm === f.farm);
   if (f.near) rows = rows.filter(r => r.nearest && r.nearest.person_id);
-  const t = (on, l, js) => `<button class="${on ? 'on' : ''}" onclick="${js}">${l}</button>`;
-  const tools = `<div class="filters">${t(f.type === 'all', 'ALL', "mktSet('type','all')")}${t(f.type === 'permit', 'PERMITS', "mktSet('type','permit')")}${t(f.type === 'mls', 'LISTINGS', "mktSet('type','mls')")}${t(f.near, 'NEAR SOMEONE I KNOW', "mktSet('near',!S.mktF.near)")}
-    <select onchange="mktSet('label', this.value)"><option value="">every kind</option>${labels.map(l => `<option ${f.label === l ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>
-    <select onchange="mktSet('farm', this.value)"><option value="">all areas</option><option value="_in" ${f.farm === '_in' ? 'selected' : ''}>inside any farm</option>${farmsList().map(x => `<option value="${esc(x.id)}" ${f.farm === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div>`;
-  const body = rows.length ? `<div class="rows mkt">${rows.slice(0, 300).map((r, i) => `<div class="row" style="--i:${Math.min(i, 20)}">
-    <span class="ico ${r.type === 'permit' ? 'warm' : 'lukewarm'}">${r.type === 'permit' ? '⚒' : '◆'}</span>
-    <div class="who"><b>${esc(r.address)}</b><small><span class="tag ${r.type === 'permit' ? 'warn' : 'live'}">${esc(r.label)}</span><span>${esc(r.city)}</span><span>${esc(r.date)}</span>${r.farm ? `<span class="tag info">${esc(farmName(r.farm))}</span>` : ''}</small></div>
-    <div class="why"><b>${r.type === 'permit' ? (r.value ? money(r.value) + ' · ' : '') + esc(r.subtype) : (r.price ? money(r.price) : 'no price') + (r.price_was ? ` · was ${money(r.price_was)}` : '')}</b>
-      <span>${r.nearest && r.nearest.person_id ? `near ${esc(r.nearest.display)} · ${r.nearest.miles} mi · ` : ''}${esc(r.source)} · ${esc(r.source_date)}</span></div>
-    <div class="acts">${marketActs(r)}</div></div>`).join('')}</div>` : `<div class="empty"><b>No signals</b>${all.length ? 'Nothing matches these filters.' : 'Run monitor.py pull --write, then the refresh.'}</div>`;
-  const mc = (feed().market || {}).counts || {};
-  return `<div class="view">${panel(0, `Market Monitor · ${rows.length}`, `${(mc.by_type || {}).permit || 0} permits · ${all.length - ((mc.by_type || {}).permit || 0)} MLS · newest first`, tools + body)}</div>`;
+  const t = (on, l, js) => `<button type="button" class="cc-filter" aria-pressed="${on}" onclick="${js}">${l}</button>`;
+  const mc = (feed().market || {}).counts || {}, permits = (mc.by_type || {}).permit || 0;
+  const tools = `<div class="cc-filters">${t(f.type === 'all', 'All', "mktSet('type','all')")}${t(f.type === 'permit', `Permits <b>${permits}</b>`, "mktSet('type','permit')")}${t(f.type === 'mls', `Listings <b>${all.length - permits}</b>`, "mktSet('type','mls')")}${t(f.near, 'Near someone I know', "mktSet('near',!S.mktF.near)")}</div>
+    <div class="cc-selects"><label>Kind <select onchange="mktSet('label', this.value)"><option value="">Every kind</option>${labels.map(l => `<option ${f.label === l ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+    <label>Area <select onchange="mktSet('farm', this.value)"><option value="">All areas</option><option value="_in" ${f.farm === '_in' ? 'selected' : ''}>Inside any farm</option>${farmsList().map(x => `<option value="${esc(x.id)}" ${f.farm === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label></div>`;
+  const body = rows.length ? `<ul class="cc-rows">${rows.slice(0, 300).map(r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${r.type === 'permit' ? '⚒' : '◆'}</span>
+    <div class="cc-row-main"><h3>${esc(r.address)}</h3>
+      <div class="cc-pills"><span class="cc-pill ${r.type === 'permit' ? 'k-listing' : 'k-closing'}">${esc(r.label)}</span><span class="cc-pill k-other">${esc(r.city)}</span>${r.farm ? `<span class="cc-pill k-other">${esc(farmName(r.farm))}</span>` : ''}</div>
+      <p class="cc-row-why">${r.type === 'permit' ? (r.value ? CC.m(r.value) + ' · ' : '') + esc(r.subtype) : (r.price ? CC.m(r.price) : 'No price given') + (r.price_was ? ` · was ${CC.m(r.price_was)}` : '')}</p>
+      <p class="cc-note">${esc(C_day(r.date))}${r.nearest && r.nearest.person_id ? ` · ${r.nearest.miles} mi from ${CC.who(r.nearest.display)}` : ''} · ${esc(r.source)}, ${esc(C_day(r.source_date))}</p></div>
+    <div class="cc-acts">${marketActs(r)}</div></li>`).join('')}</ul>${rows.length > 300 ? `<p class="cc-note">Showing the newest 300 of ${rows.length}.</p>` : ''}`
+    : CC.empty(all.length ? 'Nothing matches these filters.' : 'No permits or listing changes in the last read.');
+  return CC.crmPage('Listings and permits', `New listings, price changes and building permits near your farms, newest first. ${rows.length} shown.`, body, ['crm'], tools);
 }
+const C_day = k => (k && /^\d{4}-\d{2}-\d{2}/.test(k) ? CC.day(k.slice(0, 10)) : k || '');
 function mktSet(k, v) { S.mktF[k] = v; render(); }
 async function makeLead(key) {
   const r = mktByKey(key); if (!r) return;
@@ -238,3 +245,7 @@ async function dismissRow(key) {
   if (S.pick === key) S.pick = '';
   await load();
 }
+
+// Register the map pages with the Command Center router; the map mounts after the page is on screen.
+Object.assign(CC.views, { map: viewMap, dealmap: viewDealMap, monitor: viewMarket });
+Object.assign(CC.after, { map: () => mountMap(false), dealmap: () => mountMap(true) });

@@ -1,11 +1,12 @@
 // Pipeline map. A small slippy map with no library and no build step, same as the rest of the app.
-// Tiles: OpenStreetMap for streets, USGS The National Map imagery (public domain) for satellite. Both free, both credited
+// Tiles: USGS The National Map, topo for streets and imagery for satellite. Public domain and free to use from an app
+// (tile.openstreetmap.org refuses apps like this one with a 403, and CARTO's free tier is non-commercial). Credited
 // on the map. Pins, deals, market rows and farms are drawn on one canvas. Past 200 pins in view they cluster.
 // PMap.create(el, opts) -> { setData, setBase, fit, focus, bounds, startDraw, cancelDraw, view, destroy }
 window.PMap = (function () {
   const TILE = 256;
   const BASES = {
-    street: { url: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`, max: 19, attr: '© OpenStreetMap contributors' },
+    street: { url: (z, x, y) => `https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/${z}/${y}/${x}`, max: 16, attr: 'Map: USGS The National Map', dark: true },
     sat: { url: (z, x, y) => `https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/${z}/${y}/${x}`, max: 16, attr: 'Imagery: USGS The National Map' },
   };
   const BAND = { hot: '#ff5c7a', warm: '#ffb547', lukewarm: '#c8b596', cold: '#4f9dff', 'ice-cold': '#bdb4a9', '': '#5d6b7c' };
@@ -31,6 +32,7 @@ window.PMap = (function () {
 
     function layoutTiles() {
       const base = BASES[st.base], z = st.zoom, n = 2 ** z, [cx, cy] = centerPx();
+      tilesEl.classList.toggle('is-dark', !!base.dark);  // the light topo map, turned dark to sit in the black design
       const x0 = Math.floor((cx - st.w / 2) / TILE), x1 = Math.floor((cx + st.w / 2) / TILE), y0 = Math.max(0, Math.floor((cy - st.h / 2) / TILE)), y1 = Math.min(n - 1, Math.floor((cy + st.h / 2) / TILE));
       const want = new Set();
       for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) {
@@ -58,7 +60,23 @@ window.PMap = (function () {
       ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = ring ? 2.5 : 1; ctx.strokeStyle = ring || 'rgba(4,9,22,.9)'; ctx.stroke();
     }
 
+    // Area names never sit on top of each other: the selected area goes first, then bigger names, and a label whose
+    // box would overlap one already drawn is nudged below, then above, then left out at this zoom.
+    function drawLabels(labels) {
+      ctx.font = '600 12px ' + getComputedStyle(document.body).getPropertyValue('--sans'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const boxes = [], hit = b => boxes.some(o => b.x1 > o.x0 && b.x0 < o.x1 && b.y1 > o.y0 && b.y0 < o.y1);
+      for (const l of labels.sort((a, b) => (b.on - a.on) || (b.name.length - a.name.length))) {
+        const w = ctx.measureText(l.name).width + 12, h = 20;
+        const spot = [0, h + 2, -(h + 2)].map(dy => ({ x0: l.x - w / 2, x1: l.x + w / 2, y0: l.y + dy - h / 2, y1: l.y + dy + h / 2, dy })).find(b => !hit(b));
+        if (!spot) continue;
+        boxes.push(spot);
+        ctx.fillStyle = 'rgba(10,10,11,.82)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(spot.x0, spot.y0, w, h, 6) : ctx.rect(spot.x0, spot.y0, w, h); ctx.fill();
+        ctx.fillStyle = l.on ? '#e87757' : '#f3eee6'; ctx.fillText(l.name, l.x, l.y + spot.dy + .5);
+      }
+      ctx.textBaseline = 'alphabetic';
+    }
     function drawFarms() {
+      const labels = [];
       for (const f of st.data.farms) {
         if (!f.polygon || f.polygon.length < 3) continue;
         const pts = f.polygon.map(([a, b]) => toScreen(a, b));
@@ -66,10 +84,9 @@ window.PMap = (function () {
         const on = st.data.farm === f.id;
         ctx.fillStyle = on ? 'rgba(232, 119, 87,.14)' : 'rgba(232, 119, 87,.07)'; ctx.fill();
         ctx.setLineDash([6, 4]); ctx.lineWidth = on ? 2.4 : 1.6; ctx.strokeStyle = '#e87757'; ctx.stroke(); ctx.setLineDash([]);
-        const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
-        ctx.font = '600 11px ' + getComputedStyle(document.body).getPropertyValue('--mono'); ctx.textAlign = 'center';
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(4,9,22,.85)'; ctx.strokeText(f.name.toUpperCase(), cx, cy); ctx.fillStyle = '#f3eee6'; ctx.fillText(f.name.toUpperCase(), cx, cy);
+        labels.push({ name: f.name, x: pts.reduce((s, p) => s + p[0], 0) / pts.length, y: pts.reduce((s, p) => s + p[1], 0) / pts.length, on });
       }
+      drawLabels(labels);
       if (st.draw) {
         const pts = st.draw.pts.map(([a, b]) => toScreen(a, b));
         if (st.draw.hover && pts.length) pts.push(st.draw.hover);
