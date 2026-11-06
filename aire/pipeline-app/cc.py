@@ -301,3 +301,107 @@ def commission_mail(rows: list[dict]) -> list[dict]:
         st = ("Resolved" if _street(s) in paid else "Not processed") if re.search(r"not processed", s, re.I) else "Notice"
         out.append({**r, "status": st})
     return sorted(out, key=lambda r: r["status"] != "Not processed")
+
+
+# ---------------- Scorecard, goals, history ----------------
+
+def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
+    yr = str(today.year)
+    closed = [r for r in deals if stage_of(r["status"]) == "closed"]
+    yr_closed = [r for r in closed if is_day(r.get("act")) and r["act"][:4] == yr]
+    sheet_gci = sum(r["commission"] or 0 for r in yr_closed)
+    real = [r for r in leads if not r.get("test")]
+    end7 = (today + timedelta(days=6)).isoformat()
+    appts = [r for r in evs if r["kind"] in ("showing", "listing", "client") and today.isoformat() <= r["day"] <= end7]
+    since7 = (today - timedelta(days=6)).isoformat()
+    leads7 = [r for r in real if (r.get("received") or "")[:10] >= since7]
+    paid = kw_paid.get("value") if kw_paid and kw_paid.get("value") is not None else None
+    gci = {"value": paid if paid is not None else sheet_gci,
+           "from": "kw_paid" if paid is not None else "sheet",
+           "sheet_value": sheet_gci, "n": len(yr_closed),
+           "blank": sum(1 for r in yr_closed if r["commission"] is None),
+           "undated": sum(1 for r in closed if not is_day(r.get("act")))}
+    pend = pending_commission(deals)
+    gci["with_pending"] = gci["value"] + pend["value"]
+    g = goals or {}
+    cap = None
+    if g.get("cap_amount") and is_day(g.get("cap_start")):
+        co = SPLIT_CO * sum(r["commission"] or 0 for r in closed if is_day(r.get("act")) and r["act"] >= g["cap_start"])
+        cap = {"paid": round(co, 2), "amount": g["cap_amount"], "pct": round(min(100, co / g["cap_amount"] * 100), 1),
+               "left": round(max(0, g["cap_amount"] - co), 2), "start": g["cap_start"], "by": g.get("cap_by")}
+    day_of_year = today.timetuple().tm_yday
+    days_in_year = 366 if today.year % 4 == 0 else 365
+    pace = day_of_year / days_in_year
+
+    def prog(value, goal):
+        if not goal:
+            return None
+        return {"goal": goal, "pct": round(value / goal * 100, 1), "pace_pct": round(pace * 100, 1),
+                "ahead": value >= goal * pace, "left": max(0, goal - value)}
+
+    return {"gci": {**gci, "goal": prog(gci["value"], g.get("gci_goal")),
+                    "goal_with_pending": prog(gci["with_pending"], g.get("gci_goal"))},
+            "pending": pend,
+            "closings": {"value": len(yr_closed), "goal": prog(len(yr_closed), g.get("closings_high") or g.get("closings_low")),
+                         "low": g.get("closings_low"), "high": g.get("closings_high")},
+            "leads7": {"value": len(leads7), "low": g.get("leads_low"), "high": g.get("leads_high"),
+                       "undated": sum(1 for r in real if not r.get("received"))},
+            "appts7": {"value": len(appts), "goal": g.get("appts")},
+            "cap": cap,
+            "response": {"value": None, "note": "Not tracked yet: needs the time of the first reply to each lead."}}
+
+
+def history_row(sc: dict, today: date) -> dict:
+    return {"day": today.isoformat(), "gci": sc["gci"]["value"], "pending": sc["pending"]["value"],
+            "closings": sc["closings"]["value"], "leads7": sc["leads7"]["value"], "appts7": sc["appts7"]["value"]}
+
+
+def add_history(rows: list[dict], row: dict) -> list[dict]:
+    """One row a day. Today's row is replaced, never doubled."""
+    return sorted([r for r in rows if r.get("day") != row["day"]] + [row], key=lambda r: r["day"])[-400:]
+
+
+def deltas(rows: list[dict], row: dict, metric: str) -> dict:
+    out = {}
+    for span in (7, 30):
+        k = (date.fromisoformat(row["day"]) - timedelta(days=span)).isoformat()
+        past = [r for r in rows if r["day"] <= k]
+        out[str(span)] = None if not past else round(row[metric] - past[-1][metric], 2)
+    return out
+
+
+# ---------------- The whole payload ----------------
+
+def _rows(d):
+    return (d or {}).get("rows") or []
+
+
+def build(folder: Path, now: datetime | None = None) -> dict:
+    now = (now or datetime.now(CENTRAL)).astimezone(CENTRAL)
+    today = now.date()
+    raw = load(folder)
+    cfg = (raw.get("config") or {}).get("rows") or {}
+    coord = cfg.get("coordinator_domains") or []
+    fresh = {k: freshness(raw.get(k) or {}, k, now) for k in DATASETS if k != "config"}
+    deals = deal_rows(_rows(raw["deals"]))
+    evs = cal_events(_rows(raw["calendar"]), coord)
+    leads = _rows(raw["leads"])
+    dl = deal_deadlines(evs)
+    goals = (raw.get("goals") or {}).get("rows") or {}
+    sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today)
+    hist = _rows(raw["history"])
+    hrow = history_row(sc, today)
+    full = add_history(hist, hrow)
+    return {
+        "at": now.isoformat(timespec="seconds"), "today": today.isoformat(), "fresh": fresh,
+        "deals": deal_cards(deals, today), "stages": pipeline_stages(deals, len([r for r in leads if not r.get("test")])),
+        "calendar": evs, "week": week_load(evs, today),
+        "deadlines": {"all": in_days(dl, today, 30), "d3": in_days(dl, today, 2), "d7": in_days(dl, today, 6),
+                      "deals": len({r["deal"] for r in in_days(dl, today, 30)})},
+        "closings": closings(dl, deals, today),
+        "inbox": inbox_sorted(_rows(raw["inbox"]), leads, coord),
+        "leads": leads, "commission_mail": commission_mail(_rows(raw["commission_mail"])),
+        "scorecard": sc, "goals": goals, "goals_set": bool(goals),
+        "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
+        "kw_paid": cfg.get("kw_paid"),
+    }
