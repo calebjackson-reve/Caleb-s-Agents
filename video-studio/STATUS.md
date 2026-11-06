@@ -45,7 +45,19 @@ Session on the Mac mini, Claude Code, started 20:46. Steps 2 to 4 took about 8 m
 
 **Committed** with Caleb's OK on the size (about 4,500 lines, about 4,000 of them the generated `package-lock.json`).
 
-**Step 6. Proof chain: built and proven on a synthetic take, waiting on Caleb's real take**
+**Step 6. Proof render: done on a real take, waiting on Caleb's look**
+- Take: Caleb chose the first 20 s of `~/Desktop/TC-Ad-Recordings/Untitled.MOV` (1280x720 landscape, mono AAC, his TC system ad) over filming a new iPhone take. Cropped to vertical, so it is upscaled 2.7x and softer than a real reel will be.
+- Ingest: 602 source frames, 605 in the 30fps mp4 (20.17 s), one transcription of 42 words, no cuts at scene 0.05, grid frames at f151, f302, f453.
+- Measured rows (1080x1920): cap top about y460 (higher in the first second, about y420), eye line about y880, mouth about y1160, chin about y1380, lav mic on the jacket about y1660 to 1690 at x about 840, below the safe band.
+- Placement: caption baseline y1425 (45 px below the chin, BRAND.md 4). Hook top y250, ending at y460 on the cap line: the crop leaves only 175 px between the safe band top (y285) and the cap, a two-line hook needs 210, so its top sits 35 px above the 4:5 grid crop and its bottom touches the cap in the first second. A vertical iPhone take with more headroom will not have this problem.
+- Render: `out/test/test.mp4`, 605 frames, 1080x1920, crf 17, 14 s render, 14.3 MB. `verify-audio.py` voice gain 0.9989, added audio -83.7 dB.
+- Frame map (final): f5 what if you, f35 never had to, f74 type a contract, f121 again, f141 I'm Caleb Jackson, f171 with, f185 Keller Williams, f211 First Choice and, f242 I built my, f262 own TC system, f285 with AI (clears f335), pause with no caption, f436 I just say, f457 the terms out, f475 loud, f497 the price, f516 the closing date, f547 who pays what (clears f590).
+- Found and fixed on the real take:
+  - The camera file starts its audio 153 ms after the video. whisper read from the first audio sample, so every caption was about 5 frames early, and `verify-audio.py` read gain 0.036 because the offset was past its search window. `ingest.sh` now pads the audio to start at zero, and the take was re-ingested.
+  - "Keller Williams First Choice" was lowercased and split. Names in `PHRASES` now stay one unit in their own capitals. "TC" added to `KEEP`.
+  - A chunk held through a pause ("with AI" for 4.4 s). Chunks now clear 12 frames after their last word when a pause follows.
+  - whisper padded "AI." to the next sentence and the two retime passes disagreed. The loudness envelope settled it: speech ends at 10.75 s and resumes at 14.5 s. Applied as index-keyed fixes in `out/test/fixes.json` (local), with "build" corrected back to "built".
+- Session 20:46 to 21:26, about 40 minutes for steps 2 to 6, most of it the sandbox and sign-in detours.
 - Caleb turned the sandbox off for this project (`.claude/settings.local.json` in the main checkout and the worktree, never committed) and allowed git push for the session.
 - `scripts/ingest.sh`: probe, transcode to H.264 1080x1920 30fps with stereo AAC, confirm the frame count, transcribe once, cuts at scene 0.05, three grid frames at 25, 50 and 75 percent.
 - `src/test-run/TestRun.tsx`: the take, brand captions chunked 1 to 3 words and at most about 17 characters, casual lowercase with a proper-noun list (`KEEP`), the default hook for the first 90 frames. Caption Y, hook top and frame count come in as measured props.
@@ -53,8 +65,10 @@ Session on the Mac mini, Claude Code, started 20:46. Steps 2 to 4 took about 8 m
 - Three bugs found and fixed on the synthetic run: ffmpeg 9 dropped `-vsync` (now `-fps_mode passthrough`); whisper emitted "(Bell)" as a word (sound tags are now dropped); "St." ended a caption chunk on its own (abbreviations no longer break chunks). A mono source reads voice gain 0.707 against Remotion's stereo output, so ingest now always writes stereo.
 
 **Needs Caleb**
-- Step 6: film the 20-second test take (rear camera, 4K 30fps, eye level, clip-on mic), AirDrop it, drop it in `engine/public/recordings/test.MOV`.
+- Watch `engine/out/test/test.mp4` and say whether captions land on the right words and the hook placement works. Phase 1 starts only after that yes.
 - Decide whether the listing reel playbook's gold hairline title or BRAND.md's no-gold rule wins for listing reels.
+- Optional: a 20-second vertical iPhone take to test real framing and 4K, since this proof used a cropped 720p landscape file.
+- Pick the Phase 1 topic.
 
 ## 2026-11-06, evening: Phase 0 pre-checks done on the Mac mini
 

@@ -26,18 +26,47 @@ const KEEP: Record<string, string> = {
   caleb: "Caleb", jackson: "Jackson", keller: "Keller", williams: "Williams", realtor: "REALTOR",
   louisiana: "Louisiana", baton: "Baton", rouge: "Rouge", st: "St", "st.": "St.", francisville: "Francisville",
   zachary: "Zachary", new: "new", roads: "roads", feliciana: "Feliciana", felicianas: "Felicianas", prairieville: "Prairieville",
+  tc: "TC",
 };
+// Multi-word names kept as one caption unit, in their own capitals.
+const PHRASES = ["Keller Williams", "First Choice", "St. Francisville", "Baton Rouge", "New Roads"];
+
 const casual = (t: string) => {
+  const phrase = PHRASES.find((p) => p.toLowerCase() === t.replace(/[,.?!;:]+$/, "").toLowerCase());
+  if (phrase) return phrase;
   const core = t.replace(/[,?!;:]+$/, "").replace(/\.$/, (m) => (/^st\.$/i.test(t) ? m : ""));
   return KEEP[core.toLowerCase()] ?? core.toLowerCase();
 };
 
 // A period after these is not a sentence end ("St. Francisville").
 const ABBREV = /^(st|mr|mrs|ms|dr|jr|sr|mt|ft)\.$/i;
+// A chunk clears this long after its last word when a pause follows.
+const HOLD = 12;
+
+/** Joins the words of a PHRASES name into one word with the first start and
+    the last end, so a name is never split across two chunks. */
+const joinPhrases = (words: Word[]) => {
+  const out: Word[] = [];
+  for (let i = 0; i < words.length; i++) {
+    const hit = PHRASES.find((p) => {
+      const parts = p.toLowerCase().split(" ");
+      return parts.every((part, k) => words[i + k] && words[i + k].text.replace(/[,?!;:]+$/, "").replace(/\.$/, (m) => (part.endsWith(".") ? m : "")).toLowerCase() === part);
+    });
+    if (hit) {
+      const n = hit.split(" ").length;
+      const last = words[i + n - 1];
+      out.push({ text: hit + (last.text.match(/[,.?!;:]+$/)?.[0] ?? ""), startMs: words[i].startMs, endMs: last.endMs });
+      i += n - 1;
+    } else out.push(words[i]);
+  }
+  return out;
+};
 
 /** 1 to 3 words, at most about 17 characters, breaking after punctuation.
-    Each chunk holds until the next one starts, so nothing flickers. */
-export const chunk = (words: Word[]) => {
+    A chunk holds until the next one starts, or clears HOLD frames after its
+    last word when a pause follows. */
+export const chunk = (input: Word[]) => {
+  const words = joinPhrases(input);
   const out: { text: string; from: number; to: number }[] = [];
   let cur: Word[] = [];
   const flush = () => {
@@ -52,7 +81,7 @@ export const chunk = (words: Word[]) => {
     if (/[,.?!;:]$/.test(w.text) && !ABBREV.test(w.text)) flush();
   }
   flush();
-  for (let i = 0; i < out.length - 1; i++) out[i].to = Math.max(out[i].from + 1, out[i + 1].from);
+  for (let i = 0; i < out.length - 1; i++) out[i].to = Math.max(out[i].from + 1, Math.min(out[i + 1].from, out[i].to + HOLD));
   return out;
 };
 

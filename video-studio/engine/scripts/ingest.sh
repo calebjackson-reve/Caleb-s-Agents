@@ -19,10 +19,15 @@ ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,heigh
 
 if [ "$SRC" != "$MP4" ]; then
   echo "== transcode -> $MP4"
+  # Camera files often start the audio a little after the video (153 ms on
+  # the first test take). Pad it to start at zero so the transcript, the
+  # video and verify-audio.py all share one clock.
   ffmpeg -v error -y -i "$SRC" -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p \
     -vf "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920" \
+    -af "aresample=async=1:first_pts=0" \
     -r 30 -c:a aac -b:a 192k -ar 48000 -ac 2 "$MP4"
 fi
+echo "audio starts at $(ffprobe -v error -select_streams a:0 -show_entries stream=start_time -of csv=p=0 "$MP4")s, video at $(ffprobe -v error -select_streams v:0 -show_entries stream=start_time -of csv=p=0 "$MP4")s"
 FRAMES=$(ffprobe -v error -count_frames -select_streams v:0 -show_entries stream=nb_read_frames -of csv=p=0 "$MP4")
 DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$MP4")
 echo "frames $FRAMES, duration ${DUR}s, expected about $(python3 -c "print(round($DUR*30))")"
