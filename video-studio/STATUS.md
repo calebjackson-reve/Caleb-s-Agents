@@ -2,6 +2,28 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-05, night (Central): cloud side caught up with Phase 0
+
+Dates in this log: the Mac mini entries are Caleb's local time (Central). The entries written from the cloud session on "2026-11-06" were UTC and belong to the evening of 2026-11-05 Central. From here on, Central.
+
+**Confirmed by Caleb**
+- Phase 0 step 6 ran on a real take and pushed (commits 373c75a, df57dac, 3f53ad8). He is watching `engine/out/test/test.mp4`.
+
+**Done (cloud session, pulled the three commits first)**
+- `engine/brand/BRAND.md`: end card now carries REALTOR and the license line per `~/reels/CLAUDE.md`, the pill has its 1px ivory edge, and a new section 10 sets 4K finals, records that the listing tour engine in `~/reels/` is a sibling that is not rebuilt here, and names the one open conflict (Didot and gold hairline versus Instrument Serif and no gold).
+- `ENGINE-PLAN.md`: Phase 0 result table, delivery changed to 2160x3840, Phase 1 topic steered to talking-head pieces since tours already have an engine, two Unknowns marked resolved.
+- `README.md` file table: the playbook and the engine's real contents.
+
+**Not verified**
+- The proof render itself. It is on the Mac. Only Caleb can say whether the captions land on his words.
+- 4K render time on this engine.
+
+**Needs Caleb**
+- Yes or no on the proof render.
+- "No gold" or "keep gold" for titles.
+- The Phase 1 topic: a market stat, a buyer or seller question, or the TC ad, filmed vertical with headroom.
+- What to do with `~/Desktop/TC-Ad-Recordings` (the Mac session asked).
+
 ## 2026-11-05, evening: Phase 0 steps 2 to 4 done, step 5 built and waiting on one render
 
 Session on the Mac mini, Claude Code, started 20:46. Steps 2 to 4 took about 8 minutes. The work runs in a separate worktree (`.claude/worktrees/video-studio`) so the main checkout, which the live Pipeline LaunchAgents run from, is never switched again. Earlier in the session a branch switch in the main checkout stopped halfway and Caleb restored it with `git reset` and `git checkout HEAD -- .`. Pipeline on 4747 served every asset afterwards.

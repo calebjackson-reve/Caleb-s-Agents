@@ -55,7 +55,7 @@ Emphasis word, option: one word per chunk in Instrument Serif Italic, ember, no 
 
 - **Default text hook** (Instagram native style, frame 0, no animation): Hauora SemiBold 600, 78px, ivory text inside one ink outline traced round all the lines, tight 12px corners. Two lines maximum, each under 880px, above the head inside the safe band. The method's `TextHook` component with the brand colours swapped in.
 - **Option, the site's title pair**: an Instrument Serif Italic word over an Instrument Serif uppercase line, ivory on ink or ink on ivory, with an ember period. Use it for market updates and the hook of a "prove" video, as a full-screen title card for 1 to 2 seconds, then cut to the head.
-- **End card** (last 2 seconds): ink ground, "Caleb Jackson" in Instrument Serif, "Keller Williams First Choice" in Hauora label, a "Call or text" pill (ink fill, ivory text, 100px radius, the site's button) with no number baked in, the number lives in the caption text so compliance can check it. Office address and license number only when the compliance check says a piece needs them.
+- **End card** (last 2 seconds): ink ground, "Caleb Jackson" in Instrument Serif, then "REALTOR", "Keller Williams First Choice" and "Louisiana license 995709547" in Hauora label (a hard rule on every reel from `~/reels/CLAUDE.md`, confirmed by the approved frame of 2026-11-05), a "Call or text" pill (ink fill, 1px ivory edge so it reads on the ink ground, ivory text, 100px radius) with no number baked in, the number lives in the caption text so compliance can check it. Listing tours built in `~/reels/` end on the closing shot with the brand line instead of a separate card, per the playbook.
 
 ## 6. Motifs and motion
 
@@ -85,3 +85,10 @@ Emphasis word, option: one word per chunk in Instrument Serif Italic, ember, no 
 Numbered, newest last. Claude appends one line whenever Caleb corrects a render, so the mistake does not come back.
 
 1. (none yet)
+
+## 10. Delivery size, and the listing tour playbook
+
+- **Finals are 4K, 2160x3840**, per the listing reel playbook. Compositions are authored at 1080x1920 and rendered with `--scale=2` in chunks of about 450 frames, then joined with ffmpeg concat, because one pass runs out of Chrome's video cache. Storyboard clips, check ranges and brand samples stay at 1080x1920. Keep 6 GB free before a 4K render.
+- **Two engines share this sheet.** The talking-head engine lives in this folder. The listing tour engine already lives in `~/reels/` on the Mac mini (reel 01, the Acadian estate in St. Francisville, finished 2026-10-25 after 19 cuts): a Tour composition with 12-frame dissolves on music beats, Higgsfield Kling motion applied to Caleb's own listing stills and disclosed as AI motion, a 4K grade script, LuxTitle and BrandLine. Its playbook is copied beside this file as `listing-reel-playbook.md` and is the record of what Caleb approved and rejected on tours. Do not rebuild it here. A listing video that needs Caleb on camera uses both: this engine for the talking head, the tour engine for the property run.
+- **Where the playbook and this sheet disagree**, the approved sample frames of 2026-11-05 settle captions and the end card (Hauora, ivory on ink). One conflict is open: the playbook's LuxTitle is Didot with a gold hairline, and section 1 says no gold. **Pending Caleb's call.** Until he decides, tours keep LuxTitle as built, and talking-head reels use the title pair in section 5.
+- The playbook's rejected list applies to any video that uses property footage: no handheld shots back to back, no Ken Burns stills next to video, no clip under 2 seconds, no title naming one area over a shot of another, colour match clamped to plus or minus 6 percent per channel.

@@ -8,6 +8,24 @@ Labels: **from the source** cites `research.md` or the lesson. **Applied** is th
 
 ---
 
+## Phase 0 result (2026-11-05 evening Central, Caleb's Mac mini session)
+
+Phase 0 ran in about 40 minutes, most of it sandbox and sign-in detours, and the chain holds. Numbers from `STATUS.md`:
+
+| Measured | Result |
+|---|---|
+| Machine | Apple M6, 12 cores, 16 GB, 44 GB free after installs |
+| Brand sample render | 6 frames in 4 seconds, all six approved by Caleb |
+| Proof take | first 20 s of a 1280x720 landscape TC ad recording, cropped to vertical |
+| Frames | 605 in, 605 out, 20.17 s |
+| Render | 14 seconds at 1080x1920, crf 17, 14.3 MB |
+| Audio | voice gain 0.9989, added audio -83.7 dB (nothing added) |
+| Transcript | 42 words, one pass, 3 real defects found and fixed in ingest |
+
+The three defects were real and are now engine rules: the camera file's audio starts 153 ms after its video, so ingest pads audio to zero. Brand names stay whole and capitalized. A caption clears 12 frames after its last word when a pause follows, and whisper's padded word ends are checked against the loudness envelope. The hook touched the cap in the first second only because the landscape crop left 175 px of headroom where a two-line hook needs 210. A vertical iPhone take fixes that.
+
+One thing the plan did not know on 2026-11-06: **Caleb already has a listing tour engine** at `~/reels/` on the Mac mini, with a finished 4K reel, a playbook and a compliance script. This engine is its sibling for talking-head video. Section 10 of `engine/brand/BRAND.md` says how they share the brand sheet and where they still disagree (the gold title).
+
 ## Blueprint
 
 ### 1. What the engine does, start to finish
@@ -23,7 +41,7 @@ Labels: **from the source** cites `research.md` or the lesson. **Applied** is th
 | 7 Build | Claude | One Remotion composition per video. Brand sheet drives colours, type, caption style. Layout per segment from the five layouts, switched only on Caleb's own cuts. Captions 1 to 3 words, measured baseline, colour by measured luminance. 3 to 6 motion graphics in a 50-second reel, each with a job (prove, explain, show, feel, emphasize), each anchored to a word. Music bed 15 to 18 dB under the voice, cues fired early by their measured lead. | `src/<video>/<Video>.tsx`, `src/shared/` |
 | 8 Verify | Claude, automatic | One range render per graphic to a contact sheet. `camera-check.py` on every screen-recording move. `verify-audio.py` on the render. Safe area check x90 to x990, y285 to y1635. Compliance check on the final caption text. VMAF of the delivered render against the master above a threshold Caleb sets after the first run (ffmpeg on the Mac has libvmaf). | `$TMPDIR/check/`, `out/<video>/report.md` |
 | 9 Storyboard review | Caleb, 5 min | A private Artifact page: one clip per beat, Keep, Maybe, Drop, notes, Submit. Claude applies the round, replies per beat, re-renders, same URL, round 2. | `out/<video>/storyboard.html` |
-| 10 Deliver | Claude | `out/<video>/<video>.mp4` at 1080x1920, a 1:1 and 16:9 reframe when the brief asks, the cover frame, caption text with 3 to 5 hashtags, and a Metricool draft created for review, never scheduled. Two versions when hooks A and B were both filmed, per the teardown skill's rule. | `out/<video>/` |
+| 10 Deliver | Claude | `out/<video>/<video>.mp4` at 2160x3840 (4K, rendered at `--scale=2` in chunks per the listing playbook), a 1:1 and 16:9 reframe when the brief asks, the cover frame, caption text with 3 to 5 hashtags, and a Metricool draft created for review, never scheduled. Two versions when hooks A and B were both filmed, per the teardown skill's rule. | `out/<video>/` |
 | 11 Approve and post | Caleb | Schedules in Metricool. | Metricool |
 | 12 Learn | Claude | Appends to `video-studio/STATUS.md` what changed and what Caleb corrected. Corrections that will recur go into `brand/BRAND.md` as learned rules. `teardown-tuesday` reads the 7-day value metrics (saves, shares, DMs, link clicks) the following week. | `STATUS.md`, `brand/BRAND.md` |
 
@@ -85,7 +103,7 @@ Code goes to GitHub, media never does. `.gitignore` already covers `public/`, `b
 4. Prove the chain on a 20-second test take of Caleb saying anything: transcode, transcribe, measure, one caption layer, one text hook, render, `verify-audio.py`. Done when the mp4 plays with captions on the right words and the frame map matches the transcript. **Not verified** until it runs.
 
 **Phase 1, the first real reel. One filming day plus one edit session.**
-1. Caleb picks the topic: one listing he can show, or one market stat from `aire/market-data/` with its source. Hooks A and B scripted and compliance-checked. He films both hooks and one body.
+1. Caleb picks the topic. Because the listing tour engine in `~/reels/` already covers property tours, the first run of this engine should be a talking-head piece: one market stat from `aire/market-data/` with its source, or one buyer or seller question he hears every week, or the TC system ad he already recorded. Filmed vertical on the iPhone with headroom. Hooks A and B scripted and compliance-checked. He films both hooks and one body.
 2. Full pipeline. Ingest, measure, 3 to 5 graphics (at least one "prove" with a sourced number on screen, one "show" with his own photos), captions, a music bed from his own pack, storyboard round, round 2, deliver two versions.
 3. Metricool drafts for both. Caleb schedules one and holds the other for the test window per the teardown skill.
 4. Measure the time Caleb spent and the time Claude spent, and log both in `STATUS.md` against Michael Ly's 20-minute claim.
@@ -122,11 +140,9 @@ Code goes to GitHub, media never does. `.gitignore` already covers `public/`, `b
 
 ## Unknowns
 
-- **The Mac mini's chip, cores and free disk.** Render times, background removal speed and whisper speed all scale with it. Michael Ly's numbers are from a 12-core machine. Phase 0 step 2 records the real figures.
-- **Node, numpy and Pillow on the Mac.** Three Terminal checks in Phase 0.
+- **Resolved in Phase 0:** the Mac mini is an M6 with 12 cores, 16 GB and 44 GB free. Node 26, numpy and Pillow are present. A 605-frame 1080p render took 14 seconds. 4K render time is unmeasured on this engine (the tour engine's playbook reports 4 minutes for a 45-second reel).
 - **The storyboard Artifact from the Mac's Claude Code.** This cloud session has the Artifact tool with the database capability. Whether Caleb's Mac session has it is unconfirmed. Fallback: a local HTML page with the notes saved to a JSON file in `out/`, same Keep Maybe Drop layout, no cloud.
-- **Caleb's mic landmark.** The skill places captions on a handheld mic's windscreen. Caleb's clip-on mic may not be visible, in which case the baseline is measured from the chin and shoulder line instead. Phase 0 step 4 decides.
-- **Whether the brand package palette is current.** Caleb confirms in Phase 0 step 3.
+- **Resolved in Phase 0:** the lav mic sits on the jacket below the safe band, so the caption baseline is 45 px below the chin. Caleb approved the palette by approving the six frames.
 - **Whisper on local names.** Zachary, Bocage, St. Francisville, Prairieville and Louisiana street names will need a fix dictionary, keyed by index per the skill's rule. Size unknown until the first transcript.
 - **Michael Ly's time claims.** Setup about 15 minutes, edits about 20 minutes. Phase 1 step 4 measures ours.
 - **Caleb's music and sound packs.** The skill wants licensed originals in `public/music pack/` and `public/sound pack/`. What Caleb owns the rights to use on Instagram and Facebook is not recorded here. Until then, reels run with original audio only, which the reels-script skill says is fine for a founder voice.

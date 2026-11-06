@@ -10,7 +10,8 @@ Caleb's AI video setup, driven by Claude Code on the Mac mini. Round 1 reverse e
 | `ENGINE-PLAN.md` | The build plan for the video editing engine: a Remotion project on the Mac mini run by Claude Code, following the millee.md remotion-reel method. Phases 0 to 3, costs, unknowns. Written 2026-11-06. |
 | `engine/PHASE-0.md` | The Phase 0 runbook for the Mac mini session: skills, Node, whisper.cpp, the Remotion project, six brand sample frames, one proof render. Approved by Caleb 2026-11-06. |
 | `engine/brand/BRAND.md` | The engine's brand sheet, drafted from `website-rebuild/DESIGN-SYSTEM.md`. Ink, ivory, ember once, Instrument Serif and Hauora. Caleb approves after the sample frames. Learned rules grow at the bottom. |
-| `engine/` | The Remotion project lands here in Phase 0. Media, models, renders and node_modules inside it are git-ignored. |
+| `engine/brand/listing-reel-playbook.md` | Caleb's playbook from the listing tour engine in `~/reels/` on the Mac mini (reel 01, 2026-10-25): what he approved and rejected on property tours. Copied in 2026-11-05. |
+| `engine/` | The Remotion project, built in Phase 0: `scripts/ingest.sh`, `scripts/transcribe.mjs`, `src/brand/theme.ts`, the brand samples and test-run compositions. Media, models, renders, node_modules and the copied millee.md components are git-ignored. |
 | `dashboard-spec.md` | Not written yet. The video-designer's two candidate stacks, A and B, and the workflow Claude Code runs on the Mac. |
 | `verdict-round-1.md` | Not written yet. The blind video-judge's scores and verdict. |
 
