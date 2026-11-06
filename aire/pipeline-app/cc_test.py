@@ -210,5 +210,36 @@ class LeadMatch(unittest.TestCase):
         self.assertEqual(out[0]["crm"]["band"], "hot")
 
 
+
+class LifeAndWorkouts(unittest.TestCase):
+    def test_life(self):
+        items = [{"kind": "family", "name": "Mom birthday", "date": "1960-11-09"}, {"kind": "family", "name": "Anniversary", "date": "06-01"},
+                 {"kind": "upkeep", "name": "Gutters", "every_days": "180"}, {"kind": "habit", "name": "Read"}, {"kind": "habit", "name": "Walk"}]
+        log = [{"date": "2026-11-05", "item": "Read"}, {"date": "2026-11-04", "item": "read"}, {"date": "2026-11-03", "item": "Read"},
+               {"date": "2026-11-04", "item": "Walk"}, {"date": "2026-10-01", "item": "Gutters"}]
+        L = cc.life({"items": items, "log": log}, [], T)
+        self.assertEqual([(f["name"], f["days"]) for f in L["family"]], [("Mom birthday", 4), ("Anniversary", 208)])
+        self.assertEqual((L["upkeep"][0]["due"], L["upkeep"][0]["days"]), ("2027-03-30", 145))
+        h = {x["name"]: x for x in L["habits"]}
+        self.assertEqual((h["Read"]["today"], h["Read"]["streak"], h["Walk"]["today"], h["Walk"]["streak"]), (True, 3, False, 1))
+
+    def test_workouts(self):
+        plan = [{"day": "Mon", "focus": "Upper push"}, {"day": "Thursday", "focus": "Upper pull"}]
+        log = [{"date": "2026-11-02", "focus": "Upper push", "minutes": "50"}, {"date": "2026-10-20", "focus": "x"}]
+        W = cc.workouts({"plan": plan, "log": log}, [], T)
+        self.assertEqual([w["day"] for w in W["week"]][:2], ["Mon", "Tue"])
+        self.assertTrue(W["week"][0]["done"]); self.assertEqual(W["today"]["focus"], "Upper pull")
+        self.assertEqual((W["done_7"], W["minutes_7"]), (1, 50))
+
+    def test_queue_row_guards(self):
+        with tempfile.TemporaryDirectory() as d:
+            e = cc.queue_row(Path(d), "Life log", {"date": "2026-11-05", "item": "=HYPERLINK(1)", "kind": "habit"}, NOW)
+            self.assertEqual(e["row"]["item"], "'=HYPERLINK(1)")
+            for tab, row in (("Contacts", {}), ("Life", {"kind": "chores", "name": "x"}), ("Life", {"kind": "family", "name": "x", "date": "soon"}),
+                             ("Workout log", {"date": "today"}), ("Life", {"kind": "upkeep", "name": "x", "every_days": "often"})):
+                with self.assertRaises(ValueError):
+                    cc.queue_row(Path(d), tab, row, NOW)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
