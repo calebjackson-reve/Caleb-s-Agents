@@ -5,7 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pipeline</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#0a0a0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pipeline">
 <link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="cc.css">
 </head>
 <body>
 <div id="boot" class="boot">
@@ -70,5 +77,18 @@
 <script src="app.js"></script>
 <script src="map.js"></script>
 <script src="mapviews.js"></script>
+<script src="cc.js"></script>
+<script src="cc-pages.js"></script>
+<script src="cc-score.js"></script>
+<script src="cc-life.js"></script>
+<script src="cc-today.js"></script>
+<script src="cc-sources.js"></script>
+<script>
+// The home-screen install: the service worker keeps the shell and the last data for when the Mac can't be reached.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.addEventListener('message', e => { if (window.CC && e.data && 'online' in e.data && CC.offline !== !e.data.online) { CC.offline = !e.data.online; CC.rerender(); } });
+}
+</script>
 </body>
 </html>

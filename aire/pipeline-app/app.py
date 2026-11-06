@@ -46,6 +46,7 @@ import os
 import platform
 import re
 import subprocess
+import tempfile
 import sys
 import threading
 import time
@@ -61,6 +62,10 @@ HERE = Path(__file__).resolve().parent
 AIRE = HERE.parent
 sys.path.insert(0, str(HERE))
 import jarvis  # noqa: E402  (the voice's tools and tool loop)
+import cc  # noqa: E402  (Command Center numbers)
+import auth  # noqa: E402  (the login for anything but this Mac)
+import push  # noqa: E402  (phone alerts)
+import cc_ask  # noqa: E402  (Ask Claude on every Command Center page)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -82,22 +87,26 @@ def load_env_file(path: Path = ENV_FILE) -> int:
             if k and k not in os.environ:
                 os.environ[k] = v
                 n += 1
-    except FileNotFoundError:
+    except OSError:  # missing, or a sandbox that blocks the key folder: run without keys
         pass
     return n
 
 
+# PIPELINE_DATA_ROOT points the CRM views at another checkout's aire/ folder (a branch preview reading the live
+# feed, drafts, map files and engine). The send log never moves: a preview's dry runs must not count against the
+# live daily caps.
+DATA = Path(os.getenv("PIPELINE_DATA_ROOT") or AIRE).expanduser()
 PATHS = {
-    "feed": AIRE / "crm" / "feed.json",
-    "text_queue": AIRE / "follow-up" / "out" / "text-queue.json",
-    "email_queue": AIRE / "follow-up" / "out" / "email-queue.json",
-    "command_status": AIRE / "command-reader" / "out" / "status.json",
+    "feed": DATA / "crm" / "feed.json",
+    "text_queue": DATA / "follow-up" / "out" / "text-queue.json",
+    "email_queue": DATA / "follow-up" / "out" / "email-queue.json",
+    "command_status": DATA / "command-reader" / "out" / "status.json",
     "send_log": OUT / "send-log.json",
     "voice_usage": OUT / "voice-usage.json",
     "feed_log": Path.home() / ".aire" / "logs" / "feed.log",
-    "farms": AIRE / "map-crm" / "farms.local.json",
-    "dismissed": AIRE / "map-crm" / "cache" / "dismissed.json",
-    "lists": AIRE / "map-crm" / "out",
+    "farms": DATA / "map-crm" / "farms.local.json",
+    "dismissed": DATA / "map-crm" / "cache" / "dismissed.json",
+    "lists": DATA / "map-crm" / "out",
 }
 # Sonnet 5.5: on 4 real questions (2026-10-29) it answered in 2.5 to 3.1 s with complete, accurate answers; Opus 5.5
 # took 3.4 to 5.7 s and cut one answer off; Haiku 5.5 was faster but miscounted and dropped an answer.
@@ -119,8 +128,8 @@ DEMO_PATHS = {
     "dismissed": OUT / "demo-dismissed.json",
     "lists": OUT / "demo-lists",
 }
-CRM_PY = AIRE / "crm" / "crm.py"
-REFRESH_SH = AIRE / "crm" / "refresh_feed.sh"
+CRM_PY = DATA / "crm" / "crm.py"
+REFRESH_SH = DATA / "crm" / "refresh_feed.sh"
 SHEET_URL = "https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
 COMMAND_URL = "https://agent.kw.com/command"
 DEAL_STAGES = ["lead", "consult", "active", "showing", "under_contract", "closed", "lost"]
@@ -318,6 +327,13 @@ class State:
         if self.sender == "live" and not demo and platform.system() == "Darwin":
             threading.Thread(target=self.check_messages, daemon=True).start()
         self.started = now().isoformat(timespec="seconds")
+        # Command Center reads: out/cc/ on the Mac (written by the sync), made-up fixtures in demo.
+        self.ask_log = (send_log.parent / "ask-usage.json") if send_log else OUT / ("demo-ask-usage.json" if demo else "ask-usage.json")
+        self.push_subs = (send_log.parent if send_log else OUT) / ("demo-push-subs.json" if demo else "push-subs.json")
+        self.push_key = (send_log.parent / "push-keys.json") if send_log else (OUT / "demo-push-keys.json" if demo else push.KEY_FILE)
+        self.auth = auth.Auth((send_log.parent if send_log else OUT) / ("demo-sessions.json" if demo else "sessions.json"),
+                              login_file=Path(os.getenv("PIPELINE_LOGIN_FILE") or auth.LOGIN_FILE))
+        self.cc_dir = cc.demo_folder(FIXTURES / "cc", Path(tempfile.mkdtemp(prefix="pipeline-cc-"))) if demo else OUT / "cc"
 
     # ---- reads
     def feed(self) -> dict:
@@ -504,6 +520,27 @@ class State:
         u = self.log_claude("ask", r.get("model", self.ask_model), r["usage"], tool_calls=len(r["calls"]))
         return {"ok": True, "result": {"answer": r["answer"] or "I have nothing on that.", "model": r.get("model", self.ask_model),
                                        "proposals": r["proposals"], "tools_used": [c["tool"] for c in r["calls"]]}, "usage": u}
+
+    def cc_ask(self, page: str, question: str, private: bool) -> dict:
+        """Ask Claude about one Command Center page. Sonnet 5.5, low effort, a daily dollar cap (cc_ask.py)."""
+        if self.demo:
+            return {"ok": True, "answer": "Demo mode: on the Mac, with the Anthropic key set, Claude answers from this page's numbers. "
+                    "You asked: " + question[:160], "cost": 0, "spent": 0, "cap": cc_ask.CAP}
+        if not self.ask_key:
+            raise CRMError("Ask Claude is off: set ANTHROPIC_API_KEY in Pipeline's key file and restart Pipeline")
+        try:
+            import anthropic
+        except ImportError:
+            raise CRMError("the anthropic package is not installed in Pipeline's Python")
+        f = self.feed() or {}
+        p = cc.build(self.cc_dir)
+        p["leads"] = cc.attach_crm(p["leads"], (f.get("new_leads") or []) + (f.get("touches_due") or []))
+        client = anthropic.Anthropic(api_key=self.ask_key, timeout=60.0)
+        try:
+            r = self._ask_call(anthropic, lambda: cc_ask.ask(client, p, page, question, private, self.ask_log, now()))
+        except ValueError as e:
+            raise CRMError(str(e))
+        return {"ok": True, **r}
 
     def _ask_call(self, anthropic, call):
         """Run one Claude call, turning SDK errors into sentences Pipeline can say out loud."""
@@ -965,12 +1002,17 @@ class Handler(BaseHTTPRequestHandler):
         if os.getenv("PIPELINE_VERBOSE"):
             super().log_message(fmt, *args)
 
-    def _json(self, code: int, data) -> None:
+    def _json(self, code: int, data, cookie: str | None = None) -> None:
         raw = json.dumps(data, ensure_ascii=False, default=str).encode("utf-8")
         self.send_response(code)
+        if cookie:
+            self.send_header("Set-Cookie", cookie)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
         self.wfile.write(raw)
 
@@ -980,21 +1022,40 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
             return
         ctype = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
-                 ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon"}.get(path.suffix, "application/octet-stream")
+                 ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json"}.get(path.suffix, "application/octet-stream")
         raw = path.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
         self.wfile.write(raw)
 
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
+        if not self._gate(u.path):
+            return
+        if u.path == "/login":
+            return self._file("login.html")
         if u.path == "/api/state":
             return self._json(200, self.state.snapshot())
         if u.path == "/api/refresh":
             return self._json(200, self.state.refresh)
+        if u.path == "/api/push/key":
+            return self._json(200, {"ok": True, "key": push.keys(self.state.push_key)["public"]})
+        if u.path == "/api/alerts":
+            d = push._read(self.state.cc_dir / "alerts.json", {"rows": []})
+            return self._json(200, {"ok": True, "rows": d.get("rows", [])[:20], "phones": len(push._read(self.state.push_subs, []))})
+        if u.path == "/api/cc":
+            p = cc.build(self.state.cc_dir)
+            f = self.state.feed() or {}
+            p["leads"] = cc.attach_crm(p["leads"], (f.get("new_leads") or []) + (f.get("touches_due") or []))
+            p["ask"] = {"on": bool(self.state.ask_key) or self.state.demo, "cap": cc_ask.CAP, "model": cc_ask.MODEL,
+                        "spent": cc_ask.spent_today(self.state.ask_log, now())}
+            return self._json(200, {**p, "demo": self.state.demo})
         if u.path == "/api/voice/token":
             try:
                 return self._json(200, self.state.call_token())
@@ -1004,16 +1065,77 @@ class Handler(BaseHTTPRequestHandler):
             return self._file("index.html")
         return self._file(u.path)
 
+    def _same_origin(self) -> bool:
+        """Refuse a POST that a web page on another site sent (CSRF), or one that came in under a foreign
+        Host name (DNS rebinding). Tools with no Origin header, like curl and the tests, still work."""
+        port = self.server.server_address[1]
+        ok = {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"} | set(filter(None, os.getenv("PIPELINE_HOSTS", "").split(",")))
+        host = (self.headers.get("Host") or "").lower()
+        # A Tailscale name (tailscale serve) is allowed too: only this tailnet's devices can resolve it, and it always
+        # needs the login. Origin must still equal Host, so a page on another site cannot press Pipeline's buttons.
+        tailnet = host.split(":")[0].endswith(".ts.net")
+        if host not in ok and not tailnet:
+            return False
+        origin = self.headers.get("Origin")
+        return origin is None or urllib.parse.urlparse(origin).netloc.lower() == host or urllib.parse.urlparse(origin).netloc in ok
+
+    def _gate(self, path: str) -> bool:
+        """True when the request may go on. From this Mac: always. Otherwise: a passcode session, except the login
+        page, the app manifest, icons and the service worker, which hold no data."""
+        a = self.state.auth
+        if a.is_local(self.headers, self.server.server_address[1]) or path in auth.PUBLIC_PATHS or a.valid(self.headers.get("Cookie")):
+            return True
+        if path.startswith("/api/"):
+            self._json(401, {"ok": False, "error": "sign in first" if a.configured() else "no passcode is set on the Mac yet"})
+        else:
+            self.send_response(302)
+            self.send_header("Location", "/login")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+        return False
+
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
+        if not self._same_origin():
+            return self._json(403, {"ok": False, "error": "refused: this request did not come from Pipeline's own page"})
         n = int(self.headers.get("Content-Length") or 0)
         try:
             body = json.loads(self.rfile.read(n) or b"{}")
         except Exception:
             return self._json(400, {"ok": False, "error": "body must be JSON"})
+        if u.path == "/api/login":
+            addr = (self.headers.get("X-Forwarded-For") or self.client_address[0]).split(",")[0].strip()
+            try:
+                tok = self.state.auth.login(str(body.get("passcode", "")), addr)
+            except ValueError as e:
+                return self._json(200, {"ok": False, "error": str(e)})
+            secure = (self.headers.get("X-Forwarded-Proto") or "") == "https"
+            return self._json(200, {"ok": True}, cookie=auth.Auth.cookie(tok, secure))
+        if not self._gate(u.path):
+            return
+        if u.path == "/api/logout":
+            self.state.auth.logout(self.headers.get("Cookie"))
+            return self._json(200, {"ok": True}, cookie=auth.Auth.cookie("", False, clear=True))
         s = self.state
         try:
-            if u.path == "/api/touch":
+            if u.path == "/api/cc/ask":
+                out = s.cc_ask(str(body.get("page", "dash")), str(body.get("question", "")), body.get("private", True) is not False)
+            elif u.path == "/api/push/subscribe":
+                out = {"ok": True, "phones": push.subscribe(body.get("subscription") or {}, s.push_subs)}
+            elif u.path == "/api/push/test":
+                rows = [{"kind": "test", "title": "Pipeline alerts are on", "body": "This is a test from your Mac.", "page": "sources", "at": now().isoformat(timespec="seconds")}]
+                d = push._read(s.cc_dir / "alerts.json", {"rows": [], "state": {}})
+                push._write(s.cc_dir / "alerts.json", {**d, "rows": (rows + d.get("rows", []))[:50]})
+                k = push.keys(s.push_key)
+                codes = [push.send_one(x["endpoint"], k) for x in push._read(s.push_subs, [])] if not s.demo else []
+                out = {"ok": True, "phones": len(codes), "sent": sum(1 for c in codes if 200 <= c < 300)}
+            elif u.path == "/api/cc/row":
+                e = cc.queue_row(s.cc_dir, str(body.get("tab", "")), body.get("row") or {})
+                out = {"ok": True, "queued": e, "where": "Saved. It goes to the sheet on the next sync, within 5 minutes."}
+            elif u.path == "/api/cc/goals":
+                g = cc.save_goals(s.cc_dir, body)
+                out = {"ok": True, "goals": g, "where": "Saved on this Mac. It goes to the Goals tab once the sheet sync is on."}
+            elif u.path == "/api/touch":
                 out = s.touch(body.get("person_id", ""), body.get("what", "Touched from Pipeline"))
             elif u.path == "/api/done":
                 out = s.done(body.get("task_id", ""), body.get("person_id", ""), body.get("task", ""))
@@ -1333,7 +1455,9 @@ def run_tests() -> int:
     # the HTTP layer end to end on a free port
     import socket
     sock = socket.socket(); sock.bind(("127.0.0.1", 0)); port = sock.getsockname()[1]; sock.close()
+    os.environ["PIPELINE_LOGIN_FILE"] = str(tmp / "login.json")  # never the real passcode file
     Handler.state = State(demo=True, send_log=tmp / "http.json")
+    state = Handler.state
     httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     th = threading.Thread(target=httpd.serve_forever, daemon=True); th.start()
     base = f"http://127.0.0.1:{port}"
@@ -1341,9 +1465,87 @@ def run_tests() -> int:
     check("<title>Pipeline" in html, "GET / serves the screen")
     st = json.loads(urllib.request.urlopen(base + "/api/state").read())
     check(st["feed"]["counts"]["contacts"] > 0, "GET /api/state")
+    ccp = json.loads(urllib.request.urlopen(base + "/api/cc").read())
+    check(ccp["demo"] and ccp["fresh"]["deals"]["state"] == "ok" and ccp["scorecard"]["pending"]["value"] > 0, "GET /api/cc in demo")
     req = urllib.request.Request(base + "/api/touch", data=json.dumps({"person_id": "118", "what": "test"}).encode(),
                                  headers={"Content-Type": "application/json"})
     check(json.loads(urllib.request.urlopen(req).read())["ok"], "POST /api/touch")
+    evil = urllib.request.Request(base + "/api/touch", data=b'{"person_id": "118"}', headers={"Content-Type": "application/json", "Origin": "https://evil.example"})
+    try:
+        urllib.request.urlopen(evil); check(False, "POST from another site is refused")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST from another site is refused")
+    rebind = urllib.request.Request(base + "/api/touch", data=b"{}", headers={"Content-Type": "application/json", "Host": "attacker.example:4747"})
+    try:
+        urllib.request.urlopen(rebind); check(False, "POST under a foreign Host is refused")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST under a foreign Host is refused")
+    gq = urllib.request.Request(base + "/api/cc/goals", data=json.dumps({"gci_goal": 90000}).encode(), headers={"Content-Type": "application/json", "Origin": base.rstrip("/")})
+    check(json.loads(urllib.request.urlopen(gq).read())["ok"], "POST /api/cc/goals from Pipeline's own page")
+    check(json.loads(urllib.request.urlopen(base + "/api/cc").read())["goals"].get("gci_goal") == 90000, "goals read back on /api/cc")
+    rq = urllib.request.Request(base + "/api/cc/row", data=json.dumps({"tab": "Workout log", "row": {"date": "2026-11-05", "focus": "Lower"}}).encode(), headers={"Content-Type": "application/json"})
+    check(json.loads(urllib.request.urlopen(rq).read())["ok"], "POST /api/cc/row queues a workout")
+    rq = urllib.request.Request(base + "/api/cc/row", data=json.dumps({"tab": "Contacts", "row": {}}).encode(), headers={"Content-Type": "application/json"})
+    check(not json.loads(urllib.request.urlopen(rq).read())["ok"], "POST /api/cc/row refuses an engine tab")
+    k = json.loads(urllib.request.urlopen(base + "/api/push/key").read())
+    check(k["ok"] and len(k["key"]) == 87, "GET /api/push/key gives the public key")
+    rq = urllib.request.Request(base + "/api/push/subscribe", data=json.dumps({"subscription": {"endpoint": "https://evil.example/x"}}).encode(), headers={"Content-Type": "application/json"})
+    check(not json.loads(urllib.request.urlopen(rq).read())["ok"], "a subscription to a non-push address is refused")
+    rq = urllib.request.Request(base + "/api/push/test", data=b"{}", headers={"Content-Type": "application/json"})
+    urllib.request.urlopen(rq)
+    check(json.loads(urllib.request.urlopen(base + "/api/alerts").read())["rows"][0]["kind"] == "test", "a test alert shows in /api/alerts")
+    rq = urllib.request.Request(base + "/api/cc/ask", data=json.dumps({"page": "ccleads", "question": "Any new leads?"}).encode(), headers={"Content-Type": "application/json"})
+    r = json.loads(urllib.request.urlopen(rq).read())
+    check(r["ok"] and "Demo mode" in r["answer"] and r["cap"] == cc_ask.CAP, "POST /api/cc/ask answers in demo without calling Claude")
+    check(json.loads(urllib.request.urlopen(base + "/api/cc").read())["ask"]["on"], "/api/cc says Ask Claude is on")
+    # the login: anything that is not this Mac needs a passcode session
+    host = f"pipeline-mac.tail1234.ts.net"
+    def remote(path, data=None, cookie=None):
+        h = {"Host": host, "X-Forwarded-For": "100.64.0.7", "X-Forwarded-Proto": "https", "Content-Type": "application/json"}
+        if data is not None:
+            h["Origin"] = "https://" + host
+        if cookie:
+            h["Cookie"] = cookie
+        rq = urllib.request.Request(base + path, data=None if data is None else json.dumps(data).encode(), headers=h)
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, *a, **k):
+                return None
+        try:
+            r = urllib.request.build_opener(NoRedirect).open(rq)
+            return r.status, r.headers, r.read()
+        except urllib.error.HTTPError as e:
+            return e.code, e.headers, e.read()
+    code, _, _ = remote("/api/cc")
+    check(code == 401, "a phone with no session gets 401 on the API")
+    code, hd, body = remote("/api/login", {"passcode": "nothing set yet"})
+    check(code == 200 and "no passcode" in json.loads(body)["error"], "login says when no passcode is set")
+    auth.set_passcode("correct horse battery", state.auth.login_file)
+    for _i in range(2):
+        code, hd, body = remote("/api/login", {"passcode": "wrong one here"})
+    check(not json.loads(body)["ok"], "a wrong passcode is refused")
+    code, hd, body = remote("/api/login", {"passcode": "correct horse battery"})
+    ck = (hd.get("Set-Cookie") or "").split(";")[0]
+    check(json.loads(body)["ok"] and "HttpOnly" in hd.get("Set-Cookie", "") and "Secure" in hd.get("Set-Cookie", "") and "SameSite=Strict" in hd.get("Set-Cookie", ""), "the right passcode sets a locked-down cookie")
+    code, _, body = remote("/api/cc", cookie=ck)
+    check(code == 200 and json.loads(body)["demo"], "with the session the phone reads /api/cc")
+    code, hd, _ = remote("/", cookie=None)
+    check(code == 302 and hd.get("Location") == "/login", "a page without a session goes to /login")
+    code, _, _ = remote("/sw.js")
+    check(code in (200, 404), "the service worker needs no session")
+    lock = auth.Auth(tmp / "s2.json", login_file=state.auth.login_file)
+    for _i in range(5):
+        try:
+            lock.login("wrong passcode!", "1.2.3.4")
+        except ValueError:
+            pass
+    try:
+        lock.login("correct horse battery", "1.2.3.4"); check(False, "five wrong tries lock the address")
+    except ValueError as e:
+        check("too many" in str(e), "five wrong tries lock the address")
+    check(auth.Auth.is_local({"Host": f"127.0.0.1:{port}"}, port) and not auth.Auth.is_local({"Host": f"127.0.0.1:{port}", "X-Forwarded-For": "1.1.1.1"}, port), "a proxied request is never treated as local")
+    remote("/api/logout", {}, cookie=ck)
+    code, _, _ = remote("/api/cc", cookie=ck)
+    check(code == 401, "after logout the old session is refused")
     req = urllib.request.Request(base + "/api/dnc", data=json.dumps({"person_id": "118", "reason": ""}).encode(),
                                  headers={"Content-Type": "application/json"})
     check(json.loads(urllib.request.urlopen(req).read())["ok"] is False, "POST with a gate failure answers ok false, not 500")
@@ -1376,9 +1578,12 @@ def main(argv=None) -> int:
     ap.add_argument("--port", type=int, default=int(os.getenv("PIPELINE_PORT", "4747")))
     ap.add_argument("--no-open", action="store_true", help="do not open the browser")
     ap.add_argument("--test", action="store_true")
+    ap.add_argument("--set-passcode", action="store_true", help="set the passcode the phone signs in with")
     a = ap.parse_args(argv)
     if a.test:
         return run_tests()
+    if a.set_passcode:
+        return auth.cmd_set_passcode()
     load_env_file()
     paths = None
     if a.demo and (a.demo_feed or a.demo_status):

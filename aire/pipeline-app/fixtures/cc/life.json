@@ -1,0 +1,5 @@
+{"at": "{{NOW-10}}", "source": "Life and Life log tabs, AIRE CRM sheet (demo)", "error": null, "rows": {
+ "items": [{"kind": "family", "name": "Demo birthday", "date": "{{D+4}}"}, {"kind": "family", "name": "Demo anniversary", "date": "{{D+40}}"},
+  {"kind": "upkeep", "name": "Change the AC filter", "every_days": "90", "date": "{{D-95}}"}, {"kind": "upkeep", "name": "Clean the gutters", "every_days": "180", "date": "{{D-60}}"},
+  {"kind": "habit", "name": "Read 20 minutes"}, {"kind": "habit", "name": "No phone after 9"}],
+ "log": [{"date": "{{D-1}}", "item": "Read 20 minutes", "kind": "habit"}, {"date": "{{D-2}}", "item": "Read 20 minutes", "kind": "habit"}, {"date": "{{D+0}}", "item": "No phone after 9", "kind": "habit"}]}}

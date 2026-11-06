@@ -1,0 +1,1 @@
+{"at": "{{NOW-20}}", "error": null, "results": {"calendar": {"ok": true, "rows": 11}, "inbox": {"ok": true, "rows": 3}, "leads": {"ok": true, "rows": 4}, "deals": {"ok": true, "rows": 9}, "commission_mail": {"ok": true, "rows": 3}, "bank_mail": {"ok": true, "rows": 3}, "goals": {"ok": true, "read": 9}, "history": {"ok": true, "rows": 3, "added": false}}}

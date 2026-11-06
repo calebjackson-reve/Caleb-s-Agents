@@ -1,0 +1,231 @@
+/* Ask Claude box, under every page title */
+.cc-ask { background: var(--cc-panel, #141215); border: 1px solid rgba(255, 255, 255, .09); border-left: 3px solid #e87757; border-radius: 12px; padding: 10px 14px; }
+.cc-ask summary { cursor: pointer; font-weight: 600; color: #e87757; min-height: 32px; display: flex; align-items: center; }
+.cc-ask form { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+.cc-ask input { flex: 1 1 16rem; font: inherit; color: #f3eee6; background: #0a0a0b; border: 1px solid rgba(255, 255, 255, .09); border-radius: 10px; padding: 9px 11px; min-height: 40px; }
+.cc-answer { padding: 12px 14px; border-radius: 10px; background: #1d1a1f; line-height: 1.55; margin-bottom: 8px; }
+
+/* Command Center pages. Keller Williams First Choice: black and coral, tan only as an accent.
+   Text pairs are WCAG AA on the panel color: --cc-text 15.9:1, --cc-muted 7.3:1, coral 6.4:1, tan 9.6:1. */
+:root {
+  --cc-ink: #0a0a0b; --cc-panel: #141215; --cc-raise: #1d1a1f; --cc-line: rgba(255, 255, 255, .09);
+  --cc-coral: #e87757; --cc-coral-soft: rgba(232, 119, 87, .14); --cc-tan: #c8b596;
+  --cc-text: #f3eee6; --cc-muted: #aaa298; --cc-ok: #7fd0a0; --cc-warn: #ffb547; --cc-bad: #ff8a70;
+}
+.cc-page { display: grid; gap: 18px; padding: 4px 2px 24px; color: var(--cc-text); font-size: 14px; }
+.cc-head { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: flex-end; justify-content: space-between; }
+.cc-head h1 { margin: 0; font: 400 clamp(26px, 3vw, 36px)/1.1 "Iowan Old Style", Palatino, Georgia, serif; }
+.cc-head p { margin: 4px 0 0; color: var(--cc-muted); font-size: 13px; }
+.cc-priv, .cc-acts button, .cc-seg button, .cc-filter, .cc-primary {
+  font: inherit; font-size: 13px; color: var(--cc-text); background: var(--cc-raise); border: 1px solid var(--cc-line);
+  border-radius: 999px; padding: 9px 16px; min-height: 40px; cursor: pointer;
+}
+.cc-priv[aria-pressed="true"], .cc-seg button[aria-pressed="true"], .cc-primary { background: var(--cc-coral); border-color: var(--cc-coral); color: #160c08; font-weight: 600; }
+.cc-page button:hover { border-color: var(--cc-coral); }
+.cc-page :focus-visible { outline: 2px solid var(--cc-coral); outline-offset: 2px; }
+.cc-page button:disabled { opacity: .4; cursor: default; }
+
+.cc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr)); gap: 12px; }
+.cc-tile { display: grid; gap: 6px; align-content: start; text-align: left; font: inherit; color: inherit;
+  background: var(--cc-panel); border: 1px solid var(--cc-line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+button.cc-tile { cursor: pointer; transition: border-color .15s, background .15s; }
+button.cc-tile:hover { background: var(--cc-raise); }
+.cc-tile-l { font-size: 13px; font-weight: 600; color: var(--cc-muted); }
+.cc-num { font: 400 clamp(30px, 3vw, 40px)/1.05 "Iowan Old Style", Palatino, Georgia, serif; font-variant-numeric: tabular-nums; color: var(--cc-text); overflow-wrap: anywhere; }
+.cc-num small { font-size: .45em; color: var(--cc-muted); margin-left: 3px; }
+.cc-sub { font-size: 13px; color: var(--cc-muted); line-height: 1.35; }
+.cc-sub em, .cc-page em { font-style: normal; color: var(--cc-warn); }
+
+.cc-src { display: block; font-size: 12px; line-height: 1.35; color: var(--cc-muted); overflow-wrap: anywhere; }
+.cc-src i { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--cc-ok); transform: translateY(-1px); }
+.cc-src.is-stale i, .cc-src.is-missing i { background: var(--cc-warn); }
+.cc-src.is-stale, .cc-src.is-missing { color: var(--cc-warn); }
+.cc-src.is-failed i { background: var(--cc-bad); }
+.cc-src.is-failed { color: var(--cc-bad); }
+.cc-src b { font-weight: 600; }
+
+.cc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 14px; align-items: start; }
+.cc-card { background: var(--cc-panel); border: 1px solid var(--cc-line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 12px; min-width: 0; }
+.cc-card.is-hot { border-color: rgba(232, 119, 87, .5); }
+.cc-card h2 { margin: 0; font-size: 15px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.cc-card footer { display: grid; gap: 3px; border-top: 1px solid var(--cc-line); padding-top: 10px; }
+.cc-count { font-size: 12px; color: var(--cc-muted); background: var(--cc-raise); border-radius: 999px; padding: 2px 9px; }
+.cc-sub-h { margin: 6px 0 0; font-size: 13px; color: var(--cc-tan); font-weight: 600; }
+.cc-empty, .cc-none, .cc-note { margin: 0; color: var(--cc-muted); font-size: 13px; line-height: 1.5; }
+.cc-warn { margin: 0; color: var(--cc-warn); font-size: 13px; }
+
+.cc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.cc-ev { display: grid; grid-template-columns: 5.4rem minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 8px; border-radius: 10px; border-left: 3px solid transparent; }
+.cc-list.tight .cc-ev { grid-template-columns: 1fr; gap: 2px; padding: 6px; }
+.cc-ev:hover { background: var(--cc-raise); }
+.cc-ev.is-soon { background: var(--cc-coral-soft); }
+.cc-ev.k-deadline, .cc-ev.k-closing { border-left-color: var(--cc-coral); }
+.cc-ev.k-showing, .cc-ev.k-listing, .cc-ev.k-client { border-left-color: var(--cc-tan); }
+.cc-when { font-size: 13px; color: var(--cc-muted); font-variant-numeric: tabular-nums; }
+.cc-what { min-width: 0; overflow-wrap: anywhere; display: grid; gap: 1px; }
+.cc-what small, .cc-table small { display: block; font-size: 12px; color: var(--cc-muted); }
+.cc-amt { font-variant-numeric: tabular-nums; }
+.cc-chip { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--cc-line); color: var(--cc-muted); white-space: nowrap; justify-self: start; }
+.cc-chip.c-Lead, .cc-chip.s-Notprocessed { border-color: var(--cc-coral); color: var(--cc-coral); }
+.cc-chip.c-Deal, .cc-chip.s-Resolved { border-color: var(--cc-tan); color: var(--cc-tan); }
+
+.cc-tablewrap { overflow-x: auto; }
+.cc-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.cc-table th, .cc-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--cc-line); vertical-align: top; }
+.cc-table thead th { font-size: 12px; font-weight: 600; color: var(--cc-muted); }
+.cc-table tbody th { font-weight: 600; }
+.cc-table .r { text-align: right; font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.cc-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
+.cc-seg { display: inline-flex; gap: 4px; align-items: center; }
+.cc-range { min-width: 11rem; text-align: center; font-variant-numeric: tabular-nums; }
+.cc-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.cc-filter[aria-pressed="false"] { opacity: .6; text-decoration: line-through; }
+.cc-filter b { font-weight: 500; color: var(--cc-muted); margin-left: 4px; }
+.cc-days { display: grid; gap: 8px; }
+.cc-days.week { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cc-days.month { grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
+.cc-day { background: var(--cc-raise); border-radius: 10px; padding: 8px; min-height: 110px; min-width: 0; border: 1px solid transparent; }
+.cc-day.is-today { border-color: var(--cc-coral); }
+.cc-day h3 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--cc-muted); display: grid; }
+.cc-day.is-today h3 { color: var(--cc-coral); }
+.cc-day h3 small { font-weight: 400; font-size: 12px; }
+.cc-bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; height: 140px; }
+.cc-bars div { display: grid; grid-template-rows: 1fr auto auto; height: 100%; text-align: center; gap: 3px; font-size: 12px; color: var(--cc-muted); }
+.cc-bars i { align-self: end; background: var(--cc-coral); border-radius: 6px 6px 2px 2px; min-height: 2px; }
+.cc-bars b { color: var(--cc-text); font-weight: 500; }
+
+.cc-leads { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.cc-lead { border: 1px solid var(--cc-line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; background: var(--cc-raise); }
+.cc-lead-h { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; justify-content: space-between; }
+.cc-lead-h h3 { margin: 0; font: 400 20px/1.2 "Iowan Old Style", Palatino, Georgia, serif; }
+.cc-lead-h small, .cc-lead-meta { font-size: 13px; color: var(--cc-muted); margin: 0; }
+.cc-lead-msg { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--cc-ink); border: 1px solid var(--cc-line); line-height: 1.5; }
+.cc-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.cc-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 14px; }
+.cc-kbar { position: relative; height: 10px; border-radius: 999px; background: var(--cc-raise); overflow: visible; }
+.cc-kbar i { display: block; height: 100%; border-radius: 999px; background: var(--cc-coral); }
+.cc-kbar s { position: absolute; top: -4px; width: 2px; height: 18px; background: var(--cc-tan); }
+.cc-pace { margin: 0; font-size: 13px; }
+.cc-pace.is-ahead { color: var(--cc-ok); }
+.cc-pace.is-behind { color: var(--cc-warn); }
+.cc-delta { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--cc-muted); }
+.cc-delta b { color: var(--cc-text); font-weight: 500; }
+.cc-spark { width: 100%; height: 48px; }
+.cc-spark polyline { fill: none; stroke: var(--cc-coral); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.cc-goals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 12px; }
+.cc-goals label { display: grid; gap: 5px; font-size: 13px; color: var(--cc-muted); }
+.cc-goals input { font: inherit; color: var(--cc-text); background: var(--cc-ink); border: 1px solid var(--cc-line); border-radius: 10px; padding: 9px 11px; min-height: 40px; color-scheme: dark; }
+.cc-goals .cc-note, .cc-goals .cc-primary { grid-column: 1 / -1; justify-self: start; }
+
+@media (max-width: 900px) { .cc-days.week { grid-template-columns: 1fr; } .cc-day { min-height: 0; } }
+@media (max-width: 560px) {
+  .cc-ev { grid-template-columns: 4.4rem minmax(0, 1fr); } .cc-ev .cc-chip { display: none; }
+  .cc-ev:not(:has(.cc-when)) { grid-template-columns: minmax(0, 1fr) auto; }
+  .cc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .cc-tile .cc-src-n { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } .cc-tile { padding: 12px; } .cc-num { font-size: 28px; }
+  .cc-table thead { display: none; } .cc-table tr { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--cc-line); padding: 6px 0; }
+  .cc-table th, .cc-table td { border: 0; padding: 4px 6px; } .cc-table .r { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) { .cc-page * { transition: none !important; animation: none !important; } }
+
+/* Problem banner, Sources states */
+.cc-banner { border: 1px solid var(--cc-warn); background: rgba(255, 181, 71, .08); border-radius: 12px; padding: 12px 16px; display: grid; gap: 6px; }
+.cc-banner b { color: var(--cc-warn); }
+.cc-banner ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; }
+.cc-banner button { justify-self: start; font: inherit; font-size: 13px; color: var(--cc-text); background: var(--cc-raise); border: 1px solid var(--cc-line); border-radius: 999px; padding: 7px 14px; min-height: 36px; cursor: pointer; }
+.cc-state { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--cc-line); white-space: nowrap; }
+.cc-state.s-ok { color: var(--cc-ok); border-color: rgba(127, 208, 160, .5); }
+.cc-state.s-stale, .cc-state.s-missing { color: var(--cc-warn); border-color: rgba(255, 181, 71, .5); }
+.cc-state.s-failed { color: var(--cc-bad); border-color: rgba(255, 138, 112, .5); }
+
+/* Color by kind, on the calendar and on deadlines. Each color is legible on the dark panel; the label always says the kind too. */
+.k-closing { --k: #e87757; } .k-deadline { --k: #ffb547; } .k-finance { --k: #6fcfb8; } .k-inspection { --k: #b9a3e3; }
+.k-showing { --k: #7fd0a0; } .k-listing { --k: #c8b596; } .k-client { --k: #8ab4f8; } .k-block { --k: #8a837b; }
+.k-personal { --k: #e29ac0; } .k-other { --k: #a8a097; }
+.cc-ev[class*="k-"] { border-left: 4px solid var(--k); background: color-mix(in srgb, var(--k) 11%, transparent); margin-bottom: 3px; }
+.cc-ev[class*="k-"]:hover { background: color-mix(in srgb, var(--k) 20%, transparent); }
+.cc-ev[class*="k-"].is-soon { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 60%, transparent); }
+.cc-ev[class*="k-"] .cc-chip { color: var(--k); border-color: color-mix(in srgb, var(--k) 55%, transparent); }
+.cc-filter[class*="k-"] { display: inline-flex; align-items: center; gap: 7px; }
+.cc-filter[class*="k-"]::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--k); }
+.cc-filter[class*="k-"][aria-pressed="true"] { border-color: var(--k); background: color-mix(in srgb, var(--k) 15%, transparent); }
+.cc-dayview { gap: 6px; }
+.cc-dayview .cc-ev { grid-template-columns: 7rem minmax(0, 1fr) auto; padding: 14px 14px; font-size: 17px; }
+.cc-dayview .cc-when { font-size: 16px; color: var(--cc-text); }
+.cc-dayview .cc-chip { font-size: 13px; }
+.cc-btn { font: inherit; font-size: 13px; color: var(--cc-text); background: var(--cc-raise); border: 1px solid var(--cc-line); border-radius: 999px; padding: 9px 16px; min-height: 40px; display: inline-flex; align-items: center; text-decoration: none; }
+.cc-btn:hover { border-color: var(--cc-coral); }
+.cc-how { margin-top: -2px; }
+@media (max-width: 560px) { .cc-dayview .cc-ev { grid-template-columns: 5rem minmax(0, 1fr); font-size: 16px; } }
+
+/* Lead cards: a color per lead, full contact details, everything the lead email carried */
+.cc-lead { border-left: 4px solid var(--av); background: linear-gradient(135deg, color-mix(in srgb, var(--av) 10%, var(--cc-raise)), var(--cc-raise) 55%); gap: 12px; padding: 16px 18px; }
+.cc-lead-top { display: flex; gap: 14px; align-items: center; }
+.cc-av { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--av); color: #160c08; font-weight: 700; font-size: 17px; letter-spacing: .02em; }
+.cc-lead-id { display: grid; gap: 6px; min-width: 0; }
+.cc-lead-id h3 { margin: 0; font: 400 24px/1.15 "Iowan Old Style", Palatino, Georgia, serif; overflow-wrap: anywhere; }
+.cc-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.cc-pill { font-size: 12px; padding: 3px 10px; border-radius: 999px; color: var(--k); border: 1px solid color-mix(in srgb, var(--k) 55%, transparent); background: color-mix(in srgb, var(--k) 12%, transparent); white-space: nowrap; }
+.cc-contact { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 6px 16px; font-size: 15px; }
+.cc-contact li { display: flex; gap: 10px; align-items: center; min-height: 32px; overflow-wrap: anywhere; }
+.cc-contact li > span { width: 28px; height: 28px; flex: none; border-radius: 8px; display: grid; place-items: center; background: color-mix(in srgb, var(--av) 18%, transparent); color: var(--av); font-size: 14px; }
+.cc-contact a { color: var(--cc-text); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--av) 70%, transparent); text-underline-offset: 3px; }
+.cc-contact em { color: var(--cc-muted); font-style: normal; }
+.cc-quote { margin: 0; padding: 10px 14px; border-left: 3px solid var(--av); background: rgba(255, 255, 255, .03); border-radius: 0 10px 10px 0; font-style: italic; line-height: 1.5; }
+.cc-fields { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 8px 16px; }
+.cc-fields div { display: grid; gap: 2px; }
+.cc-fields dt { font-size: 12px; color: var(--cc-muted); }
+.cc-fields dd { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.cc-fields a { color: var(--av); }
+.cc-crm { padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, .03); border: 1px dashed var(--cc-line); }
+.cc-owed { color: var(--cc-warn); font-weight: 600; }
+
+/* Market, News, Life, Workouts */
+.cc-yy { font-size: 12px; color: var(--cc-muted); margin-left: 6px; white-space: nowrap; }
+.cc-yy.up { color: var(--cc-ok); } .cc-yy.down { color: var(--cc-bad); }
+.cc-areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 12px; }
+.cc-area { background: var(--cc-raise); border-radius: 12px; padding: 14px; border-top: 3px solid var(--cc-tan); display: grid; gap: 4px; }
+.cc-area h3 { margin: 0 0 4px; font-size: 15px; display: grid; } .cc-area h3 small { font-weight: 400; font-size: 12px; color: var(--cc-muted); }
+.cc-area p { margin: 0; font-size: 14px; } .cc-area b { font: 400 20px/1.2 "Iowan Old Style", Palatino, Georgia, serif; }
+.cc-points { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.5; }
+.cc-news { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cc-news a { display: grid; gap: 4px; padding: 10px 12px; border-radius: 10px; border-left: 4px solid var(--k); background: color-mix(in srgb, var(--k) 8%, transparent); color: var(--cc-text); text-decoration: none; }
+.cc-news a:hover { background: color-mix(in srgb, var(--k) 16%, transparent); }
+.cc-news .cc-pill { justify-self: start; } .cc-news b { font-weight: 500; line-height: 1.35; } .cc-news small { font-size: 12px; color: var(--cc-muted); }
+.cc-habits { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cc-habits li { display: flex; gap: 12px; align-items: center; } .cc-habits span { display: grid; } .cc-habits small { font-size: 12px; color: var(--cc-muted); }
+.cc-check { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--cc-coral); background: none; color: #160c08; font-size: 18px; cursor: pointer; }
+.cc-check[aria-pressed="true"] { background: var(--cc-coral); cursor: default; }
+.cc-mini { font: inherit; font-size: 12px; color: var(--cc-text); background: var(--cc-raise); border: 1px solid var(--cc-line); border-radius: 999px; padding: 6px 12px; min-height: 32px; cursor: pointer; white-space: nowrap; }
+.cc-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.cc-wday { background: var(--cc-raise); border-radius: 12px; padding: 10px; display: grid; gap: 4px; align-content: start; border: 1px solid transparent; min-width: 0; }
+.cc-wday h3 { margin: 0; font-size: 13px; color: var(--cc-muted); display: grid; } .cc-wday h3 small { font-weight: 400; }
+.cc-wday b { font-weight: 600; } .cc-wday > small { font-size: 12px; color: var(--cc-muted); overflow-wrap: anywhere; }
+.cc-wday.is-today { border-color: var(--cc-coral); } .cc-wday.is-today h3 { color: var(--cc-coral); }
+.cc-wday.is-done { background: color-mix(in srgb, #7fd0a0 10%, var(--cc-raise)); }
+.cc-wday .cc-pill { justify-self: start; }
+.cc-big { margin: 0; font: 400 30px/1.1 "Iowan Old Style", Palatino, Georgia, serif; }
+.cc-goals select { font: inherit; color: var(--cc-text); background: var(--cc-ink); border: 1px solid var(--cc-line); border-radius: 10px; padding: 9px 11px; min-height: 40px; color-scheme: dark; }
+@media (max-width: 900px) { .cc-week { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Today list */
+.cc-today-card { border-color: rgba(232, 119, 87, .45); }
+.cc-today { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.cc-today .cc-ev { grid-template-columns: 9.5rem minmax(0, 1fr) auto; }
+.cc-today-acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.cc-today-acts button { font: inherit; font-size: 12px; min-height: 32px; }
+@media (max-width: 560px) { .cc-today .cc-ev { grid-template-columns: minmax(0, 1fr); } .cc-today .cc-ev .cc-chip { display: inline-block; justify-self: start; } .cc-today-acts { justify-content: flex-start; } }
+
+/* Deal cards */
+.cc-deals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 12px; }
+.cc-deal { background: var(--cc-raise); border-radius: 12px; padding: 14px; display: grid; gap: 8px; border-top: 3px solid var(--cc-coral); }
+.cc-deal header { display: flex; flex-wrap: wrap; gap: 6px 10px; justify-content: space-between; align-items: baseline; }
+.cc-deal h3 { margin: 0; font: 400 19px/1.2 "Iowan Old Style", Palatino, Georgia, serif; }
+.cc-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.cc-steps li { display: grid; grid-template-columns: 24px 1fr; gap: 0 8px; align-items: baseline; }
+.cc-steps li > span { grid-row: span 2; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; color: var(--k); border: 1.5px solid var(--k); }
+.cc-steps small { color: var(--cc-muted); font-size: 12px; }
+.cc-next { margin: 0; font-size: 13px; } .cc-next b { color: var(--cc-coral); }

@@ -1,7 +1,7 @@
 /* Pipeline front end. Vanilla JS, no build step. Talks to app.py over /api. */
 'use strict';
 
-const S = { data: null, view: 'cc', q: '', filter: 'all', queueIdx: 0, pollTimer: null, bootDone: false };
+const S = { data: null, view: 'dash', q: '', filter: 'all', queueIdx: 0, pollTimer: null, bootDone: false };
 const $ = (sel, el = document) => el.querySelector(sel);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const initials = n => (n || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -123,6 +123,8 @@ function render() {
   $('#open-sheet').hidden = !(d.links && d.links.sheet);
   // main
   const main = $('#main');
+  // Command Center pages read /api/cc, not feed.json, so they work even when the feed is missing.
+  if (window.CC && CC.views[S.view]) { const ae = document.activeElement; if (ae && ae.closest && ae.closest('.cc-goals')) return; if (S.map) { S.map.destroy(); S.map = null; } main.innerHTML = CC.views[S.view](); return; }
   if (d.feed_ok && f.header_ok === false) { main.innerHTML = stopScreen(f); return; }
   if (!d.feed_ok) { main.innerHTML = `<div class="stop-screen"><div class="big">NO FEED</div><p>${esc((problems()[0] || {}).text || 'feed.json is missing.')}</p><div class="acts"><button class="primary" onclick="refresh()">Run the refresh</button></div></div>`; return; }
   const views = { cc: viewCC, touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent, map: viewMap, market: viewMarket };
@@ -148,7 +150,12 @@ function countUp(el) {
 }
 function renderNav(c) {
   const dr = drafts();
+  const cd = window.CC && CC.data, np = cd ? cd.commission_mail.filter(r => r.status === 'Not processed').length : 0;
   const items = [
+    ['dash', '◧', 'Dashboard'], ['commission', '$', 'Commission', np, np > 0], ['deadlines', '⚑', 'Deadlines', cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0],
+    ['calendar', '▦', 'Calendar'], ['ccleads', '✧', 'Leads', cd ? cd.leads.filter(r => !r.test).length : 0], ['scorecard', '▲', 'Scorecard'],
+    ['ccmarket', '◆', 'Market'], ['news', '▤', 'News'], ['life', '❀', 'Life'], ['health', '♥', 'Workouts'],
+    ['bank', '◎', 'Bank'], ['sources', '◉', 'Sources', cd ? (cd.problems || []).length + (cd.sync && cd.sync.error ? 1 : 0) : 0, true],
     ['cc', '⌂', 'Command Center'], ['touches', '◎', 'Touches due', (feed().touches_due || []).length, (feed().touches_due || []).some(r => r.owes_reply)],
     ['tasks', '☑', 'Tasks', (feed().tasks || []).length, c.tasks_overdue > 0], ['deals', '⌂', 'Deals', (feed().deals || []).length],
     ['leads', '✦', 'New leads', (feed().new_leads || []).length, (feed().new_leads || []).length > 0], ['queue', '✉', 'Drafts', dr.length],
@@ -156,6 +163,8 @@ function renderNav(c) {
     ['map', '◈', 'Map', ((feed().map || {}).counts || {}).persons || 0], ['market', '◆', 'Market Monitor', ((feed().market || {}).rows || []).length],
   ];
   $('#nav').innerHTML = items.map(([k, ico, label, n, warn]) => `<button class="${S.view === k ? 'on' : ''}" onclick="go('${k}')"><span class="ico">${ico}</span>${label}${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`).join('');
+  const on = $('#nav .on'), side = $('.side');
+  if (on && side && innerWidth <= 720) { const a = on.getBoundingClientRect(), b = side.getBoundingClientRect(); side.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2); }
 }
 function panel(i, title, right, body, extra = '') { return `<section class="panel ${extra}" style="--i:${i}"><div class="ph"><h3>${title}</h3><div class="ph-right">${right || ''}</div></div>${body}</section>`; }
 
@@ -329,7 +338,10 @@ function viewSent() {
 }
 
 // ---------------------------------------------------------------- navigation
-function go(v) { S.view = v; S.filter = 'all'; render(); $('#main').scrollTop = 0; }
+function go(v) { S.view = v; S.filter = 'all'; try { history.replaceState(null, '', '#' + v); } catch (e) { } render(); $('#main').scrollTop = 0; }
+// A link like 127.0.0.1:4747/#commission opens that page.
+(function () { const h = location.hash.slice(1); if (/^[a-z]+$/.test(h)) S.view = h; })();
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (/^[a-z]+$/.test(h) && h !== S.view) go(h); });
 function setFilter(k) { S.filter = k; render(); }
 async function refresh() {
   const r = await api('/api/refresh', {});
@@ -482,7 +494,7 @@ function tick() { const d = new Date(); $('#date').textContent = d.toLocaleDateS
 document.addEventListener('keydown', e => {
   if (e.target.matches('input, textarea, select')) { if (e.key === 'Escape') e.target.blur(); return; }
   const views = ['cc', 'touches', 'tasks', 'deals', 'leads', 'queue', 'sent', 'map', 'market'];
-  if (/^[1-9]$/.test(e.key)) go(views[Number(e.key) - 1]);
+  if (/^[1-9]$/.test(e.key)) go(views[Number(e.key) - 1]); else if (e.key === '0') go('dash');
   else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
   else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }
   else if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else closeDrawer(); }
@@ -531,6 +543,7 @@ async function boot() {
   if (S.data) tele(`drafts: ${((S.data.text_queue || {}).drafts || []).length} texts, ${((S.data.email_queue || {}).drafts || []).length} emails, ${((S.data.text_queue || {}).reply_first || []).length} replies owed`);
   tick(); setInterval(tick, 1000);
   $('#app').hidden = false;
+  if (window.CC) { CC.load(); setInterval(CC.load, 60000); }
   if (S.data) { render(); watchDelivery(); } else toast('err', 'SERVER', 'app.py is not answering.');
   $('#boot').classList.add('out'); setTimeout(() => $('#boot').remove(), 600);
   S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.view === 'cc') { /* keep the globe steady: update numbers only */ renderNav(feed().counts || {}); } else if (S.map) { /* keep the map where Caleb left it */ renderNav(feed().counts || {}); mapUpdate(); } else render(); } catch (e) { } }, 30000);

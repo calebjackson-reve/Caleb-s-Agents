@@ -1,0 +1,12 @@
+{"at": "{{NOW-20}}", "source": "Google Calendar, primary, 30 days (demo)", "error": null, "rows": [
+ {"title":"Working hours","start":"{{D+0}}T08:00:00-06:00","end":"{{D+0}}T17:00:00-06:00","allDay":false},
+ {"title":"Sales block","start":"{{D+0}}T08:30:00-06:00","end":"{{D+0}}T10:00:00-06:00","allDay":false},
+ {"title":"Showing - 902 Bayou Ridge","start":"{{D+0}}T11:00:00-06:00","end":"{{D+0}}T12:00:00-06:00","allDay":false},
+ {"title":"Coffee with buyer Pat Example","start":"{{D+0}}T14:00:00-06:00","end":"{{D+0}}T15:00:00-06:00","allDay":false},
+ {"title":"1418 Magnolia Bend - Appraisal deadline","start":"{{D+6}}","end":"{{D+7}}","allDay":true},
+ {"title":"77 Cypress Hollow - Financing deadline","start":"{{D+2}}","end":"{{D+3}}","allDay":true},
+ {"title":"1418 Magnolia Bend - Act of sale","start":"{{D+14}}","end":"{{D+15}}","allDay":true},
+ {"title":"Listing appointment - Willow Creek","start":"{{D+1}}T16:00:00-06:00","end":"{{D+1}}T17:00:00-06:00","allDay":false},
+ {"title":"Showing - 5 Live Oak Court","start":"{{D+3}}T10:00:00-06:00","end":"{{D+3}}T11:00:00-06:00","allDay":false},
+ {"title":"Gym","start":"{{D+1}}T06:00:00-06:00","end":"{{D+1}}T07:00:00-06:00","allDay":false},
+ {"title":"KW class: contracts","start":"{{D+8}}T09:00:00-06:00","end":"{{D+8}}T11:00:00-06:00","allDay":false}]}

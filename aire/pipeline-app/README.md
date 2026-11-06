@@ -170,6 +170,100 @@ Tests: `python3 aire/pipeline-app/speech_engine.py --test` (history mapping, the
 
 What the two reels Caleb sent have that this does not: sub-agents per business tool. `REFERENCE.md` has the full notes on both reels with what is confirmed and what is inference.
 
+## Command Center pages
+
+Six pages at the top of the nav, Dashboard first (key `0`, or a link such as `http://127.0.0.1:4747/#commission`):
+
+| Page | Link | What it shows |
+|---|---|---|
+| Dashboard | `#dash` | Pending commission, GCI this year against goal, deadlines in 7 days, new leads in 7 days, under contract volume, appointments, hours booked today, commission emails KW has not processed. Today, deadlines and inbox below. Each tile opens its page. |
+| Commission | `#commission` | GCI paid, paid plus pending, pending, toward cap (30% company dollar from the cap year start), not processed, your deals, paydays in 30 days, commission mail in 120 days. |
+| Deadlines | `#deadlines` | Contract dates in the next 3 and 30 days, by deal, and act of sale dates. |
+| Calendar | `#calendar` | Day, week or month, filters by kind (closing, deadline, inspection, showing, listing, client, work block, personal), hours booked per day. |
+| Leads | `#ccleads` | Website leads, newest first, with a ready text to copy and Add to CRM (through `crm.py` and its Do Not Contact check). Nothing sends from this page. |
+| Scorecard | `#scorecard` | GCI, closings, leads and appointments a week against your goals, with even pace, 7 and 30 day changes and a daily history chart. Cap progress. The goals form. |
+
+**Privacy.** Money and contact details show as dots until **Show money and contacts** is pressed, and hide again after two minutes. Every page opens hidden.
+
+**Data trust.** Every tile and card ends with its source and as-of time. A read past its limit turns amber (out of date), a failed read turns red and says why while the last good numbers stay. Limits: calendar 2 hours, inbox and leads 1 hour, Deals sheet 6 hours, commission mail 24 hours.
+
+**Where the numbers come from.** `cc.py` works out every number from the reads cached in `out/cc/` (git-ignored, holds client data): `deals.json` (the AIRE Deals sheet), `calendar.json`, `inbox.json`, `leads.json`, `commission_mail.json`, `goals.json`, `history.json` and `config.json` (the coordinator's email domain and, when known, the KW paid figure). Each file is `{"at", "source", "rows", "error"}`. The rules match the Claude page Command Center, so the two agree. In `--demo` the same pages run on `fixtures/cc/`, made-up deals with dates moved to today.
+
+**Goals** are saved from the Scorecard form to `out/cc/goals.json` on this Mac until the sheet sync carries them to a Goals tab. Only known goals are accepted, numbers zero or more, dates as dates, a low end never above its high end.
+
+**Checks.** `python3 aire/pipeline-app/cc_test.py` (every calculation, made-up deals) and `python3 aire/pipeline-app/app.py --test` (the HTTP layer, including the goals save and the refusal of a POST from another site).
+
+**Bank** (`#bank`) is read only, from Chase alert emails: cash is the amount in the newest balance alert, with that email's time; last deposit; every alert in 30 days. Nothing can move money. It is only as current as Chase's last email; a live balance would need a paid bank connection, and none is set up.
+
+**Sources** (`#sources`) lists every read, its state, its last good time and the error if it failed. When any read is out of date or failed, every Command Center page opens with a banner that says which and why.
+
+### The sync (`cc_sync.py`)
+
+The reads behind those pages, on the Mac. Read only, except two tabs it keeps in the AIRE Deals sheet: **Goals** (what the Scorecard form saves, and what you type there) and **Scorecard history** (one row a day, added after 6 AM Central). Nothing is sent and nothing is deleted.
+
+| Read | Pace | Query |
+|---|---|---|
+| Gmail inbox | 10 min | `in:inbox newer_than:3d -from:me` |
+| Website leads | 10 min | Luxury Presence lead and home value emails, 14 days. Name, phone, email and area are read from the email body. |
+| Google Calendar | 15 min | primary calendar, today through 30 days |
+| AIRE Deals sheet | 30 min | `Deals!A1:L300`, matched by header name |
+| Chase alerts | 60 min | `from:(chase.com) newer_than:30d`, type and amount from the subject and preview |
+| Commission mail | 120 min | commission, disbursement, CDA, closing statement, 120 days |
+
+Setup, once, on the Mac, from `~/Caleb-s-Agents`:
+
+1. `aire/pipeline-app/out/cc/config.json` (git-ignored) holds `deals_sheet_id` (the AIRE Deals sheet), `coordinator_domains` (whose calendar events count as contract deadlines) and `kw_paid` (null until a KW paid-to-date figure is known).
+2. Sign in: run `cc_sync.py auth` with the CRM engine's Python (the `PIPELINE_PYTHON` default above). A browser opens on aire@calebjackson.org for Sheets, Gmail read and Calendar read, and the token is saved as `google-token-cc.json` in the AIRE key folder. Without it the sync falls back to the World's token, which has the same three.
+3. `sh aire/pipeline-app/install-sync.sh` loads the LaunchAgent `org.calebjackson.aire.ccsync`: one pass every 5 minutes with `TZ=America/Chicago`, each read on its own pace, log in `ccsync.log` in the AIRE logs folder. `--remove` takes it away.
+
+Check: `cc_sync.py --status` prints the last pass. `cc_sync.py --all` reads everything now. A read that fails keeps its last good rows and records the error, a failed sign-in marks every read failed, and the Sources page and banner show both. Tests: `python3 aire/pipeline-app/cc_sync_test.py` (Google faked: the mappers, a first pass, pacing, a failure keeping the last good read, no sign-in, history once a day after 6 AM, goals up and down, a bad goal in the sheet).
+
+### Market, News, Life, Workouts and Health
+
+| Page | Link | Source (all free, no account) | Pace |
+|---|---|---|---|
+| Market | `#ccmarket` | Freddie Mac 30-year rate (FRED CSV), Realtor.com monthly inventory by ZIP and parish (`RDC_Inventory_Core_Metrics_Zip.csv` and `_County.csv`), the newest `aire/market-data/gbrar-*.json` | 12 hours |
+| News | `#news` | Google News RSS searches, last 7 days, at most 8 headlines per search | 2 hours |
+| Life | `#life` | the Life and Life log tabs of the AIRE CRM sheet | 15 min |
+| Workouts and Health | `#health` | the Workouts and Workout log tabs of the AIRE CRM sheet | 15 min |
+
+- **Market** talking points are written only from the numbers on the page, each naming its source and date. The areas are in `MARKET_AREAS` in `cc_sync.py` (or `market_areas` in `out/cc/config.json`): St. Francisville, Zachary, New Roads and Prairieville by ZIP, East Baton Rouge and West Feliciana by parish. Each source is read on its own, so a slow download leaves the rest on screen and the page names the one that failed. For-rent counts are not available from these free sources.
+- **News** searches are in `NEWS_QUERIES` (or `news_queries` in the config).
+- **Life** shows family dates (next one and days until), home upkeep (due from the last time it was done, every N days) and habits (a one-tap check, streak, days in the last 7). **Workouts** shows the week against the plan and logs a workout. The Workouts tab starts with a starter split you edit in the sheet.
+- **Writes**: the Add, Done today, habit check and Log it buttons queue one row in `out/cc/outbox.json` through `POST /api/cc/row`. Only the Life, Life log and Workout log tabs are accepted, and only their own columns. A cell starting with `=`, `+`, `-` or `@` is stored as text. The row shows at once, marked saving, and the sync appends it on its next pass. The sync never writes Contacts, Deals, Tasks or any other tab of the CRM sheet. `config.json` holds `crm_sheet_id`.
+- **Health** has no source: Caleb chose to skip it on 2026-11-05. The page lists the three ways to add one: a free Apple Shortcut, Health Auto Export ($6.99 a year) or typing the numbers in.
+
+### On the iPhone: Tailscale, the login, the Home Screen icon and alerts
+
+Pipeline still listens only on 127.0.0.1. `tailscale serve` puts it on a private HTTPS address only your own Tailscale devices can open, and Pipeline asks for the passcode on every request that did not come straight from this Mac. Everything here is free.
+
+1. **Passcode, once**, in Terminal on the Mac (type it yourself, it is never shown): `python3 aire/pipeline-app/app.py --set-passcode`. It is stored only as a scrypt hash, as `pipeline-login.json` in the AIRE key folder. Setting it again signs every phone out.
+2. **Tailscale**: open the Tailscale app on the Mac and sign in. Install Tailscale on the iPhone and sign in with the same account. In the Tailscale admin console, under DNS, turn on MagicDNS and HTTPS Certificates.
+3. **Serve Pipeline** on the tailnet: `/Applications/Tailscale.app/Contents/MacOS/Tailscale serve --bg 4747` (or the port of the Pipeline that runs this code). `... serve status` shows the address, `https://<mac name>.<tailnet>.ts.net`, and `... serve reset` stops it.
+4. **On the iPhone**: open that address in Safari, sign in with the passcode, then Share, Add to Home Screen. Open Pipeline from the new icon.
+5. **Alerts**: in the icon's Pipeline, open Sources, then Turn on alerts on this device, then Send a test alert.
+
+**What the login does.** No session means the API answers 401 and pages go to `/login`. The login page, manifest, icons and service worker hold no data and stay open. Sessions last 30 days, are kept as hashes in `out/sessions.json` and use HttpOnly, Secure, SameSite=Strict cookies. Five wrong passcodes in 10 minutes lock that device out for 10 minutes. A request carrying a proxy header (`X-Forwarded-For`, `Tailscale-User-Login`) is never treated as local. A `*.ts.net` Host is accepted for POSTs only when the Origin matches it.
+
+**Offline.** The service worker keeps the app shell and the last answer from `/api/cc`, `/api/state` and `/api/alerts`. When the Mac can't be reached, the pages show that copy under "Can't reach the Mac" with its time. Sends and saves are never cached or replayed.
+
+**Alerts** (`push.py`): a new website lead, a contract deadline within 24 hours, a read that fails. Each fires once. The first run only learns the leads already there. The sync checks after every pass. The push is empty and signed with VAPID (`vapid.py`, standard library, checked against the RFC 6979 test vector), so no alert text passes through Apple: the icon wakes, fetches `/api/alerts` behind the login and shows it. The lock screen never shows a client's name. Keys: `pipeline-push.json` in the AIRE key folder. Phones: `out/push-subs.json`. A phone that turned alerts off is dropped.
+
+Checks: `push_test.py` (4), `vapid_test.py` (2), and the login and push routes in `app.py --test`.
+
+### Ask Claude on every page (`cc_ask.py`)
+
+Every Command Center page has an **Ask Claude about this page** box under its title. Caleb approved this on 2026-11-05: Claude Sonnet 5.5 with a $1-a-day cap.
+
+- **What goes**: only the numbers of the page you are on, with their sources and as-of times, plus your question. Phone numbers, email addresses, senders and links never go. While money and contacts are hidden, amounts go as "hidden" and lead names are left out.
+- **Model**: `claude-sonnet-5-5` at low effort, at most 1,200 output tokens, with the server-side refusal fallback on. The instructions are byte-stable and cached. `PIPELINE_CC_ASK_MODEL` changes the model.
+- **Cost**: about 4,000 tokens in and 300 out, so about 1.1 cents a question at $2 in and $10 out per million, or roughly $3 to $10 a month at 10 to 30 questions a day. Every question's exact cost goes to `out/ask-usage.json`.
+- **Cap**: `PIPELINE_ASK_CAP`, default `1.00` dollars a day, Central time. Once it is reached, questions are refused before they reach Claude, until midnight. The box shows today's spend against the cap.
+- **Needs** `ANTHROPIC_API_KEY` in Pipeline's key file (the same key the voice Q&A uses) and the `anthropic` package in Pipeline's Python. Without them the box says Ask Claude is off. Claude can't send, save or change anything from here.
+- Checks: `cc_ask_test.py` (4, Claude faked) and the demo route in `app.py --test`.
+
+**Security.** Every POST must come from Pipeline's own page: a foreign `Origin` or `Host` gets 403, which stops a web page on another site from pressing Pipeline's buttons. `PIPELINE_HOSTS` (comma separated, `host:port`) adds a name Pipeline may be reached under.
+
 ## The screen
 
 | View | Key | What is on it |

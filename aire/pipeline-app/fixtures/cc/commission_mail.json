@@ -1,0 +1,4 @@
+{"at": "{{NOW-20}}", "source": "Gmail, commission and CDA mail, 120 days (demo)", "error": null, "rows": [
+ {"threadId":"c1","sender":"KW Accounting","subject":"Not processed - 2200 River Road","received":"{{D-40}}"},
+ {"threadId":"c2","sender":"KW Accounting","subject":"Commission for 2200 River Rd","received":"{{D-38}}"},
+ {"threadId":"c3","sender":"KW Accounting","subject":"Not processed - 1418 Magnolia Bend","received":"{{D-1}}"}]}
