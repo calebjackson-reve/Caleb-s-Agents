@@ -11,11 +11,10 @@ Newest first. Every entry says what was done, what it was based on, and what nee
 **Done**
 - `engine/PHASE-0.md` step 2 now records the results and uses `brew install pillow`, run by Caleb with the `!` prefix since the sandbox cannot write to Homebrew. Disk note added.
 
-**Not verified**
-- Pillow install not yet run.
+- Pillow 13.0.0 installed through Homebrew and importing alongside numpy 2.5.4 (Caleb, 2026-11-06 evening). Homebrew also upgraded jpeg-turbo to 3.2.1 and lz4 to 1.11.0. All Phase 0 pre-checks pass.
 
 **Needs Caleb**
-- `! brew install pillow` in the Claude Code session, then step 1 of the runbook (fetch skills, link remotion-reel, add the Remotion skills).
+- Step 1 of `engine/PHASE-0.md` in the Mac mini session: pull the branch, fetch the skills, link remotion-reel, add the Remotion skills.
 
 ## 2026-11-06, later: Phase 0 approved, brand sheet drafted in our own design system
 

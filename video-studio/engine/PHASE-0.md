@@ -40,7 +40,7 @@ Done when `ls ~/.claude/skills/remotion-reel/SKILL.md` prints the path and `npx 
 
 ## Step 2. Node, Python and the tools
 
-Pre-check results, 2026-11-06 (Caleb's Mac session): Node v26.12.1, Python 3.15.1 from Homebrew, numpy 2.5.4, Pillow missing. Mac mini, Apple M6, 12 cores (2 Super, 4 Performance, 6 Efficiency), 16 GB memory, 48 GB free of 228 GB.
+Pre-check results, 2026-11-06 (Caleb's Mac session): Node v26.12.1, Python 3.15.1 from Homebrew, numpy 2.5.4, Pillow 13.0.0 (installed with `brew install pillow`, imports cleanly). **All pre-checks pass. Start at step 1.** Mac mini, Apple M6, 12 cores (2 Super, 4 Performance, 6 Efficiency), 16 GB memory, 48 GB free of 228 GB.
 
 Node is fine (HyperFrames needs 22 or later). Homebrew's Python refuses `pip install` (PEP 668, externally managed), and the Claude Code sandbox cannot write to `/opt/homebrew`, so Caleb runs this one line himself with the `!` prefix in the Claude Code session, or in a plain Terminal tab:
 
