@@ -40,17 +40,23 @@ Done when `ls ~/.claude/skills/remotion-reel/SKILL.md` prints the path and `npx 
 
 ## Step 2. Node, Python and the tools
 
-If `node -v` printed nothing or a version under 22:
+Pre-check results, 2026-11-06 (Caleb's Mac session): Node v26.12.1, Python 3.15.1 from Homebrew, numpy 2.5.4, Pillow missing. Mac mini, Apple M6, 12 cores (2 Super, 4 Performance, 6 Efficiency), 16 GB memory, 48 GB free of 228 GB.
+
+Node is fine (HyperFrames needs 22 or later). Homebrew's Python refuses `pip install` (PEP 668, externally managed), and the Claude Code sandbox cannot write to `/opt/homebrew`, so Caleb runs this one line himself with the `!` prefix in the Claude Code session, or in a plain Terminal tab:
 
 ```bash
-brew install node
+brew install pillow
 ```
 
+Then confirm:
+
 ```bash
-python3 -m pip install --user numpy pillow
+python3 -c "import numpy, PIL; print(numpy.__version__, PIL.__version__)"
 ```
 
 ffmpeg 9.0.2 is already installed (confirmed 2026-11-05). Google Chrome is on the Mac. Nothing else to install for Remotion itself.
+
+Disk note: 48 GB free is enough for Phase 0 (whisper models about 650 MB, node_modules about 1 GB, renders a few hundred MB). Background removal in Phase 3 writes ProRes 4444 at about 340 MB per 7 seconds, so cut-outs stay short and `out/` gets cleared between videos.
 
 ## Step 3. Create the Remotion project here
 

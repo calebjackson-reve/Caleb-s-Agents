@@ -2,6 +2,21 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-06, evening: Phase 0 pre-checks done on the Mac mini
+
+**Confirmed by Caleb** (pasted from his Mac session)
+- Node v26.12.1. Python 3.15.1 (Homebrew). numpy 2.5.4. Pillow not installed, Homebrew Python blocks pip (PEP 668).
+- Mac mini, Apple M6, 12 cores (2 Super, 4 Performance, 6 Efficiency), 16 GB memory, 48 GB free of 228 GB.
+
+**Done**
+- `engine/PHASE-0.md` step 2 now records the results and uses `brew install pillow`, run by Caleb with the `!` prefix since the sandbox cannot write to Homebrew. Disk note added.
+
+**Not verified**
+- Pillow install not yet run.
+
+**Needs Caleb**
+- `! brew install pillow` in the Claude Code session, then step 1 of the runbook (fetch skills, link remotion-reel, add the Remotion skills).
+
 ## 2026-11-06, later: Phase 0 approved, brand sheet drafted in our own design system
 
 **Confirmed by Caleb**
