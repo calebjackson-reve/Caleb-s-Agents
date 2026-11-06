@@ -102,7 +102,8 @@ class Mail(unittest.TestCase):
         rows = cc.inbox_sorted([{"threadId": "a", "subject": "Lunch?", "sender": "x"},
                                 {"threadId": "b", "subject": "Counter offer", "sender": "y"}],
                                [{"threadId": "c", "subject": "New lead: Pat", "sender": "lp"},
-                                {"threadId": "a", "subject": "dupe", "sender": "x"}], [])
+                                {"threadId": "a", "subject": "dupe", "sender": "x"},
+                                {"threadId": "t", "subject": "New lead: Test", "test": True}], [])
         self.assertEqual([r["category"] for r in rows], ["Lead", "Deal", "Other"])
 
     def test_commission_resolved(self):
@@ -167,6 +168,22 @@ class Trust(unittest.TestCase):
         self.assertEqual(p["scorecard"]["pending"]["value"], 7500)
         self.assertEqual(p["fresh"]["deals"]["source"], "AIRE Deals sheet")
         self.assertEqual(p["history"][-1]["day"], "2026-11-05")
+
+
+class Goals(unittest.TestCase):
+    def test_clean(self):
+        self.assertEqual(cc.clean_goals({"gci_goal": 100000, "cap_start": "2026-01-01"}), {"gci_goal": 100000, "cap_start": "2026-01-01"})
+        for bad in ({"gci_goal": -1}, {"gci_goal": "lots"}, {"cap_start": "Jan 1"}, {"wire_to": 1},
+                    {"closings_low": 9, "closings_high": 3}, {"appts": True}):
+            with self.assertRaises(ValueError):
+                cc.clean_goals(bad)
+
+    def test_save_and_read_back(self):
+        with tempfile.TemporaryDirectory() as d:
+            cc.save_goals(Path(d), {"gci_goal": 50000}, NOW)
+            p = cc.build(Path(d), NOW)
+        self.assertEqual(p["goals"], {"gci_goal": 50000})
+        self.assertEqual(p["scorecard"]["gci"]["goal"]["goal"], 50000)
 
 
 if __name__ == "__main__":

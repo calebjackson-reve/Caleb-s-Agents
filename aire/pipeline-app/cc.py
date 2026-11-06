@@ -269,7 +269,7 @@ DEAL_SENDERS = r"authentisign|docusign|title\.com"
 
 def inbox_sorted(inbox: list[dict], leads: list[dict], coord: list[str]) -> list[dict]:
     seen = {r.get("threadId") for r in inbox}
-    rows = inbox + [r for r in leads if r.get("threadId") not in seen]
+    rows = inbox + [r for r in leads if r.get("threadId") not in seen and not r.get("test")]
     rank = {"Lead": 0, "Deal": 1, "Other": 2}
     out = []
     for r in rows:
@@ -424,3 +424,42 @@ def demo_folder(src: Path, dest: Path, now: datetime | None = None) -> Path:
     for p in src.glob("*.json"):
         (dest / p.name).write_text(re.sub(r"\{\{([^}]+)\}\}", sub, p.read_text(encoding="utf-8")), encoding="utf-8")
     return dest
+
+
+GOAL_NUMBERS = ["gci_goal", "gci_goal_next", "closings_low", "closings_high", "leads_low", "leads_high", "appts",
+                "cap_amount", "royalty"]
+GOAL_DATES = ["cap_start", "cap_by"]
+
+
+def clean_goals(data: dict) -> dict:
+    """Only known goals, numbers zero or more, dates as YYYY-MM-DD, low never above high. Raises ValueError."""
+    if not isinstance(data, dict):
+        raise ValueError("goals must be an object")
+    out = {}
+    for k, v in data.items():
+        if k in GOAL_NUMBERS:
+            if isinstance(v, bool) or not isinstance(v, (int, float)) or v < 0 or v != v:
+                raise ValueError(f"{k} must be a number, zero or more")
+            out[k] = v
+        elif k in GOAL_DATES:
+            if not is_day(v):
+                raise ValueError(f"{k} must be a date")
+            out[k] = v
+        else:
+            raise ValueError(f"unknown goal {k}")
+    for lo, hi in (("closings_low", "closings_high"), ("leads_low", "leads_high")):
+        if lo in out and hi in out and out[lo] > out[hi]:
+            raise ValueError(f"{lo} is above {hi}")
+    return out
+
+
+def save_goals(folder: Path, data: dict, now: datetime | None = None) -> dict:
+    goals = clean_goals(data)
+    now = (now or datetime.now(CENTRAL)).astimezone(CENTRAL)
+    folder.mkdir(parents=True, exist_ok=True)
+    doc = {"at": now.isoformat(timespec="seconds"), "source": "Goals form in Pipeline, saved on this Mac",
+           "error": None, "rows": goals, "sheet_pending": True}
+    tmp = folder / "goals.json.tmp"
+    tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+    tmp.replace(folder / "goals.json")
+    return goals

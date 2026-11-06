@@ -1010,8 +1010,20 @@ class Handler(BaseHTTPRequestHandler):
             return self._file("index.html")
         return self._file(u.path)
 
+    def _same_origin(self) -> bool:
+        """Refuse a POST that a web page on another site sent (CSRF), or one that came in under a foreign
+        Host name (DNS rebinding). Tools with no Origin header, like curl and the tests, still work."""
+        port = self.server.server_address[1]
+        ok = {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"} | set(filter(None, os.getenv("PIPELINE_HOSTS", "").split(",")))
+        if (self.headers.get("Host") or "") not in ok:
+            return False
+        origin = self.headers.get("Origin")
+        return origin is None or urllib.parse.urlparse(origin).netloc in ok
+
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
+        if not self._same_origin():
+            return self._json(403, {"ok": False, "error": "refused: this request did not come from Pipeline's own page"})
         n = int(self.headers.get("Content-Length") or 0)
         try:
             body = json.loads(self.rfile.read(n) or b"{}")
@@ -1019,7 +1031,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"ok": False, "error": "body must be JSON"})
         s = self.state
         try:
-            if u.path == "/api/touch":
+            if u.path == "/api/cc/goals":
+                g = cc.save_goals(s.cc_dir, body)
+                out = {"ok": True, "goals": g, "where": "Saved on this Mac. It goes to the Goals tab once the sheet sync is on."}
+            elif u.path == "/api/touch":
                 out = s.touch(body.get("person_id", ""), body.get("what", "Touched from Pipeline"))
             elif u.path == "/api/done":
                 out = s.done(body.get("task_id", ""), body.get("person_id", ""), body.get("task", ""))
@@ -1352,6 +1367,19 @@ def run_tests() -> int:
     req = urllib.request.Request(base + "/api/touch", data=json.dumps({"person_id": "118", "what": "test"}).encode(),
                                  headers={"Content-Type": "application/json"})
     check(json.loads(urllib.request.urlopen(req).read())["ok"], "POST /api/touch")
+    evil = urllib.request.Request(base + "/api/touch", data=b'{"person_id": "118"}', headers={"Content-Type": "application/json", "Origin": "https://evil.example"})
+    try:
+        urllib.request.urlopen(evil); check(False, "POST from another site is refused")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST from another site is refused")
+    rebind = urllib.request.Request(base + "/api/touch", data=b"{}", headers={"Content-Type": "application/json", "Host": "attacker.example:4747"})
+    try:
+        urllib.request.urlopen(rebind); check(False, "POST under a foreign Host is refused")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST under a foreign Host is refused")
+    gq = urllib.request.Request(base + "/api/cc/goals", data=json.dumps({"gci_goal": 90000}).encode(), headers={"Content-Type": "application/json", "Origin": base.rstrip("/")})
+    check(json.loads(urllib.request.urlopen(gq).read())["ok"], "POST /api/cc/goals from Pipeline's own page")
+    check(json.loads(urllib.request.urlopen(base + "/api/cc").read())["goals"].get("gci_goal") == 90000, "goals read back on /api/cc")
     req = urllib.request.Request(base + "/api/dnc", data=json.dumps({"person_id": "118", "reason": ""}).encode(),
                                  headers={"Content-Type": "application/json"})
     check(json.loads(urllib.request.urlopen(req).read())["ok"] is False, "POST with a gate failure answers ok false, not 500")
