@@ -47,7 +47,12 @@ READS = {
     "deals": (30, "AIRE Deals sheet"),
     "commission_mail": (120, "Gmail, commission and CDA mail, last 120 days"),
     "bank_mail": (60, "Gmail, Chase alerts, last 30 days, read only"),
+    "news": (120, "Google News searches, last 7 days"),
+    "market": (720, "Freddie Mac rate (FRED), Realtor.com inventory, GBRAR monthly"),
+    "life": (15, "Life and Life log tabs, AIRE CRM sheet"),
+    "workouts": (15, "Workouts and Workout log tabs, AIRE CRM sheet"),
 }
+PUBLIC_READS = {"news", "market"}  # no Google sign-in needed
 Q_INBOX = "in:inbox newer_than:3d -from:me"
 Q_LEADS = 'newer_than:14d from:luxurypresence.com subject:("new lead" OR "home value")'
 Q_COMMISSION = 'subject:(commission OR disbursement OR CDA OR "closing statement") newer_than:120d'
@@ -250,7 +255,159 @@ def fetch_deals(svc, cfg, now):
     return svc["sheets"].spreadsheets().values().get(spreadsheetId=sid, range="Deals!A1:L300").execute().get("values") or []
 
 
-FETCH = {"calendar": fetch_calendar, "inbox": fetch_inbox, "leads": fetch_leads, "deals": fetch_deals,
+# ---------------- public reads: news and market (no account, read only) ----------------
+
+UA = {"User-Agent": "Pipeline-AIRE/1.0 (personal dashboard)"}
+NEWS_QUERIES = [  # (search, kind); config.json news_queries replaces this list
+    ('"Baton Rouge" real estate', "local"), ('"St. Francisville" OR "West Feliciana"', "local"),
+    ('Zachary OR "New Roads" OR Prairieville Louisiana homes', "local"), ("Louisiana housing market", "market"),
+    ("mortgage rates", "rates"),
+]
+MARKET_AREAS = [  # (name, "zip" or "county", id); config.json market_areas replaces this list
+    ("St. Francisville", "zip", "70775"), ("Zachary", "zip", "70791"), ("New Roads", "zip", "70760"),
+    ("Prairieville", "zip", "70769"), ("East Baton Rouge Parish", "county", "22033"), ("West Feliciana Parish", "county", "22125"),
+]
+RDC = "https://econdata.s3-us-west-2.amazonaws.com/Reports/Core/RDC_Inventory_Core_Metrics_{}.csv"
+FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=MORTGAGE30US"
+
+
+def http_get(url: str) -> bytes:
+    import urllib.request
+    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=TIMEOUT * 3) as r:
+        return r.read()
+
+
+def news_rows(xml: bytes, kind: str) -> list[dict]:
+    """Google News RSS items: headline, outlet, link, time. The outlet is cut off the end of the headline."""
+    import xml.etree.ElementTree as ET
+    from email.utils import parsedate_to_datetime
+    out = []
+    for it in ET.fromstring(xml).iter("item"):
+        title, link = (it.findtext("title") or "").strip(), (it.findtext("link") or "").strip()
+        src = (it.findtext("source") or "").strip()
+        if src and title.endswith(" - " + src):
+            title = title[: -len(src) - 3]
+        try:
+            when = parsedate_to_datetime(it.findtext("pubDate")).astimezone(cc.CENTRAL).isoformat(timespec="minutes")
+        except (TypeError, ValueError):
+            when = ""
+        if title and link.startswith("https://"):
+            out.append({"title": title, "url": link, "source": src, "date": when, "kind": kind})
+    return out
+
+
+def fetch_news(svc, cfg, now):
+    import urllib.parse
+    seen, rows = set(), []
+    for q, kind in cfg.get("news_queries") or NEWS_QUERIES:
+        url = "https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": q + " when:7d", "hl": "en-US", "gl": "US", "ceid": "US:en"})
+        for r in news_rows(http_get(url), kind):
+            key = re.sub(r"\W+", " ", r["title"].lower()).strip()
+            if key not in seen:
+                seen.add(key)
+                rows.append(r)
+    return sorted(rows, key=lambda r: r["date"], reverse=True)[:40]
+
+
+def rate_rows(csv_text: str) -> dict:
+    vals = [l.split(",") for l in csv_text.strip().splitlines()[1:] if "," in l and l.split(",")[1] not in ("", ".")]
+    (d0, v0), (d1, v1) = vals[-2], vals[-1]
+    return {"rate": float(v1), "date": d1, "prior": float(v0), "prior_date": d0, "change": round(float(v1) - float(v0), 2)}
+
+
+def area_rows(csv_text: str, level: str, areas: list) -> list[dict]:
+    import csv, io
+    key = "postal_code" if level == "zip" else "county_fips"
+    want = {a[2]: a[0] for a in areas if a[1] == level}
+    out = []
+    for r in csv.DictReader(io.StringIO(csv_text)):
+        if r.get(key) in want:
+            f = lambda k: cc.num(r.get(k))
+            out.append({"area": want[r[key]], "level": level, "id": r[key], "month": r.get("month_date_yyyymm"),
+                        "active": f("active_listing_count"), "active_yy": f("active_listing_count_yy"),
+                        "median_price": f("median_listing_price"), "median_price_yy": f("median_listing_price_yy"),
+                        "dom": f("median_days_on_market"), "dom_yy": f("median_days_on_market_yy"),
+                        "new": f("new_listing_count"), "flag": r.get("quality_flag") == "1"})
+    return out
+
+
+def gbrar_latest() -> dict | None:
+    files = sorted((HERE.parent / "market-data").glob("gbrar-*.json"))
+    if not files:
+        return None
+    d = json.loads(files[-1].read_text(encoding="utf-8"))
+    return {k: d.get(k) for k in ("source", "source_url", "month", "pulled", "snapshot")}
+
+
+def fetch_market(svc, cfg, now):
+    areas = cfg.get("market_areas") or MARKET_AREAS
+    out = {"rate": rate_rows(http_get(FRED).decode()), "areas": [], "gbrar": gbrar_latest()}
+    for level, name in (("zip", "Zip"), ("county", "County")):
+        if any(a[1] == level for a in areas):
+            out["areas"] += area_rows(http_get(RDC.format(name)).decode("utf-8", "replace"), level, areas)
+    return out
+
+
+# ---------------- Life and Workouts tabs in the AIRE CRM sheet ----------------
+# Pipeline queues rows in out/cc/outbox.json; the sync appends them here, then reads the tabs back.
+# Rows are only ever appended. Contacts, Deals, Tasks and every other engine tab are never touched.
+
+LIFE_TABS = {"Life": ["kind", "name", "date", "every_days", "note"], "Life log": ["date", "item", "kind"]}
+WORKOUT_TABS = {"Workouts": ["day", "focus", "exercises"], "Workout log": ["date", "focus", "minutes", "note"]}
+STARTER_PLAN = [["Mon", "Upper push", "Bench, overhead press, dips, triceps"], ["Tue", "Lower", "Squat, Romanian deadlift, lunges, calves"],
+                ["Wed", "Walk or rest", "30 minute walk"], ["Thu", "Upper pull", "Rows, pull-ups, face pulls, biceps"],
+                ["Fri", "Lower and core", "Deadlift, leg press, planks"], ["Sat", "Optional full body", "Light full body or a long walk"],
+                ["Sun", "Rest", ""]]
+
+
+def _tab_rows(sh, sid, tab, cols):
+    vals = sh.spreadsheets().values().get(spreadsheetId=sid, range=f"'{tab}'!A1:F2000").execute().get("values") or []
+    return [{c: (r[i] if i < len(r) else "") for i, c in enumerate(cols)} for r in vals[1:] if any(str(x).strip() for x in r)]
+
+
+def push_outbox(sh, sid, tabs: dict, folder: Path) -> int:
+    box = read_doc("outbox", folder).get("rows") or []
+    keep, n = [], 0
+    for e in box:
+        if e.get("tab") in tabs:
+            sh.spreadsheets().values().append(spreadsheetId=sid, range=f"'{e['tab']}'!A1", valueInputOption="RAW",
+                                              insertDataOption="INSERT_ROWS", body={"values": [[e["row"].get(c, "") for c in tabs[e["tab"]]]]}).execute()
+            n += 1
+        else:
+            keep.append(e)
+    if n:
+        write_doc("outbox", {"rows": keep}, folder)
+    return n
+
+
+def _sheet_pair(svc, cfg, tabs, folder, starter=None):
+    sid = cfg.get("crm_sheet_id")
+    if not sid:
+        raise RuntimeError("no crm_sheet_id in out/cc/config.json")
+    sh = svc["sheets"]
+    for tab, cols in tabs.items():
+        meta = sh.spreadsheets().get(spreadsheetId=sid, fields="sheets.properties.title").execute()
+        if not any(s["properties"]["title"] == tab for s in meta.get("sheets", [])):
+            _ensure_tab(sh, sid, tab, cols)
+            if starter and tab in starter:
+                sh.spreadsheets().values().append(spreadsheetId=sid, range=f"'{tab}'!A1", valueInputOption="RAW",
+                                                  insertDataOption="INSERT_ROWS", body={"values": starter[tab]}).execute()
+    push_outbox(sh, sid, tabs, folder)
+    return [_tab_rows(sh, sid, t, c) for t, c in tabs.items()]
+
+
+def fetch_life(svc, cfg, now):
+    items, log = _sheet_pair(svc, cfg, LIFE_TABS, cfg.get("_folder", OUT))
+    return {"items": items, "log": log}
+
+
+def fetch_workouts(svc, cfg, now):
+    plan, log = _sheet_pair(svc, cfg, WORKOUT_TABS, cfg.get("_folder", OUT), starter={"Workouts": STARTER_PLAN})
+    return {"plan": plan, "log": log}
+
+
+FETCH = {"news": fetch_news, "market": fetch_market, "life": fetch_life, "workouts": fetch_workouts,
+         "calendar": fetch_calendar, "inbox": fetch_inbox, "leads": fetch_leads, "deals": fetch_deals,
          "commission_mail": fetch_commission, "bank_mail": fetch_bank}
 
 
@@ -347,13 +504,17 @@ def sync_history(svc, cfg, now, folder: Path = OUT) -> dict:
 
 def run_pass(now: datetime | None = None, force: bool = False, svc=None, folder: Path = OUT) -> dict:
     now = (now or datetime.now(cc.CENTRAL)).astimezone(cc.CENTRAL)
-    cfg = config(folder)
+    cfg = {**config(folder), "_folder": folder}
     status = {"at": now.isoformat(timespec="seconds"), "results": {}, "error": None}
     try:
         svc = svc or services()
     except Exception as e:
         status["error"] = f"sign-in: {type(e).__name__}: {str(e)[:160]}"
-        for name in READS:  # mark every read failed so the screen says why, keeping the last good rows
+        for name in READS:  # mark every Google read failed so the screen says why, keeping the last good rows
+            if name in PUBLIC_READS:
+                if due(name, read_doc(name, folder), now, force):
+                    status["results"][name] = run_read(name, None, cfg, now, folder)
+                continue
             prev = read_doc(name, folder)
             write_doc(name, {**prev, "source": READS[name][1], "error": status["error"], "rows": prev.get("rows") or [],
                              "at": prev.get("at"), "tried_at": status["at"]}, folder)
