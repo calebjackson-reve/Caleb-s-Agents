@@ -234,3 +234,141 @@ def fetch_deals(svc, cfg, now):
 FETCH = {"calendar": fetch_calendar, "inbox": fetch_inbox, "leads": fetch_leads, "deals": fetch_deals,
          "commission_mail": fetch_commission, "bank_mail": fetch_bank}
 
+
+# ---------------- one pass ----------------
+
+def due(name: str, prev: dict, now: datetime, force: bool) -> bool:
+    if force or not prev:
+        return True
+    last = prev.get("tried_at") or prev.get("at")
+    try:
+        return now - datetime.fromisoformat(last) >= timedelta(minutes=READS[name][0])
+    except (TypeError, ValueError):
+        return True
+
+
+def run_read(name: str, svc, cfg: dict, now: datetime, folder: Path = OUT) -> dict:
+    """Read one source. On failure keep the last good rows and time, and record the error."""
+    prev = read_doc(name, folder)
+    stamp = now.isoformat(timespec="seconds")
+    try:
+        rows = FETCH[name](svc, cfg, now)
+        doc = {"at": stamp, "tried_at": stamp, "source": READS[name][1], "error": None, "rows": rows}
+        result = {"ok": True, "rows": len(rows)}
+    except Exception as e:  # any failure is shown on screen, never hidden
+        err = f"{type(e).__name__}: {str(e)[:160]}"
+        doc = {**prev, "tried_at": stamp, "source": READS[name][1], "error": err, "rows": prev.get("rows") or []}
+        doc.setdefault("at", None)
+        result = {"ok": False, "error": err}
+    write_doc(name, doc, folder)
+    return result
+
+
+GOALS_TAB, HISTORY_TAB = "Goals", "Scorecard history"
+HISTORY_COLS = ["day", "gci", "pending", "closings", "leads7", "appts7"]
+
+
+def _ensure_tab(sheets, sid: str, title: str, header: list) -> None:
+    meta = sheets.spreadsheets().get(spreadsheetId=sid, fields="sheets.properties.title").execute()
+    if any(s["properties"]["title"] == title for s in meta.get("sheets", [])):
+        return
+    sheets.spreadsheets().batchUpdate(spreadsheetId=sid, body={"requests": [{"addSheet": {"properties": {"title": title}}}]}).execute()
+    sheets.spreadsheets().values().update(spreadsheetId=sid, range=f"'{title}'!A1", valueInputOption="RAW", body={"values": [header]}).execute()
+
+
+def goals_from_rows(values: list) -> dict:
+    raw = {}
+    for r in values[1:]:
+        if len(r) >= 2 and str(r[0]).strip() and str(r[1]).strip():
+            k, v = str(r[0]).strip(), str(r[1]).strip()
+            raw[k] = v if k in cc.GOAL_DATES else cc.num(v)
+    return cc.clean_goals({k: v for k, v in raw.items() if v is not None})
+
+
+def sync_goals(svc, cfg, now, folder: Path = OUT) -> dict:
+    """A goal saved in Pipeline goes up to the Goals tab; otherwise the tab is read down. The sheet is the record."""
+    sid = cfg.get("deals_sheet_id")
+    sh = svc["sheets"]
+    _ensure_tab(sh, sid, GOALS_TAB, ["goal", "value"])
+    local = read_doc("goals", folder)
+    stamp = now.isoformat(timespec="seconds")
+    if local.get("sheet_pending"):
+        g = cc.clean_goals(local.get("rows") or {})
+        rows = [["goal", "value"]] + [[k, v] for k, v in g.items()]
+        sh.spreadsheets().values().clear(spreadsheetId=sid, range=f"'{GOALS_TAB}'!A:B").execute()
+        sh.spreadsheets().values().update(spreadsheetId=sid, range=f"'{GOALS_TAB}'!A1", valueInputOption="RAW", body={"values": rows}).execute()
+        write_doc("goals", {"at": stamp, "source": "Goals tab, AIRE Deals sheet", "error": None, "rows": g}, folder)
+        return {"ok": True, "pushed": len(g)}
+    vals = sh.spreadsheets().values().get(spreadsheetId=sid, range=f"'{GOALS_TAB}'!A1:B40").execute().get("values") or []
+    g = goals_from_rows(vals)
+    write_doc("goals", {"at": stamp, "source": "Goals tab, AIRE Deals sheet", "error": None, "rows": g}, folder)
+    return {"ok": True, "read": len(g)}
+
+
+def sync_history(svc, cfg, now, folder: Path = OUT) -> dict:
+    """After 6 AM Central, add today's Scorecard row to the tab once, then read the tab back for the charts."""
+    sid = cfg.get("deals_sheet_id")
+    sh = svc["sheets"]
+    _ensure_tab(sh, sid, HISTORY_TAB, HISTORY_COLS)
+    rng = f"'{HISTORY_TAB}'!A1:F800"
+    vals = sh.spreadsheets().values().get(spreadsheetId=sid, range=rng).execute().get("values") or []
+    days = {r[0] for r in vals[1:] if r}
+    added = False
+    today = now.astimezone(cc.CENTRAL)
+    if today.hour >= HISTORY_HOUR and today.date().isoformat() not in days:
+        row = cc.history_row(cc.build(folder, now)["scorecard"], today.date())
+        sh.spreadsheets().values().append(spreadsheetId=sid, range=f"'{HISTORY_TAB}'!A1", valueInputOption="RAW",
+                                          insertDataOption="INSERT_ROWS", body={"values": [[row[c] for c in HISTORY_COLS]]}).execute()
+        vals.append([row[c] for c in HISTORY_COLS])
+        added = True
+    rows = [{c: (r[i] if i == 0 else cc.num(r[i]) or 0) for i, c in enumerate(HISTORY_COLS) if i < len(r)} for r in vals[1:] if r]
+    write_doc("history", {"at": now.isoformat(timespec="seconds"), "source": "Scorecard history tab, AIRE Deals sheet", "error": None, "rows": rows}, folder)
+    return {"ok": True, "rows": len(rows), "added": added}
+
+
+def run_pass(now: datetime | None = None, force: bool = False, svc=None, folder: Path = OUT) -> dict:
+    now = (now or datetime.now(cc.CENTRAL)).astimezone(cc.CENTRAL)
+    cfg = config(folder)
+    status = {"at": now.isoformat(timespec="seconds"), "results": {}, "error": None}
+    try:
+        svc = svc or services()
+    except Exception as e:
+        status["error"] = f"sign-in: {type(e).__name__}: {str(e)[:160]}"
+        for name in READS:  # mark every read failed so the screen says why, keeping the last good rows
+            prev = read_doc(name, folder)
+            write_doc(name, {**prev, "source": READS[name][1], "error": status["error"], "rows": prev.get("rows") or [],
+                             "at": prev.get("at"), "tried_at": status["at"]}, folder)
+        write_doc("sync-status", status, folder)
+        return status
+    for name in READS:
+        if due(name, read_doc(name, folder), now, force):
+            status["results"][name] = run_read(name, svc, cfg, now, folder)
+    for name, fn in (("goals", sync_goals), ("history", sync_history)):
+        try:
+            status["results"][name] = fn(svc, cfg, now, folder) if cfg.get("deals_sheet_id") else {"ok": False, "error": "no deals_sheet_id"}
+        except Exception as e:
+            status["results"][name] = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:160]}"}
+    write_doc("sync-status", status, folder)
+    return status
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("cmd", nargs="?", choices=["auth"])
+    ap.add_argument("--all", action="store_true", help="read everything now")
+    ap.add_argument("--status", action="store_true", help="print the last pass")
+    a = ap.parse_args(argv)
+    if a.cmd == "auth":
+        cmd_auth()
+        return 0
+    if a.status:
+        print(json.dumps(read_doc("sync-status"), indent=1))
+        return 0
+    st = run_pass(force=a.all)
+    bad = {k: v for k, v in st["results"].items() if not v.get("ok")}
+    print(st["at"], "ok" if not st["error"] and not bad else "FAILED", st["error"] or "", json.dumps(st["results"]))
+    return 1 if st["error"] or bad else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
