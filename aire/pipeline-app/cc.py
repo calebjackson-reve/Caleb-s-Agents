@@ -17,8 +17,8 @@ CENTRAL = ZoneInfo("America/Chicago")
 SPLIT_CO = 0.30  # KW 70/30: the company's share of each commission, counted toward cap.
 
 # How old a read may be before the screen calls it stale, in hours.
-STALE_HOURS = {"deals": 6, "calendar": 2, "inbox": 1, "leads": 1, "commission_mail": 24, "history": 36}
-DATASETS = ["deals", "calendar", "inbox", "leads", "commission_mail", "goals", "history", "config"]
+STALE_HOURS = {"deals": 6, "calendar": 2, "inbox": 1, "leads": 1, "commission_mail": 24, "bank_mail": 6, "history": 36}
+DATASETS = ["deals", "calendar", "inbox", "leads", "commission_mail", "bank_mail", "goals", "history", "config", "sync-status"]
 
 
 def central_today(now: datetime | None = None) -> date:
@@ -303,6 +303,17 @@ def commission_mail(rows: list[dict]) -> list[dict]:
     return sorted(out, key=lambda r: r["status"] != "Not processed")
 
 
+
+def bank(rows: list[dict]) -> dict:
+    """Chase alert emails, read only. Cash is the newest balance alert's amount, with that email's time."""
+    rows = sorted(rows, key=lambda r: r.get("received") or "", reverse=True)
+    bal = next((r for r in rows if r.get("type") == "Balance" and r.get("amount") is not None), None)
+    dep = next((r for r in rows if r.get("type") == "Deposit"), None)
+    return {"rows": rows, "alerts": len(rows), "deposits": sum(1 for r in rows if r.get("type") == "Deposit"),
+            "cash": bal and {"value": bal["amount"], "at": bal.get("received")},
+            "last_deposit": dep and {"value": dep.get("amount"), "at": dep.get("received"), "subject": dep.get("subject")}}
+
+
 # ---------------- Scorecard, goals, history ----------------
 
 def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
@@ -382,7 +393,7 @@ def build(folder: Path, now: datetime | None = None) -> dict:
     raw = load(folder)
     cfg = (raw.get("config") or {}).get("rows") or {}
     coord = cfg.get("coordinator_domains") or []
-    fresh = {k: freshness(raw.get(k) or {}, k, now) for k in DATASETS if k != "config"}
+    fresh = {k: freshness(raw.get(k) or {}, k, now) for k in DATASETS if k not in ("config", "sync-status")}
     deals = deal_rows(_rows(raw["deals"]))
     evs = cal_events(_rows(raw["calendar"]), coord)
     leads = _rows(raw["leads"])
@@ -404,6 +415,9 @@ def build(folder: Path, now: datetime | None = None) -> dict:
         "scorecard": sc, "goals": goals, "goals_set": bool(goals),
         "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
         "kw_paid": cfg.get("kw_paid"),
+        "bank": bank(_rows(raw["bank_mail"])),
+        "sync": raw.get("sync-status") or None,
+        "problems": [{"name": k, **v} for k, v in fresh.items() if v["state"] in ("failed", "stale")],
     }
 
 

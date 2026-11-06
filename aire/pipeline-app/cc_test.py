@@ -186,5 +186,20 @@ class Goals(unittest.TestCase):
         self.assertEqual(p["scorecard"]["gci"]["goal"]["goal"], 50000)
 
 
+
+class Bank(unittest.TestCase):
+    def test_bank(self):
+        b = cc.bank([{"type": "Balance", "amount": 900.0, "received": "2026-11-01"}, {"type": "Balance", "amount": 1200.0, "received": "2026-11-04"},
+                     {"type": "Deposit", "amount": 500.0, "received": "2026-11-03"}, {"type": "Alert", "received": "2026-11-05"}])
+        self.assertEqual((b["alerts"], b["deposits"], b["cash"]["value"], b["last_deposit"]["value"]), (4, 1, 1200.0, 500.0))
+        self.assertIsNone(cc.bank([])["cash"])
+
+    def test_problems_list(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "calendar.json").write_text(json.dumps({"at": NOW.isoformat(), "error": "token expired", "rows": []}))
+            p = cc.build(Path(d), NOW)
+        self.assertEqual([(x["name"], x["state"]) for x in p["problems"]], [("calendar", "failed")])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
