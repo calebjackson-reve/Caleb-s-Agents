@@ -193,6 +193,31 @@ Six pages at the top of the nav, Dashboard first (key `0`, or a link such as `ht
 
 **Checks.** `python3 aire/pipeline-app/cc_test.py` (every calculation, made-up deals) and `python3 aire/pipeline-app/app.py --test` (the HTTP layer, including the goals save and the refusal of a POST from another site).
 
+**Bank** (`#bank`) is read only, from Chase alert emails: cash is the amount in the newest balance alert, with that email's time; last deposit; every alert in 30 days. Nothing can move money. It is only as current as Chase's last email; a live balance would need a paid bank connection, and none is set up.
+
+**Sources** (`#sources`) lists every read, its state, its last good time and the error if it failed. When any read is out of date or failed, every Command Center page opens with a banner that says which and why.
+
+### The sync (`cc_sync.py`)
+
+The reads behind those pages, on the Mac. Read only, except two tabs it keeps in the AIRE Deals sheet: **Goals** (what the Scorecard form saves, and what you type there) and **Scorecard history** (one row a day, added after 6 AM Central). Nothing is sent and nothing is deleted.
+
+| Read | Pace | Query |
+|---|---|---|
+| Gmail inbox | 10 min | `in:inbox newer_than:3d -from:me` |
+| Website leads | 10 min | Luxury Presence lead and home value emails, 14 days. Name, phone, email and area are read from the email body. |
+| Google Calendar | 15 min | primary calendar, today through 30 days |
+| AIRE Deals sheet | 30 min | `Deals!A1:L300`, matched by header name |
+| Chase alerts | 60 min | `from:(chase.com) newer_than:30d`, type and amount from the subject and preview |
+| Commission mail | 120 min | commission, disbursement, CDA, closing statement, 120 days |
+
+Setup, once, on the Mac, from `~/Caleb-s-Agents`:
+
+1. `aire/pipeline-app/out/cc/config.json` (git-ignored) holds `deals_sheet_id` (the AIRE Deals sheet), `coordinator_domains` (whose calendar events count as contract deadlines) and `kw_paid` (null until a KW paid-to-date figure is known).
+2. Sign in: run `cc_sync.py auth` with the CRM engine's Python (the `PIPELINE_PYTHON` default above). A browser opens on aire@calebjackson.org for Sheets, Gmail read and Calendar read, and the token is saved as `google-token-cc.json` in the AIRE key folder. Without it the sync falls back to the World's token, which has the same three.
+3. `sh aire/pipeline-app/install-sync.sh` loads the LaunchAgent `org.calebjackson.aire.ccsync`: one pass every 5 minutes with `TZ=America/Chicago`, each read on its own pace, log in `ccsync.log` in the AIRE logs folder. `--remove` takes it away.
+
+Check: `cc_sync.py --status` prints the last pass. `cc_sync.py --all` reads everything now. A read that fails keeps its last good rows and records the error, a failed sign-in marks every read failed, and the Sources page and banner show both. Tests: `python3 aire/pipeline-app/cc_sync_test.py` (Google faked: the mappers, a first pass, pacing, a failure keeping the last good read, no sign-in, history once a day after 6 AM, goals up and down, a bad goal in the sheet).
+
 **Security.** Every POST must come from Pipeline's own page: a foreign `Origin` or `Host` gets 403, which stops a web page on another site from pressing Pipeline's buttons. `PIPELINE_HOSTS` (comma separated, `host:port`) adds a name Pipeline may be reached under.
 
 ## The screen
