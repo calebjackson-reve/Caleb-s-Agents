@@ -2,6 +2,27 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-06, later: Phase 0 approved, brand sheet drafted in our own design system
+
+**Confirmed by Caleb**
+- "Yes, it's good." Yes on Phase 0. Design the engine in our own design system (the `website-rebuild/DESIGN-SYSTEM.md` tokens, not Michael Ly's look).
+
+**Done**
+- `engine/brand/BRAND.md`: ink and ivory grounds, ember once per graphic, stone for labels and source lines, Instrument Serif display, Hauora body and captions with Instrument Sans as the stand-in, captions ivory with an ink outline flipping by measured luminance, the default text hook and the title-pair option, an end card for Keller Williams First Choice, the site's easing and durations in frames, no radius, no shadow, hairlines, real photos only, generated b-roll disclosed, original audio until licensed music exists, an empty Learned Rules section.
+- `engine/PHASE-0.md`: the runbook. Pre-checks, seven steps with the exact prompts to paste into Claude Code on the Mac, done criteria per step, fixes for the likely failures.
+- `README.md` file table updated.
+
+**Not verified**
+- Nothing in Phase 0 has run. The Mac mini session does it.
+- Hauora font files: the brand package has them, the repo does not.
+
+**Needs Caleb**
+- Run Phase 0 on the Mac mini per `engine/PHASE-0.md`, starting with the three pre-checks.
+- Say yes or no to the six sample frames in step 5. Changes become learned rules.
+- Film the 20-second test take for step 6.
+- Pick the Phase 1 topic.
+- Still open: the Instagram post, Higgsfield Plus price, invideo plan.
+
 ## 2026-11-06: millee.md guides read, engine plan written
 
 **Confirmed by Caleb**
