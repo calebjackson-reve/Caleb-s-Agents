@@ -22,19 +22,19 @@
   const n = v => (v == null ? '—' : Number(v).toLocaleString());
   const ago = min => (min == null ? '' : min < 1 ? 'just now' : min < 60 ? min + ' min ago' : min < 1440 ? Math.floor(min / 60) + 'h ago' : Math.floor(min / 1440) + 'd ago');
 
-  function src(names) {
+  function src(names, short) {
     const f = (C.data && C.data.fresh) || {};
     return [].concat(names).map(k => {
       const r = f[k] || { state: 'missing' };
       const when = r.at ? 'as of ' + fmtTime.format(new Date(r.at)) + ', ' + ago(r.age_min) : 'never read';
-      const what = r.state === 'failed' ? 'read failed: ' + (r.error || 'unknown') + ', showing the last good read'
+      const what = r.state === 'failed' ? (short ? 'read failed' : 'read failed: ' + (r.error || 'unknown') + ', showing the last good read')
         : r.state === 'stale' ? 'out of date' : r.state === 'missing' ? 'not synced yet' : '';
       return `<span class="cc-src is-${r.state}"><i aria-hidden="true"></i><span class="cc-src-n">${esc(r.source || NAMES[k] || k)} · </span>${esc(when)}${what ? ' · <b>' + esc(what) + '</b>' : ''}</span>`;
     }).join('');
   }
   const card = (title, body, sources, extra = '') => `<section class="cc-card ${extra}"><h2>${title}</h2>${body}<footer>${src(sources)}</footer></section>`;
   const tile = (label, value, sub, sources, go) => `<${go ? `button type="button" onclick="go('${go}')"` : 'div'} class="cc-tile">
-      <span class="cc-tile-l">${label}</span><b class="cc-num">${value}</b><span class="cc-sub">${sub || ''}</span>${src(sources)}</${go ? 'button' : 'div'}>`;
+      <span class="cc-tile-l">${label}</span><b class="cc-num">${value}</b><span class="cc-sub">${sub || ''}</span>${src(sources, true)}</${go ? 'button' : 'div'}>`;
   const empty = t => `<p class="cc-empty">${t}</p>`;
   const head = (h, p) => `<header class="cc-head"><div><h1>${h}</h1><p>${p}</p></div>${privBtn()}</header>`;
   const privBtn = () => `<button type="button" class="cc-priv" aria-pressed="${!C.priv}" onclick="CC.togglePriv()">${C.priv ? 'Show money and contacts' : 'Hide money and contacts'}</button>`;

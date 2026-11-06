@@ -29,8 +29,8 @@ button.cc-tile:hover { background: var(--cc-raise); }
 .cc-sub { font-size: 13px; color: var(--cc-muted); line-height: 1.35; }
 .cc-sub em, .cc-page em { font-style: normal; color: var(--cc-warn); }
 
-.cc-src { display: flex; gap: 6px; align-items: baseline; font-size: 12px; line-height: 1.35; color: var(--cc-muted); overflow-wrap: anywhere; }
-.cc-src i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--cc-ok); transform: translateY(-1px); }
+.cc-src { display: block; font-size: 12px; line-height: 1.35; color: var(--cc-muted); overflow-wrap: anywhere; }
+.cc-src i { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--cc-ok); transform: translateY(-1px); }
 .cc-src.is-stale i, .cc-src.is-missing i { background: var(--cc-warn); }
 .cc-src.is-stale, .cc-src.is-missing { color: var(--cc-warn); }
 .cc-src.is-failed i { background: var(--cc-bad); }
