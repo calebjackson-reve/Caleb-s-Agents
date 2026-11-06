@@ -38,7 +38,7 @@ const render = (v, priv) => run(`CC.priv = ${priv}; S.view = ${JSON.stringify(v)
 const f = state.feed || {};
 const people = [].concat(f.touches_due || [], f.tasks || [], f.new_leads || [], f.partners || [], (f.deals || []).map(d => ({ display: d.display })),
   ccdata.leads.map(l => ({ display: l.name, phone: l.phone, email: l.email })), (state.sent_today || []));
-const names = [...new Set(people.map(p => p.display).filter(n => n && n.length > 3))];
+const names = [...new Set(people.concat(f.people || []).map(p => p.display).filter(n => n && n.length > 3 && /\s/.test(n)))];
 const phones = [...new Set(people.map(p => String(p.phone || p.to || '').replace(/\D/g, '').slice(-7)).filter(p => p.length === 7))];
 const emails = [...new Set(people.map(p => p.email).filter(Boolean))];
 const msgs = [...new Set((f.touches_due || []).flatMap(r => (r.last_messages || []).map(m => String(m).replace(/^\d{4}-\d{2}-\d{2}: /, ''))).filter(m => m.length > 12))];
@@ -89,6 +89,9 @@ const appjs = fs.readFileSync(path.join(dir, 'app.js'), 'utf8');
 check(!/OPTIMAL|connected<\/span>/.test(appjs), 'no OPTIMAL and no "connected" count');
 run(`S.data = Object.assign({}, __state, { feed_ok: false })`);
 check(run('CC.failing()').length > 0, 'a failed CRM read is counted as failed');
+run(`CC.data = Object.assign({}, __cc, { fresh: Object.assign({}, __cc.fresh, { deals: { state: 'missing', source: 'AIRE Deals sheet' } }) })`);
+check(run('CC.notCurrent()').includes('AIRE Deals sheet'), 'a source never synced is counted as not current, never as all clear');
+run('CC.data = __cc');
 run('S.data = __state');
 
 // 10. Tags: only coral, tan and the neutral muted color.

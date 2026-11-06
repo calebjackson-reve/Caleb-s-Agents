@@ -96,10 +96,11 @@ function render() {
   const f = feed(), c = f.counts || {}, d = S.data;
   renderNav(c);
   // top status: what is actually true. A failed read is named, never covered by an all-clear word.
-  const lvl = statusLevel(), bad = window.CC && CC.failing ? CC.failing() : [];
-  const chip = $('#status-chip'); chip.className = 'status-chip ' + (bad.length || lvl === 'stop' ? 'stop' : lvl);
-  $('#status-word').textContent = !d.feed_ok ? 'CRM feed did not load' : bad.length ? `${bad.length} read${bad.length > 1 ? 's' : ''} failed` : lvl === 'stop' ? 'Needs attention' : lvl === 'warn' ? 'Check the bell' : 'Every source current';
-  chip.title = bad.length ? 'Failed: ' + bad.join(', ') : ''; chip.onclick = () => go('sources');
+  const lvl = statusLevel(), bad = window.CC && CC.failing ? CC.failing() : [], old = window.CC && CC.data && CC.notCurrent ? CC.notCurrent() : [];
+  const chip = $('#status-chip'); chip.className = 'status-chip ' + (bad.length || lvl === 'stop' ? 'stop' : old.length || lvl === 'warn' ? 'warn' : 'ok');
+  $('#status-word').textContent = !d.feed_ok ? 'CRM feed did not load' : bad.length ? `${bad.length} read${bad.length > 1 ? 's' : ''} failed`
+    : old.length ? `${old.length} source${old.length > 1 ? 's' : ''} not current` : lvl === 'stop' ? 'Needs attention' : lvl === 'warn' ? 'Check the bell' : window.CC && CC.data ? 'Every source current' : 'Reading';
+  chip.title = bad.length ? 'Failed: ' + bad.join(', ') : old.length ? 'Not current: ' + old.join(', ') : ''; chip.onclick = () => go('sources');
   S.systemWord = $('#status-word').textContent; S.systemLevel = chip.className.replace('status-chip ', '');
   const bc = $('#bell-count'); bc.hidden = !problems().length; bc.textContent = problems().length;
   // send status

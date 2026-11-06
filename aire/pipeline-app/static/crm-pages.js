@@ -13,7 +13,21 @@
   C.em = v => (!v ? '' : C.priv ? HID : esc(v));
   C.msg = v => (C.priv ? '<span class="cc-hid">Message hidden</span>' : esc(v));
   C.ini = v => (C.priv ? '•' : esc(initials(v)));
-  // Free text (a task, a next step, a subject): with privacy on, dollar amounts and the given names are blanked.
+  // Free text (a task, a next step, a subject): with privacy on, dollar amounts and names are blanked. Names are every
+  // first and last name in the CRM (so a next step that mentions another client is covered too) plus any run of two or
+  // more capitalized words, which is how a name the CRM does not know yet still looks.
+  let nameRe = null, nameKey = '';
+  function crmNames() {
+    const f = (typeof S !== "undefined" && S.data && S.data.feed) || {};
+    const key = f.generated_at || '';
+    if (nameRe && nameKey === key) return nameRe;
+    const words = new Set();
+    [].concat(f.people || [], f.touches_due || [], f.new_leads || [], f.partners || [], f.tasks || []).forEach(p =>
+      String(p.display || '').split(/[\s/,&()]+/).forEach(w => { if (w.length > 2 && /^[A-Z]/.test(w)) words.add(w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); }));
+    nameKey = key;
+    nameRe = words.size ? new RegExp('\\b(' + [...words].sort((a, b) => b.length - a.length).join('|') + ')\\b', 'g') : null;
+    return nameRe;
+  }
   C.scrub = function (t, names) {
     let s = String(t || '');
     if (!C.priv) return esc(s);
@@ -21,8 +35,12 @@
     [].concat(names || []).forEach(n => String(n || '').split(/\s+/).filter(w => w.length > 2).forEach(w => {
       s = s.replace(new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), '•••');
     }));
+    const re = crmNames(); if (re) s = s.replace(re, '•••');
+    s = s.replace(/\b[A-Z][a-z'’]+(?:[ -][A-Z][a-z'’]+)+\b/g, '•••');
     return esc(s);
   };
+  // Public text with no people in it (market talking points): only dollar amounts hide.
+  C.scrubMoney = t => esc(C.priv ? String(t || '').replace(/\$\s?\d[\d,]*(\.\d+)?\s?[kKmM]?/g, '$•••') : String(t || ''));
   // A text message as it should read: no date prefix, no attachment placeholder, a photo said in words.
   C.cleanMsg = t => {
     const s = String(t || '').replace(/^\d{4}-\d{2}-\d{2}: /, '').replace(/[￼�]/g, '').trim();
@@ -43,6 +61,11 @@
     return null;
   };
   // Every read that failed, the synced ones and the CRM's own, for the status in the top bar.
+  // Reads that worked but are not current: never synced on this Mac, or older than their limit.
+  C.notCurrent = function () {
+    const f = (C.data && C.data.fresh) || {};
+    return Object.keys(f).filter(k => f[k].state === 'missing' || f[k].state === 'stale').map(k => f[k].source || k);
+  };
   C.failing = function () {
     const out = [];
     const f = (C.data && C.data.fresh) || {};

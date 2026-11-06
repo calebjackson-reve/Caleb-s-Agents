@@ -46,7 +46,7 @@ const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); retur
           ${twin ? `<p class="cc-note">Same numbers as ${esc(twin.area)} in Realtor.com's own file: every listing ${a.level === 'zip' ? 'in the parish is in this ZIP' : 'is in ZIP ' + esc(twin.id)}.</p>` : ''}
           ${msrc('Realtor.com inventory', mon(a.month))}</div>`; }).join('')}</div>`
         : empty('No area numbers yet.'), [])}
-      ${card('Talking points', (m.points || []).length ? `<ul class="cc-points">${m.points.map(p => `<li>${C.scrub(p)}</li>`).join('')}</ul><div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyPoints()">Copy the talking points</button></div><p class="cc-note">Built only from the numbers above, each with its source and date. Check the date before you quote one to a client.</p>` : empty('No numbers yet, so no talking points.'), 'market')}
+      ${card('Talking points', (m.points || []).length ? `<ul class="cc-points">${m.points.map(p => `<li>${C.scrubMoney(p)}</li>`).join('')}</ul><div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyPoints()">Copy the talking points</button></div><p class="cc-note">Built only from the numbers above, each with its source and date. Check the date before you quote one to a client.</p>` : empty('No numbers yet, so no talking points.'), 'market')}
       ${(m.warnings || []).length ? `<p class="cc-warn">Not current in the last read: ${m.warnings.map(esc).join('; ')}. The rest of the page is from that read.</p>` : ''}
       <p class="cc-note">For-rent counts are not here: the free sources don't have them, and Zillow's rental data needs a paid feed.</p></div>`;
   }
