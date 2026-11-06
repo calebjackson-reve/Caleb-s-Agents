@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video Studio</title>
+<style>
+:root{
+  --kw-red:#B40101;
+  --ink:#1a1a1a;
+  --paper:#f6f5f3;
+  --card:#ffffff;
+  --line:#e3e1dd;
+  --muted:#6b6b6b;
+  --good:#1e7d44;
+  --warn:#a66a00;
+  --bad:#b42318;
+  --radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#f0eeeb; --paper:#131313; --card:#1e1e1e; --line:#333; --muted:#a3a3a3;
+    --good:#4cc383; --warn:#e0a53f; --bad:#f0716a;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--paper);color:var(--ink);padding:0 16px 96px;max-width:720px;margin:0 auto;font-size:16px;line-height:1.45}
+header{display:flex;align-items:center;gap:10px;padding:14px 0 10px;border-bottom:3px solid var(--kw-red)}
+.logo{background:var(--kw-red);color:#fff;font-weight:800;font-size:13px;padding:6px 9px;border-radius:6px;letter-spacing:.5px}
+header h1{font-size:18px;font-weight:700}
+header .sub{font-size:12px;color:var(--muted)}
+.statusbar{display:flex;gap:8px;align-items:center;margin:12px 0;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--good);display:inline-block}
+.dot.off{background:var(--bad)}
+.tabs{display:flex;gap:6px;margin:10px 0 16px;overflow-x:auto;padding-bottom:4px}
+.tabs button{flex:0 0 auto;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:999px;font-size:14px;min-height:44px;cursor:pointer}
+.tabs button.on{background:var(--kw-red);border-color:var(--kw-red);color:#fff;font-weight:600}
+section{display:none}
+section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.badge{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.badge.you{background:var(--kw-red);color:#fff}
+.badge.claude{background:var(--line);color:var(--ink)}
+.badge.err{background:var(--bad);color:#fff}
+.badge.sched{background:var(--good);color:#fff}
+.stage{font-size:13px;color:var(--muted);margin-top:4px}
+.addr{font-weight:700;font-size:16px}
+.meta{font-size:13px;color:var(--muted);margin-top:2px}
+.bar{height:6px;background:var(--line);border-radius:3px;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--kw-red)}
+.btn{display:inline-block;border:none;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:700;min-height:48px;cursor:pointer}
+.btn.approve{background:var(--good);color:#fff;flex:1}
+.btn.back{background:var(--card);color:var(--ink);border:2px solid var(--line);flex:1}
+.btn.kill{background:none;color:var(--bad);border:none;font-size:14px;min-height:44px}
+.btn.primary{background:var(--kw-red);color:#fff;width:100%}
+.btn.ghost{background:var(--card);border:2px solid var(--line);color:var(--ink);width:100%}
+.btnrow{display:flex;gap:10px;margin-top:12px}
+.video{background:#000;border-radius:10px;aspect-ratio:9/16;max-height:360px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;width:min(100%,220px)}
+.script{font-size:14px;background:var(--paper);border-radius:10px;padding:12px;margin-top:10px}
+.script h4{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+.empty{ text-align:center;padding:36px 16px;color:var(--muted)}
+.empty .big{font-size:40px;margin-bottom:8px}
+.empty h3{color:var(--ink);font-size:17px;margin-bottom:6px}
+.alert{border-left:4px solid var(--bad);background:var(--card);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:14px}
+.alert.warn{border-left-color:var(--warn)}
+.alert b{display:block;margin-bottom:3px}
+.meter{font-size:14px}
+.meter .num{font-size:28px;font-weight:800}
+.cost-line{display:flex;justify-content:space-between;font-size:14px;padding:7px 0;border-bottom:1px solid var(--line)}
+.cost-line:last-child{border:none}
+label{display:block;font-size:13px;font-weight:600;margin:12px 0 5px}
+select,input,textarea{width:100%;padding:12px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);min-height:48px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chips span{border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer;min-height:40px;display:inline-flex;align-items:center}
+.chips span.pick{background:var(--kw-red);color:#fff;border-color:var(--kw-red)}
+.brand{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-top:14px;padding:10px;border:1px dashed var(--line);border-radius:10px}
+.swatch{width:16px;height:16px;border-radius:4px;background:var(--kw-red);flex:0 0 auto}
+.hist .row{padding:10px 0;border-bottom:1px solid var(--line)}
+.hist .row:last-child{border:none}
+.statepick{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 10px}
+.statepick button{font-size:12px;padding:7px 11px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;min-height:36px}
+.statepick button.on{border-color:var(--kw-red);color:var(--kw-red);font-weight:700}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:16px 0 10px}
+.prompt .row{align-items:flex-start}
+.prompt .note{font-size:13px;color:var(--muted);margin-top:4px}
+.toast{position:fixed;left:16px;right:16px;bottom:16px;max-width:688px;margin:0 auto;background:var(--ink);color:var(--paper);padding:14px;border-radius:12px;font-size:14px;display:none}
+footer{margin-top:24px;font-size:12px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">KW</span>
+  <div>
+    <h1>Video Studio</h1>
+    <div class="sub">Keller Williams First Choice · Caleb Jackson</div>
+  </div>
+</header>
+
+<div class="statusbar">
+  <span><span class="dot" id="macdot"></span> Mac mini online</span>
+  <span>·</span>
+  <span>2 waiting on you</span>
+  <span>·</span>
+  <span>$41.20 of $110 this month</span>
+</div>
+
+<nav class="tabs" aria-label="Main">
+  <button class="on" data-tab="queue">Queue</button>
+  <button data-tab="review">Review</button>
+  <button data-tab="start">Start a video</button>
+  <button data-tab="costs">Costs</button>
+  <button data-tab="history">History</button>
+  <button data-tab="prompts">Prompts</button>
+</nav>
+
+<!-- QUEUE -->
+<section id="queue" class="on">
+  <div class="statepick" aria-label="Demo states">
+    <button class="on" data-state="normal">Normal</button>
+    <button data-state="empty">Empty queue</button>
+    <button data-state="failed">Generation failed</button>
+    <button data-state="credits">Out of credits</button>
+    <button data-state="offline">Mac mini offline</button>
+  </div>
+
+  <div id="q-normal">
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="addr">4812 Magnolia Trace Ave</div>
+          <div class="meta">Listing reel · 30 s · Instagram + TikTok</div>
+        </div>
+        <span class="badge you">Your turn</span>
+      </div>
+      <div class="stage">Cut is ready to watch. Sitting 2 h 10 m.</div>
+      <div class="bar"><i style="width:85%"></i></div>
+      <div class="btnrow"><button class="btn primary" onclick="go('review')">Review now</button></div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="addr">November market update</div>
+          <div class="meta">Market update · 45 s · Facebook + Instagram</div>
+        </div>
+        <span class="badge claude">Claude working</span>
+      </div>
+      <div class="stage">Making the voiceover. About 10 min left.</div>
+      <div class="bar"><i style="width:55%"></i></div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="addr">9034 Cypress Hollow Dr</div>
+          <div class="meta">Listing reel · 30 s · Instagram</div>
+        </div>
+        <span class="badge sched">Scheduled</span>
+      </div>
+      <div class="stage">Approved. Goes out through Metricool once you confirm the draft there. Fri 9:00 AM.</div>
+    </div>
+  </div>
+
+  <div id="q-empty" style="display:none">
+    <div class="empty">
+      <div class="big">&#127916;</div>
+      <h3>Nothing in flight</h3>
+      <p>Every video is either published or hasn't been started yet. Want to kick one off?</p>
+      <div class="btnrow"><button class="btn primary" onclick="go('start')">Start a video</button></div>
+    </div>
+  </div>
+
+  <div id="q-failed" style="display:none">
+    <div class="alert">
+      <b>Clip generation failed on 4812 Magnolia Trace Ave</b>
+      fal.ai rejected the kitchen photo (too low resolution). Nothing was charged for the failed clip. Claude swapped in the next photo and will retry once.
+      <div class="btnrow">
+        <button class="btn back">See the photo</button>
+        <button class="btn approve">Retry now</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div><div class="addr">4812 Magnolia Trace Ave</div><div class="meta">Listing reel · 30 s</div></div>
+        <span class="badge err">Needs a fix</span>
+      </div>
+      <div class="stage">Paused at the visuals step. Nothing runs until the retry.</div>
+      <div class="bar"><i style="width:40%"></i></div>
+    </div>
+  </div>
+
+  <div id="q-credits" style="display:none">
+    <div class="alert warn">
+      <b>ElevenLabs credits are used up for the month</b>
+      Voiceovers are paused. Two videos are waiting at the voice step. Nothing else is blocked. Options: wait until the 14th when credits reset, top up in your ElevenLabs account, or switch these two to the bundled Higgsfield voice.
+      <div class="btnrow">
+        <button class="btn back">Use Higgsfield voice</button>
+        <button class="btn approve">I'll top up</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div><div class="addr">November market update</div><div class="meta">Market update · 45 s</div></div>
+        <span class="badge err">Waiting on credits</span>
+      </div>
+      <div class="stage">Script and clips done. Voiceover paused.</div>
+      <div class="bar"><i style="width:60%"></i></div>
+    </div>
+  </div>
+
+  <div id="q-offline" style="display:none">
+    <div class="alert">
+      <b>Can't reach the Mac mini</b>
+      Last heard from it 38 minutes ago. Nothing is lost, work resumes where it stopped once it is back. You can still review finished cuts and approve Metricool drafts from here. If it stays down, check the power and network at the house.
+    </div>
+    <div class="empty">
+      <div class="big">&#128268;</div>
+      <h3>Showing the last known state</h3>
+      <p>Queue below may be stale. Updated 38 min ago.</p>
+    </div>
+  </div>
+</section>
+
+<!-- REVIEW -->
+<section id="review">
+  <div class="card">
+    <div class="row">
+      <div>
+        <div class="addr">4812 Magnolia Trace Ave, Baton Rouge, LA 70810</div>
+        <div class="meta">Listing reel · 30 s · Instagram + TikTok · Cost so far $1.42</div>
+      </div>
+    </div>
+    <div class="video" role="img" aria-label="Video preview placeholder">&#9654; Tap to play (0:30)</div>
+    <div class="btnrow">
+      <button class="btn approve" onclick="toast('Approved. Draft sent to Metricool for your final OK there.')">Approve</button>
+      <button class="btn back" onclick="document.getElementById('sendback').style.display='block'">Send back</button>
+    </div>
+    <button class="btn kill" onclick="toast('Killed. Assets kept in the archive for 30 days.')">Kill this video</button>
+    <div id="sendback" style="display:none">
+      <label for="note">What should change? Plain words are fine.</label>
+      <textarea id="note" rows="3" placeholder="Hook is slow. Open on the backyard oak instead."></textarea>
+      <div class="btnrow"><button class="btn primary" onclick="toast('Sent back to Claude with your note.')">Send it back</button></div>
+    </div>
+    <div class="script">
+      <h4>Hook</h4>
+      <p>This Baton Rouge kitchen has a hidden walk-in pantry most buyers miss.</p>
+      <h4 style="margin-top:10px">Script</h4>
+      <p>Four beds, three baths, 2,640 square feet in Magnolia Trace. Quartz counters, gas range, and that pantry. Covered patio under a live oak out back. Listed at $432,000.</p>
+      <h4 style="margin-top:10px">Caption</h4>
+      <p>New in 70810. 4 bed, 3 bath, hidden pantry reveal inside. DM TRACE for the full tour. #BatonRougeRealEstate</p>
+    </div>
+  </div>
+</section>
+
+<!-- START -->
+<section id="start">
+  <div class="card">
+    <label>Format</label>
+    <div class="chips" id="fmt">
+      <span class="pick">Listing reel</span><span>Market update</span><span>Client explainer</span><span>Promo</span>
+    </div>
+    <label for="src">Source</label>
+    <select id="src">
+      <option>MLS listing: 7723 Bayou Bend Ct, Baton Rouge (active)</option>
+      <option>MLS listing: 4812 Magnolia Trace Ave, Baton Rouge (active)</option>
+      <option>Folder of clips on the Mac mini</option>
+      <option>Just a topic (type it below)</option>
+    </select>
+    <label for="topic">Topic or notes (optional)</label>
+    <input id="topic" placeholder="Lead with the pool and the oversized lot">
+    <label>Length</label>
+    <div class="chips"><span class="pick">30 s</span><span>45 s</span><span>60 s</span></div>
+    <label>Platforms</label>
+    <div class="chips"><span class="pick">Instagram</span><span class="pick">TikTok</span><span>Facebook</span><span>YouTube</span></div>
+    <div class="card" style="margin-top:14px;background:var(--paper)">
+      <div class="meter">Estimated cost: <b>$1.10 to $1.60</b> <span class="meta">(3 Kling clips, voiceover, images)</span></div>
+      <div class="meta">Anything over $5 estimated will ask you first before it runs.</div>
+    </div>
+    <div class="btnrow"><button class="btn primary" onclick="toast('Handed to Claude. It shows in the queue in under a minute.')">Hand it to Claude</button></div>
+    <div class="brand">
+      <span class="swatch"></span>
+      <span><b>Brand lock:</b> Keller Williams First Choice. KW red, approved fonts, logo and lower thirds are fixed on every video. Not editable here.</span>
+    </div>
+  </div>
+</section>
+
+<!-- COSTS -->
+<section id="costs">
+  <div class="card">
+    <div class="meter"><span class="num">$41.20</span> of $110 budget · November</div>
+    <div class="bar"><i style="width:37%"></i></div>
+    <div style="margin-top:12px">
+      <div class="cost-line"><span>fal.ai (Kling and Veo clips)</span><b>$14.80</b></div>
+      <div class="cost-line"><span>ElevenLabs (voice, Creator plan)</span><b>$22.00</b></div>
+      <div class="cost-line"><span>Gemini images (Nano Banana)</span><b>$2.10</b></div>
+      <div class="cost-line"><span>Ideogram (text graphics)</span><b>$2.30</b></div>
+      <div class="cost-line"><span>Metricool</span><b>$0.00 (plan covers it)</b></div>
+      <div class="cost-line"><span>ffmpeg and whisper on the Mac mini</span><b>$0.00</b></div>
+    </div>
+  </div>
+  <h2>Per video, this month</h2>
+  <div class="card hist">
+    <div class="row"><span>4812 Magnolia Trace Ave (in progress)</span><b>$1.42</b></div>
+    <div class="row"><span>9034 Cypress Hollow Dr</span><b>$1.18</b></div>
+    <div class="row"><span>October market recap</span><b>$2.74 <span class="meta">(one Veo hero shot)</span></b></div>
+  </div>
+</section>
+
+<!-- HISTORY -->
+<section id="history">
+  <div class="card hist">
+    <div class="row">
+      <div>
+        <div class="addr" style="font-size:15px">9034 Cypress Hollow Dr</div>
+        <div class="meta">Published Oct 31 · Instagram + TikTok</div>
+      </div>
+      <div style="text-align:right;font-size:13px"><b>4,210 views</b><br>186 likes · 9 saves</div>
+    </div>
+    <div class="row">
+      <div>
+        <div class="addr" style="font-size:15px">October market recap</div>
+        <div class="meta">Published Oct 24 · Facebook + Instagram</div>
+      </div>
+      <div style="text-align:right;font-size:13px"><b>2,980 views</b><br>town hall hook won</div>
+    </div>
+    <div class="row">
+      <div>
+        <div class="addr" style="font-size:15px">615 Pelican Pointe Ln</div>
+        <div class="meta">Published Oct 17 · Instagram</div>
+      </div>
+      <div style="text-align:right;font-size:13px"><b>1,140 views</b><br>slow hook, noted</div>
+    </div>
+  </div>
+  <div class="meta" style="margin-top:8px">Numbers pull from Metricool nightly. Claude reads these before writing the next script.</div>
+</section>
+
+<!-- PROMPTS -->
+<section id="prompts">
+  <div class="card prompt">
+    <div class="row">
+      <div>
+        <b>Hook: hidden feature reveal</b>
+        <div class="note">Used on 6 reels. Best performer, avg 3.4k views. "This [city] [room] has a hidden [feature] most buyers miss."</div>
+      </div>
+      <button class="btn back" style="flex:0">Edit</button>
+    </div>
+  </div>
+  <div class="card prompt">
+    <div class="row">
+      <div>
+        <b>Video: minimal motion interior</b>
+        <div class="note">Kling prompt. Slow push-in only, no pans, keeps walls straight. Used on every listing clip since Oct 20.</div>
+      </div>
+      <button class="btn back" style="flex:0">Edit</button>
+    </div>
+  </div>
+  <div class="card prompt">
+    <div class="row">
+      <div>
+        <b>Image: market update cover</b>
+        <div class="note">Ideogram prompt for the stat card cover. Renders the headline number clean. 4 uses.</div>
+      </div>
+      <button class="btn back" style="flex:0">Edit</button>
+    </div>
+  </div>
+</section>
+
+<div class="toast" id="toast" role="status"></div>
+<footer>Mock data only. Addresses and people are made up.</footer>
+
+<script>
+function go(id){
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));
+document.querySelectorAll('.statepick button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.statepick button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  ['normal','empty','failed','credits','offline'].forEach(s=>{
+    document.getElementById('q-'+s).style.display = (b.dataset.state===s)?'block':'none';
+  });
+  document.getElementById('macdot').classList.toggle('off', b.dataset.state==='offline');
+}));
+document.querySelectorAll('.chips span').forEach(c=>c.addEventListener('click',()=>{
+  if(c.parentElement.id==='fmt'){c.parentElement.querySelectorAll('span').forEach(x=>x.classList.remove('pick'));c.classList.add('pick');}
+  else c.classList.toggle('pick');
+}));
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2600);
+}
+</script>
+</body>
+</html>
