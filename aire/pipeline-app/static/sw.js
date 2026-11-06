@@ -1,8 +1,8 @@
 /* Pipeline service worker: the app shell for the home-screen icon, the last copy of the data for when the Mac
    can't be reached, and the phone alerts. It never caches a send, and nothing it stores leaves the phone. */
-const SHELL = 'pipeline-shell-v1', DATA = 'pipeline-data-v1';
-const FILES = ['/', '/app.css', '/cc.css', '/app.js', '/core.js', '/voice.js', '/map.js', '/mapviews.js', '/cc.js', '/cc-pages.js',
-  '/cc-score.js', '/cc-life.js', '/cc-sources.js', '/favicon.svg', '/icon-192.png', '/manifest.webmanifest'];
+const SHELL = 'pipeline-shell-v1-judge1', DATA = 'pipeline-data-v1';
+const FILES = ['/', '/app.css', '/cc.css', '/ui.css', '/app.js', '/voice.js', '/map.js', '/mapviews.js', '/cc.js', '/cc-pages.js',
+  '/crm-pages.js', '/cc-score.js', '/cc-life.js', '/cc-today.js', '/cc-sources.js', '/favicon.svg', '/icon-192.png', '/manifest.webmanifest'];
 const READS = ['/api/cc', '/api/state', '/api/alerts'];
 
 self.addEventListener('install', e => e.waitUntil(caches.open(SHELL).then(c => c.addAll(FILES)).then(() => self.skipWaiting())));

@@ -10,23 +10,23 @@
     const np = d.commission_mail.filter(r => r.status === 'Not processed');
     const paidFrom = sc.gci.from === 'kw_paid' ? 'Paid on KW commission forms' : 'Closed deals in your sheet this year';
     const live = d.deals.filter(r => r.stage !== 'out');
-    return `<div class="cc-page">${head('Commission', '70/30 split · ' + (cap ? 'cap year from ' + day(cap.start) : 'cap and cap year not set yet, add them on Scorecard'))}
+    return `<div class="cc-page">${head('Commission', 'Amounts are gross, before the KW 70/30 split · ' + (cap ? 'cap year from ' + day(cap.start) : 'cap and cap year not set yet, add them on Scorecard'))}
       <div class="cc-tiles">
         ${tile('GCI paid', m(sc.gci.value), paidFrom + (sc.gci.blank ? ` · <em>${sc.gci.blank} closed with no commission</em>` : ''), 'deals')}
         ${tile('Paid plus pending', m(sc.gci.with_pending), 'Paid, plus every deal under contract', 'deals')}
-        ${tile('Pending', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} blank</em>` : ''}`, 'deals')}
+        ${tile('Pending, gross', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} blank</em>` : ''}`, 'deals')}
         ${tile('Toward cap', cap ? m(cap.paid) : '—', cap ? `${cap.pct}% of ${m(cap.amount)} · ${m(cap.left)} to go` : 'Set the cap amount and start date on Scorecard', ['deals', 'goals'])}
         ${tile('Not processed', n(np.length), np.length ? 'KW has not processed these yet' : 'Nothing waiting', 'commission_mail')}
       </div>
       ${C.dealCards(d.deals.filter(r => r.stage === 'contract'))}
       ${card('Your deals', live.length ? `<div class="cc-tablewrap"><table class="cc-table"><caption class="sr">Deals from the AIRE Deals sheet</caption>
-        <thead><tr><th scope="col">Deal</th><th scope="col">Status</th><th scope="col" class="r">Price</th><th scope="col" class="r">Your commission</th><th scope="col">Act of sale</th><th scope="col">Next</th></tr></thead>
+        <thead><tr><th scope="col">Deal</th><th scope="col">Status</th><th scope="col" class="r">Price</th><th scope="col" class="r">Your commission, gross</th><th scope="col">Act of sale</th><th scope="col">Next</th></tr></thead>
         <tbody>${live.map(r => `<tr><th scope="row">${esc(r.deal)}<small>${esc(r.side || '')}</small></th><td>${esc(r.status)}${r.days != null ? `<small>${r.days} days in stage</small>` : ''}</td>
           <td class="r">${m(r.price)}</td><td class="r">${r.commission == null ? '<em>blank</em>' : m(r.commission)}</td><td>${r.act ? day(r.act) : ''}</td><td>${esc(r.next || '')}</td></tr>`).join('')}</tbody></table></div>`
         : empty('No deals on the sheet yet.'), 'deals')}
       <div class="cc-grid">
-        ${card('Paydays, next 30 days', d.closings.length ? `<ul class="cc-list">${d.closings.map(r => `<li class="cc-ev"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.deal)}<small>${r.from === 'both' ? 'calendar and sheet agree' : 'from the ' + r.from}</small></span><b class="cc-amt">${r.money == null ? '<em>blank</em>' : m(r.money)}</b></li>`).join('')}</ul>` : empty('No act of sale in the next 30 days.'), ['calendar', 'deals'])}
-        ${card('Commission emails, 120 days', d.commission_mail.length ? `<ul class="cc-list">${d.commission_mail.map(r => `<li class="cc-ev"><span class="cc-chip s-${r.status.replace(' ', '')}">${r.status}</span><span class="cc-what">${esc(r.subject)}<small>${day((r.received || '').slice(0, 10))}</small></span></li>`).join('')}</ul>` : empty('No commission or CDA mail found.'), 'commission_mail')}
+        ${card('Paydays, next 30 days', d.closings.length ? `<ul class="cc-list">${d.closings.map(r => `<li class="cc-ev"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.deal)}<small>${r.from === 'both' ? 'Deals sheet and calendar agree' : r.from === 'sheet' ? 'from the Deals sheet' : 'from the calendar only'}</small></span><b class="cc-amt">${r.money == null ? '<em>blank</em>' : m(r.money)}</b></li>`).join('')}</ul>` : empty('No act of sale in the next 30 days.'), ['calendar', 'deals'])}
+        ${card('Commission emails, 120 days', d.commission_mail.length ? `<ul class="cc-list">${d.commission_mail.map(r => `<li class="cc-ev"><span class="cc-chip s-${r.status.replace(' ', '')}">${r.status}</span><span class="cc-what">${C.scrub(r.subject)}<small>${day((r.received || '').slice(0, 10))}</small></span></li>`).join('')}</ul>` : empty('No commission or CDA mail found.'), 'commission_mail')}
       </div></div>`;
   }
 
@@ -34,7 +34,7 @@
   const STEP = { done: ['✓', 'Done', 'k-showing'], today: ['●', 'Today', 'k-closing'], upcoming: ['○', '', 'k-client'], missing: ['!', 'No date on the sheet', 'k-deadline'] };
   C.dealCards = rows => !rows.length ? '' : card(`Under contract <span class="cc-count">${rows.length}</span>`, `<div class="cc-deals">${rows.map(r => `
     <article class="cc-deal"><header><h3>${esc(r.deal)}</h3><span class="cc-pill ${r.to_close != null && r.to_close <= 7 ? 'k-closing' : 'k-listing'}">${r.to_close == null ? 'No act of sale date' : r.to_close < 0 ? 'Closed ' + Math.abs(r.to_close) + ' days ago?' : r.to_close === 0 ? 'Closes today' : r.to_close + ' days to close'}</span></header>
-      <p class="cc-note">${esc(r.side || '')}${r.price != null ? ' · ' + m(r.price) : ''} · your side ${r.commission == null ? '<em>blank</em>' : m(r.commission)}</p>
+      <p class="cc-note">${esc(r.side || '')}${r.price != null ? ' · ' + m(r.price) : ''} · your commission, gross ${r.commission == null ? '<em>blank</em>' : m(r.commission)}</p>
       <ol class="cc-steps">${r.checklist.map(c => { const [ico, word, k] = STEP[c.state]; return `<li class="${k}"><span aria-hidden="true">${ico}</span><b>${esc(c.step)}</b><small>${c.date ? day(c.date) + (c.state === 'upcoming' ? ` · in ${c.days} days` : '') : esc(c.note || '')}${word ? ' · ' + word : ''}</small></li>`; }).join('')}</ol>
       ${r.next ? `<p class="cc-next"><b>Next:</b> ${esc(r.next)}</p>` : ''}</article>`).join('')}</div>`, 'deals');
 
@@ -42,17 +42,17 @@
   function deadlines() {
     const g = guard(); if (g) return g;
     const d = C.data, all = d.deadlines.all, by = {};
-    all.forEach(r => { (by[r.deal] = by[r.deal] || []).push(r); });
-    return `<div class="cc-page">${head('Deadlines', 'Every contract date in the next 30 days, from your calendar')}
+    all.forEach(r => { (by[r.deal] = by[r.deal] || []).push(r); });  // r.deal is the sheet's name when the street matches
+    return `<div class="cc-page">${head('Deadlines', 'Every contract date in the next 30 days: the Deals sheet\'s dates plus your coordinator\'s calendar, one line per deal per day')}
       <div class="cc-tiles">
-        ${tile('Next 3 days', n(d.deadlines.d3.length), 'Due soon', 'calendar')}
-        ${tile('Next 30 days', n(all.length), 'All deadlines', 'calendar')}
-        ${tile('Deals with a deadline', n(d.deadlines.deals), 'Active deals', 'calendar')}
+        ${tile('Next 3 days', n(d.deadlines.d3.length), 'Due soon', ['deals', 'calendar'])}
+        ${tile('Next 30 days', n(all.length), 'All deadlines', ['deals', 'calendar'])}
+        ${tile('Deals with a deadline', n(d.deadlines.deals), 'Active deals', ['deals', 'calendar'])}
         ${tile('Act of sale, 30 days', n(d.closings.length), 'Same list as Paydays', ['calendar', 'deals'])}
       </div>
       <div class="cc-grid">
-        ${card('Next 3 days', deadlineList(d.deadlines.d3), 'calendar', 'is-hot')}
-        ${card('By deal', Object.keys(by).length ? Object.keys(by).map(k => `<h3 class="cc-sub-h">${esc(k)}</h3>${deadlineList(by[k])}`).join('') : empty('No deadlines in 30 days.'), 'calendar')}
+        ${card('Next 3 days', deadlineList(d.deadlines.d3), ['deals', 'calendar'], 'is-hot')}
+        ${card('By deal', Object.keys(by).length ? Object.keys(by).map(k => `<h3 class="cc-sub-h">${esc(k)}</h3>${deadlineList(by[k])}`).join('') : empty('No deadlines in 30 days.'), ['deals', 'calendar'])}
       </div></div>`;
   }
 
@@ -83,49 +83,41 @@
   C.calKind = k => { C.cal.hide.has(k) ? C.cal.hide.delete(k) : C.cal.hide.add(k); render(); };
 
   // ---------------- Leads ----------------
-  // Leads show the full name, phone, email and everything the lead email carried, without the privacy dots
-  // (Caleb, 2026-11-05). Money elsewhere stays behind Show.
-  const AV = ['#e87757', '#7fd0a0', '#8ab4f8', '#b9a3e3', '#ffb547', '#6fcfb8', '#e29ac0', '#c8b596'];
+  // One list: website lead emails and CRM contacts in Stage new lead, one row per person (cc.merge_leads).
+  // Names, phones, emails and what they wrote hide with the privacy button like everything else (Caleb, 2026-11-06,
+  // replacing the 2026-11-05 always-shown rule).
+  const AV = ['#e87757', '#c8b596'];
   const avColor = t => AV[[...String(t || '')].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % AV.length];
-  const initials = t => String(t || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
-  const srcKind = t => /home value|valuation/i.test(t) ? 'k-closing' : /listing|showing|tour/i.test(t) ? 'k-showing' : 'k-client';
-  const BAND = { hot: 'k-closing', warm: 'k-deadline', cool: 'k-client', cold: 'k-block', 'ice-cold': 'k-block' };
-  function ageChip(r) {
-    const k = (r.received || '').slice(0, 10), t = C.data.today;
-    const n = k ? Math.round((new Date(t + 'T12:00:00Z') - new Date(k + 'T12:00:00Z')) / 864e5) : null;
-    const [label, cls] = n == null ? ['Date unknown', 'k-other'] : n <= 0 ? ['New today', 'k-closing'] : n === 1 ? ['Yesterday', 'k-deadline'] : [n + ' days ago', 'k-other'];
-    return `<span class="cc-pill ${cls}">${label}</span>`;
-  }
-  const leadRows = () => C.data.leads.filter(r => !r.test).sort((a, b) => (b.received || '').localeCompare(a.received || ''));
+  const DUE = { now: 'k-closing', late: 'k-closing', soon: 'k-listing', done: 'k-other', unknown: 'k-other' };
+  const leadRows = () => C.data.leads.filter(r => matches(`${r.name} ${r.phone} ${r.email} ${r.source}`));
   function leadCard(r, i) {
-    const name = r.name || 'Website lead', c = r.crm, shown = new Set(['address', 'message']);
+    const name = r.name || 'Website lead', c = r.crm, pid = c && c.person_id, shown = new Set(['address', 'message']);
     const extra = (r.fields || []).filter(([k]) => !shown.has(k.toLowerCase()));
-    const tel = String(r.phone || '').replace(/[^\d+]/g, '');
+    const tel = String(r.phone || '').replace(/[^\d+]/g, ''), due = r.due || {};
+    const when = (r.received || '').length > 10 ? day(r.received.slice(0, 10)) + ', ' + C.time(r.received) : r.received ? day(r.received.slice(0, 10)) : 'Date unknown';
     return `<li class="cc-lead" style="--av:${avColor(name)}">
-      <div class="cc-lead-top"><span class="cc-av" aria-hidden="true">${esc(initials(name))}</span>
-        <div class="cc-lead-id"><h3>${esc(name)}</h3>
-          <div class="cc-pills">${ageChip(r)}<span class="cc-pill ${srcKind(r.source || r.subject)}">${esc(r.source || 'Website lead')}</span>${r.area ? `<span class="cc-pill k-listing">${esc(r.area)}</span>` : ''}
-          ${c ? `<span class="cc-pill ${BAND[(c.band || '').toLowerCase()] || 'k-other'}">In your CRM${c.band ? ' · ' + esc(c.band) : ''}</span>` : '<span class="cc-pill k-other">Not in your CRM yet</span>'}</div></div></div>
+      <div class="cc-lead-top"><span class="cc-av" aria-hidden="true">${C.ini(name)}</span>
+        <div class="cc-lead-id"><h3>${C.who(name)}</h3>
+          <div class="cc-pills"><span class="cc-pill ${DUE[due.level] || 'k-other'}">${esc(due.label || '')}</span><span class="cc-pill k-listing">${esc(r.source || 'Website lead')}</span>${r.area ? `<span class="cc-pill k-other">${esc(r.area)}</span>` : ''}
+          ${c ? `<span class="cc-pill k-other">In your CRM${c.band ? ' · ' + esc(c.band) : ''}</span>` : '<span class="cc-pill k-other">Not in your CRM yet</span>'}</div></div></div>
       <ul class="cc-contact">
-        <li><span aria-hidden="true">☎</span>${r.phone ? `<a href="tel:${esc(tel)}">${esc(r.phone)}</a>` : '<em>No phone in the email</em>'}</li>
-        <li><span aria-hidden="true">✉</span>${r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : '<em>No email in the email</em>'}</li>
-        ${r.address ? `<li><span aria-hidden="true">⌂</span>${esc(r.address)}</li>` : ''}
-        <li><span aria-hidden="true">◷</span>Came in ${esc(C.time(r.received || '') === 'All day' ? day((r.received || '').slice(0, 10)) : day((r.received || '').slice(0, 10)) + ', ' + C.time(r.received))}</li>
+        <li><span aria-hidden="true">☎</span>${r.phone ? (C.priv ? C.ph(r.phone) : `<a href="tel:${esc(tel)}">${esc(fmtPhone(r.phone))}</a>`) : '<em>No phone</em>'}</li>
+        <li><span aria-hidden="true">✉</span>${r.email ? (C.priv ? C.em(r.email) : `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>`) : '<em>No email</em>'}</li>
+        ${r.address ? `<li><span aria-hidden="true">⌂</span>${C.priv ? '<span class="cc-hid">hidden</span>' : esc(r.address)}</li>` : ''}
+        <li><span aria-hidden="true">◷</span>Came in ${esc(when)} · ${r.origin === 'crm' ? 'from the CRM' : 'from the lead email'}</li>
       </ul>
-      ${r.message ? `<blockquote class="cc-quote">${esc(r.message)}</blockquote>` : ''}
-      ${extra.length ? `<dl class="cc-fields">${extra.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${/^https?:\/\//i.test(v) ? `<a href="${esc(v)}" target="_blank" rel="noopener">Open link</a>` : esc(v)}</dd></div>`).join('')}</dl>` : ''}
-      ${c ? `<dl class="cc-fields cc-crm"><div><dt>In the CRM as</dt><dd>${esc(c.display || '')}</dd></div>${c.stage ? `<div><dt>Stage</dt><dd>${esc(c.stage)}</dd></div>` : ''}${c.last_touch ? `<div><dt>Last touch</dt><dd>${esc(c.last_touch)}${c.days_quiet != null ? ` · ${c.days_quiet} days quiet` : ''}</dd></div>` : ''}${c.next_action ? `<div><dt>Next action</dt><dd>${esc(c.next_action)}</dd></div>` : ''}${c.owes_reply ? `<div><dt>Reply</dt><dd class="cc-owed">They texted, you owe a reply</dd></div>` : ''}</dl>` : ''}
-      <p class="cc-lead-msg">${esc(draftText(r))}</p>
-      <div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyLead(${i})">Copy the text</button><a class="cc-btn" href="https://agent.kw.com/command" target="_blank" rel="noopener">Open Command</a></div>
-      <p class="cc-note cc-how">Copy the text, open Command, paste it on ${esc(name.split(' ')[0])}'s contact and press send in Command.</p></li>`;
+      ${r.message ? `<blockquote class="cc-quote">${C.msg(r.message)}</blockquote>` : ''}
+      ${extra.length && !C.priv ? `<dl class="cc-fields">${extra.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${/^https?:\/\//i.test(v) ? `<a href="${esc(v)}" target="_blank" rel="noopener">Open link</a>` : esc(v)}</dd></div>`).join('')}</dl>` : ''}
+      ${c && (c.last_touch || c.next_action) ? `<p class="cc-note">${c.last_touch ? 'Last touch ' + esc(c.last_touch) : 'No touch logged'}${c.next_action && !/within the hour/i.test(c.next_action) ? ' · Next: ' + C.scrub(c.next_action, [name]) : ''}</p>` : ''}
+      <div class="cc-acts">${pid ? `${typeof textBtn === 'function' ? textBtn(pid, { phone: r.phone, display: name }) : ''}<button type="button" class="cc-primary" onclick="touched('${esc(pid)}')">✓ Touched</button><button type="button" onclick="openTask('${esc(pid)}')">＋ Task</button>` : `<button type="button" class="cc-primary" onclick="CC.addLead(${i})">Add to the CRM</button>`}<button type="button" onclick="CC.copyLead(${i})">Copy a first text</button></div></li>`;
   }
   function ccleads() {
     const g = guard(); if (g) return g;
-    const rows = leadRows(), tests = C.data.leads.length - rows.length;
-    return `<div class="cc-page">${head('Leads', 'New website leads, newest first. Copy the text here, then press send in Command.')}
-      ${card(`Website leads <span class="cc-count">${rows.length}</span>`, rows.length ? `<ul class="cc-leads">${rows.map(leadCard).join('')}</ul>`
-        : empty('No website leads in the last 14 days.'), 'leads')}
-      ${tests ? `<p class="cc-note">${tests} test lead${tests > 1 ? 's' : ''} not counted.</p>` : ''}</div>`;
+    const rows = leadRows();
+    return `<div class="cc-page">${head('Leads', 'Every new lead from the last 14 days, newest first: website lead emails and new CRM contacts, once each.')}
+      <div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button></div>
+      ${card(`Leads <span class="cc-count">${rows.length}</span>`, rows.length ? `<ul class="cc-leads">${rows.map(leadCard).join('')}</ul>`
+        : empty('No new leads in the last 14 days.'), ['leads', 'crm'])}</div>`;
   }
   function draftText(r) {
     const first = (r.name || '').split(' ')[0] || 'there';
@@ -135,7 +127,22 @@
   }
   C.copyLead = i => {
     const r = leadRows()[i];
-    navigator.clipboard.writeText(draftText(r)).then(() => toast('ok', 'COPIED', 'Text copied. Now paste it in Command and press send there.'), () => toast('err', 'COPY', 'The browser blocked the clipboard.'));
+    navigator.clipboard.writeText(draftText(r)).then(() => toast('ok', 'COPIED', 'A first text is on the clipboard. Read it, then send it from Command or the Text button.'), () => toast('err', 'COPY', 'The browser blocked the clipboard.'));
+  };
+  // Add a lead: one form, saved by crm.py (it refuses a name, phone or email already in the CRM, and says so when
+  // that person is on Do Not Contact). Click Add a lead, fill it in, click Save: two clicks.
+  C.addLead = async i => {
+    const r = i == null ? {} : leadRows()[i] || {};
+    const SRC = ['Website', 'Referral', 'Sign call', 'Open house', 'Social', 'Past client', 'Other'];
+    const v = await modal('Add a lead', `
+      <div class="field"><label for="m-lname">Name</label><input id="m-lname" autocomplete="off" value="${esc(r.name || '')}" required></div>
+      <div class="field"><label for="m-lphone">Phone</label><input id="m-lphone" type="tel" inputmode="tel" autocomplete="off" value="${esc(r.phone || '')}"></div>
+      <div class="field"><label for="m-lemail">Email</label><input id="m-lemail" type="email" autocomplete="off" value="${esc(r.email || '')}"></div>
+      <div class="field"><label for="m-lsrc">Source</label><select id="m-lsrc">${SRC.map(x => `<option ${(r.source ? /luxury|website/i.test(r.source) && x === 'Website' : x === 'Website') ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
+      <p class="cc-note">Saved to the CRM as a new lead. Refused if the name, phone or email is already there or on Do Not Contact.</p>`,
+      m => { const name = $('#m-lname', m).value.trim(); if (!name) { $('#m-lname', m).focus(); return false; }
+        return { name, phone: $('#m-lphone', m).value.trim(), email: $('#m-lemail', m).value.trim(), source: $('#m-lsrc', m).value + ' ' + (C.data ? C.data.today : todayISO()), next_action: 'Reach out: new lead' }; }, 'Save lead');
+    if (v) await act('/api/lead', v, { tag: 'LEAD', text: `${v.name} is in the CRM as a new lead` }).then(ok => { if (ok) C.load(); });
   };
   Object.assign(C.views, { commission, deadlines, calendar, ccleads });
 })();

@@ -21,7 +21,7 @@ async function load() {
     S.data = await api('/api/state');
     render();
   } catch (e) {
-    toast('err', 'SERVER', 'app.py is not answering. Start it with: python3 aire/pipeline-app/app.py');
+    toast('err', 'NOT ANSWERING', 'Pipeline on the Mac is not answering. It restarts by itself within a minute.');
   }
 }
 async function act(path, body, okText) {
@@ -50,9 +50,9 @@ const firstName = n => (String(n || '').trim().split(/\s+/)[0] || '');
 function lastText(id) { return ((S.data && S.data.last_texts) || {})[id]; }
 function textBtn(id, row) {
   row = row || personRow(id) || {};
-  if (!row.phone) return `<button class="primary" onclick="openCompose('${id}')">✉ Compose</button>`;
-  const n = firstName(row.display);
-  return `<button class="primary text-btn" onclick="textNow('${id}')" title="Opens the text. Nothing goes until you press SEND.">▭ Text${n ? ' ' + esc(n) : ''}</button>`;
+  if (!row.phone) return `<button type="button" onclick="openCompose('${id}')">Email</button>`;
+  const n = window.CC && CC.priv ? '' : firstName(row.display);
+  return `<button type="button" class="text-btn" onclick="textNow('${id}')" title="Opens the text. Nothing goes until you press SEND.">Text${n ? ' ' + esc(n) : ''}</button>`;
 }
 function textWhen(at) {
   const d = new Date(at); if (isNaN(d)) return '';
@@ -76,7 +76,7 @@ function watchDelivery() {
   S.deliveryTimer = setInterval(async () => {
     if (++n > 120 || !textPending()) { clearInterval(S.deliveryTimer); S.deliveryTimer = null; return; }
     if (S.compose || !$('#modal').hidden) return;
-    try { S.data = await api('/api/state'); if (S.view !== 'cc' && !S.map) render(); } catch (e) { }
+    try { S.data = await api('/api/state'); if (!S.map) render(); } catch (e) { }
   }, 4000);
 }
 function textNow(id) {
@@ -95,22 +95,23 @@ function render() {
   if (!S.data) return;
   const f = feed(), c = f.counts || {}, d = S.data;
   renderNav(c);
-  // top status
-  const lvl = statusLevel();
-  const chip = $('#status-chip'); chip.className = 'status-chip ' + lvl;
-  $('#status-word').textContent = !d.feed_ok ? 'NO FEED' : lvl === 'stop' ? 'STOP' : lvl === 'warn' ? 'ATTENTION' : 'OPTIMAL';
-  S.systemWord = $('#status-word').textContent; S.systemLevel = lvl;
+  // top status: what is actually true. A failed read is named, never covered by an all-clear word.
+  const lvl = statusLevel(), bad = window.CC && CC.failing ? CC.failing() : [];
+  const chip = $('#status-chip'); chip.className = 'status-chip ' + (bad.length || lvl === 'stop' ? 'stop' : lvl);
+  $('#status-word').textContent = !d.feed_ok ? 'CRM feed did not load' : bad.length ? `${bad.length} read${bad.length > 1 ? 's' : ''} failed` : lvl === 'stop' ? 'Needs attention' : lvl === 'warn' ? 'Check the bell' : 'Every source current';
+  chip.title = bad.length ? 'Failed: ' + bad.join(', ') : ''; chip.onclick = () => go('sources');
+  S.systemWord = $('#status-word').textContent; S.systemLevel = chip.className.replace('status-chip ', '');
   const bc = $('#bell-count'); bc.hidden = !problems().length; bc.textContent = problems().length;
   // send status
   const mode = $('#mode'); mode.textContent = d.demo ? 'DEMO · DRY RUN' : d.sender === 'live' ? 'LIVE' : 'DRY RUN'; mode.className = 'mode mono' + (d.sender === 'live' && !d.demo ? ' live' : '');
-  $('#mode-sub').textContent = d.demo ? 'made-up people, nothing is written' : d.sender === 'live' ? 'texts via Messages, email via Gmail' : 'set PIPELINE_SENDER=live to send';
+  $('#mode-sub').textContent = d.demo ? 'made-up people, nothing is written' : d.sender === 'live' ? 'texts via Messages, email via Gmail' : 'sends are logged, nothing leaves the Mac';
   const vst = $('#voice-state'); if (vst && d.voice) vst.title = (d.voice.ask ? 'Claude Q&A on' : 'Claude Q&A off') + ' · ' + (d.voice.tts === 'elevenlabs' ? 'ElevenLabs voice' : 'browser voice');
   $('#caps-mini').innerHTML = `<div><b>${d.caps.sent_texts}/${d.caps.texts}</b>texts</div><div><b>${d.caps.sent_emails}/${d.caps.emails}</b>emails</div>`;
   const wave = $('#wave'); if (!wave.children.length) wave.innerHTML = Array.from({ length: 28 }, (_, i) => `<i style="--d:${(i * 37) % 900}"></i>`).join('');
   document.querySelectorAll('.wave.small').forEach(w => { if (!w.children.length) w.innerHTML = Array.from({ length: 9 }, (_, i) => `<i style="--d:${(i * 97) % 700}"></i>`).join(''); });
   // bottom
   const items = drafts(), replies = items.filter(i => i.reply).length;
-  $('#compose-next').textContent = !items.length ? '✉ Queue clear' : `✉ Compose next · ${replies ? replies + ' owed, ' : ''}${items.length} ready`;
+  $('#compose-next').textContent = !items.length ? 'No drafts waiting' : `Next draft · ${items.length}`;
   const cmd = d.command || {};
   const age = d.feed_age_minutes;
   $('#foot-chips').innerHTML = [
@@ -121,17 +122,17 @@ function render() {
   $('#refresh').classList.toggle('spin', !!(d.refresh && d.refresh.running));
   $('#refresh').innerHTML = '<span>⟳</span>';
   $('#open-sheet').hidden = !(d.links && d.links.sheet);
-  // main
+  // main: every page is a Command Center page now (cc.js and friends), so one design and one privacy switch.
   const main = $('#main');
-  // Command Center pages read /api/cc, not feed.json, so they work even when the feed is missing.
-  if (window.CC && CC.views[S.view]) { const ae = document.activeElement; if (ae && ae.closest && ae.closest('.cc-goals')) return; if (S.map) { S.map.destroy(); S.map = null; } main.innerHTML = CC.views[S.view](); return; }
   if (d.feed_ok && f.header_ok === false) { main.innerHTML = stopScreen(f); return; }
-  if (!d.feed_ok) { main.innerHTML = `<div class="stop-screen"><div class="big">NO FEED</div><p>${esc((problems()[0] || {}).text || 'feed.json is missing.')}</p><div class="acts"><button class="primary" onclick="refresh()">Run the refresh</button></div></div>`; return; }
-  const views = { cc: viewCC, touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent, map: viewMap, market: viewMarket };
+  if (S.view === 'cc') S.view = 'dash';
+  if (S.view === 'leads') S.view = 'ccleads';
+  if (S.view === 'market') S.view = 'monitor';
+  const page = window.CC && (CC.views[S.view] || CC.views.dash);
+  const ae = document.activeElement; if (ae && ae.closest && ae.closest('.cc-goals')) return;
   if (S.map) { S.map.destroy(); S.map = null; }
-  main.innerHTML = (views[S.view] || viewCC)();
-  if (S.view === 'map') mountMap(false); else if (S.view === 'deals' && S.dealsMode === 'map') mountMap(true);
-  if (S.view === 'cc' && window.Core) { const cv = $('#core'); if (cv) Core.mount(cv, (f.counts || {}).by_band || {}); }
+  main.innerHTML = page ? page() : '';
+  if (window.CC && CC.after[S.view]) CC.after[S.view]();
   reflectVoice();
   // the hero's header is absolute, so the svg gets the whole panel
   // deferred animations: bars, gauges, counters
@@ -148,193 +149,37 @@ function countUp(el) {
   const t0 = performance.now(), dur = 900;
   (function step(t) { const p = Math.min(1, (t - t0) / dur), v = Math.round(target * (1 - Math.pow(1 - p, 3))); el.textContent = v.toLocaleString(); if (p < 1) requestAnimationFrame(step); })(t0);
 }
+// The nav, in groups, one distinct icon each. KEYS: the number keys open the same pages, in this order.
+const NAV = [
+  ['Today', [['dash', '◧', 'Dashboard'], ['touches', '☎', 'Touches due'], ['tasks', '☑', 'Tasks'], ['queue', '✎', 'Drafts'], ['sent', '➚', 'Sent today']]],
+  ['People', [['ccleads', '✚', 'Leads'], ['map', '⌖', 'Map']]],
+  ['Deals', [['deals', '⌂', 'Deals'], ['commission', '$', 'Commission'], ['deadlines', '⚑', 'Deadlines'], ['calendar', '▦', 'Calendar']]],
+  ['Numbers', [['scorecard', '▲', 'Scorecard'], ['ccmarket', '◆', 'Market'], ['monitor', '⚒', 'Listings and permits'], ['news', '▤', 'News'], ['bank', '◫', 'Bank']]],
+  ['You', [['life', '❀', 'Life'], ['health', '♥', 'Workouts']]],
+  ['System', [['sources', '⇄', 'Sources']]],
+];
+const KEYS = ['dash', 'touches', 'tasks', 'queue', 'ccleads', 'deals', 'commission', 'deadlines', 'calendar', 'map'];
 function renderNav(c) {
-  const dr = drafts();
+  const dr = S.data ? drafts() : [];
   const cd = window.CC && CC.data, np = cd ? cd.commission_mail.filter(r => r.status === 'Not processed').length : 0;
-  const items = [
-    ['dash', '◧', 'Dashboard'], ['commission', '$', 'Commission', np, np > 0], ['deadlines', '⚑', 'Deadlines', cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0],
-    ['calendar', '▦', 'Calendar'], ['ccleads', '✧', 'Leads', cd ? cd.leads.filter(r => !r.test).length : 0], ['scorecard', '▲', 'Scorecard'],
-    ['ccmarket', '◆', 'Market'], ['news', '▤', 'News'], ['life', '❀', 'Life'], ['health', '♥', 'Workouts'],
-    ['bank', '◎', 'Bank'], ['sources', '◉', 'Sources', cd ? (cd.problems || []).length + (cd.sync && cd.sync.error ? 1 : 0) : 0, true],
-    ['cc', '⌂', 'Command Center'], ['touches', '◎', 'Touches due', (feed().touches_due || []).length, (feed().touches_due || []).some(r => r.owes_reply)],
-    ['tasks', '☑', 'Tasks', (feed().tasks || []).length, c.tasks_overdue > 0], ['deals', '⌂', 'Deals', (feed().deals || []).length],
-    ['leads', '✦', 'New leads', (feed().new_leads || []).length, (feed().new_leads || []).length > 0], ['queue', '✉', 'Drafts', dr.length],
-    ['sent', '↗', 'Sent today', (S.data.sent_today || []).length],
-    ['map', '◈', 'Map', ((feed().map || {}).counts || {}).persons || 0], ['market', '◆', 'Market Monitor', ((feed().market || {}).rows || []).length],
-  ];
-  $('#nav').innerHTML = items.map(([k, ico, label, n, warn]) => `<button class="${S.view === k ? 'on' : ''}" onclick="go('${k}')"><span class="ico">${ico}</span>${label}${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`).join('');
+  const td = feed().touches_due || [];
+  const cnt = { commission: [np, np > 0], deadlines: [cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0], ccleads: [cd ? cd.leads.length : 0, false],
+    sources: [window.CC && CC.failing ? CC.failing().length + ((cd && cd.problems) || []).filter(p => p.state === 'stale').length : 0, true],
+    touches: [td.length, td.some(r => r.owes_reply)], tasks: [(feed().tasks || []).length, c.tasks_overdue > 0], deals: [cd ? cd.deals.filter(r => !['closed', 'out'].includes(r.stage)).length : 0, false],
+    queue: [dr.length, false], sent: [(S.data.sent_today || []).length, false] };
+  const view = { cc: 'dash', leads: 'ccleads', market: 'monitor', dealmap: 'deals' }[S.view] || S.view;
+  $('#nav').innerHTML = NAV.map(([g, items]) => `<div class="nav-g"><span class="nav-h">${g}</span>${items.map(([k, ico, label]) => { const [n, warn] = cnt[k] || [];
+    return `<button type="button" class="${view === k ? 'on' : ''}" ${view === k ? 'aria-current="page"' : ''} onclick="go('${k}')"><span class="ico" aria-hidden="true">${ico}</span><span class="lbl">${label}</span>${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`; }).join('')}</div>`).join('');
   const on = $('#nav .on'), side = $('.side');
   if (on && side && innerWidth <= 720) { const a = on.getBoundingClientRect(), b = side.getBoundingClientRect(); side.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2); }
 }
 function panel(i, title, right, body, extra = '') { return `<section class="panel ${extra}" style="--i:${i}"><div class="ph"><h3>${title}</h3><div class="ph-right">${right || ''}</div></div>${body}</section>`; }
 
-// ---------------------------------------------------------------- command center
-function viewCC() {
-  const f = feed(), c = f.counts || {}, d = S.data;
-  const owes = (f.touches_due || []).filter(r => r.owes_reply).length;
-  const stats = [
-    ['◎', 'Touches due', c.touches_due, owes ? `${owes} owe a reply` : 'none owe a reply', owes ? 'hot' : '', 'touches'],
-    ['☑', 'Tasks open', c.tasks_open, c.tasks_overdue ? `${c.tasks_overdue} overdue` : 'none overdue', c.tasks_overdue ? 'bad' : '', 'tasks'],
-    ['⌂', 'Live deals', c.deals_live, (f.deals || []).filter(x => x.stage === 'under_contract').length + ' under contract', '', 'deals'],
-    ['✦', 'New leads', (f.new_leads || []).length, 'last 14 days', (f.new_leads || []).length ? 'hot' : '', 'leads'],
-    ['✉', 'Drafts ready', drafts().length, `${d.caps.sent_texts + d.caps.sent_emails} sent today`, '', 'queue'],
-  ];
-  const row1 = `<div class="cc-row1">
-    ${panel(2, 'CRM overview', '', `<div class="stat-list">${stats.map(([i, l, n, s, cls, v]) => `<div class="stat" onclick="go('${v}')"><span class="ico">${i}</span><div><b data-count="${n || 0}">0</b><small class="${cls}">${esc(s)}</small></div></div>`).join('')}</div>`)}
-    ${panel(3, 'Pipeline core', `<span class="tag live">● LIVE</span>`, hero(f), 'hero')}
-    ${panel(4, 'Live feed', `<button class="link" onclick="go('touches')">View all ›</button>`, `<div class="feed-list">${liveFeed()}</div>`)}
-  </div>`;
-  const deals = (f.deals || []).slice(0, 6);
-  const row2 = `<div class="cc-row2">
-    ${panel(5, 'Active deals', `<button class="link" onclick="go('deals')">View all ›</button>`, deals.length ? `<div class="cards">${deals.map((x, i) => dealCard(x, i)).join('')}</div>` : `<div class="empty"><b>No live deals</b>Deals come from Gmail ingest or the Quick command below.</div>`)}
-    ${panel(6, "Today's timeline", `<span>${todayISO()}</span>`, timeline())}
-    ${panel(7, 'Quick commands', '', `<div class="qc">
-      <button style="--i:0" onclick="composeNext()"><span class="ico">✉</span>Compose next draft</button>
-      <button style="--i:1" onclick="openTask()"><span class="ico">＋</span>New task</button>
-      <button style="--i:2" onclick="openDeal()"><span class="ico">⌂</span>Add or edit a deal</button>
-      <button style="--i:3" onclick="refresh()"><span class="ico">⟳</span>Refresh feed (ingest + feed)</button>
-      <button style="--i:4" onclick="window.open('${esc(d.links.command)}')"><span class="ico">⌘</span>Open Command</button>
-    </div>`)}
-  </div>`;
-  const row3 = `<div class="cc-row3">
-    ${panel(8, 'Send monitor', `<span>${d.demo ? 'demo' : d.sender === 'live' ? 'live' : 'dry run'}</span>`, gauges())}
-    ${panel(9, 'Pipeline insights', '', insights())}
-    ${panel(10, 'Sources', `<span>${sourcesOK()} connected</span>`, sources())}
-  </div>`;
-  return `<div class="cc">${row1}${row2}${row3}</div>`;
-}
-function hero(f) {
-  const v = Voice.state();
-  return `<div class="scan"></div><canvas id="core"></canvas>
-  <div class="hero-text"><div><div class="hero-title">PIPELINE</div><div class="hero-sub">AIRE CORE</div><div class="hero-ver">as of ${esc(f.as_of || '')} · feed ${esc((f.generated_at || '').slice(11, 16))}</div></div></div>
-  <div class="hero-corner tl">CRM · ${esc(String((f.counts || {}).contacts || 0))} PEOPLE</div><div class="hero-corner tr">SIGNALS · ${f.signals && f.signals.file ? 'IMESSAGE' : 'NONE'} · VOICE · ${v.on ? v.state.toUpperCase() : v.supported ? 'OFF' : 'TYPE ONLY'}</div>
-  <div class="tele" id="tele">${teleHTML()}</div><div class="heard" id="heard">${esc(S.lastHeard || '')}</div>`;
-}
+// A short log of what Pipeline did and heard this session (the voice answers read it). Not shown on screen.
 const TELE = [];
-function tele(text, strong) { TELE.push({ at: new Date(), text, strong }); if (TELE.length > 30) TELE.shift(); const el = $('#tele'); if (el) el.innerHTML = teleHTML(); }
-function teleHTML() { return TELE.slice(-4).map(t => `<div>${t.at.toTimeString().slice(0, 8)} ${t.strong ? '<b>' + esc(t.text) + '</b>' : esc(t.text)}</div>`).join(''); }
-function liveFeed() {
-  const f = feed(), items = [];
-  (f.touches_due || []).filter(r => r.owes_reply).slice(0, 4).forEach(r => items.push({ cls: 'reply', ico: '↩', b: `${r.display} texted you`, s: (r.last_messages || [])[0] ? r.last_messages[r.last_messages.length - 1].replace(/^\d{4}-\d{2}-\d{2}: /, '') : 'owes a reply', tag: 'REPLY', tcls: 'reply', on: `openCompose('${r.person_id}')` }));
-  (f.tasks || []).filter(t => t.overdue).slice(0, 2).forEach(t => items.push({ cls: 'task', ico: '!', b: `${t.task} is overdue`, s: `${t.display || 'no person'} · due ${t.due}`, tag: 'OVERDUE', tcls: 'stop', on: `go('tasks')` }));
-  (f.new_leads || []).slice(0, 2).forEach(l => items.push({ cls: 'lead', ico: '✦', b: `New lead: ${l.display}`, s: `${l.source} · ${l.next_action || ''}`, tag: 'LEAD', tcls: 'live', on: `textNow('${l.person_id}')` }));
-  (f.deals || []).slice().sort((a, b) => (b.last_event_at || '').localeCompare(a.last_event_at || '')).slice(0, 2).forEach(x => items.push({ cls: 'deal', ico: '⌂', b: x.address, s: x.last_event || x.next_step || x.stage, tag: x.stage.replace('_', ' ').toUpperCase(), tcls: 'violet', on: `openDeal(${esc(JSON.stringify(x.address))})` }));
-  (f.touches_due || []).filter(r => !r.owes_reply && r.band === 'hot').slice(0, 2).forEach(r => items.push({ cls: '', ico: '◎', b: `${r.display} is due`, s: r.next_action || quiet(r), tag: 'HOT', tcls: 'hot', on: `textNow('${r.person_id}')` }));
-  if (!items.length) return `<div class="empty"><b>All quiet</b>Nothing owes a reply, nothing overdue.</div>`;
-  return items.slice(0, 8).map((x, i) => `<div class="feed-item" style="--i:${i}" onclick="${x.on}"><span class="ico ${x.cls}">${x.ico}</span><div class="body"><b>${esc(x.b)}</b><small>${esc(x.s)}</small></div><span class="tag ${x.tcls}">${x.tag}</span></div>`).join('');
-}
-function dealCard(x, i) {
-  const stages = S.data.stages || [], pos = Math.max(0, stages.indexOf(x.stage)), pct = Math.round(((pos + 1) / 5) * 100);
-  return `<div class="card" style="--i:${i}" onclick="openDeal(${esc(JSON.stringify(x.address))})"><span class="ico">${x.side === 'buyer' ? '◇' : '⌂'}</span><b>${esc(x.address)}</b><small>${esc([x.display, money(x.price), x.expected_close ? 'closes ' + x.expected_close : ''].filter(Boolean).join(' · ') || x.source)}</small><div class="bar"><i data-w="${Math.min(100, pct)}"></i></div><div class="stage">${esc(x.stage.replace('_', ' '))}${x.next_step ? ' · ' + esc(x.next_step) : ''}</div></div>`;
-}
-function timeline() {
-  const t = (feed().tasks || []).slice(0, 7);
-  if (!t.length) return `<div class="empty"><b>No open tasks</b></div>`;
-  return `<div class="tl">${t.map((x, i) => `<div class="tl-item ${x.overdue ? 'over' : ''} ${x.task_id ? '' : 'na'}" style="--i:${i}" onclick="go('tasks')"><span class="when">${esc(dayName(x.due))}</span><span class="node"></span><div><b>${esc(x.task)}</b><small>${esc(x.display || x.source)}</small></div><span class="st">${x.overdue ? 'LATE' : x.due === todayISO() ? 'TODAY' : 'OPEN'}</span></div>`).join('')}</div>`;
-}
-function gauge(label, val, max, cls) {
-  const r = 36, C = 2 * Math.PI * r, pct = max ? Math.min(1, val / max) : 0;
-  return `<div class="gauge ${cls}"><svg viewBox="0 0 86 86"><circle class="track" cx="43" cy="43" r="${r}"/><circle class="arc" cx="43" cy="43" r="${r}" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${(C * (1 - pct)).toFixed(1)}"/></svg><div class="val">${val}<small>of ${max}</small></div><div class="lbl">${label}</div></div>`;
-}
-function gauges() {
-  const c = S.data.caps, age = S.data.feed_age_minutes == null ? 0 : S.data.feed_age_minutes;
-  return `<div class="gauges">${gauge('texts', c.sent_texts, c.texts, c.sent_texts >= c.texts ? 'red' : c.sent_texts > c.texts * .8 ? 'amber' : '')}${gauge('emails', c.sent_emails, c.emails, c.sent_emails >= c.emails ? 'red' : '')}${gauge('feed min', Math.min(age, 999), 60, age > 60 ? 'red' : age > 30 ? 'amber' : '')}</div>`;
-}
-function insights() {
-  const f = feed(), b = (f.counts || {}).by_band || {}, max = Math.max(1, ...Object.values(b));
-  const order = ['hot', 'warm', 'lukewarm', 'cold', 'ice-cold'];
-  const owes = (f.touches_due || []).filter(r => r.owes_reply).length;
-  return `<div class="insight"><div class="bands">${order.map(k => `<div class="band ${k}"><i data-h="${Math.round(100 * (b[k] || 0) / max)}" data-v="${(b[k] || 0).toLocaleString()}"></i><small>${k}</small></div>`).join('')}</div>
-  <div class="kv"><div>OWE A REPLY<b>${owes}</b></div><div>DUE TODAY<b>${(f.counts || {}).touches_due || 0}</b></div><div>CADENCE<b style="font-size:11px">hot ${(f.cadence_days || {}).hot || 7}d · warm ${(f.cadence_days || {}).warm || 14}d</b></div></div></div>`;
-}
-function sourceRows() {
-  const d = S.data, f = feed(), cmd = d.command || {}, age = d.feed_age_minutes;
-  const tq = d.text_queue || {}, eq = d.email_queue || {};
-  return [
-    ['◔', 'CRM feed', d.feed_ok ? (age == null || age <= 60 ? 'ok' : 'warn') : 'stop', d.feed_ok ? `feed.json · ${f.as_of || ''}` : 'missing'],
-    ['◉', 'iMessage signals', f.signals && f.signals.file ? 'ok' : 'warn', f.signals && f.signals.file ? `${f.signals.people} people` : 'not in this feed'],
-    ['⌘', 'Command reader', cmd.state === 'ok' ? 'ok' : cmd.state ? 'warn' : 'off', cmd.state || 'no status.json'],
-    ['✉', 'Email drafts', eq.drafts ? 'ok' : 'off', eq.drafts ? `${eq.drafts.length} ready` : 'no queue yet'],
-    ['▭', 'Text drafts', tq.drafts ? 'ok' : 'off', tq.drafts ? `${tq.drafts.length} + ${(tq.reply_first || []).length} replies` : 'no queue yet'],
-    ['↗', 'Sender', d.demo ? 'warn' : d.sender === 'live' ? 'ok' : 'warn', d.demo ? 'demo' : d.sender === 'live' ? 'Messages + Gmail' : 'dry run'],
-    ['◍', 'Claude Q&A', (d.voice || {}).ask ? 'ok' : 'off', (d.voice || {}).ask ? `${(d.voice || {}).ask_model} · ${((d.voice || {}).usage || {}).asked || 0} asked` : 'no key'],
-    ['♪', 'Voice', (d.voice || {}).tts === 'elevenlabs' ? 'ok' : 'warn', (d.voice || {}).tts === 'elevenlabs' ? `ElevenLabs · ${(((d.voice || {}).usage || {}).spoken_chars || 0).toLocaleString()} chars${(d.voice || {}).speech_engine ? ' · calls on' : ''}` : 'browser voice'],
-  ];
-}
-function sourcesOK() { return sourceRows().filter(r => r[2] === 'ok').length; }
-function sources() { return `<div class="src">${sourceRows().map(([i, n, st, s], k) => `<div class="${st}" style="--i:${k}"><span class="ico">${i}</span><div><b>${n}</b><small>${esc(s)}</small></div></div>`).join('')}</div>`; }
+function tele(text, strong) { TELE.push({ at: new Date(), text, strong }); if (TELE.length > 30) TELE.shift(); }
 function stopScreen(f) {
   return `<div class="stop-screen"><div><div class="big">HEADER CHANGED</div><p>The Contacts tab of the AIRE CRM sheet lost a column the engine needs: <code>${esc((f.missing_columns || []).join(', ') || 'unknown')}</code>. Nothing on this screen can be trusted until the header is restored, so Pipeline shows nothing else.</p><p>Put the column back in the sheet, then run the refresh.</p><div class="acts" style="justify-content:center"><button class="primary" onclick="refresh()">Refresh feed</button><button onclick="window.open('${esc(S.data.links.sheet)}')">Open the sheet</button></div></div></div>`;
-}
-
-// ---------------------------------------------------------------- list views
-function filterBar(opts) { return `<div class="filters">${opts.map(([k, l]) => `<button class="${S.filter === k ? 'on' : ''}" onclick="setFilter('${k}')">${l}</button>`).join('')}</div>`; }
-function viewTouches() {
-  let rows = (feed().touches_due || []).filter(r => matches(`${r.display} ${r.phone} ${r.email} ${r.next_action} ${r.stage}`));
-  if (S.filter === 'reply') rows = rows.filter(r => r.owes_reply); else if (S.filter === 'hot') rows = rows.filter(r => r.band === 'hot'); else if (S.filter === 'warm') rows = rows.filter(r => r.band === 'warm');
-  const body = rows.length ? `<div class="rows">${rows.slice(0, 200).map((r, i) => touchRow(r, i)).join('')}</div>` : `<div class="empty"><b>Nobody here</b>${S.q ? 'Nothing matches the search.' : 'Every touch is logged.'}</div>`;
-  return `<div class="view">${panel(0, `Touches due · ${rows.length}`, filterBar([['all', 'ALL'], ['reply', 'OWE A REPLY'], ['hot', 'HOT'], ['warm', 'WARM']]), body)}</div>`;
-}
-function touchRow(r, i) {
-  const last = (r.last_messages || []).slice(-1)[0];
-  return `<div class="row ${r.owes_reply ? 'reply' : ''}" style="--i:${i}">
-    <span class="ico ${r.band}">${initials(r.display)}</span>
-    <div class="who"><b>${esc(r.display || r.phone)}</b><small><span class="tag ${r.band}">${esc(r.band)}</span>${r.owes_reply ? '<span class="tag reply">REPLY</span>' : ''}<span>${esc(r.stage || '')}</span><span>${esc(fmtPhone(r.phone) || r.email || '')}</span>${textStatus(r.person_id)}</small></div>
-    <div class="why"><b>${esc(r.next_action || (r.owes_reply ? 'They texted last. Answer first.' : 'Time for a touch'))}</b>${last ? `<span class="msg">“${esc(last.replace(/^\d{4}-\d{2}-\d{2}: /, ''))}”</span>` : `<span>${quiet(r)}${r.signal_score ? ' · score ' + r.signal_score : ''}</span>`}</div>
-    <div class="acts">${textBtn(r.person_id, r)}<button onclick="touched('${r.person_id}')">✓ Touched</button><button onclick="openTask('${r.person_id}')">＋ Task</button><button onclick="openNote('${r.person_id}')">✎ Note</button><button class="danger" onclick="openDNC('${r.person_id}')">⊘</button></div>
-  </div>`;
-}
-function viewTasks() {
-  let rows = (feed().tasks || []).filter(t => matches(`${t.task} ${t.display} ${t.source}`));
-  if (S.filter === 'over') rows = rows.filter(t => t.overdue); else if (S.filter === 'today') rows = rows.filter(t => t.due === todayISO()); else if (S.filter === 'na') rows = rows.filter(t => !t.task_id);
-  rows = rows.slice().sort((a, b) => (b.overdue - a.overdue) || (a.due || '9').localeCompare(b.due || '9'));
-  const body = rows.length ? `<div class="rows">${rows.map((t, i) => `<div class="row" style="--i:${i}">
-    <span class="ico ${t.overdue ? 'hot' : ''}">${t.overdue ? '!' : '☑'}</span>
-    <div class="who"><b>${esc(t.task)}</b><small><span>${esc(t.display || 'no person')}</span><span class="tag ${t.task_id ? 'info' : 'warn'}">${t.task_id ? esc(t.source) : 'NEXT ACTION'}</span></small></div>
-    <div class="why"><b>${esc(dayName(t.due))}</b><span>${esc(t.due)}${t.overdue ? ' · overdue' : ''}</span></div>
-    <div class="acts"><button class="primary" onclick="doneTask('${t.task_id}','${t.person_id}',${JSON.stringify(t.task).replace(/"/g, '&quot;')})">✓ Done</button>${t.person_id ? `<button onclick="openCompose('${t.person_id}')">✉</button>` : ''}</div>
-  </div>`).join('')}</div>` : `<div class="empty"><b>No open tasks</b></div>`;
-  return `<div class="view">${panel(0, `Tasks · ${rows.length}`, `${filterBar([['all', 'ALL'], ['over', 'OVERDUE'], ['today', 'TODAY'], ['na', 'NEXT ACTION']])} <button class="link" onclick="openTask()">＋ New task</button>`, body)}</div>`;
-}
-function viewDeals() {
-  const rows = (feed().deals || []).filter(x => matches(`${x.address} ${x.display} ${x.stage} ${x.next_step}`));
-  const body = rows.length ? `<div class="rows">${rows.map((x, i) => `<div class="row" style="--i:${i}">
-    <span class="ico">${x.side === 'buyer' ? '◇' : '⌂'}</span>
-    <div class="who"><b>${esc(x.address)}</b><small><span class="tag violet">${esc(x.stage.replace('_', ' '))}</span><span>${esc(x.side)}</span><span>${esc(x.display)}</span>${x.price ? `<span>${money(x.price)}</span>` : ''}${x.expected_close ? `<span>closes ${x.expected_close}</span>` : ''}</small></div>
-    <div class="why"><b>${esc(x.next_step || 'no next step')}</b><span>${esc(x.last_event || '')}${x.last_event_at ? ' · ' + x.last_event_at.slice(0, 10) : ''} · ${esc(x.source)}</span></div>
-    <div class="acts"><button class="primary" onclick="openDeal(${esc(JSON.stringify(x.address))})">✎ Edit</button>${x.person_id ? `<button onclick="openCompose('${x.person_id}')">✉</button>` : ''}</div>
-  </div>`).join('')}</div>` : `<div class="empty"><b>No live deals</b></div>`;
-  const seg = `<div class="filters"><button class="${S.dealsMode === 'list' ? 'on' : ''}" onclick="S.dealsMode='list';render()">LIST</button><button class="${S.dealsMode === 'map' ? 'on' : ''}" onclick="S.dealsMode='map';render()">MAP</button></div>`;
-  return `<div class="view ${S.dealsMode === 'map' ? 'map-view' : ''}">${panel(0, `Deals · ${rows.length}`, `${seg} <button class="link" onclick="openDeal()">＋ Add a deal</button>`, S.dealsMode === 'map' ? mapPanel(true) : body)}</div>`;
-}
-function viewLeads() {
-  const rows = (feed().new_leads || []).filter(l => matches(`${l.display} ${l.source} ${l.email} ${l.phone}`));
-  const body = rows.length ? `<div class="rows">${rows.map((l, i) => `<div class="row" style="--i:${i}">
-    <span class="ico">${initials(l.display)}</span>
-    <div class="who"><b>${esc(l.display)}</b><small><span class="tag live">NEW</span><span>${esc(fmtPhone(l.phone) || l.email || '')}</span>${textStatus(l.person_id)}</small></div>
-    <div class="why"><b>${esc(l.next_action || 'Reach out')}</b><span>${esc(l.source)} · received ${esc(l.received)}</span></div>
-    <div class="acts">${textBtn(l.person_id, l)}<button onclick="touched('${l.person_id}')">✓ Touched</button><button onclick="openTask('${l.person_id}')">＋ Task</button></div>
-  </div>`).join('')}</div>` : `<div class="empty"><b>No new leads in the last 14 days</b></div>`;
-  return `<div class="view">${panel(0, `New leads · ${rows.length}`, 'last 14 days', body)}</div>`;
-}
-function viewQueue() {
-  const items = drafts().filter(d => matches(`${d.name} ${d.body} ${d.subject}`));
-  const body = items.length ? `<div class="rows">${items.map((d, i) => `<div class="row ${d.reply ? 'reply' : ''}" style="--i:${i}">
-    <span class="ico">${d.kind === 'text' ? '▭' : '✉'}</span>
-    <div class="who"><b>${esc(d.name)}</b><small>${d.reply ? '<span class="tag reply">REPLY FIRST</span>' : `<span class="tag info">${esc(d.pool || '')}</span>`}<span>${esc(d.kind === 'text' ? fmtPhone(d.to) : d.to)}</span></small></div>
-    <div class="why"><b>${esc(d.reply ? 'No template. Read what they said and answer.' : d.subject || d.body.split('\n')[0])}</b><span class="msg">${esc(d.reply ? (d.last_messages.slice(-1)[0] || '').replace(/^\d{4}-\d{2}-\d{2}: /, '') : d.body.slice(0, 110))}</span></div>
-    <div class="acts"><button class="primary" onclick="openCompose('${d.person_id}', ${i})">✉ Open</button></div>
-  </div>`).join('')}</div>` : `<div class="empty"><b>Queue is clear</b>Drafts come from follow-up/out/*.json after the refresh.</div>`;
-  return `<div class="view">${panel(0, `Compose queue · ${items.length}`, `${S.data.caps.sent_texts}/${S.data.caps.texts} texts · ${S.data.caps.sent_emails}/${S.data.caps.emails} emails today`, body)}</div>`;
-}
-function viewSent() {
-  const rows = (S.data.sent_today || []).slice().reverse();
-  const body = rows.length ? `<div class="rows">${rows.map((s, i) => `<div class="row" style="--i:${i}">
-    <span class="ico">${s.kind === 'text' ? '▭' : '✉'}</span>
-    <div class="who"><b>${esc(s.display || s.person_id)}</b><small><span class="tag ${s.status === 'sent' ? 'live' : 'warn'}">${esc(s.status.toUpperCase())}</span>${s.kind === 'text' && s.delivery ? `<span>${esc(s.delivery)}</span>` : ''}<span>${esc(s.kind === 'text' ? fmtPhone(s.to) : s.to)}</span></small></div>
-    <div class="why"><b>${esc(s.subject || `${s.chars} characters`)}</b><span>${esc(s.at.slice(11, 16))} · ${esc(s.detail || '')}</span></div><div></div>
-  </div>`).join('')}</div>` : `<div class="empty"><b>Nothing sent today</b></div>`;
-  return `<div class="view">${panel(0, `Sent today · ${rows.length}`, 'out/send-log.json', body)}</div>`;
 }
 
 // ---------------------------------------------------------------- navigation
@@ -377,7 +222,7 @@ function renderDrawer() {
   const cap = c.kind === 'text' ? d.caps.texts - d.caps.sent_texts : d.caps.emails - d.caps.sent_emails;
   const items = drafts(); const pos = S.queueIdx >= 0 ? `${S.queueIdx + 1} of ${items.length}` : 'not in queue';
   $('#drawer').hidden = false;
-  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${initials(c.name)}</span><div class="who"><b>${esc(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span><span>id ${esc(c.person_id)}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
+  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${initials(c.name)}</span><div class="who"><b>${esc(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
   <div class="dbody">
     ${c.last_messages && c.last_messages.length ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
     ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${esc(c.next_action || row.next_action)}</div>` : ''}
@@ -470,7 +315,12 @@ function openProblems() {
     () => (p.some(x => x.code.startsWith('command')) ? 'command' : true), p.some(x => x.code.startsWith('command')) ? 'Open Command' : 'OK').then(v => { if (v === 'command') window.open(S.data.links.command); });
 }
 function openHelp() {
-  modal('Keys', `<div class="brief"><ul><li><kbd>1</kbd> to <kbd>9</kbd> switch views (<kbd>8</kbd> Map, <kbd>9</kbd> Market Monitor)</li><li>On the map: drag to move, scroll or double-click to zoom, click a cluster to open it. Drawing a farm: click corners, double-click or Enter to finish, Backspace undoes a corner, Esc cancels.</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Those answers are read straight from the feed. Anything else goes to Claude with today's feed when the Q&amp;A step is on (ANTHROPIC_API_KEY). Say "ask ..." to force it.</li><li>With the Speech Engine set up (README), the bottom pill starts a call: ElevenLabs listens and talks over WebRTC, Claude answers from the feed, you can interrupt it. Tap again to hang up.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li><li>The Sources panel shows whether Claude Q&amp;A and the ElevenLabs voice are on and what they have used.</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
+  const label = k => NAV.flatMap(g => g[1]).find(x => x[0] === k)[2];
+  modal('Keys', `<div class="brief"><h4>PAGES</h4><ul>${KEYS.map((k, i) => `<li><kbd>${i}</kbd> ${esc(label(k))}</li>`).join('')}</ul>
+    <h4>EVERYWHERE</h4><ul><li><kbd>c</kbd> open the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the CRM feed</li><li><kbd>/</kbd> search</li><li><kbd>h</kbd> hide or show money and contacts</li><li><kbd>Esc</kbd> close</li></ul>
+    <h4>ON THE MAP</h4><ul><li>Drag to move, scroll or double-click to zoom, click a cluster to open it.</li><li>Drawing a farm: click the corners, double-click or Enter to finish, Backspace undoes a corner, Esc cancels.</li></ul>
+    <h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li></ul>
+    <h4>WHERE THINGS GO</h4><ul><li>Every button that changes something writes to the AIRE CRM sheet and is logged there.</li><li>Every text and email is checked for Do Not Contact and the daily limit before it goes, and lands in Sent today.</li></ul></div>`, () => true, 'OK');
 }
 
 // ---------------------------------------------------------------- toasts, clock, keys, boot
@@ -493,13 +343,12 @@ function toast(kind, tag, text) { const t = document.createElement('div'); t.cla
 function tick() { const d = new Date(); $('#date').textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); $('#time').textContent = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).toLowerCase(); }
 document.addEventListener('keydown', e => {
   if (e.target.matches('input, textarea, select')) { if (e.key === 'Escape') e.target.blur(); return; }
-  const views = ['cc', 'touches', 'tasks', 'deals', 'leads', 'queue', 'sent', 'map', 'market'];
-  if (/^[1-9]$/.test(e.key)) go(views[Number(e.key) - 1]); else if (e.key === '0') go('dash');
+  if (/^[0-9]$/.test(e.key)) go(KEYS[Number(e.key)]); else if (e.key === 'h' && window.CC) CC.togglePriv();
   else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
   else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }
   else if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else closeDrawer(); }
 });
-$('#search').addEventListener('input', e => { S.q = e.target.value; if (S.view === 'cc' && S.q) S.view = 'touches'; render(); });
+$('#search').addEventListener('input', e => { S.q = e.target.value; if (S.view === 'dash' && S.q) S.view = 'touches'; render(); });
 $('#refresh').onclick = refresh; $('#bell').onclick = openProblems; $('#help').onclick = openHelp; $('#brief').onclick = openBrief; $('#compose-next').onclick = composeNext;
 
 // ---------------------------------------------------------------- voice
@@ -534,7 +383,7 @@ $('#type-form').addEventListener('submit', e => { e.preventDefault(); const v = 
 $('#open-sheet').onclick = () => window.open(S.data.links.sheet);
 
 async function boot() {
-  const steps = ['reading feed.json', 'loading text and email drafts', 'checking Command reader', 'counting today\'s sends', 'ready'];
+  const steps = ['reading the CRM', 'loading drafts', 'checking Command', 'counting today\'s sends', 'ready'];
   const bar = $('#boot-bar'), sub = $('#boot-sub');
   const p = api('/api/state').catch(() => null);
   for (let i = 0; i < steps.length; i++) { sub.textContent = steps[i]; bar.style.width = `${((i + 1) / steps.length) * 100}%`; await new Promise(r => setTimeout(r, 220)); }
@@ -544,8 +393,8 @@ async function boot() {
   tick(); setInterval(tick, 1000);
   $('#app').hidden = false;
   if (window.CC) { CC.load(); setInterval(CC.load, 60000); }
-  if (S.data) { render(); watchDelivery(); } else toast('err', 'SERVER', 'app.py is not answering.');
+  if (S.data) { render(); watchDelivery(); } else toast('err', 'NOT ANSWERING', 'Pipeline on the Mac is not answering.');
   $('#boot').classList.add('out'); setTimeout(() => $('#boot').remove(), 600);
-  S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.view === 'cc') { /* keep the globe steady: update numbers only */ renderNav(feed().counts || {}); } else if (S.map) { /* keep the map where Caleb left it */ renderNav(feed().counts || {}); mapUpdate(); } else render(); } catch (e) { } }, 30000);
+  S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.map) { /* keep the map where Caleb left it */ renderNav(feed().counts || {}); mapUpdate(); } else render(); } catch (e) { } }, 30000);
 }
 boot();

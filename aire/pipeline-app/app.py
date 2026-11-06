@@ -759,11 +759,11 @@ class State:
             write_json(self.paths["dismissed"], {"ids": ids})
         return {"ok": True, "result": {"id": row_id, "dismissed": len(ids)}}
 
-    def make_lead(self, name: str, source: str, phone: str = "", email: str = "", note: str = "") -> dict:
+    def make_lead(self, name: str, source: str, phone: str = "", email: str = "", note: str = "", next_action: str = "") -> dict:
         if not name.strip() or not source.strip():
             raise CRMError("a lead needs a name and a source")
         args = ["lead", name.strip(), "--source", source.strip()]
-        for flag, v in (("--phone", phone), ("--email", email), ("--note", note)):
+        for flag, v in (("--phone", phone), ("--email", email), ("--note", note), ("--next-action", next_action)):
             if v and v.strip():
                 args += [flag, v.strip()]
         return self.crm.run(args)
@@ -1163,7 +1163,8 @@ class Handler(BaseHTTPRequestHandler):
             elif u.path == "/api/dismiss":
                 out = s.dismiss(body.get("id", ""))
             elif u.path == "/api/lead":
-                out = s.make_lead(body.get("name", ""), body.get("source", ""), body.get("phone", ""), body.get("email", ""), body.get("note", ""))
+                out = s.make_lead(body.get("name", ""), body.get("source", ""), body.get("phone", ""), body.get("email", ""), body.get("note", ""),
+                                 body.get("next_action", ""))
             elif u.path == "/api/list":
                 out = s.add_to_list(body.get("kind", ""), body.get("rows", []))
             elif u.path == "/api/ask/warm":

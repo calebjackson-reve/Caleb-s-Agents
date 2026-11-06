@@ -3,7 +3,7 @@
    when its read is stale or failed. Money and contact details stay hidden until Show is pressed, and hide
    again after two minutes. Uses esc, $, api, toast and go from app.js. */
 (function () {
-  const C = window.CC = { data: null, priv: true, privTimer: null, cal: { mode: 'week', off: 0, hide: new Set() }, err: null };
+  const C = window.CC = { after: {}, data: null, priv: true, privTimer: null, cal: { mode: 'week', off: 0, hide: new Set() }, err: null };
   const money0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
   const TZ = 'America/Chicago';
   const fmtDay = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
@@ -25,7 +25,7 @@
   function src(names, short) {
     const f = (C.data && C.data.fresh) || {};
     return [].concat(names).map(k => {
-      const r = f[k] || { state: 'missing' };
+      const r = f[k] || (C.local && C.local(k)) || { state: 'missing' };
       const when = r.at ? 'as of ' + fmtTime.format(new Date(r.at)) + ', ' + ago(r.age_min) : 'never read';
       const what = r.state === 'failed' ? (short ? 'read failed' : 'read failed: ' + (r.error || 'unknown') + ', showing the last good read')
         : r.state === 'stale' ? 'out of date' : r.state === 'missing' ? 'not synced yet' : '';
@@ -36,7 +36,7 @@
   const tile = (label, value, sub, sources, go) => `<${go ? `button type="button" onclick="go('${go}')"` : 'div'} class="cc-tile">
       <span class="cc-tile-l">${label}</span><b class="cc-num">${value}</b><span class="cc-sub">${sub || ''}</span>${src(sources, true)}</${go ? 'button' : 'div'}>`;
   const empty = t => `<p class="cc-empty">${t}</p>`;
-  const head = (h, p) => `<header class="cc-head"><div><h1>${h}</h1><p>${p}</p></div>${privBtn()}</header>${askBox()}`;
+  const head = (h, p) => `<header class="cc-head"><div><h1>${h}</h1><p>${p}</p></div>${C.priv ? '<span class="cc-privnote">Money and contacts hidden · Show is at the top</span>' : ''}</header>${askBox()}`;
   // Ask Claude about the page you are on. Only this page's numbers go, no phones or emails; with money hidden, no amounts or names.
   C.asks = {};
   function askBox() {
@@ -62,10 +62,14 @@
 
   C.togglePriv = function () {
     C.priv = !C.priv; clearTimeout(C.privTimer);
-    if (!C.priv) C.privTimer = setTimeout(() => { C.priv = true; C.rerender(); }, 120000);
+    C.syncPrivBtn();
+    if (!C.priv) C.privTimer = setTimeout(() => { C.priv = true; C.syncPrivBtn(); C.rerender(); }, 120000);
     C.rerender();
   };
-  C.rerender = function () { if (C.views[S.view]) render(); };
+  // The top bar's button and every page's button say the same thing; both flip the one switch.
+  C.syncPrivBtn = function () { const b = document.getElementById('privacy'); if (b) { b.textContent = C.priv ? 'Show' : 'Hide'; b.setAttribute('aria-pressed', String(!C.priv)); b.title = (C.priv ? 'Show' : 'Hide') + ' money and contacts (h)'; } };
+  document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('privacy'); if (b) b.onclick = () => C.togglePriv(); C.syncPrivBtn(); });
+  C.rerender = function () { render(); };
   C.load = async function () {
     try { const d = await api('/api/cc'); if (d && d.fresh) { C.data = d; C.err = null; } else if (!C.data) C.err = d && d.error === 'offline' ? "can't reach the Mac and there is no saved copy on this device yet" : (d && d.error) || 'no answer'; } catch (e) { if (!C.data) C.err = 'Pipeline did not answer /api/cc'; }
     C.rerender();
@@ -82,34 +86,43 @@
     const g = guard(); if (g) return g;
     const d = C.data, sc = d.scorecard, wk = d.week[0] || {}, np = d.commission_mail.filter(r => r.status === 'Not processed').length;
     const uc = d.stages.find(r => r.stage === 'contract') || {};
-    const leads7 = sc.leads7.value;
-    const today = d.calendar.filter(r => r.day === d.today && r.kind !== 'block');
+    const leads = d.leads.length, leads7 = sc.leads7.value;
+    const today = d.calendar.filter(r => r.day === d.today && r.kind !== 'block' && !r.invite);
+    const ff = ((typeof S !== "undefined" && S.data) && S.data.feed) || {}, td = ff.touches_due || [], tk = ff.tasks || [];
+    const owes = td.filter(r => r.owes_reply).length, over = tk.filter(t => t.overdue).length, dr = typeof drafts === 'function' && S.data ? drafts().length : 0;
     const gp = sc.gci.goal;
     return `<div class="cc-page">${head('Good ' + greet() + ', Caleb', 'Keller Williams First Choice · No paid leads, just service')}
+      <div class="cc-acts cc-quick"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button><button type="button" onclick="go('touches')">Log a touch</button><button type="button" onclick="openTask('')">＋ Add a task</button></div>
       <div class="cc-tiles">
         ${tile('Pending commission', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} blank on the sheet</em>` : ''}`, 'deals', 'commission')}
         ${tile('GCI this year', m(sc.gci.value), gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set', ['deals', 'goals'], 'scorecard')}
-        ${tile('Deadlines, 7 days', n(d.deadlines.d7.length), `${d.deadlines.d3.length} in the next 3 days`, 'calendar', 'deadlines')}
-        ${tile('New leads, 7 days', n(leads7), sc.leads7.low ? `Goal ${sc.leads7.low} to ${sc.leads7.high} a week` : 'Website leads', 'leads', 'ccleads')}
-        ${tile('Under contract', mk(uc.volume), `${n(uc.n)} deals · volume`, 'deals', 'commission')}
+        ${tile('Deadlines, 7 days', n(d.deadlines.d7.length), `${d.deadlines.d3.length} in the next 3 days`, ['deals', 'calendar'], 'deadlines')}
+        ${tile('New leads, 14 days', n(leads), `${n(leads7)} in the last 7 days${sc.leads7.low ? ` · goal ${sc.leads7.low} to ${sc.leads7.high} a week` : ''}`, ['leads', 'crm'], 'ccleads')}
+        ${tile('Under contract', n(uc.n), `${mk(uc.volume)} volume on the Deals sheet`, 'deals', 'deals')}
+        ${tile('Touches due', n(td.length), owes ? `${owes} owe a reply` : 'Nobody owes a reply', 'crm', 'touches')}
+        ${tile('Tasks open', n(tk.length), over ? `<em>${over} overdue</em>` : 'None overdue', 'crm', 'tasks')}
+        ${tile('Drafts ready', n(dr), 'Texts and emails to read and send', 'drafts', 'queue')}
         ${tile('Appointments, 7 days', n(sc.appts7.value), sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Showings, listing appts, clients', 'calendar', 'calendar')}
-        ${tile('Booked today', n(wk.hours) + '<small>h</small>', `${n(wk.events)} timed events`, 'calendar', 'calendar')}
+        ${tile('Booked today', n(wk.hours) + '<small>h</small>', `${n(wk.events)} timed events. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}
         ${tile('Not processed', n(np), np ? 'Commission emails to chase' : 'Nothing waiting at KW', 'commission_mail', 'commission')}
       </div>
+
       ${C.todayCard ? C.todayCard() : ''}
       <div class="cc-grid">
-        ${card('On the calendar today', today.length ? `<ul class="cc-list">${today.map(evRow).join('')}</ul>` : empty('Nothing on the calendar today.'), 'calendar')}
-        ${card('Deadlines, next 7 days', deadlineList(d.deadlines.d7), 'calendar')}
+        ${card('On the calendar today', (today.length ? `<ul class="cc-list">${today.map(evRow).join('')}</ul>` : empty('Nothing on the calendar today.')) + '<p class="cc-note">Work blocks and invites you have not accepted are left out.</p>', 'calendar')}
+        ${card('Deadlines, next 7 days', deadlineList(d.deadlines.d7), ['deals', 'calendar'])}
         ${card('Inbox, leads first', d.inbox.length ? `<ul class="cc-list">${d.inbox.slice(0, 6).map(inboxRow).join('')}</ul>` : empty('Inbox is clear for the last 3 days.'), ['inbox', 'leads'])}
       </div>${C.dashMore ? C.dashMore() : ''}</div>`;
   }
   function greet() { const h = Number(new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', hour12: false }).format(new Date())); return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'; }
-  const evRow = r => `<li class="cc-ev k-${r.kind}"><span class="cc-when">${time(r.start)}</span><span class="cc-what">${esc(r.title)}</span><span class="cc-chip">${KIND[r.kind]}</span></li>`;
-  const inboxRow = r => `<li class="cc-ev"><span class="cc-chip c-${r.category}">${r.category}</span><span class="cc-what">${esc(r.subject)}<small>${contact(senderName(r.sender))}</small></span></li>`;
+  // Event titles carry client names; with privacy on, only contract dates (addresses) and blocks keep their titles.
+  const evTitle = r => (C.priv && !['closing', 'deadline', 'inspection', 'block'].includes(r.kind) ? '<span class="cc-hid">Details hidden</span>' : esc(r.title));
+  const evRow = r => `<li class="cc-ev k-${r.kind}"><span class="cc-when">${time(r.start)}</span><span class="cc-what">${evTitle(r)}</span><span class="cc-chip">${r.invite ? 'Invite, not accepted' : KIND[r.kind]}</span></li>`;
+  const inboxRow = r => `<li class="cc-ev"><span class="cc-chip c-${r.category}">${r.category}</span><span class="cc-what">${C.priv ? '<span class="cc-hid">Subject hidden</span>' : esc(r.subject)}<small>${contact(senderName(r.sender))}</small></span></li>`;
   const senderName = s => String(s || '').replace(/<[^>]*>/g, '').trim();
   function deadlineList(rows) {
     if (!rows.length) return empty('No contract deadlines in this window.');
-    return `<ul class="cc-list">${rows.map(r => { const k = dlKind(r); return `<li class="cc-ev k-${k} ${r.day <= addDays(C.data.today, 2) ? 'is-soon' : ''}"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.what)}<small>${esc(r.deal)}</small></span><span class="cc-chip">${DL[k]}</span></li>`; }).join('')}</ul>`;
+    return `<ul class="cc-list">${rows.map(r => { const k = dlKind(r); return `<li class="cc-ev k-${k} ${r.day <= addDays(C.data.today, 2) ? 'is-soon' : ''}"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.what)}<small>${esc(r.deal)} · ${r.from === 'both' ? 'Deals sheet and calendar' : r.from === 'sheet' ? 'Deals sheet' : 'calendar'}</small>${r.note ? `<small class="cc-warn">Shown from the Deals sheet. ${esc(r.note)}.</small>` : ''}</span><span class="cc-chip">${DL[k]}</span></li>`; }).join('')}</ul>`;
   }
   // A contract deadline's type, for its color: act of sale, inspection, appraisal or financing, anything else.
   const DL = { closing: 'Act of sale', inspection: 'Inspection', finance: 'Appraisal / loan', deadline: 'Deadline' };
@@ -117,5 +130,5 @@
   function addDays(k, x) { const t = new Date(k + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + x); return t.toISOString().slice(0, 10); }
 
   C.views = { dash };
-  Object.assign(C, { m, mk, contact, day, time, n, src, card, tile, empty, head, guard, evRow, inboxRow, deadlineList, addDays, KIND, senderName, esc: s => esc(s) });
+  Object.assign(C, { greet, m, mk, contact, day, time, n, src, card, tile, empty, head, guard, evRow, inboxRow, deadlineList, addDays, KIND, senderName, esc: s => esc(s) });
 })();
