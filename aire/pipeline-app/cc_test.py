@@ -93,7 +93,8 @@ class Calendar(unittest.TestCase):
                              ev("800 Old Rd - Act of sale", "2026-12-25")], self.COORD)
         dl = cc.deal_deadlines(evs)
         self.assertEqual(len(cc.in_days(dl, T, 6)), 1)
-        cl = cc.closings(dl, cc.deal_rows(SHEET), T)
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(SHEET), T), [])
+        cl = cc.closings(cc.contract_deadlines(dl, cards), cards, T)
         self.assertEqual([(r["deal"], r["from"], r["money"]) for r in cl], [("100 Oak Ln", "both", 7500.0)])
 
 
@@ -253,6 +254,91 @@ class Checklist(unittest.TestCase):
         cards = cc.deal_cards(cc.deal_rows(SHEET), T)
         self.assertEqual((cards[0]["to_close"], len(cards[0]["checklist"])), (15, 3))
         self.assertEqual([c for c in cards if c["stage"] == "closed"][0]["checklist"], [])
+
+
+class JudgeRound1(unittest.TestCase):
+    """Fixes from the blind judge, round 1. Made-up deals and people."""
+    COORD = ["example.com"]
+
+    def test_deal_key_matches_spellings(self):
+        self.assertEqual(cc.deal_key("2179 South Fake Avenue, Zachary, LA"), cc.deal_key("2179 S Fake Ave"))
+        self.assertEqual(cc.deal_key("90108 Pretend Lane - Act of sale"), "90108 pretend")
+        self.assertNotEqual(cc.deal_key("100 Oak Ln"), cc.deal_key("100 Elm St"))
+
+    def test_one_deal_source_sheet_wins_and_says_where_crm_differs(self):
+        cards = cc.deal_cards(cc.deal_rows(SHEET), T)
+        crm = [{"address": "100 Oak Lane, Somewhere, LA", "stage": "active", "price": "260000", "expected_close": "2026-11-29"},
+               {"address": "900 Nowhere Rd", "stage": "under_contract", "price": "1"},
+               {"address": "901 Gone Rd", "stage": "lost"}]
+        out, only = cc.merge_deals(cards, crm)
+        oak = next(c for c in out if c["deal"] == "100 Oak Ln")
+        self.assertEqual((oak["price"], oak["act"], oak["status"]), (250000.0, "2026-11-20", "Under Contract"))
+        self.assertEqual(sorted(d["field"] for d in oak["differs"]), ["act of sale", "price", "status"])
+        self.assertEqual([o["deal"] for o in only], ["900 Nowhere Rd"])  # lost CRM rows are not shown
+        self.assertEqual(cc.pending_commission(cc.deal_rows(SHEET))["value"], 7500)  # CRM rows never add money
+
+    def test_deadlines_one_per_deal_per_day(self):
+        evs = cc.cal_events([ev("100 Oak Ln - Act of sale", "2026-11-20"), ev("100 Oak Lane - Closing", "2026-11-20"),
+                             ev("700 Gum St - Inspection deadline", "2026-11-07"),
+                             ev("700 Gum St - Appraisal deadline", "2026-11-07")], self.COORD)
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(SHEET), T), [])
+        dl = cc.contract_deadlines(cc.deal_deadlines(evs), cards)
+        oak = [r for r in dl if r["key"] == "100 oak"]
+        self.assertEqual(len(oak), 1)
+        self.assertEqual((oak[0]["what"], oak[0]["from"]), ("Act of sale", "both"))
+        gum = [r for r in dl if r["key"] == "700 gum"]
+        self.assertEqual(len(gum), 1)
+        self.assertIn("Appraisal", gum[0]["what"])
+
+    def test_calendar_act_of_sale_on_another_day_does_not_double_count(self):
+        evs = cc.cal_events([ev("100 Oak Ln - Act of sale", "2026-11-22")], self.COORD)
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(SHEET), T), [])
+        dl = cc.contract_deadlines(cc.deal_deadlines(evs), cards)
+        oak = [r for r in dl if r["key"] == "100 oak"]
+        self.assertEqual([(r["day"], r["from"]) for r in oak], [("2026-11-20", "sheet")])
+        self.assertIn("2026-11-22", oak[0]["note"])
+
+    def test_one_lead_list(self):
+        email = [{"name": "Pat Example", "phone": "(225) 555-0101", "email": "pat@example.com", "received": "2026-11-05T08:30:00-06:00",
+                  "crm": {"person_id": "P1"}},
+                 {"name": "Test Lead", "test": True, "received": "2026-11-05T08:00:00-06:00"},
+                 {"name": "Lee Sample", "phone": "", "email": "lee@example.com", "received": "2026-11-03T10:00:00-06:00", "crm": None}]
+        crm = [{"person_id": "P1", "display": "Pat Example", "received": "2026-11-05"},
+               {"person_id": "P2", "display": "Kim Madeup", "phone": "2255550102", "received": "2026-11-04", "source": "Luxury Presence 2026-11-04"}]
+        rows = cc.merge_leads(email, crm, set(), NOW)
+        self.assertEqual([r["name"] for r in rows], ["Pat Example", "Kim Madeup", "Lee Sample"])
+        self.assertEqual([r["origin"] for r in rows], ["email", "crm", "email"])
+
+    def test_call_within_the_hour_from_age_and_reply(self):
+        d = cc.lead_due("2026-11-05T08:30:00-06:00", False, NOW)
+        self.assertEqual((d["level"], d["label"]), ("now", "Call within the hour (30 min left)"))
+        self.assertEqual(cc.lead_due("2026-11-05T06:00:00-06:00", False, NOW)["label"], "3h with no reply")
+        self.assertEqual(cc.lead_due("2026-11-05T08:30:00-06:00", True, NOW)["label"], "Replied")
+        self.assertEqual(cc.lead_due("2026-11-03", False, NOW)["label"], "2 days with no reply")
+        rows = cc.merge_leads([], [{"person_id": "P3", "display": "Jo Fake", "received": "2026-11-04", "last_touch": "2026-11-04"}], set(), NOW)
+        self.assertEqual(rows[0]["due"]["level"], "done")  # a touch logged on the lead's day counts as a reply
+
+    def test_outside_invites_are_not_booked(self):
+        evs = cc.cal_events([ev("Showing", "2026-11-05T10:00:00-06:00", "2026-11-05T11:00:00-06:00"),
+                             ev("Vendor webinar", "2026-11-05T12:00:00-06:00", "2026-11-05T13:00:00-06:00", invite=True),
+                             ev("Sales block", "2026-11-05T14:00:00-06:00", "2026-11-05T16:00:00-06:00")], self.COORD)
+        w = cc.week_load(evs, T)
+        self.assertEqual((w[0]["hours"], w[0]["events"]), (1.0, 1))
+
+    def test_build_with_feed_counts_leads_once(self):
+        with tempfile.TemporaryDirectory() as t:
+            folder = Path(t)
+            meta = {"at": NOW.isoformat(), "source": "test", "error": None}
+            (folder / "leads.json").write_text(json.dumps({**meta, "rows": [{"name": "Pat Example", "phone": "2255550101", "received": "2026-11-05T08:30:00-06:00"}]}))
+            (folder / "deals.json").write_text(json.dumps({**meta, "rows": SHEET}))
+            feed = {"new_leads": [{"person_id": "P1", "display": "Pat Example", "phone": "+1 225 555 0101", "received": "2026-11-05"},
+                                  {"person_id": "P2", "display": "Kim Madeup", "received": "2026-11-04"}],
+                    "deals": [{"address": "100 Oak Lane", "stage": "under_contract", "price": "250000"}]}
+            p = cc.build(folder, NOW, feed=feed)
+            self.assertEqual(len(p["leads"]), 2)
+            self.assertEqual(p["scorecard"]["leads7"]["value"], 2)
+            self.assertEqual(p["stages"][0]["n"], 2)
+            self.assertEqual(next(c for c in p["deals"] if c["deal"] == "100 Oak Ln")["differs"], [])
 
 
 if __name__ == "__main__":

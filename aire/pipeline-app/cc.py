@@ -237,9 +237,15 @@ def _hours(e: dict) -> float:
         return 0.0
 
 
+def booked(r: dict) -> bool:
+    """Booked time: timed, not free, not a work block or personal time, and not someone else's invite Caleb has not
+    accepted."""
+    return not r.get("allDay") and not r.get("free") and r["kind"] not in ("block", "personal") and not r.get("invite")
+
+
 def week_load(evs: list[dict], today: date) -> list[dict]:
-    """Booked hours, today plus 6: timed, not free, not a work block or personal time."""
-    busy = [r for r in evs if not r.get("allDay") and not r.get("free") and r["kind"] not in ("block", "personal")]
+    """Booked hours, today plus 6 (see booked)."""
+    busy = [r for r in evs if booked(r)]
     out = []
     for n in range(7):
         k = (today + timedelta(days=n)).isoformat()
@@ -265,21 +271,158 @@ def in_days(rows: list[dict], today: date, n: int) -> list[dict]:
     return [r for r in rows if a <= r["day"] <= b]
 
 
-def closings(deadlines: list[dict], deals: list[dict], today: date) -> list[dict]:
-    """Act of sale dates in 30 days from the calendar and the sheet, merged on street number."""
-    snum = lambda t: (re.match(r"\s*(\d+)", t or "") or [None, None])[1]
-    cl = [{"deal": r["deal"], "day": r["day"], "money": None, "from": "calendar"}
-          for r in in_days(deadlines, today, 30) if re.search(r"act of sale|closing", r["what"] + r["title"], re.I)]
-    last = (today + timedelta(days=30)).isoformat()
-    for d in deals:
-        if stage_of(d["status"]) != "contract" or not is_day(d.get("act")) or not today.isoformat() <= d["act"] <= last:
+# ---------------- One deal source ----------------
+# The AIRE Deals sheet is the one source for a deal's status, price, act of sale and commission. The CRM Deals tab
+# and the calendar are matched to it by street (number plus street name), never added into its numbers.
+
+DIRECTIONS = {"n", "s", "e", "w", "north", "south", "east", "west"}
+
+
+def deal_key(t) -> str:
+    """'2179 South Turnberry Avenue, Zachary' and '2179 S Turnberry Ave' are both '2179 turnberry'."""
+    words = re.findall(r"[a-z0-9]+", str(t or "").lower())
+    if not words or not words[0].isdigit():
+        return " ".join(words[:2])
+    rest = [w for w in words[1:] if w not in DIRECTIONS]
+    return f"{words[0]} {rest[0]}" if rest else words[0]
+
+
+CRM_STAGE = {"under_contract": "contract", "closed": "closed", "lost": "out", "active": "appointment",
+             "showing": "appointment", "consult": "lead", "lead": "lead"}
+
+
+def merge_deals(cards: list[dict], crm_deals: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Sheet deals keep their own numbers. A CRM Deals tab row on the same street is attached, and every field where
+    the two disagree is listed so the screen can say so. CRM rows with no sheet deal come back on their own."""
+    by = {}
+    for d in crm_deals or []:
+        by.setdefault(deal_key(d.get("address")), d)
+    used, out = set(), []
+    for c in cards:
+        k = deal_key(c["deal"])
+        d = by.get(k)
+        diff = []
+        if d:
+            used.add(k)
+            st = CRM_STAGE.get(d.get("stage") or "")
+            if st and st != c["stage"]:
+                diff.append({"field": "status", "sheet": c["status"], "crm": (d.get("stage") or "").replace("_", " ")})
+            p = num(d.get("price"))
+            if p and c.get("price") and abs(p - c["price"]) >= 1:
+                diff.append({"field": "price", "sheet": c["price"], "crm": p})
+            ec = d.get("expected_close") or ""
+            if is_day(ec) and is_day(c.get("act")) and ec != c["act"]:
+                diff.append({"field": "act of sale", "sheet": c["act"], "crm": ec})
+        out.append({**c, "key": k, "crm": {x: d.get(x) for x in ("address", "stage", "person_id", "display")} if d else None,
+                    "differs": diff})
+    only = [{"deal": d.get("address"), "key": deal_key(d.get("address")), "stage": d.get("stage") or "",
+             "side": d.get("side") or "", "price": num(d.get("price")), "close": d.get("expected_close") or None,
+             "person_id": d.get("person_id") or "", "display": d.get("display") or "", "next": d.get("next_step") or ""}
+            for d in crm_deals or [] if deal_key(d.get("address")) not in used and (d.get("stage") or "") not in ("lost", "closed")]
+    return out, only
+
+
+def contract_deadlines(cal: list[dict], cards: list[dict]) -> list[dict]:
+    """Contract dates from the sheet (inspection, appraisal, act of sale) plus the coordinator's calendar dates.
+    One row per deal per day: two events for the same deal on the same day are one deadline. When the calendar's
+    act of sale differs from the sheet's, the sheet date stands and the row says what the calendar has."""
+    sheet = {c["key"]: c for c in cards if c["stage"] == "contract"}
+    rows = []
+    for c in sheet.values():
+        for step in c.get("checklist") or []:
+            if step.get("date"):
+                rows.append({"deal": c["deal"], "key": c["key"], "day": step["date"], "whats": [step["step"]],
+                             "from": {"sheet"}, "note": None})
+    for r in cal:
+        k = deal_key(r["deal"])
+        c = sheet.get(k)
+        act = re.search(r"act of sale|closing", r["what"] + " " + r["title"], re.I)
+        if c and act and is_day(c.get("act")) and r["day"] != c["act"]:
+            for x in rows:
+                if x["key"] == k and x["day"] == c["act"]:
+                    x["note"] = f"the calendar has act of sale on {r['day']}"
             continue
-        hit = next((r for r in cl if snum(r["deal"]) and snum(r["deal"]) == snum(d["deal"])), None)
-        if hit:
-            hit.update(money=d["commission"], **{"from": "both"})
-        else:
-            cl.append({"deal": d["deal"], "day": d["act"], "money": d["commission"], "from": "sheet"})
-    return sorted(cl, key=lambda r: r["day"])
+        rows.append({"deal": c["deal"] if c else r["deal"], "key": k, "day": r["day"],
+                     "whats": ["Act of sale" if act else r["what"]], "from": {"calendar"}, "note": None, "link": r.get("link")})
+    merged = {}
+    for r in rows:
+        m = merged.get((r["key"], r["day"]))
+        if not m:
+            merged[(r["key"], r["day"])] = r
+            continue
+        for w in r["whats"]:
+            if w.lower() not in [x.lower() for x in m["whats"]]:
+                m["whats"].append(w)
+        m["from"] |= r["from"]
+        m["note"] = m["note"] or r["note"]
+        m["link"] = m.get("link") or r.get("link")
+    out = []
+    for r in merged.values():
+        frm = "both" if len(r["from"]) > 1 else next(iter(r["from"]))
+        out.append({"deal": r["deal"], "key": r["key"], "day": r["day"], "what": ", ".join(r["whats"]),
+                    "title": f"{r['deal']} - {', '.join(r['whats'])}", "from": frm, "note": r["note"], "link": r.get("link")})
+    return sorted(out, key=lambda r: (r["day"], r["deal"]))
+
+
+def closings(deadlines: list[dict], cards: list[dict], today: date) -> list[dict]:
+    """Act of sale dates in the next 30 days, from the one deadline list, with the sheet's commission."""
+    money = {c["key"]: c["commission"] for c in cards}
+    return [{"deal": r["deal"], "day": r["day"], "money": money.get(r["key"]), "from": r["from"], "note": r["note"]}
+            for r in in_days(deadlines, today, 30) if re.search(r"act of sale", r["what"], re.I)]
+
+
+# ---------------- One lead list ----------------
+
+def lead_due(received, replied, now: datetime) -> dict:
+    """What a lead needs, from its age and whether a reply went out. Never a promise: a label for Caleb."""
+    t = None
+    try:
+        t = datetime.fromisoformat(str(received)) if received and len(str(received)) > 10 else None
+    except ValueError:
+        t = None
+    if t and t.tzinfo is None:
+        t = t.replace(tzinfo=CENTRAL)
+    if replied:
+        return {"label": "Replied", "level": "done", "age_min": None}
+    if not t:
+        day = str(received or "")[:10]
+        if not is_day(day):
+            return {"label": "No time on this lead", "level": "unknown", "age_min": None}
+        days = (now.date() - date.fromisoformat(day)).days
+        return {"label": "Came in today, no reply yet" if days <= 0 else f"{days} day{'s' if days > 1 else ''} with no reply",
+                "level": "late" if days >= 1 else "soon", "age_min": None}
+    age = max(0, int((now - t).total_seconds() // 60))
+    if age < 60:
+        return {"label": f"Call within the hour ({60 - age} min left)", "level": "now", "age_min": age}
+    if age < 1440:
+        return {"label": f"{age // 60}h with no reply", "level": "late", "age_min": age}
+    return {"label": f"{age // 1440} day{'s' if age >= 2880 else ''} with no reply", "level": "late", "age_min": age}
+
+
+def merge_leads(leads: list[dict], crm_new: list[dict], replied_ids: set, now: datetime) -> list[dict]:
+    """Website lead emails plus CRM contacts in Stage new lead, one row per person. An email lead already matched to a
+    CRM person (attach_crm) is that person's row. Test leads stay out. Newest first."""
+    out, seen = [], set()
+    for r in leads:
+        if r.get("test"):
+            continue
+        pid = (r.get("crm") or {}).get("person_id")
+        if pid:
+            seen.add(pid)
+        out.append({**r, "origin": "email"})
+    for p in crm_new or []:
+        if p.get("person_id") in seen:
+            continue
+        keep = ("person_id", "display", "band", "stage", "type", "last_touch", "days_quiet", "next_action", "owes_reply")
+        out.append({"name": p.get("display") or "", "phone": p.get("phone") or "", "email": p.get("email") or "",
+                    "source": p.get("source") or "CRM", "received": p.get("received") or "", "origin": "crm",
+                    "crm": {k: p.get(k) for k in keep if p.get(k) not in (None, "")}})
+    for r in out:
+        c = r.get("crm") or {}
+        pid, lt, day = c.get("person_id"), str(c.get("last_touch") or "")[:10], str(r.get("received") or "")[:10]
+        touched = is_day(lt) and is_day(day) and lt >= day  # a touch logged in the CRM on or after the lead's day
+        r["due"] = lead_due(r.get("received"), (pid in replied_ids if pid else False) or touched, now)
+    return sorted(out, key=lambda r: str(r.get("received") or ""), reverse=True)
 
 
 # ---------------- Gmail ----------------
@@ -407,17 +550,22 @@ def _rows(d):
     return (d or {}).get("rows") or []
 
 
-def build(folder: Path, now: datetime | None = None) -> dict:
+def build(folder: Path, now: datetime | None = None, feed: dict | None = None, replied: set | None = None) -> dict:
+    """feed is the CRM feed (crm/feed.json): its people match leads, its new leads join the lead list and its Deals
+    tab rows are checked against the Deals sheet. replied holds person_ids a text or email went to since their lead."""
     now = (now or datetime.now(CENTRAL)).astimezone(CENTRAL)
     today = now.date()
     raw = load(folder)
+    f = feed or {}
     cfg = (raw.get("config") or {}).get("rows") or {}
     coord = cfg.get("coordinator_domains") or []
     fresh = {k: freshness(raw.get(k) or {}, k, now) for k in DATASETS if k not in ("config", "sync-status", "outbox")}
     deals = deal_rows(_rows(raw["deals"]))
     evs = cal_events(_rows(raw["calendar"]), coord)
-    leads = _rows(raw["leads"])
-    dl = deal_deadlines(evs)
+    people = (f.get("new_leads") or []) + (f.get("touches_due") or [])
+    leads = merge_leads(attach_crm(_rows(raw["leads"]), people), f.get("new_leads") or [], replied or set(), now)
+    cards, crm_only = merge_deals(deal_cards(deals, today), f.get("deals") or [])
+    dl = contract_deadlines(deal_deadlines(evs), cards)
     goals = (raw.get("goals") or {}).get("rows") or {}
     sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today)
     hist = _rows(raw["history"])
@@ -425,12 +573,12 @@ def build(folder: Path, now: datetime | None = None) -> dict:
     full = add_history(hist, hrow)
     return {
         "at": now.isoformat(timespec="seconds"), "today": today.isoformat(), "fresh": fresh,
-        "deals": deal_cards(deals, today), "stages": pipeline_stages(deals, len([r for r in leads if not r.get("test")])),
+        "deals": cards, "crm_only_deals": crm_only, "stages": pipeline_stages(deals, len(leads)),
         "calendar": evs, "week": week_load(evs, today),
         "deadlines": {"all": in_days(dl, today, 30), "d3": in_days(dl, today, 2), "d7": in_days(dl, today, 6),
-                      "deals": len({r["deal"] for r in in_days(dl, today, 30)})},
-        "closings": closings(dl, deals, today),
-        "inbox": inbox_sorted(_rows(raw["inbox"]), leads, coord),
+                      "deals": len({r["key"] for r in in_days(dl, today, 30)})},
+        "closings": closings(dl, cards, today),
+        "inbox": inbox_sorted(_rows(raw["inbox"]), [r for r in leads if r.get("origin") == "email"], coord),
         "leads": leads, "commission_mail": commission_mail(_rows(raw["commission_mail"])),
         "scorecard": sc, "goals": goals, "goals_set": bool(goals),
         "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},

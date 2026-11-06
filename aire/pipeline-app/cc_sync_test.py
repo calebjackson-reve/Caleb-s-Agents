@@ -74,6 +74,13 @@ class Mappers(unittest.TestCase):
                              {"id": "b", "start": {"date": "2026-11-06"}, "end": {"date": "2026-11-07"}, "transparency": "transparent", "creator": {"email": "x@example.com"}}])
         self.assertEqual((r[0]["allDay"], r[1]["allDay"], r[1]["title"], r[1]["free"], r[1]["creator"]), (False, True, "(no title)", True, "x@example.com"))
 
+    def test_outside_invite(self):
+        mine = {"organizer": {"email": "me@example.com", "self": True}}
+        theirs = {"organizer": {"email": "vendor@example.com"}, "attendees": [{"email": "me@example.com", "self": True, "responseStatus": "needsAction"}]}
+        yes = {"organizer": {"email": "client@example.com"}, "attendees": [{"email": "me@example.com", "self": True, "responseStatus": "accepted"}]}
+        self.assertEqual([S.is_invite(e) for e in (mine, theirs, yes)], [False, True, False])
+        self.assertTrue(S.calendar_rows([{**theirs, "start": {"dateTime": "2026-11-05T10:00:00-06:00"}, "end": {"dateTime": "2026-11-05T11:00:00-06:00"}}])[0]["invite"])
+
     def test_thread_and_body(self):
         t = thread("t", "Pat <pat@example.com>", "Hi", body="Line one\nLine two")
         self.assertEqual(S.thread_row(t)["subject"], "Hi")

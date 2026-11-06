@@ -357,6 +357,12 @@ class State:
         log = read_json(self.send_log_path, [])
         return log if isinstance(log, list) else []
 
+    def cc_payload(self) -> dict:
+        """The Command Center payload: one lead list, one deal source, built with the CRM feed. A lead counts as
+        replied once a real (not dry run) text or email went to that person."""
+        sent = {r.get("person_id") for r in self.send_log() if r.get("status") == "sent" and r.get("person_id")}
+        return cc.build(self.cc_dir, feed=self.feed() or {}, replied=sent)
+
     def sent_today(self) -> dict:
         d = today().isoformat()
         rows = [r for r in self.send_log() if r.get("at", "").startswith(d) and r.get("status") in ("sent", "dry-run")]
@@ -532,9 +538,7 @@ class State:
             import anthropic
         except ImportError:
             raise CRMError("the anthropic package is not installed in Pipeline's Python")
-        f = self.feed() or {}
-        p = cc.build(self.cc_dir)
-        p["leads"] = cc.attach_crm(p["leads"], (f.get("new_leads") or []) + (f.get("touches_due") or []))
+        p = self.cc_payload()
         client = anthropic.Anthropic(api_key=self.ask_key, timeout=60.0)
         try:
             r = self._ask_call(anthropic, lambda: cc_ask.ask(client, p, page, question, private, self.ask_log, now()))
@@ -1050,9 +1054,7 @@ class Handler(BaseHTTPRequestHandler):
             d = push._read(self.state.cc_dir / "alerts.json", {"rows": []})
             return self._json(200, {"ok": True, "rows": d.get("rows", [])[:20], "phones": len(push._read(self.state.push_subs, []))})
         if u.path == "/api/cc":
-            p = cc.build(self.state.cc_dir)
-            f = self.state.feed() or {}
-            p["leads"] = cc.attach_crm(p["leads"], (f.get("new_leads") or []) + (f.get("touches_due") or []))
+            p = self.state.cc_payload()
             p["ask"] = {"on": bool(self.state.ask_key) or self.state.demo, "cap": cc_ask.CAP, "model": cc_ask.MODEL,
                         "spent": cc_ask.spent_today(self.state.ask_log, now())}
             return self._json(200, {**p, "demo": self.state.demo})

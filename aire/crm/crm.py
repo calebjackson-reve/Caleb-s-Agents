@@ -551,6 +551,9 @@ class CRM:
                        source: str = "", next_action: str = "", type_: str = "client") -> dict:
         """A new row with a minted person_id. Refuses when an email, phone or exact name already exists."""
         hits = self.find(display, email, phone)
+        dnc = next((h for h in hits if str(h.get("Do_Not_Contact") or "").strip().upper() == "YES"), None)
+        if dnc:
+            raise GateError(f"{display!r} matches person_id {dnc['person_id']} by {dnc['_match']}, who is on Do Not Contact. Not added.")
         if hits:
             raise GateError(f"{display!r} matches person_id {hits[0]['person_id']} by {hits[0]['_match']}; update, don't create")
         band = norm_band(band) if band else ""
@@ -1890,6 +1893,12 @@ def run_tests() -> int:
     check("dnc twice is a no-op", c2.set_do_not_contact("6", "again") is False)
     check("Do_Not_Contact cannot be written back through update_contact", raises(lambda: c2.update_contact("6", {"Do_Not_Contact": "NO"}, "x")))
     check("touch refuses a DNC person", raises(lambda: c2.touch("6", "called")))
+    try:
+        c2.create_contact(c2.by_id("6")["display"], "", "")
+        dnc_msg = ""
+    except GateError as e:
+        dnc_msg = str(e)
+    check("a new lead matching a DNC person is refused and says Do Not Contact", "Do Not Contact" in dnc_msg)
     # geocode and the map feed, on a fresh fixture with a fake geocoder (no network in tests)
     db3 = tmp / "db3.json"
     db3.write_text((HERE / "tests" / "fixtures" / "fake-crm.json").read_text())

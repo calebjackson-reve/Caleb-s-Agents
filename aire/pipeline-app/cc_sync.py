@@ -117,6 +117,24 @@ def cmd_auth() -> None:
 
 # ---------------- mappers: API answers to cached rows (pure, tested) ----------------
 
+def crm_feed() -> dict:
+    """The CRM feed, so the Scorecard history and the alerts count the same leads and deals as the screen."""
+    try:
+        return json.loads((HERE.parent / "crm" / "feed.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def is_invite(e: dict) -> bool:
+    """Someone else's event Caleb has not said yes to. It shows on the calendar but is not booked time."""
+    if (e.get("organizer") or {}).get("self") or (e.get("creator") or {}).get("self"):
+        return False
+    me = next((a for a in e.get("attendees") or [] if a.get("self")), None)
+    if me is None:
+        return bool(e.get("organizer") or e.get("creator"))
+    return me.get("responseStatus") != "accepted"
+
+
 def calendar_rows(items: list[dict]) -> list[dict]:
     out = []
     for e in items:
@@ -125,7 +143,7 @@ def calendar_rows(items: list[dict]) -> list[dict]:
                     "start": st.get("dateTime") or st.get("date") or "", "end": en.get("dateTime") or en.get("date") or "",
                     "allDay": "dateTime" not in st, "eventType": e.get("eventType") or "default",
                     "creator": (e.get("creator") or {}).get("email") or "", "free": e.get("transparency") == "transparent",
-                    "link": e.get("htmlLink") or ""})
+                    "invite": is_invite(e), "link": e.get("htmlLink") or ""})
     return out
 
 
@@ -510,7 +528,7 @@ def sync_history(svc, cfg, now, folder: Path = OUT) -> dict:
     added = False
     today = now.astimezone(cc.CENTRAL)
     if today.hour >= HISTORY_HOUR and today.date().isoformat() not in days:
-        row = cc.history_row(cc.build(folder, now)["scorecard"], today.date())
+        row = cc.history_row(cc.build(folder, now, feed=crm_feed())["scorecard"], today.date())
         sh.spreadsheets().values().append(spreadsheetId=sid, range=f"'{HISTORY_TAB}'!A1", valueInputOption="RAW",
                                           insertDataOption="INSERT_ROWS", body={"values": [[row[c] for c in HISTORY_COLS]]}).execute()
         vals.append([row[c] for c in HISTORY_COLS])
@@ -555,7 +573,7 @@ def run_pass(now: datetime | None = None, force: bool = False, svc=None, folder:
 def alert(now: datetime, folder: Path, status: dict) -> None:
     """New leads, deadlines within 24 hours and failed reads become phone alerts (push.py). Never stops the sync."""
     try:
-        status["results"]["alerts"] = push.run(cc.build(folder, now), now, folder, subs_path=folder.parent / "push-subs.json")
+        status["results"]["alerts"] = push.run(cc.build(folder, now, feed=crm_feed()), now, folder, subs_path=folder.parent / "push-subs.json")
     except Exception as e:
         status["results"]["alerts"] = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:160]}"}
     write_doc("sync-status", status, folder)
