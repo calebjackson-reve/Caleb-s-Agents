@@ -116,7 +116,8 @@ button.cc-tile:hover { background: var(--cc-raise); }
 @media (max-width: 900px) { .cc-days.week { grid-template-columns: 1fr; } .cc-day { min-height: 0; } }
 @media (max-width: 560px) {
   .cc-ev { grid-template-columns: 4.4rem minmax(0, 1fr); } .cc-ev .cc-chip { display: none; }
-  .cc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .cc-tile { padding: 12px; } .cc-num { font-size: 28px; }
+  .cc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .cc-tile .cc-src-n { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } .cc-tile { padding: 12px; } .cc-num { font-size: 28px; }
   .cc-table thead { display: none; } .cc-table tr { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--cc-line); padding: 6px 0; }
   .cc-table th, .cc-table td { border: 0; padding: 4px 6px; } .cc-table .r { text-align: left; }
 }

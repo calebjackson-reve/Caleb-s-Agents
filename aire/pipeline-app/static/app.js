@@ -161,6 +161,7 @@ function renderNav(c) {
     ['map', '◈', 'Map', ((feed().map || {}).counts || {}).persons || 0], ['market', '◆', 'Market Monitor', ((feed().market || {}).rows || []).length],
   ];
   $('#nav').innerHTML = items.map(([k, ico, label, n, warn]) => `<button class="${S.view === k ? 'on' : ''}" onclick="go('${k}')"><span class="ico">${ico}</span>${label}${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`).join('');
+  const on = $('#nav .on'); if (on && innerWidth <= 720) on.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 function panel(i, title, right, body, extra = '') { return `<section class="panel ${extra}" style="--i:${i}"><div class="ph"><h3>${title}</h3><div class="ph-right">${right || ''}</div></div>${body}</section>`; }
 
@@ -334,7 +335,10 @@ function viewSent() {
 }
 
 // ---------------------------------------------------------------- navigation
-function go(v) { S.view = v; S.filter = 'all'; render(); $('#main').scrollTop = 0; }
+function go(v) { S.view = v; S.filter = 'all'; try { history.replaceState(null, '', '#' + v); } catch (e) { } render(); $('#main').scrollTop = 0; }
+// A link like 127.0.0.1:4747/#commission opens that page.
+(function () { const h = location.hash.slice(1); if (/^[a-z]+$/.test(h)) S.view = h; })();
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (/^[a-z]+$/.test(h) && h !== S.view) go(h); });
 function setFilter(k) { S.filter = k; render(); }
 async function refresh() {
   const r = await api('/api/refresh', {});

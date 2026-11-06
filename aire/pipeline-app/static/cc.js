@@ -29,7 +29,7 @@
       const when = r.at ? 'as of ' + fmtTime.format(new Date(r.at)) + ', ' + ago(r.age_min) : 'never read';
       const what = r.state === 'failed' ? 'read failed: ' + (r.error || 'unknown') + ', showing the last good read'
         : r.state === 'stale' ? 'out of date' : r.state === 'missing' ? 'not synced yet' : '';
-      return `<span class="cc-src is-${r.state}"><i aria-hidden="true"></i>${esc(r.source || NAMES[k] || k)} · ${esc(when)}${what ? ' · <b>' + esc(what) + '</b>' : ''}</span>`;
+      return `<span class="cc-src is-${r.state}"><i aria-hidden="true"></i><span class="cc-src-n">${esc(r.source || NAMES[k] || k)} · </span>${esc(when)}${what ? ' · <b>' + esc(what) + '</b>' : ''}</span>`;
     }).join('');
   }
   const card = (title, body, sources, extra = '') => `<section class="cc-card ${extra}"><h2>${title}</h2>${body}<footer>${src(sources)}</footer></section>`;
