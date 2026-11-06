@@ -154,6 +154,7 @@ function renderNav(c) {
   const items = [
     ['dash', '◧', 'Dashboard'], ['commission', '$', 'Commission', np, np > 0], ['deadlines', '⚑', 'Deadlines', cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0],
     ['calendar', '▦', 'Calendar'], ['ccleads', '✧', 'Leads', cd ? cd.leads.filter(r => !r.test).length : 0], ['scorecard', '▲', 'Scorecard'],
+    ['ccmarket', '◆', 'Market'], ['news', '▤', 'News'], ['life', '❀', 'Life'], ['health', '♥', 'Workouts'],
     ['bank', '◎', 'Bank'], ['sources', '◉', 'Sources', cd ? (cd.problems || []).length + (cd.sync && cd.sync.error ? 1 : 0) : 0, true],
     ['cc', '⌂', 'Command Center'], ['touches', '◎', 'Touches due', (feed().touches_due || []).length, (feed().touches_due || []).some(r => r.owes_reply)],
     ['tasks', '☑', 'Tasks', (feed().tasks || []).length, c.tasks_overdue > 0], ['deals', '⌂', 'Deals', (feed().deals || []).length],

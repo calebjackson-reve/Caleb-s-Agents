@@ -79,7 +79,7 @@
         ${card('Today', today.length ? `<ul class="cc-list">${today.map(evRow).join('')}</ul>` : empty('Nothing on the calendar today.'), 'calendar')}
         ${card('Deadlines, next 7 days', deadlineList(d.deadlines.d7), 'calendar')}
         ${card('Inbox, leads first', d.inbox.length ? `<ul class="cc-list">${d.inbox.slice(0, 6).map(inboxRow).join('')}</ul>` : empty('Inbox is clear for the last 3 days.'), ['inbox', 'leads'])}
-      </div></div>`;
+      </div>${C.dashMore ? C.dashMore() : ''}</div>`;
   }
   function greet() { const h = Number(new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', hour12: false }).format(new Date())); return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'; }
   const evRow = r => `<li class="cc-ev k-${r.kind}"><span class="cc-when">${time(r.start)}</span><span class="cc-what">${esc(r.title)}</span><span class="cc-chip">${KIND[r.kind]}</span></li>`;

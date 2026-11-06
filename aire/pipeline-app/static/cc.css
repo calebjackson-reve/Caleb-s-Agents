@@ -175,3 +175,31 @@ button.cc-tile:hover { background: var(--cc-raise); }
 .cc-fields a { color: var(--av); }
 .cc-crm { padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, .03); border: 1px dashed var(--cc-line); }
 .cc-owed { color: var(--cc-warn); font-weight: 600; }
+
+/* Market, News, Life, Workouts */
+.cc-yy { font-size: 12px; color: var(--cc-muted); margin-left: 6px; white-space: nowrap; }
+.cc-yy.up { color: var(--cc-ok); } .cc-yy.down { color: var(--cc-bad); }
+.cc-areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 12px; }
+.cc-area { background: var(--cc-raise); border-radius: 12px; padding: 14px; border-top: 3px solid var(--cc-tan); display: grid; gap: 4px; }
+.cc-area h3 { margin: 0 0 4px; font-size: 15px; display: grid; } .cc-area h3 small { font-weight: 400; font-size: 12px; color: var(--cc-muted); }
+.cc-area p { margin: 0; font-size: 14px; } .cc-area b { font: 400 20px/1.2 "Iowan Old Style", Palatino, Georgia, serif; }
+.cc-points { margin: 0; padding-left: 20px; display: grid; gap: 8px; line-height: 1.5; }
+.cc-news { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cc-news a { display: grid; gap: 4px; padding: 10px 12px; border-radius: 10px; border-left: 4px solid var(--k); background: color-mix(in srgb, var(--k) 8%, transparent); color: var(--cc-text); text-decoration: none; }
+.cc-news a:hover { background: color-mix(in srgb, var(--k) 16%, transparent); }
+.cc-news .cc-pill { justify-self: start; } .cc-news b { font-weight: 500; line-height: 1.35; } .cc-news small { font-size: 12px; color: var(--cc-muted); }
+.cc-habits { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cc-habits li { display: flex; gap: 12px; align-items: center; } .cc-habits span { display: grid; } .cc-habits small { font-size: 12px; color: var(--cc-muted); }
+.cc-check { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--cc-coral); background: none; color: #160c08; font-size: 18px; cursor: pointer; }
+.cc-check[aria-pressed="true"] { background: var(--cc-coral); cursor: default; }
+.cc-mini { font: inherit; font-size: 12px; color: var(--cc-text); background: var(--cc-raise); border: 1px solid var(--cc-line); border-radius: 999px; padding: 6px 12px; min-height: 32px; cursor: pointer; white-space: nowrap; }
+.cc-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.cc-wday { background: var(--cc-raise); border-radius: 12px; padding: 10px; display: grid; gap: 4px; align-content: start; border: 1px solid transparent; min-width: 0; }
+.cc-wday h3 { margin: 0; font-size: 13px; color: var(--cc-muted); display: grid; } .cc-wday h3 small { font-weight: 400; }
+.cc-wday b { font-weight: 600; } .cc-wday > small { font-size: 12px; color: var(--cc-muted); overflow-wrap: anywhere; }
+.cc-wday.is-today { border-color: var(--cc-coral); } .cc-wday.is-today h3 { color: var(--cc-coral); }
+.cc-wday.is-done { background: color-mix(in srgb, #7fd0a0 10%, var(--cc-raise)); }
+.cc-wday .cc-pill { justify-self: start; }
+.cc-big { margin: 0; font: 400 30px/1.1 "Iowan Old Style", Palatino, Georgia, serif; }
+.cc-goals select { font: inherit; color: var(--cc-text); background: var(--cc-ink); border: 1px solid var(--cc-line); border-radius: 10px; padding: 9px 11px; min-height: 40px; color-scheme: dark; }
+@media (max-width: 900px) { .cc-week { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

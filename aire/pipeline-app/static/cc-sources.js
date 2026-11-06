@@ -3,7 +3,8 @@
   const C = window.CC;
   const { m, n, day, card, tile, empty, head, guard, src } = C;
   const NAMES = { deals: 'AIRE Deals sheet', calendar: 'Google Calendar', inbox: 'Gmail inbox', leads: 'Website lead emails',
-    commission_mail: 'Commission mail', bank_mail: 'Chase alerts', goals: 'Goals tab', history: 'Scorecard history tab' };
+    commission_mail: 'Commission mail', bank_mail: 'Chase alerts', goals: 'Goals tab', history: 'Scorecard history tab',
+    news: 'Google News', market: 'Market data', life: 'Life tabs', workouts: 'Workout tabs' };
   const when = s => (s ? new Date(s).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'never');
 
   // A banner at the top of every Command Center page when any read is out of date or failed.
@@ -39,7 +40,7 @@
     return `<div class="cc-page">${C.banner()}${head('Sources', 'Every read that feeds these pages, when it last worked, and what went wrong')}
       ${card('Last sync', `<p class="${sy.error ? 'cc-warn' : 'cc-note'}">${sy.at ? 'Last pass ' + esc(when(sy.at)) + (sy.error ? ': ' + esc(sy.error) : ', no sign-in problems') : 'The sync has not run on this Mac yet.'}</p>
         <div class="cc-tablewrap"><table class="cc-table"><caption class="sr">Each source and its state</caption><thead><tr><th scope="col">Source</th><th scope="col">State</th><th scope="col">Last good read</th><th scope="col">Detail</th></tr></thead><tbody>${rows}</tbody></table></div>
-        <p class="cc-note">The sync runs every 5 minutes from the LaunchAgent org.calebjackson.aire.ccsync. Each read has its own pace: inbox and leads 10 minutes, calendar 15, Deals sheet 30, Chase alerts 60, commission mail 120. Today's Scorecard row is added after 6 AM Central. Log: ~/.aire/logs/ccsync.log.</p>`, [])}
+        <p class="cc-note">The sync runs every 5 minutes from the LaunchAgent org.calebjackson.aire.ccsync. Each read has its own pace: inbox and leads 10 minutes, calendar, Life and Workouts 15, Deals sheet 30, Chase alerts 60, news and commission mail 120, market 12 hours. Today's Scorecard row is added after 6 AM Central. Log: ~/.aire/logs/ccsync.log.</p>`, [])}
       </div>`;
   }
 
