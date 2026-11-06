@@ -218,6 +218,21 @@ Setup, once, on the Mac, from `~/Caleb-s-Agents`:
 
 Check: `cc_sync.py --status` prints the last pass. `cc_sync.py --all` reads everything now. A read that fails keeps its last good rows and records the error, a failed sign-in marks every read failed, and the Sources page and banner show both. Tests: `python3 aire/pipeline-app/cc_sync_test.py` (Google faked: the mappers, a first pass, pacing, a failure keeping the last good read, no sign-in, history once a day after 6 AM, goals up and down, a bad goal in the sheet).
 
+### Market, News, Life, Workouts and Health
+
+| Page | Link | Source (all free, no account) | Pace |
+|---|---|---|---|
+| Market | `#ccmarket` | Freddie Mac 30-year rate (FRED CSV), Realtor.com monthly inventory by ZIP and parish (`RDC_Inventory_Core_Metrics_Zip.csv` and `_County.csv`), the newest `aire/market-data/gbrar-*.json` | 12 hours |
+| News | `#news` | Google News RSS searches, last 7 days, at most 8 headlines per search | 2 hours |
+| Life | `#life` | the Life and Life log tabs of the AIRE CRM sheet | 15 min |
+| Workouts and Health | `#health` | the Workouts and Workout log tabs of the AIRE CRM sheet | 15 min |
+
+- **Market** talking points are written only from the numbers on the page, each naming its source and date. The areas are in `MARKET_AREAS` in `cc_sync.py` (or `market_areas` in `out/cc/config.json`): St. Francisville, Zachary, New Roads and Prairieville by ZIP, East Baton Rouge and West Feliciana by parish. Each source is read on its own, so a slow download leaves the rest on screen and the page names the one that failed. For-rent counts are not available from these free sources.
+- **News** searches are in `NEWS_QUERIES` (or `news_queries` in the config).
+- **Life** shows family dates (next one and days until), home upkeep (due from the last time it was done, every N days) and habits (a one-tap check, streak, days in the last 7). **Workouts** shows the week against the plan and logs a workout. The Workouts tab starts with a starter split you edit in the sheet.
+- **Writes**: the Add, Done today, habit check and Log it buttons queue one row in `out/cc/outbox.json` through `POST /api/cc/row`. Only the Life, Life log and Workout log tabs are accepted, and only their own columns. A cell starting with `=`, `+`, `-` or `@` is stored as text. The row shows at once, marked saving, and the sync appends it on its next pass. The sync never writes Contacts, Deals, Tasks or any other tab of the CRM sheet. `config.json` holds `crm_sheet_id`.
+- **Health** has no source: Caleb chose to skip it on 2026-11-05. The page lists the three ways to add one: a free Apple Shortcut, Health Auto Export ($6.99 a year) or typing the numbers in.
+
 **Security.** Every POST must come from Pipeline's own page: a foreign `Origin` or `Host` gets 403, which stops a web page on another site from pressing Pipeline's buttons. `PIPELINE_HOSTS` (comma separated, `host:port`) adds a name Pipeline may be reached under.
 
 ## The screen

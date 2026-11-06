@@ -267,6 +267,7 @@ MARKET_AREAS = [  # (name, "zip" or "county", id); config.json market_areas repl
     ("St. Francisville", "zip", "70775"), ("Zachary", "zip", "70791"), ("New Roads", "zip", "70760"),
     ("Prairieville", "zip", "70769"), ("East Baton Rouge Parish", "county", "22033"), ("West Feliciana Parish", "county", "22125"),
 ]
+PER_QUERY = 8
 RDC = "https://econdata.s3-us-west-2.amazonaws.com/Reports/Core/RDC_Inventory_Core_Metrics_{}.csv"
 FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=MORTGAGE30US"
 
@@ -301,7 +302,7 @@ def fetch_news(svc, cfg, now):
     seen, rows = set(), []
     for q, kind in cfg.get("news_queries") or NEWS_QUERIES:
         url = "https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": q + " when:7d", "hl": "en-US", "gl": "US", "ceid": "US:en"})
-        for r in news_rows(http_get(url), kind):
+        for r in news_rows(http_get(url), kind)[:PER_QUERY]:  # each search gets a fair share of the list
             key = re.sub(r"\W+", " ", r["title"].lower()).strip()
             if key not in seen:
                 seen.add(key)
