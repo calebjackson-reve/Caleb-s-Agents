@@ -28,6 +28,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import cc  # noqa: E402
+import push  # noqa: E402
 
 OUT = HERE / "out" / "cc"
 HOME_AIRE = Path.home() / ".aire"
@@ -536,6 +537,7 @@ def run_pass(now: datetime | None = None, force: bool = False, svc=None, folder:
             write_doc(name, {**prev, "source": READS[name][1], "error": status["error"], "rows": prev.get("rows") or [],
                              "at": prev.get("at"), "tried_at": status["at"]}, folder)
         write_doc("sync-status", status, folder)
+        alert(now, folder, status)
         return status
     for name in READS:
         if due(name, read_doc(name, folder), now, force):
@@ -546,7 +548,17 @@ def run_pass(now: datetime | None = None, force: bool = False, svc=None, folder:
         except Exception as e:
             status["results"][name] = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:160]}"}
     write_doc("sync-status", status, folder)
+    alert(now, folder, status)
     return status
+
+
+def alert(now: datetime, folder: Path, status: dict) -> None:
+    """New leads, deadlines within 24 hours and failed reads become phone alerts (push.py). Never stops the sync."""
+    try:
+        status["results"]["alerts"] = push.run(cc.build(folder, now), now, folder, subs_path=folder.parent / "push-subs.json")
+    except Exception as e:
+        status["results"]["alerts"] = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:160]}"}
+    write_doc("sync-status", status, folder)
 
 
 def main(argv=None) -> int:
