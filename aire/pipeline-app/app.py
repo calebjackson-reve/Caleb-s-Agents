@@ -1038,7 +1038,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"ok": False, "error": "body must be JSON"})
         s = self.state
         try:
-            if u.path == "/api/cc/goals":
+            if u.path == "/api/cc/row":
+                e = cc.queue_row(s.cc_dir, str(body.get("tab", "")), body.get("row") or {})
+                out = {"ok": True, "queued": e, "where": "Saved. It goes to the sheet on the next sync, within 5 minutes."}
+            elif u.path == "/api/cc/goals":
                 g = cc.save_goals(s.cc_dir, body)
                 out = {"ok": True, "goals": g, "where": "Saved on this Mac. It goes to the Goals tab once the sheet sync is on."}
             elif u.path == "/api/touch":
@@ -1387,6 +1390,10 @@ def run_tests() -> int:
     gq = urllib.request.Request(base + "/api/cc/goals", data=json.dumps({"gci_goal": 90000}).encode(), headers={"Content-Type": "application/json", "Origin": base.rstrip("/")})
     check(json.loads(urllib.request.urlopen(gq).read())["ok"], "POST /api/cc/goals from Pipeline's own page")
     check(json.loads(urllib.request.urlopen(base + "/api/cc").read())["goals"].get("gci_goal") == 90000, "goals read back on /api/cc")
+    rq = urllib.request.Request(base + "/api/cc/row", data=json.dumps({"tab": "Workout log", "row": {"date": "2026-11-05", "focus": "Lower"}}).encode(), headers={"Content-Type": "application/json"})
+    check(json.loads(urllib.request.urlopen(rq).read())["ok"], "POST /api/cc/row queues a workout")
+    rq = urllib.request.Request(base + "/api/cc/row", data=json.dumps({"tab": "Contacts", "row": {}}).encode(), headers={"Content-Type": "application/json"})
+    check(not json.loads(urllib.request.urlopen(rq).read())["ok"], "POST /api/cc/row refuses an engine tab")
     req = urllib.request.Request(base + "/api/dnc", data=json.dumps({"person_id": "118", "reason": ""}).encode(),
                                  headers={"Content-Type": "application/json"})
     check(json.loads(urllib.request.urlopen(req).read())["ok"] is False, "POST with a gate failure answers ok false, not 500")

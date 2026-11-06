@@ -17,8 +17,10 @@ CENTRAL = ZoneInfo("America/Chicago")
 SPLIT_CO = 0.30  # KW 70/30: the company's share of each commission, counted toward cap.
 
 # How old a read may be before the screen calls it stale, in hours.
-STALE_HOURS = {"deals": 6, "calendar": 2, "inbox": 1, "leads": 1, "commission_mail": 24, "bank_mail": 6, "history": 36}
-DATASETS = ["deals", "calendar", "inbox", "leads", "commission_mail", "bank_mail", "goals", "history", "config", "sync-status"]
+STALE_HOURS = {"deals": 6, "calendar": 2, "inbox": 1, "leads": 1, "commission_mail": 24, "bank_mail": 6, "history": 36,
+               "news": 6, "market": 36, "life": 2, "workouts": 2}
+DATASETS = ["deals", "calendar", "inbox", "leads", "commission_mail", "bank_mail", "goals", "history", "news", "market",
+            "life", "workouts", "config", "sync-status", "outbox"]
 
 
 def central_today(now: datetime | None = None) -> date:
@@ -393,7 +395,7 @@ def build(folder: Path, now: datetime | None = None) -> dict:
     raw = load(folder)
     cfg = (raw.get("config") or {}).get("rows") or {}
     coord = cfg.get("coordinator_domains") or []
-    fresh = {k: freshness(raw.get(k) or {}, k, now) for k in DATASETS if k not in ("config", "sync-status")}
+    fresh = {k: freshness(raw.get(k) or {}, k, now) for k in DATASETS if k not in ("config", "sync-status", "outbox")}
     deals = deal_rows(_rows(raw["deals"]))
     evs = cal_events(_rows(raw["calendar"]), coord)
     leads = _rows(raw["leads"])
@@ -416,6 +418,11 @@ def build(folder: Path, now: datetime | None = None) -> dict:
         "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
         "kw_paid": cfg.get("kw_paid"),
         "bank": bank(_rows(raw["bank_mail"])),
+        "news": _rows(raw["news"]),
+        "market": market((raw.get("market") or {}).get("rows") or {}),
+        "life": life((raw.get("life") or {}).get("rows") or {}, _rows(raw["outbox"]), today),
+        "workouts": workouts((raw.get("workouts") or {}).get("rows") or {}, _rows(raw["outbox"]), today),
+        "health": {"source": None, "note": "Health is skipped: no source chosen (Caleb, 2026-11-05)."},
         "sync": raw.get("sync-status") or None,
         "problems": [{"name": k, **v} for k, v in fresh.items() if v["state"] in ("failed", "stale")],
     }
@@ -497,3 +504,161 @@ def attach_crm(leads: list[dict], people: list[dict]) -> list[dict]:
         keep = ("person_id", "display", "band", "stage", "type", "last_touch", "days_quiet", "next_action", "owes_reply")
         out.append({**r, "crm": {k: hit.get(k) for k in keep if hit.get(k) not in (None, "")} if hit else None})
     return out
+
+
+# ---------------- Market, Life, Workouts ----------------
+
+def _pct(x) -> str:
+    return "" if x is None else f"{'+' if x > 0 else ''}{round(x * 100)}% vs a year ago"
+
+
+def market(m: dict) -> dict:
+    """Rates, areas and GBRAR, plus talking points written only from those numbers, each naming its source and date."""
+    if not m:
+        return {"rate": None, "areas": [], "gbrar": None, "points": []}
+    pts, r = [], m.get("rate")
+    if r:
+        d = "down" if r["change"] < 0 else "up" if r["change"] > 0 else "flat"
+        pts.append(f"The 30-year fixed averaged {r['rate']:.2f}% the week of {r['date']}, {d} {abs(r['change']):.2f} from the week before (Freddie Mac, via FRED).")
+    for a in m.get("areas") or []:
+        if a.get("active") is None:
+            continue
+        mon = a.get("month") or ""
+        mon = f"{mon[:4]}-{mon[4:]}" if len(mon) == 6 else mon
+        bits = [f"{int(a['active'])} active listings"]
+        if a.get("median_price"):
+            bits.append(f"median list price ${a['median_price']:,.0f}")
+        if a.get("dom"):
+            bits.append(f"{int(a['dom'])} median days on market")
+        yy = _pct(a.get("active_yy"))
+        pts.append(f"{a['area']}: {', '.join(bits)}{' (' + yy.replace('vs', 'listings vs') + ')' if yy else ''} (Realtor.com, {mon}).")
+    g = m.get("gbrar")
+    if g and g.get("snapshot"):
+        s = g["snapshot"]
+        def gv(k):
+            return (s.get(k) or {}).get("now")
+        pts.append(f"Greater Baton Rouge, {g['month']}: median sale price ${gv('median_price'):,.0f}, {gv('closed_sales')} closed sales, "
+                   f"{gv('months_supply')} months of supply, {gv('days_on_market')} days on market (GBRAR MLS monthly indicators).")
+    return {**m, "points": pts}
+
+
+def _merge_outbox(rows: dict, outbox: list, tabs: dict) -> dict:
+    """Rows Pipeline queued but the sync has not pushed yet show at once, marked pending."""
+    out = {k: list(rows.get(k) or []) for k in tabs.values()}
+    for e in outbox:
+        if e.get("tab") in tabs:
+            out[tabs[e["tab"]]].append({**e["row"], "pending": True})
+    return out
+
+
+def _day(t) -> date | None:
+    try:
+        return date.fromisoformat(str(t)[:10])
+    except ValueError:
+        return None
+
+
+def life(rows: dict, outbox: list, today: date) -> dict:
+    r = _merge_outbox(rows, outbox, {"Life": "items", "Life log": "log"})
+    items, log = r["items"], r["log"]
+    done = {}
+    for x in log:
+        d = _day(x.get("date"))
+        if d:
+            done.setdefault(str(x.get("item", "")).strip().lower(), set()).add(d)
+    fam, upkeep, habits = [], [], []
+    for it in items:
+        kind, name = str(it.get("kind", "")).strip().lower(), str(it.get("name", "")).strip()
+        if not name:
+            continue
+        key = name.lower()
+        if kind == "family":
+            t = str(it.get("date", "")).strip()
+            mmdd = t[5:10] if re.match(r"\d{4}-\d{2}-\d{2}", t) else t if re.match(r"\d{2}-\d{2}$", t) else ""
+            if not mmdd:
+                continue
+            try:
+                nxt = date.fromisoformat(f"{today.year}-{mmdd}")
+                if nxt < today:
+                    nxt = date.fromisoformat(f"{today.year + 1}-{mmdd}")
+            except ValueError:  # Feb 29 in a short year
+                nxt = date(today.year if (today.month, today.day) <= (2, 28) else today.year + 1, 3, 1)
+            fam.append({"name": name, "next": nxt.isoformat(), "days": (nxt - today).days, "note": it.get("note", ""), "pending": it.get("pending", False)})
+        elif kind == "upkeep":
+            every = num(it.get("every_days"))
+            last = max(done.get(key, set()) | ({_day(it.get("date"))} - {None}), default=None)
+            due_on = last + timedelta(days=int(every)) if last and every else None
+            upkeep.append({"name": name, "every": every, "last": last.isoformat() if last else None,
+                           "due": due_on.isoformat() if due_on else None, "days": (due_on - today).days if due_on else None,
+                           "note": it.get("note", ""), "pending": it.get("pending", False)})
+        elif kind == "habit":
+            ds, streak, d = done.get(key, set()), 0, today
+            if today not in ds:
+                d = today - timedelta(days=1)
+            while d in ds:
+                streak, d = streak + 1, d - timedelta(days=1)
+            habits.append({"name": name, "today": today in ds, "streak": streak,
+                           "week": sum(1 for i in range(7) if today - timedelta(days=i) in ds), "pending": it.get("pending", False)})
+    return {"family": sorted(fam, key=lambda x: x["days"]),
+            "upkeep": sorted(upkeep, key=lambda x: (x["days"] is None, x["days"] if x["days"] is not None else 0)),
+            "habits": habits}
+
+
+DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+
+def workouts(rows: dict, outbox: list, today: date) -> dict:
+    r = _merge_outbox(rows, outbox, {"Workouts": "plan", "Workout log": "log"})
+    plan = {str(p.get("day", ""))[:3].title(): p for p in r["plan"]}
+    log = [x for x in r["log"] if _day(x.get("date"))]
+    monday = today - timedelta(days=today.weekday())
+    week = []
+    for i, dn in enumerate(DAYS):
+        d = monday + timedelta(days=i)
+        hits = [x for x in log if _day(x["date"]) == d]
+        p = plan.get(dn) or {}
+        week.append({"day": dn, "date": d.isoformat(), "focus": p.get("focus", ""), "exercises": p.get("exercises", ""),
+                     "done": bool(hits), "minutes": sum(num(x.get("minutes")) or 0 for x in hits), "is_today": d == today,
+                     "pending": any(x.get("pending") for x in hits)})
+    last7 = [x for x in log if 0 <= (today - _day(x["date"])).days < 7]
+    return {"week": week, "done_7": len({x["date"][:10] for x in last7}), "minutes_7": sum(num(x.get("minutes")) or 0 for x in last7),
+            "today": next((w for w in week if w["is_today"]), None), "has_plan": bool(plan),
+            "recent": sorted(log, key=lambda x: str(x.get("date")), reverse=True)[:10]}
+
+
+LIFE_KINDS = ("family", "upkeep", "habit")
+
+
+def queue_row(folder: Path, tab: str, row: dict, now: datetime | None = None) -> dict:
+    """Pipeline's Life and Workouts buttons: one row queued for the sheet. Only these four tabs, only known columns."""
+    cols = {"Life": ["kind", "name", "date", "every_days", "note"], "Life log": ["date", "item", "kind"],
+            "Workout log": ["date", "focus", "minutes", "note"]}
+    if tab not in cols:
+        raise ValueError("unknown tab")
+    clean = {}
+    for c in cols[tab]:
+        v = str(row.get(c, "") if row.get(c) is not None else "").strip()[:200]
+        if v.startswith(("=", "+", "-", "@")):  # never let a cell become a formula
+            v = "'" + v
+        clean[c] = v
+    if tab == "Life" and (clean["kind"] not in LIFE_KINDS or not clean["name"]):
+        raise ValueError("a life item needs a kind (family, upkeep or habit) and a name")
+    if tab != "Life" and not is_day(clean["date"]):
+        raise ValueError("a log row needs a date")
+    if tab == "Life" and clean["kind"] == "family" and not re.match(r"(\d{4}-)?\d{2}-\d{2}$", clean["date"]):
+        raise ValueError("a family date needs a date")
+    if clean.get("every_days") and num(clean["every_days"]) is None:
+        raise ValueError("every_days must be a number")
+    now = (now or datetime.now(CENTRAL)).astimezone(CENTRAL)
+    p = folder / "outbox.json"
+    try:
+        box = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        box = {"rows": []}
+    entry = {"tab": tab, "row": clean, "at": now.isoformat(timespec="seconds")}
+    box["rows"].append(entry)
+    folder.mkdir(parents=True, exist_ok=True)
+    tmp = folder / "outbox.json.tmp"
+    tmp.write_text(json.dumps(box, indent=1), encoding="utf-8")
+    tmp.replace(p)
+    return entry
