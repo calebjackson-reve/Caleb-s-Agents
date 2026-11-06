@@ -45,6 +45,13 @@ Session on the Mac mini, Claude Code, started 20:46. Steps 2 to 4 took about 8 m
 
 **Committed** with Caleb's OK on the size (about 4,500 lines, about 4,000 of them the generated `package-lock.json`).
 
+**Step 6. Proof chain: built and proven on a synthetic take, waiting on Caleb's real take**
+- Caleb turned the sandbox off for this project (`.claude/settings.local.json` in the main checkout and the worktree, never committed) and allowed git push for the session.
+- `scripts/ingest.sh`: probe, transcode to H.264 1080x1920 30fps with stereo AAC, confirm the frame count, transcribe once, cuts at scene 0.05, three grid frames at 25, 50 and 75 percent.
+- `src/test-run/TestRun.tsx`: the take, brand captions chunked 1 to 3 words and at most about 17 characters, casual lowercase with a proper-noun list (`KEEP`), the default hook for the first 90 frames. Caption Y, hook top and frame count come in as measured props.
+- Synthetic run (5 s test pattern with a tone): 150 frames in and out, render 6 s at crf 17, `verify-audio.py` voice gain 1.0003 against a stereo source, added audio -87 dB (nothing added).
+- Three bugs found and fixed on the synthetic run: ffmpeg 9 dropped `-vsync` (now `-fps_mode passthrough`); whisper emitted "(Bell)" as a word (sound tags are now dropped); "St." ended a caption chunk on its own (abbreviations no longer break chunks). A mono source reads voice gain 0.707 against Remotion's stereo output, so ingest now always writes stereo.
+
 **Needs Caleb**
 - Step 6: film the 20-second test take (rear camera, 4K 30fps, eye level, clip-on mic), AirDrop it, drop it in `engine/public/recordings/test.MOV`.
 - Decide whether the listing reel playbook's gold hairline title or BRAND.md's no-gold rule wins for listing reels.

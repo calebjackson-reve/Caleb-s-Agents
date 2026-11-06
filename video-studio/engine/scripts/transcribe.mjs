@@ -7,7 +7,8 @@
 // between runs, and every beat anchored to a word drifts if you re-run it.
 // Use scripts/retime-captions.py to fix late captions instead of re-running.
 //
-// Standalone punctuation tokens are dropped (whisper emits them as words).
+// Standalone punctuation tokens and sound tags like (Bell) or [Music] are
+// dropped (whisper emits them as words).
 // --no-gpu is only needed inside the Claude Code sandbox, which blocks Metal.
 
 import { execFileSync } from "node:child_process";
@@ -58,7 +59,9 @@ execFileSync(WHISPER, whisperArgs, { stdio: ["ignore", "ignore", "inherit"] });
 const raw = JSON.parse(readFileSync(prefix + ".json", "utf8")).transcription ?? [];
 const words = raw
   .map((w) => ({ text: w.text.trim(), startMs: w.offsets.from, endMs: w.offsets.to }))
-  .filter((w) => /[a-z0-9]/i.test(w.text));
+  .filter((w) => /[a-z0-9]/i.test(w.text))
+  // sound tags such as (Bell), [Music], *laughs* are not speech
+  .filter((w) => !/^[([*].*[)\]*]$/.test(w.text));
 
 writeFileSync(out, JSON.stringify(words, null, 0).replace(/},{/g, "},\n{") + "\n");
 const last = words[words.length - 1];
