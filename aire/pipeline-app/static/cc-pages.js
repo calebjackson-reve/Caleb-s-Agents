@@ -56,7 +56,7 @@
     const kinds = Object.keys(KIND).filter(k => d.calendar.some(r => r.kind === k));
     const days = Array.from({ length: span }, (_, i) => C.addDays(from, i));
     const wk = Object.fromEntries(d.week.map(r => [r.day, r]));
-    const body = st.mode === 'day' ? (evs.length ? `<ul class="cc-list">${evs.map(evRow).join('')}</ul>` : empty('Nothing booked.'))
+    const body = st.mode === 'day' ? (evs.length ? `<ul class="cc-list cc-dayview">${evs.map(evRow).join('')}</ul>` : empty('Nothing booked.'))
       : `<div class="cc-days ${st.mode}">${days.map(k => { const e = evs.filter(r => r.day === k); return `<div class="cc-day ${k === d.today ? 'is-today' : ''}"><h3>${day(k)}${wk[k] ? `<small>${wk[k].hours}h booked</small>` : ''}</h3>${e.length ? `<ul class="cc-list tight">${e.map(evRow).join('')}</ul>` : '<p class="cc-none">Free</p>'}</div>`; }).join('')}</div>`;
     const last = d.week.length ? Math.max(1, ...d.week.map(r => r.hours)) : 1;
     return `<div class="cc-page">${head('Calendar', 'Today through the next 30 days, Baton Rouge time')}
@@ -78,12 +78,13 @@
     const g = guard(); if (g) return g;
     const rows = C.data.leads.filter(r => !r.test).sort((a, b) => (b.received || '').localeCompare(a.received || ''));
     const tests = C.data.leads.length - rows.length;
-    return `<div class="cc-page">${head('Leads', 'New website leads, newest first. Nothing sends from this page.')}
+    return `<div class="cc-page">${head('Leads', 'New website leads, newest first. Copy the text here, then press send in Command.')}
       ${card(`Website leads <span class="cc-count">${rows.length}</span>`, rows.length ? `<ul class="cc-leads">${rows.map((r, i) => `<li class="cc-lead">
         <div class="cc-lead-h"><h3>${C.priv ? esc((r.name || 'Lead').split(' ')[0]) + ' •••' : esc(r.name || 'Lead')}</h3><small>${day((r.received || '').slice(0, 10))} · ${esc(r.source || r.subject || '')}${r.area ? ' · ' + esc(r.area) : ''}</small></div>
         <p class="cc-lead-meta">${r.phone ? 'Phone ' + contact(r.phone) : 'No phone'} · ${r.email ? 'Email ' + contact(r.email) : 'No email'}</p>
         <p class="cc-lead-msg">${esc(draftText(r))}</p>
-        <div class="cc-acts"><button type="button" onclick="CC.copyLead(${i})">Copy the text</button><button type="button" onclick="CC.addLead(${i})">Add to the CRM</button></div></li>`).join('')}</ul>`
+        <div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyLead(${i})">Copy the text</button><a class="cc-btn" href="https://agent.kw.com/command" target="_blank" rel="noopener">Open Command</a></div>
+        <p class="cc-note cc-how">Copy the text, open Command, paste it on ${esc((r.name || 'their').split(' ')[0])}'s contact and press send in Command.</p></li>`).join('')}</ul>`
         : empty('No website leads in the last 14 days.'), 'leads')}
       ${tests ? `<p class="cc-note">${tests} test lead${tests > 1 ? 's' : ''} not counted.</p>` : ''}</div>`;
   }
@@ -95,15 +96,7 @@
   }
   C.copyLead = i => {
     const r = C.data.leads.filter(x => !x.test).sort((a, b) => (b.received || '').localeCompare(a.received || ''))[i];
-    navigator.clipboard.writeText(draftText(r)).then(() => toast('ok', 'COPIED', 'Text copied. It goes out only when you send it yourself.'), () => toast('err', 'COPY', 'The browser blocked the clipboard.'));
+    navigator.clipboard.writeText(draftText(r)).then(() => toast('ok', 'COPIED', 'Text copied. Now paste it in Command and press send there.'), () => toast('err', 'COPY', 'The browser blocked the clipboard.'));
   };
-  C.addLead = async i => {
-    const r = C.data.leads.filter(x => !x.test).sort((a, b) => (b.received || '').localeCompare(a.received || ''))[i];
-    const ok = await modal('Add this lead to the CRM?', `<p>${esc(r.name || 'This lead')} goes into the AIRE CRM sheet as a website lead, through the CRM engine and its Do Not Contact check. Nothing is sent to them.</p>`, () => true, 'Add to CRM');
-    if (!ok) return;
-    const res = await api('/api/lead', { name: r.name || '', source: 'Website: ' + (r.source || 'Luxury Presence'), phone: r.phone || '', email: r.email || '' });
-    res.ok ? toast('ok', 'ADDED', 'Lead added to the CRM sheet.') : toast('err', 'REFUSED', res.error || 'The CRM engine refused it.');
-  };
-
   Object.assign(C.views, { commission, deadlines, calendar, ccleads });
 })();

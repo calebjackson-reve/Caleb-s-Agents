@@ -87,8 +87,11 @@
   const senderName = s => String(s || '').replace(/<[^>]*>/g, '').trim();
   function deadlineList(rows) {
     if (!rows.length) return empty('No contract deadlines in this window.');
-    return `<ul class="cc-list">${rows.map(r => `<li class="cc-ev ${r.day <= addDays(C.data.today, 2) ? 'is-soon' : ''}"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.what)}<small>${esc(r.deal)}</small></span></li>`).join('')}</ul>`;
+    return `<ul class="cc-list">${rows.map(r => { const k = dlKind(r); return `<li class="cc-ev k-${k} ${r.day <= addDays(C.data.today, 2) ? 'is-soon' : ''}"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.what)}<small>${esc(r.deal)}</small></span><span class="cc-chip">${DL[k]}</span></li>`; }).join('')}</ul>`;
   }
+  // A contract deadline's type, for its color: act of sale, inspection, appraisal or financing, anything else.
+  const DL = { closing: 'Act of sale', inspection: 'Inspection', finance: 'Appraisal / loan', deadline: 'Deadline' };
+  function dlKind(r) { const t = (r.what || '') + ' ' + (r.title || ''); return /act of sale|closing/i.test(t) ? 'closing' : /inspect/i.test(t) ? 'inspection' : /apprais|financ|loan|mortgage/i.test(t) ? 'finance' : 'deadline'; }
   function addDays(k, x) { const t = new Date(k + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + x); return t.toISOString().slice(0, 10); }
 
   C.views = { dash };
