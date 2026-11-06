@@ -40,6 +40,7 @@ cd skills/nick-saraev/<course> && zip -r <skill-name>.zip <skill-name>
 |---|---|
 | [**SKOOL AI FOR AGENTS**](SKOOL-AI-FOR-AGENTS/README.md) | Project hub for the free Skool community: status log, shot board for every video, and links to the plan, scripts and research. Start here for anything Skool. |
 | [**AIRE**](aire/README.md) | Project hub: status log, stack memory, the October 2026 rollout plan, weekly AI briefs, and the speed to lead responder. Start here for anything AIRE. |
+| [**VIDEO STUDIO**](video-studio/README.md) | Project hub for the AI video workflow: status log, round 1 research plan and scored tool report, the blind judge procedure, and the four video agents. Start here for anything video. |
 | `global-claude-md/` | The global CLAUDE.md for Caleb's machine, with the install line. |
 
 ## Programs
@@ -54,6 +55,7 @@ cd skills/nick-saraev/<course> && zip -r <skill-name>.zip <skill-name>
 |---|---|---|
 | Reverse Engineer Everything | [YouTube video on the REA tool](https://www.youtube.com/watch?v=dAzs_rU6080) | [Lesson plan](lessons/reverse-engineer-everything/LESSON.md) · [Viewable page](lessons/reverse-engineer-everything/lesson.html) |
 | The Floor Is Rising | Video on why AI automation won't last forever | [Lesson plan](lessons/the-floor-is-rising/LESSON.md) |
+| The millee.md guides and skills | [24 free guides by Michael Ly](https://milleemd.com/guides/) and six free skill files | [Lesson](lessons/millee-md-guides/LESSON.md) · [remotion-reel digest](lessons/millee-md-guides/remotion-reel-digest.md) · [Engine plan](video-studio/ENGINE-PLAN.md) |
 
 ## Setup
 

@@ -5,3 +5,10 @@ briefs/
 cache/
 queue-*.md
 *.audit.jsonl
+
+# Third-party skill downloads (see tools/fetch-millee-skills.sh), not ours to redistribute
+skills/third-party/
+# Video engine media and renders stay on the Mac
+video-studio/engine/public/
+video-studio/engine/node_modules/
+video-studio/engine/bin/
