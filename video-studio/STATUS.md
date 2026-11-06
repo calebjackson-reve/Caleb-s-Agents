@@ -2,6 +2,53 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-05, evening: Phase 0 steps 2 to 4 done, step 5 built and waiting on one render
+
+Session on the Mac mini, Claude Code, started 20:46. Steps 2 to 4 took about 8 minutes. The work runs in a separate worktree (`.claude/worktrees/video-studio`) so the main checkout, which the live Pipeline LaunchAgents run from, is never switched again. Earlier in the session a branch switch in the main checkout stopped halfway and Caleb restored it with `git reset` and `git checkout HEAD -- .`. Pipeline on 4747 served every asset afterwards.
+
+**Confirmed by Caleb**
+- "Run steps 2 through 5 end to end. Step 1 is done. Review the five scripts in the remotion-reel skill before you copy them. Stop at step 5 and show me the six sample frames."
+- Copy `~/reels/playbook/listing-reel.md` into `engine/brand/listing-reel-playbook.md` after checking it for client names and numbers.
+
+**Machine** Apple M6, 12 cores (2 Super, 4 Performance, 6 Efficiency), 16 GB, Node v26.12.1, 44 GB free after the installs (48 GB before).
+
+**Step 2. Tools: pass**
+- ffmpeg and ffprobe 9.0.2, Node v26.12.1, npm 11.20.0, Python 3.15.1 with numpy 2.5.4 and Pillow 13.0.0, Google Chrome in /Applications, Xcode Command Line Tools.
+- cmake was missing. A portable cmake 4.4.5 lives in `engine/bin/cmake/` (git-ignored) instead of Homebrew, which the sandbox cannot write to.
+
+**Step 3. Remotion project: pass, with three sandbox limits**
+- `create-video` cannot reach npm or GitHub from the sandbox (Node's own fetch skips the proxy), so the blank template was written by hand: Remotion 4.0.541, React 19.2, TypeScript 5.9, `@remotion/google-fonts`. `npx remotion versions` clean, `tsc` clean, `npx remotion bundle` builds.
+- Folders made: `public/recordings`, `screen-recordings`, `images`, `logos`, `broll`, `music pack`, `sound pack`, `fonts`, `out`, `bin`. All git-ignored.
+- whisper.cpp built from source (master `b1535f5fb1`, 2026-11-05) into `bin/whisper.cpp/build/bin/whisper-cli`. Models `ggml-base.en.bin` (148 MB) and `ggml-small.bin` (488 MB). `whisper-cli -h` prints its help and a CPU test run writes JSON.
+- `scripts/transcribe.mjs` (ours): ffmpeg to 16 kHz mono, whisper-cli with word timestamps, drops punctuation-only tokens, writes `[{text,startMs,endMs}]` next to the recording, refuses to re-transcribe an existing file unless `--force`. Defaults to the small model.
+- The five Python scripts were reviewed line by line before copying: no network calls, no shell strings, subprocess only to ffmpeg, ffprobe and whisper-cli, writes only to the paths given or to temp folders. `verify-audio.py` and `retime-captions.py` leave temp WAVs in `$TMPDIR`, harmless. Copied unchanged into `scripts/`.
+- Caption, TextHook, TwoThirdsPanel and Silhouette copied into `src/shared/` with the brand swapped in: Hauora, ivory fill and ink outline captions with the light-ground flip, Instrument Serif Italic ember emphasis, the hook default as ivory text in an ink outline, drop shadows and the white sheen gradient replaced by hairlines. Theme tokens live in `src/brand/theme.ts`.
+- **Kept off GitHub:** the five scripts and `src/shared/` are Michael Ly's work with no license, so `engine/.gitignore` keeps them on the Mac. A fresh clone needs `tools/fetch-millee-skills.sh` plus the copy step to build.
+- Three things the Claude Code sandbox blocks: Chrome (Mach port registration, SIGABRT on launch), Metal for whisper (falls back to CPU with `-ng`), and macOS `say`. Renders and GPU transcription run outside the sandbox with the `!` prefix.
+
+**Step 4. Fonts: pass**
+- Hauora Regular, SemiBold and Bold (`.woff2`, SIL OFL) copied from iCloud Drive into `public/fonts/`, loaded in `src/brand/theme.ts`, present in the bundle. Instrument Serif and Instrument Sans load from Google Fonts. No stand-in needed.
+
+**Step 5. Sample frames: approved**
+- Caleb: "yes" on all six frames (2026-11-05, evening). No changes, so BRAND.md section 9 stays empty. The end card's REALTOR and license line and the outlined pill stand as rendered.
+- `src/brand-samples/BrandSamples.tsx`: one six-frame composition, one sample per frame, so `scripts/render-brand-samples.sh` does a single range render plus a 3x2 contact sheet in `out/brand-samples/`.
+- Caleb ran it with `!` at 20:58: the range render took 4 s, six PNGs at 1080x1920, contact sheet built. Measured on the frames: the hook's ink shape spans y430 to y639, inside the y285 to y1635 safe band and above the stand-in head (top y690), 686 px wide (limit 880). The caption's letters span y1091 to y1150 with the baseline 40 px below the stand-in chin, so the tops of the letters overlap the chin by about 19 px. That follows BRAND.md section 4 (baseline about 45 px below the chin), and real takes get measured per video.
+- Hook line widths are measured in the loaded font at render time, not guessed.
+- The stat tile uses a placeholder number labelled "placeholder, not a market stat" with a source and date line, so no unsourced number appears.
+
+**Judgment calls to check on the frames**
+- End card adds "REALTOR" and "Louisiana license 995709547". BRAND.md section 5 says license only when compliance needs it, but `~/reels/CLAUDE.md` makes name, REALTOR, Keller Williams First Choice and license a hard rule on every reel.
+- End card pill: BRAND.md says ink fill on an ink ground, which would be invisible, so it has a 1px ivory edge.
+- The copied listing reel playbook still describes LuxTitle in Didot with a gold hairline, which BRAND.md section 1 rules out (no gold). Copied unchanged, Caleb's call which wins.
+
+**Sandbox settings changed by Caleb** (`~/.claude/settings.json`): `allowUnsandboxedCommands: true`, and `npx remotion *`, the brand samples render script, `node scripts/transcribe.mjs *`, `*/whisper-cli *` and `python3 scripts/retime-captions.py *` excluded from the sandbox. The rest stays sandboxed.
+
+**Committed** with Caleb's OK on the size (about 4,500 lines, about 4,000 of them the generated `package-lock.json`).
+
+**Needs Caleb**
+- Step 6: film the 20-second test take (rear camera, 4K 30fps, eye level, clip-on mic), AirDrop it, drop it in `engine/public/recordings/test.MOV`.
+- Decide whether the listing reel playbook's gold hairline title or BRAND.md's no-gold rule wins for listing reels.
+
 ## 2026-11-06, evening: Phase 0 pre-checks done on the Mac mini
 
 **Confirmed by Caleb** (pasted from his Mac session)
