@@ -64,6 +64,7 @@ sys.path.insert(0, str(HERE))
 import jarvis  # noqa: E402  (the voice's tools and tool loop)
 import cc  # noqa: E402  (Command Center numbers)
 import auth  # noqa: E402  (the login for anything but this Mac)
+import push  # noqa: E402  (phone alerts)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -326,6 +327,8 @@ class State:
             threading.Thread(target=self.check_messages, daemon=True).start()
         self.started = now().isoformat(timespec="seconds")
         # Command Center reads: out/cc/ on the Mac (written by the sync), made-up fixtures in demo.
+        self.push_subs = (send_log.parent if send_log else OUT) / ("demo-push-subs.json" if demo else "push-subs.json")
+        self.push_key = (send_log.parent / "push-keys.json") if send_log else (OUT / "demo-push-keys.json" if demo else push.KEY_FILE)
         self.auth = auth.Auth((send_log.parent if send_log else OUT) / ("demo-sessions.json" if demo else "sessions.json"),
                               login_file=Path(os.getenv("PIPELINE_LOGIN_FILE") or auth.LOGIN_FILE))
         self.cc_dir = cc.demo_folder(FIXTURES / "cc", Path(tempfile.mkdtemp(prefix="pipeline-cc-"))) if demo else OUT / "cc"
@@ -996,7 +999,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
             return
         ctype = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
-                 ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon"}.get(path.suffix, "application/octet-stream")
+                 ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json"}.get(path.suffix, "application/octet-stream")
         raw = path.read_bytes()
         self.send_response(200)
         self.send_header("Content-Type", ctype)
@@ -1018,6 +1021,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, self.state.snapshot())
         if u.path == "/api/refresh":
             return self._json(200, self.state.refresh)
+        if u.path == "/api/push/key":
+            return self._json(200, {"ok": True, "key": push.keys(self.state.push_key)["public"]})
+        if u.path == "/api/alerts":
+            d = push._read(self.state.cc_dir / "alerts.json", {"rows": []})
+            return self._json(200, {"ok": True, "rows": d.get("rows", [])[:20], "phones": len(push._read(self.state.push_subs, []))})
         if u.path == "/api/cc":
             p = cc.build(self.state.cc_dir)
             f = self.state.feed() or {}
@@ -1085,7 +1093,16 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": True}, cookie=auth.Auth.cookie("", False, clear=True))
         s = self.state
         try:
-            if u.path == "/api/cc/row":
+            if u.path == "/api/push/subscribe":
+                out = {"ok": True, "phones": push.subscribe(body.get("subscription") or {}, s.push_subs)}
+            elif u.path == "/api/push/test":
+                rows = [{"kind": "test", "title": "Pipeline alerts are on", "body": "This is a test from your Mac.", "page": "sources", "at": now().isoformat(timespec="seconds")}]
+                d = push._read(s.cc_dir / "alerts.json", {"rows": [], "state": {}})
+                push._write(s.cc_dir / "alerts.json", {**d, "rows": (rows + d.get("rows", []))[:50]})
+                k = push.keys(s.push_key)
+                codes = [push.send_one(x["endpoint"], k) for x in push._read(s.push_subs, [])] if not s.demo else []
+                out = {"ok": True, "phones": len(codes), "sent": sum(1 for c in codes if 200 <= c < 300)}
+            elif u.path == "/api/cc/row":
                 e = cc.queue_row(s.cc_dir, str(body.get("tab", "")), body.get("row") or {})
                 out = {"ok": True, "queued": e, "where": "Saved. It goes to the sheet on the next sync, within 5 minutes."}
             elif u.path == "/api/cc/goals":
@@ -1443,6 +1460,13 @@ def run_tests() -> int:
     check(json.loads(urllib.request.urlopen(rq).read())["ok"], "POST /api/cc/row queues a workout")
     rq = urllib.request.Request(base + "/api/cc/row", data=json.dumps({"tab": "Contacts", "row": {}}).encode(), headers={"Content-Type": "application/json"})
     check(not json.loads(urllib.request.urlopen(rq).read())["ok"], "POST /api/cc/row refuses an engine tab")
+    k = json.loads(urllib.request.urlopen(base + "/api/push/key").read())
+    check(k["ok"] and len(k["key"]) == 87, "GET /api/push/key gives the public key")
+    rq = urllib.request.Request(base + "/api/push/subscribe", data=json.dumps({"subscription": {"endpoint": "https://evil.example/x"}}).encode(), headers={"Content-Type": "application/json"})
+    check(not json.loads(urllib.request.urlopen(rq).read())["ok"], "a subscription to a non-push address is refused")
+    rq = urllib.request.Request(base + "/api/push/test", data=b"{}", headers={"Content-Type": "application/json"})
+    urllib.request.urlopen(rq)
+    check(json.loads(urllib.request.urlopen(base + "/api/alerts").read())["rows"][0]["kind"] == "test", "a test alert shows in /api/alerts")
     # the login: anything that is not this Mac needs a passcode session
     host = f"pipeline-mac.tail1234.ts.net"
     def remote(path, data=None, cookie=None):
