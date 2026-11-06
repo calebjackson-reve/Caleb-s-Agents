@@ -89,6 +89,13 @@ class Mappers(unittest.TestCase):
         self.assertEqual((r["phone"], r["email"], r["source"]), ("225.555.0187", "riley@example.com", "Home value request"))
         self.assertTrue(S.lead_row(thread("n", "LP", "New lead: Test"), "")["test"])
 
+    def test_lead_keeps_every_labeled_line(self):
+        b = ("Name: Pat Example\nPhone: 225-555-0100\nEmail: pat@example.com\nAddress: 12 Demo Way, Zachary, LA\n"
+             "Message: Thinking of selling in spring\nTimeframe: 3-6 months\nValuation Source: https://example.com/v\nTimeframe: dupe")
+        r = S.lead_row(thread("f", "LP", "Home value request"), b)
+        self.assertEqual((r["address"], r["message"]), ("12 Demo Way, Zachary, LA", "Thinking of selling in spring"))
+        self.assertEqual([k for k, v in r["fields"]], ["Address", "Message", "Timeframe", "Valuation Source"])
+
     def test_bank(self):
         self.assertEqual(S.bank_row(thread("b", "Chase", "Your balance", "Available balance is $12,345.67"))["amount"], 12345.67)
         self.assertEqual(S.bank_row(thread("d", "Chase", "Direct deposit posted", "$1,000.00"))["type"], "Deposit")

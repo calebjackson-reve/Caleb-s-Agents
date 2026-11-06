@@ -1004,7 +1004,10 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/api/refresh":
             return self._json(200, self.state.refresh)
         if u.path == "/api/cc":
-            return self._json(200, {**cc.build(self.state.cc_dir), "demo": self.state.demo})
+            p = cc.build(self.state.cc_dir)
+            f = self.state.feed() or {}
+            p["leads"] = cc.attach_crm(p["leads"], (f.get("new_leads") or []) + (f.get("touches_due") or []))
+            return self._json(200, {**p, "demo": self.state.demo})
         if u.path == "/api/voice/token":
             try:
                 return self._json(200, self.state.call_token())

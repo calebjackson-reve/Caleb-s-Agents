@@ -201,5 +201,14 @@ class Bank(unittest.TestCase):
         self.assertEqual([(x["name"], x["state"]) for x in p["problems"]], [("calendar", "failed")])
 
 
+
+class LeadMatch(unittest.TestCase):
+    def test_attach_crm(self):
+        people = [{"person_id": "7", "phone": "+12255550142", "band": "hot"}, {"person_id": "9", "email": "Pat@Example.com", "phone": ""}]
+        out = cc.attach_crm([{"phone": "(225) 555-0142"}, {"email": "pat@example.com "}, {"phone": "555-0142"}, {}], people)
+        self.assertEqual([r["crm"] and r["crm"]["person_id"] for r in out], ["7", "9", None, None])
+        self.assertEqual(out[0]["crm"]["band"], "hot")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

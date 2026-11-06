@@ -74,17 +74,47 @@
   C.calKind = k => { C.cal.hide.has(k) ? C.cal.hide.delete(k) : C.cal.hide.add(k); render(); };
 
   // ---------------- Leads ----------------
+  // Leads show the full name, phone, email and everything the lead email carried, without the privacy dots
+  // (Caleb, 2026-11-05). Money elsewhere stays behind Show.
+  const AV = ['#e87757', '#7fd0a0', '#8ab4f8', '#b9a3e3', '#ffb547', '#6fcfb8', '#e29ac0', '#c8b596'];
+  const avColor = t => AV[[...String(t || '')].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % AV.length];
+  const initials = t => String(t || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+  const srcKind = t => /home value|valuation/i.test(t) ? 'k-closing' : /listing|showing|tour/i.test(t) ? 'k-showing' : 'k-client';
+  const BAND = { hot: 'k-closing', warm: 'k-deadline', cool: 'k-client', cold: 'k-block', 'ice-cold': 'k-block' };
+  function ageChip(r) {
+    const k = (r.received || '').slice(0, 10), t = C.data.today;
+    const n = k ? Math.round((new Date(t + 'T12:00:00Z') - new Date(k + 'T12:00:00Z')) / 864e5) : null;
+    const [label, cls] = n == null ? ['Date unknown', 'k-other'] : n <= 0 ? ['New today', 'k-closing'] : n === 1 ? ['Yesterday', 'k-deadline'] : [n + ' days ago', 'k-other'];
+    return `<span class="cc-pill ${cls}">${label}</span>`;
+  }
+  const leadRows = () => C.data.leads.filter(r => !r.test).sort((a, b) => (b.received || '').localeCompare(a.received || ''));
+  function leadCard(r, i) {
+    const name = r.name || 'Website lead', c = r.crm, shown = new Set(['address', 'message']);
+    const extra = (r.fields || []).filter(([k]) => !shown.has(k.toLowerCase()));
+    const tel = String(r.phone || '').replace(/[^\d+]/g, '');
+    return `<li class="cc-lead" style="--av:${avColor(name)}">
+      <div class="cc-lead-top"><span class="cc-av" aria-hidden="true">${esc(initials(name))}</span>
+        <div class="cc-lead-id"><h3>${esc(name)}</h3>
+          <div class="cc-pills">${ageChip(r)}<span class="cc-pill ${srcKind(r.source || r.subject)}">${esc(r.source || 'Website lead')}</span>${r.area ? `<span class="cc-pill k-listing">${esc(r.area)}</span>` : ''}
+          ${c ? `<span class="cc-pill ${BAND[(c.band || '').toLowerCase()] || 'k-other'}">In your CRM${c.band ? ' · ' + esc(c.band) : ''}</span>` : '<span class="cc-pill k-other">Not in your CRM yet</span>'}</div></div></div>
+      <ul class="cc-contact">
+        <li><span aria-hidden="true">☎</span>${r.phone ? `<a href="tel:${esc(tel)}">${esc(r.phone)}</a>` : '<em>No phone in the email</em>'}</li>
+        <li><span aria-hidden="true">✉</span>${r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : '<em>No email in the email</em>'}</li>
+        ${r.address ? `<li><span aria-hidden="true">⌂</span>${esc(r.address)}</li>` : ''}
+        <li><span aria-hidden="true">◷</span>Came in ${esc(C.time(r.received || '') === 'All day' ? day((r.received || '').slice(0, 10)) : day((r.received || '').slice(0, 10)) + ', ' + C.time(r.received))}</li>
+      </ul>
+      ${r.message ? `<blockquote class="cc-quote">${esc(r.message)}</blockquote>` : ''}
+      ${extra.length ? `<dl class="cc-fields">${extra.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${/^https?:\/\//i.test(v) ? `<a href="${esc(v)}" target="_blank" rel="noopener">Open link</a>` : esc(v)}</dd></div>`).join('')}</dl>` : ''}
+      ${c ? `<dl class="cc-fields cc-crm"><div><dt>In the CRM as</dt><dd>${esc(c.display || '')}</dd></div>${c.stage ? `<div><dt>Stage</dt><dd>${esc(c.stage)}</dd></div>` : ''}${c.last_touch ? `<div><dt>Last touch</dt><dd>${esc(c.last_touch)}${c.days_quiet != null ? ` · ${c.days_quiet} days quiet` : ''}</dd></div>` : ''}${c.next_action ? `<div><dt>Next action</dt><dd>${esc(c.next_action)}</dd></div>` : ''}${c.owes_reply ? `<div><dt>Reply</dt><dd class="cc-owed">They texted, you owe a reply</dd></div>` : ''}</dl>` : ''}
+      <p class="cc-lead-msg">${esc(draftText(r))}</p>
+      <div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyLead(${i})">Copy the text</button><a class="cc-btn" href="https://agent.kw.com/command" target="_blank" rel="noopener">Open Command</a></div>
+      <p class="cc-note cc-how">Copy the text, open Command, paste it on ${esc(name.split(' ')[0])}'s contact and press send in Command.</p></li>`;
+  }
   function ccleads() {
     const g = guard(); if (g) return g;
-    const rows = C.data.leads.filter(r => !r.test).sort((a, b) => (b.received || '').localeCompare(a.received || ''));
-    const tests = C.data.leads.length - rows.length;
+    const rows = leadRows(), tests = C.data.leads.length - rows.length;
     return `<div class="cc-page">${head('Leads', 'New website leads, newest first. Copy the text here, then press send in Command.')}
-      ${card(`Website leads <span class="cc-count">${rows.length}</span>`, rows.length ? `<ul class="cc-leads">${rows.map((r, i) => `<li class="cc-lead">
-        <div class="cc-lead-h"><h3>${C.priv ? esc((r.name || 'Lead').split(' ')[0]) + ' •••' : esc(r.name || 'Lead')}</h3><small>${day((r.received || '').slice(0, 10))} · ${esc(r.source || r.subject || '')}${r.area ? ' · ' + esc(r.area) : ''}</small></div>
-        <p class="cc-lead-meta">${r.phone ? 'Phone ' + contact(r.phone) : 'No phone'} · ${r.email ? 'Email ' + contact(r.email) : 'No email'}</p>
-        <p class="cc-lead-msg">${esc(draftText(r))}</p>
-        <div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyLead(${i})">Copy the text</button><a class="cc-btn" href="https://agent.kw.com/command" target="_blank" rel="noopener">Open Command</a></div>
-        <p class="cc-note cc-how">Copy the text, open Command, paste it on ${esc((r.name || 'their').split(' ')[0])}'s contact and press send in Command.</p></li>`).join('')}</ul>`
+      ${card(`Website leads <span class="cc-count">${rows.length}</span>`, rows.length ? `<ul class="cc-leads">${rows.map(leadCard).join('')}</ul>`
         : empty('No website leads in the last 14 days.'), 'leads')}
       ${tests ? `<p class="cc-note">${tests} test lead${tests > 1 ? 's' : ''} not counted.</p>` : ''}</div>`;
   }
@@ -95,7 +125,7 @@
       : `Hi ${first}, this is Caleb Jackson with Keller Williams First Choice. Thanks for reaching out on my site. What would be most helpful for you right now?`;
   }
   C.copyLead = i => {
-    const r = C.data.leads.filter(x => !x.test).sort((a, b) => (b.received || '').localeCompare(a.received || ''))[i];
+    const r = leadRows()[i];
     navigator.clipboard.writeText(draftText(r)).then(() => toast('ok', 'COPIED', 'Text copied. Now paste it in Command and press send there.'), () => toast('err', 'COPY', 'The browser blocked the clipboard.'));
   };
   Object.assign(C.views, { commission, deadlines, calendar, ccleads });

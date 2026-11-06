@@ -477,3 +477,23 @@ def save_goals(folder: Path, data: dict, now: datetime | None = None) -> dict:
     tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
     tmp.replace(folder / "goals.json")
     return goals
+
+
+def _digits(v) -> str:
+    d = re.sub(r"\D", "", str(v or ""))
+    return d[-10:] if len(d) >= 10 else ""
+
+
+def attach_crm(leads: list[dict], people: list[dict]) -> list[dict]:
+    """Each website lead gets the CRM person it matches, by phone (last 10 digits) or email."""
+    by = {}
+    for p in people:
+        for k in (_digits(p.get("phone")), str(p.get("email") or "").strip().lower()):
+            if k and k not in by:
+                by[k] = p
+    out = []
+    for r in leads:
+        hit = by.get(_digits(r.get("phone"))) or by.get(str(r.get("email") or "").strip().lower())
+        keep = ("person_id", "display", "band", "stage", "type", "last_touch", "days_quiet", "next_action", "owes_reply")
+        out.append({**r, "crm": {k: hit.get(k) for k in keep if hit.get(k) not in (None, "")} if hit else None})
+    return out

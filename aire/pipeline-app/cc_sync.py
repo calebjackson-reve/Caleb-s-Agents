@@ -173,7 +173,26 @@ def lead_row(t: dict, body: str) -> dict:
     return {**r, "name": name or "Website lead", "phone": phone, "email": field("email") or next(iter(emails), ""),
             "source": "Home value request" if re.search(r"home value", r["subject"] + body, re.I) else field("source", "type") or "Website lead",
             "area": field("city", "area", "location"),
+            "address": field("address", "property address", "property", "home address"),
+            "message": field("message", "comments", "comment", "notes", "question"),
+            "fields": labeled(body),
             "test": bool(re.search(r"\btest\b", name + " " + r["subject"], re.I))}
+
+
+SKIP_LABELS = re.compile(r"^(name|full name|first name|last name|phone|phone number|email|e-mail|unsubscribe|copyright|privacy)$", re.I)
+
+
+def labeled(body: str) -> list[list[str]]:
+    """Every 'Label: value' line in the lead email, in order, so the card shows whatever Luxury Presence sent.
+    Name, phone and email have their own spots; links keep their address."""
+    out, seen = [], set()
+    for m in re.finditer(r"^\s*([A-Za-z][A-Za-z /&()'-]{1,30}?)\s*:\s*(\S.{0,240})$", body, re.M):
+        k, v = m.group(1).strip(), m.group(2).strip()
+        if SKIP_LABELS.match(k) or k.lower() in seen or v.lower().startswith(("http://", "https://")) and len(v) > 200:
+            continue
+        seen.add(k.lower())
+        out.append([k, v])
+    return out[:16]
 
 
 MONEY = re.compile(r"\$\s?([\d,]+\.\d{2})")
