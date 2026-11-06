@@ -169,8 +169,26 @@ def deal_cards(deals: list[dict], today: date) -> list[dict]:
         days = None
         if is_day(r.get("since")) and r["since"] <= today.isoformat():
             days = (today - date.fromisoformat(r["since"])).days
-        out.append({**r, "stage": st, "next": next_step(r.get("check")), "days": days})
+        out.append({**r, "stage": st, "next": next_step(r.get("check")), "days": days,
+                    "checklist": checklist(r, today) if st == "contract" else [],
+                    "to_close": (date.fromisoformat(r["act"]) - today).days if is_day(r.get("act")) else None})
     return sorted(out, key=lambda r: (order[r["stage"]], r.get("act") or "9"))
+
+
+def checklist(r: dict, today: date) -> list[dict]:
+    """A deal under contract, step by step from the sheet: done (date passed), upcoming (date ahead, with days),
+    or missing (no date on the sheet). A step whose cell is not a date but says done or cleared counts as done."""
+    out = []
+    for key, label in (("inspection", "Inspection"), ("appraisal", "Appraisal and loan"), ("act", "Act of sale")):
+        v = str(r.get(key) or "").strip()
+        if is_day(v):
+            n = (date.fromisoformat(v) - today).days
+            out.append({"step": label, "date": v, "days": n, "state": "done" if n < 0 else "today" if n == 0 else "upcoming"})
+        elif re.search(r"\b(done|clear(ed)?|complete[d]?|waived|approved|ok)\b", v, re.I):
+            out.append({"step": label, "date": None, "days": None, "state": "done", "note": v[:60]})
+        else:
+            out.append({"step": label, "date": None, "days": None, "state": "missing", "note": v[:60]})
+    return out
 
 
 # ---------------- Calendar ----------------

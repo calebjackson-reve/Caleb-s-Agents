@@ -241,5 +241,19 @@ class LifeAndWorkouts(unittest.TestCase):
                     cc.queue_row(Path(d), tab, row, NOW)
 
 
+
+class Checklist(unittest.TestCase):
+    def test_deal_checklist(self):
+        r = {"inspection": "2026-11-01", "appraisal": "Cleared 11/3", "act": "2026-11-20"}
+        c = {x["step"]: x for x in cc.checklist(r, T)}
+        self.assertEqual((c["Inspection"]["state"], c["Appraisal and loan"]["state"], c["Act of sale"]["state"], c["Act of sale"]["days"]),
+                         ("done", "done", "upcoming", 15))
+        self.assertEqual(cc.checklist({"inspection": "", "act": "2026-11-05"}, T)[0]["state"], "missing")
+        self.assertEqual(cc.checklist({"act": "2026-11-05"}, T)[2]["state"], "today")
+        cards = cc.deal_cards(cc.deal_rows(SHEET), T)
+        self.assertEqual((cards[0]["to_close"], len(cards[0]["checklist"])), (15, 3))
+        self.assertEqual([c for c in cards if c["stage"] == "closed"][0]["checklist"], [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
