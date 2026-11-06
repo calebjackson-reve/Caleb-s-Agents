@@ -1189,9 +1189,16 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": False, "error": f"{type(e).__name__}: {e}"[:300]})
 
 
+class Server(ThreadingHTTPServer):
+    # Older Pythons listen with a queue of 5. A page load through `tailscale serve` opens about 15 connections at once,
+    # so the rest were refused and the phone got 502s on its scripts (2026-11-06).
+    request_queue_size = 128
+    daemon_threads = True
+
+
 def serve(state: State, port: int, open_browser: bool) -> None:
     Handler.state = state
-    httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    httpd = Server(("127.0.0.1", port), Handler)
     url = f"http://127.0.0.1:{port}/"
     v = state.voice_info()
     print(f"Pipeline {'(demo) ' if state.demo else ''}on {url}  sender={state.sender}  crm python={getattr(state.crm, 'python', 'demo')}  "
