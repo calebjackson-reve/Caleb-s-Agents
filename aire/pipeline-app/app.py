@@ -63,6 +63,7 @@ AIRE = HERE.parent
 sys.path.insert(0, str(HERE))
 import jarvis  # noqa: E402  (the voice's tools and tool loop)
 import cc  # noqa: E402  (Command Center numbers)
+import auth  # noqa: E402  (the login for anything but this Mac)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -325,6 +326,8 @@ class State:
             threading.Thread(target=self.check_messages, daemon=True).start()
         self.started = now().isoformat(timespec="seconds")
         # Command Center reads: out/cc/ on the Mac (written by the sync), made-up fixtures in demo.
+        self.auth = auth.Auth((send_log.parent if send_log else OUT) / ("demo-sessions.json" if demo else "sessions.json"),
+                              login_file=Path(os.getenv("PIPELINE_LOGIN_FILE") or auth.LOGIN_FILE))
         self.cc_dir = cc.demo_folder(FIXTURES / "cc", Path(tempfile.mkdtemp(prefix="pipeline-cc-"))) if demo else OUT / "cc"
 
     # ---- reads
@@ -973,12 +976,17 @@ class Handler(BaseHTTPRequestHandler):
         if os.getenv("PIPELINE_VERBOSE"):
             super().log_message(fmt, *args)
 
-    def _json(self, code: int, data) -> None:
+    def _json(self, code: int, data, cookie: str | None = None) -> None:
         raw = json.dumps(data, ensure_ascii=False, default=str).encode("utf-8")
         self.send_response(code)
+        if cookie:
+            self.send_header("Set-Cookie", cookie)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
         self.wfile.write(raw)
 
@@ -994,11 +1002,18 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
         self.wfile.write(raw)
 
     def do_GET(self):
         u = urllib.parse.urlparse(self.path)
+        if not self._gate(u.path):
+            return
+        if u.path == "/login":
+            return self._file("login.html")
         if u.path == "/api/state":
             return self._json(200, self.state.snapshot())
         if u.path == "/api/refresh":
@@ -1022,10 +1037,29 @@ class Handler(BaseHTTPRequestHandler):
         Host name (DNS rebinding). Tools with no Origin header, like curl and the tests, still work."""
         port = self.server.server_address[1]
         ok = {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"} | set(filter(None, os.getenv("PIPELINE_HOSTS", "").split(",")))
-        if (self.headers.get("Host") or "") not in ok:
+        host = (self.headers.get("Host") or "").lower()
+        # A Tailscale name (tailscale serve) is allowed too: only this tailnet's devices can resolve it, and it always
+        # needs the login. Origin must still equal Host, so a page on another site cannot press Pipeline's buttons.
+        tailnet = host.split(":")[0].endswith(".ts.net")
+        if host not in ok and not tailnet:
             return False
         origin = self.headers.get("Origin")
-        return origin is None or urllib.parse.urlparse(origin).netloc in ok
+        return origin is None or urllib.parse.urlparse(origin).netloc.lower() == host or urllib.parse.urlparse(origin).netloc in ok
+
+    def _gate(self, path: str) -> bool:
+        """True when the request may go on. From this Mac: always. Otherwise: a passcode session, except the login
+        page, the app manifest, icons and the service worker, which hold no data."""
+        a = self.state.auth
+        if a.is_local(self.headers, self.server.server_address[1]) or path in auth.PUBLIC_PATHS or a.valid(self.headers.get("Cookie")):
+            return True
+        if path.startswith("/api/"):
+            self._json(401, {"ok": False, "error": "sign in first" if a.configured() else "no passcode is set on the Mac yet"})
+        else:
+            self.send_response(302)
+            self.send_header("Location", "/login")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+        return False
 
     def do_POST(self):
         u = urllib.parse.urlparse(self.path)
@@ -1036,6 +1070,19 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(n) or b"{}")
         except Exception:
             return self._json(400, {"ok": False, "error": "body must be JSON"})
+        if u.path == "/api/login":
+            addr = (self.headers.get("X-Forwarded-For") or self.client_address[0]).split(",")[0].strip()
+            try:
+                tok = self.state.auth.login(str(body.get("passcode", "")), addr)
+            except ValueError as e:
+                return self._json(200, {"ok": False, "error": str(e)})
+            secure = (self.headers.get("X-Forwarded-Proto") or "") == "https"
+            return self._json(200, {"ok": True}, cookie=auth.Auth.cookie(tok, secure))
+        if not self._gate(u.path):
+            return
+        if u.path == "/api/logout":
+            self.state.auth.logout(self.headers.get("Cookie"))
+            return self._json(200, {"ok": True}, cookie=auth.Auth.cookie("", False, clear=True))
         s = self.state
         try:
             if u.path == "/api/cc/row":
@@ -1364,7 +1411,9 @@ def run_tests() -> int:
     # the HTTP layer end to end on a free port
     import socket
     sock = socket.socket(); sock.bind(("127.0.0.1", 0)); port = sock.getsockname()[1]; sock.close()
+    os.environ["PIPELINE_LOGIN_FILE"] = str(tmp / "login.json")  # never the real passcode file
     Handler.state = State(demo=True, send_log=tmp / "http.json")
+    state = Handler.state
     httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     th = threading.Thread(target=httpd.serve_forever, daemon=True); th.start()
     base = f"http://127.0.0.1:{port}"
@@ -1394,6 +1443,54 @@ def run_tests() -> int:
     check(json.loads(urllib.request.urlopen(rq).read())["ok"], "POST /api/cc/row queues a workout")
     rq = urllib.request.Request(base + "/api/cc/row", data=json.dumps({"tab": "Contacts", "row": {}}).encode(), headers={"Content-Type": "application/json"})
     check(not json.loads(urllib.request.urlopen(rq).read())["ok"], "POST /api/cc/row refuses an engine tab")
+    # the login: anything that is not this Mac needs a passcode session
+    host = f"pipeline-mac.tail1234.ts.net"
+    def remote(path, data=None, cookie=None):
+        h = {"Host": host, "X-Forwarded-For": "100.64.0.7", "X-Forwarded-Proto": "https", "Content-Type": "application/json"}
+        if data is not None:
+            h["Origin"] = "https://" + host
+        if cookie:
+            h["Cookie"] = cookie
+        rq = urllib.request.Request(base + path, data=None if data is None else json.dumps(data).encode(), headers=h)
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, *a, **k):
+                return None
+        try:
+            r = urllib.request.build_opener(NoRedirect).open(rq)
+            return r.status, r.headers, r.read()
+        except urllib.error.HTTPError as e:
+            return e.code, e.headers, e.read()
+    code, _, _ = remote("/api/cc")
+    check(code == 401, "a phone with no session gets 401 on the API")
+    code, hd, body = remote("/api/login", {"passcode": "nothing set yet"})
+    check(code == 200 and "no passcode" in json.loads(body)["error"], "login says when no passcode is set")
+    auth.set_passcode("correct horse battery", state.auth.login_file)
+    for _i in range(2):
+        code, hd, body = remote("/api/login", {"passcode": "wrong one here"})
+    check(not json.loads(body)["ok"], "a wrong passcode is refused")
+    code, hd, body = remote("/api/login", {"passcode": "correct horse battery"})
+    ck = (hd.get("Set-Cookie") or "").split(";")[0]
+    check(json.loads(body)["ok"] and "HttpOnly" in hd.get("Set-Cookie", "") and "Secure" in hd.get("Set-Cookie", "") and "SameSite=Strict" in hd.get("Set-Cookie", ""), "the right passcode sets a locked-down cookie")
+    code, _, body = remote("/api/cc", cookie=ck)
+    check(code == 200 and json.loads(body)["demo"], "with the session the phone reads /api/cc")
+    code, hd, _ = remote("/", cookie=None)
+    check(code == 302 and hd.get("Location") == "/login", "a page without a session goes to /login")
+    code, _, _ = remote("/sw.js")
+    check(code in (200, 404), "the service worker needs no session")
+    lock = auth.Auth(tmp / "s2.json", login_file=state.auth.login_file)
+    for _i in range(5):
+        try:
+            lock.login("wrong passcode!", "1.2.3.4")
+        except ValueError:
+            pass
+    try:
+        lock.login("correct horse battery", "1.2.3.4"); check(False, "five wrong tries lock the address")
+    except ValueError as e:
+        check("too many" in str(e), "five wrong tries lock the address")
+    check(auth.Auth.is_local({"Host": f"127.0.0.1:{port}"}, port) and not auth.Auth.is_local({"Host": f"127.0.0.1:{port}", "X-Forwarded-For": "1.1.1.1"}, port), "a proxied request is never treated as local")
+    remote("/api/logout", {}, cookie=ck)
+    code, _, _ = remote("/api/cc", cookie=ck)
+    check(code == 401, "after logout the old session is refused")
     req = urllib.request.Request(base + "/api/dnc", data=json.dumps({"person_id": "118", "reason": ""}).encode(),
                                  headers={"Content-Type": "application/json"})
     check(json.loads(urllib.request.urlopen(req).read())["ok"] is False, "POST with a gate failure answers ok false, not 500")
@@ -1426,9 +1523,12 @@ def main(argv=None) -> int:
     ap.add_argument("--port", type=int, default=int(os.getenv("PIPELINE_PORT", "4747")))
     ap.add_argument("--no-open", action="store_true", help="do not open the browser")
     ap.add_argument("--test", action="store_true")
+    ap.add_argument("--set-passcode", action="store_true", help="set the passcode the phone signs in with")
     a = ap.parse_args(argv)
     if a.test:
         return run_tests()
+    if a.set_passcode:
+        return auth.cmd_set_passcode()
     load_env_file()
     paths = None
     if a.demo and (a.demo_feed or a.demo_status):
