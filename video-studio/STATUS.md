@@ -2,6 +2,33 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-06: millee.md guides read, engine plan written
+
+**Confirmed by Caleb**
+- "Go to milleemd.com/guides, download all the free skills, read them, come back with a plan on how we should build our video editing engine." Then: "collect all the skills, add them to our 2nd brain knowledge and then use them to help build the plan." Also sent an Instagram reference, `instagram.com/p/De2SEI7JP8r`.
+
+**Done**
+- All 24 guides read (the millee.md short domain does not resolve from the cloud session, milleemd.com does). Six skill files downloaded from the public Drive folders and read in full: remotion-reel, carousel-studio, human, the-council, web-designer, the four resume skills.
+- `lessons/millee-md-guides/LESSON.md`: every guide in one table with what it is and what it is for here, the six skill files described, the shared method, Proof, Unknowns, proposed changes.
+- `lessons/millee-md-guides/remotion-reel-digest.md`: the editing method in our words, with the numbers, the five layouts, caption math, audio rules, the 13 gotchas, and what changes for Caleb.
+- `tools/fetch-millee-skills.sh`: downloads the originals into `skills/third-party/millee-md/`, now git-ignored, because the files are Michael Ly's and carry no license.
+- `ENGINE-PLAN.md`: the twelve-step engine, the stack at $0 incremental, why Remotion over invideo, CapCut, Descript and ffmpeg-only, the project layout, Phases 0 to 3, Proof, Unknowns, recommendations.
+- `.gitignore`: `skills/third-party/`, `video-studio/engine/public/`, `engine/node_modules/`, `engine/bin/`.
+- Root `README.md` lessons table row.
+
+**Not verified**
+- The Instagram post. Age-restricted login wall on the post and reel URLs, the embed says the post may be removed. Nothing read.
+- Michael Ly's time claims and render speeds. His machine, not the Mac mini.
+- Node, numpy and Pillow on the Mac mini.
+
+**Needs Caleb**
+- Yes or no on Phase 0 of the engine plan (one session, $0, reversible).
+- The Phase 1 topic: a listing with photos he owns, or a market stat.
+- Confirm the `website-rebuild/DESIGN-SYSTEM.md` palette is the current Keller Williams First Choice era, not Rêve, before it becomes `brand/BRAND.md`.
+- Open the Instagram post on the Mac and say what it shows, or send a screen recording.
+- Run the three Terminal checks at the end of `ENGINE-PLAN.md`.
+- Still open from 2026-11-05: Higgsfield Plus price, invideo plan.
+
 ## 2026-11-05, afternoon: ffmpeg confirmed on the Mac mini
 
 **Confirmed by Caleb**

@@ -55,6 +55,7 @@ cd skills/nick-saraev/<course> && zip -r <skill-name>.zip <skill-name>
 |---|---|---|
 | Reverse Engineer Everything | [YouTube video on the REA tool](https://www.youtube.com/watch?v=dAzs_rU6080) | [Lesson plan](lessons/reverse-engineer-everything/LESSON.md) · [Viewable page](lessons/reverse-engineer-everything/lesson.html) |
 | The Floor Is Rising | Video on why AI automation won't last forever | [Lesson plan](lessons/the-floor-is-rising/LESSON.md) |
+| The millee.md guides and skills | [24 free guides by Michael Ly](https://milleemd.com/guides/) and six free skill files | [Lesson](lessons/millee-md-guides/LESSON.md) · [remotion-reel digest](lessons/millee-md-guides/remotion-reel-digest.md) · [Engine plan](video-studio/ENGINE-PLAN.md) |
 
 ## Setup
 

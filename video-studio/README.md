@@ -7,6 +7,8 @@ Caleb's AI video setup, driven by Claude Code on the Mac mini. Round 1 reverse e
 | `STATUS.md` | Status log, newest first. What was done, what needs Caleb. |
 | `plan.md` | Round 1 research plan from the video-planner. The four research tracks. |
 | `research.md` | Round 1 report from the video-researcher. Scored tool matrix for images, video and editing, plus the scripting workflow spec. |
+| `ENGINE-PLAN.md` | The build plan for the video editing engine: a Remotion project on the Mac mini run by Claude Code, following the millee.md remotion-reel method. Phases 0 to 3, costs, unknowns. Written 2026-11-06. |
+| `engine/` | Not created yet. The Remotion project itself (Phase 0). Media folders inside it are git-ignored. |
 | `dashboard-spec.md` | Not written yet. The video-designer's two candidate stacks, A and B, and the workflow Claude Code runs on the Mac. |
 | `verdict-round-1.md` | Not written yet. The blind video-judge's scores and verdict. |
 
@@ -46,6 +48,8 @@ Rules: every price shows its source URL and the date it was checked. A score wit
 6. Round 2 uses the same procedure on the workflow after one real listing has run through it, with the real outputs attached.
 
 ## Related skills in this repo
+
+- `lessons/millee-md-guides/LESSON.md` and `remotion-reel-digest.md`: the 24 millee.md guides and the six free skills, digested. The engine plan is built on them. `tools/fetch-millee-skills.sh` downloads the originals onto the Mac.
 
 - `skills/teardown/SKILL.md`: the short video checklist and the two-version rebuild rule.
 - `skills/ai-compliance-check/SKILL.md`: runs on every script and caption before Caleb sees it.
