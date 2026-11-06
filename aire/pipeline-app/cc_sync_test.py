@@ -201,6 +201,24 @@ class Pass(unittest.TestCase):
         self.assertTrue(st["results"]["news"]["ok"])
         self.assertEqual(cc.build(self.dir, NOW)["fresh"]["deals"]["state"], "failed")
 
+    def test_failed_read_retries_within_30_minutes(self):
+        S.FETCH["market"] = lambda s, c, n: (_ for _ in ()).throw(TimeoutError("slow"))
+        S.run_pass(NOW, svc=self.ok, folder=self.dir)
+        S.FETCH["market"] = lambda s, c, n: {"rate": None, "areas": [], "gbrar": {"month": "2026-09"}}
+        st = S.run_pass(NOW.replace(minute=31), svc=self.ok, folder=self.dir)
+        self.assertTrue(st["results"]["market"]["ok"])
+
+    def test_market_survives_one_slow_source(self):
+        real = S.http_get
+        S.http_get = lambda url, timeout=60: (_ for _ in ()).throw(TimeoutError("slow")) if "Zip" in url else (
+            b"d,v\n2026-10-29,7.24\n2026-11-05,7.18\n" if "fred" in url else b"month_date_yyyymm,county_fips,active_listing_count\n202610,22033,1889\n")
+        try:
+            m = S.FETCH_REAL["market"](None, {}, NOW)
+        finally:
+            S.http_get = real
+        self.assertEqual((m["rate"]["rate"], m["areas"][0]["active"]), (7.18, 1889))
+        self.assertIn("Realtor.com zip", m["warnings"][0])
+
 
 class Public(unittest.TestCase):
     def test_news(self):

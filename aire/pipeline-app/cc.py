@@ -539,7 +539,7 @@ def market(m: dict) -> dict:
             return (s.get(k) or {}).get("now")
         pts.append(f"Greater Baton Rouge, {g['month']}: median sale price ${gv('median_price'):,.0f}, {gv('closed_sales')} closed sales, "
                    f"{gv('months_supply')} months of supply, {gv('days_on_market')} days on market (GBRAR MLS monthly indicators).")
-    return {**m, "points": pts}
+    return {**m, "points": pts, "warnings": m.get("warnings") or []}
 
 
 def _merge_outbox(rows: dict, outbox: list, tabs: dict) -> dict:

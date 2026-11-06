@@ -32,6 +32,7 @@
           <p><b>${n(a.dom)}</b> median days on market</p>${a.flag ? '<p class="cc-warn">Realtor.com marks this ZIP\'s data as less reliable.</p>' : ''}</div>`).join('')}</div>`
         : empty('No area numbers yet.'), 'market')}
       ${card('Talking points', (m.points || []).length ? `<ul class="cc-points">${m.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul><div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyPoints()">Copy the talking points</button></div><p class="cc-note">Built only from the numbers above, each with its source and date. Check the date before you quote one to a client.</p>` : empty('No numbers yet, so no talking points.'), 'market')}
+      ${(m.warnings || []).length ? `<p class="cc-warn">Not current in the last read: ${m.warnings.map(esc).join('; ')}. The rest of the page is from that read.</p>` : ''}
       <p class="cc-note">For-rent counts are not here: the free sources don't have them, and Zillow's rental data needs a paid feed.</p></div>`;
   }
   C.copyPoints = () => navigator.clipboard.writeText(C.data.market.points.join('\n')).then(() => toast('ok', 'COPIED', 'Talking points copied.'), () => toast('err', 'COPY', 'The browser blocked the clipboard.'));

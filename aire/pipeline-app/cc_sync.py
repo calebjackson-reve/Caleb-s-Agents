@@ -271,9 +271,9 @@ RDC = "https://econdata.s3-us-west-2.amazonaws.com/Reports/Core/RDC_Inventory_Co
 FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=MORTGAGE30US"
 
 
-def http_get(url: str) -> bytes:
+def http_get(url: str, timeout: int = TIMEOUT * 3) -> bytes:
     import urllib.request
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=TIMEOUT * 3) as r:
+    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=timeout) as r:
         return r.read()
 
 
@@ -340,11 +340,26 @@ def gbrar_latest() -> dict | None:
 
 
 def fetch_market(svc, cfg, now):
+    """Each source on its own: one slow download leaves the others on screen with a warning. Fails only if all fail."""
     areas = cfg.get("market_areas") or MARKET_AREAS
-    out = {"rate": rate_rows(http_get(FRED).decode()), "areas": [], "gbrar": gbrar_latest()}
-    for level, name in (("zip", "Zip"), ("county", "County")):
+    out, warn = {"rate": None, "areas": [], "gbrar": None, "warnings": []}, []
+    try:
+        out["rate"] = rate_rows(http_get(FRED).decode())
+    except Exception as e:
+        warn.append(f"rate: {type(e).__name__}: {str(e)[:100]}")
+    for level, name in (("county", "County"), ("zip", "Zip")):
         if any(a[1] == level for a in areas):
-            out["areas"] += area_rows(http_get(RDC.format(name)).decode("utf-8", "replace"), level, areas)
+            try:  # the ZIP file is about 7 MB, so it gets a longer wait
+                out["areas"] += area_rows(http_get(RDC.format(name), timeout=180).decode("utf-8", "replace"), level, areas)
+            except Exception as e:
+                warn.append(f"Realtor.com {level}: {type(e).__name__}: {str(e)[:100]}")
+    try:
+        out["gbrar"] = gbrar_latest()
+    except Exception as e:
+        warn.append(f"GBRAR file: {type(e).__name__}")
+    if not out["rate"] and not out["areas"] and not out["gbrar"]:
+        raise RuntimeError("; ".join(warn) or "no market source answered")
+    out["warnings"] = warn
     return out
 
 
@@ -417,8 +432,9 @@ def due(name: str, prev: dict, now: datetime, force: bool) -> bool:
     if force or not prev:
         return True
     last = prev.get("tried_at") or prev.get("at")
+    pace = READS[name][0] if not prev.get("error") else min(READS[name][0], 30)  # a failed read tries again within 30 minutes
     try:
-        return now - datetime.fromisoformat(last) >= timedelta(minutes=READS[name][0])
+        return now - datetime.fromisoformat(last) >= timedelta(minutes=pace)
     except (TypeError, ValueError):
         return True
 
