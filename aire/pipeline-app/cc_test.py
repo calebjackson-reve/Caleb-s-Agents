@@ -64,13 +64,13 @@ class Deals(unittest.TestCase):
 
 
 class Calendar(unittest.TestCase):
-    COORD = ["coordinator.example"]
+    COORD = ["example.com"]
 
     def test_kinds(self):
         k = lambda t, **x: cc.cal_kind({"title": t, **x}, self.COORD)
         self.assertEqual(k("Act of sale 100 Oak"), "closing")
         self.assertEqual(k("100 Oak - Inspection"), "inspection")
-        self.assertEqual(k("100 Oak - Inspection", creator="tc@coordinator.example"), "deadline")
+        self.assertEqual(k("100 Oak - Inspection", creator="tc@example.com"), "deadline")
         self.assertEqual(k("Showing 12 Main"), "showing")
         self.assertEqual(k("Listing appointment"), "listing")
         self.assertEqual(k("Sales block"), "block")

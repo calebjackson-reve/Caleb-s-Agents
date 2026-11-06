@@ -46,6 +46,7 @@ import os
 import platform
 import re
 import subprocess
+import tempfile
 import sys
 import threading
 import time
@@ -61,6 +62,7 @@ HERE = Path(__file__).resolve().parent
 AIRE = HERE.parent
 sys.path.insert(0, str(HERE))
 import jarvis  # noqa: E402  (the voice's tools and tool loop)
+import cc  # noqa: E402  (Command Center numbers)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -82,7 +84,7 @@ def load_env_file(path: Path = ENV_FILE) -> int:
             if k and k not in os.environ:
                 os.environ[k] = v
                 n += 1
-    except FileNotFoundError:
+    except OSError:  # missing, or a sandbox that blocks the key folder: run without keys
         pass
     return n
 
@@ -318,6 +320,8 @@ class State:
         if self.sender == "live" and not demo and platform.system() == "Darwin":
             threading.Thread(target=self.check_messages, daemon=True).start()
         self.started = now().isoformat(timespec="seconds")
+        # Command Center reads: out/cc/ on the Mac (written by the sync), made-up fixtures in demo.
+        self.cc_dir = cc.demo_folder(FIXTURES / "cc", Path(tempfile.mkdtemp(prefix="pipeline-cc-"))) if demo else OUT / "cc"
 
     # ---- reads
     def feed(self) -> dict:
@@ -995,6 +999,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, self.state.snapshot())
         if u.path == "/api/refresh":
             return self._json(200, self.state.refresh)
+        if u.path == "/api/cc":
+            return self._json(200, {**cc.build(self.state.cc_dir), "demo": self.state.demo})
         if u.path == "/api/voice/token":
             try:
                 return self._json(200, self.state.call_token())
@@ -1341,6 +1347,8 @@ def run_tests() -> int:
     check("<title>Pipeline" in html, "GET / serves the screen")
     st = json.loads(urllib.request.urlopen(base + "/api/state").read())
     check(st["feed"]["counts"]["contacts"] > 0, "GET /api/state")
+    ccp = json.loads(urllib.request.urlopen(base + "/api/cc").read())
+    check(ccp["demo"] and ccp["fresh"]["deals"]["state"] == "ok" and ccp["scorecard"]["pending"]["value"] > 0, "GET /api/cc in demo")
     req = urllib.request.Request(base + "/api/touch", data=json.dumps({"person_id": "118", "what": "test"}).encode(),
                                  headers={"Content-Type": "application/json"})
     check(json.loads(urllib.request.urlopen(req).read())["ok"], "POST /api/touch")

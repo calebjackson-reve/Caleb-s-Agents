@@ -1,0 +1,5 @@
+{"at": "{{NOW-20}}", "source": "Gmail, Luxury Presence lead emails, last 14 days (demo)", "error": null, "rows": [
+ {"threadId":"l1","name":"Jordan Sample","sender":"Luxury Presence","subject":"New lead: Jordan Sample","received":"{{D+0}}","phone":"(225) 555-0142","email":"jordan@example.com","source":"Home value request","area":"St. Francisville"},
+ {"threadId":"l2","name":"Riley Demo","sender":"Luxury Presence","subject":"New lead: Riley Demo","received":"{{D-2}}","phone":"(225) 555-0187","email":"riley@example.com","source":"Listing inquiry","area":"Baton Rouge"},
+ {"threadId":"l3","name":"Casey Madeup","sender":"Luxury Presence","subject":"Home value request","received":"{{D-9}}","phone":"","email":"casey@example.com","source":"Home value request","area":"Zachary"},
+ {"threadId":"l4","name":"Test Lead","sender":"Luxury Presence","subject":"New lead: Test","received":"{{D-1}}","test":true}]}

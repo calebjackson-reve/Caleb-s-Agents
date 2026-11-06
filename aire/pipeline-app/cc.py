@@ -405,3 +405,22 @@ def build(folder: Path, now: datetime | None = None) -> dict:
         "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
         "kw_paid": cfg.get("kw_paid"),
     }
+
+
+def demo_folder(src: Path, dest: Path, now: datetime | None = None) -> Path:
+    """Copy the made-up fixtures with dates moved to today: {{D+3}}, {{Y-03-14}}, {{NOW-20}} (minutes ago)."""
+    now = (now or datetime.now(CENTRAL)).astimezone(CENTRAL)
+    today = now.date()
+
+    def sub(m):
+        k = m.group(1)
+        if k.startswith("NOW-"):
+            return (now - timedelta(minutes=int(k[4:]))).isoformat(timespec="seconds")
+        if k.startswith("Y-"):
+            return f"{today.year}{k[1:]}"
+        return (today + timedelta(days=int(k[1:]))).isoformat()
+
+    dest.mkdir(parents=True, exist_ok=True)
+    for p in src.glob("*.json"):
+        (dest / p.name).write_text(re.sub(r"\{\{([^}]+)\}\}", sub, p.read_text(encoding="utf-8")), encoding="utf-8")
+    return dest
