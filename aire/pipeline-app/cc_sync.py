@@ -108,3 +108,129 @@ def cmd_auth() -> None:
     os.chmod(TOKEN, 0o600)
     print(f"saved {TOKEN}: Sheets, Gmail read, Calendar read. Run cc_sync.py --all for the first pass.")
 
+
+# ---------------- mappers: API answers to cached rows (pure, tested) ----------------
+
+def calendar_rows(items: list[dict]) -> list[dict]:
+    out = []
+    for e in items:
+        st, en = e.get("start") or {}, e.get("end") or {}
+        out.append({"id": e.get("id"), "title": e.get("summary") or "(no title)",
+                    "start": st.get("dateTime") or st.get("date") or "", "end": en.get("dateTime") or en.get("date") or "",
+                    "allDay": "dateTime" not in st, "eventType": e.get("eventType") or "default",
+                    "creator": (e.get("creator") or {}).get("email") or "", "free": e.get("transparency") == "transparent",
+                    "link": e.get("htmlLink") or ""})
+    return out
+
+
+def headers(msg: dict) -> dict:
+    return {h.get("name", "").lower(): h.get("value", "") for h in ((msg.get("payload") or {}).get("headers") or [])}
+
+
+def thread_row(t: dict) -> dict:
+    ms = t.get("messages") or [{}]
+    m = ms[-1]
+    h = headers(m)
+    received = ""
+    if m.get("internalDate"):
+        received = datetime.fromtimestamp(int(m["internalDate"]) / 1000, cc.CENTRAL).isoformat(timespec="seconds")
+    return {"threadId": t.get("id"), "sender": h.get("from", ""), "subject": h.get("subject") or "(no subject)",
+            "received": received, "messages": len(ms), "snippet": m.get("snippet", "")}
+
+
+def body_text(msg: dict) -> str:
+    """The plain-text part of a message, or the HTML part with tags removed."""
+    found = {"plain": "", "html": ""}
+
+    def walk(p):
+        mt, data = p.get("mimeType", ""), (p.get("body") or {}).get("data")
+        if data and mt in ("text/plain", "text/html"):
+            txt = base64.urlsafe_b64decode(data + "=" * (-len(data) % 4)).decode("utf-8", "replace")
+            found["plain" if mt == "text/plain" else "html"] += txt
+        for c in p.get("parts") or []:
+            walk(c)
+    walk(msg.get("payload") or {})
+    t = found["plain"] or re.sub(r"<[^>]+>", " ", found["html"])
+    return re.sub(r"[ \t\r\f\v]+", " ", t)
+
+
+PHONE = re.compile(r"\(?\b\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b")
+EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+
+
+def lead_row(t: dict, body: str) -> dict:
+    """A Luxury Presence lead email as a lead. Labeled fields win; otherwise the first phone and email in it."""
+    r = thread_row(t)
+    def field(*names):
+        for n in names:
+            m = re.search(rf"^\s*{n}\s*[:\-]\s*(.+)$", body, re.I | re.M)
+            if m:
+                return m.group(1).strip()
+        return ""
+    name = field("name", "full name") or re.sub(r"^.*?(new lead|home value request)\s*[:\-]?\s*", "", r["subject"], flags=re.I).strip()
+    emails = [e for e in EMAIL.findall(body) if not re.search(r"luxurypresence|calebjackson\.org|noreply|no-reply", e, re.I)]
+    phone = field("phone", "phone number") or next(iter(PHONE.findall(body)), "")
+    return {**r, "name": name or "Website lead", "phone": phone, "email": field("email") or next(iter(emails), ""),
+            "source": "Home value request" if re.search(r"home value", r["subject"] + body, re.I) else field("source", "type") or "Website lead",
+            "area": field("city", "area", "location"),
+            "test": bool(re.search(r"\btest\b", name + " " + r["subject"], re.I))}
+
+
+MONEY = re.compile(r"\$\s?([\d,]+\.\d{2})")
+
+
+def bank_row(t: dict) -> dict:
+    r = thread_row(t)
+    text = r["subject"] + " " + r["snippet"]
+    kind = "Deposit" if re.search(r"deposit|direct dep|credit", text, re.I) else "Balance" if re.search(r"balance", text, re.I) else "Alert"
+    amt = MONEY.search(text)
+    return {**r, "type": kind, "amount": float(amt.group(1).replace(",", "")) if amt else None}
+
+
+# ---------------- fetchers ----------------
+
+def fetch_calendar(svc, cfg, now):
+    start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    res = svc["calendar"].events().list(calendarId="primary", timeMin=start.isoformat(), timeMax=(start + timedelta(days=31)).isoformat(),
+                                        singleEvents=True, orderBy="startTime", maxResults=250).execute()
+    return calendar_rows(res.get("items") or [])
+
+
+def _threads(svc, q, n, full=False):
+    g = svc["gmail"].users()
+    ids = [t["id"] for t in (g.threads().list(userId="me", q=q, maxResults=n).execute().get("threads") or [])]
+    out = []
+    for i in ids:
+        if full:
+            out.append(g.threads().get(userId="me", id=i, format="full").execute())
+        else:
+            out.append(g.threads().get(userId="me", id=i, format="metadata", metadataHeaders=["From", "Subject", "Date"]).execute())
+    return out
+
+
+def fetch_inbox(svc, cfg, now):
+    return [thread_row(t) for t in _threads(svc, Q_INBOX, 50)]
+
+
+def fetch_leads(svc, cfg, now):
+    return [lead_row(t, body_text((t.get("messages") or [{}])[0])) for t in _threads(svc, Q_LEADS, 25, full=True)]
+
+
+def fetch_commission(svc, cfg, now):
+    return [thread_row(t) for t in _threads(svc, Q_COMMISSION, 25)]
+
+
+def fetch_bank(svc, cfg, now):
+    return [bank_row(t) for t in _threads(svc, Q_BANK, 25)]
+
+
+def fetch_deals(svc, cfg, now):
+    sid = cfg.get("deals_sheet_id")
+    if not sid:
+        raise RuntimeError("no deals_sheet_id in out/cc/config.json")
+    return svc["sheets"].spreadsheets().values().get(spreadsheetId=sid, range="Deals!A1:L300").execute().get("values") or []
+
+
+FETCH = {"calendar": fetch_calendar, "inbox": fetch_inbox, "leads": fetch_leads, "deals": fetch_deals,
+         "commission_mail": fetch_commission, "bank_mail": fetch_bank}
+
