@@ -7,7 +7,7 @@
   function commission() {
     const g = guard(); if (g) return g;
     const d = C.data, sc = d.scorecard, cap = sc.cap;
-    const np = d.commission_mail.filter(r => r.status === 'Not processed');
+    const np = d.commission_mail.filter(r => r.status === 'Not processed'), nc = d.commission_mail.filter(r => r.status === 'No closed deal');
     const paidFrom = sc.gci.from === 'kw_paid' ? 'Paid on KW commission forms' : 'Closed deals in your sheet this year';
     const live = d.deals.filter(r => r.stage !== 'out');
     return `<div class="cc-page">${head('Commission', 'Amounts are gross, before the KW 70/30 split · ' + (cap ? 'cap year from ' + day(cap.start) : 'cap and cap year not set yet, add them on Scorecard'))}
@@ -17,6 +17,7 @@
         ${tile('Pending, gross', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals')}
         ${tile('Toward cap', cap ? m(cap.paid) : '—', cap ? `${cap.pct}% of ${m(cap.amount)} · ${m(cap.left)} to go` : 'Set the cap amount and start date on Scorecard', ['deals', 'goals'])}
         ${tile('Not processed', n(np.length), np.length ? 'KW has not processed these yet' : 'Nothing waiting', 'commission_mail')}
+        ${tile('Paid, no closed deal', n(nc.length), nc.length ? 'Commission came in for a street the Deals sheet does not show as closed' : 'Every paid commission matches a closed deal', ['commission_mail', 'deals'])}
       </div>
       ${C.dealCards(d.deals.filter(r => r.stage === 'contract'))}
       ${card('Your deals', live.length ? `<div class="cc-tablewrap"><table class="cc-table cc-stack"><caption class="sr">Deals from the AIRE Deals sheet</caption>
@@ -26,7 +27,7 @@
         : empty('No deals on the sheet yet.'), 'deals')}
       <div class="cc-grid">
         ${card('Paydays, next 30 days', d.closings.length ? `<ul class="cc-list">${d.closings.map(r => `<li class="cc-ev"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.deal)}<small>${r.from === 'both' ? 'Deals sheet and calendar agree' : r.from === 'sheet' ? 'from the Deals sheet' : 'from the calendar only'}</small></span><b class="cc-amt">${r.money == null ? '<em>not on the sheet</em>' : m(r.money)}</b></li>`).join('')}</ul>` : empty('No act of sale in the next 30 days.'), ['calendar', 'deals'])}
-        ${card('Commission emails, 120 days', d.commission_mail.length ? `<ul class="cc-list">${d.commission_mail.map(r => `<li class="cc-ev"><span class="cc-chip s-${r.status.replace(' ', '')}">${r.status}</span><span class="cc-what">${C.scrub(r.subject)}<small>${day((r.received || '').slice(0, 10))}</small></span></li>`).join('')}</ul>` : empty('No commission or CDA mail found.'), 'commission_mail')}
+        ${card('Commission emails, 120 days', d.commission_mail.length ? `<ul class="cc-list">${d.commission_mail.map(r => `<li class="cc-ev ${r.status === 'No closed deal' ? 'k-closing' : ''}"><span class="cc-chip s-${r.status.replace(/\s+/g, '')}">${r.status}</span><span class="cc-what">${C.scrub(r.subject)}<small>${day((r.received || '').slice(0, 10))}</small>${r.status === 'No closed deal' ? '<small class="cc-warn">Paid, but no deal on the Deals sheet with this street is Closed. Check the sheet: the deal may be missing or still marked under contract.</small>' : ''}</span></li>`).join('')}</ul>` : empty('No commission or CDA mail found.'), 'commission_mail')}
       </div></div>`;
   }
 

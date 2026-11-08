@@ -210,3 +210,7 @@ body { background: #0a0a0b; background-image: none; }
   .cc-tasks .cc-row .cc-acts button { min-height: 40px; }
   .cc-tasks .cc-pills { margin: 4px 0; }
 }
+
+/* Commission mail: a paid commission with no closed deal on the sheet is flagged in coral, like Not processed. */
+.cc-chip.s-Nocloseddeal { color: var(--cc-coral); border-color: rgba(232, 119, 87, .55); }
+.cc-chip.s-Paid { color: var(--cc-tan); }

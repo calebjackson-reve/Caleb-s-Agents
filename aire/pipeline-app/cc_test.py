@@ -423,5 +423,21 @@ class JudgeRound2(unittest.TestCase):
         self.assertEqual(cc.market({"rate": {"rate": 6.1, "change": 0, "date": "2026-11-05"}, "warnings": []})["parts"]["rate"]["state"], "ok")
 
 
+    def test_paid_commission_with_no_closed_deal_is_flagged(self):
+        # item 16: money in for a deal the sheet does not show as closed
+        mail = [{"subject": "Commission for 300 Pine"}, {"subject": "Re: Commission for Pine Dr"}, {"subject": "Commission for Fake Chapel"},
+                {"subject": "Commission for 41st"}, {"subject": "Commission Not Processed - 300 Pine Dr"}, {"subject": "Your CDA is ready"}]
+        out = cc.commission_mail(mail, cc.deal_rows(SHEET))
+        st = {r["subject"]: r["status"] for r in out}
+        self.assertEqual(st["Commission for 300 Pine"], "Paid")          # 300 Pine Dr is Closed on the sheet
+        self.assertEqual(st["Re: Commission for Pine Dr"], "Paid")
+        self.assertEqual(st["Commission for Fake Chapel"], "No closed deal")
+        self.assertEqual(st["Commission for 41st"], "No closed deal")    # too short to match any street
+        self.assertEqual(st["Commission Not Processed - 300 Pine Dr"], "Resolved")
+        self.assertEqual(st["Your CDA is ready"], "Notice")
+        self.assertEqual({r["status"] for r in out[:2]}, {"No closed deal"})  # flags come first
+        self.assertEqual(cc.commission_mail([{"subject": "Commission for 100 Oak Ln"}], cc.deal_rows(SHEET))[0]["status"], "No closed deal")  # under contract, not closed
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

@@ -499,15 +499,29 @@ def _street(t: str) -> str:
     return re.sub(r"[^a-z ]", "", s).strip()
 
 
-def commission_mail(rows: list[dict]) -> list[dict]:
-    """Not processed is flagged unless a Commission for email names the same street."""
+def _same_street(a: str, b: str) -> bool:
+    """Whole words of three letters or more: 'pecan tree' matches 'pecan tree', and '41st' (which reads as 'st') matches nothing."""
+    wa, wb = {w for w in a.split() if len(w) >= 3}, {w for w in b.split() if len(w) >= 3}
+    return bool(wa) and bool(wb) and (wa <= wb or wb <= wa)
+
+
+def commission_mail(rows: list[dict], deals: list[dict] | None = None) -> list[dict]:
+    """Not processed is flagged unless a Commission for email names the same street. With the Deals sheet's rows, a paid
+    Commission for email is Paid when a closed deal on the sheet has that street, and No closed deal when none does, so
+    money that came in for a deal the sheet does not show as closed gets looked at."""
     paid = {_street(r["subject"]) for r in rows if re.search(r"commission for", r.get("subject") or "", re.I)}
+    closed = [_street(d.get("deal")) for d in deals or [] if stage_of(d.get("status")) == "closed"]
     out = []
     for r in rows:
         s = r.get("subject") or ""
-        st = ("Resolved" if _street(s) in paid else "Not processed") if re.search(r"not processed", s, re.I) else "Notice"
+        if re.search(r"not processed", s, re.I):
+            st = "Resolved" if _street(s) in paid else "Not processed"
+        elif deals is not None and re.search(r"commission for", s, re.I):
+            st = "Paid" if any(_same_street(_street(s), c) for c in closed) else "No closed deal"
+        else:
+            st = "Notice"
         out.append({**r, "status": st})
-    return sorted(out, key=lambda r: r["status"] != "Not processed")
+    return sorted(out, key=lambda r: r["status"] not in ("Not processed", "No closed deal"))
 
 
 
@@ -634,7 +648,7 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
                       "deals": len({r["key"] for r in in_days(dl, today, 30)})},
         "closings": closings(dl, cards, today),
         "inbox": inbox_sorted(_rows(raw["inbox"]), [r for r in leads if r.get("origin") == "email"], coord),
-        "leads": leads, "lead_counts": lead_counts(leads, today), "commission_mail": commission_mail(_rows(raw["commission_mail"])),
+        "leads": leads, "lead_counts": lead_counts(leads, today), "commission_mail": commission_mail(_rows(raw["commission_mail"]), deals),
         "scorecard": sc, "goals": goals, "goals_set": bool(goals),
         "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
         "history_saved": len(saved_days(hist, today)),

@@ -309,6 +309,16 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   run('CC.data = __cc');
 }
 
+// Round 2, item 16: Commission flags a paid commission email with no closed deal on the Deals sheet.
+{
+  const cm = [{ subject: 'Commission for Fake Chapel', received: ccdata.today, status: 'No closed deal' }, { subject: 'Commission for 310 Sugar Mill', received: ccdata.today, status: 'Paid' }];
+  run(`CC.data = Object.assign({}, __cc, { commission_mail: ${JSON.stringify(cm)} })`);
+  const com = render('commission', false);
+  check(/Paid, no closed deal<\/span><b class="cc-num">1</.test(com) && /class="cc-chip s-Nocloseddeal">No closed deal/.test(com) && /no deal on the Deals sheet with this street is Closed/.test(com), 'Commission flags a paid commission with no closed deal and says what to check');
+  check(/\.cc-chip\.s-Nocloseddeal \{ color: var\(--cc-coral\)/.test(ui), 'the flag is coral like Not processed');
+  run('CC.data = __cc');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');
