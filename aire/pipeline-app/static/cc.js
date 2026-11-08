@@ -96,7 +96,7 @@
       <div class="cc-tiles">
         ${tile('Pending commission', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals', 'commission')}
         ${tile('GCI this year', m(sc.gci.value), gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set', ['deals', 'goals'], 'scorecard')}
-        ${tile('Deadlines, 7 days', n(d.deadlines.d7.length), `${d.deadlines.d3.length} in the next 3 days`, ['deals', 'calendar'], 'deadlines')}
+        ${tile('Deadlines, 7 days', n(d.deadlines.d7.length), `${d.deadlines.d3.length} in the next 3 days${(d.deadlines.undated || []).length ? ` · <em>${d.deadlines.undated.length} written without a date</em>` : ''}`, ['deals', 'calendar'], 'deadlines')}
         ${tile('New leads, 14 days', n(leads), `${n(leads7)} in the last 7 days${sc.leads7.low ? ` · goal ${sc.leads7.low} to ${sc.leads7.high} a week` : ''}`, ['leads', 'crm'], 'ccleads')}
         ${tile('Under contract', n(uc.n), `${mk(uc.volume)} volume on the Deals sheet`, 'deals', 'deals')}
         ${tile('Touches due', n(td.length), owes ? `${owes} owe a reply` : 'Nobody owes a reply', 'crm', 'touches')}

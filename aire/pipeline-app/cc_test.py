@@ -451,5 +451,20 @@ class JudgeRound2(unittest.TestCase):
         self.assertEqual(cc.deltas(rows, {"day": "2026-11-05", "gci": 15.0}, "closings"), {"7": None, "30": None})
 
 
+class JudgeRound3(unittest.TestCase):
+    """Fixes from the blind judge, round 3. Made-up deals and people."""
+
+    def test_a_deadline_written_as_words_is_undated_not_missing(self):
+        steps = {x["step"]: x["state"] for x in cc.checklist(
+            {"inspection": "7 day due diligence from Nov 3 acceptance", "appraisal": "Cash. No appraisal contingency", "act": "2026-11-20"}, T)}
+        self.assertEqual(steps, {"Inspection": "undated", "Appraisal and loan": "done", "Act of sale": "upcoming"})
+        self.assertEqual(cc.checklist({"inspection": "Removed Oct 27", "act": ""}, T)[0]["state"], "done")
+        with tempfile.TemporaryDirectory() as d:
+            sheet = [HEAD, ["100 Oak Ln", "Buyer", "Under Contract", "1", "1", "DDI ends 10 days after acceptance", "", "2026-11-20", "", ""]]
+            Path(d, "deals.json").write_text(json.dumps({"at": NOW.isoformat(), "rows": sheet}))
+            p = cc.build(Path(d), NOW)
+        self.assertEqual([(u["deal"], u["step"]) for u in p["deadlines"]["undated"]], [("100 Oak Ln", "Inspection")])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

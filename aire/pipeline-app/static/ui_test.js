@@ -382,6 +382,16 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   run('CC.data = __cc; S.data = __state;');
 }
 
+// Round 3, item 3: a deadline written as words counts as "without a date", not as zero.
+{
+  const und = [{ deal: '100 Fixture Ln', key: '100 fixture', step: 'Inspection', note: '7 day due diligence from Nov 3 acceptance' }];
+  run(`CC.data = Object.assign({}, __cc, { deadlines: Object.assign({}, __cc.deadlines, { d3: [], undated: ${JSON.stringify(und)} }) })`);
+  const dp = render('deadlines', true), dd = render('dash', true);
+  check(/Without a date<\/span><b class="cc-num">1</.test(dp) && /1 more written without a date/.test(dp) && /Written without a date <span class="cc-count">1/.test(dp), 'Deadlines counts and lists the steps written without a date');
+  check(/1 written without a date/.test(dd), 'the Dashboard deadline tile says how many have no date');
+  run('CC.data = __cc');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

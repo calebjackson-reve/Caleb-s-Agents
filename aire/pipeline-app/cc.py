@@ -209,17 +209,20 @@ def deal_cards(deals: list[dict], today: date) -> list[dict]:
 
 def checklist(r: dict, today: date) -> list[dict]:
     """A deal under contract, step by step from the sheet: done (date passed), upcoming (date ahead, with days),
-    or missing (no date on the sheet). A step whose cell is not a date but says done or cleared counts as done."""
+    undated (the cell has words but no date, like "7 day due diligence from Nov 3"), or missing (blank). A step whose
+    cell says done, cleared, removed or no contingency counts as done."""
     out = []
     for key, label in (("inspection", "Inspection"), ("appraisal", "Appraisal and loan"), ("act", "Act of sale")):
         v = str(r.get(key) or "").strip()
         if is_day(v):
             n = (date.fromisoformat(v) - today).days
             out.append({"step": label, "date": v, "days": n, "state": "done" if n < 0 else "today" if n == 0 else "upcoming"})
-        elif re.search(r"\b(done|clear(ed)?|complete[d]?|waived|approved|ok)\b", v, re.I):
+        elif re.search(r"\b(done|clear(ed)?|complete[d]?|waived|approved|ok|removed)\b|\bno (?:\w+ )?contingency\b", v, re.I):
             out.append({"step": label, "date": None, "days": None, "state": "done", "note": v[:60]})
+        elif v:
+            out.append({"step": label, "date": None, "days": None, "state": "undated", "note": v[:90]})
         else:
-            out.append({"step": label, "date": None, "days": None, "state": "missing", "note": v[:60]})
+            out.append({"step": label, "date": None, "days": None, "state": "missing", "note": ""})
     return out
 
 
@@ -668,7 +671,10 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         "deals": cards, "crm_only_deals": crm_only, "stages": pipeline_stages(deals, len(leads)),
         "calendar": evs, "week": week_load(evs, today),
         "deadlines": {"all": in_days(dl, today, 30), "d3": in_days(dl, today, 2), "d7": in_days(dl, today, 6),
-                      "deals": len({r["key"] for r in in_days(dl, today, 30)})},
+                      "deals": len({r["key"] for r in in_days(dl, today, 30)}),
+                      # Contract steps written as words with no date: they are deadlines the dates above cannot count.
+                      "undated": [{"deal": c["deal"], "key": c["key"], "step": st["step"], "note": st.get("note") or ""}
+                                  for c in cards if c["stage"] == "contract" for st in c.get("checklist") or [] if st["state"] == "undated"]},
         "closings": closings(dl, cards, today),
         "inbox": inbox_sorted(_rows(raw["inbox"]), [r for r in leads if r.get("origin") == "email"], coord),
         "leads": leads, "lead_counts": lead_counts(leads, today), "commission_mail": commission_mail(_rows(raw["commission_mail"]), deals),
