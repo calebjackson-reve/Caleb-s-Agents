@@ -202,6 +202,22 @@ check(/onclick="CC\.addLead\(\)"/.test(render('dash', true)) && /onclick="CC\.ad
 check(run('PMap.streetFailing(6, 0)') && run('PMap.streetFailing(9, 3)') && !run('PMap.streetFailing(5, 0)') && !run('PMap.streetFailing(6, 30)'), 'street tiles failing six times with none drawn switch the map to Satellite');
 check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')) && /Street tiles didn't load, so this is Satellite/.test(mapjs), 'the switch is remembered and the map says why');
 
+// Round 2, item 8: the header search works from every page and says No match when nothing is found.
+{
+  const pick = (f.touches_due || []).find(r => r.display && r.display.split(' ')[1]);
+  if (pick) {
+    run(`S.q = ${JSON.stringify(pick.display.split(' ')[1])}`);
+    const hits = run(`CC.priv = false; CC.views.search()`);
+    check(hits.includes(run(`esc(${JSON.stringify(pick.display)})`)) && /match/.test(hits), 'search from any page finds a person by name');
+  }
+  run(`S.q = 'zzqx no such thing'`);
+  for (const v of ['search', 'touches', 'tasks', 'deals', 'ccleads', 'queue', 'monitor'])
+    check(/No match for “zzqx no such thing”/.test(run(`CC.priv = true; CC.views[${JSON.stringify(v)}]()`)), `${v}: an empty search says No match`);
+  run(`S.q = ''`);
+  const own = run('CC.SEARCHES_ITSELF'), nonList = views.filter(v => !own.includes(v) && v !== 'search');
+  check(nonList.length > 5 && /S\.view = 'search'/.test(appjs) && /S\.before \|\| 'dash'/.test(appjs), 'typing on a page with no list opens Search, clearing it goes back');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

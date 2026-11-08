@@ -362,7 +362,15 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }
   else if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else closeDrawer(); }
 });
-$('#search').addEventListener('input', e => { S.q = e.target.value; if (S.view === 'dash' && S.q) S.view = 'touches'; render(); });
+// The header search works from every page: a page with its own list filters it, every other page shows Search results.
+// Clearing the box goes back to the page you were on.
+$('#search').addEventListener('input', e => {
+  S.q = e.target.value;
+  const own = window.CC && CC.SEARCHES_ITSELF.includes(S.view);
+  if (S.q && !own && S.view !== 'search') { S.before = S.view; S.view = 'search'; }
+  else if (!S.q && S.view === 'search') S.view = S.before || 'dash';
+  render(); const b = $('#search'); if (document.activeElement !== b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
+});
 $('#refresh').onclick = refresh; $('#bell').onclick = openProblems; $('#help').onclick = openHelp; $('#brief').onclick = openBrief; $('#compose-next').onclick = composeNext;
 
 // ---------------------------------------------------------------- voice

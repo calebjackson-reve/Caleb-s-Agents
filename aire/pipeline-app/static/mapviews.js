@@ -221,7 +221,7 @@ function viewMarket() {
       <p class="cc-row-why">${r.type === 'permit' ? (r.value ? CC.m(r.value) + ' · ' : '') + esc(r.subtype) : (r.price ? CC.m(r.price) : 'No price given') + (r.price_was ? ` · was ${CC.m(r.price_was)}` : '')}</p>
       <p class="cc-note">${esc(C_day(r.date))}${r.nearest && r.nearest.person_id ? ` · ${r.nearest.miles} mi from ${CC.who(r.nearest.display)}` : ''} · ${esc(r.source)}, ${esc(C_day(r.source_date))}</p></div>
     <div class="cc-acts">${marketActs(r)}</div></li>`).join('')}</ul>${rows.length > 300 ? `<p class="cc-note">Showing the newest 300 of ${rows.length}.</p>` : ''}`
-    : CC.empty(all.length ? 'Nothing matches these filters.' : 'No permits or listing changes in the last read.');
+    : S.q ? CC.noMatch() : CC.empty(all.length ? 'Nothing matches these filters.' : 'No permits or listing changes in the last read.');
   return CC.crmPage('Listings and permits', `New listings, price changes and building permits near your farms, newest first. ${rows.length} shown.`, body, ['crm'], tools);
 }
 const C_day = k => (k && /^\d{4}-\d{2}-\d{2}/.test(k) ? CC.day(k.slice(0, 10)) : k || '');
