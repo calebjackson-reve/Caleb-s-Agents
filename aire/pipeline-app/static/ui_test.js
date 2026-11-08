@@ -434,6 +434,17 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
 // Round 3, item 7: Tasks explains how the Next_Action tasks are chosen.
 check(/How the \d+ from Next_Action are chosen\.<\/b> A contact's Next_Action becomes a task when the contact is hot or warm, is not on Do Not Contact, is not a vendor, agent or lender, and has no open task with the same words\. Hot ones are due today, warm ones in 3 days/.test(render('tasks', true)) || !(f.tasks || []).some(t => !t.task_id), 'Tasks says how the Next_Action tasks are chosen, matching crm.next_action_tasks');
 
+// Round 3, item 8: Touched is a quick form (type and an optional note), and the Dashboard button says what it opens.
+{
+  run('var __tf = null; modal = (t, h, ok, lbl) => { __tf = { t, h, ok, lbl }; return Promise.resolve(null); }; touchForm("this person");');
+  const types = [...run('__tf.h').matchAll(/data-touch="([^"]+)"/g)].map(m => m[1]);
+  check(run('__tf.t') === 'Log a touch' && types.join('|') === 'Call|Text|Email|In person|Voicemail' && /aria-pressed="true" aria-checked="true" data-touch="Call"/.test(run('__tf.h')) && /Note \(optional\)/.test(run('__tf.h')), 'Touched opens a quick form: five touch types, Call picked, an optional note');
+  const fake = (type, note) => `({ querySelector: s => s.startsWith('[data-touch]') ? { dataset: { touch: ${JSON.stringify(type)} } } : { value: ${JSON.stringify(note)} } })`;
+  check(run(`__tf.ok(${fake('Text', '')})`) === 'Text' && run(`__tf.ok(${fake('Voicemail', 'about the inspection')})`) === 'Voicemail: about the inspection', 'the form saves the type, with the note after it when there is one');
+  const dsh = render('dash', true);
+  check(/onclick="go\('touches'\)">Touches due<\/button>/.test(dsh) && !/>Log a touch</.test(dsh), 'the Dashboard button is named for the page it opens');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

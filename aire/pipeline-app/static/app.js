@@ -209,7 +209,7 @@ async function refresh() {
 
 // ---------------------------------------------------------------- actions
 async function touched(id) {
-  const r = personRow(id), who = nm(r ? r.display : 'this person'); const what = await ask('Touched', `What happened with ${who}?`, 'Called, left a voicemail'); if (what == null) return;
+  const r = personRow(id), who = nm(r ? r.display : 'this person'); const what = await touchForm(who); if (what == null) return;
   await act('/api/touch', { person_id: id, what }, { tag: 'LOGGED', text: `Touch logged for ${who}` });
 }
 async function doneTask(task_id, person_id, task) {
@@ -264,7 +264,7 @@ async function sendNow() {
   if (c.fromCard) { closeDrawer(); setTimeout(() => { if (S.justTexted === c.person_id) { S.justTexted = null; } }, 4000); return; }
   const items = drafts(); if (items.length) openCompose(items[Math.min(S.queueIdx, items.length - 1)].person_id, Math.min(S.queueIdx, items.length - 1)); else closeDrawer();
 }
-async function touchFromCompose() { const c = S.compose; const what = await ask('Touched', `What happened with ${nm(c.name)}?`, 'Called'); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${nm(c.name)}` }); if (r) nextInQueue(); }
+async function touchFromCompose() { const c = S.compose; const what = await touchForm(nm(c.name)); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${nm(c.name)}` }); if (r) nextInQueue(); }
 
 // ---- modals
 // opts.info: a window that only shows something gets one OK button, no Cancel.
@@ -284,6 +284,13 @@ function modal(title, bodyHTML, onOK, okLabel = 'Save', opts = {}) {
   });
 }
 function closeModal() { const m = $('#modal'); m.hidden = true; m.innerHTML = ''; if (m._resolve) { m._resolve(null); m._resolve = null; } }
+// Log a touch: pick what it was (one tap, Call is picked), add a note if you want, Log. Saved as "Call: note".
+const TOUCH_TYPES = ['Call', 'Text', 'Email', 'In person', 'Voicemail'];
+function touchForm(who) {
+  return modal('Log a touch', `<p class="cc-note">With ${esc(who)}.</p><div class="cc-filters" role="radiogroup" aria-label="Touch type">${TOUCH_TYPES.map((t, i) => `<button type="button" class="cc-filter" role="radio" aria-pressed="${i === 0}" aria-checked="${i === 0}" data-touch="${esc(t)}" onclick="this.parentNode.querySelectorAll('button').forEach(b => { const on = b === this; b.setAttribute('aria-pressed', on); b.setAttribute('aria-checked', on); })">${esc(t)}</button>`).join('')}</div>
+    <div class="field"><label for="m-tnote">Note (optional)</label><input id="m-tnote" placeholder="Left a voicemail about the inspection"></div>`,
+    m => { const t = (m.querySelector('[data-touch][aria-pressed="true"]') || {}).dataset; const type = (t && t.touch) || 'Call', note = $('#m-tnote', m).value.trim(); return note ? `${type}: ${note}` : type; }, 'Log it');
+}
 function ask(title, label, placeholder) { return modal(title, `<div class="field"><label>${esc(label.toUpperCase())}</label><input id="m-in" placeholder="${esc(placeholder)}"></div>`, m => { const v = $('#m-in', m).value.trim(); return v || false; }, 'Log it'); }
 function personSelect(selected) {
   const rows = (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || []);

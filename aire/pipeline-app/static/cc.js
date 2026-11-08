@@ -92,7 +92,7 @@
     const owes = typeof owesReply === 'function' ? owesReply().length : td.filter(r => r.owes_reply).length, over = tk.filter(t => t.overdue).length, dr = typeof readyDrafts === 'function' && S.data ? readyDrafts().length : 0;
     const gp = sc.gci.goal;
     return `<div class="cc-page">${head('Good ' + greet() + ', Caleb', 'Keller Williams First Choice · No paid leads, just service')}
-      <div class="cc-acts cc-quick"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button><button type="button" onclick="go('touches')">Log a touch</button><button type="button" onclick="openTask('')">＋ Add a task</button></div>
+      <div class="cc-acts cc-quick"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button><button type="button" onclick="go('touches')">Touches due</button><button type="button" onclick="openTask('')">＋ Add a task</button></div>
       <div class="cc-tiles">
         ${tile('Pending commission', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals', 'commission')}
         ${tile('GCI this year', m(sc.gci.value), gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set', ['deals', 'goals'], 'scorecard')}
