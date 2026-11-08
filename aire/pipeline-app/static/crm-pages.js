@@ -172,7 +172,10 @@
         <p class="cc-note">${d.reply ? (C.priv ? C.msg('') : '“' + esc(C.cleanMsg(d.last_messages.slice(-1)[0])) + '”') : C.priv ? '' : esc(d.body.slice(0, 140))}${d.to ? ' · to ' + (d.kind === 'text' ? C.ph(d.to) : C.em(d.to)) : ''}</p></div>
       <div class="cc-acts"><button type="button" class="cc-primary" onclick="openCompose('${esc(d.person_id)}', ${i})">Open</button></div></li>`).join('')}</ul>`
       : S.q ? C.noMatch() : C.empty('No drafts waiting. New ones come with the next feed refresh.');
-    return page('Drafts', `Texts and emails ready to read and send. ${caps.sent_texts} of ${caps.texts} texts and ${caps.sent_emails} of ${caps.emails} emails sent today.`, body, ['drafts', 'crm']);
+    // One owe-a-reply number: Touches due's. Reply drafts cover the ones with a usable first name; the rest are named here.
+    const owe = owesReply().length, rf = drafts().filter(d => d.reply).length;
+    const why = owe ? ` ${owe} owe a reply (the same number as Touches due). ${rf === owe ? 'Each has a reply draft.' : `${rf} have a reply draft. The other ${owe - rf} have no first name on file or were already answered today, so they are on Touches due only.`}` : '';
+    return page('Drafts', `Texts and emails ready to read and send. ${caps.sent_texts} of ${caps.texts} texts and ${caps.sent_emails} of ${caps.emails} emails sent today.${why}`, body, ['drafts', 'crm']);
   }
   function sent() {
     const rows = (S.data.sent_today || []).slice().reverse();

@@ -89,7 +89,7 @@
     const lc = d.lead_counts || { d14: d.leads.length, d7: sc.leads7.value }, leads = lc.d14, leads7 = lc.d7;
     const today = d.calendar.filter(r => r.day === d.today && r.kind !== 'block' && !r.invite);
     const ff = ((typeof S !== "undefined" && S.data) && S.data.feed) || {}, td = ff.touches_due || [], tk = ff.tasks || [];
-    const owes = td.filter(r => r.owes_reply).length, over = tk.filter(t => t.overdue).length, dr = typeof drafts === 'function' && S.data ? drafts().length : 0;
+    const owes = typeof owesReply === 'function' ? owesReply().length : td.filter(r => r.owes_reply).length, over = tk.filter(t => t.overdue).length, dr = typeof drafts === 'function' && S.data ? drafts().length : 0;
     const gp = sc.gci.goal;
     return `<div class="cc-page">${head('Good ' + greet() + ', Caleb', 'Keller Williams First Choice · No paid leads, just service')}
       <div class="cc-acts cc-quick"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button><button type="button" onclick="go('touches')">Log a touch</button><button type="button" onclick="openTask('')">＋ Add a task</button></div>

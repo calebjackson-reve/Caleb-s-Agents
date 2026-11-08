@@ -218,6 +218,19 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   check(nonList.length > 5 && /S\.view = 'search'/.test(appjs) && /S\.before \|\| 'dash'/.test(appjs), 'typing on a page with no list opens Search, clearing it goes back');
 }
 
+// Round 2, item 9: one owe-a-reply number. Touches due's count shows on the Dashboard, Touches due and Drafts, even when
+// the signals file and the reply-draft queue say something else.
+{
+  const owe = (f.touches_due || []).filter(r => r.owes_reply).length;
+  const tq = Object.assign({}, state.text_queue || {}, { reply_first: ((state.text_queue || {}).reply_first || []).slice(0, Math.max(0, owe - 1)) });
+  run(`S.data = Object.assign({}, __state, { text_queue: ${JSON.stringify(tq)}, feed: Object.assign({}, __state.feed, { signals: Object.assign({}, __state.feed.signals, { owes_reply: 999 }) }) })`);
+  const dsh = render('dash', true), tch = render('touches', true), drf = render('queue', true);
+  check(owe > 0 && dsh.includes(`${owe} owe a reply`) && tch.includes(`Owe a reply <b>${owe}</b>`) && drf.includes(`${owe} owe a reply (the same number as Touches due)`),
+    'Dashboard, Touches due and Drafts show the same owe-a-reply number', `touches ${owe}`);
+  check(/have no first name on file/.test(drf) && !/999/.test(dsh + tch + drf) && !/signals\.owes_reply/.test(appjs), 'Drafts explains the people with no reply draft, and nothing reads the signals count');
+  run('S.data = __state');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

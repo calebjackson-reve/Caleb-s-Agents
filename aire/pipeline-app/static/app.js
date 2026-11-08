@@ -121,7 +121,7 @@ function render() {
   $('#foot-chips').innerHTML = [
     chipHTML('◔', 'Feed', d.demo ? 'demo · as of ' + (f.as_of || '') : age == null ? 'none yet' : age < 60 ? `${age} min ago` : `${Math.floor(age / 60)}h ${age % 60}m ago`, age > 60 ? 'warn' : ''),
     chipHTML('⌘', 'Command', cmd.state ? cmd.state : 'no status', cmd.state === 'ok' ? '' : cmd.state ? 'warn' : ''),
-    chipHTML('◉', 'Signals', f.signals && f.signals.file ? `${(f.signals.people || 0).toLocaleString()} people · ${f.signals.owes_reply || 0} owe a reply` : 'sheet only', f.signals && f.signals.file ? '' : 'warn'),
+    chipHTML('◉', 'Signals', f.signals && f.signals.file ? `${(f.signals.people || 0).toLocaleString()} people · ${owesReply().length} owe a reply` : 'sheet only', f.signals && f.signals.file ? '' : 'warn'),
   ].join('');
   $('#refresh').classList.toggle('spin', !!(d.refresh && d.refresh.running));
   $('#refresh').innerHTML = '<span>⟳</span>';
@@ -411,7 +411,7 @@ async function boot() {
   for (let i = 0; i < steps.length; i++) { sub.textContent = steps[i]; bar.style.width = `${((i + 1) / steps.length) * 100}%`; await new Promise(r => setTimeout(r, 220)); }
   S.data = await p;
   if (S.data && S.data.feed) tele(`feed ${S.data.demo ? 'demo' : S.data.as_of} · ${(S.data.feed.counts || {}).contacts || 0} people · ${(S.data.feed.touches_due || []).length} due`, true);
-  if (S.data) tele(`drafts: ${((S.data.text_queue || {}).drafts || []).length} texts, ${((S.data.email_queue || {}).drafts || []).length} emails, ${((S.data.text_queue || {}).reply_first || []).length} replies owed`);
+  if (S.data) tele(`drafts: ${((S.data.text_queue || {}).drafts || []).length} texts, ${((S.data.email_queue || {}).drafts || []).length} emails, ${owesReply().length} owe a reply`);
   tick(); setInterval(tick, 1000);
   $('#app').hidden = false;
   if (window.CC) { CC.load(); setInterval(CC.load, 60000); }

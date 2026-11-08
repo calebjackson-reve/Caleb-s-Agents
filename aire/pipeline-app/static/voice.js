@@ -110,7 +110,7 @@ const Voice = (() => {
 
   function handle(text) {
     const st = appState(), f = feed() || {}, c = f.counts || {}, q = text.toLowerCase().replace(/[’]/g, "'").trim();
-    const owes = (f.touches_due || []).filter(r => r.owes_reply), over = (f.tasks || []).filter(t => t.overdue);
+    const owes = owesReply(), over = (f.tasks || []).filter(t => t.overdue);
     if (/^(ask|question|hey claude|claude)[ ,:]/i.test(q)) return askClaude(text.replace(/^(ask|question|hey claude|claude)[ ,:]+/i, ''));
     if (/^(stop|quiet|cancel|never ?mind|hush|shut up|that'?s enough|enough)\b/.test(q)) { if ('speechSynthesis' in window) speechSynthesis.cancel(); if (audioEl) { try { audioEl.pause(); } catch (e) { } } setState(on ? 'listening' : 'idle'); return; }
     if (/^(thanks|thank you|cheers|perfect|got it|great|awesome)\b/.test(q)) return say('Anytime.');
