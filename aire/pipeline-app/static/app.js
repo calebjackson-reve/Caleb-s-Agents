@@ -44,6 +44,8 @@ function drafts() {
   const sentIds = new Set((S.data.sent_today || []).map(s => s.person_id));
   return items.filter(i => !sentIds.has(i.person_id));
 }
+// The one owe-a-reply list: people in Touches due whose last text was theirs. Every count on every page is this length.
+function owesReply() { return (feed().touches_due || []).filter(r => r.owes_reply); }
 function personRow(id) { return (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person')).find(r => r.person_id === id); }
 // ---- texting from a card: one button opens the text, SEND sends it, then the card shows what happened
 const firstName = n => (String(n || '').trim().split(/\s+/)[0] || '');
@@ -301,12 +303,16 @@ async function openDeal(address = '') {
   if (v) await act('/api/deal', v, { tag: 'DEAL', text: `${v.address} · ${v.stage.replace('_', ' ')}` });
 }
 function openBrief() {
-  const f = feed(), c = f.counts || {}, owes = (f.touches_due || []).filter(r => r.owes_reply), over = (f.tasks || []).filter(t => t.overdue), dr = drafts();
+  // The same lists the pages use: replies owed from Touches due, deals from the AIRE Deals sheet, leads from the one lead
+  // list. Names, messages and dollars hide with the privacy switch like every page.
+  const f = feed(), C = window.CC, cd = C && C.data, owes = owesReply(), over = (f.tasks || []).filter(t => t.overdue), dr = drafts();
+  const who = v => (C ? C.who(v) : esc(v)), scrub = (t, n) => (C ? C.scrub(t, n) : esc(t));
+  const deals = cd ? cd.deals.filter(x => !['closed', 'out'].includes(x.stage)) : [], leads = cd ? cd.leads : [];
   modal('Morning brief', `<div class="brief">
-    <h4>FIRST</h4><ul>${owes.length ? owes.slice(0, 5).map(r => `<li>Answer <b>${esc(r.display)}</b>: ${esc((r.last_messages || []).slice(-1)[0] || '').replace(/^\d{4}-\d{2}-\d{2}: /, '')}</li>`).join('') : '<li>Nobody is waiting on a reply.</li>'}</ul>
-    <h4>OVERDUE</h4><ul>${over.length ? over.map(t => `<li>${esc(t.task)} · ${esc(t.display || '')}</li>`).join('') : '<li>Nothing overdue.</li>'}</ul>
-    <h4>NEW LEADS</h4><ul>${(f.new_leads || []).length ? f.new_leads.map(l => `<li><b>${esc(l.display)}</b> · ${esc(l.source)} · ${esc(l.next_action || '')}</li>`).join('') : '<li>None in the last 14 days.</li>'}</ul>
-    <h4>DEALS</h4><ul>${(f.deals || []).length ? f.deals.map(x => `<li><b>${esc(x.address)}</b> · ${esc(x.stage.replace('_', ' '))}${x.next_step ? ' · ' + esc(x.next_step) : ''}</li>`).join('') : '<li>No live deals.</li>'}</ul>
+    <h4>FIRST</h4><ul>${owes.length ? owes.slice(0, 5).map(r => `<li>Answer <b>${who(r.display)}</b>: ${C && C.priv ? C.msg('') : esc(C ? C.cleanMsg((r.last_messages || []).slice(-1)[0]) : '')}</li>`).join('') : '<li>Nobody is waiting on a reply.</li>'}</ul>
+    <h4>OVERDUE</h4><ul>${over.length ? over.map(t => `<li>${scrub(t.task, [t.display])} · ${who(t.display || '')}</li>`).join('') : '<li>Nothing overdue.</li>'}</ul>
+    <h4>NEW LEADS, 14 DAYS</h4><ul>${leads.length ? leads.map(l => `<li><b>${who(l.name || 'Website lead')}</b> · ${esc(l.source || '')} · ${esc((l.due || {}).label || '')}</li>`).join('') : '<li>None in the last 14 days.</li>'}</ul>
+    <h4>DEALS, FROM THE DEALS SHEET</h4><ul>${deals.length ? deals.map(x => `<li><b>${esc(x.deal)}</b> · ${esc(x.status)}${x.act ? ' · act of sale ' + esc(C.day(x.act)) : ''}${x.next ? ' · ' + scrub(x.next) : ''}</li>`).join('') : '<li>No open deals on the Deals sheet.</li>'}</ul>
     <h4>TODAY'S DRAFTS</h4><ul><li>${dr.length} ready (${dr.filter(d => d.kind === 'text').length} texts, ${dr.filter(d => d.kind === 'email').length} emails). Cap ${S.data.caps.texts} and ${S.data.caps.emails}.</li></ul>
   </div>`, () => true, 'Start with the first reply').then(v => { if (v) composeNext(); });
 }
@@ -329,7 +335,7 @@ function openHelp() {
 async function showProposals(list) {
   for (const p of list || []) {
     const what = p.action === 'relabel' ? (p.type ? `Type to ${p.type}` : `band ${p.expect_band || 'blank'} to ${p.band}`) : p.action === 'task' ? `task "${p.task}" due ${p.due}` : `note "${p.text}"`;
-    const ok = await modal('JARVIS SUGGESTS', `<div class="brief"><p><b>${esc(p.name)}</b>: ${esc(what)}</p><p>${esc(p.why)}</p></div>`, () => true, 'Yes, do it');
+    const ok = await modal('JARVIS SUGGESTS', `<div class="brief"><p><b>${window.CC ? CC.who(p.name) : esc(p.name)}</b>: ${esc(what)}</p><p>${esc(p.why)}</p></div>`, () => true, 'Yes, do it');
     if (!ok) { toast('warn', 'JARVIS', `Skipped: ${p.name}`); continue; }
     const path = p.action === 'relabel' ? '/api/relabel' : p.action === 'task' ? '/api/task' : '/api/note';
     const body = p.action === 'relabel' ? { person_id: p.person_id, band: p.band, type: p.type, expect_band: p.expect_band }

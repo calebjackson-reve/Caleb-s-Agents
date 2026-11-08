@@ -22,7 +22,7 @@
       ${card('Your deals', live.length ? `<div class="cc-tablewrap"><table class="cc-table"><caption class="sr">Deals from the AIRE Deals sheet</caption>
         <thead><tr><th scope="col">Deal</th><th scope="col">Status</th><th scope="col" class="r">Price</th><th scope="col" class="r">Your commission, gross</th><th scope="col">Act of sale</th><th scope="col">Next</th></tr></thead>
         <tbody>${live.map(r => `<tr><th scope="row">${esc(r.deal)}<small>${esc(r.side || '')}</small></th><td>${esc(r.status)}${r.days != null ? `<small>${r.days} days in stage</small>` : ''}</td>
-          <td class="r">${m(r.price)}</td><td class="r">${r.commission == null ? '<em>blank</em>' : m(r.commission)}</td><td>${r.act ? day(r.act) : ''}</td><td>${esc(r.next || '')}</td></tr>`).join('')}</tbody></table></div>`
+          <td class="r">${m(r.price)}</td><td class="r">${r.commission == null ? '<em>blank</em>' : m(r.commission)}</td><td>${r.act ? day(r.act) : ''}</td><td>${C.scrub(r.next || '')}</td></tr>`).join('')}</tbody></table></div>`
         : empty('No deals on the sheet yet.'), 'deals')}
       <div class="cc-grid">
         ${card('Paydays, next 30 days', d.closings.length ? `<ul class="cc-list">${d.closings.map(r => `<li class="cc-ev"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.deal)}<small>${r.from === 'both' ? 'Deals sheet and calendar agree' : r.from === 'sheet' ? 'from the Deals sheet' : 'from the calendar only'}</small></span><b class="cc-amt">${r.money == null ? '<em>blank</em>' : m(r.money)}</b></li>`).join('')}</ul>` : empty('No act of sale in the next 30 days.'), ['calendar', 'deals'])}
@@ -36,7 +36,7 @@
     <article class="cc-deal"><header><h3>${esc(r.deal)}</h3><span class="cc-pill ${r.to_close != null && r.to_close <= 7 ? 'k-closing' : 'k-listing'}">${r.to_close == null ? 'No act of sale date' : r.to_close < 0 ? 'Closed ' + Math.abs(r.to_close) + ' days ago?' : r.to_close === 0 ? 'Closes today' : r.to_close + ' days to close'}</span></header>
       <p class="cc-note">${esc(r.side || '')}${r.price != null ? ' · ' + m(r.price) : ''} · your commission, gross ${r.commission == null ? '<em>blank</em>' : m(r.commission)}</p>
       <ol class="cc-steps">${r.checklist.map(c => { const [ico, word, k] = STEP[c.state]; return `<li class="${k}"><span aria-hidden="true">${ico}</span><b>${esc(c.step)}</b><small>${c.date ? day(c.date) + (c.state === 'upcoming' ? ` · in ${c.days} days` : '') : esc(c.note || '')}${word ? ' · ' + word : ''}</small></li>`; }).join('')}</ol>
-      ${r.next ? `<p class="cc-next"><b>Next:</b> ${esc(r.next)}</p>` : ''}</article>`).join('')}</div>`, 'deals');
+      ${r.next ? `<p class="cc-next"><b>Next:</b> ${C.scrub(r.next)}</p>` : ''}</article>`).join('')}</div>`, 'deals');
 
   // ---------------- Deadlines ----------------
   function deadlines() {

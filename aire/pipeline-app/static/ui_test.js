@@ -113,6 +113,24 @@ check(/gross/.test(render('commission', false)), 'commission is labelled gross')
 // 12. Booked time says what it leaves out.
 check(/invites you have not accepted are left out/.test(dash), 'Booked and On the calendar say work blocks and invites are left out');
 
+// Round 2, item 1: free text that carries money or a name (a deal's next step, a bank alert subject, the brief) hides too.
+{
+  const dl = JSON.parse(JSON.stringify(ccdata.deals)); if (dl[0]) { dl[0].next = 'KW Command still shows $7,198 off the old list price'; dl[0].stage = 'contract'; }
+  const bankRows = [{ type: 'Deposit', subject: 'You received a $12,053.16 deposit', received: ccdata.at, amount: 12053.16 }];
+  run(`CC.data = Object.assign({}, __cc, { deals: ${JSON.stringify(dl)}, bank: Object.assign({}, __cc.bank, { rows: ${JSON.stringify(bankRows)} }) })`);
+  for (const v of ['commission', 'deals', 'bank', 'dash']) {
+    const t = render(v, true).replace(/<[^>]+>/g, ' ');
+    check(!/7,198|12,053/.test(t), `${v}: a dollar amount inside a note or subject hides with privacy on`);
+  }
+  check(/7,198/.test(render('commission', false)), 'commission: the note shows in full with privacy off');
+  run('var __briefHtml = ""; modal = (t, h) => { __briefHtml = h; return new Promise(() => {}); }; CC.priv = true; openBrief();');
+  const brief = run('__briefHtml').replace(/<[^>]+>/g, ' ');
+  const bleak = names.filter(x => brief.includes(x)).concat(brief.match(/\$\s?\d[\d,]{2,}/g) || []);
+  check(!bleak.length, 'morning brief hides names and dollars with privacy on', bleak.slice(0, 3).join(' / '));
+  check(/DEALS SHEET/.test(run('__briefHtml')) && !(f.deals || []).some(x => x.address && run('__briefHtml').includes(x.address)), 'morning brief lists the Deals sheet, not the CRM Deals tab');
+  run('CC.data = __cc');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

@@ -116,7 +116,7 @@ function pinCard(p) {
   }
   if (p.kind === 'deal') {
     return `<div class="pin-card"><div class="pc-h"><span class="ico">⌂</span><div><b>${esc(p.address)}</b><small><span class="tag violet">${esc((p.stage || '').replace('_', ' '))}</span><span>${esc(p.side || '')}</span></small></div>${x}</div>
-      <dl><dt>Client</dt><dd>${p.display ? CC.who(p.display) : 'none'}</dd><dt>Last event</dt><dd>${esc(p.last_event || 'none')}${p.last_event_at ? ' · ' + esc(p.last_event_at.slice(0, 10)) : ''}</dd></dl>
+      <dl><dt>Client</dt><dd>${p.display ? CC.who(p.display) : 'none'}</dd><dt>Last event</dt><dd>${CC.scrub(p.last_event || 'none', [p.display])}${p.last_event_at ? ' · ' + esc(p.last_event_at.slice(0, 10)) : ''}</dd></dl>
       <div class="acts"><button class="primary" onclick="openDeal(${jsa(p.address)})">✎ Edit deal</button>${p.person_id ? `<button onclick="openCompose(${jsa(p.person_id)})">✉ Compose</button>` : ''}</div></div>`;
   }
   return `<div class="pin-card"><div class="pc-h"><span class="ico">◆</span><div><b>${esc(p.address)}</b><small><span class="tag ${p.type === 'permit' ? 'warn' : 'live'}">${esc(p.label)}</span><span>${esc(p.city)}</span></small></div>${x}</div>

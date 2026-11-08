@@ -32,7 +32,7 @@
         ${tile('Last deposit', b.last_deposit ? m(b.last_deposit.value) : '—', b.last_deposit ? when(b.last_deposit.at) : 'None in 30 days', 'bank_mail')}
         ${tile('Chase alerts', n(b.alerts), `${b.deposits} deposits, last 30 days`, 'bank_mail')}
       </div>
-      ${card('Alerts', b.rows.length ? `<ul class="cc-list">${b.rows.map(r => `<li class="cc-ev"><span class="cc-chip">${esc(r.type)}</span><span class="cc-what">${esc(r.subject)}<small>${esc(when(r.received))}</small></span><b class="cc-amt">${r.amount == null ? '' : m(r.amount)}</b></li>`).join('')}</ul>` : empty('No Chase alerts in the last 30 days.'), 'bank_mail')}
+      ${card('Alerts', b.rows.length ? `<ul class="cc-list">${b.rows.map(r => `<li class="cc-ev"><span class="cc-chip">${esc(r.type)}</span><span class="cc-what">${C.scrubMoney(r.subject)}<small>${esc(when(r.received))}</small></span><b class="cc-amt">${r.amount == null ? '' : m(r.amount)}</b></li>`).join('')}</ul>` : empty('No Chase alerts in the last 30 days.'), 'bank_mail')}
       <p class="cc-note">The balance is only as current as Chase's last alert email. A live balance would need a paid bank connection, and none is set up.</p></div>`;
   }
 
