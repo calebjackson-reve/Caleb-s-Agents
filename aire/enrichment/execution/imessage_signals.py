@@ -92,12 +92,18 @@ GROUP_MIN_PEOPLE = 3  # a chat with this many people, Caleb included, is a group
 
 
 def read_messages(db: Path, days: int) -> list[tuple[str, datetime, bool, str]]:
-    tmp = Path(tempfile.mkdtemp()) / "chat.db"
-    shutil.copy2(db, tmp)
-    for extra in ("chat.db-wal", "chat.db-shm"):
-        src = db.parent / extra
-        if src.exists():
-            shutil.copy2(src, tmp.parent / extra)
+    # The copy lives only while it is read. Leaving it behind filled the Mac mini's disk with 408 copies in four days (2026-11-08).
+    with tempfile.TemporaryDirectory(prefix="aire-chatdb-") as d:
+        tmp = Path(d) / "chat.db"
+        shutil.copy2(db, tmp)
+        for extra in ("chat.db-wal", "chat.db-shm"):
+            src = db.parent / extra
+            if src.exists():
+                shutil.copy2(src, tmp.parent / extra)
+        return _read_copy(tmp, days)
+
+
+def _read_copy(tmp: Path, days: int) -> list[tuple[str, datetime, bool, str]]:
     con = sqlite3.connect(f"file:{tmp}?mode=ro", uri=True)
     since = int((datetime.now(timezone.utc) - timedelta(days=days) - APPLE_EPOCH).total_seconds()) * 10**9
     # Group chats of GROUP_MIN_PEOPLE or more (Caleb plus 2 others) never count as a conversation with that sender.
