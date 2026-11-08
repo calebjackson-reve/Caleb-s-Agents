@@ -365,6 +365,23 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   run('CC.priv = true');
 }
 
+// Round 3, items 2 and 15: the chip, the bell and its window show the worst source. A failed part of Market and a
+// never-run Command reader count, and an information window has one OK button.
+{
+  const fr = JSON.parse(JSON.stringify(ccdata.fresh)); Object.keys(fr).forEach(k => { fr[k].state = 'ok'; });
+  const mk = Object.assign({}, ccdata.market, { parts: { rate: { state: 'failed', note: 'The mortgage rate (Freddie Mac, via FRED) did not load: the site took too long to answer' }, gbrar: { state: 'ok' } } });
+  run(`CC.data = Object.assign({}, __cc, { fresh: ${JSON.stringify(fr)}, market: ${JSON.stringify(mk)}, sync: {} }); S.data = Object.assign({}, __state, { command: {}, problems: [] });`);
+  const att = run('CC.attention()');
+  check(att[0] && att[0].level === 'red' && /mortgage rate/.test(att[0].text), 'a failed part of Market is red at the top of the attention list', JSON.stringify(att[0]));
+  check(att.some(x => x.level === 'amber' && /KW Command reader: never run/.test(x.text)), 'a never-run Command reader is on the list');
+  check(/s-failed[^]*part of it did not load/.test(render('sources', true)), 'Sources shows Market as failed when part of it failed, not Current');
+  check(/const att = window\.CC && CC\.data && CC\.attention \? CC\.attention\(\)/.test(appjs) && /bc\.textContent = att\.length/.test(appjs), 'the header chip and the bell count the one attention list');
+  run('var __pm = null; modal = (t, h, ok, lbl, o) => { __pm = { t, h, lbl, o }; return Promise.resolve(null); }; openProblems();');
+  check(run('__pm.o && __pm.o.info === true') && run('__pm.h').includes('mortgage rate'), 'What needs attention lists the same items and has one OK button');
+  run('openHelp();'); check(run('__pm.o && __pm.o.info === true'), 'the Keys window has one OK button');
+  run('CC.data = __cc; S.data = __state;');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

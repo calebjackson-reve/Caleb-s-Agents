@@ -7,6 +7,32 @@
     news: 'Google News', market: 'Market data', life: 'Life tabs', workouts: 'Workout tabs' };
   const when = s => (s ? new Date(s).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'never');
 
+  // Everything that needs attention, worst first: one list for the header chip, the bell and its window.
+  // red: a read failed, is out of date, or part of it failed (the mortgage rate). amber: late, or never read yet.
+  const SNAME = Object.assign({}, NAMES);
+  C.attention = function () {
+    const out = [], d = C.data || {}, f = d.fresh || {}, sy = d.sync || {};
+    const add = (level, text) => out.push({ level, text });
+    if (sy.error) add('red', 'Google sign-in: ' + (sy.error_text || 'the sync could not sign in'));
+    Object.keys(f).forEach(k => {
+      const r = f[k], n = SNAME[k] || k;
+      if (r.state === 'failed') add('red', `${n}: read failed, ${r.error_text || 'the read did not finish'}`);
+      else if (r.state === 'stale') add('red', `${n}: out of date, last read ${when(r.at)}`);
+      else if (r.state === 'late') add('amber', `${n}: late, last read ${when(r.at)}, it reads every ${r.pace_min} minutes`);
+      else if (r.state === 'missing') add('amber', `${n}: never read on this Mac yet`);
+    });
+    Object.values(((d.market || {}).parts) || {}).forEach(p => { if (p.state === 'failed' && p.note && !out.some(x => x.text.includes(p.note))) add('red', 'Market: ' + p.note); });
+    const crm = C.local('crm'), cmd = C.local('command');
+    if (crm.state === 'failed') add('red', 'CRM feed: ' + crm.error);
+    else if (crm.state === 'stale' || crm.state === 'late') add(crm.state === 'stale' ? 'red' : 'amber', `CRM feed: rebuilt ${crm.age_min} min ago, it rebuilds every 15 minutes`);
+    else if (crm.state === 'missing') add('amber', 'CRM feed: no build time on file');
+    if (cmd.state === 'failed') add('red', 'KW Command reader: ' + cmd.error);
+    else if (cmd.state === 'missing') add('amber', 'KW Command reader: never run on this Mac, so new leads in Command are not checked');
+    const skip = new Set(['feed_failed', 'feed_stale', 'no_feed', 'feed_unreadable', 'command_login', 'command_layout']);
+    ((typeof S !== 'undefined' && S.data && S.data.problems) || []).forEach(p => { if (!skip.has(p.code)) add(p.level === 'stop' ? 'red' : 'amber', p.text); });
+    return out.sort((a, b) => (a.level === 'red' ? 0 : 1) - (b.level === 'red' ? 0 : 1));
+  };
+
   // A banner at the top of every Command Center page when any read is out of date or failed.
   C.banner = function () {
     const d = C.data; if (!d) return '';
@@ -42,7 +68,8 @@
     const g = guard(); if (g) return g;
     const d = C.data, sy = d.sync || {}, f = d.fresh || {};
     const rows = Object.keys(NAMES).map(k => {
-      const r = f[k] || { state: 'missing' }, res = (sy.results || {})[k];
+      const parts = k === 'market' ? Object.values(((d.market || {}).parts) || {}).filter(p => p.state === 'failed') : [];
+      const r0 = f[k] || { state: 'missing' }, r = parts.length && r0.state === 'ok' ? Object.assign({}, r0, { state: 'failed', error: 'part', error_text: 'part of it did not load: ' + parts.map(p => p.note).join('. ') }) : r0, res = (sy.results || {})[k];
       return `<tr class="is-${r.state}"><th scope="row">${esc(NAMES[k])}<small>${esc(r.source || '')}</small></th><td><span class="cc-state s-${r.state}">${{ ok: 'Current', late: 'Late', stale: 'Out of date', failed: 'Failed', missing: 'Not synced yet' }[r.state]}</span></td>
         <td>${esc(when(r.at))}${r.age_min != null ? `<small>${r.age_min} min ago</small>` : ''}</td><td>${r.error ? esc(r.error_text || 'the read did not finish') : res ? (res.ok ? `${res.rows ?? res.read ?? res.pushed ?? ''} rows` : esc(res.error_text || 'the read did not finish')) : ''}</td></tr>`;
     }).join('');

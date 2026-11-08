@@ -102,14 +102,15 @@ function render() {
   const f = feed(), c = f.counts || {}, d = S.data;
   renderNav(c);
   // top status: what is actually true. A failed read is named, never covered by an all-clear word.
-  const lvl = statusLevel(), bad = window.CC && CC.failing ? CC.failing() : [], old = window.CC && CC.data && CC.notCurrent ? CC.notCurrent() : [];
-  const red = window.CC && CC.data && CC.staleReads ? CC.staleReads() : [];
-  const chip = $('#status-chip'); chip.className = 'status-chip ' + (bad.length || red.length || lvl === 'stop' ? 'stop' : old.length || lvl === 'warn' ? 'warn' : 'ok');
-  $('#status-word').textContent = !d.feed_ok ? 'CRM feed did not load' : bad.length ? `${bad.length} read${bad.length > 1 ? 's' : ''} failed`
-    : old.length ? `${old.length} source${old.length > 1 ? 's' : ''} not current` : lvl === 'stop' ? 'Needs attention' : lvl === 'warn' ? 'Check the bell' : window.CC && CC.data ? 'Every source current' : 'Reading';
-  chip.title = bad.length ? 'Failed: ' + bad.join(', ') : old.length ? 'Not current: ' + old.join(', ') : ''; chip.onclick = () => go('sources');
+  // The chip shows the worst thing on the one attention list (cc-sources.js): red for failed or out of date, amber for
+  // late or never read. The bell counts the same list.
+  const att = window.CC && CC.data && CC.attention ? CC.attention() : [], red = att.filter(x => x.level === 'red'), amb = att.filter(x => x.level === 'amber');
+  const chip = $('#status-chip'); chip.className = 'status-chip ' + (red.length || statusLevel() === 'stop' ? 'stop' : amb.length ? 'warn' : 'ok');
+  $('#status-word').textContent = !d.feed_ok ? 'CRM feed did not load' : red.length ? `${red.length} source${red.length > 1 ? 's' : ''} failed or out of date`
+    : amb.length ? `${amb.length} source${amb.length > 1 ? 's' : ''} late or not read yet` : window.CC && CC.data ? 'Every source current' : 'Reading';
+  chip.title = att.map(x => x.text).join('\n'); chip.onclick = () => go('sources');
   S.systemWord = $('#status-word').textContent; S.systemLevel = chip.className.replace('status-chip ', '');
-  const bc = $('#bell-count'); bc.hidden = !problems().length; bc.textContent = problems().length;
+  const bc = $('#bell-count'); bc.hidden = !att.length; bc.textContent = att.length;
   // send status
   const mode = $('#mode'); mode.textContent = d.demo ? 'DEMO · DRY RUN' : d.sender === 'live' ? 'LIVE' : 'DRY RUN'; mode.className = 'mode mono' + (d.sender === 'live' && !d.demo ? ' live' : '');
   $('#mode-sub').textContent = d.demo ? 'made-up people, nothing is written' : d.sender === 'live' ? 'texts via Messages, email via Gmail' : 'sends are logged, nothing leaves the Mac';
@@ -263,10 +264,11 @@ async function sendNow() {
 async function touchFromCompose() { const c = S.compose; const what = await ask('Touched', `What happened with ${nm(c.name)}?`, 'Called'); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${nm(c.name)}` }); if (r) nextInQueue(); }
 
 // ---- modals
-function modal(title, bodyHTML, onOK, okLabel = 'Save') {
+// opts.info: a window that only shows something gets one OK button, no Cancel.
+function modal(title, bodyHTML, onOK, okLabel = 'Save', opts = {}) {
   return new Promise(resolve => {
     const m = $('#modal'); m.hidden = false;
-    m.innerHTML = `<section class="panel"><div class="dh"><div class="who"><b>${title}</b></div><button class="x" onclick="closeModal()">×</button></div><div class="dbody">${bodyHTML}</div><div class="dfoot"><button class="send-btn" id="m-ok">${okLabel}</button><button class="ghost-btn" onclick="closeModal()">Cancel</button></div></section>`;
+    m.innerHTML = `<section class="panel"><div class="dh"><div class="who"><b>${title}</b></div><button class="x" onclick="closeModal()" aria-label="Close">×</button></div><div class="dbody">${bodyHTML}</div><div class="dfoot"><button class="send-btn" id="m-ok">${okLabel}</button>${opts.info ? '' : '<button class="ghost-btn" onclick="closeModal()">Cancel</button>'}</div></section>`;
     m._resolve = resolve;
     // resolve with the value first: closeModal() resolves whatever is still pending with null (that is Cancel)
     $('#m-ok').onclick = async () => { const v = onOK(m); if (v === false) return; m._resolve = null; resolve(v); closeModal(); };
@@ -332,10 +334,12 @@ function openBrief() {
   </div>`, () => true, 'Start with the first reply').then(v => { if (v) composeNext(); });
 }
 function openProblems() {
-  const p = problems();
-  modal('What needs attention', p.length ? `<div class="rows">${p.map((x, i) => `<div class="row" style="--i:${i};grid-template-columns:auto 1fr"><span class="tag ${x.level}">${x.level.toUpperCase()}</span><div class="why"><b>${esc(x.text)}</b></div></div>`).join('')}</div>` : `<div class="empty"><b>All clear</b></div>`,
-    () => (p.some(x => x.code.startsWith('command')) ? 'command' : true), p.some(x => x.code.startsWith('command')) ? 'Open Command' : 'OK').then(v => { if (v === 'command') window.open(S.data.links.command); });
+  // The same list as the header chip, worst first. Information only, so one OK button.
+  const p = window.CC && CC.data && CC.attention ? CC.attention() : problems().map(x => ({ level: x.level === 'stop' ? 'red' : 'amber', text: x.text }));
+  modal('What needs attention', p.length ? `<ul class="cc-list">${p.map(x => `<li class="cc-ev ${x.level === 'red' ? 'k-closing' : 'k-deadline'}"><span class="cc-chip">${x.level === 'red' ? 'Failed or out of date' : 'Late or not read yet'}</span><span class="cc-what">${esc(x.text)}</span></li>`).join('')}</ul><div class="cc-acts"><button type="button" onclick="closeModal();go('sources')">Open Sources</button></div>`
+    : C_empty('Every source is current.'), () => true, 'OK', { info: true });
 }
+const C_empty = t => `<p class="cc-empty">${esc(t)}</p>`;
 // Shortcuts in plain sentences: a key is a letter or word you press, never code.
 function openHelp() {
   const label = k => NAV.flatMap(g => g[1]).find(x => x[0] === k)[2];
@@ -343,7 +347,7 @@ function openHelp() {
     <h4>ANYWHERE</h4><ul><li>Press <kbd>C</kbd> to open the next draft.</li><li>Press <kbd>V</kbd> to turn the voice on or off, and <kbd>T</kbd> to type to it.</li><li>Press <kbd>R</kbd> to refresh the CRM.</li><li>Press the slash key <kbd>/</kbd> to search.</li><li>Press <kbd>H</kbd> to hide or show money and contacts.</li><li>Press <kbd>Escape</kbd> to close a window like this one.</li></ul>
     <h4>ON THE MAP</h4><ul><li>Drag to move, scroll or double-click to zoom, click a cluster to open it.</li><li>Drawing a farm: click the corners, double-click or press Return to finish, Delete takes back a corner, Escape stops drawing.</li></ul>
     <h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li></ul>
-    <h4>WHERE THINGS GO</h4><ul><li>Every button that changes something writes to the AIRE CRM sheet and is logged there.</li><li>Every text and email is checked for Do Not Contact and the daily limit before it goes, and lands in Sent today.</li></ul></div>`, () => true, 'OK');
+    <h4>WHERE THINGS GO</h4><ul><li>Every button that changes something writes to the AIRE CRM sheet and is logged there.</li><li>Every text and email is checked for Do Not Contact and the daily limit before it goes, and lands in Sent today.</li></ul></div>`, () => true, 'OK', { info: true });
 }
 
 // ---------------------------------------------------------------- toasts, clock, keys, boot
