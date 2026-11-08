@@ -28,43 +28,59 @@
     'follow mark open binding counter countered sent short ninja handwritten later today tomorrow removed waiting paid cash conventional appraisal inspection ' +
     'closing closed close contract deal deals price rate commission notes note new lead leads home value request website referral sign open house social past client other ' +
     'expired expires until likely dead fell through probably maybe need needs needed set up get got look looking').split(/\s+/));
+  // More ordinary words that start sentences in tasks and notes, so a quiet day with little text to learn from still reads.
+  ('schedule review email update prepare meet meeting order walkthrough walk through showing showings tour appointment appt reminder remind ' +
+   'thank-you coffee lunch dinner visit drop drive bring pick pull run write draft print sign mail call-back callback voicemail left ' +
+   'great good nice happy congratulations welcome sorry hope hi hello hey dear please let lets just also only next last first second third ' +
+   'week weeks month months year years day days morning afternoon evening tonight noon midnight early late soon now asap hour hours minute minutes ' +
+   'yes okay sure maybe not none all any some every each both either neither few many more most less least much lot lots ' +
+   'buyer seller agent lender title inspector appraiser contractor tenant landlord owner family kids wife husband mom dad son daughter friend').split(/\s+/).forEach(w => KEEP.add(w));
+  // Template verbs that start CRM task text. They stay readable even when a client has the same name ("Call before Monday").
+  const VERBS = new Set('call text send ask reply check confirm follow thank partner offer paid cash command ninja reach handwritten congrats'.split(' '));
+  // Words in capitals that are real acronyms. Any other all-caps word is treated like a capitalized one (SMITH hides).
+  const ACRONYMS = new Set('KW VA FHA USDA DDI MLS CRM FORD TC CMA CDA LLC HOA AM PM EBR GBRAR FRED PMMS LA USA ASAP ID OK ROI ARV DOM IRS HUD FSBO REO BPO POF EMD DNC FYI TBD ETA CST CT ZIP PDF'.split(' '));
   let vocab = null, vocabKey = '';
   function lowerWords() {
-    const f = (typeof S !== "undefined" && S.data && S.data.feed) || {}, key = (f.generated_at || '') + '|' + ((C.data && C.data.at) || '');
+    const f = (typeof S !== "undefined" && S.data && S.data.feed) || {}, key = (f.generated_at || '') + '|' + ((C.data && C.data.at) || '') + '|' + (f.people || []).length;
     if (vocab && vocabKey === key) return vocab;
     vocab = new Set(); vocabKey = key;
-    const add = t => (String(t || '').match(/\b[a-z][a-z'’]+\b/g) || []).forEach(w => vocab.add(w));
+    const names = crmNameSet();
+    // A word only counts as ordinary when it is written in lowercase AND is not a word of anyone's name in the CRM, so
+    // "call mike back" never makes Mike safe to show.
+    const add = t => (String(t || '').match(/(?<![\p{L}])[\p{Ll}][\p{L}'’]+/gu) || []).forEach(w => { if (!names.has(w)) vocab.add(w); });
     (f.tasks || []).forEach(t => add(t.task));
     [].concat(f.touches_due || [], f.partners || []).forEach(r => add(r.next_action));
     ((C.data && C.data.deals) || []).forEach(d => { add(d.check); add(d.next); });
     return vocab;
   }
-  let nameRe = null, nameKey = '';
-  function crmNames() {
-    const f = (typeof S !== "undefined" && S.data && S.data.feed) || {};
-    const key = f.generated_at || '';
-    if (nameRe && nameKey === key) return nameRe;
-    const words = new Set();
+  // Every word of every name in the CRM, lowercased: these always hide when written with a capital, whatever else they mean.
+  let nameSet = null, nameSetKey = '';
+  function crmNameSet() {
+    const f = (typeof S !== "undefined" && S.data && S.data.feed) || {}, key = (f.generated_at || '') + '|' + (f.people || []).length;
+    if (nameSet && nameSetKey === key) return nameSet;
+    nameSet = new Set(); nameSetKey = key;
+    const STOP = new Set(['the', 'and', 'mr', 'mrs', 'ms', 'dr', 'jr', 'sr', 'iii', 'family', 'team', 'llc', 'inc']);
     [].concat(f.people || [], f.touches_due || [], f.new_leads || [], f.partners || [], f.tasks || []).forEach(p =>
-      String(p.display || '').split(/[\s/,&()]+/).forEach(w => { if (w.length > 2 && /^[A-Z]/.test(w) && !KEEP.has(w.toLowerCase())) words.add(w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); }));
-    nameKey = key;
-    nameRe = words.size ? new RegExp('\\b(' + [...words].sort((a, b) => b.length - a.length).join('|') + ')\\b', 'g') : null;
-    return nameRe;
+      String(p.display || '').split(/[^\p{L}'’]+/u).forEach(w => { const l = w.toLowerCase(); if (l.length > 1 && !STOP.has(l)) nameSet.add(l); }));
+    return nameSet;
   }
+  const DATEWORDS = new Set('jan feb mar apr may jun jul aug sep sept oct nov dec january february march april june july august september october november december mon tue tues wed thu thur thurs fri sat sun monday tuesday wednesday thursday friday saturday sunday'.split(' '));
   C.isNameWord = function (w) {
-    if (/^[A-Z0-9]{2,5}$/.test(w)) return false;  // an acronym like FORD, KW, VA, DDI
+    if (ACRONYMS.has(w)) return false;
     const l = w.toLowerCase().replace(/['’]s$/, '');
+    if (DATEWORDS.has(l)) return false;                      // dates always read, even with a client named May
+    if (crmNameSet().has(l)) return !VERBS.has(l);          // a client's name: hidden, unless it is a task verb like Call
     return !KEEP.has(l) && !lowerWords().has(l);
   };
   C.scrub = function (t, names) {
     let s = String(t || '');
     if (!C.priv) return esc(s);
     s = s.replace(MONEY, '$•••');
-    [].concat(names || []).forEach(n => String(n || '').split(/\s+/).filter(w => w.length > 2).forEach(w => {
-      s = s.replace(new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), '•••');
+    [].concat(names || []).forEach(n => String(n || '').split(/\s+/).filter(w => w.length > 1).forEach(w => {
+      s = s.replace(new RegExp('(?<![\\p{L}])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\p{L}])', 'giu'), '•••');
     }));
-    const re = crmNames(); if (re) s = s.replace(re, '•••');
-    s = s.replace(/\b[A-Z][A-Za-z'’]*\b/g, w => (C.isNameWord(w) ? '•••' : w));
+    // Any word that starts with a capital (accents included): hidden if it is a name by the rule above.
+    s = s.replace(/(?<![\p{L}])\p{Lu}[\p{L}'’]*/gu, w => (C.isNameWord(w) ? '•••' : w));
     s = s.replace(/•••(?:[ -]•••)+/g, '•••');
     return esc(s);
   };

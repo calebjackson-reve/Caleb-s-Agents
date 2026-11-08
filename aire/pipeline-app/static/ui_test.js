@@ -513,6 +513,24 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
 
 // Round 3: the cache name moves on again so browsers drop the round 2 shell.
 check(/pipeline-shell-v3-judge4/.test(fs.readFileSync(path.join(dir, 'sw.js'), 'utf8')), 'service worker cache is v3-judge4');
+// Reviewer findings on round 3 masking: a client's name hides even when it is also a common word, a lowercase mention
+// never makes a name safe, capitals and accents hide, dates read, and ordinary words read on a quiet day.
+{
+  const people = [{ person_id: 'r1', display: 'Mark Fixture' }, { person_id: 'r2', display: 'Mike Sample' }, { person_id: 'r3', display: 'May Example' }, { person_id: 'r4', display: 'Call Tester' }];
+  const tasks = [{ task: 'call mike back about the docs', person_id: 'r2', display: 'Mike Sample' }];
+  run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { generated_at: 'r3-test', people: ${JSON.stringify(people)}, tasks: ${JSON.stringify(tasks)}, touches_due: [], partners: [], new_leads: [] }) }); CC.priv = true;`);
+  const sc = t => run(`CC.scrub(${JSON.stringify(t)})`).replace(/&#39;/g, "'");
+  check(sc('Mark sent the offer') === '••• sent the offer', 'a client named Mark hides even though mark is a common word');
+  check(sc('Mike said yes') === '••• said yes', 'a lowercase mention of a name never makes the name safe to show');
+  check(sc('SMITH counter at 5 PM') === '••• counter at 5 PM' && sc('KW and FHA') === 'KW and FHA', 'an all-caps name hides, real acronyms stay');
+  check(sc('José asked about the house') === '••• asked about the house', 'an accented name hides whole');
+  check(sc('Closing May 5 with May') === 'Closing May 5 with May', 'a month always reads, even with a client named May');
+  check(sc('Call before Monday') === 'Call before Monday', 'a task verb that is also a surname stays readable');
+  run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { generated_at: 'r3-empty', people: [], tasks: [], touches_due: [], partners: [], new_leads: [] }) }); CC.data = Object.assign({}, __cc, { deals: [] });`);
+  check(sc('Schedule the walkthrough and email the lender') === 'Schedule the walkthrough and email the lender', 'ordinary words read on a quiet day with little text to learn from');
+  run('S.data = __state; CC.data = __cc;');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');
