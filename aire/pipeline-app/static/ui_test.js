@@ -431,6 +431,9 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   check(!/<input[^>]*\$\{maskAttr\(\)\}/.test(appjs) && /type="button" class="send-btn" id="m-ok"/.test(appjs), 'no masked input in the compose drawer, and dialog buttons are not submit buttons');
 }
 
+// Round 3, item 7: Tasks explains how the Next_Action tasks are chosen.
+check(/How the \d+ from Next_Action are chosen\.<\/b> A contact's Next_Action becomes a task when the contact is hot or warm, is not on Do Not Contact, is not a vendor, agent or lender, and has no open task with the same words\. Hot ones are due today, warm ones in 3 days/.test(render('tasks', true)) || !(f.tasks || []).some(t => !t.task_id), 'Tasks says how the Next_Action tasks are chosen, matching crm.next_action_tasks');
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

@@ -173,7 +173,8 @@
       : S.q ? C.noMatch() : C.empty('No open tasks here.');
     // Where the open tasks come from: rows on the CRM's Tasks tab, and contacts whose Next_Action column has a step.
     const tab = (feedF().tasks || []).filter(t => t.task_id).length, na = (feedF().tasks || []).length - tab;
-    return page('Tasks', `Open CRM tasks, overdue first. Done marks it done in the CRM. ${n0(tab + na)} open: ${n0(tab)} on the Tasks tab and ${n0(na)} from the Next_Action column on contacts.${na && !tab ? ' That is why the Tasks tab itself shows none open. Done on one of these moves it to the Tasks tab and closes it there.' : ''}`, body, ['crm'],
+    const how = na ? `<p class="cc-note cc-how"><b>How the ${n0(na)} from Next_Action are chosen.</b> A contact's Next_Action becomes a task when the contact is hot or warm, is not on Do Not Contact, is not a vendor, agent or lender, and has no open task with the same words. Hot ones are due today, warm ones in 3 days. They are worked out from the CRM each time the feed rebuilds, so the Tasks tab itself does not hold them until you press Done.</p>` : '';
+    return page('Tasks', `Open CRM tasks, overdue first. Done marks it done in the CRM. ${n0(tab + na)} open: ${n0(tab)} on the Tasks tab and ${n0(na)} from the Next_Action column on contacts.${na && !tab ? ' That is why the Tasks tab itself shows none open. Done on one of these moves it to the Tasks tab and closes it there.' : ''}`, how + body, ['crm'],
       seg([['all', 'All', all.length], ['over', 'Overdue', n.over], ['today', 'Due today', n.today]], S.filter, 'CC.setFilter') +
       '<div class="cc-acts"><button type="button" class="cc-primary" onclick="openTask()">＋ New task</button></div>');
   }
