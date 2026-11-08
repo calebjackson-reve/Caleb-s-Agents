@@ -13,9 +13,32 @@
   C.em = v => (!v ? '' : C.priv ? HID : esc(v));
   C.msg = v => (C.priv ? '<span class="cc-hid">Message hidden</span>' : esc(v));
   C.ini = v => (C.priv ? '•' : esc(initials(v)));
-  // Free text (a task, a next step, a subject): with privacy on, dollar amounts and names are blanked. Names are every
-  // first and last name in the CRM (so a next step that mentions another client is covered too) plus any run of two or
-  // more capitalized words, which is how a name the CRM does not know yet still looks.
+  // Free text (a task, a next step, a deal note, a subject): with privacy on, dollar amounts and names are blanked.
+  // A name is any capitalized word that is not an acronym (FORD, KW), not a month, weekday, place or brand below, and
+  // never written in lowercase anywhere in the CRM's own text. So "Offer", "Call" and "Removed" stay, while "Ford" in
+  // "Ford offer expired" and a sentence-first name are hidden. CRM names are always hidden too.
+  const MONEY = /\$\s?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?:\s?[kKmM]\b)?|\$\s?\d+(?:\.\d+)?(?:\s?[kKmM]\b)?/g;
+  const KEEP = new Set(('jan feb mar apr may jun jul aug sep sept oct nov dec january february march april june july august september october november december ' +
+    'mon tue tues wed thu thur thurs fri sat sun monday tuesday wednesday thursday friday saturday sunday am pm i ' +
+    'kw keller williams first choice command transact zillow realtor realtors mls crm pipeline claude gmail google messages imessage chase luxury presence ' +
+    'baton rouge louisiana la zachary saint st francisville feliciana west east north south prairieville walker livingston ascension denham springs central new roads ' +
+    'ebr freddie mac fred gbrar va fha usda ddi cda pmms hwy ' +
+    'the a an and or but if when after before then so to of in on at for from with by about as is are was were be been has have had do does did not no yes ' +
+    'call text send ask reply partner thank thanks congrats offer offers seller sellers buyer buyers listed listing your our my amount act due still check confirm ' +
+    'follow mark open binding counter countered sent short ninja handwritten later today tomorrow removed waiting paid cash conventional appraisal inspection ' +
+    'closing closed close contract deal deals price rate commission notes note new lead leads home value request website referral sign open house social past client other ' +
+    'expired expires until likely dead fell through probably maybe need needs needed set up get got look looking').split(/\s+/));
+  let vocab = null, vocabKey = '';
+  function lowerWords() {
+    const f = (typeof S !== "undefined" && S.data && S.data.feed) || {}, key = (f.generated_at || '') + '|' + ((C.data && C.data.at) || '');
+    if (vocab && vocabKey === key) return vocab;
+    vocab = new Set(); vocabKey = key;
+    const add = t => (String(t || '').match(/\b[a-z][a-z'’]+\b/g) || []).forEach(w => vocab.add(w));
+    (f.tasks || []).forEach(t => add(t.task));
+    [].concat(f.touches_due || [], f.partners || []).forEach(r => add(r.next_action));
+    ((C.data && C.data.deals) || []).forEach(d => { add(d.check); add(d.next); });
+    return vocab;
+  }
   let nameRe = null, nameKey = '';
   function crmNames() {
     const f = (typeof S !== "undefined" && S.data && S.data.feed) || {};
@@ -23,24 +46,30 @@
     if (nameRe && nameKey === key) return nameRe;
     const words = new Set();
     [].concat(f.people || [], f.touches_due || [], f.new_leads || [], f.partners || [], f.tasks || []).forEach(p =>
-      String(p.display || '').split(/[\s/,&()]+/).forEach(w => { if (w.length > 2 && /^[A-Z]/.test(w)) words.add(w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); }));
+      String(p.display || '').split(/[\s/,&()]+/).forEach(w => { if (w.length > 2 && /^[A-Z]/.test(w) && !KEEP.has(w.toLowerCase())) words.add(w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); }));
     nameKey = key;
     nameRe = words.size ? new RegExp('\\b(' + [...words].sort((a, b) => b.length - a.length).join('|') + ')\\b', 'g') : null;
     return nameRe;
   }
+  C.isNameWord = function (w) {
+    if (/^[A-Z0-9]{2,5}$/.test(w)) return false;  // an acronym like FORD, KW, VA, DDI
+    const l = w.toLowerCase().replace(/['’]s$/, '');
+    return !KEEP.has(l) && !lowerWords().has(l);
+  };
   C.scrub = function (t, names) {
     let s = String(t || '');
     if (!C.priv) return esc(s);
-    s = s.replace(/\$\s?\d[\d,]*(\.\d+)?\s?[kKmM]?/g, '$•••');
+    s = s.replace(MONEY, '$•••');
     [].concat(names || []).forEach(n => String(n || '').split(/\s+/).filter(w => w.length > 2).forEach(w => {
       s = s.replace(new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi'), '•••');
     }));
     const re = crmNames(); if (re) s = s.replace(re, '•••');
-    s = s.replace(/\b[A-Z][a-z'’]+(?:[ -][A-Z][a-z'’]+)+\b/g, '•••');
+    s = s.replace(/\b[A-Z][A-Za-z'’]*\b/g, w => (C.isNameWord(w) ? '•••' : w));
+    s = s.replace(/•••(?:[ -]•••)+/g, '•••');
     return esc(s);
   };
   // Public text with no people in it (market talking points): only dollar amounts hide.
-  C.scrubMoney = t => esc(C.priv ? String(t || '').replace(/\$\s?\d[\d,]*(\.\d+)?\s?[kKmM]?/g, '$•••') : String(t || ''));
+  C.scrubMoney = t => esc(C.priv ? String(t || '').replace(MONEY, '$•••') : String(t || ''));
   // A text message as it should read: no date prefix, no attachment placeholder, a photo said in words.
   C.cleanMsg = t => {
     const s = String(t || '').replace(/^\d{4}-\d{2}-\d{2}: /, '').replace(/[￼�]/g, '').trim();

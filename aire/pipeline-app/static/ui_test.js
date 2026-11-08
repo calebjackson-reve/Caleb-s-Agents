@@ -350,6 +350,21 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   run('CC.data = __cc');
 }
 
+// Round 3, items 1 and 10: names inside free text hide, and masking never eats a word, a digit or a date.
+{
+  run('CC.priv = true');
+  const sc = t => run(`CC.scrub(${JSON.stringify(t)})`).replace(/&#39;/g, "'");
+  check(sc('Ford offer expired Nov 4 9 AM, counter still waiting') === '••• offer expired Nov 4 9 AM, counter still waiting', 'a name that starts a sentence hides, the date stays', sc('Ford offer expired Nov 4 9 AM, counter still waiting'));
+  check(sc('KW Command still shows $7,198 off the old list price') === 'KW Command still shows $••• off the old list price', 'a masked dollar amount keeps the space after it');
+  check(sc('median list price $285,000, 78 median days') === 'median list price $•••, 78 median days', 'a masked dollar amount never swallows the next number');
+  check(sc('Seller countered at $2.8M as is, open until Fri Nov 6 5 PM') === 'Seller countered at $••• as is, open until Fri Nov 6 5 PM', 'a weekday and month are never masked');
+  check(sc("FORD check-in: 'how yall been?'") === "FORD check-in: 'how yall been?'", 'an acronym like FORD stays');
+  check(sc('Text Jessamyn Quill back about the open house') === 'Text ••• back about the open house', 'a full name the CRM does not know hides as one mask');
+  run('CC.priv = false');
+  check(sc('Ford offer expired') === 'Ford offer expired', 'with privacy off, free text shows as written');
+  run('CC.priv = true');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');
