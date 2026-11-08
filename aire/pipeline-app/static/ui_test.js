@@ -131,6 +131,14 @@ check(/invites you have not accepted are left out/.test(dash), 'Booked and On th
   run('CC.data = __cc');
 }
 
+// Round 2, item 2: Add a lead is one click from the Dashboard and from Leads, a four-field form with one Save.
+check(/onclick="CC\.addLead\(\)"/.test(render('dash', true)) && /onclick="CC\.addLead\(\)"/.test(render('ccleads', true)), 'Add a lead is one click from the Dashboard and Leads');
+{
+  run('var __leadForm = ""; modal = (t, h) => { __leadForm = t + "|" + h; return Promise.resolve(null); }; CC.addLead();');
+  const form = run('__leadForm'), ids = [...form.matchAll(/<(?:input|select)[^>]*id="([^"]+)"/g)].map(m => m[1]);
+  check(JSON.stringify(ids) === JSON.stringify(['m-lname', 'm-lphone', 'm-lemail', 'm-lsrc']) && /Do Not Contact/.test(form), 'the lead form is name, phone, email and source, and says Do Not Contact is checked', ids.join(','));
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

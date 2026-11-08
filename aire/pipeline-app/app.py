@@ -1448,6 +1448,15 @@ def run_tests() -> int:
         sm.make_lead("Owner at 1 Fixture Way", "Market Monitor permit 2026-10-26"); check(False, "a duplicate lead is refused")
     except CRMError:
         check(True, "a duplicate lead is refused")
+    # Add a lead from the Dashboard or Leads: name, phone, email, source, one Save, one crm.py lead call (round 2, item 2).
+    sm.make_lead("Fixture Newlead", "Referral 2026-11-08", phone="225-555-0188", email="newlead@example.com", next_action="Reach out: new lead")
+    last = sm.crm.log[-1]
+    check(last[:4] == ["lead", "Fixture Newlead", "--source", "Referral 2026-11-08"] and last[last.index("--phone") + 1] == "225-555-0188"
+          and last[last.index("--email") + 1] == "newlead@example.com" and "--next-action" in last, "Add a lead sends name, phone, email and source in one crm.py lead call")
+    try:
+        sm.make_lead("", "Website 2026-11-08"); check(False, "a lead with no name is refused")
+    except CRMError:
+        check(True, "a lead with no name is refused")
     people = [{"kind": "person", "person_id": "1", "display": "A Fixture", "phone": "+12255550001", "address": "1 Fixture St", "city": "Baton Rouge", "zip": "70808"},
               {"kind": "person", "person_id": "2", "display": "B Fixture", "phone": "", "address": "2 Fixture St", "city": "Baton Rouge", "zip": "70808"}]
     c1 = sm.add_to_list("call", people)
