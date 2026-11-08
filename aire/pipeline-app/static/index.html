@@ -87,7 +87,10 @@
 <script>
 // The home-screen install: the service worker keeps the shell and the last data for when the Mac can't be reached.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => {});
+  // When a new worker takes over, load the page once more so the new screens show, not the old shell.
+  let swReloaded = false, hadSw = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadSw && !swReloaded) { swReloaded = true; location.reload(); } });
   navigator.serviceWorker.addEventListener('message', e => { if (window.CC && e.data && 'online' in e.data && CC.offline !== !e.data.online) { CC.offline = !e.data.online; CC.rerender(); } });
 }
 </script>

@@ -1,6 +1,6 @@
 /* Pipeline service worker: the app shell for the home-screen icon, the last copy of the data for when the Mac
    can't be reached, and the phone alerts. It never caches a send, and nothing it stores leaves the phone. */
-const SHELL = 'pipeline-shell-v1-judge1', DATA = 'pipeline-data-v1';
+const SHELL = 'pipeline-shell-v2-judge3', DATA = 'pipeline-data-v1';
 const FILES = ['/', '/app.css', '/cc.css', '/ui.css', '/app.js', '/voice.js', '/map.js', '/mapviews.js', '/cc.js', '/cc-pages.js',
   '/crm-pages.js', '/cc-score.js', '/cc-life.js', '/cc-today.js', '/cc-sources.js', '/favicon.svg', '/icon-192.png', '/manifest.webmanifest'];
 const READS = ['/api/cc', '/api/state', '/api/alerts'];
@@ -20,7 +20,9 @@ self.addEventListener('fetch', e => {
     return;
   }
   if (u.pathname.startsWith('/api/')) return;
-  e.respondWith(fetch(e.request).then(r => { if (r.ok && FILES.includes(u.pathname)) { const c = r.clone(); caches.open(SHELL).then(x => x.put(e.request, c)); } return r; })
+  // HTML, JS and CSS come from the Mac every time (no browser cache), so a new build shows on the next load.
+  // The kept copy is only for when the Mac can't be reached.
+  e.respondWith(fetch(e.request, { cache: 'no-store' }).then(r => { if (r.ok && FILES.includes(u.pathname)) { const c = r.clone(); caches.open(SHELL).then(x => x.put(e.request, c)); } return r; })
     .catch(() => caches.match(e.request, { cacheName: SHELL }).then(h => h || caches.match('/', { cacheName: SHELL }))));
 });
 

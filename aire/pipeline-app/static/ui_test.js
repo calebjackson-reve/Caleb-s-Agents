@@ -113,5 +113,13 @@ check(/gross/.test(render('commission', false)), 'commission is labelled gross')
 // 12. Booked time says what it leaves out.
 check(/invites you have not accepted are left out/.test(dash), 'Booked and On the calendar say work blocks and invites are left out');
 
+// Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
+const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
+check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');
+check(/updateViaCache: 'none'/.test(indexHtml) && /controllerchange/.test(indexHtml), 'the page picks up a new worker and reloads once');
+const shell = (swjs.match(/const FILES = \[([^\]]+)\]/) || [])[1] || '';
+const scripts = [...indexHtml.matchAll(/<script src="([^"]+)"/g)].map(m => '/' + m[1]);
+check(scripts.every(s => shell.includes(`'${s}'`)), 'every script the page loads is in the offline shell', scripts.filter(s => !shell.includes(`'${s}'`)).join(' '));
+
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);
