@@ -401,6 +401,19 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   check(/const dr = S\.data \? readyDrafts\(\) : \[\]/.test(appjs) && /\$\{ready\} ready/.test(appjs), 'the nav and the compose button count ready drafts only');
 }
 
+// Round 3, item 5: offers past their deadline show as expired, and an offer never counts down to close.
+{
+  const dl = JSON.parse(JSON.stringify(ccdata.deals));
+  dl.push({ deal: '700 Fixture Rd', status: 'Offer', stage: 'offer', side: 'Buyer', price: 1, commission: null, act: ccdata.today, to_close: null,
+    offer: { date: '2026-11-06', time: '5 PM', expired: true }, differs: [], checklist: [], key: '700 fixture', next: '' });
+  run(`CC.data = Object.assign({}, __cc, { deals: ${JSON.stringify(dl)} })`);
+  const dp = render('deals', true), cp = render('commission', true);
+  const row = (dp.match(/<li class="cc-row[^"]*"><span class="cc-av" aria-hidden="true">⌂<\/span>\s*<div class="cc-row-main"><h3>700 Fixture Rd[^]*?<\/li>/) || [''])[0];
+  check(/Offer expired [A-Z][a-z]{2}, Nov 6 5 PM/.test(row) && !/days to close|Closes today/.test(row) && /Act of sale if accepted/.test(row), 'an expired offer says so on Deals, with no days to close');
+  check(/Offer expired/.test(cp) && /if accepted/.test(cp), 'Commission shows the expired offer and the act date as if accepted');
+  run('CC.data = __cc');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

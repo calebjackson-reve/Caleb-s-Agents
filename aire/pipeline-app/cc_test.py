@@ -466,5 +466,18 @@ class JudgeRound3(unittest.TestCase):
         self.assertEqual([(u["deal"], u["step"]) for u in p["deadlines"]["undated"]], [("100 Oak Ln", "Inspection")])
 
 
+    def test_offers_past_their_deadline_are_expired_and_never_count_down_to_close(self):
+        t = date(2026, 11, 8)
+        self.assertTrue(cc.offer_deadline("Offer was binding until Oct 29 7 AM. No answer found", t)["expired"])
+        o = cc.offer_deadline("Seller countered at $2.8M as is, open until Fri Nov 6 5 PM. Not in Command", t)
+        self.assertEqual((o["date"], o["time"], o["expired"]), ("2026-11-06", "5 PM", True))
+        self.assertEqual(cc.offer_deadline("Fake offer expired Nov 4 9 AM, counter still waiting", t)["date"], "2026-11-04")
+        self.assertFalse(cc.offer_deadline("Counter open until Nov 12 5 PM", t)["expired"])
+        self.assertIsNone(cc.offer_deadline("Offer and pre-approval sent Nov 4, no answer yet", t))
+        sheet = [HEAD, ["700 Fake Rd", "Buyer", "Offer", "1", "", "", "", "2026-12-04", "Offer open until Fri Nov 6 5 PM", ""]]
+        card = cc.deal_cards(cc.deal_rows(sheet), t)[0]
+        self.assertEqual((card["to_close"], card["offer"]["expired"]), (None, True))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

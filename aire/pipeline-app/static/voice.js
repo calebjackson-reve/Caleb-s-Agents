@@ -177,7 +177,7 @@ const Voice = (() => {
     }
     if (/\b(compose|drafts?|write one)\b/.test(q) || /^(next|send)$/.test(q)) { const d = drafts(); if (!d.length) return say('The queue is clear.'); composeNext(); return say(`${d[0].reply ? 'Reply to' : 'Draft for'} ${d[0].name}. ${d[0].reply ? 'They texted last, so write it yourself.' : 'The draft is ready, read it and send.'}`); }
     if (/\b(close|closes|closing|closings)\b/.test(q) && /\b(next|soon|when|first|upcoming|this (week|month))\b/.test(q)) {
-      go('deals'); const all = sheetDeals(), d = all.filter(x => x.expected_close).sort((a, b) => a.expected_close.localeCompare(b.expected_close));
+      go('deals'); const all = sheetDeals().filter(x => x.stage === 'under_contract'), d = all.filter(x => x.expected_close).sort((a, b) => a.expected_close.localeCompare(b.expected_close));
       return say(d.length ? `${shortAddr(d[0].address)} closes ${d[0].expected_close}${d[1] ? `, then ${shortAddr(d[1].address)} on ${d[1].expected_close}` : ''}.${all.length > d.length ? ` ${plural(all.length - d.length, 'deal has', 'deals have')} no act of sale date.` : ''}` : 'No open deal has an act of sale date.');
     }
     const STAGE_WORDS = [['under contract', 'under_contract'], ['offer', 'offer'], ['active', 'active'], ['lead', 'lead']];

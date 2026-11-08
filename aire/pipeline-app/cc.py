@@ -193,6 +193,30 @@ def pipeline_stages(deals: list[dict], leads_waiting: int) -> list[dict]:
     return rows
 
 
+MONTHS = {m: i + 1 for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"])}
+OFFER_DEADLINE = re.compile(r"\b(binding|open|good|valid|expires?|expired|deadline)\s+(?:until\s+|by\s+|on\s+|at\s+)?(?:(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?,?\s+)?"
+                            r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b(?:\s+(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?))?", re.I)
+
+
+def offer_deadline(note, today: date) -> dict | None:
+    """An offer's deadline as the Check note says it ("binding until Oct 29 7 AM", "open until Fri Nov 6 5 PM",
+    "expired Nov 4 9 AM"). Expired once that day has passed, or when the note says it expired. None when the note
+    names no deadline. The year is this year, or last year for a date more than six months ahead."""
+    hits = list(OFFER_DEADLINE.finditer(str(note or "")))
+    if not hits:
+        return None
+    m = hits[-1]
+    try:
+        d = date(today.year, MONTHS[m.group(2).lower()[:3]], int(m.group(3)))
+    except ValueError:
+        return None
+    if (d - today).days > 183:
+        d = d.replace(year=today.year - 1)
+    said = m.group(0).strip()
+    return {"date": d.isoformat(), "said": said, "time": (m.group(4) or "").upper().replace(".", "") or None,
+            "expired": d < today or m.group(1).lower() == "expired"}
+
+
 def deal_cards(deals: list[dict], today: date) -> list[dict]:
     order = {"contract": 0, "offer": 1, "appointment": 2, "other": 3, "closed": 4, "out": 5}
     out = []
@@ -203,7 +227,9 @@ def deal_cards(deals: list[dict], today: date) -> list[dict]:
             days = (today - date.fromisoformat(r["since"])).days
         out.append({**r, "stage": st, "next": next_step(r.get("check")), "days": days,
                     "checklist": checklist(r, today) if st == "contract" else [],
-                    "to_close": (date.fromisoformat(r["act"]) - today).days if is_day(r.get("act")) else None})
+                    # an offer has no closing to count down to: its act date is only an estimate if it is accepted
+                    "offer": offer_deadline(r.get("check"), today) if st == "offer" else None,
+                    "to_close": (date.fromisoformat(r["act"]) - today).days if is_day(r.get("act")) and st != "offer" else None})
     return sorted(out, key=lambda r: (order[r["stage"]], r.get("act") or "9"))
 
 
