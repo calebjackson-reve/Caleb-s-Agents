@@ -93,8 +93,16 @@
   function page(title, sub, body, sources, tools) {
     const ok = (typeof S !== "undefined" && S.data) && S.data.feed_ok;
     const inner = ok || !sources.includes('crm') ? body : C.empty('The CRM feed did not load, so this list would be a guess. Nothing is shown. Sources has the detail.');
-    return `<div class="cc-page">${C.head(title, sub)}<section class="cc-card">${tools ? `<div class="cc-tools">${tools}</div>` : ''}${inner}<footer>${C.src(sources)}</footer></section></div>`;
+    // The source and as-of time sit at the top of the list as well as under it, so a long list still says where it came from.
+    return `<div class="cc-page">${C.head(title, sub)}<section class="cc-card"><p class="cc-srcline">${C.src(sources)}</p>${tools ? `<div class="cc-tools">${tools}</div>` : ''}${inner}<footer>${C.src(sources)}</footer></section></div>`;
   }
+  // The three people counts, said once in words: contacts in the CRM, those with text history, those placed on the map.
+  C.peopleLine = function () {
+    const f = feedF(), c = f.counts || {}, sg = f.signals || {}, mc = (f.map || {}).counts || {};
+    if (!c.contacts) return '';
+    return `${n0(c.contacts)} contacts in the AIRE CRM sheet. ${sg.people ? `${n0(sg.people)} of them have texts with you in Messages (that is the Signals number). ` : ''}${mc.persons ? `${n0(mc.persons)} have an address placed on the map${mc.ungeocoded_contacts ? `, ${n0(mc.ungeocoded_contacts)} more are waiting to be placed` : ''}.` : ''}`;
+  };
+  const n0 = v => Number(v || 0).toLocaleString();
   C.crmPage = page;
   const seg = (opts, cur, fn) => `<div class="cc-filters" role="group">${opts.map(([k, l, n]) => `<button type="button" class="cc-filter" aria-pressed="${cur === k}" onclick="${fn}('${k}')">${l}${n != null ? ` <b>${n}</b>` : ''}</button>`).join('')}</div>`;
   C.setFilter = k => { S.filter = k; render(); };
@@ -134,7 +142,9 @@
         <p class="cc-note">${t.display ? C.who(t.display) + ' · ' : ''}${t.due ? 'Due ' + esc(C.day(t.due)) : 'No due date'}${t.source ? ' · ' + esc(t.source) : ''}</p></div>
       <div class="cc-acts"><button type="button" class="cc-primary" onclick="doneTask('${esc(t.task_id)}','${esc(t.person_id)}',${JSON.stringify(String(t.task || '')).replace(/"/g, '&quot;')})">✓ Done</button>${t.person_id ? `<button type="button" onclick="openCompose('${esc(t.person_id)}')">Message</button>` : ''}</div></li>`).join('')}</ul>`
       : S.q ? C.noMatch() : C.empty('No open tasks here.');
-    return page('Tasks', 'Open CRM tasks, overdue first. Done marks it done in the CRM.', body, ['crm'],
+    // Where the open tasks come from: rows on the CRM's Tasks tab, and contacts whose Next_Action column has a step.
+    const tab = (feedF().tasks || []).filter(t => t.task_id).length, na = (feedF().tasks || []).length - tab;
+    return page('Tasks', `Open CRM tasks, overdue first. Done marks it done in the CRM. ${n0(tab + na)} open: ${n0(tab)} on the Tasks tab and ${n0(na)} from the Next_Action column on contacts.${na && !tab ? ' That is why the Tasks tab itself shows none open. Done on one of these moves it to the Tasks tab and closes it there.' : ''}`, body, ['crm'],
       seg([['all', 'All', all.length], ['over', 'Overdue', n.over], ['today', 'Due today', n.today]], S.filter, 'CC.setFilter') +
       '<div class="cc-acts"><button type="button" class="cc-primary" onclick="openTask()">＋ New task</button></div>');
   }

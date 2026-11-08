@@ -121,7 +121,7 @@ function render() {
   $('#foot-chips').innerHTML = [
     chipHTML('◔', 'Feed', d.demo ? 'demo · as of ' + (f.as_of || '') : age == null ? 'none yet' : age < 60 ? `${age} min ago` : `${Math.floor(age / 60)}h ${age % 60}m ago`, age > 60 ? 'warn' : ''),
     chipHTML('⌘', 'Command', cmd.state ? cmd.state : 'no status', cmd.state === 'ok' ? '' : cmd.state ? 'warn' : ''),
-    chipHTML('◉', 'Signals', f.signals && f.signals.file ? `${(f.signals.people || 0).toLocaleString()} people · ${owesReply().length} owe a reply` : 'sheet only', f.signals && f.signals.file ? '' : 'warn'),
+    chipHTML('◉', 'Signals', f.signals && f.signals.file ? `${(f.signals.people || 0).toLocaleString()} with texts · ${owesReply().length} owe a reply` : 'sheet only', f.signals && f.signals.file ? '' : 'warn'),
   ].join('');
   $('#refresh').classList.toggle('spin', !!(d.refresh && d.refresh.running));
   $('#refresh').innerHTML = '<span>⟳</span>';

@@ -244,6 +244,24 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   run('CC.data = __cc');
 }
 
+// Round 2, item 11: CRM pages say their source and time at the top, Tasks says where its count comes from, and the three
+// people counts are explained in words.
+{
+  for (const v of ['touches', 'tasks', 'queue', 'sent', 'monitor', 'search']) {
+    if (v === 'search') run(`S.q = 'a'`);
+    check(/<section class="cc-card"><p class="cc-srcline"><span class="cc-src/.test(render(v, true)), `${v}: the source and as-of time are at the top of the list`);
+    run(`S.q = ''`);
+  }
+  const tk = f.tasks || [], tab = tk.filter(t => t.task_id).length;
+  check(render('tasks', true).includes(`${tk.length} open: ${tab} on the Tasks tab and ${tk.length - tab} from the Next_Action column on contacts`), 'Tasks says how many come from the Tasks tab and how many from Next_Action');
+  run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { tasks: [{ person_id: '1', display: 'A Fixture', task: 'Call', due: '', source: 'Next_Action' }] }) })`);
+  check(/That is why the Tasks tab itself shows none open/.test(render('tasks', true)), 'with every task from Next_Action, Tasks explains why the Tasks tab shows none');
+  run('S.data = __state');
+  const pl = run('CC.peopleLine()'), c = f.counts || {};
+  check(pl.includes(c.contacts.toLocaleString() + ' contacts in the AIRE CRM sheet') && (!(f.signals || {}).people || pl.includes('have texts with you')) && pl.includes('placed on the map'), 'the people counts are explained in one sentence', pl);
+  check(render('sources', true).includes(pl) && render('map', true).includes(pl), 'Sources and the Map carry that sentence');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

@@ -64,7 +64,7 @@ function mapTools() {
 }
 function viewMap() {
   const c = mapFeed().counts || {};
-  const right = `${(c.persons || 0).toLocaleString()} people and ${dealPins().length} open deals placed${c.ungeocoded_contacts ? `, ${c.ungeocoded_contacts.toLocaleString()} addresses not placed yet` : ''}`;
+  const right = `${CC.peopleLine()} ${dealPins().length} open deals placed`;
   return CC.crmPage('Map', 'Your people, deals and market signals by address. ' + right + '.', `${mapPanel(false)}`, ['crm'], `<div id="map-tools">${mapTools()}</div>`).replace('class="cc-page"', 'class="cc-page cc-wide"');
 }
 function viewDealMap() {
