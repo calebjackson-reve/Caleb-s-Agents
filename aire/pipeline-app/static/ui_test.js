@@ -478,6 +478,16 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
   check(/drawLabels\(farmLabels\);\s*cancelAnimationFrame/.test(mapjs) && !/rgba\(8,22,46/.test(mapjs), 'labels are drawn after the pins, and clusters are not navy');
 }
 
+// Round 3, items 13 and 14 and one source line: no scrollbar line under the phone nav, News names its source once at the
+// top, and a list page shows its source line once.
+{
+  const uiPhone = (ui.match(/@media \(max-width: 720px\) \{[^]*?\n\}/) || [''])[0];
+  check(/\.side \{ scrollbar-width: none; \} \.side::-webkit-scrollbar \{ display: none;/.test(uiPhone), 'phone: no scrollbar line under the nav strip');
+  const nw = render('news', true), srcCount = h => (h.match(/<span class="cc-src /g) || []).length;
+  check(/<\/header>[^]*?<p class="cc-srcline"><span class="cc-src/.test(nw) && srcCount(nw) === 1 && /Obituaries and school sports are left out/.test(nw), 'News shows its source and time once, at the top, and says what it leaves out');
+  for (const v of ['touches', 'tasks', 'queue', 'sent', 'monitor']) check(srcCount(render(v, true).replace(/<div class="cc-banner"[^]*?<\/div>/, '')) === (v === 'queue' ? 2 : 1), `${v}: one source line, not two`);
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

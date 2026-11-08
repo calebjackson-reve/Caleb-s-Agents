@@ -162,6 +162,7 @@ body { background: #0a0a0b; background-image: none; }
   .side .brand { position: sticky; left: 0; z-index: 2; background: var(--cc-panel); border-bottom: 0; padding: 0 8px 0 0; flex: none; }
   .side .brand-name, .side .brand-sub { display: none; }
   .nav-g + .nav-g { border-left: 1px solid var(--cc-line); padding-left: 8px; margin-left: 4px; }
+  .side { scrollbar-width: none; } .side::-webkit-scrollbar { display: none; height: 0; }  /* no light scrollbar line under the strip */
   .nav-h { display: inline-flex; align-items: center; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--cc-muted); padding: 0 2px; white-space: nowrap; }
   .nav button { min-height: 40px; padding: 8px 12px; }
   .top { gap: 8px; }

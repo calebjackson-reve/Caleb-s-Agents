@@ -479,5 +479,14 @@ class JudgeRound3(unittest.TestCase):
         self.assertEqual((card["to_close"], card["offer"]["expired"]), (None, True))
 
 
+    def test_news_leaves_out_obituaries_and_school_sports(self):
+        titles = ["Pat Fixture Obituary (2026) - Zachary, LA - Fake Funeral Home", "Tara vs West Feliciana - Boys Varsity Basketball 01/25/2027",
+                  "University Lab Girls Varsity Volleyball @ West Feliciana", "Collegiate Academy vs West Feliciana Football - Nov 6, 2026",
+                  "Zachary High School (LA) Basketball", "Where Baton Rouge's short-term rental market currently stands",
+                  "Mortgage rates fall for third straight week", "Incumbents fall in Zachary City Council races, but hold on to School Board"]
+        kept = [r["title"] for r in cc.news_rows([{"title": t} for t in titles])]
+        self.assertEqual(kept, titles[5:])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

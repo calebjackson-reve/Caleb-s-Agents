@@ -131,8 +131,8 @@
   function page(title, sub, body, sources, tools) {
     const ok = (typeof S !== "undefined" && S.data) && S.data.feed_ok;
     const inner = ok || !sources.includes('crm') ? body : C.empty('The CRM feed did not load, so this list would be a guess. Nothing is shown. Sources has the detail.');
-    // The source and as-of time sit at the top of the list as well as under it, so a long list still says where it came from.
-    return `<div class="cc-page">${C.head(title, sub)}<section class="cc-card"><p class="cc-srcline">${C.src(sources)}</p>${tools ? `<div class="cc-tools">${tools}</div>` : ''}${inner}<footer>${C.src(sources)}</footer></section></div>`;
+    // The source and as-of time sit once, at the top of the list, so a long list says where it came from before it starts.
+    return `<div class="cc-page">${C.head(title, sub)}<section class="cc-card"><p class="cc-srcline">${C.src(sources)}</p>${tools ? `<div class="cc-tools">${tools}</div>` : ''}${inner}</section></div>`;
   }
   // The three people counts, said once in words: contacts in the CRM, those with text history, those placed on the map.
   C.peopleLine = function () {

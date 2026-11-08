@@ -667,6 +667,17 @@ def deltas(rows: list[dict], row: dict, metric: str) -> dict:
 
 # ---------------- The whole payload ----------------
 
+# Headlines that are not real estate news: obituaries and school sports (Google News matches the town names).
+NEWS_SKIP = re.compile(r"\bobituar|\bobit\b|funeral|passed away|celebration of life|in memoriam|\bvarsity\b|\bjv\b|high school (?:\(\w+\) )?"
+                       r"(?:football|basketball|baseball|softball|volleyball|soccer|track|wrestling)|\b(?:football|basketball|baseball|"
+                       r"softball|volleyball|soccer)\b.*\b(?:vs\.?|@|game|score|playoffs?)\b|\b(?:vs\.?|@)\b.*\b(?:football|basketball|"
+                       r"baseball|softball|volleyball|soccer)\b|\blhsaa\b|\bprep\b|maxpreps|high school \(\w+\) (?:basketball|football)", re.I)
+
+
+def news_rows(rows: list[dict]) -> list[dict]:
+    return [r for r in rows if not NEWS_SKIP.search(str(r.get("title") or ""))]
+
+
 def _rows(d):
     return (d or {}).get("rows") or []
 
@@ -710,7 +721,7 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         "since": {m: since_saved(hist, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
         "kw_paid": cfg.get("kw_paid"),
         "bank": bank(_rows(raw["bank_mail"])),
-        "news": _rows(raw["news"]),
+        "news": news_rows(_rows(raw["news"])),
         "market": market((raw.get("market") or {}).get("rows") or {}),
         "life": life((raw.get("life") or {}).get("rows") or {}, _rows(raw["outbox"]), today),
         "workouts": workouts((raw.get("workouts") or {}).get("rows") or {}, _rows(raw["outbox"]), today),

@@ -63,9 +63,10 @@ const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); retur
     const g = guard(); if (g) return g;
     const all = C.data.news || [], kinds = [...new Set(all.map(r => r.kind))];
     const rows = all.filter(r => C.news.kind === 'all' || r.kind === C.news.kind);
-    return `<div class="cc-page">${head('News', 'Local real estate, the Louisiana market and mortgage rates, last 7 days')}
+    return `<div class="cc-page">${head('News', 'Local real estate, the Louisiana market and mortgage rates, last 7 days. Obituaries and school sports are left out.')}
+      <p class="cc-srcline">${C.src('news')}</p>
       <div class="cc-filters" role="group" aria-label="Show news by kind"><button type="button" class="cc-filter" aria-pressed="${C.news.kind === 'all'}" onclick="CC.newsKind('all')">All <b>${all.length}</b></button>${kinds.map(k => `<button type="button" class="cc-filter ${(NEWS[k] || [, 'k-other'])[1]}" aria-pressed="${C.news.kind === k}" onclick="CC.newsKind('${esc(k)}')">${(NEWS[k] || ['Other'])[0]} <b>${all.filter(r => r.kind === k).length}</b></button>`).join('')}</div>
-      ${card('Headlines', newsList(rows, 40), 'news')}<p class="cc-note">Headlines and links from Google News searches. Each opens the outlet's own page.</p></div>`;
+      ${card('Headlines', newsList(rows, 40), []).replace('<footer></footer>', '')}<p class="cc-note">Headlines and links from Google News searches. Each opens the outlet's own page.</p></div>`;
   }
   C.newsKind = k => { C.news.kind = k; render(); };
 
