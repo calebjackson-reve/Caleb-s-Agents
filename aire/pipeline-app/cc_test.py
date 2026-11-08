@@ -341,5 +341,26 @@ class JudgeRound1(unittest.TestCase):
             self.assertEqual(next(c for c in p["deals"] if c["deal"] == "100 Oak Ln")["differs"], [])
 
 
+
+class JudgeRound2(unittest.TestCase):
+    """Fixes from the blind judge, round 2. Made-up deals and people."""
+    COORD = ["example.com"]
+
+    def test_deal_key_finds_the_address_after_a_label(self):
+        # item 5: a coordinator event titled "Act of Sale · <address>" keyed as "act of" and was counted twice
+        self.assertEqual(cc.deal_key("Act of Sale · 2179 South Fake"), "2179 fake")
+        self.assertEqual(cc.deal_key("Inspection 11/20 - 14150 Pretend Ln"), "14150 pretend")
+        self.assertEqual(cc.deal_key("42553 Hwy 42"), "42553 hwy")
+        self.assertEqual(cc.deal_key("Commission for 41st"), "commission for")
+
+    def test_deadline_titled_label_first_merges_with_the_sheet(self):
+        evs = cc.cal_events([ev("100 Oak Ln - Act of sale", "2026-11-20"), ev("Act of Sale · 100 Oak Lane", "2026-11-20")], self.COORD)
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(SHEET), T), [])
+        dl = cc.contract_deadlines(cc.deal_deadlines(evs), cards)
+        on_day = [r for r in dl if r["day"] == "2026-11-20"]
+        self.assertEqual([(r["deal"], r["what"], r["from"]) for r in on_day], [("100 Oak Ln", "Act of sale", "both")])
+        self.assertEqual(len([c for c in cc.closings(dl, cards, T) if c["day"] == "2026-11-20"]), 1)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

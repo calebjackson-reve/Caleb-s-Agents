@@ -279,12 +279,17 @@ DIRECTIONS = {"n", "s", "e", "w", "north", "south", "east", "west"}
 
 
 def deal_key(t) -> str:
-    """'2179 South Turnberry Avenue, Zachary' and '2179 S Turnberry Ave' are both '2179 turnberry'."""
+    """'2179 South Turnberry Avenue, Zachary', '2179 S Turnberry Ave' and 'Act of Sale · 2179 South Turnberry' are all
+    '2179 turnberry': the first house number followed by a street word, directions dropped. A date like 11/23 is not a
+    house number because a number follows it. The screen's CC.dealKey is the same rule."""
     words = re.findall(r"[a-z0-9]+", str(t or "").lower())
-    if not words or not words[0].isdigit():
-        return " ".join(words[:2])
-    rest = [w for w in words[1:] if w not in DIRECTIONS]
-    return f"{words[0]} {rest[0]}" if rest else words[0]
+    for i, w in enumerate(words):
+        if not w.isdigit():
+            continue
+        rest = [x for x in words[i + 1:] if x not in DIRECTIONS]
+        if rest and re.search(r"[a-z]", rest[0]):
+            return f"{w} {rest[0]}"
+    return " ".join(words[:2])
 
 
 CRM_STAGE = {"under_contract": "contract", "closed": "closed", "lost": "out", "active": "appointment",
