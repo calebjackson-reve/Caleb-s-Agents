@@ -166,7 +166,7 @@ function renderNav(c) {
   const dr = S.data ? drafts() : [];
   const cd = window.CC && CC.data, np = cd ? cd.commission_mail.filter(r => r.status === 'Not processed').length : 0;
   const td = feed().touches_due || [];
-  const cnt = { commission: [np, np > 0], deadlines: [cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0], ccleads: [cd ? cd.leads.length : 0, false],
+  const cnt = { commission: [np, np > 0], deadlines: [cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0], ccleads: [cd ? (cd.lead_counts || {}).d14 ?? cd.leads.length : 0, false],
     sources: [window.CC && CC.failing ? CC.failing().length + ((cd && cd.problems) || []).filter(p => p.state === 'stale').length : 0, true],
     touches: [td.length, td.some(r => r.owes_reply)], tasks: [(feed().tasks || []).length, c.tasks_overdue > 0], deals: [cd ? cd.deals.filter(r => !['closed', 'out'].includes(r.stage)).length : 0, false],
     queue: [dr.length, false], sent: [(S.data.sent_today || []).length, false] };

@@ -165,6 +165,15 @@ check(/onclick="CC\.addLead\(\)"/.test(render('dash', true)) && /onclick="CC\.ad
   check(!/f\.deals\b|feed\(\)\.deals|deals_live|f\.new_leads \|\| \[\]\)\.length|const l = f\.new_leads/.test(voicejs), 'voice answers about deals and leads read the Deals sheet and the one lead list');
 }
 
+// Round 2, item 4: one new-lead rule. The Dashboard, Scorecard, Leads and the nav all show lead_counts.
+{
+  const lc = ccdata.lead_counts, d = render('dash', true), sc = render('scorecard', true), lp = render('ccleads', true);
+  check(lc && new RegExp(`New leads, 14 days</span><b class="cc-num">${lc.d14}<`).test(d) && d.includes(`${lc.d7} in the last 7 days`), 'Dashboard shows the 14 and 7 day lead counts', JSON.stringify(lc));
+  check(new RegExp(`Leads per week</h2><b class="cc-num">${lc.d7}<`).test(sc), 'Scorecard leads per week is the 7 day count');
+  check(new RegExp(`Leads <span class="cc-count">${lc.d14}<`).test(lp) && lp.includes(`${lc.d7} came in the last 7 days`), 'Leads page shows the same 14 and 7 day counts');
+  check(run('CC.leadsIn(14).length') === lc.d14 && run('CC.leadsIn(7).length') === lc.d7, 'the screen windows leads the same way the server does');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

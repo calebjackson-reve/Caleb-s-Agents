@@ -114,7 +114,7 @@
   function ccleads() {
     const g = guard(); if (g) return g;
     const rows = leadRows();
-    return `<div class="cc-page">${head('Leads', 'Every new lead from the last 14 days, newest first: website lead emails and new CRM contacts, once each.')}
+    return `<div class="cc-page">${head('Leads', `Every new lead from the last 14 days counting today, newest first: website lead emails and new CRM contacts, once each, test leads left out. ${n((d0 => d0.lead_counts ? d0.lead_counts.d7 : 0)(C.data))} came in the last 7 days.`)}
       <div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button></div>
       ${card(`Leads <span class="cc-count">${rows.length}</span>`, rows.length ? `<ul class="cc-leads">${rows.map(leadCard).join('')}</ul>`
         : empty('No new leads in the last 14 days.'), ['leads', 'crm'])}</div>`;

@@ -2,7 +2,7 @@
 import json
 import tempfile
 import unittest
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import cc
@@ -360,6 +360,26 @@ class JudgeRound2(unittest.TestCase):
         on_day = [r for r in dl if r["day"] == "2026-11-20"]
         self.assertEqual([(r["deal"], r["what"], r["from"]) for r in on_day], [("100 Oak Ln", "Act of sale", "both")])
         self.assertEqual(len([c for c in cc.closings(dl, cards, T) if c["day"] == "2026-11-20"]), 1)
+
+
+    def test_one_new_lead_rule_rolling_7_and_14_days_no_test_leads(self):
+        # item 4: one rule for the Dashboard, Scorecard, Leads, the nav and the brief
+        day = lambda n: (T - timedelta(days=n)).isoformat()
+        email = [{"name": "Pat Fixture", "received": day(0) + "T08:00:00-06:00", "threadId": "a"},
+                 {"name": "Jo Fixture", "received": day(6) + "T08:00:00-06:00", "threadId": "b"},
+                 {"name": "Lee Fixture", "received": day(7) + "T08:00:00-06:00", "threadId": "c"},
+                 {"name": "Old Fixture", "received": day(14) + "T08:00:00-06:00", "threadId": "d"},
+                 {"name": "Form Test", "received": day(1), "threadId": "e", "test": False}]
+        crm = [{"person_id": "71", "display": "Kim Fixture", "received": day(13)},
+               {"person_id": "72", "display": "Test Lead", "received": day(2)},
+               {"person_id": "73", "display": "No Date Fixture"}]
+        leads = cc.merge_leads(email, crm, set(), NOW)
+        names = {r["name"] for r in leads}
+        self.assertEqual(names, {"Pat Fixture", "Jo Fixture", "Lee Fixture", "Kim Fixture", "No Date Fixture"})
+        lc = cc.lead_counts(leads, T)
+        self.assertEqual((lc["d14"], lc["d7"], lc["undated"]), (5, 2, 1))
+        sc = cc.scorecard([], [], leads, {}, None, T)
+        self.assertEqual(sc["leads7"]["value"], lc["d7"])
 
 
 if __name__ == "__main__":

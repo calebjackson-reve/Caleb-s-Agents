@@ -86,7 +86,7 @@
     const g = guard(); if (g) return g;
     const d = C.data, sc = d.scorecard, wk = d.week[0] || {}, np = d.commission_mail.filter(r => r.status === 'Not processed').length;
     const uc = d.stages.find(r => r.stage === 'contract') || {};
-    const leads = d.leads.length, leads7 = sc.leads7.value;
+    const lc = d.lead_counts || { d14: d.leads.length, d7: sc.leads7.value }, leads = lc.d14, leads7 = lc.d7;
     const today = d.calendar.filter(r => r.day === d.today && r.kind !== 'block' && !r.invite);
     const ff = ((typeof S !== "undefined" && S.data) && S.data.feed) || {}, td = ff.touches_due || [], tk = ff.tasks || [];
     const owes = td.filter(r => r.owes_reply).length, over = tk.filter(t => t.overdue).length, dr = typeof drafts === 'function' && S.data ? drafts().length : 0;
@@ -146,7 +146,8 @@
   C.sheetDeal = t => { const k = C.dealKey(t); return ((C.data && C.data.deals) || []).find(r => (r.key || C.dealKey(r.deal)) === k) || null; };
   C.openDeals = () => ((C.data && C.data.deals) || []).filter(r => !['closed', 'out'].includes(r.stage));
   // The one lead list (cc.merge_leads, test leads already out), within the last n days counting today.
-  C.leadsIn = days => { const d = C.data; if (!d) return []; const since = addDays(d.today, 1 - days); return d.leads.filter(r => !r.received || String(r.received).slice(0, 10) >= since); };
+  // Same rule as cc.in_lead_window: a lead with no date is in the 14 days, never in the 7.
+  C.leadsIn = days => { const d = C.data; if (!d) return []; const since = addDays(d.today, 1 - days); return d.leads.filter(r => { const k = String(r.received || '').slice(0, 10); return /^\d{4}-\d{2}-\d{2}$/.test(k) ? k >= since : days >= 14; }); };
 
   C.views = { dash };
   Object.assign(C, { greet, addDaysK: addDays, m, mk, contact, day, time, n, src, card, tile, empty, head, guard, evRow, inboxRow, deadlineList, addDays, KIND, senderName, esc: s => esc(s) });

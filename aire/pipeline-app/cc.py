@@ -404,19 +404,46 @@ def lead_due(received, replied, now: datetime) -> dict:
     return {"label": f"{age // 1440} day{'s' if age >= 2880 else ''} with no reply", "level": "late", "age_min": age}
 
 
+LEAD_DAYS = 14  # the one new-lead window: the last 14 days counting today. The weekly number is the last 7 (lead_counts).
+
+
+def is_test_lead(*texts) -> bool:
+    """A lead whose name, email or subject says test (a form check, not a person). Left out of every count."""
+    return bool(re.search(r"\btest\b", " ".join(str(t or "") for t in texts), re.I))
+
+
+def lead_day(r: dict) -> str:
+    d = str(r.get("received") or "")[:10]
+    return d if is_day(d) else ""
+
+
+def in_lead_window(r: dict, today: date, days: int = LEAD_DAYS) -> bool:
+    """Received on or after today minus days-1. A lead with no date is kept in the 14 days, because both sources only
+    return 14 days of leads, and is never in the 7."""
+    d = lead_day(r)
+    return (not d and days >= LEAD_DAYS) or (bool(d) and d >= (today - timedelta(days=days - 1)).isoformat())
+
+
+def lead_counts(leads: list[dict], today: date) -> dict:
+    """The numbers every screen shows for new leads: the Dashboard, Scorecard, Leads, the nav and the brief."""
+    return {"d14": sum(1 for r in leads if in_lead_window(r, today, 14)), "d7": sum(1 for r in leads if in_lead_window(r, today, 7)),
+            "undated": sum(1 for r in leads if not lead_day(r)), "days": LEAD_DAYS}
+
+
 def merge_leads(leads: list[dict], crm_new: list[dict], replied_ids: set, now: datetime) -> list[dict]:
-    """Website lead emails plus CRM contacts in Stage new lead, one row per person. An email lead already matched to a
-    CRM person (attach_crm) is that person's row. Test leads stay out. Newest first."""
+    """Website lead emails plus CRM contacts in Stage new lead, one row per person, within the last 14 days (LEAD_DAYS).
+    An email lead already matched to a CRM person (attach_crm) is that person's row. Test leads stay out, from either
+    source. Newest first."""
     out, seen = [], set()
     for r in leads:
-        if r.get("test"):
+        if r.get("test") or is_test_lead(r.get("name"), r.get("email"), r.get("subject")):
             continue
         pid = (r.get("crm") or {}).get("person_id")
         if pid:
             seen.add(pid)
         out.append({**r, "origin": "email"})
     for p in crm_new or []:
-        if p.get("person_id") in seen:
+        if p.get("person_id") in seen or is_test_lead(p.get("display"), p.get("email")):
             continue
         keep = ("person_id", "display", "band", "stage", "type", "last_touch", "days_quiet", "next_action", "owes_reply")
         out.append({"name": p.get("display") or "", "phone": p.get("phone") or "", "email": p.get("email") or "",
@@ -427,6 +454,7 @@ def merge_leads(leads: list[dict], crm_new: list[dict], replied_ids: set, now: d
         pid, lt, day = c.get("person_id"), str(c.get("last_touch") or "")[:10], str(r.get("received") or "")[:10]
         touched = is_day(lt) and is_day(day) and lt >= day  # a touch logged in the CRM on or after the lead's day
         r["due"] = lead_due(r.get("received"), (pid in replied_ids if pid else False) or touched, now)
+    out = [r for r in out if in_lead_window(r, now.date())]
     return sorted(out, key=lambda r: str(r.get("received") or ""), reverse=True)
 
 
@@ -490,10 +518,9 @@ def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
     yr_closed = [r for r in closed if is_day(r.get("act")) and r["act"][:4] == yr]
     sheet_gci = sum(r["commission"] or 0 for r in yr_closed)
     real = [r for r in leads if not r.get("test")]
+    lc = lead_counts(real, today)
     end7 = (today + timedelta(days=6)).isoformat()
     appts = [r for r in evs if r["kind"] in ("showing", "listing", "client") and today.isoformat() <= r["day"] <= end7]
-    since7 = (today - timedelta(days=6)).isoformat()
-    leads7 = [r for r in real if (r.get("received") or "")[:10] >= since7]
     paid = kw_paid.get("value") if kw_paid and kw_paid.get("value") is not None else None
     gci = {"value": paid if paid is not None else sheet_gci,
            "from": "kw_paid" if paid is not None else "sheet",
@@ -523,8 +550,7 @@ def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
             "pending": pend,
             "closings": {"value": len(yr_closed), "goal": prog(len(yr_closed), g.get("closings_high") or g.get("closings_low")),
                          "low": g.get("closings_low"), "high": g.get("closings_high")},
-            "leads7": {"value": len(leads7), "low": g.get("leads_low"), "high": g.get("leads_high"),
-                       "undated": sum(1 for r in real if not r.get("received"))},
+            "leads7": {"value": lc["d7"], "low": g.get("leads_low"), "high": g.get("leads_high"), "undated": lc["undated"]},
             "appts7": {"value": len(appts), "goal": g.get("appts")},
             "cap": cap,
             "response": {"value": None, "note": "Not tracked yet: needs the time of the first reply to each lead."}}
@@ -584,7 +610,7 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
                       "deals": len({r["key"] for r in in_days(dl, today, 30)})},
         "closings": closings(dl, cards, today),
         "inbox": inbox_sorted(_rows(raw["inbox"]), [r for r in leads if r.get("origin") == "email"], coord),
-        "leads": leads, "commission_mail": commission_mail(_rows(raw["commission_mail"])),
+        "leads": leads, "lead_counts": lead_counts(leads, today), "commission_mail": commission_mail(_rows(raw["commission_mail"])),
         "scorecard": sc, "goals": goals, "goals_set": bool(goals),
         "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
         "kw_paid": cfg.get("kw_paid"),
