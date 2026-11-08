@@ -392,6 +392,15 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   run('CC.data = __cc');
 }
 
+// Round 3, item 4: reply-first rows (no template) are not drafts ready.
+{
+  const ready = run('readyDrafts().length'), all = run('drafts().length'), rep = all - ready;
+  const dsh = render('dash', true), q = render('queue', true);
+  check(rep > 0 && new RegExp(`Drafts ready</span><b class="cc-num">${ready}<`).test(dsh), 'the Dashboard counts written drafts only, not reply-first rows', `ready ${ready}, all ${all}`);
+  check(q.includes(`Ready to send <span class="cc-count">${ready}<`) && q.includes(`Replies to write <span class="cc-count">${rep}<`) && /They are not counted as drafts ready/.test(q), 'Drafts splits ready drafts from replies to write');
+  check(/const dr = S\.data \? readyDrafts\(\) : \[\]/.test(appjs) && /\$\{ready\} ready/.test(appjs), 'the nav and the compose button count ready drafts only');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

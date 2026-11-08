@@ -50,6 +50,8 @@ const hid = () => !!(window.CC && CC.priv);
 const nm = v => (hid() ? 'this person' : v);
 const maskAttr = () => (hid() ? ' class="cc-masked" autocomplete="off"' : '');
 function owesReply() { return (feed().touches_due || []).filter(r => r.owes_reply); }
+// Drafts ready: written texts and emails only. Reply-first rows have no template, so they are never counted as ready.
+function readyDrafts() { return drafts().filter(d => !d.reply); }
 function personRow(id) { return (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person')).find(r => r.person_id === id); }
 // ---- texting from a card: one button opens the text, SEND sends it, then the card shows what happened
 const firstName = n => (String(n || '').trim().split(/\s+/)[0] || '');
@@ -120,7 +122,8 @@ function render() {
   document.querySelectorAll('.wave.small').forEach(w => { if (!w.children.length) w.innerHTML = Array.from({ length: 9 }, (_, i) => `<i style="--d:${(i * 97) % 700}"></i>`).join(''); });
   // bottom
   const items = drafts(), replies = items.filter(i => i.reply).length;
-  $('#compose-next').textContent = !items.length ? 'No drafts waiting' : `Next draft · ${items.length}`;
+  const ready = items.length - replies;
+  $('#compose-next').textContent = !items.length ? 'No drafts waiting' : ready ? `Next draft · ${ready} ready` : `${replies} replies to write`;
   const cmd = d.command || {};
   const age = d.feed_age_minutes;
   $('#foot-chips').innerHTML = [
@@ -169,7 +172,7 @@ const NAV = [
 ];
 const KEYS = ['dash', 'touches', 'tasks', 'queue', 'ccleads', 'deals', 'commission', 'deadlines', 'calendar', 'map'];
 function renderNav(c) {
-  const dr = S.data ? drafts() : [];
+  const dr = S.data ? readyDrafts() : [];
   const cd = window.CC && CC.data, np = cd ? cd.commission_mail.filter(r => r.status === 'Not processed' || r.status === 'No closed deal').length : 0;
   const td = feed().touches_due || [];
   const cnt = { commission: [np, np > 0], deadlines: [cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0], ccleads: [cd ? (cd.lead_counts || {}).d14 ?? cd.leads.length : 0, false],
@@ -322,7 +325,7 @@ async function openDeal(address = '') {
 function openBrief() {
   // The same lists the pages use: replies owed from Touches due, deals from the AIRE Deals sheet, leads from the one lead
   // list. Names, messages and dollars hide with the privacy switch like every page.
-  const f = feed(), C = window.CC, cd = C && C.data, owes = owesReply(), over = (f.tasks || []).filter(t => t.overdue), dr = drafts();
+  const f = feed(), C = window.CC, cd = C && C.data, owes = owesReply(), over = (f.tasks || []).filter(t => t.overdue), dr = readyDrafts();
   const who = v => (C ? C.who(v) : esc(v)), scrub = (t, n) => (C ? C.scrub(t, n) : esc(t));
   const deals = cd ? cd.deals.filter(x => !['closed', 'out'].includes(x.stage)) : [], leads = cd ? cd.leads : [];
   modal('Morning brief', `<div class="brief">

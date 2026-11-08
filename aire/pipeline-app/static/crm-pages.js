@@ -201,20 +201,24 @@
   }
 
   // ---------------- Drafts and Sent today
+  // Drafts: written texts and emails ready to send, then the replies to write yourself (they texted last, so there is no
+  // template). Only the first list counts as drafts ready, on every screen.
   function queue() {
-    const items = drafts().filter(d => matches(`${d.name} ${d.body} ${d.subject}`));
-    const caps = S.data.caps;
-    const body = items.length ? `<ul class="cc-rows">${items.map((d, i) => `<li class="cc-row ${d.reply ? 'is-hot' : ''}"><span class="cc-av" aria-hidden="true">${d.kind === 'text' ? '▭' : '✉'}</span>
+    const all = drafts(), caps = S.data.caps;
+    const row = d => { const i = all.indexOf(d); return `<li class="cc-row ${d.reply ? 'is-hot' : ''}"><span class="cc-av" aria-hidden="true">${d.kind === 'text' ? '▭' : '✉'}</span>
       <div class="cc-row-main"><h3>${C.who(d.name)}</h3>
-        <div class="cc-pills">${d.reply ? '<span class="cc-pill k-closing">Reply first</span>' : `<span class="cc-pill k-other">${esc(d.kind === 'text' ? 'Text' : 'Email')}${d.pool ? ' · ' + esc(d.pool) : ''}</span>`}</div>
-        <p class="cc-row-why">${d.reply ? 'No template. Read what they said and answer.' : C.priv ? C.msg('') : esc(d.subject || d.body.split('\n')[0])}</p>
+        <div class="cc-pills">${d.reply ? '<span class="cc-pill k-closing">Reply to write</span>' : `<span class="cc-pill k-other">${esc(d.kind === 'text' ? 'Text' : 'Email')}${d.pool ? ' · ' + esc(d.pool) : ''}</span>`}</div>
+        <p class="cc-row-why">${d.reply ? 'They texted last. Read what they said and answer in your own words.' : C.priv ? C.msg('') : esc(d.subject || d.body.split('\n')[0])}</p>
         <p class="cc-note">${d.reply ? (C.priv ? C.msg('') : '“' + esc(C.cleanMsg(d.last_messages.slice(-1)[0])) + '”') : C.priv ? '' : esc(d.body.slice(0, 140))}${d.to ? ' · to ' + (d.kind === 'text' ? C.ph(d.to) : C.em(d.to)) : ''}</p></div>
-      <div class="cc-acts"><button type="button" class="cc-primary" onclick="openCompose('${esc(d.person_id)}', ${i})">Open</button></div></li>`).join('')}</ul>`
-      : S.q ? C.noMatch() : C.empty('No drafts waiting. New ones come with the next feed refresh.');
-    // One owe-a-reply number: Touches due's. Reply drafts cover the ones with a usable first name; the rest are named here.
-    const owe = owesReply().length, rf = drafts().filter(d => d.reply).length;
-    const why = owe ? ` ${owe} owe a reply (the same number as Touches due). ${rf === owe ? 'Each has a reply draft.' : `${rf} have a reply draft. The other ${owe - rf} have no first name on file or were already answered today, so they are on Touches due only.`}` : '';
-    return page('Drafts', `Texts and emails ready to read and send. ${caps.sent_texts} of ${caps.texts} texts and ${caps.sent_emails} of ${caps.emails} emails sent today.${why}`, body, ['drafts', 'crm']);
+      <div class="cc-acts"><button type="button" class="cc-primary" onclick="openCompose('${esc(d.person_id)}', ${i})">${d.reply ? 'Write a reply' : 'Open'}</button></div></li>`; };
+    const shown = all.filter(d => matches(`${d.name} ${d.body} ${d.subject}`)), ready = shown.filter(d => !d.reply), reply = shown.filter(d => d.reply);
+    const body = !shown.length ? (S.q ? C.noMatch() : C.empty('No drafts waiting. New ones come with the next feed refresh.'))
+      : `<h3 class="cc-sub-h">Ready to send <span class="cc-count">${ready.length}</span></h3>${ready.length ? `<ul class="cc-rows">${ready.map(row).join('')}</ul>` : C.empty('No written drafts right now.')}
+        ${reply.length ? `<h3 class="cc-sub-h">Replies to write <span class="cc-count">${reply.length}</span></h3><p class="cc-note">Not drafts: these people texted last, so there is no template. They are not counted as drafts ready.</p><ul class="cc-rows">${reply.map(row).join('')}</ul>` : ''}`;
+    // One owe-a-reply number: Touches due's. Replies to write cover the ones with a usable first name; the rest are named here.
+    const owe = owesReply().length, rf = all.filter(d => d.reply).length;
+    const why = owe ? ` ${owe} owe a reply (the same number as Touches due). ${rf === owe ? 'Each is under Replies to write.' : `${rf} are under Replies to write. The other ${owe - rf} have no first name on file or were already answered today, so they are on Touches due only.`}` : '';
+    return page('Drafts', `${readyDrafts().length} written texts and emails ready to read and send. ${caps.sent_texts} of ${caps.texts} texts and ${caps.sent_emails} of ${caps.emails} emails sent today.${why}`, body, ['drafts', 'crm']);
   }
   function sent() {
     const rows = (S.data.sent_today || []).slice().reverse();

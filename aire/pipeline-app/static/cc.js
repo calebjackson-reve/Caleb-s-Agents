@@ -89,7 +89,7 @@
     const lc = d.lead_counts || { d14: d.leads.length, d7: sc.leads7.value }, leads = lc.d14, leads7 = lc.d7;
     const today = d.calendar.filter(r => r.day === d.today && r.kind !== 'block' && !r.invite);
     const ff = ((typeof S !== "undefined" && S.data) && S.data.feed) || {}, td = ff.touches_due || [], tk = ff.tasks || [];
-    const owes = typeof owesReply === 'function' ? owesReply().length : td.filter(r => r.owes_reply).length, over = tk.filter(t => t.overdue).length, dr = typeof drafts === 'function' && S.data ? drafts().length : 0;
+    const owes = typeof owesReply === 'function' ? owesReply().length : td.filter(r => r.owes_reply).length, over = tk.filter(t => t.overdue).length, dr = typeof readyDrafts === 'function' && S.data ? readyDrafts().length : 0;
     const gp = sc.gci.goal;
     return `<div class="cc-page">${head('Good ' + greet() + ', Caleb', 'Keller Williams First Choice · No paid leads, just service')}
       <div class="cc-acts cc-quick"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button><button type="button" onclick="go('touches')">Log a touch</button><button type="button" onclick="openTask('')">＋ Add a task</button></div>
@@ -101,7 +101,7 @@
         ${tile('Under contract', n(uc.n), `${mk(uc.volume)} volume on the Deals sheet`, 'deals', 'deals')}
         ${tile('Touches due', n(td.length), owes ? `${owes} owe a reply` : 'Nobody owes a reply', 'crm', 'touches')}
         ${S.data && S.data.feed_ok ? tile('Tasks open', n(tk.length), over ? `<em>${over} overdue</em>` : 'None overdue', 'crm', 'tasks') : tile('Tasks open', '—', "<em>Tasks didn't load</em>", 'crm', 'sources')}
-        ${tile('Drafts ready', n(dr), 'Texts and emails to read and send', 'drafts', 'queue')}
+        ${tile('Drafts ready', n(dr), `Written texts and emails to read and send${owes ? ` · ${owes} replies to write are not counted` : ''}`, 'drafts', 'queue')}
         ${tile('Appointments, 7 days', n(sc.appts7.value), sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Showings, listing appts, clients', 'calendar', 'calendar')}
         ${tile('Booked today', n(wk.hours) + '<small>h</small>', `${n(wk.events)} timed events. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}
         ${tile('Commission to check', n(np), np ? 'Not processed at KW, or paid with no closed deal on the sheet' : 'Nothing waiting at KW', ['commission_mail', 'deals'], 'commission')}

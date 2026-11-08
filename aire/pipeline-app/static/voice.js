@@ -159,7 +159,7 @@ const Voice = (() => {
       const parts = [`Good ${hourWord()}, Caleb.`];
       parts.push(owes.length ? `${plural(owes.length, 'person owes', 'people owe')} a reply. Start with ${names(owes)}.` : 'Nobody is waiting on a reply.');
       parts.push(over.length ? `${plural(over.length, 'task is', 'tasks are')} overdue, starting with ${over[0].task}.` : 'Nothing is overdue.');
-      parts.push(`${plural(leads14().length, 'new lead')} in the last two weeks, ${plural(sheetDeals().length, 'open deal')} on the Deals sheet, ${plural(drafts().length, 'draft')} ready.`);
+      parts.push(`${plural(leads14().length, 'new lead')} in the last two weeks, ${plural(sheetDeals().length, 'open deal')} on the Deals sheet, ${plural(readyDrafts().length, 'draft')} ready.`);
       parts.push(owes.length ? 'Say compose to start with the first reply.' : 'Say compose to start on the drafts.');
       return say(parts.join(' '));
     }
