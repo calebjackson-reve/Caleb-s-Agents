@@ -511,6 +511,8 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
   check(!/gradient\(/.test(css2), 'no gradient in the page styles, lead cards included');
 }
 
+// Round 3: the cache name moves on again so browsers drop the round 2 shell.
+check(/pipeline-shell-v3-judge4/.test(fs.readFileSync(path.join(dir, 'sw.js'), 'utf8')), 'service worker cache is v3-judge4');
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');
