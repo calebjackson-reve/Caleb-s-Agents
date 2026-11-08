@@ -10,7 +10,7 @@ window.PMap = (function () {
     sat: { url: (z, x, y) => `https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/${z}/${y}/${x}`, max: 16, attr: 'Imagery: USGS The National Map' },
   };
   const BAND = { hot: '#ff5c7a', warm: '#ffb547', lukewarm: '#c8b596', cold: '#4f9dff', 'ice-cold': '#bdb4a9', '': '#5d6b7c' };
-  const STAGE = { lead: '#bdb4a9', consult: '#4f9dff', active: '#c8b596', showing: '#e87757', under_contract: '#d9a98c' };
+  const STAGE = { lead: '#bdb4a9', consult: '#a8997f', active: '#c8b596', showing: '#e87757', under_contract: '#d9a98c' };
   const MARKET = { permit: '#ffb547', new_listing: '#c8b596', price_change: '#e87757', back_on_market: '#e87757', pending: '#d9a98c', sold: '#ff5c7a', listing_change: '#bdb4a9' };
   const CLUSTER_PAST = 200, CELL = 54;
 

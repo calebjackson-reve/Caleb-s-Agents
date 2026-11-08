@@ -139,6 +139,32 @@ check(/onclick="CC\.addLead\(\)"/.test(render('dash', true)) && /onclick="CC\.ad
   check(JSON.stringify(ids) === JSON.stringify(['m-lname', 'm-lphone', 'm-lemail', 'm-lsrc']) && /Do Not Contact/.test(form), 'the lead form is name, phone, email and source, and says Do Not Contact is checked', ids.join(','));
 }
 
+// Round 2, item 3: one deal source. The map pins, the deal form and the voice read the AIRE Deals sheet.
+{
+  const cases = { 'Act of Sale · 2179 South Fake': '2179 fake', 'Inspection 11/20 - 14150 Pretend Ln': '14150 pretend', '42553 Hwy 42': '42553 hwy',
+    '2179 South Fake Avenue, Zachary, LA': '2179 fake', 'Commission for 41st': 'commission for' };  // the same cases as cc_test.JudgeRound2
+  const bad = Object.entries(cases).filter(([t, k]) => run(`CC.dealKey(${JSON.stringify(t)})`) !== k);
+  check(!bad.length, 'the screen keys a street the same way cc.deal_key does', bad.map(b => b[0]).join(' / '));
+  const sheet = ccdata.deals.find(r => r.stage === 'contract'), closed = ccdata.deals.find(r => r.stage === 'closed');
+  if (sheet) {
+    const pins = [{ kind: 'deal', key: 'd1', address: sheet.deal + ', Somewhere, LA', stage: 'active', lat: 30.4, lng: -91.1 }]
+      .concat(closed ? [{ kind: 'deal', key: 'd2', address: closed.deal, stage: 'under_contract', lat: 30.4, lng: -91.1 }] : []);
+    const crmDeals = [{ address: pins[0].address, stage: 'active', price: '1', expected_close: '2099-01-01' }];
+    run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { deals: ${JSON.stringify(crmDeals)}, map: Object.assign({}, __state.feed.map, { pins: ${JSON.stringify(pins)} }) }) }); S.mapF.deals = true;`);
+    const got = run('JSON.stringify(dealPins().map(p => [p.key, p.stage]))');
+    check(got === JSON.stringify([['d1', 'under_contract']]), 'a deal pin takes the sheet status and a closed sheet deal leaves the map', got);
+    const pc = run(`CC.priv = false; pinCard(dealPins()[0])`);
+    check(pc.includes(run(`esc(${JSON.stringify(sheet.status)})`)) && !pc.includes('>active<'), 'the deal pin card shows the sheet status and price');
+    run('var __dealForm = ""; modal = (t, h) => { __dealForm = h; return Promise.resolve(null); };');
+    run(`openDeal(${JSON.stringify(pins[0].address)})`);
+    const fm = run('__dealForm');
+    check(fm.includes(`id="m-price" value="${sheet.price}"`) && fm.includes(`value="${sheet.act}"`) && /Prefilled from the AIRE Deals sheet/.test(fm), 'the deal form is prefilled with the sheet price and act of sale');
+    run('S.data = __state; CC.priv = true;');
+  }
+  const voicejs = fs.readFileSync(path.join(dir, 'voice.js'), 'utf8');
+  check(!/f\.deals\b|feed\(\)\.deals|deals_live|f\.new_leads \|\| \[\]\)\.length|const l = f\.new_leads/.test(voicejs), 'voice answers about deals and leads read the Deals sheet and the one lead list');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

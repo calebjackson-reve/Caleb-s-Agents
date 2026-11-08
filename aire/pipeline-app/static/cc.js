@@ -129,6 +129,25 @@
   function dlKind(r) { const t = (r.what || '') + ' ' + (r.title || ''); return /act of sale|closing/i.test(t) ? 'closing' : /inspect/i.test(t) ? 'inspection' : /apprais|financ|loan|mortgage/i.test(t) ? 'finance' : 'deadline'; }
   function addDays(k, x) { const t = new Date(k + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + x); return t.toISOString().slice(0, 10); }
 
+  // ---------------- One deal source, one lead list ----------------
+  // A street key, the same rule as cc.deal_key: the first house number followed by a street word, directions dropped.
+  // '2179 South Turnberry Avenue', '2179 S Turnberry Ave' and 'Act of Sale · 2179 South Turnberry' are all '2179 turnberry'.
+  const DIRS = new Set(['n', 's', 'e', 'w', 'north', 'south', 'east', 'west']);
+  C.dealKey = t => {
+    const w = String(t || '').toLowerCase().match(/[a-z0-9]+/g) || [];
+    for (let i = 0; i < w.length; i++) {
+      if (!/^\d+$/.test(w[i])) continue;
+      const rest = w.slice(i + 1).filter(x => !DIRS.has(x));
+      if (rest.length && /[a-z]/.test(rest[0])) return w[i] + ' ' + rest[0];
+    }
+    return w.slice(0, 2).join(' ');
+  };
+  // The AIRE Deals sheet row for a street, or null. Every screen that names a deal's status, price or act of sale reads this.
+  C.sheetDeal = t => { const k = C.dealKey(t); return ((C.data && C.data.deals) || []).find(r => (r.key || C.dealKey(r.deal)) === k) || null; };
+  C.openDeals = () => ((C.data && C.data.deals) || []).filter(r => !['closed', 'out'].includes(r.stage));
+  // The one lead list (cc.merge_leads, test leads already out), within the last n days counting today.
+  C.leadsIn = days => { const d = C.data; if (!d) return []; const since = addDays(d.today, 1 - days); return d.leads.filter(r => !r.received || String(r.received).slice(0, 10) >= since); };
+
   C.views = { dash };
-  Object.assign(C, { greet, m, mk, contact, day, time, n, src, card, tile, empty, head, guard, evRow, inboxRow, deadlineList, addDays, KIND, senderName, esc: s => esc(s) });
+  Object.assign(C, { greet, addDaysK: addDays, m, mk, contact, day, time, n, src, card, tile, empty, head, guard, evRow, inboxRow, deadlineList, addDays, KIND, senderName, esc: s => esc(s) });
 })();

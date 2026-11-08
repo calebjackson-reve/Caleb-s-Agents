@@ -289,7 +289,12 @@ async function openDNC(person_id) {
   if (v) await act('/api/dnc', { person_id, reason: v }, { tag: 'DNC', text: `${r ? r.display : person_id} will not be contacted` });
 }
 async function openDeal(address = '') {
-  const x = (feed().deals || []).find(d => d.address === address) || {};
+  // The CRM Deals tab row being edited, prefilled with the Deals sheet's numbers: the sheet is the one deal source, so
+  // saving brings the CRM tab in line with it. Nothing is written until Save.
+  const crmRow = (feed().deals || []).find(d => d.address === address) || {};
+  const sh = window.CC && address ? CC.sheetDeal(address) : null;
+  const SHEET_STAGE = { contract: 'under_contract', closed: 'closed', out: 'lost', appointment: 'active' };
+  const x = sh ? { ...crmRow, price: sh.price != null ? String(sh.price) : crmRow.price, expected_close: sh.act || crmRow.expected_close, stage: SHEET_STAGE[sh.stage] || crmRow.stage } : crmRow;
   const stages = S.data.stages || [];
   const v = await modal(x.address ? `Edit ${esc(x.address)}` : 'Add a deal', `
     <div class="field"><label>STREET ADDRESS</label><input id="m-addr" value="${esc(x.address || '')}" ${x.address ? 'readonly' : ''} placeholder="2179 S Turnberry Ave"></div>
@@ -298,8 +303,9 @@ async function openDeal(address = '') {
     <div class="field"><label>PRICE</label><input id="m-price" value="${esc(x.price || '')}" placeholder="329000"></div>
     <div class="field"><label>EXPECTED CLOSE</label><input id="m-close" type="date" value="${esc(x.expected_close || '')}"></div>
     <div class="field"><label>NEXT STEP</label><input id="m-next" value="${esc(x.next_step || '')}" placeholder="Inspection Friday"></div>
-    <div class="field"><label>EVENT (optional, logs what just happened)</label><input id="m-event" placeholder="Offer accepted"></div>`,
-    m => ({ address: $('#m-addr', m).value.trim(), stage: $('#m-stage', m).value, price: $('#m-price', m).value.trim(), close: $('#m-close', m).value, next_step: $('#m-next', m).value.trim(), event: $('#m-event', m).value.trim(), expect: x.stage || '', create: !x.address, side: x.address ? '' : $('#m-side', m).value }), x.address ? 'Save deal' : 'Add deal');
+    <div class="field"><label>EVENT (optional, logs what just happened)</label><input id="m-event" placeholder="Offer accepted"></div>
+    ${sh ? '<p class="cc-note">Prefilled from the AIRE Deals sheet, the one deal source. Save writes these to the CRM Deals tab so the two agree.</p>' : ''}`,
+    m => ({ address: $('#m-addr', m).value.trim(), stage: $('#m-stage', m).value, price: $('#m-price', m).value.trim(), close: $('#m-close', m).value, next_step: $('#m-next', m).value.trim(), event: $('#m-event', m).value.trim(), expect: crmRow.stage || '', create: !x.address, side: x.address ? '' : $('#m-side', m).value }), x.address ? 'Save deal' : 'Add deal');
   if (v) await act('/api/deal', v, { tag: 'DEAL', text: `${v.address} · ${v.stage.replace('_', ' ')}` });
 }
 function openBrief() {

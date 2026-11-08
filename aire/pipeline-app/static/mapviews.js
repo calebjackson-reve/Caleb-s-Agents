@@ -28,7 +28,14 @@ function peoplePins() {
     && (!farm || PMap.inPolygon(p.lat, p.lng, farm.polygon))
     && matches(`${p.display} ${p.phone} ${p.email} ${p.address || ''} ${p.city || ''} ${p.next_action}`));
 }
-function dealPins() { return (mapFeed().pins || []).filter(p => p.kind === 'deal' && matches(`${p.address} ${p.display} ${p.stage}`)); }
+// Deal pins are placed from the CRM's geocoded Deals tab, but their status, price and act of sale are the Deals sheet's.
+const SHEET_TO_PIN = { contract: 'under_contract', closed: 'closed', out: 'lost', appointment: 'active', offer: 'showing', other: 'lead' };
+function dealPins() {
+  return (mapFeed().pins || []).filter(p => p.kind === 'deal' && matches(`${p.address} ${p.display} ${p.stage}`)).map(p => {
+    const s = CC.sheetDeal(p.address);
+    return s ? { ...p, sheet: s, stage: SHEET_TO_PIN[s.stage] || p.stage } : { ...p, sheet: null };
+  }).filter(p => !p.sheet || !['closed', 'out'].includes(p.sheet.stage));
+}
 function marketPins() { const farm = farmById(S.mapF.farm); return marketRows().filter(r => r.lat != null && (!farm || PMap.inPolygon(r.lat, r.lng, farm.polygon))); }
 function mapData(dealsOnly) {
   const f = S.mapF;
@@ -57,11 +64,11 @@ function mapTools() {
 }
 function viewMap() {
   const c = mapFeed().counts || {};
-  const right = `${(c.persons || 0).toLocaleString()} people and ${c.deals || 0} deals placed${c.ungeocoded_contacts ? `, ${c.ungeocoded_contacts.toLocaleString()} addresses not placed yet` : ''}`;
+  const right = `${(c.persons || 0).toLocaleString()} people and ${dealPins().length} open deals placed${c.ungeocoded_contacts ? `, ${c.ungeocoded_contacts.toLocaleString()} addresses not placed yet` : ''}`;
   return CC.crmPage('Map', 'Your people, deals and market signals by address. ' + right + '.', `${mapPanel(false)}`, ['crm'], `<div id="map-tools">${mapTools()}</div>`).replace('class="cc-page"', 'class="cc-page cc-wide"');
 }
 function viewDealMap() {
-  return CC.crmPage('Deals on the map', 'Deals placed by their street address from the CRM Deals tab. The Deals page has the numbers, from the Deals sheet.',
+  return CC.crmPage('Deals on the map', 'Open deals from the AIRE Deals sheet, placed by street address. Status, price and act of sale are the sheet\'s, the same as the Deals page.',
     mapPanel(true), ['crm'], '<div class="cc-acts"><button type="button" onclick="go(\'deals\')">Back to the deal list</button></div>').replace('class="cc-page"', 'class="cc-page cc-wide"');
 }
 function mountMap(dealsOnly) {
@@ -115,8 +122,9 @@ function pinCard(p) {
       <div class="acts"><button onclick="addToList('call', [personListRow(pinByKey(${jsa(p.key)}))])">☎ Call list</button><button onclick="addToList('postcards', [personListRow(pinByKey(${jsa(p.key)}))])">✉ Postcards</button></div></div>`;
   }
   if (p.kind === 'deal') {
-    return `<div class="pin-card"><div class="pc-h"><span class="ico">⌂</span><div><b>${esc(p.address)}</b><small><span class="tag violet">${esc((p.stage || '').replace('_', ' '))}</span><span>${esc(p.side || '')}</span></small></div>${x}</div>
-      <dl><dt>Client</dt><dd>${p.display ? CC.who(p.display) : 'none'}</dd><dt>Last event</dt><dd>${CC.scrub(p.last_event || 'none', [p.display])}${p.last_event_at ? ' · ' + esc(p.last_event_at.slice(0, 10)) : ''}</dd></dl>
+    const s = p.sheet || CC.sheetDeal(p.address);
+    return `<div class="pin-card"><div class="pc-h"><span class="ico">⌂</span><div><b>${esc(s ? s.deal : p.address)}</b><small><span class="tag violet">${esc(s ? s.status : 'Only in the CRM Deals tab')}</span><span>${esc((s && s.side) || p.side || '')}</span></small></div>${x}</div>
+      <dl>${s ? `<dt>Price</dt><dd>${CC.m(s.price)}</dd><dt>Act of sale</dt><dd>${s.act ? esc(CC.day(s.act)) : 'No date on the sheet'}</dd>` : ''}<dt>Client</dt><dd>${p.display ? CC.who(p.display) : 'none'}</dd><dt>Last event</dt><dd>${CC.scrub(p.last_event || 'none', [p.display])}${p.last_event_at ? ' · ' + esc(p.last_event_at.slice(0, 10)) : ''}</dd></dl>
       <div class="acts"><button class="primary" onclick="openDeal(${jsa(p.address)})">✎ Edit deal</button>${p.person_id ? `<button onclick="openCompose(${jsa(p.person_id)})">✉ Compose</button>` : ''}</div></div>`;
   }
   return `<div class="pin-card"><div class="pc-h"><span class="ico">◆</span><div><b>${esc(p.address)}</b><small><span class="tag ${p.type === 'permit' ? 'warn' : 'live'}">${esc(p.label)}</span><span>${esc(p.city)}</span></small></div>${x}</div>
@@ -128,7 +136,7 @@ function inViewSummary() {
   const people = d.pins.filter(p => inBounds(p, b)), deals = d.deals.filter(p => inBounds(p, b)), mkt = d.market.filter(p => inBounds(p, b));
   const by = {}; people.forEach(p => { by[p.band || ''] = (by[p.band || ''] || 0) + 1; });
   if (S.mapDealsOnly) return `<div class="in-view"><h4>IN VIEW</h4><div class="iv-n"><div><b>${deals.length}</b><small>deals</small></div></div>
-    <p class="dim">${d.deals.length - deals.length ? `${d.deals.length - deals.length} more off screen. ` : ''}Click a house for the deal card. Same deals as the list, placed by the Geo tab.</p></div>`;
+    <p class="dim">${d.deals.length - deals.length ? `${d.deals.length - deals.length} more off screen. ` : ''}Click a house for the deal card. Same deals and numbers as the Deals page.</p></div>`;
   const scope = S.mapF.farm ? farmName(S.mapF.farm) : 'in view';
   const farms = `<h4>FARMS</h4>${farmsList().length ? `<div class="farm-list">${farmsList().map(f => {
     const n = (mapFeed().pins || []).filter(p => p.kind === 'person' && PMap.inPolygon(p.lat, p.lng, f.polygon));
