@@ -60,5 +60,31 @@ class Ask(unittest.TestCase):
             A.ask(FakeClient(), PAY, "dash", "  ", False, Path(tempfile.mkdtemp()) / "u.json", NOW)
 
 
+class JudgeRound2Privacy(unittest.TestCase):
+    """Reviewer findings on round 2: nothing a hidden screen hides goes to Claude."""
+    LEADS = {"today": "2026-11-05", "fresh": {}, "leads": [{
+        "name": "Pat Example", "source": "Website", "message": "Call me at 225 555 0100 about 12 Fake St",
+        "address": "12 Fake St", "fields": [["Phone", "225-555-0100"], ["Email", "pat@example.com"], ["Timeframe", "3 months"]],
+        "crm": {"display": "Pat Example", "next_action": "Send Pat the comps", "band": "warm"}}],
+        "inbox": [{"subject": "Re: Pat Example offer", "category": "Lead"}]}
+
+    def test_private_context_carries_no_names_messages_or_form_contacts(self):
+        ctx = A.page_context(self.LEADS, "ccleads", True)
+        for leak in ("Pat", "555", "example.com", "Fake St", "comps"):
+            self.assertNotIn(leak, ctx)
+        self.assertIn("Website", ctx)
+        self.assertIn("warm", ctx)
+
+    def test_form_field_contacts_drop_even_with_names_shown(self):
+        ctx = A.page_context(self.LEADS, "ccleads", False)
+        self.assertNotIn("555-0100", ctx.replace(" ", ""))
+        self.assertNotIn("pat@example.com", ctx)
+        self.assertIn("3 months", ctx)
+
+    def test_a_page_ask_does_not_know_is_refused_not_answered_from_the_dashboard(self):
+        with self.assertRaises(ValueError):
+            A.page_context(self.LEADS, "touches", True)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

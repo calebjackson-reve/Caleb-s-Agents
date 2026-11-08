@@ -45,6 +45,10 @@ function drafts() {
   return items.filter(i => !sentIds.has(i.person_id));
 }
 // The one owe-a-reply list: people in Touches due whose last text was theirs. Every count on every page is this length.
+// With money and contacts hidden, dialogs and toasts say "this person" instead of a name, and contact fields are masked.
+const hid = () => !!(window.CC && CC.priv);
+const nm = v => (hid() ? 'this person' : v);
+const maskAttr = () => (hid() ? ' class="cc-masked" autocomplete="off"' : '');
 function owesReply() { return (feed().touches_due || []).filter(r => r.owes_reply); }
 function personRow(id) { return (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person')).find(r => r.person_id === id); }
 // ---- texting from a card: one button opens the text, SEND sends it, then the card shows what happened
@@ -201,8 +205,8 @@ async function refresh() {
 
 // ---------------------------------------------------------------- actions
 async function touched(id) {
-  const r = personRow(id); const what = await ask('Touched', `What happened with ${r ? r.display : id}?`, 'Called, left a voicemail'); if (what == null) return;
-  await act('/api/touch', { person_id: id, what }, { tag: 'LOGGED', text: `Touch logged for ${r ? r.display : id}` });
+  const r = personRow(id), who = nm(r ? r.display : 'this person'); const what = await ask('Touched', `What happened with ${who}?`, 'Called, left a voicemail'); if (what == null) return;
+  await act('/api/touch', { person_id: id, what }, { tag: 'LOGGED', text: `Touch logged for ${who}` });
 }
 async function doneTask(task_id, person_id, task) {
   const r = await act('/api/done', { task_id, person_id, task }, { tag: 'DONE', text: task });
@@ -226,14 +230,16 @@ function renderDrawer() {
   const cap = c.kind === 'text' ? d.caps.texts - d.caps.sent_texts : d.caps.emails - d.caps.sent_emails;
   const items = drafts(); const pos = S.queueIdx >= 0 ? `${S.queueIdx + 1} of ${items.length}` : 'not in queue';
   $('#drawer').hidden = false;
-  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${initials(c.name)}</span><div class="who"><b>${esc(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
+  const H = hid(), C2 = window.CC;
+  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${H ? '•' : initials(c.name)}</span><div class="who"><b>${H ? '<span class="cc-hid">Name hidden</span>' : esc(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
   <div class="dbody">
-    ${c.last_messages && c.last_messages.length ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
-    ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${esc(c.next_action || row.next_action)}</div>` : ''}
+    ${c.last_messages && c.last_messages.length && H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span><div class="bubble">${C2.msg('')} · press Show at the top to read them</div></div>` : ''}
+    ${c.last_messages && c.last_messages.length && !H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
+    ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${C2 ? C2.scrub(c.next_action || row.next_action, [c.name]) : esc(c.next_action || row.next_action)}</div>` : ''}
     <div class="seg"><button class="${c.kind === 'text' ? 'on' : ''}" ${canText ? '' : 'disabled'} onclick="setKind('text')">▭ TEXT</button><button class="${c.kind === 'email' ? 'on' : ''}" ${canEmail ? '' : 'disabled'} onclick="setKind('email')">✉ EMAIL</button></div>
-    <div class="field"><label>TO</label><input id="c-to" value="${esc(to)}" ${to ? 'readonly' : ''} placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}"></div>
+    <div class="field"><label>TO</label><input id="c-to"${maskAttr()} value="${esc(to)}" ${to ? 'readonly' : ''} placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}"></div>
     ${c.kind === 'email' ? `<div class="field"><label>SUBJECT</label><input id="c-subject" value="${esc(c.subject || '')}" placeholder="Subject"></div>` : ''}
-    <div class="field"><label>${c.kind === 'text' ? 'TEXT' : 'EMAIL'} DRAFT${c.reply ? ' · write it yourself, they texted last' : c.pool ? ' · from the ' + esc(c.pool) + ' pool' : ''}</label><textarea id="c-body" placeholder="${c.reply ? 'Answer what they said.' : 'Write the message.'}">${esc(c.body || '')}</textarea><div class="hint"><span id="c-count">${(c.body || '').length} chars</span><span>${cap} ${c.kind}${cap === 1 ? '' : 's'} left today</span></div></div>
+    <div class="field"><label>${c.kind === 'text' ? 'TEXT' : 'EMAIL'} DRAFT${c.reply ? ' · write it yourself, they texted last' : c.pool ? ' · from the ' + esc(c.pool) + ' pool' : ''}</label><textarea id="c-body"${maskAttr()} placeholder="${c.reply ? 'Answer what they said.' : 'Write the message.'}">${esc(c.body || '')}</textarea><div class="hint"><span id="c-count">${(c.body || '').length} chars</span><span>${cap} ${c.kind}${cap === 1 ? '' : 's'} left today</span></div></div>
   </div>
   <div class="dfoot"><button class="send-btn ${dry ? 'dry' : ''}" id="send" onclick="sendNow()">${dry ? 'DRY RUN SEND' : 'SEND'}</button><button class="ghost-btn" onclick="touchFromCompose()">✓ Touched, no message</button><span class="spacer"></span><span class="mono" style="font-size:9px;color:var(--dim)">${pos}</span><button class="ghost-btn" onclick="nextInQueue()">Skip ›</button></div></section>`;
   const ta = $('#c-body'); ta.addEventListener('input', () => { $('#c-count').textContent = ta.value.length + ' chars'; }); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
@@ -247,14 +253,14 @@ async function sendNow() {
   const r = await api('/api/send', body);
   btn.disabled = false; btn.classList.remove('charging');
   if (!r.ok) { toast('err', 'NOT SENT', r.error); return; }
-  toast(r.result.status === 'sent' ? 'ok' : 'warn', r.result.status === 'sent' ? 'SENT' : 'DRY RUN', `${c.kind} to ${c.name} ${r.result.status === 'sent' ? 'is on its way and logged in the CRM' : 'logged, nothing left the Mac'}`);
+  toast(r.result.status === 'sent' ? 'ok' : 'warn', r.result.status === 'sent' ? 'SENT' : 'DRY RUN', `${c.kind} to ${nm(c.name)} ${r.result.status === 'sent' ? 'is on its way and logged in the CRM' : 'logged, nothing left the Mac'}`);
   if (c.kind === 'text') S.justTexted = c.person_id;
   await load();
   watchDelivery();
   if (c.fromCard) { closeDrawer(); setTimeout(() => { if (S.justTexted === c.person_id) { S.justTexted = null; } }, 4000); return; }
   const items = drafts(); if (items.length) openCompose(items[Math.min(S.queueIdx, items.length - 1)].person_id, Math.min(S.queueIdx, items.length - 1)); else closeDrawer();
 }
-async function touchFromCompose() { const c = S.compose; const what = await ask('Touched', `What happened with ${c.name}?`, 'Called'); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${c.name}` }); if (r) nextInQueue(); }
+async function touchFromCompose() { const c = S.compose; const what = await ask('Touched', `What happened with ${nm(c.name)}?`, 'Called'); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${nm(c.name)}` }); if (r) nextInQueue(); }
 
 // ---- modals
 function modal(title, bodyHTML, onOK, okLabel = 'Save') {
@@ -273,7 +279,8 @@ function closeModal() { const m = $('#modal'); m.hidden = true; m.innerHTML = ''
 function ask(title, label, placeholder) { return modal(title, `<div class="field"><label>${esc(label.toUpperCase())}</label><input id="m-in" placeholder="${esc(placeholder)}"></div>`, m => { const v = $('#m-in', m).value.trim(); return v || false; }, 'Log it'); }
 function personSelect(selected) {
   const rows = (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || []);
-  return `<select id="m-person"><option value="">pick a person</option>${rows.map(r => `<option value="${esc(r.person_id)}" ${r.person_id === selected ? 'selected' : ''}>${esc(r.display)} · ${esc(r.band || r.source || '')}</option>`).join('')}</select>`;
+  const h = hid();
+  return `<select id="m-person"><option value="">${h && !selected ? 'names hidden, press Show to pick by name' : 'pick a person'}</option>${rows.map(r => `<option value="${esc(r.person_id)}" ${r.person_id === selected ? 'selected' : ''}>${h ? (r.person_id === selected ? 'This person' : 'Name hidden') : esc(r.display)} · ${esc(r.band || r.source || '')}</option>`).join('')}</select>`;
 }
 async function openTask(person_id = '') {
   const v = await modal('New task', `<div class="field"><label>PERSON</label>${personSelect(person_id)}</div><div class="field"><label>TASK</label><input id="m-task" placeholder="Call back about the inspection"></div><div class="field"><label>DUE</label><input id="m-due" type="date" value="${todayISO()}"></div>`,
@@ -282,13 +289,13 @@ async function openTask(person_id = '') {
 }
 async function openNote(person_id) {
   const r = personRow(person_id);
-  const v = await modal(`Note on ${esc(r ? r.display : person_id)}`, `<div class="field"><label>NOTE</label><textarea id="m-note" style="min-height:90px" placeholder="What you learned"></textarea></div>`, m => $('#m-note', m).value.trim() || false, 'Save note');
+  const v = await modal(`Note on ${esc(nm(r ? r.display : 'this person'))}`, `<div class="field"><label>NOTE</label><textarea id="m-note" style="min-height:90px" placeholder="What you learned"></textarea></div>`, m => $('#m-note', m).value.trim() || false, 'Save note');
   if (v) await act('/api/note', { person_id, text: v }, { tag: 'NOTE', text: 'Saved to the CRM' });
 }
 async function openDNC(person_id) {
   const r = personRow(person_id);
-  const v = await modal(`Do Not Contact: ${esc(r ? r.display : person_id)}`, `<p style="color:var(--amber);margin:0 0 6px">One way. The engine never sets it back to NO. They drop off every list.</p><div class="field"><label>REASON</label><input id="m-reason" placeholder="Asked us to stop"></div>`, m => $('#m-reason', m).value.trim() || false, 'Set Do Not Contact');
-  if (v) await act('/api/dnc', { person_id, reason: v }, { tag: 'DNC', text: `${r ? r.display : person_id} will not be contacted` });
+  const v = await modal(`Do Not Contact: ${esc(nm(r ? r.display : 'this person'))}`, `<p style="color:var(--amber);margin:0 0 6px">One way. The engine never sets it back to NO. They drop off every list.</p><div class="field"><label>REASON</label><input id="m-reason" placeholder="Asked us to stop"></div>`, m => $('#m-reason', m).value.trim() || false, 'Set Do Not Contact');
+  if (v) await act('/api/dnc', { person_id, reason: v }, { tag: 'DNC', text: `${nm(r ? r.display : 'This person')} will not be contacted` });
 }
 async function openDeal(address = '') {
   // The CRM Deals tab row being edited, prefilled with the Deals sheet's numbers: the sheet is the one deal source, so
@@ -344,13 +351,14 @@ function openHelp() {
 async function showProposals(list) {
   for (const p of list || []) {
     const what = p.action === 'relabel' ? (p.type ? `Type to ${p.type}` : `band ${p.expect_band || 'none'} to ${p.band}`) : p.action === 'task' ? `task "${p.task}" due ${p.due}` : `note "${p.text}"`;
-    const ok = await modal('JARVIS SUGGESTS', `<div class="brief"><p><b>${window.CC ? CC.who(p.name) : esc(p.name)}</b>: ${esc(what)}</p><p>${esc(p.why)}</p></div>`, () => true, 'Yes, do it');
-    if (!ok) { toast('warn', 'JARVIS', `Skipped: ${p.name}`); continue; }
+    const sc = t => (window.CC ? CC.scrub(t, [p.name]) : esc(t));
+    const ok = await modal('JARVIS SUGGESTS', `<div class="brief"><p><b>${window.CC ? CC.who(p.name) : esc(p.name)}</b>: ${sc(what)}</p><p>${sc(p.why)}</p></div>`, () => true, 'Yes, do it');
+    if (!ok) { toast('warn', 'JARVIS', `Skipped: ${nm(p.name)}`); continue; }
     const path = p.action === 'relabel' ? '/api/relabel' : p.action === 'task' ? '/api/task' : '/api/note';
     const body = p.action === 'relabel' ? { person_id: p.person_id, band: p.band, type: p.type, expect_band: p.expect_band }
       : p.action === 'task' ? { person_id: p.person_id, task: p.task, due: p.due } : { person_id: p.person_id, text: p.text };
     const r = await api(path, body);
-    toast(r.ok ? 'ok' : 'err', 'JARVIS', r.ok ? `Saved: ${p.name}` : (r.error || 'not saved'));
+    toast(r.ok ? 'ok' : 'err', 'JARVIS', r.ok ? `Saved: ${nm(p.name)}` : (r.error || 'not saved'));
   }
   load();
 }
