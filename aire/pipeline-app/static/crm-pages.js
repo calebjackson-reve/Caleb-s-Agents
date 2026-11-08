@@ -93,6 +93,15 @@
       state: !c.state ? 'missing' : c.state === 'ok' ? 'ok' : 'failed', error: c.state && c.state !== 'ok' ? c.state + (c.detail ? ', ' + c.detail : '') : null }; }
     if (k === 'drafts') { const q = d.text_queue || {}, at = q.generated_at || (d.email_queue || {}).generated_at;
       return { source: 'Draft queue, text and email', at, age_min: age(at), state: at ? 'ok' : 'missing', error: null }; }
+    if (k === 'permits') {
+      // Listings and permits: named by where the rows came from (EBR permits on data.brla.gov, Flexmls alert mail), as of
+      // the newest pull. Late after 2 days, out of date after 7: the pull is not on a schedule yet.
+      const rows = ((f.market || {}).rows) || [], names = [...new Set(rows.map(r => String(r.source || '').replace(/\s+[0-9a-z]{4}-[0-9a-z]{4}$/i, '').trim()).filter(Boolean))];
+      const at = rows.map(r => String(r.source_date || '')).filter(x => /^\d{4}-\d{2}-\d{2}/.test(x)).sort().pop() || null;
+      const days = at ? Math.floor((Date.now() - new Date(at.slice(0, 10) + 'T12:00:00')) / 864e5) : null;
+      return { source: names.length ? names.join(' and ') : 'Permits and listing alerts', at: at ? at.slice(0, 10) + 'T12:00:00' : null, age_min: days == null ? null : days * 1440,
+        state: !rows.length || days == null ? 'missing' : days > 7 ? 'stale' : days > 2 ? 'late' : 'ok', error: null };
+    }
     if (k === 'sends') return { source: "Pipeline's send log", at: new Date().toISOString(), age_min: 0, state: 'ok', error: null };
     return null;
   };

@@ -26,6 +26,8 @@
     if (crm.state === 'failed') add('red', 'CRM feed: ' + crm.error);
     else if (crm.state === 'stale' || crm.state === 'late') add(crm.state === 'stale' ? 'red' : 'amber', `CRM feed: rebuilt ${crm.age_min} min ago, it rebuilds every 15 minutes`);
     else if (crm.state === 'missing') add('amber', 'CRM feed: no build time on file');
+    const pm = C.local('permits');
+    if (pm.state === 'stale' || pm.state === 'late') add(pm.state === 'stale' ? 'red' : 'amber', `Listings and permits: newest pull ${when(pm.at).replace(/,? \d+:\d+ [AP]M$/, '')}, ${Math.round(pm.age_min / 1440)} days old`);
     if (cmd.state === 'failed') add('red', 'KW Command reader: ' + cmd.error);
     else if (cmd.state === 'missing') add('amber', 'KW Command reader: never run on this Mac, so new leads in Command are not checked');
     const skip = new Set(['feed_failed', 'feed_stale', 'no_feed', 'feed_unreadable', 'command_login', 'command_layout']);
@@ -73,10 +75,10 @@
       return `<tr class="is-${r.state}"><th scope="row">${esc(NAMES[k])}<small>${esc(r.source || '')}</small></th><td><span class="cc-state s-${r.state}">${{ ok: 'Current', late: 'Late', stale: 'Out of date', failed: 'Failed', missing: 'Not synced yet' }[r.state]}</span></td>
         <td>${esc(when(r.at))}${r.age_min != null ? `<small>${r.age_min} min ago</small>` : ''}</td><td>${r.error ? esc(r.error_text || 'the read did not finish') : res ? (res.ok ? `${res.rows ?? res.read ?? res.pushed ?? ''} rows` : esc(res.error_text || 'the read did not finish')) : ''}</td></tr>`;
     }).join('');
-    const own = ['crm', 'command', 'drafts'].map(k => {
+    const own = ['crm', 'command', 'drafts', 'permits'].map(k => {
       const r = C.local(k);
       return `<tr class="is-${r.state}"><th scope="row">${esc(r.source)}</th><td><span class="cc-state s-${r.state}">${{ ok: 'Current', late: 'Late', stale: 'Out of date', failed: 'Failed', missing: 'Not read yet' }[r.state]}</span></td>
-        <td>${esc(when(r.at))}${r.age_min != null ? `<small>${r.age_min} min ago</small>` : ''}</td><td>${r.error ? esc(r.error) : k === 'crm' ? 'People, tasks, touches, drafts' : k === 'command' ? 'New leads in KW Command' : 'Texts and emails waiting'}</td></tr>`;
+        <td>${esc(when(r.at))}${r.age_min != null ? `<small>${r.age_min} min ago</small>` : ''}</td><td>${r.error ? esc(r.error) : k === 'crm' ? 'People, tasks, touches, drafts' : k === 'command' ? 'New leads in KW Command' : k === 'permits' ? 'Listings and permits, the map\'s market signals' : 'Texts and emails waiting'}</td></tr>`;
     }).join('');
     const sd = S.data || {};
     return `<div class="cc-page">${C.banner()}${head('Sources', 'Every read that feeds these pages, when it last worked, and what went wrong')}

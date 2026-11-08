@@ -453,6 +453,17 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
   if (d0 && d0.name) { run(`S.q = ${JSON.stringify(d0.name.split(' ')[0])}`); check(/<h3 class="cc-sub-h">Drafts <span class="cc-count">/.test(run('CC.priv = true; CC.views.search()')), 'Search finds drafts too'); run(`S.q = ''`); }
 }
 
+// Round 3, item 11: the permits feed is labelled with its real source and the date of its newest pull, not CRM feed.
+{
+  const rows = [{ source: 'EBR permits, data.brla.gov 7fq7-8j7r', source_date: '2026-10-27' }, { source: 'EBR permits, data.brla.gov 7fq7-8j7r', source_date: '2026-10-20' }];
+  run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { market: { rows: ${JSON.stringify(rows)}, counts: {} } }) })`);
+  const pm = run(`CC.local('permits')`);
+  check(pm.source === 'EBR permits, data.brla.gov' && pm.at.startsWith('2026-10-27'), 'the permits source is EBR permits on data.brla.gov, as of its newest pull', JSON.stringify(pm));
+  const mon = render('monitor', true);
+  check(/class="cc-srcline"><span class="cc-src is-\w+"><i aria-hidden="true"><\/i><span class="cc-src-n">EBR permits, data\.brla\.gov · /.test(mon) && !/CRM feed, AIRE CRM sheet/.test(mon), 'Listings and permits names EBR permits, not the CRM feed');
+  run('S.data = __state');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');
