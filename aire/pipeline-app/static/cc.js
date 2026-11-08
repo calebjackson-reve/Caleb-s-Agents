@@ -28,7 +28,7 @@
       const r = f[k] || (C.local && C.local(k)) || { state: 'missing' };
       const when = r.at ? 'as of ' + fmtTime.format(new Date(r.at)) + ', ' + ago(r.age_min) : 'never read';
       const what = r.state === 'failed' ? (short ? 'read failed' : 'read failed: ' + (r.error || 'unknown') + ', showing the last good read')
-        : r.state === 'stale' ? 'out of date' : r.state === 'missing' ? 'not synced yet' : '';
+        : r.state === 'stale' ? 'out of date' : r.state === 'late' ? 'late' + (r.pace_min ? `, reads every ${r.pace_min} min` : '') : r.state === 'missing' ? 'not synced yet' : '';
       return `<span class="cc-src is-${r.state}"><i aria-hidden="true"></i><span class="cc-src-n">${esc(r.source || NAMES[k] || k)} · </span>${esc(when)}${what ? ' · <b>' + esc(what) + '</b>' : ''}</span>`;
     }).join('');
   }
@@ -100,7 +100,7 @@
         ${tile('New leads, 14 days', n(leads), `${n(leads7)} in the last 7 days${sc.leads7.low ? ` · goal ${sc.leads7.low} to ${sc.leads7.high} a week` : ''}`, ['leads', 'crm'], 'ccleads')}
         ${tile('Under contract', n(uc.n), `${mk(uc.volume)} volume on the Deals sheet`, 'deals', 'deals')}
         ${tile('Touches due', n(td.length), owes ? `${owes} owe a reply` : 'Nobody owes a reply', 'crm', 'touches')}
-        ${tile('Tasks open', n(tk.length), over ? `<em>${over} overdue</em>` : 'None overdue', 'crm', 'tasks')}
+        ${S.data && S.data.feed_ok ? tile('Tasks open', n(tk.length), over ? `<em>${over} overdue</em>` : 'None overdue', 'crm', 'tasks') : tile('Tasks open', '—', "<em>Tasks didn't load</em>", 'crm', 'sources')}
         ${tile('Drafts ready', n(dr), 'Texts and emails to read and send', 'drafts', 'queue')}
         ${tile('Appointments, 7 days', n(sc.appts7.value), sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Showings, listing appts, clients', 'calendar', 'calendar')}
         ${tile('Booked today', n(wk.hours) + '<small>h</small>', `${n(wk.events)} timed events. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}

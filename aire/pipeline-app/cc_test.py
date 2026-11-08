@@ -382,5 +382,18 @@ class JudgeRound2(unittest.TestCase):
         self.assertEqual(sc["leads7"]["value"], lc["d7"])
 
 
+    def test_reads_turn_amber_past_their_refresh_and_red_when_stale_or_failed(self):
+        # item 6: the Deals sheet reads every 30 minutes
+        at = lambda mins: (NOW - timedelta(minutes=mins)).isoformat()
+        st = lambda m: cc.freshness(m, "deals", NOW)["state"]
+        self.assertEqual([st({"at": at(m)}) for m in (20, 44, 50, 104, 110)], ["ok", "ok", "late", "late", "stale"])
+        self.assertEqual(st({"at": at(1), "error": "quota"}), "failed")  # a failed read is never ok, however new
+        self.assertEqual(cc.freshness({"at": at(50)}, "deals", NOW)["late_after"], 45)
+
+    def test_pace_matches_the_sync(self):
+        import cc_sync
+        self.assertEqual(cc.PACE_MIN, {k: v[0] for k, v in cc_sync.READS.items()})
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

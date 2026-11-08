@@ -16,11 +16,13 @@
   C.bannerData = function () {
     const d = C.data;
     const bad = d.problems || [], sy = d.sync || {};
-    if (!bad.length && !sy.error && C.local('crm').state !== 'failed') return '';
-    const lines = (sy.error ? [`Sync could not sign in: ${esc(sy.error)}`] : []).concat(bad.map(p => `${esc(NAMES[p.name] || p.name)}: ${p.state === 'failed' ? 'read failed, ' + esc(p.error || '') + ', showing the last good read' : 'out of date, last read ' + esc(when(p.at))}`));
+    if (!bad.length && !sy.error && C.local('crm').state === 'ok') return '';
+    const lines = (sy.error ? [`Sync could not sign in: ${esc(sy.error)}`] : []).concat(bad.map(p => `${esc(NAMES[p.name] || p.name)}: ${p.state === 'failed' ? 'read failed, ' + esc(p.error || '') + ', showing the last good read' : p.state === 'late' ? `late, last read ${esc(when(p.at))}, it reads every ${p.pace_min} minutes` : 'out of date, last read ' + esc(when(p.at))}`));
     const crm = C.local('crm');
-    if (crm.state === 'failed') lines.unshift('CRM feed: did not load, so people, tasks and drafts are not shown');
-    return `<div class="cc-banner" role="alert"><b>${bad.some(p => p.state === 'failed') || sy.error ? 'Some numbers are not current' : 'Some numbers are out of date'}</b><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><button type="button" onclick="go('sources')">Open Sources</button></div>`;
+    if (crm.state === 'failed') lines.unshift('CRM feed: ' + esc(crm.error));
+    if (['late', 'stale'].includes(crm.state)) lines.unshift(`CRM feed: ${crm.state === 'late' ? 'late' : 'out of date'}, rebuilt ${crm.age_min} min ago, it rebuilds every 15 minutes`);
+    const red = bad.some(p => p.state !== 'late') || sy.error || ['failed', 'stale'].includes(crm.state);
+    return `<div class="cc-banner ${red ? 'is-red' : 'is-amber'}" role="alert"><b>${bad.some(p => p.state === 'failed') || sy.error || crm.state === 'failed' ? 'Some numbers are not current' : red ? 'Some numbers are out of date' : 'Some numbers are late'}</b><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><button type="button" onclick="go('sources')">Open Sources</button></div>`;
   };
 
   function bank() {
@@ -41,12 +43,12 @@
     const d = C.data, sy = d.sync || {}, f = d.fresh || {};
     const rows = Object.keys(NAMES).map(k => {
       const r = f[k] || { state: 'missing' }, res = (sy.results || {})[k];
-      return `<tr class="is-${r.state}"><th scope="row">${esc(NAMES[k])}<small>${esc(r.source || '')}</small></th><td><span class="cc-state s-${r.state}">${{ ok: 'Current', stale: 'Out of date', failed: 'Failed', missing: 'Not synced yet' }[r.state]}</span></td>
+      return `<tr class="is-${r.state}"><th scope="row">${esc(NAMES[k])}<small>${esc(r.source || '')}</small></th><td><span class="cc-state s-${r.state}">${{ ok: 'Current', late: 'Late', stale: 'Out of date', failed: 'Failed', missing: 'Not synced yet' }[r.state]}</span></td>
         <td>${esc(when(r.at))}${r.age_min != null ? `<small>${r.age_min} min ago</small>` : ''}</td><td>${r.error ? esc(r.error) : res ? (res.ok ? `${res.rows ?? res.read ?? res.pushed ?? ''} rows` : esc(res.error || '')) : ''}</td></tr>`;
     }).join('');
     const own = ['crm', 'command', 'drafts'].map(k => {
       const r = C.local(k);
-      return `<tr class="is-${r.state}"><th scope="row">${esc(r.source)}</th><td><span class="cc-state s-${r.state}">${{ ok: 'Current', stale: 'Out of date', failed: 'Failed', missing: 'Not read yet' }[r.state]}</span></td>
+      return `<tr class="is-${r.state}"><th scope="row">${esc(r.source)}</th><td><span class="cc-state s-${r.state}">${{ ok: 'Current', late: 'Late', stale: 'Out of date', failed: 'Failed', missing: 'Not read yet' }[r.state]}</span></td>
         <td>${esc(when(r.at))}${r.age_min != null ? `<small>${r.age_min} min ago</small>` : ''}</td><td>${r.error ? esc(r.error) : k === 'crm' ? 'People, tasks, touches, drafts' : k === 'command' ? 'New leads in KW Command' : 'Texts and emails waiting'}</td></tr>`;
     }).join('');
     const sd = S.data || {};

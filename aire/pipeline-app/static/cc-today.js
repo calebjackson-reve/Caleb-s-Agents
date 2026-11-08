@@ -37,7 +37,7 @@
     const counts = {}; all.forEach(x => { counts[x.k] = (counts[x.k] || 0) + 1; });
     const body = shown.length ? `<ol class="cc-today">${shown.map(x => `<li class="cc-ev ${x.kind}"><span class="cc-chip">${C.esc(x.label)}</span>
         <span class="cc-what">${x.title || ''}<small>${x.sub || ''}</small></span><span class="cc-today-acts">${x.acts}</span></li>`).join('')}</ol>`
-      : C.empty('Nothing urgent right now. Nice.');
+      : C.empty(S.data && !S.data.feed_ok ? "Tasks didn't load, and neither did touches or replies, so this list can't be trusted. Sources has the detail." : 'Nothing urgent right now. Nice.');
     return `<section class="cc-card cc-today-card" aria-labelledby="cc-today-h"><h2 id="cc-today-h">Today <span class="cc-count">${all.length}</span></h2>
       ${body}${all.length > LIMIT ? `<p class="cc-note">${all.length - LIMIT} more: see Touches due and Tasks.</p>` : ''}
       <div class="cc-acts"><button type="button" onclick="go('touches')">All touches due</button><button type="button" onclick="go('tasks')">All tasks</button></div>

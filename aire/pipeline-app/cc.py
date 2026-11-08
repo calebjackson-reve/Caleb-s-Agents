@@ -19,6 +19,11 @@ SPLIT_CO = 0.30  # KW 70/30: the company's share of each commission, counted tow
 # How old a read may be before the screen calls it stale, in hours.
 STALE_HOURS = {"deals": 6, "calendar": 2, "inbox": 1, "leads": 1, "commission_mail": 24, "bank_mail": 6, "history": 36,
                "news": 6, "market": 36, "life": 2, "workouts": 2}
+# Minutes between reads, the same as cc_sync.READS (cc_test checks they agree). A read is late (amber) once it is past
+# its next read plus GRACE_MIN (the sync wakes every 5 minutes, so up to two missed wakes are normal), and stale (red) at three missed reads or STALE_HOURS.
+PACE_MIN = {"calendar": 15, "inbox": 10, "leads": 10, "deals": 30, "commission_mail": 120, "bank_mail": 60, "news": 120,
+            "market": 720, "life": 15, "workouts": 15}
+GRACE_MIN = 15
 DATASETS = ["deals", "calendar", "inbox", "leads", "commission_mail", "bank_mail", "goals", "history", "news", "market",
             "life", "workouts", "config", "sync-status", "outbox"]
 
@@ -42,7 +47,8 @@ def num(v):
 # ---------------- Reading the cache ----------------
 
 def freshness(meta: dict, name: str, now: datetime) -> dict:
-    """ok, stale, failed or missing, with the as-of time. A failed read keeps its last good rows."""
+    """ok, late (amber: past its refresh time), stale (red: three reads missed or past STALE_HOURS), failed (red) or
+    missing, with the as-of time. A failed read keeps its last good rows and is never ok."""
     if not meta:
         return {"state": "missing", "at": None, "age_min": None, "source": None, "error": None}
     at = meta.get("at")
@@ -53,14 +59,19 @@ def freshness(meta: dict, name: str, now: datetime) -> dict:
         except ValueError:
             age = None
     limit = STALE_HOURS.get(name)
+    pace = PACE_MIN.get(name)
+    red = min(x for x in (limit * 60 if limit is not None else None, 3 * pace + GRACE_MIN if pace else None, 10 ** 9) if x is not None)
     state = "ok"
     if meta.get("error"):
         state = "failed"
     elif age is None:
         state = "missing"
-    elif limit is not None and age > limit * 60:
+    elif age > red:
         state = "stale"
-    return {"state": state, "at": at, "age_min": age, "source": meta.get("source"), "error": meta.get("error")}
+    elif pace and age > pace + GRACE_MIN:
+        state = "late"
+    return {"state": state, "at": at, "age_min": age, "source": meta.get("source"), "error": meta.get("error"),
+            "pace_min": pace, "late_after": pace + GRACE_MIN if pace else None}
 
 
 def load(folder: Path) -> dict:
@@ -621,7 +632,7 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         "workouts": workouts((raw.get("workouts") or {}).get("rows") or {}, _rows(raw["outbox"]), today),
         "health": {"source": None, "note": "Health is skipped: no source chosen (Caleb, 2026-11-05)."},
         "sync": raw.get("sync-status") or None,
-        "problems": [{"name": k, **v} for k, v in fresh.items() if v["state"] in ("failed", "stale")],
+        "problems": [{"name": k, **v} for k, v in fresh.items() if v["state"] in ("failed", "stale", "late")],
     }
 
 

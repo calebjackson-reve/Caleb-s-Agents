@@ -51,8 +51,15 @@
   const age = at => (at ? Math.max(0, Math.round((Date.now() - new Date(at)) / 60000)) : null);
   C.local = function (k) {
     const d = (typeof S !== "undefined" && S.data) || {}, f = d.feed || {};
-    if (k === 'crm') return { source: 'CRM feed, AIRE CRM sheet', at: f.generated_at, age_min: d.feed_age_minutes ?? age(f.generated_at),
-      state: !d.feed_ok ? 'failed' : (d.feed_age_minutes || 0) > 90 ? 'stale' : 'ok', error: d.feed_ok ? null : 'the CRM feed did not load' };
+    if (k === 'crm') {
+      // Rebuilt every 15 minutes: late (amber) past 30, stale (red) past 60, failed (red) when the last rebuild failed or
+      // no feed loaded. A failed rebuild keeps the last good feed on screen and says so.
+      const run = d.feed_run || null, a = d.feed_age_minutes ?? age(f.generated_at);
+      const failed = !d.feed_ok || (run && run.state === 'failed');
+      return { source: 'CRM feed, AIRE CRM sheet', at: f.generated_at, age_min: a,
+        state: failed ? 'failed' : a > 60 ? 'stale' : a > 30 ? 'late' : 'ok',
+        error: !d.feed_ok ? 'the CRM feed did not load' : failed ? `the rebuild at ${run.at_text} failed (${run.detail}), showing the feed from ${a} min ago` : null };
+    }
     if (k === 'command') { const c = d.command || {}; return { source: 'KW Command reader', at: c.at, age_min: age(c.at),
       state: !c.state ? 'missing' : c.state === 'ok' ? 'ok' : 'failed', error: c.state && c.state !== 'ok' ? c.state + (c.detail ? ', ' + c.detail : '') : null }; }
     if (k === 'drafts') { const q = d.text_queue || {}, at = q.generated_at || (d.email_queue || {}).generated_at;
@@ -64,7 +71,13 @@
   // Reads that worked but are not current: never synced on this Mac, or older than their limit.
   C.notCurrent = function () {
     const f = (C.data && C.data.fresh) || {};
-    return Object.keys(f).filter(k => f[k].state === 'missing' || f[k].state === 'stale').map(k => f[k].source || k);
+    return Object.keys(f).filter(k => ['missing', 'stale', 'late'].includes(f[k].state)).map(k => f[k].source || k)
+      .concat(['late', 'stale'].includes(C.local('crm').state) ? [C.local('crm').source] : []);
+  };
+  // Reads that are red without having failed: three refreshes missed.
+  C.staleReads = function () {
+    const f = (C.data && C.data.fresh) || {};
+    return Object.keys(f).filter(k => f[k].state === 'stale').map(k => f[k].source || k).concat(C.local('crm').state === 'stale' ? [C.local('crm').source] : []);
   };
   C.failing = function () {
     const out = [];

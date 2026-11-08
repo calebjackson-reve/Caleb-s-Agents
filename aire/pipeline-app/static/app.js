@@ -99,7 +99,8 @@ function render() {
   renderNav(c);
   // top status: what is actually true. A failed read is named, never covered by an all-clear word.
   const lvl = statusLevel(), bad = window.CC && CC.failing ? CC.failing() : [], old = window.CC && CC.data && CC.notCurrent ? CC.notCurrent() : [];
-  const chip = $('#status-chip'); chip.className = 'status-chip ' + (bad.length || lvl === 'stop' ? 'stop' : old.length || lvl === 'warn' ? 'warn' : 'ok');
+  const red = window.CC && CC.data && CC.staleReads ? CC.staleReads() : [];
+  const chip = $('#status-chip'); chip.className = 'status-chip ' + (bad.length || red.length || lvl === 'stop' ? 'stop' : old.length || lvl === 'warn' ? 'warn' : 'ok');
   $('#status-word').textContent = !d.feed_ok ? 'CRM feed did not load' : bad.length ? `${bad.length} read${bad.length > 1 ? 's' : ''} failed`
     : old.length ? `${old.length} source${old.length > 1 ? 's' : ''} not current` : lvl === 'stop' ? 'Needs attention' : lvl === 'warn' ? 'Check the bell' : window.CC && CC.data ? 'Every source current' : 'Reading';
   chip.title = bad.length ? 'Failed: ' + bad.join(', ') : old.length ? 'Not current: ' + old.join(', ') : ''; chip.onclick = () => go('sources');

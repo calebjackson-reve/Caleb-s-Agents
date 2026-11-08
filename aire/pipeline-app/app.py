@@ -603,8 +603,16 @@ class State:
         self._bump_usage(spoken_chars=len(text))
         return audio
 
+    def feed_run(self) -> dict | None:
+        """How the last feed rebuild went, from the end of its log (refresh_feed.sh). None in demo or with no log."""
+        p = self.paths.get("feed_log")
+        if self.demo or not p:
+            return None
+        return feed_run_status(p, now())
+
     def snapshot(self) -> dict:
         feed = self.feed()
+        run = self.feed_run()
         text_q = read_json(self.paths["text_queue"], {})
         email_q = read_json(self.paths["email_queue"], {})
         command = read_json(self.paths["command_status"], {})
@@ -623,6 +631,9 @@ class State:
         elif feed.get("header_ok") is False:
             problems.append({"level": "stop", "code": "header_not_ok",
                              "text": "The Contacts header lost a column the engine needs: " + ", ".join(feed.get("missing_columns", []))})
+        if run and run["state"] == "failed":
+            problems.append({"level": "warn", "code": "feed_failed", "text": f"The CRM feed rebuild failed at {run['at_text']}: {run['detail']}. "
+                                                                          "The screens show the last good feed."})
         if feed_age is not None and feed_age > 60:
             problems.append({"level": "warn", "code": "feed_stale", "text": f"Feed is {feed_age // 60}h {feed_age % 60}m old."})
         if self.messages.get("checked") and not self.messages.get("ok"):
@@ -642,6 +653,7 @@ class State:
             "platform": platform.system(),
             "feed_ok": feed_ok,
             "feed_age_minutes": feed_age,
+            "feed_run": run,
             "feed": feed if feed_ok else {},
             "text_queue": text_q if "_error" not in text_q else {},
             "email_queue": email_q if "_error" not in email_q else {},
@@ -1211,6 +1223,39 @@ def serve(state: State, port: int, open_browser: bool) -> None:
         pass
 
 
+FEED_RUN_MAX_MIN = 10  # a rebuild that started this long ago and never wrote ok or failed is counted as failed
+
+
+def feed_run_status(log: Path, at: datetime) -> dict | None:
+    """The last run in refresh_feed.sh's log: ok, or failed with why. Lines look like '2026-11-08 12:46:37 start',
+    '... feed ok', '... feed failed, previous feed.json kept', '... imessage_signals failed, ...'."""
+    try:
+        with log.open("rb") as fh:
+            fh.seek(0, 2)
+            fh.seek(max(0, fh.tell() - 16000))
+            lines = fh.read().decode("utf-8", "replace").splitlines()
+    except OSError:
+        return None
+    starts = [i for i, ln in enumerate(lines) if re.match(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} start$", ln.strip())]
+    if not starts:
+        return None
+    block = lines[starts[-1]:]
+    stamp = lambda ln: datetime.strptime(ln[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=CENTRAL)
+    began = stamp(block[0])
+    end = next((ln for ln in block if re.search(r"\bfeed (ok|failed)\b", ln)), None)
+    signals_failed = any("imessage_signals failed" in ln for ln in block)
+    if end and " feed ok" in end:
+        state, detail, t = "ok", "signals failed, the feed used the last signals" if signals_failed else "", stamp(end)
+    elif end:
+        state, detail, t = "failed", "crm.py feed failed", stamp(end)
+    elif (at - began).total_seconds() > FEED_RUN_MAX_MIN * 60:
+        state, detail, t = "failed", "the last run started and never finished", began
+    else:
+        state, detail, t = "running", "", began
+    return {"state": state, "at": t.isoformat(timespec="seconds"), "at_text": t.strftime("%b %-d, %-I:%M %p"), "detail": detail,
+            "signals_failed": signals_failed}
+
+
 # ----------------------------------------------------------------------- tests
 
 
@@ -1425,6 +1470,22 @@ def run_tests() -> int:
     sd.send("text", "118", "+12255550101", "hello", display="Riley Quiet")
     snap_lt = sd.snapshot()["last_texts"]
     check(snap_lt.get("118", {}).get("delivery") == "dry-run" and snap_lt["118"]["display"] == "Riley Quiet", "a demo send shows on the card as a dry run")
+
+    # Round 2, item 6: the CRM feed's last rebuild, read from its log. A failure shows; a run that never ended is a failure.
+    lg = tmp / "feed.log"
+    at = datetime(2026, 11, 8, 13, 0, tzinfo=CENTRAL)
+    lg.write_text("2026-11-08 12:30:00 start\n2026-11-08 12:30:04 feed ok\n2026-11-08 12:45:00 start\n2026-11-08 12:45:03 feed failed, previous feed.json kept\n")
+    r = feed_run_status(lg, at)
+    check(r["state"] == "failed" and r["at"].startswith("2026-11-08T12:45:03") and "failed" in r["detail"], "a failed feed rebuild is read from the log")
+    lg.write_text("2026-11-08 12:45:00 start\n2026-11-08 12:45:01 imessage_signals failed, feed keeps the last signals file\n2026-11-08 12:45:03 feed ok\n")
+    r = feed_run_status(lg, at)
+    check(r["state"] == "ok" and r["signals_failed"] and "signals" in r["detail"], "a rebuild that kept old signals is ok and says so")
+    lg.write_text("2026-11-08 12:30:00 start\n2026-11-08 12:30:04 feed ok\n2026-11-08 12:40:00 start\n")
+    check(feed_run_status(lg, at)["state"] == "failed" and feed_run_status(lg, datetime(2026, 11, 8, 12, 45, tzinfo=CENTRAL))["state"] == "running",
+          "a rebuild that never finished is a failure after 10 minutes, running before")
+    check(feed_run_status(tmp / "nope.log", at) is None and State(demo=True, send_log=tmp / "fr.json").snapshot()["feed_run"] is None, "no log, or demo: no feed run status")
+    sfr = State(demo=True, send_log=tmp / "fr2.json"); sfr.feed_run = lambda: {"state": "failed", "at": "x", "at_text": "Nov 8, 12:45 PM", "detail": "crm.py feed failed"}
+    check(any(p["code"] == "feed_failed" for p in sfr.snapshot()["problems"]), "a failed feed rebuild becomes a problem row")
 
     # map and market monitor
     sm = State(demo=True, send_log=tmp / "map" / "send-log.json")

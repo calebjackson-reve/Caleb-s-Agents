@@ -174,6 +174,30 @@ check(/onclick="CC\.addLead\(\)"/.test(render('dash', true)) && /onclick="CC\.ad
   check(run('CC.leadsIn(14).length') === lc.d14 && run('CC.leadsIn(7).length') === lc.d7, 'the screen windows leads the same way the server does');
 }
 
+// Round 2, item 6: stale and failed reads. Amber when late, red when stale or failed, never a green dot on a failure.
+{
+  const fr = JSON.parse(JSON.stringify(ccdata.fresh));
+  fr.deals = Object.assign({}, fr.deals, { state: 'late', pace_min: 30 }); fr.calendar = Object.assign({}, fr.calendar, { state: 'stale' });
+  fr.inbox = Object.assign({}, fr.inbox, { state: 'failed', error: 'quota' });
+  run(`CC.data = Object.assign({}, __cc, { fresh: ${JSON.stringify(fr)} })`);
+  const srcHtml = run(`CC.src(['deals', 'calendar', 'inbox'])`);
+  check(/is-late[^]*late, reads every 30 min/.test(srcHtml) && /is-stale/.test(srcHtml) && /is-failed/.test(srcHtml) && !/is-ok/.test(srcHtml), 'a late read is amber, a stale or failed read is red, none is green');
+  const css = fs.readFileSync(path.join(dir, 'cc.css'), 'utf8');
+  check(/\.cc-src\.is-failed i, \.cc-src\.is-stale i \{ background: var\(--cc-bad\)/.test(css) && /\.cc-src\.is-late i[^{]*\{ background: var\(--cc-warn\)/.test(css), 'stale and failed dots are red, late dots amber');
+  run('CC.data = __cc');
+  // The CRM feed's failed rebuild shows on Sources and in the banner, and its dot is red.
+  run(`S.data = Object.assign({}, __state, { feed_run: { state: 'failed', at: '2026-11-08T12:45:03-06:00', at_text: 'Nov 8, 12:45 PM', detail: 'crm.py feed failed' } })`);
+  check(run(`CC.local('crm').state`) === 'failed' && /is-failed/.test(run(`CC.src('crm')`)), 'a failed CRM feed rebuild is red, not green');
+  const srcPage = render('sources', true);
+  check(/s-failed[^]*Failed[^]*rebuild at Nov 8, 12:45 PM failed/.test(srcPage), 'Sources names the failed CRM feed rebuild');
+  check(/rebuild at Nov 8, 12:45 PM failed/.test(render('touches', true)), 'every page banner names the failed feed rebuild');
+  // With no feed at all, the Dashboard says tasks did not load, not that nothing is urgent.
+  run(`S.data = Object.assign({}, __state, { feed_ok: false, feed: {} })`);
+  const d0 = render('dash', true);
+  check(/Tasks didn.t load/.test(d0) && !/Nothing urgent/.test(d0), 'with the feed failed, the Dashboard says Tasks didn\'t load');
+  run('S.data = __state');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

@@ -38,10 +38,11 @@ button.cc-tile:hover { background: var(--cc-raise); }
 
 .cc-src { display: block; font-size: 12px; line-height: 1.35; color: var(--cc-muted); overflow-wrap: anywhere; }
 .cc-src i { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--cc-ok); transform: translateY(-1px); }
-.cc-src.is-stale i, .cc-src.is-missing i { background: var(--cc-warn); }
-.cc-src.is-stale, .cc-src.is-missing { color: var(--cc-warn); }
-.cc-src.is-failed i { background: var(--cc-bad); }
-.cc-src.is-failed { color: var(--cc-bad); }
+/* Read states: late and never synced are amber, out of date (three refreshes missed) and failed are red. Only ok is not flagged. */
+.cc-src.is-late i, .cc-src.is-missing i { background: var(--cc-warn); }
+.cc-src.is-late, .cc-src.is-missing { color: var(--cc-warn); }
+.cc-src.is-failed i, .cc-src.is-stale i { background: var(--cc-bad); }
+.cc-src.is-failed, .cc-src.is-stale { color: var(--cc-bad); }
 .cc-src b { font-weight: 600; }
 
 .cc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 14px; align-items: start; }
@@ -138,8 +139,8 @@ button.cc-tile:hover { background: var(--cc-raise); }
 .cc-banner button { justify-self: start; font: inherit; font-size: 13px; color: var(--cc-text); background: var(--cc-raise); border: 1px solid var(--cc-line); border-radius: 999px; padding: 7px 14px; min-height: 36px; cursor: pointer; }
 .cc-state { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--cc-line); white-space: nowrap; }
 .cc-state.s-ok { color: var(--cc-ok); border-color: rgba(127, 208, 160, .5); }
-.cc-state.s-stale, .cc-state.s-missing { color: var(--cc-warn); border-color: rgba(255, 181, 71, .5); }
-.cc-state.s-failed { color: var(--cc-bad); border-color: rgba(255, 138, 112, .5); }
+.cc-state.s-late, .cc-state.s-missing { color: var(--cc-warn); border-color: rgba(255, 181, 71, .5); }
+.cc-state.s-failed, .cc-state.s-stale { color: var(--cc-bad); border-color: rgba(255, 138, 112, .5); }
 
 /* Color by kind, on the calendar and on deadlines. Each color is legible on the dark panel; the label always says the kind too. */
 .k-closing { --k: #e87757; } .k-deadline { --k: #ffb547; } .k-finance { --k: #6fcfb8; } .k-inspection { --k: #b9a3e3; }
