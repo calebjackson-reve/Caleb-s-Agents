@@ -461,7 +461,7 @@ class State:
         try:
             from elevenlabs import ElevenLabs
         except ImportError:
-            raise CRMError("the elevenlabs package is not installed in Pipeline's Python (pip install elevenlabs)")
+            raise CRMError("Call mode needs a voice package that is not installed on this Mac yet. Ask Claude to install it")
         try:
             resp = ElevenLabs(api_key=self.eleven_key).conversational_ai.conversations.get_webrtc_token(agent_id=self.speech_engine_id)
         except Exception as e:
@@ -480,9 +480,16 @@ class State:
                 "has_phone": bool(r.get("phone")), "has_email": bool(r.get("email"))} for r in f.get("touches_due", [])[:25]]
         tasks = [{"task": t.get("task"), "who": t.get("display"), "due": t.get("due"), "overdue": t.get("overdue"), "source": t.get("source")}
                  for t in f.get("tasks", [])[:20]]
-        deals = [{"address": d.get("address"), "who": d.get("display"), "side": d.get("side"), "stage": d.get("stage"), "price": d.get("price"),
-                  "expected_close": d.get("expected_close"), "next_step": d.get("next_step"), "last_event": d.get("last_event")} for d in f.get("deals", [])[:15]]
-        leads = [{"name": l.get("display"), "source": l.get("source"), "received": l.get("received"), "next_action": l.get("next_action")} for l in f.get("new_leads", [])[:15]]
+        # Deals and leads as the screens show them: the AIRE Deals sheet (the one deal source) and the one lead list
+        # (14 days, test leads out), so a spoken answer never disagrees with a page.
+        try:
+            cp = self.cc_payload()
+        except Exception:  # noqa: BLE001  (a missing Command Center cache must not break the voice)
+            cp = {}
+        deals = [{"address": d.get("deal"), "status": d.get("status"), "side": d.get("side"), "price": d.get("price"),
+                  "act_of_sale": d.get("act"), "next_step": d.get("next")} for d in cp.get("deals", []) if d.get("stage") not in ("closed", "out")][:15]
+        leads = [{"name": l.get("name"), "source": l.get("source"), "received": l.get("received"), "needs": (l.get("due") or {}).get("label")}
+                 for l in cp.get("leads", [])][:15]
         # The whole due list is too big to send, so the people a question most often reaches past the top 25 for:
         # hot and warm contacts quiet the longest, and everyone waiting on a reply.
         allrows = f.get("touches_due", [])
@@ -517,7 +524,7 @@ class State:
         try:
             import anthropic
         except ImportError:
-            raise CRMError("the anthropic package is not installed in Pipeline's Python (pip install anthropic in ~/.aire/venv)")
+            raise CRMError("Claude answers need a package that is not installed on this Mac yet. Ask Claude to install it")
         client = anthropic.Anthropic(api_key=self.ask_key)
         tools = jarvis.Tools(self.feed(), self.sent_today(), {"texts": self.max_texts, "emails": self.max_emails}, today().isoformat())
         r = self._ask_call(anthropic, lambda: jarvis.ask(client, self.ask_model, tools, question))
@@ -537,7 +544,7 @@ class State:
         try:
             import anthropic
         except ImportError:
-            raise CRMError("the anthropic package is not installed in Pipeline's Python")
+            raise CRMError("Claude answers need a package that is not installed on this Mac yet. Ask Claude to install it")
         p = self.cc_payload()
         client = anthropic.Anthropic(api_key=self.ask_key, timeout=60.0)
         try:
@@ -639,7 +646,7 @@ class State:
         if self.messages.get("checked") and not self.messages.get("ok"):
             problems.append({"level": "warn", "code": "messages_permission",
                              "text": "Pipeline cannot control Messages yet, so texts will not send. System Settings, Privacy and Security, Automation: "
-                                     "turn on Messages for Pipeline's Python, then restart Pipeline. (" + self.messages.get("detail", "")[:80] + ")"})
+                                     "turn on Messages for the Python entry Pipeline runs on, then restart Pipeline."})
         if command.get("state") == "login needed":
             problems.append({"level": "warn", "code": "command_login",
                              "text": "Command needs a login. " + (command.get("detail") or "Open the AIRE Chrome profile and sign in once.")})
@@ -1067,7 +1074,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": True, "rows": d.get("rows", [])[:20], "phones": len(push._read(self.state.push_subs, []))})
         if u.path == "/api/cc":
             p = self.state.cc_payload()
-            p["ask"] = {"on": bool(self.state.ask_key) or self.state.demo, "cap": cc_ask.CAP, "model": cc_ask.MODEL,
+            p["ask"] = {"on": bool(self.state.ask_key) or self.state.demo, "cap": cc_ask.CAP, "model": cc_ask.MODEL, "pages": list(cc_ask.PAGES),
                         "spent": cc_ask.spent_today(self.state.ask_log, now())}
             return self._json(200, {**p, "demo": self.state.demo})
         if u.path == "/api/voice/token":
@@ -1247,7 +1254,7 @@ def feed_run_status(log: Path, at: datetime) -> dict | None:
     if end and " feed ok" in end:
         state, detail, t = "ok", "signals failed, the feed used the last signals" if signals_failed else "", stamp(end)
     elif end:
-        state, detail, t = "failed", "crm.py feed failed", stamp(end)
+        state, detail, t = "failed", "the step that builds the feed from the CRM sheet failed", stamp(end)
     elif (at - began).total_seconds() > FEED_RUN_MAX_MIN * 60:
         state, detail, t = "failed", "the last run started and never finished", began
     else:

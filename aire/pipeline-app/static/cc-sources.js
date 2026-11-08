@@ -17,7 +17,7 @@
     const d = C.data;
     const bad = d.problems || [], sy = d.sync || {};
     if (!bad.length && !sy.error && C.local('crm').state === 'ok') return '';
-    const lines = (sy.error ? [`Sync could not sign in: ${esc(sy.error)}`] : []).concat(bad.map(p => `${esc(NAMES[p.name] || p.name)}: ${p.state === 'failed' ? 'read failed, ' + esc(p.error || '') + ', showing the last good read' : p.state === 'late' ? `late, last read ${esc(when(p.at))}, it reads every ${p.pace_min} minutes` : 'out of date, last read ' + esc(when(p.at))}`));
+    const lines = (sy.error ? [`Sync could not sign in: ${esc(sy.error_text || 'Google sign-in did not work')}`] : []).concat(bad.map(p => `${esc(NAMES[p.name] || p.name)}: ${p.state === 'failed' ? 'read failed, ' + esc(p.error_text || 'the read did not finish') + ', showing the last good read' : p.state === 'late' ? `late, last read ${esc(when(p.at))}, it reads every ${p.pace_min} minutes` : 'out of date, last read ' + esc(when(p.at))}`));
     const crm = C.local('crm');
     if (crm.state === 'failed') lines.unshift('CRM feed: ' + esc(crm.error));
     if (['late', 'stale'].includes(crm.state)) lines.unshift(`CRM feed: ${crm.state === 'late' ? 'late' : 'out of date'}, rebuilt ${crm.age_min} min ago, it rebuilds every 15 minutes`);
@@ -44,7 +44,7 @@
     const rows = Object.keys(NAMES).map(k => {
       const r = f[k] || { state: 'missing' }, res = (sy.results || {})[k];
       return `<tr class="is-${r.state}"><th scope="row">${esc(NAMES[k])}<small>${esc(r.source || '')}</small></th><td><span class="cc-state s-${r.state}">${{ ok: 'Current', late: 'Late', stale: 'Out of date', failed: 'Failed', missing: 'Not synced yet' }[r.state]}</span></td>
-        <td>${esc(when(r.at))}${r.age_min != null ? `<small>${r.age_min} min ago</small>` : ''}</td><td>${r.error ? esc(r.error) : res ? (res.ok ? `${res.rows ?? res.read ?? res.pushed ?? ''} rows` : esc(res.error || '')) : ''}</td></tr>`;
+        <td>${esc(when(r.at))}${r.age_min != null ? `<small>${r.age_min} min ago</small>` : ''}</td><td>${r.error ? esc(r.error_text || 'the read did not finish') : res ? (res.ok ? `${res.rows ?? res.read ?? res.pushed ?? ''} rows` : esc(res.error_text || 'the read did not finish')) : ''}</td></tr>`;
     }).join('');
     const own = ['crm', 'command', 'drafts'].map(k => {
       const r = C.local(k);
@@ -59,7 +59,7 @@
       ${card('Phone alerts', `<p class="cc-note">A new website lead, a contract deadline within 24 hours, or a read that fails. Each comes once. The lock screen never shows a client's name.</p>
         <p class="cc-note" id="cc-push-state">${'PushManager' in window ? (Notification.permission === 'granted' ? 'Alerts are allowed on this device.' : 'Alerts are off on this device.') : 'This browser can\'t take alerts. On the iPhone, add Pipeline to the Home Screen first, then open it from there.'}</p>
         <div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.pushOn()">Turn on alerts on this device</button><button type="button" class="cc-btn" onclick="CC.pushTest()">Send a test alert</button></div>`, [])}
-      ${card('Last sync', `<p class="${sy.error ? 'cc-warn' : 'cc-note'}">${sy.at ? 'Last pass ' + esc(when(sy.at)) + (sy.error ? ': ' + esc(sy.error) : ', no sign-in problems') : 'The sync has not run on this Mac yet.'}</p>
+      ${card('Last sync', `<p class="${sy.error ? 'cc-warn' : 'cc-note'}">${sy.at ? 'Last pass ' + esc(when(sy.at)) + (sy.error ? ': ' + esc(sy.error_text || 'Google sign-in did not work') : ', no sign-in problems') : 'The sync has not run on this Mac yet.'}</p>
         <div class="cc-tablewrap"><table class="cc-table"><caption class="sr">Each source and its state</caption><thead><tr><th scope="col">Source</th><th scope="col">State</th><th scope="col">Last good read</th><th scope="col">Detail</th></tr></thead><tbody>${rows}</tbody></table></div>
         <p class="cc-note">The Mac checks every 5 minutes. Each read has its own pace: inbox and leads 10 minutes, calendar, Life and Workouts 15, Deals sheet 30, Chase alerts 60, news and commission mail 120, market 12 hours. Today's Scorecard row is added after 6 AM Central.</p>`, [])}
       </div>`;
@@ -83,6 +83,7 @@
   Object.keys(C.views).forEach(k => {
     if (k === 'bank' || k === 'sources') return;
     const fn = C.views[k];
-    C.views[k] = () => { const h = fn(); return h.replace('<div class="cc-page">', '<div class="cc-page">' + C.banner()); };
+    // Wide pages (the maps) carry an extra class, so match any cc-page opening tag.
+    C.views[k] = () => { const h = fn(); return h.replace(/<div class="cc-page( [^"]*)?">/, m => m + C.banner()); };
   });
 })();

@@ -440,5 +440,16 @@ class JudgeRound2(unittest.TestCase):
         self.assertEqual(cc.commission_mail([{"subject": "Commission for 100 Oak Ln"}], cc.deal_rows(SHEET))[0]["status"], "No closed deal")  # under contract, not closed
 
 
+    def test_reviewer_round2_commission_house_number_and_short_history_rows(self):
+        sheet = [HEAD, ["500 Oak Ridge Dr", "Listing", "Closed", "1", "1", "", "", "2026-10-01", "", ""],
+                 ["300 Pine Dr", "Listing", "Closed", "1", "1", "", "", "2026-10-02", "", ""]]
+        st = {r["subject"]: r["status"] for r in cc.commission_mail(
+            [{"subject": "Commission for 12 Oak Ridge"}, {"subject": "Commission for 300 Pine"}, {"subject": "Commission for Pine Dr"}], cc.deal_rows(sheet))}
+        self.assertEqual(st, {"Commission for 12 Oak Ridge": "No closed deal", "Commission for 300 Pine": "Paid", "Commission for Pine Dr": "Paid"})
+        rows = [{"day": "2026-10-01", "gci": 10.0}, {"day": "2026-10-20"}]  # the second row lost its trailing cells
+        self.assertEqual(cc.deltas(rows, {"day": "2026-11-05", "gci": 15.0}, "gci"), {"7": 5.0, "30": 5.0})
+        self.assertEqual(cc.deltas(rows, {"day": "2026-11-05", "gci": 15.0}, "closings"), {"7": None, "30": None})
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

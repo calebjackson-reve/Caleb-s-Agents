@@ -27,7 +27,7 @@
     return [].concat(names).map(k => {
       const r = f[k] || (C.local && C.local(k)) || { state: 'missing' };
       const when = r.at ? 'as of ' + fmtTime.format(new Date(r.at)) + ', ' + ago(r.age_min) : 'never read';
-      const what = r.state === 'failed' ? (short ? 'read failed' : 'read failed: ' + (r.error || 'unknown') + ', showing the last good read')
+      const what = r.state === 'failed' ? (short ? 'read failed' : 'read failed: ' + (r.error_text || 'the read did not finish') + ', showing the last good read')
         : r.state === 'stale' ? 'out of date' : r.state === 'late' ? 'late' + (r.pace_min ? `, reads every ${r.pace_min} min` : '') : r.state === 'missing' ? 'not synced yet' : '';
       return `<span class="cc-src is-${r.state}"><i aria-hidden="true"></i><span class="cc-src-n">${esc(r.source || NAMES[k] || k)} · </span>${esc(when)}${what ? ' · <b>' + esc(what) + '</b>' : ''}</span>`;
     }).join('');
@@ -41,7 +41,7 @@
   C.asks = {};
   function askBox() {
     const a = (C.data && C.data.ask) || {}, page = S.view, st = C.asks[page] || {};
-    if (!a.on) return '';
+    if (!a.on || (a.pages && !a.pages.includes(page))) return '';
     return `<details class="cc-ask" ${st.open ? 'open' : ''} ontoggle="CC.asks['${page}']=Object.assign(CC.asks['${page}']||{},{open:this.open})">
       <summary>Ask Claude about this page</summary>
       <form onsubmit="CC.ask(event)"><label class="sr" for="cc-ask-q">Question</label><input id="cc-ask-q" name="q" maxlength="500" required placeholder="What needs my attention here?" value="${esc(st.q || '')}">
@@ -84,7 +84,7 @@
   // ---------------- Dashboard ----------------
   function dash() {
     const g = guard(); if (g) return g;
-    const d = C.data, sc = d.scorecard, wk = d.week[0] || {}, np = d.commission_mail.filter(r => r.status === 'Not processed').length;
+    const d = C.data, sc = d.scorecard, wk = d.week[0] || {}, np = d.commission_mail.filter(r => r.status === 'Not processed' || r.status === 'No closed deal').length;
     const uc = d.stages.find(r => r.stage === 'contract') || {};
     const lc = d.lead_counts || { d14: d.leads.length, d7: sc.leads7.value }, leads = lc.d14, leads7 = lc.d7;
     const today = d.calendar.filter(r => r.day === d.today && r.kind !== 'block' && !r.invite);
@@ -104,7 +104,7 @@
         ${tile('Drafts ready', n(dr), 'Texts and emails to read and send', 'drafts', 'queue')}
         ${tile('Appointments, 7 days', n(sc.appts7.value), sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Showings, listing appts, clients', 'calendar', 'calendar')}
         ${tile('Booked today', n(wk.hours) + '<small>h</small>', `${n(wk.events)} timed events. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}
-        ${tile('Not processed', n(np), np ? 'Commission emails to chase' : 'Nothing waiting at KW', 'commission_mail', 'commission')}
+        ${tile('Commission to check', n(np), np ? 'Not processed at KW, or paid with no closed deal on the sheet' : 'Nothing waiting at KW', ['commission_mail', 'deals'], 'commission')}
       </div>
 
       ${C.todayCard ? C.todayCard() : ''}

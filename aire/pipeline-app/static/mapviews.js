@@ -34,7 +34,7 @@ function dealPins() {
   return (mapFeed().pins || []).filter(p => p.kind === 'deal' && matches(`${p.address} ${p.display} ${p.stage}`)).map(p => {
     const s = CC.sheetDeal(p.address);
     return s ? { ...p, sheet: s, stage: SHEET_TO_PIN[s.stage] || p.stage } : { ...p, sheet: null };
-  }).filter(p => !p.sheet || !['closed', 'out'].includes(p.sheet.stage));
+  }).filter(p => (p.sheet ? !['closed', 'out'].includes(p.sheet.stage) : !['closed', 'lost', 'fell_through'].includes(p.stage)));
 }
 function marketPins() { const farm = farmById(S.mapF.farm); return marketRows().filter(r => r.lat != null && (!farm || PMap.inPolygon(r.lat, r.lng, farm.polygon))); }
 function mapData(dealsOnly) {
@@ -75,7 +75,7 @@ function mountMap(dealsOnly) {
   const el = $('#pmap'); if (!el) return;
   if (S.map) S.map.destroy();
   S.mapDealsOnly = !!dealsOnly;
-  S.map = PMap.create(el, { view: S.mapView, base: S.mapF.base, onBase: b => { S.mapF.base = b; toast('warn', 'MAP', "Street tiles didn't load, so the map switched to Satellite."); }, onMove: v => { S.mapView = v; renderMapSide(); }, onPick: p => { S.pick = p ? p.key : ''; S.map.setData({ selected: S.pick }); renderMapSide(); } });
+  S.map = PMap.create(el, { view: S.mapView, base: S.mapF.base, onBase: b => { S.mapF.base = b; const mt = $('#map-tools'); if (mt) mt.innerHTML = mapTools(); toast('warn', 'MAP', "Street tiles didn't load, so the map switched to Satellite."); }, onMove: v => { S.mapView = v; renderMapSide(); }, onPick: p => { S.pick = p ? p.key : ''; S.map.setData({ selected: S.pick }); renderMapSide(); } });
   const d = mapData(dealsOnly); S.map.setData(d);
   if (!S.mapView) { const pts = homeArea((dealsOnly ? d.deals : d.pins.concat(d.deals)).map(p => [p.lat, p.lng])); if (pts.length) S.map.fit(pts, 13); }
   renderMapSide();
@@ -195,7 +195,7 @@ async function addToList(kind, rows) {
 function marketDetail(r) {
   const amt = r.type === 'permit' ? (r.value ? `${CC.m(r.value)} project` : 'no value given') : r.price ? CC.m(r.price) + (r.price_was ? ` (was ${CC.m(r.price_was)})` : '') : 'no price given';
   const near = r.nearest && r.nearest.person_id ? `<a href="#" onclick="S.pick=${jsa('person:' + r.nearest.person_id)};S.mapView={center:[${r.lat},${r.lng}],zoom:15};go('map');return false">${CC.who(r.nearest.display)}</a> · ${esc(r.nearest.band || 'no band')} · ${r.nearest.miles} mi` : 'nobody you know within 2 miles';
-  return `<dl><dt>When</dt><dd>${esc(r.date)} · ${esc(r.subtype || r.label)}</dd><dt>Amount</dt><dd>${amt}</dd>${r.description && r.description !== r.subtype ? `<dt>Detail</dt><dd>${esc(r.description)}</dd>` : ''}
+  return `<dl><dt>When</dt><dd>${esc(r.date)} · ${CC.scrub(r.subtype || r.label)}</dd><dt>Amount</dt><dd>${amt}</dd>${r.description && r.description !== r.subtype ? `<dt>Detail</dt><dd>${CC.scrub(r.description)}</dd>` : ''}
     <dt>Farm</dt><dd>${esc(farmName(r.farm) || 'outside your farms')}</dd><dt>Nearest</dt><dd>${near}</dd><dt>Source</dt><dd>${esc(r.source)} · ${esc(r.source_date)}${r.source_ref ? ' · #' + esc(r.source_ref) : ''}</dd></dl>`;
 }
 function marketActs(r) {
@@ -218,7 +218,7 @@ function viewMarket() {
   const body = rows.length ? `<ul class="cc-rows">${rows.slice(0, 300).map(r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${r.type === 'permit' ? '⚒' : '◆'}</span>
     <div class="cc-row-main"><h3>${esc(r.address)}</h3>
       <div class="cc-pills"><span class="cc-pill ${r.type === 'permit' ? 'k-listing' : 'k-closing'}">${esc(r.label)}</span><span class="cc-pill k-other">${esc(r.city)}</span>${r.farm ? `<span class="cc-pill k-other">${esc(farmName(r.farm))}</span>` : ''}</div>
-      <p class="cc-row-why">${r.type === 'permit' ? (r.value ? CC.m(r.value) + ' · ' : '') + esc(r.subtype) : (r.price ? CC.m(r.price) : 'No price given') + (r.price_was ? ` · was ${CC.m(r.price_was)}` : '')}</p>
+      <p class="cc-row-why">${r.type === 'permit' ? (r.value ? CC.m(r.value) + ' · ' : '') + CC.scrub(r.subtype) : (r.price ? CC.m(r.price) : 'No price given') + (r.price_was ? ` · was ${CC.m(r.price_was)}` : '')}</p>
       <p class="cc-note">${esc(C_day(r.date))}${r.nearest && r.nearest.person_id ? ` · ${r.nearest.miles} mi from ${CC.who(r.nearest.display)}` : ''} · ${esc(r.source)}, ${esc(C_day(r.source_date))}</p></div>
     <div class="cc-acts">${marketActs(r)}</div></li>`).join('')}</ul>${rows.length > 300 ? `<p class="cc-note">Showing the newest 300 of ${rows.length}.</p>` : ''}`
     : S.q ? CC.noMatch() : CC.empty(all.length ? 'Nothing matches these filters.' : 'No permits or listing changes in the last read.');
@@ -230,14 +230,14 @@ async function makeLead(key) {
   const r = mktByKey(key); if (!r) return;
   const what = r.type === 'permit' ? `${r.label} permit` : r.label;
   const v = await modal('Make lead', `
-    <div class="field"><label>NAME</label><input id="m-name" value="${esc(r.owner || 'Owner at ' + r.address)}"></div>
+    <div class="field"><label>NAME</label><input id="m-name"${CC.priv ? ' class="cc-masked"' : ''} value="${esc(r.owner || 'Owner at ' + r.address)}"></div>
     <div class="field"><label>PHONE (optional)</label><input id="m-phone" placeholder="if you have it"></div>
     <div class="field"><label>EMAIL (optional)</label><input id="m-email"></div>
     <div class="field"><label>NOTE</label><input id="m-note" value="${esc(`${what} ${r.date}, ${r.address}, ${r.city}. ${r.source} ${r.source_date}`)}"></div>
     <p class="dim" style="margin:4px 0 0">Goes in as band warm, Stage new lead, Source "Market Monitor ${esc(r.type)} ${esc(r.date)}". Refused if the name, phone or email is already in the CRM.</p>`,
     m => ({ name: $('#m-name', m).value.trim(), phone: $('#m-phone', m).value.trim(), email: $('#m-email', m).value.trim(), note: $('#m-note', m).value.trim() }) , 'Make lead');
   if (!v || !v.name) return;
-  await act('/api/lead', { ...v, source: `Market Monitor ${r.type} ${r.date}` }, { tag: 'LEAD', text: `${v.name} is in the CRM as a new lead` });
+  await act('/api/lead', { ...v, source: `Market Monitor ${r.type} ${r.date}` }, { tag: 'LEAD', text: `${CC.priv ? 'The lead' : v.name} is in the CRM as a new lead` });
 }
 async function makeDeal(key) {
   const r = mktByKey(key); if (!r) return;

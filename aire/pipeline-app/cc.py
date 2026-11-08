@@ -46,6 +46,26 @@ def num(v):
 
 # ---------------- Reading the cache ----------------
 
+def plain_error(e) -> str | None:
+    """A read error in plain words for the screen. Never an exception name, status code or file."""
+    t = str(e or "")
+    if not t:
+        return None
+    if re.search(r"invalid_grant|expired|revoked|unauthori[sz]ed|\b401\b|credentials|sign.?in|token", t, re.I):
+        return "Google sign-in expired or was turned off, so sign in again"
+    if re.search(r"quota|rate.?limit|\b429\b", t, re.I):
+        return "Google limited how often this can be read, it tries again on the next pass"
+    if re.search(r"\b403\b|forbidden|permission|not have access", t, re.I):
+        return "access to this source was refused"
+    if re.search(r"\b404\b|not found|no such", t, re.I):
+        return "the sheet, tab or file was not found"
+    if re.search(r"timed? ?out|timeout", t, re.I):
+        return "the source took too long to answer"
+    if re.search(r"reset|refused|unreachable|name or service|nodename|urlerror|connection", t, re.I):
+        return "the source could not be reached"
+    return "the read did not finish"
+
+
 def freshness(meta: dict, name: str, now: datetime) -> dict:
     """ok, late (amber: past its refresh time), stale (red: three reads missed or past STALE_HOURS), failed (red) or
     missing, with the as-of time. A failed read keeps its last good rows and is never ok."""
@@ -71,6 +91,7 @@ def freshness(meta: dict, name: str, now: datetime) -> dict:
     elif pace and age > pace + GRACE_MIN:
         state = "late"
     return {"state": state, "at": at, "age_min": age, "source": meta.get("source"), "error": meta.get("error"),
+            "error_text": plain_error(meta.get("error")),
             "pace_min": pace, "late_after": pace + GRACE_MIN if pace else None}
 
 
@@ -510,14 +531,16 @@ def commission_mail(rows: list[dict], deals: list[dict] | None = None) -> list[d
     Commission for email is Paid when a closed deal on the sheet has that street, and No closed deal when none does, so
     money that came in for a deal the sheet does not show as closed gets looked at."""
     paid = {_street(r["subject"]) for r in rows if re.search(r"commission for", r.get("subject") or "", re.I)}
-    closed = [_street(d.get("deal")) for d in deals or [] if stage_of(d.get("status")) == "closed"]
+    num = lambda t: (re.search(r"\b(\d{2,6})\s+[a-z]", str(t or ""), re.I) or [None, None])[1]  # a house number, not "41st"
+    closed = [(_street(d.get("deal")), num(d.get("deal"))) for d in deals or [] if stage_of(d.get("status")) == "closed"]
     out = []
     for r in rows:
         s = r.get("subject") or ""
         if re.search(r"not processed", s, re.I):
             st = "Resolved" if _street(s) in paid else "Not processed"
         elif deals is not None and re.search(r"commission for", s, re.I):
-            st = "Paid" if any(_same_street(_street(s), c) for c in closed) else "No closed deal"
+            n = num(re.sub(r"^.*?commission for\s*", "", s, flags=re.I))  # "Commission for 12 Oak Ln" is house 12 only
+            st = "Paid" if any(_same_street(_street(s), c) and (not n or not cn or n == cn) for c, cn in closed) else "No closed deal"
         else:
             st = "Notice"
         out.append({**r, "status": st})
@@ -608,8 +631,8 @@ def deltas(rows: list[dict], row: dict, metric: str) -> dict:
     out = {}
     for span in (7, 30):
         k = (date.fromisoformat(row["day"]) - timedelta(days=span)).isoformat()
-        past = [r for r in rows if r["day"] <= k]
-        out[str(span)] = None if not past else round(row[metric] - past[-1][metric], 2)
+        past = [r for r in rows if str(r.get("day") or "") <= k and isinstance(r.get(metric), (int, float))]
+        out[str(span)] = None if not past or row.get(metric) is None else round(row[metric] - past[-1][metric], 2)
     return out
 
 
@@ -660,7 +683,10 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         "life": life((raw.get("life") or {}).get("rows") or {}, _rows(raw["outbox"]), today),
         "workouts": workouts((raw.get("workouts") or {}).get("rows") or {}, _rows(raw["outbox"]), today),
         "health": {"source": None, "note": "Health is skipped: no source chosen (Caleb, 2026-11-05)."},
-        "sync": raw.get("sync-status") or None,
+        "sync": ({**raw["sync-status"], "error_text": plain_error(raw["sync-status"].get("error")),
+                  "results": {k: ({**v, "error_text": plain_error(v.get("error"))} if isinstance(v, dict) and v.get("error") else v)
+                              for k, v in (raw["sync-status"].get("results") or {}).items()}}
+                 if isinstance(raw.get("sync-status"), dict) else None),
         "problems": [{"name": k, **v} for k, v in fresh.items() if v["state"] in ("failed", "stale", "late")],
     }
 

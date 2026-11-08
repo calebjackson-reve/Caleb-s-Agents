@@ -319,6 +319,37 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   run('CC.data = __cc');
 }
 
+// Reviewer findings on round 2: dialogs, toasts, the compose drawer, Market text, the map banner and counts.
+{
+  const tdp = (f.touches_due || []).find(r => r.display && /\s/.test(r.display) && r.phone);
+  if (tdp) {
+    run('CC.priv = true');
+    check(!run(`personSelect('')`).includes(run(`esc(${JSON.stringify(tdp.display)})`)), 'the task picker hides names with privacy on');
+    run('var __t = ""; modal = (t, h) => { __t = t + "|" + h; return Promise.resolve(null); };');
+    run(`touched(${JSON.stringify(tdp.person_id)})`);
+    check(/this person/i.test(run('__t')) && !run('__t').toUpperCase().includes(tdp.display.toUpperCase()), 'the Touched dialog says this person, not the name');
+    run(`var __drawer = {}; var __q = document.querySelector; document.querySelector = s => s === '#drawer' ? __drawer : (s === '#c-body' ? { addEventListener() {}, focus() {}, setSelectionRange() {}, value: '' } : __q(s));`);
+    run(`openCompose(${JSON.stringify(tdp.person_id)})`);
+    const dh = run('__drawer.innerHTML || ""');
+    check(dh && !dh.includes(tdp.display) && /class="cc-masked"/.test(dh) && !(tdp.last_messages || []).some(m => m.length > 15 && dh.includes(m.slice(12))), 'the compose drawer hides the name, masks the number and hides their texts');
+    run('document.querySelector = __q; S.compose = null;');
+  }
+  const mr = { kind: 'market', key: 'mx', type: 'permit', label: 'Roof', address: '1 Fixture Way', city: 'Zachary', date: '2026-11-01', subtype: 'Reroof', description: 'Reroof $350,000 for John Fixture', value: 350000, source: 'EBR permits', source_date: '2026-11-02' };
+  const mc = run(`CC.priv = true; pinCard(${JSON.stringify(mr)})`);
+  check(!/350,000|John Fixture/.test(mc), 'Market Monitor detail text hides dollars and names');
+  const fr2 = JSON.parse(JSON.stringify(ccdata.fresh)); fr2.deals = Object.assign({}, fr2.deals, { state: 'failed', error: 'x', error_text: 'access to this source was refused' });
+  run(`CC.data = Object.assign({}, __cc, { fresh: ${JSON.stringify(fr2)}, problems: [Object.assign({ name: 'deals' }, ${JSON.stringify(fr2.deals)})] })`);
+  check(/cc-banner/.test(render('map', true)) && /access to this source was refused/.test(render('dash', true)), 'the map pages carry the banner, and read errors show in plain words');
+  run('CC.data = __cc');
+  run(`S.data = Object.assign({}, __state, { feed_age_minutes: null, feed: Object.assign({}, __state.feed, { generated_at: null }) })`);
+  check(run(`CC.local('crm').state`) === 'missing', 'a feed with no build time is never green');
+  run('S.data = __state');
+  const cm = [{ subject: 'Commission for Fake Chapel', received: ccdata.today, status: 'No closed deal' }, { subject: 'x', received: ccdata.today, status: 'Not processed' }];
+  run(`CC.data = Object.assign({}, __cc, { commission_mail: ${JSON.stringify(cm)} })`);
+  check(/Commission to check<\/span><b class="cc-num">2</.test(render('dash', true)), 'the Dashboard commission tile counts the same two the nav does');
+  run('CC.data = __cc');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

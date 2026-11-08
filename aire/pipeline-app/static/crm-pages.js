@@ -57,7 +57,7 @@
       const run = d.feed_run || null, a = d.feed_age_minutes ?? age(f.generated_at);
       const failed = !d.feed_ok || (run && run.state === 'failed');
       return { source: 'CRM feed, AIRE CRM sheet', at: f.generated_at, age_min: a,
-        state: failed ? 'failed' : a > 60 ? 'stale' : a > 30 ? 'late' : 'ok',
+        state: failed ? 'failed' : a == null ? 'missing' : a > 60 ? 'stale' : a > 30 ? 'late' : 'ok',  // no build time: never green
         error: !d.feed_ok ? 'the CRM feed did not load' : failed ? `the rebuild at ${run.at_text} failed (${run.detail}), showing the feed from ${a} min ago` : null };
     }
     if (k === 'command') { const c = d.command || {}; return { source: 'KW Command reader', at: c.at, age_min: age(c.at),
