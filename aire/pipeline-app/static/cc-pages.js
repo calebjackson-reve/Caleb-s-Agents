@@ -19,10 +19,10 @@
         ${tile('Not processed', n(np.length), np.length ? 'KW has not processed these yet' : 'Nothing waiting', 'commission_mail')}
       </div>
       ${C.dealCards(d.deals.filter(r => r.stage === 'contract'))}
-      ${card('Your deals', live.length ? `<div class="cc-tablewrap"><table class="cc-table"><caption class="sr">Deals from the AIRE Deals sheet</caption>
+      ${card('Your deals', live.length ? `<div class="cc-tablewrap"><table class="cc-table cc-stack"><caption class="sr">Deals from the AIRE Deals sheet</caption>
         <thead><tr><th scope="col">Deal</th><th scope="col">Status</th><th scope="col" class="r">Price</th><th scope="col" class="r">Your commission, gross</th><th scope="col">Act of sale</th><th scope="col">Next</th></tr></thead>
-        <tbody>${live.map(r => `<tr><th scope="row">${esc(r.deal)}<small>${esc(r.side || '')}</small></th><td>${esc(r.status)}${r.days != null ? `<small>${r.days} days in stage</small>` : ''}</td>
-          <td class="r">${m(r.price)}</td><td class="r">${r.commission == null ? '<em>blank</em>' : m(r.commission)}</td><td>${r.act ? day(r.act) : ''}</td><td>${C.scrub(r.next || '')}</td></tr>`).join('')}</tbody></table></div>`
+        <tbody>${live.map(r => `<tr><th scope="row">${esc(r.deal)}<small>${esc(r.side || '')}</small></th><td data-label="Status">${esc(r.status)}${r.days != null ? `<small>${r.days} day${r.days === 1 ? '' : 's'} in stage</small>` : ''}</td>
+          <td class="r" data-label="Price">${m(r.price)}</td><td class="r" data-label="Your commission, gross">${r.commission == null ? '<em>blank</em>' : m(r.commission)}</td><td data-label="Act of sale">${r.act ? day(r.act) : ''}</td><td data-label="Next">${C.scrub(r.next || '')}</td></tr>`).join('')}</tbody></table></div>`
         : empty('No deals on the sheet yet.'), 'deals')}
       <div class="cc-grid">
         ${card('Paydays, next 30 days', d.closings.length ? `<ul class="cc-list">${d.closings.map(r => `<li class="cc-ev"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.deal)}<small>${r.from === 'both' ? 'Deals sheet and calendar agree' : r.from === 'sheet' ? 'from the Deals sheet' : 'from the calendar only'}</small></span><b class="cc-amt">${r.money == null ? '<em>blank</em>' : m(r.money)}</b></li>`).join('')}</ul>` : empty('No act of sale in the next 30 days.'), ['calendar', 'deals'])}

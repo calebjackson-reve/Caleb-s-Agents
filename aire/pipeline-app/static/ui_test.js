@@ -262,6 +262,18 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   check(render('sources', true).includes(pl) && render('map', true).includes(pl), 'Sources and the Map carry that sentence');
 }
 
+// Round 2, item 12: phone width. The page itself is checked at 390 px in Chrome (no sideways scroll on any page); these keep
+// the rules that make it so.
+{
+  const uiPhone = (ui.match(/@media \(max-width: 720px\) \{[^]*?\n\}/) || [''])[0];
+  check(/\.side \.brand \{ position: sticky; left: 0;/.test(uiPhone) && /\.side \.brand-name, \.side \.brand-sub \{ display: none; \}/.test(uiPhone), 'phone: the P mark is pinned at the left of the nav, never clipped');
+  check(/\.nav-h \{ display: inline-flex;/.test(uiPhone) && /\.nav-g \+ \.nav-g \{ border-left/.test(uiPhone), 'phone: nav groups keep their names as dividers');
+  check(/\.cc-row-main, \.cc-what, \.cc-note, \.cc-row-why[^{]*\{ min-width: 0; overflow-wrap: anywhere; \}/.test(ui), 'long words in notes wrap instead of spilling sideways');
+  const com = render('commission', false), tds = (com.match(/<table class="cc-table cc-stack">[^]*?<\/table>/) || [''])[0].match(/<td[^>]*>/g) || [];
+  check(tds.length > 0 && tds.every(t => /data-label="[^"]+"/.test(t)) && /td::before \{ content: attr\(data-label\)/.test(ui), 'phone: the Commission table stacks into rows with every cell labelled');
+  check(/class="cc-rows cc-tasks"/.test(render('tasks', true)), 'Tasks rows get their phone spacing');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

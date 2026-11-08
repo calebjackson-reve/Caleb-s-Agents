@@ -157,7 +157,12 @@ body { background: #0a0a0b; background-image: none; }
   .side { flex-direction: row; overflow-x: auto; overflow-y: hidden; }
   .nav { flex-direction: row; gap: 4px; }
   .nav-g { flex-direction: row; gap: 4px; }
-  .nav-h { display: none; }
+  /* Phone: the nav is one sideways strip. The P mark stays pinned at its left edge, never clipped or scrolled away, and
+     each group keeps its name as a small divider so the strip still reads Today, People, Deals, Numbers, You, System. */
+  .side .brand { position: sticky; left: 0; z-index: 2; background: var(--cc-panel); border-bottom: 0; padding: 0 8px 0 0; flex: none; }
+  .side .brand-name, .side .brand-sub { display: none; }
+  .nav-g + .nav-g { border-left: 1px solid var(--cc-line); padding-left: 8px; margin-left: 4px; }
+  .nav-h { display: inline-flex; align-items: center; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--cc-muted); padding: 0 2px; white-space: nowrap; }
   .nav button { min-height: 40px; padding: 8px 12px; }
   .top { gap: 8px; }
   .top .operator, .top .clock { display: none; }
@@ -190,4 +195,18 @@ body { background: #0a0a0b; background-image: none; }
   .cc-tile .cc-src-n { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
   .cc-ev .cc-chip { display: inline-block; }
   .cc-lead-top { align-items: flex-start; }
+}
+
+/* Long words, links and numbers in notes wrap instead of pushing the row sideways (Touches due, Tasks, the Dashboard). */
+.cc-row-main, .cc-what, .cc-note, .cc-row-why, .cc-lead, .cc-deal { min-width: 0; overflow-wrap: anywhere; }
+/* Phone: a table becomes labelled rows, each cell with its column name, so nothing scrolls sideways unlabelled. */
+@media (max-width: 720px) {
+  .cc-table.cc-stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .cc-table.cc-stack, .cc-table.cc-stack tbody, .cc-table.cc-stack tr, .cc-table.cc-stack th, .cc-table.cc-stack td { display: block; width: 100%; }
+  .cc-table.cc-stack tr { padding: 10px 0; border-bottom: 1px solid var(--cc-line); }
+  .cc-table.cc-stack td { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; text-align: right; border: 0; }
+  .cc-table.cc-stack td::before { content: attr(data-label); color: var(--cc-muted); text-align: left; flex: none; }
+  .cc-table.cc-stack th[scope="row"] { padding: 0 0 4px; border: 0; }
+  .cc-tasks .cc-row .cc-acts button { min-height: 40px; }
+  .cc-tasks .cc-pills { margin: 4px 0; }
 }
