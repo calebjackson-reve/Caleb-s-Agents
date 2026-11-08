@@ -195,7 +195,7 @@ function stopScreen(f) {
 }
 
 // ---------------------------------------------------------------- navigation
-function go(v) { S.view = v; S.filter = 'all'; try { history.replaceState(null, '', '#' + v); } catch (e) { } render(); $('#main').scrollTop = 0; }
+function go(v) { if (S.view === 'search' && v !== 'search' && S.q) { S.q = ''; const sb = $('#search'); if (sb) sb.value = ''; } S.view = v; S.filter = 'all'; try { history.replaceState(null, '', '#' + v); } catch (e) { } render(); $('#main').scrollTop = 0; }
 // A link like 127.0.0.1:4747/#commission opens that page.
 (function () { const h = location.hash.slice(1); if (/^[a-z]+$/.test(h)) S.view = h; })();
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (/^[a-z]+$/.test(h) && h !== S.view) go(h); });
@@ -392,12 +392,11 @@ document.addEventListener('keydown', e => {
   else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }
   else if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else closeDrawer(); }
 });
-// The header search works from every page: a page with its own list filters it, every other page shows Search results.
-// Clearing the box goes back to the page you were on.
+// The header search works the same on every page: typing opens Search, across people, tasks, deals, leads and drafts.
+// Clearing the box goes back to the page you were on. Leaving Search clears the box, so no page stays filtered.
 $('#search').addEventListener('input', e => {
   S.q = e.target.value;
-  const own = window.CC && CC.SEARCHES_ITSELF.includes(S.view);
-  if (S.q && !own && S.view !== 'search') { S.before = S.view; S.view = 'search'; }
+  if (S.q && S.view !== 'search') { S.before = S.view; S.view = 'search'; }
   else if (!S.q && S.view === 'search') S.view = S.before || 'dash';
   render(); const b = $('#search'); if (document.activeElement !== b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
 });

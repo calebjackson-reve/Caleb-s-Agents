@@ -445,6 +445,14 @@ check(/How the \d+ from Next_Action are chosen\.<\/b> A contact's Next_Action be
   check(/onclick="go\('touches'\)">Touches due<\/button>/.test(dsh) && !/>Log a touch</.test(dsh), 'the Dashboard button is named for the page it opens');
 }
 
+// Round 3, item 9: the header search behaves the same on every page: typing opens Search, leaving Search clears it.
+check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'search'\) \{ S\.before = S\.view; S\.view = 'search'; \}/.test(appjs)
+  && /function go\(v\) \{ if \(S\.view === 'search' && v !== 'search' && S\.q\) \{ S\.q = ''/.test(appjs), 'typing in the header opens Search from every page, and leaving Search clears the box');
+{
+  const d0 = run('drafts()[0] || null');
+  if (d0 && d0.name) { run(`S.q = ${JSON.stringify(d0.name.split(' ')[0])}`); check(/<h3 class="cc-sub-h">Drafts <span class="cc-count">/.test(run('CC.priv = true; CC.views.search()')), 'Search finds drafts too'); run(`S.q = ''`); }
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

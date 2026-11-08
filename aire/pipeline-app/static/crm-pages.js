@@ -235,8 +235,8 @@
   }
 
   // ---------------- Search: the header box from any page. Pages with a list filter themselves; the rest come here.
-  C.SEARCHES_ITSELF = ['touches', 'tasks', 'deals', 'ccleads', 'queue', 'monitor'];
-  C.noMatch = () => C.empty(`No match for “${esc(S.q)}”. Search looks at names, streets, phones, emails, tasks, deals and leads.`);
+  C.SEARCHES_ITSELF = [];  // every page opens Search the same way (round 3)
+  C.noMatch = () => C.empty(`No match for “${esc(S.q)}”. Search looks at names, streets, phones, emails, tasks, deals, leads and drafts.`);
   function search() {
     const f = feedF(), q = S.q || '';
     if (!q) return `<div class="cc-page">${C.head('Search', 'Find a person, task, deal or lead from any page.')}${C.empty('Type in the box at the top.')}</div>`;
@@ -248,7 +248,8 @@
     const tk = (f.tasks || []).filter(t => matches(`${t.task} ${t.display}`));
     const dl = C.data ? C.data.deals.filter(r => matches(`${r.deal} ${r.status} ${r.side} ${r.next}`)) : [];
     const ld = C.data ? C.data.leads.filter(r => matches(`${r.name} ${r.phone} ${r.email} ${r.source}`)) : [];
-    const n = people.length + tk.length + dl.length + ld.length;
+    const all = typeof drafts === 'function' ? drafts() : [], dr = all.filter(d => matches(`${d.name} ${d.subject || ''} ${d.body || ''}`));
+    const n = people.length + tk.length + dl.length + ld.length + dr.length;
     const group = (title, rows, li, more) => rows.length ? `<h3 class="cc-sub-h">${title} <span class="cc-count">${rows.length}</span></h3><ul class="cc-rows">${rows.slice(0, 15).map(li).join('')}</ul>${rows.length > 15 ? `<p class="cc-note">${more}</p>` : ''}` : '';
     const body = !n ? C.noMatch() : group('People', people, p => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${C.ini(p.display)}</span><div class="cc-row-main"><h3>${C.who(p.display || 'No name')}</h3>
         <div class="cc-pills">${p.band ? `<span class="cc-pill ${band(p.band)}">${esc(p.band)}</span>` : ''}${p.stage ? `<span class="cc-pill k-other">${esc(p.stage)}</span>` : ''}</div>
@@ -256,7 +257,8 @@
         <div class="cc-acts">${textBtn(p.person_id, p)}<button type="button" class="cc-primary" onclick="touched('${esc(p.person_id)}')">✓ Touched</button><button type="button" onclick="openTask('${esc(p.person_id)}')">＋ Task</button></div></li>`, 'Showing 15. Add more of the name or street to narrow it.')
       + group('Tasks', tk, t => `<li class="cc-row"><span class="cc-av" aria-hidden="true">☑</span><div class="cc-row-main"><h3>${C.scrub(t.task, [t.display])}</h3><p class="cc-note">${t.display ? C.who(t.display) + ' · ' : ''}${t.due ? 'Due ' + esc(C.day(t.due)) : 'No due date'}</p></div></li>`, 'Showing 15. Open Tasks for all of them.')
       + group('Deals', dl, r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">⌂</span><div class="cc-row-main"><h3>${esc(r.deal)}</h3><p class="cc-note">${esc(r.status)} · ${C.m(r.price)}${r.act ? ' · Act of sale ' + esc(C.day(r.act)) : ''}</p></div><div class="cc-acts"><button type="button" onclick="go('deals')">Open Deals</button></div></li>`, '')
-      + group('Leads', ld, r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">✚</span><div class="cc-row-main"><h3>${C.who(r.name || 'Website lead')}</h3><p class="cc-note">${esc(r.source || '')} · ${esc((r.due || {}).label || '')}</p></div><div class="cc-acts"><button type="button" onclick="go('ccleads')">Open Leads</button></div></li>`, '');
+      + group('Leads', ld, r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">✚</span><div class="cc-row-main"><h3>${C.who(r.name || 'Website lead')}</h3><p class="cc-note">${esc(r.source || '')} · ${esc((r.due || {}).label || '')}</p></div><div class="cc-acts"><button type="button" onclick="go('ccleads')">Open Leads</button></div></li>`, '')
+      + group('Drafts', dr, d => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${d.kind === 'text' ? '▭' : '✉'}</span><div class="cc-row-main"><h3>${C.who(d.name)}</h3><p class="cc-note">${d.reply ? 'Reply to write' : d.kind === 'text' ? 'Text draft' : 'Email draft'}</p></div><div class="cc-acts"><button type="button" class="cc-primary" onclick="openCompose('${esc(d.person_id)}', ${all.indexOf(d)})">Open</button></div></li>`, 'Showing 15. Open Drafts for all of them.');
     return page('Search', `${n} match${n === 1 ? '' : 'es'} for “${esc(q)}”.`, body, ['crm', 'deals', 'leads']);
   }
 
