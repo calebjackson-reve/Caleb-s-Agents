@@ -230,12 +230,12 @@ async function makeLead(key) {
   const r = mktByKey(key); if (!r) return;
   const what = r.type === 'permit' ? `${r.label} permit` : r.label;
   const v = await modal('Make lead', `
-    <div class="field"><label>NAME</label><input id="m-name"${CC.priv ? ' class="cc-masked"' : ''} value="${esc(r.owner || 'Owner at ' + r.address)}"></div>
+    <div class="field"><label>NAME</label><input id="m-name" ${CC.priv && r.owner ? 'placeholder="Owner name hidden · press Show to see it"' : `value="${esc(r.owner || 'Owner at ' + r.address)}"`}></div>
     <div class="field"><label>PHONE (optional)</label><input id="m-phone" placeholder="if you have it"></div>
     <div class="field"><label>EMAIL (optional)</label><input id="m-email"></div>
     <div class="field"><label>NOTE</label><input id="m-note" value="${esc(`${what} ${r.date}, ${r.address}, ${r.city}. ${r.source} ${r.source_date}`)}"></div>
     <p class="dim" style="margin:4px 0 0">Goes in as band warm, Stage new lead, Source "Market Monitor ${esc(r.type)} ${esc(r.date)}". Refused if the name, phone or email is already in the CRM.</p>`,
-    m => ({ name: $('#m-name', m).value.trim(), phone: $('#m-phone', m).value.trim(), email: $('#m-email', m).value.trim(), note: $('#m-note', m).value.trim() }) , 'Make lead');
+    m => ({ name: $('#m-name', m).value.trim() || (CC.priv && r.owner ? r.owner : ''), phone: $('#m-phone', m).value.trim(), email: $('#m-email', m).value.trim(), note: $('#m-note', m).value.trim() }) , 'Make lead');
   if (!v || !v.name) return;
   await act('/api/lead', { ...v, source: `Market Monitor ${r.type} ${r.date}` }, { tag: 'LEAD', text: `${CC.priv ? 'The lead' : v.name} is in the CRM as a new lead` });
 }

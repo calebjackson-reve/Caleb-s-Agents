@@ -217,3 +217,4 @@ body { background: #0a0a0b; background-image: none; }
 
 /* With money and contacts hidden, a contact or message typed or prefilled in a dialog shows as dots, like a password. */
 .cc-masked { -webkit-text-security: disc; text-security: disc; }
+

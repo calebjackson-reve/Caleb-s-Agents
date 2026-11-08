@@ -414,6 +414,23 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   run('CC.data = __cc');
 }
 
+// Round 3, item 6: no password-style dots in a form field (iCloud Passwords read them as a login and opened an empty grey
+// menu over Phone). A hidden prefilled lead keeps its details out of the boxes and Save still sends them.
+{
+  run('CC.priv = true; var __lf = null; modal = (t, h, ok) => { __lf = { h, ok }; return Promise.resolve(null); };');
+  run('CC.addLead()');
+  check(!/<input[^>]*cc-masked/.test(run('__lf.h')), 'Add a lead has no password-style field with privacy on');
+  const lead = (ccdata.leads || []).find(l => l.name && l.phone);
+  if (lead) {
+    run(`CC.leadsTest = ${JSON.stringify(ccdata.leads.indexOf(lead))}; CC.addLead(CC.leadsTest)`);
+    const h = run('__lf.h');
+    check(!h.includes(run(`esc(${JSON.stringify(lead.name)})`)) && /placeholder="Hidden · press Show at the top to see it"/.test(h), 'a hidden prefilled lead shows a placeholder, not the name or a masked value');
+    const v = run('__lf.ok(document)');
+    check(v && v.name === lead.name && v.phone === lead.phone.trim(), 'Save still sends the hidden lead details', JSON.stringify(v && { n: !!v.name, p: !!v.phone }));
+  }
+  check(!/<input[^>]*\$\{maskAttr\(\)\}/.test(appjs) && /type="button" class="send-btn" id="m-ok"/.test(appjs), 'no masked input in the compose drawer, and dialog buttons are not submit buttons');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

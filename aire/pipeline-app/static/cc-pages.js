@@ -136,14 +136,18 @@
   C.addLead = async i => {
     const r = i == null ? {} : leadRows()[i] || {};
     const SRC = ['Website', 'Referral', 'Sign call', 'Open house', 'Social', 'Past client', 'Other'];
+    // A lead copied from a card: with contacts hidden its details stay out of the boxes (a placeholder says so) and Save
+    // keeps them. No password-style dots, which made password managers open an empty menu over the form.
+    const fill = v => (!v ? '' : C.priv ? 'placeholder="Hidden · press Show at the top to see it"' : `value="${esc(v)}"`);
+    const keep = (id, v) => $(id).value.trim() || (C.priv ? v || '' : '');
     const v = await modal('Add a lead', `
-      <div class="field"><label for="m-lname">Name</label><input id="m-lname" autocomplete="off"${C.priv ? ' class="cc-masked"' : ''} value="${esc(r.name || '')}" required></div>
-      <div class="field"><label for="m-lphone">Phone</label><input id="m-lphone" type="tel" inputmode="tel" autocomplete="off"${C.priv ? ' class="cc-masked"' : ''} value="${esc(r.phone || '')}"></div>
-      <div class="field"><label for="m-lemail">Email</label><input id="m-lemail" type="email" autocomplete="off"${C.priv ? ' class="cc-masked"' : ''} value="${esc(r.email || '')}"></div>
+      <div class="field"><label for="m-lname">Name</label><input id="m-lname" autocomplete="off" ${fill(r.name)} required></div>
+      <div class="field"><label for="m-lphone">Phone</label><input id="m-lphone" type="tel" inputmode="tel" autocomplete="off" ${fill(r.phone)}></div>
+      <div class="field"><label for="m-lemail">Email</label><input id="m-lemail" type="email" autocomplete="off" ${fill(r.email)}></div>
       <div class="field"><label for="m-lsrc">Source</label><select id="m-lsrc">${SRC.map(x => `<option ${(r.source ? /luxury|website/i.test(r.source) && x === 'Website' : x === 'Website') ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
       <p class="cc-note">Saved to the CRM as a new lead. Refused if the name, phone or email is already there or on Do Not Contact.</p>`,
-      m => { const name = $('#m-lname', m).value.trim(); if (!name) { $('#m-lname', m).focus(); return false; }
-        return { name, phone: $('#m-lphone', m).value.trim(), email: $('#m-lemail', m).value.trim(), source: $('#m-lsrc', m).value + ' ' + (C.data ? C.data.today : todayISO()), next_action: 'Reach out: new lead' }; }, 'Save lead');
+      m => { const name = keep('#m-lname', r.name); if (!name) { $('#m-lname', m).focus(); return false; }
+        return { name, phone: keep('#m-lphone', r.phone), email: keep('#m-lemail', r.email), source: $('#m-lsrc', m).value + ' ' + (C.data ? C.data.today : todayISO()), next_action: 'Reach out: new lead' }; }, 'Save lead');
     if (v) await act('/api/lead', v, { tag: 'LEAD', text: `${C.priv ? 'The lead' : v.name} is in the CRM as a new lead` }).then(ok => { if (ok) C.load(); });
   };
   Object.assign(C.views, { commission, deadlines, calendar, ccleads });

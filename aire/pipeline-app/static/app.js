@@ -241,7 +241,7 @@ function renderDrawer() {
     ${c.last_messages && c.last_messages.length && !H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
     ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${C2 ? C2.scrub(c.next_action || row.next_action, [c.name]) : esc(c.next_action || row.next_action)}</div>` : ''}
     <div class="seg"><button class="${c.kind === 'text' ? 'on' : ''}" ${canText ? '' : 'disabled'} onclick="setKind('text')">▭ TEXT</button><button class="${c.kind === 'email' ? 'on' : ''}" ${canEmail ? '' : 'disabled'} onclick="setKind('email')">✉ EMAIL</button></div>
-    <div class="field"><label>TO</label><input id="c-to"${maskAttr()} value="${esc(to)}" ${to ? 'readonly' : ''} placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}"></div>
+    <div class="field"><label>TO</label>${H && to ? `<input id="c-to" type="hidden" value="${esc(to)}"><p class="cc-hid">${c.kind === 'text' ? 'Number' : 'Email'} hidden · press Show at the top to see it</p>` : `<input id="c-to" value="${esc(to)}" ${to ? 'readonly' : ''} placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}">`}</div>
     ${c.kind === 'email' ? `<div class="field"><label>SUBJECT</label><input id="c-subject" value="${esc(c.subject || '')}" placeholder="Subject"></div>` : ''}
     <div class="field"><label>${c.kind === 'text' ? 'TEXT' : 'EMAIL'} DRAFT${c.reply ? ' · write it yourself, they texted last' : c.pool ? ' · from the ' + esc(c.pool) + ' pool' : ''}</label><textarea id="c-body"${maskAttr()} placeholder="${c.reply ? 'Answer what they said.' : 'Write the message.'}">${esc(c.body || '')}</textarea><div class="hint"><span id="c-count">${(c.body || '').length} chars</span><span>${cap} ${c.kind}${cap === 1 ? '' : 's'} left today</span></div></div>
   </div>
@@ -271,11 +271,14 @@ async function touchFromCompose() { const c = S.compose; const what = await ask(
 function modal(title, bodyHTML, onOK, okLabel = 'Save', opts = {}) {
   return new Promise(resolve => {
     const m = $('#modal'); m.hidden = false;
-    m.innerHTML = `<section class="panel"><div class="dh"><div class="who"><b>${title}</b></div><button class="x" onclick="closeModal()" aria-label="Close">×</button></div><div class="dbody">${bodyHTML}</div><div class="dfoot"><button class="send-btn" id="m-ok">${okLabel}</button>${opts.info ? '' : '<button class="ghost-btn" onclick="closeModal()">Cancel</button>'}</div></section>`;
+    m.innerHTML = `<section class="panel"><div class="dh"><div class="who"><b>${title}</b></div><button class="x" onclick="closeModal()" aria-label="Close">×</button></div><div class="dbody">${bodyHTML}</div><div class="dfoot"><button type="button" class="send-btn" id="m-ok">${okLabel}</button>${opts.info ? '' : '<button type="button" class="ghost-btn" onclick="closeModal()">Cancel</button>'}</div></section>`;
     m._resolve = resolve;
     // resolve with the value first: closeModal() resolves whatever is still pending with null (that is Cancel)
     $('#m-ok').onclick = async () => { const v = onOK(m); if (v === false) return; m._resolve = null; resolve(v); closeModal(); };
     m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', title.replace(/<[^>]+>/g, ''));
+    // Password managers (1Password, iCloud Passwords) opened an empty grey menu over these fields. They are not logins:
+    // tell every manager to leave them alone.
+    m.querySelectorAll('input, textarea').forEach(i => { i.setAttribute('autocomplete', 'off'); i.setAttribute('data-1p-ignore', ''); i.setAttribute('data-lpignore', 'true'); i.setAttribute('data-bwignore', ''); i.setAttribute('data-form-type', 'other'); });
     const first = m.querySelector('input, textarea, select'); (first || $('#m-ok')).focus();
     m.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') $('#m-ok').click(); }));
   });
