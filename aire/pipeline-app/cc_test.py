@@ -419,7 +419,8 @@ class JudgeRound2(unittest.TestCase):
         self.assertEqual(m["warnings"], ["The mortgage rate (Freddie Mac, via FRED) did not load: the site took too long to answer",
                                          "Realtor.com inventory by ZIP did not load: the connection dropped"])
         self.assertFalse(any(re.search(r"Error|Errno|urlopen|<", w) for w in m["warnings"]))
-        self.assertEqual({k: v["state"] for k, v in m["parts"].items()}, {"rate": "failed", "areas": "failed", "gbrar": "missing"})
+        self.assertEqual({k: v["state"] for k, v in m["parts"].items()},
+                         {"rate": "failed", "areas": "failed", "gbrar": "missing", "areas_county": "ok", "areas_zip": "failed"})
         self.assertEqual(cc.market({"rate": {"rate": 6.1, "change": 0, "date": "2026-11-05"}, "warnings": []})["parts"]["rate"]["state"], "ok")
 
 

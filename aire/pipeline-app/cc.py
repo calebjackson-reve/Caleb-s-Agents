@@ -777,6 +777,11 @@ def market_parts(m: dict) -> dict:
     for part, key, label in MARKET_PARTS:
         bad = [plain_warning(w) for w in warns if str(w).lower().startswith(key.lower())]
         out[part] = {"state": "failed" if bad else ("ok" if m.get(part) else "missing"), "note": "; ".join(bad), "label": label}
+    # Realtor.com reads parishes and ZIPs as two files: one failing leaves the other's cards current.
+    for level in ("county", "zip"):
+        bad = [plain_warning(w) for w in warns if str(w).lower().startswith(f"realtor.com {level}")]
+        have = any(a.get("level") == level for a in m.get("areas") or [])
+        out[f"areas_{level}"] = {"state": "failed" if bad else ("ok" if have else "missing"), "note": "; ".join(bad), "label": "Realtor.com inventory"}
     return out
 
 

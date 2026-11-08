@@ -47,7 +47,7 @@ const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); retur
           <p><b>${n(a.active)}</b> active ${yy(a.active_yy)}</p><p><b>${money(a.median_price)}</b> median list ${yy(a.median_price_yy)}</p>
           <p><b>${n(a.dom)}</b> median days on market</p>${a.flag ? '<p class="cc-warn">Realtor.com marks this ZIP\'s data as less reliable.</p>' : ''}
           ${twin ? `<p class="cc-note">Same numbers as ${esc(twin.area)} in Realtor.com's own file: every listing ${a.level === 'zip' ? 'in the parish is in this ZIP' : 'is in ZIP ' + esc(twin.id)}.</p>` : ''}
-          ${msrc('Realtor.com inventory', mon(a.month), 'areas')}</div>`; }).join('')}</div>`
+          ${msrc('Realtor.com inventory', mon(a.month), 'areas_' + a.level)}</div>`; }).join('')}</div>`
         : empty('No area numbers yet.'), [])}
       ${card('Talking points', (m.points || []).length ? `<ul class="cc-points">${m.points.map(p => `<li>${C.scrubMoney(p)}</li>`).join('')}</ul><div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyPoints()">Copy the talking points</button></div><p class="cc-note">Built only from the numbers above, each with its source and date. Check the date before you quote one to a client.</p>` : empty('No numbers yet, so no talking points.'), 'market')}
       ${(m.warnings || []).length ? `<p class="cc-warn">${m.warnings.map(esc).join('. ')}. Everything else on this page loaded in that read.</p>` : ''}
