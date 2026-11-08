@@ -75,7 +75,7 @@ function mountMap(dealsOnly) {
   const el = $('#pmap'); if (!el) return;
   if (S.map) S.map.destroy();
   S.mapDealsOnly = !!dealsOnly;
-  S.map = PMap.create(el, { view: S.mapView, base: S.mapF.base, onMove: v => { S.mapView = v; renderMapSide(); }, onPick: p => { S.pick = p ? p.key : ''; S.map.setData({ selected: S.pick }); renderMapSide(); } });
+  S.map = PMap.create(el, { view: S.mapView, base: S.mapF.base, onBase: b => { S.mapF.base = b; toast('warn', 'MAP', "Street tiles didn't load, so the map switched to Satellite."); }, onMove: v => { S.mapView = v; renderMapSide(); }, onPick: p => { S.pick = p ? p.key : ''; S.map.setData({ selected: S.pick }); renderMapSide(); } });
   const d = mapData(dealsOnly); S.map.setData(d);
   if (!S.mapView) { const pts = homeArea((dealsOnly ? d.deals : d.pins.concat(d.deals)).map(p => [p.lat, p.lng])); if (pts.length) S.map.fit(pts, 13); }
   renderMapSide();

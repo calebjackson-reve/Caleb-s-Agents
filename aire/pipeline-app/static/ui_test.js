@@ -198,6 +198,10 @@ check(/onclick="CC\.addLead\(\)"/.test(render('dash', true)) && /onclick="CC\.ad
   run('S.data = __state');
 }
 
+// Round 2, item 7: street tiles that keep failing switch the map to Satellite by itself.
+check(run('PMap.streetFailing(6, 0)') && run('PMap.streetFailing(9, 3)') && !run('PMap.streetFailing(5, 0)') && !run('PMap.streetFailing(6, 30)'), 'street tiles failing six times with none drawn switch the map to Satellite');
+check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')) && /Street tiles didn't load, so this is Satellite/.test(mapjs), 'the switch is remembered and the map says why');
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

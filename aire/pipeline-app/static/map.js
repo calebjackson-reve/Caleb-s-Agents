@@ -17,13 +17,22 @@ window.PMap = (function () {
   const project = (lat, lng, z) => { const s = TILE * 2 ** z, sin = Math.sin(lat * Math.PI / 180); return [(lng + 180) / 360 * s, (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * s]; };
   const unproject = (x, y, z) => { const s = TILE * 2 ** z, n = Math.PI - 2 * Math.PI * y / s; return [180 / Math.PI * Math.atan(Math.sinh(n)), x / s * 360 - 180]; };
 
+  // Street tiles that keep failing (a server that refuses, as OpenStreetMap's did with 403) switch the map to Satellite
+  // by itself, so the map is never a blank grid. Six failures with no tile drawn, or failures outnumbering draws three to one.
+  function streetFailing(errs, oks) { return errs >= 6 && (oks === 0 || errs >= oks * 3); }
+
   function create(el, opts = {}) {
     el.classList.add('pmap');
     el.innerHTML = '<div class="pm-tiles"></div><canvas class="pm-canvas"></canvas><div class="pm-zoom"><button data-z="1" title="Zoom in">+</button><button data-z="-1" title="Zoom out">−</button></div><div class="pm-attr"></div><div class="pm-hint" hidden></div>';
     const tilesEl = el.querySelector('.pm-tiles'), cv = el.querySelector('.pm-canvas'), ctx = cv.getContext('2d'), attr = el.querySelector('.pm-attr'), hint = el.querySelector('.pm-hint');
     const st = { center: (opts.view && opts.view.center) || [30.45, -91.15], zoom: (opts.view && opts.view.zoom) || 10, base: opts.base || 'street',
       data: { pins: [], deals: [], market: [], farms: [], selected: '' }, hits: [], w: 0, h: 0, draw: null, raf: 0, pulse: 0, dead: false };
-    const tiles = new Map();
+    const tiles = new Map(), loads = { ok: 0, err: 0 };
+    function tileDone(ok) {
+      if (st.base !== 'street') return;
+      loads[ok ? 'ok' : 'err']++;
+      if (streetFailing(loads.err, loads.ok)) { api.setBase('sat'); st.fellBack = true; draw(); if (opts.onBase) opts.onBase('sat'); }
+    }
 
     function clampZoom(z) { return Math.max(3, Math.min(BASES[st.base].max, z)); }
     function centerPx() { return project(st.center[0], st.center[1], st.zoom); }
@@ -39,11 +48,11 @@ window.PMap = (function () {
         const wx = ((x % n) + n) % n, key = `${st.base}/${z}/${wx}/${y}`;
         want.add(key + '@' + x);
         let img = tiles.get(key + '@' + x);
-        if (!img) { img = new Image(); img.draggable = false; img.alt = ''; img.onerror = () => img.classList.add('err'); img.src = base.url(z, wx, y); tilesEl.appendChild(img); tiles.set(key + '@' + x, img); }
+        if (!img) { img = new Image(); img.draggable = false; img.alt = ''; img.onerror = () => { img.classList.add('err'); tileDone(false); }; img.onload = () => tileDone(true); img.src = base.url(z, wx, y); tilesEl.appendChild(img); tiles.set(key + '@' + x, img); }
         img.style.transform = `translate(${Math.round(x * TILE - cx + st.w / 2)}px, ${Math.round(y * TILE - cy + st.h / 2)}px)`;
       }
       for (const [k, img] of tiles) if (!want.has(k)) { img.remove(); tiles.delete(k); }
-      attr.textContent = base.attr;
+      attr.textContent = st.fellBack && st.base === 'sat' ? "Street tiles didn't load, so this is Satellite · " + base.attr : base.attr;
     }
 
     function dot(x, y, r, fill, ring) {
@@ -201,9 +210,9 @@ window.PMap = (function () {
       st.zoom = z; st.center = unproject((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, z); draw(); emitMove();
     }
     draw();
-    return {
+    const api = {
       setData(d) { st.data = { ...st.data, ...d }; draw(); },
-      setBase(b) { if (!BASES[b] || b === st.base) return; st.base = b; st.zoom = clampZoom(st.zoom); for (const img of tiles.values()) img.remove(); tiles.clear(); draw(); },
+      setBase(b) { if (!BASES[b] || b === st.base) return; st.base = b; loads.ok = loads.err = 0; if (b === 'street') st.fellBack = false; st.zoom = clampZoom(st.zoom); for (const img of tiles.values()) img.remove(); tiles.clear(); draw(); },
       fit,
       focus(lat, lng, zoom = 16) { st.zoom = clampZoom(zoom); st.center = [lat, lng]; draw(); emitMove(); },
       bounds() { const a = toLatLng(0, 0), b = toLatLng(st.w, st.h); return { north: a[0], west: a[1], south: b[0], east: b[1] }; },
@@ -212,6 +221,7 @@ window.PMap = (function () {
       view: () => ({ center: st.center.slice(), zoom: st.zoom }),
       destroy() { st.dead = true; cancelAnimationFrame(st.raf); ro.disconnect(); document.removeEventListener('keydown', onKey, true); el.innerHTML = ''; },
     };
+    return api;
   }
 
   // Ray casting, [lat, lng] pairs. Same rule as aire/map-crm/geo.py so the screen and the feed agree.
@@ -224,5 +234,5 @@ window.PMap = (function () {
     }
     return inside;
   }
-  return { create, inPolygon, BAND, STAGE, MARKET };
+  return { create, inPolygon, streetFailing, BAND, STAGE, MARKET };
 })();
