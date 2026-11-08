@@ -25,7 +25,8 @@
 .cc-page :focus-visible { outline: 2px solid var(--cc-coral); outline-offset: 2px; }
 .cc-page button:disabled { opacity: .4; cursor: default; }
 
-.cc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr)); gap: 12px; }
+.cc-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }  /* every page has a multiple of 4 tiles */
+@media (max-width: 1100px) { .cc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .cc-tile { display: grid; gap: 6px; align-content: start; text-align: left; font: inherit; color: inherit;
   background: var(--cc-panel); border: 1px solid var(--cc-line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
 button.cc-tile { cursor: pointer; transition: border-color .15s, background .15s; }
@@ -162,7 +163,7 @@ button.cc-tile:hover { background: var(--cc-raise); }
 @media (max-width: 560px) { .cc-dayview .cc-ev { grid-template-columns: 5rem minmax(0, 1fr); font-size: 16px; } }
 
 /* Lead cards: a color per lead, full contact details, everything the lead email carried */
-.cc-lead { border-left: 4px solid var(--av); background: linear-gradient(135deg, color-mix(in srgb, var(--av) 10%, var(--cc-raise)), var(--cc-raise) 55%); gap: 12px; padding: 16px 18px; }
+.cc-lead { border: 1px solid var(--cc-line); border-left: 3px solid var(--av); background: var(--cc-raise); border-radius: 12px; gap: 12px; padding: 16px 18px; }  /* flat, like every other card */
 .cc-lead-top { display: flex; gap: 14px; align-items: center; }
 .cc-av { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--av); color: #160c08; font-weight: 700; font-size: 17px; letter-spacing: .02em; }
 .cc-lead-id { display: grid; gap: 6px; min-width: 0; }

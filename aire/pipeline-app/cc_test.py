@@ -488,5 +488,13 @@ class JudgeRound3(unittest.TestCase):
         self.assertEqual(kept, titles[5:])
 
 
+    def test_saved_days_match_the_history_rows_in_the_sheet(self):
+        rows = [{"day": d, "gci": 1.0, "pending": 0, "closings": 1, "leads7": 1, "appts7": 0} for d in ("2026-11-02", "2026-11-03", "2026-11-04", T.isoformat())]
+        with tempfile.TemporaryDirectory() as d:
+            Path(d, "history.json").write_text(json.dumps({"at": NOW.isoformat(), "rows": rows}))
+            p = cc.build(Path(d), NOW)
+        self.assertEqual((p["history_saved"], p["since"]["gci"]["days"], p["since"]["gci"]["since"]), (4, 4, "2026-11-02"))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

@@ -701,6 +701,7 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
     goals = (raw.get("goals") or {}).get("rows") or {}
     sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today)
     hist = _rows(raw["history"])
+    sheet_days = len({r["day"] for r in hist if is_day(r.get("day")) and r["day"] <= today.isoformat()})
     hrow = history_row(sc, today)
     full = add_history(hist, hrow)
     return {
@@ -717,8 +718,10 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         "leads": leads, "lead_counts": lead_counts(leads, today), "commission_mail": commission_mail(_rows(raw["commission_mail"]), deals),
         "scorecard": sc, "goals": goals, "goals_set": bool(goals),
         "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
-        "history_saved": len(saved_days(hist, today)),
-        "since": {m: since_saved(hist, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
+        # Rows in the sheet's Scorecard history tab, today's included once the sync has saved it: the same number the
+        # Sources page shows for that tab.
+        "history_saved": sheet_days,
+        "since": {m: (lambda x: {**x, "days": sheet_days} if x else None)(since_saved(hist, hrow, m)) for m in ("gci", "closings", "leads7", "appts7")},
         "kw_paid": cfg.get("kw_paid"),
         "bank": bank(_rows(raw["bank_mail"])),
         "news": news_rows(_rows(raw["news"])),

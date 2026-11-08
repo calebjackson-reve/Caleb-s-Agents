@@ -36,7 +36,8 @@
   const tile = (label, value, sub, sources, go) => `<${go ? `button type="button" onclick="go('${go}')"` : 'div'} class="cc-tile">
       <span class="cc-tile-l">${label}</span><b class="cc-num">${value}</b><span class="cc-sub">${sub || ''}</span>${src(sources, true)}</${go ? 'button' : 'div'}>`;
   const empty = t => `<p class="cc-empty">${t}</p>`;
-  const head = (h, p) => `<header class="cc-head"><div><h1>${h}</h1><p>${p}</p></div>${C.priv ? '<span class="cc-privnote">Money and contacts hidden · Show is at the top</span>' : ''}</header>${askBox()}`;
+  // The privacy pill always sits in the same place: under the page's one-line description, on every page.
+  const head = (h, p) => `<header class="cc-head"><div><h1>${h}</h1><p>${p}</p>${C.priv ? '<span class="cc-privnote">Money and contacts hidden · Show is at the top</span>' : ''}</div></header>${askBox()}`;
   // Ask Claude about the page you are on. Only this page's numbers go, no phones or emails; with money hidden, no amounts or names.
   C.asks = {};
   function askBox() {
@@ -90,7 +91,7 @@
     const today = d.calendar.filter(r => r.day === d.today && r.kind !== 'block' && !r.invite);
     const ff = ((typeof S !== "undefined" && S.data) && S.data.feed) || {}, td = ff.touches_due || [], tk = ff.tasks || [];
     const owes = typeof owesReply === 'function' ? owesReply().length : td.filter(r => r.owes_reply).length, over = tk.filter(t => t.overdue).length, dr = typeof readyDrafts === 'function' && S.data ? readyDrafts().length : 0;
-    const gp = sc.gci.goal;
+    const gp = sc.gci.goal, offers = d.deals.filter(r => r.stage === 'offer');
     return `<div class="cc-page">${head('Good ' + greet() + ', Caleb', 'Keller Williams First Choice · No paid leads, just service')}
       <div class="cc-acts cc-quick"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button><button type="button" onclick="go('touches')">Touches due</button><button type="button" onclick="openTask('')">＋ Add a task</button></div>
       <div class="cc-tiles">
@@ -103,7 +104,8 @@
         ${S.data && S.data.feed_ok ? tile('Tasks open', n(tk.length), over ? `<em>${over} overdue</em>` : 'None overdue', 'crm', 'tasks') : tile('Tasks open', '—', "<em>Tasks didn't load</em>", 'crm', 'sources')}
         ${tile('Drafts ready', n(dr), `Written texts and emails to read and send${owes ? ` · ${owes} replies to write are not counted` : ''}`, 'drafts', 'queue')}
         ${tile('Appointments, 7 days', n(sc.appts7.value), sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Showings, listing appts, clients', 'calendar', 'calendar')}
-        ${tile('Booked today', n(wk.hours) + '<small>h</small>', `${n(wk.events)} timed events. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}
+        ${tile('Booked today', n(wk.hours) + '<small>h</small>', `${n(wk.events)} timed event${wk.events === 1 ? '' : 's'}. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}
+        ${tile('Offers out', n(offers.length), offers.length ? `${offers.filter(r => r.offer && r.offer.expired).length} past their deadline` : 'No open offers on the Deals sheet', 'deals', 'deals')}
         ${tile('Commission to check', n(np), np ? 'Not processed at KW, or paid with no closed deal on the sheet' : 'Nothing waiting at KW', ['commission_mail', 'deals'], 'commission')}
       </div>
 

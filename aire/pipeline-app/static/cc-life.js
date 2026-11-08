@@ -95,11 +95,13 @@ const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); retur
   function health() {
     const g = guard(); if (g) return g;
     const W = C.data.workouts, t = W.today || {};
-    return `<div class="cc-page">${head('Workouts and Health', 'Weights, 4 to 5 days a week. Your plan is the Workouts tab of your AIRE CRM sheet, edit it there.')}
+    const planned = W.week.filter(w => w.focus && !/^rest$/i.test(w.focus)).length, doneWk = W.week.filter(w => w.done).length;
+    return `<div class="cc-page">${head('Workouts', 'Weights, 4 to 5 days a week. Your plan is the Workouts tab of your AIRE CRM sheet, edit it there. Health numbers are at the bottom.')}
       <div class="cc-tiles">
         ${tile('Today', esc(t.focus || 'Rest'), t.done ? 'Done ✓' : esc(t.exercises || ''), 'workouts')}
         ${tile('Workouts, 7 days', n(W.done_7), 'Goal 4 to 5', 'workouts')}
         ${tile('Minutes, 7 days', n(W.minutes_7), 'Logged', 'workouts')}
+        ${tile('This week', `${n(doneWk)}<small> of ${n(planned)}</small>`, planned ? 'Planned workouts done so far' : 'No plan on the Workouts tab', 'workouts')}
       </div>
       ${card('This week', `<div class="cc-week">${W.week.map(w => `<div class="cc-wday ${w.done ? 'is-done' : ''} ${w.is_today ? 'is-today' : ''}"><h3>${w.day}<small>${day(w.date)}</small></h3><b>${esc(w.focus || 'Rest')}</b><small>${esc(w.exercises || '')}</small>${w.done ? `<span class="cc-pill k-showing">Done${w.minutes ? ' · ' + w.minutes + ' min' : ''}</span>` : ''}</div>`).join('')}</div>`, 'workouts')}
       ${card('Log a workout', `<form class="cc-goals" onsubmit="CC.logWorkout(event)">

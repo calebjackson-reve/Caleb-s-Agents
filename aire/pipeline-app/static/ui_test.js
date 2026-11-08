@@ -488,6 +488,29 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
   for (const v of ['touches', 'tasks', 'queue', 'sent', 'monitor']) check(srcCount(render(v, true).replace(/<div class="cc-banner"[^]*?<\/div>/, '')) === (v === 'queue' ? 2 : 1), `${v}: one source line, not two`);
 }
 
+// Round 3, item 15: no orphan tiles. Tiles sit in 4 columns on a desktop, 2 on a phone, so each page has a multiple of 4.
+{
+  const counts = views.map(v => [v, (render(v, true).match(/<(?:button|div) [^>]*class="cc-tile"/g) || []).length]).filter(([, n]) => n);
+  const odd = counts.filter(([, n]) => n % 4);
+  check(!odd.length, 'every tile row is full: each page has a multiple of 4 tiles', odd.map(([v, n]) => `${v}:${n}`).join(' '));
+  check(/\.cc-tiles \{ display: grid; grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/.test(fs.readFileSync(path.join(dir, 'cc.css'), 'utf8')), 'desktop tiles sit in exactly 4 columns');
+}
+
+// Round 3, items 15 and 16: one place for the privacy pill, "1 timed event", the Workouts nav label matches its page, and
+// lead cards are flat like every other card.
+{
+  const heads = views.map(v => render(v, true)).map(h => (h.match(/<header class="cc-head">[^]*?<\/header>/) || [''])[0]).filter(Boolean);
+  check(heads.length > 10 && heads.every(h => /<p>[^]*?<\/p><span class="cc-privnote">/.test(h)), 'the privacy pill sits under the description on every page');
+  const wk = (ccdata.week || [])[0] || {};
+  run(`CC.data = Object.assign({}, __cc, { week: [Object.assign({}, ${JSON.stringify(wk)}, { events: 1, hours: 1 })].concat(__cc.week.slice(1)) })`);
+  check(/1 timed event\./.test(render('dash', true)), 'Booked today says "1 timed event"');
+  run('CC.data = __cc');
+  const navLabel = run('NAV').flatMap(g => g[1]).find(i => i[0] === 'health')[2], h1 = (render('health', true).match(/<h1>([^<]+)<\/h1>/) || [])[1];
+  check(navLabel === h1, 'the Workouts nav label matches its page title', `${navLabel} / ${h1}`);
+  const css2 = ['ui.css', 'cc.css'].map(x => fs.readFileSync(path.join(dir, x), 'utf8')).join('\n');
+  check(!/gradient\(/.test(css2), 'no gradient in the page styles, lead cards included');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');
