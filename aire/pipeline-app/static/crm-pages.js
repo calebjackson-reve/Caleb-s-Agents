@@ -159,7 +159,7 @@
     const row = r => `<li class="cc-row ${r.differs.length ? 'is-warn' : ''}"><span class="cc-av" aria-hidden="true">⌂</span>
       <div class="cc-row-main"><h3>${esc(r.deal)}</h3>
         <div class="cc-pills"><span class="cc-pill ${r.stage === 'contract' ? 'k-closing' : r.stage === 'closed' ? 'k-listing' : 'k-other'}">${esc(r.status)}</span>${r.side ? `<span class="cc-pill k-other">${esc(r.side)}</span>` : ''}${r.to_close != null && r.to_close >= 0 ? `<span class="cc-pill k-listing">${r.to_close === 0 ? 'Closes today' : r.to_close + ' days to close'}</span>` : ''}</div>
-        <p class="cc-note">Price ${C.m(r.price)} · Your commission, gross ${r.commission == null ? '<em>blank</em>' : C.m(r.commission)}${r.act ? ' · Act of sale ' + esc(C.day(r.act)) : ''}${r.crm && r.crm.display ? ' · ' + C.who(r.crm.display) : ''}</p>
+        <p class="cc-note">Price ${C.m(r.price)} · Your commission, gross ${r.commission == null ? '<em>not on the sheet</em>' : C.m(r.commission)}${r.act ? ' · Act of sale ' + esc(C.day(r.act)) : ''}${r.crm && r.crm.display ? ' · ' + C.who(r.crm.display) : ''}</p>
         ${r.next ? `<p class="cc-row-why">${C.scrub(r.next)}</p>` : ''}
         ${r.differs.length ? `<p class="cc-warn">The CRM Deals tab says ${r.differs.map(x => `${esc(x.field)} ${x.field === 'price' ? C.m(x.crm) : esc(x.field === 'act of sale' ? C.day(x.crm) : x.crm)}`).join(', ')}. This page shows the Deals sheet.</p>` : ''}</div>
       <div class="cc-acts">${r.crm ? `<button type="button" onclick="openDeal(${esc(JSON.stringify(r.crm.address))})">Edit in the CRM</button>` : ''}${r.crm && r.crm.person_id ? `<button type="button" onclick="openCompose('${esc(r.crm.person_id)}')">Message</button>` : ''}</div></li>`;

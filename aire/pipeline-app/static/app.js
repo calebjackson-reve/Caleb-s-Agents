@@ -341,7 +341,7 @@ function openHelp() {
 // Jarvis proposals: one card at a time, nothing is written until Caleb taps yes (same API and gates as every button)
 async function showProposals(list) {
   for (const p of list || []) {
-    const what = p.action === 'relabel' ? (p.type ? `Type to ${p.type}` : `band ${p.expect_band || 'blank'} to ${p.band}`) : p.action === 'task' ? `task "${p.task}" due ${p.due}` : `note "${p.text}"`;
+    const what = p.action === 'relabel' ? (p.type ? `Type to ${p.type}` : `band ${p.expect_band || 'none'} to ${p.band}`) : p.action === 'task' ? `task "${p.task}" due ${p.due}` : `note "${p.text}"`;
     const ok = await modal('JARVIS SUGGESTS', `<div class="brief"><p><b>${window.CC ? CC.who(p.name) : esc(p.name)}</b>: ${esc(what)}</p><p>${esc(p.why)}</p></div>`, () => true, 'Yes, do it');
     if (!ok) { toast('warn', 'JARVIS', `Skipped: ${p.name}`); continue; }
     const path = p.action === 'relabel' ? '/api/relabel' : p.action === 'task' ? '/api/task' : '/api/note';

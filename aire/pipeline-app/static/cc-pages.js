@@ -14,7 +14,7 @@
       <div class="cc-tiles">
         ${tile('GCI paid', m(sc.gci.value), paidFrom + (sc.gci.blank ? ` · <em>${sc.gci.blank} closed with no commission</em>` : ''), 'deals')}
         ${tile('Paid plus pending', m(sc.gci.with_pending), 'Paid, plus every deal under contract', 'deals')}
-        ${tile('Pending, gross', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} blank</em>` : ''}`, 'deals')}
+        ${tile('Pending, gross', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals')}
         ${tile('Toward cap', cap ? m(cap.paid) : '—', cap ? `${cap.pct}% of ${m(cap.amount)} · ${m(cap.left)} to go` : 'Set the cap amount and start date on Scorecard', ['deals', 'goals'])}
         ${tile('Not processed', n(np.length), np.length ? 'KW has not processed these yet' : 'Nothing waiting', 'commission_mail')}
       </div>
@@ -22,10 +22,10 @@
       ${card('Your deals', live.length ? `<div class="cc-tablewrap"><table class="cc-table cc-stack"><caption class="sr">Deals from the AIRE Deals sheet</caption>
         <thead><tr><th scope="col">Deal</th><th scope="col">Status</th><th scope="col" class="r">Price</th><th scope="col" class="r">Your commission, gross</th><th scope="col">Act of sale</th><th scope="col">Next</th></tr></thead>
         <tbody>${live.map(r => `<tr><th scope="row">${esc(r.deal)}<small>${esc(r.side || '')}</small></th><td data-label="Status">${esc(r.status)}${r.days != null ? `<small>${r.days} day${r.days === 1 ? '' : 's'} in stage</small>` : ''}</td>
-          <td class="r" data-label="Price">${m(r.price)}</td><td class="r" data-label="Your commission, gross">${r.commission == null ? '<em>blank</em>' : m(r.commission)}</td><td data-label="Act of sale">${r.act ? day(r.act) : ''}</td><td data-label="Next">${C.scrub(r.next || '')}</td></tr>`).join('')}</tbody></table></div>`
+          <td class="r" data-label="Price">${m(r.price)}</td><td class="r" data-label="Your commission, gross">${r.commission == null ? '<em>not on the sheet</em>' : m(r.commission)}</td><td data-label="Act of sale">${r.act ? day(r.act) : ''}</td><td data-label="Next">${C.scrub(r.next || '')}</td></tr>`).join('')}</tbody></table></div>`
         : empty('No deals on the sheet yet.'), 'deals')}
       <div class="cc-grid">
-        ${card('Paydays, next 30 days', d.closings.length ? `<ul class="cc-list">${d.closings.map(r => `<li class="cc-ev"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.deal)}<small>${r.from === 'both' ? 'Deals sheet and calendar agree' : r.from === 'sheet' ? 'from the Deals sheet' : 'from the calendar only'}</small></span><b class="cc-amt">${r.money == null ? '<em>blank</em>' : m(r.money)}</b></li>`).join('')}</ul>` : empty('No act of sale in the next 30 days.'), ['calendar', 'deals'])}
+        ${card('Paydays, next 30 days', d.closings.length ? `<ul class="cc-list">${d.closings.map(r => `<li class="cc-ev"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.deal)}<small>${r.from === 'both' ? 'Deals sheet and calendar agree' : r.from === 'sheet' ? 'from the Deals sheet' : 'from the calendar only'}</small></span><b class="cc-amt">${r.money == null ? '<em>not on the sheet</em>' : m(r.money)}</b></li>`).join('')}</ul>` : empty('No act of sale in the next 30 days.'), ['calendar', 'deals'])}
         ${card('Commission emails, 120 days', d.commission_mail.length ? `<ul class="cc-list">${d.commission_mail.map(r => `<li class="cc-ev"><span class="cc-chip s-${r.status.replace(' ', '')}">${r.status}</span><span class="cc-what">${C.scrub(r.subject)}<small>${day((r.received || '').slice(0, 10))}</small></span></li>`).join('')}</ul>` : empty('No commission or CDA mail found.'), 'commission_mail')}
       </div></div>`;
   }
@@ -34,7 +34,7 @@
   const STEP = { done: ['✓', 'Done', 'k-showing'], today: ['●', 'Today', 'k-closing'], upcoming: ['○', '', 'k-client'], missing: ['!', 'No date on the sheet', 'k-deadline'] };
   C.dealCards = rows => !rows.length ? '' : card(`Under contract <span class="cc-count">${rows.length}</span>`, `<div class="cc-deals">${rows.map(r => `
     <article class="cc-deal"><header><h3>${esc(r.deal)}</h3><span class="cc-pill ${r.to_close != null && r.to_close <= 7 ? 'k-closing' : 'k-listing'}">${r.to_close == null ? 'No act of sale date' : r.to_close < 0 ? 'Closed ' + Math.abs(r.to_close) + ' days ago?' : r.to_close === 0 ? 'Closes today' : r.to_close + ' days to close'}</span></header>
-      <p class="cc-note">${esc(r.side || '')}${r.price != null ? ' · ' + m(r.price) : ''} · your commission, gross ${r.commission == null ? '<em>blank</em>' : m(r.commission)}</p>
+      <p class="cc-note">${esc(r.side || '')}${r.price != null ? ' · ' + m(r.price) : ''} · your commission, gross ${r.commission == null ? '<em>not on the sheet</em>' : m(r.commission)}</p>
       <ol class="cc-steps">${r.checklist.map(c => { const [ico, word, k] = STEP[c.state]; return `<li class="${k}"><span aria-hidden="true">${ico}</span><b>${esc(c.step)}</b><small>${c.date ? day(c.date) + (c.state === 'upcoming' ? ` · in ${c.days} days` : '') : esc(c.note || '')}${word ? ' · ' + word : ''}</small></li>`; }).join('')}</ol>
       ${r.next ? `<p class="cc-next"><b>Next:</b> ${C.scrub(r.next)}</p>` : ''}</article>`).join('')}</div>`, 'deals');
 

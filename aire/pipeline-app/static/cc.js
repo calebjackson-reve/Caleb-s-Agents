@@ -94,7 +94,7 @@
     return `<div class="cc-page">${head('Good ' + greet() + ', Caleb', 'Keller Williams First Choice · No paid leads, just service')}
       <div class="cc-acts cc-quick"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button><button type="button" onclick="go('touches')">Log a touch</button><button type="button" onclick="openTask('')">＋ Add a task</button></div>
       <div class="cc-tiles">
-        ${tile('Pending commission', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} blank on the sheet</em>` : ''}`, 'deals', 'commission')}
+        ${tile('Pending commission', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals', 'commission')}
         ${tile('GCI this year', m(sc.gci.value), gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set', ['deals', 'goals'], 'scorecard')}
         ${tile('Deadlines, 7 days', n(d.deadlines.d7.length), `${d.deadlines.d3.length} in the next 3 days`, ['deals', 'calendar'], 'deadlines')}
         ${tile('New leads, 14 days', n(leads), `${n(leads7)} in the last 7 days${sc.leads7.low ? ` · goal ${sc.leads7.low} to ${sc.leads7.high} a week` : ''}`, ['leads', 'crm'], 'ccleads')}

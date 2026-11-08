@@ -274,6 +274,24 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   check(/class="cc-rows cc-tasks"/.test(render('tasks', true)), 'Tasks rows get their phone spacing');
 }
 
+// Round 2, item 13: one visual style. Coral and tan, no blue or green anywhere (CSS or map pins), no strikethrough, no
+// word "blank", and the CRM pages use the same head and card as the card pages.
+{
+  const hueOf = hex => { const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255), mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+    if (mx === mn) return null; const sat = l > .5 ? (mx - mn) / (2 - mx - mn) : (mx - mn) / (mx + mn); if (sat < .3 || l < .15 || l > .93) return null;
+    let h = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4; h *= 60; return h < 0 ? h + 360 : h; };
+  const coolIn = f => (fs.readFileSync(path.join(dir, f), 'utf8').match(/#[0-9a-f]{6}\b/gi) || []).filter(c => { const h = hueOf(c); return h !== null && h >= 75 && h <= 290; });
+  const cool = ['ui.css', 'cc.css', 'map.js'].flatMap(f => coolIn(f).map(c => f + ' ' + c));
+  check(!cool.length, 'no blue or green in the page styles or the map pins', cool.join(' '));
+  const cssAll = ['ui.css', 'cc.css', 'app.css'].map(x => fs.readFileSync(path.join(dir, x), 'utf8')).join('\n');
+  check(!/line-through/.test(cssAll), 'no strikethrough rule anywhere');
+  const words = [], strikes = [];
+  for (const v of views) for (const p of [true, false]) { const h = render(v, p); if (/\bblank\b/i.test(h.replace(/<[^>]+>/g, ' ').replace(/_blank/g, ''))) words.push(v); if (/<s[\s>]/.test(h)) strikes.push(v); }
+  check(!words.length, 'no page says "blank"', [...new Set(words)].join(' '));
+  check(!strikes.length, 'no page draws a struck-through element', [...new Set(strikes)].join(' '));
+  for (const v of ['touches', 'tasks', 'queue', 'sent']) { const h = render(v, true); check(/<header class="cc-head">/.test(h) && /<section class="cc-card">/.test(h), `${v}: the same head and card as the card pages`); }
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

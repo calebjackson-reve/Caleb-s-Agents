@@ -9,9 +9,10 @@ window.PMap = (function () {
     street: { url: (z, x, y) => `https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/${z}/${y}/${x}`, max: 16, attr: 'Map: USGS The National Map', dark: true },
     sat: { url: (z, x, y) => `https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/${z}/${y}/${x}`, max: 16, attr: 'Imagery: USGS The National Map' },
   };
-  const BAND = { hot: '#ff5c7a', warm: '#ffb547', lukewarm: '#c8b596', cold: '#4f9dff', 'ice-cold': '#bdb4a9', '': '#5d6b7c' };
+  // Bands on a coral-to-grey ramp (KW First Choice coral, tan as the accent, warm greys), no blue or green.
+  const BAND = { hot: '#e87757', warm: '#f2a585', lukewarm: '#c8b596', cold: '#9a9188', 'ice-cold': '#6d665f', '': '#4a4540' };
   const STAGE = { lead: '#bdb4a9', consult: '#a8997f', active: '#c8b596', showing: '#e87757', under_contract: '#d9a98c' };
-  const MARKET = { permit: '#ffb547', new_listing: '#c8b596', price_change: '#e87757', back_on_market: '#e87757', pending: '#d9a98c', sold: '#ff5c7a', listing_change: '#bdb4a9' };
+  const MARKET = { permit: '#ffb547', new_listing: '#c8b596', price_change: '#e87757', back_on_market: '#e87757', pending: '#d9a98c', sold: '#e87757', listing_change: '#bdb4a9' };
   const CLUSTER_PAST = 200, CELL = 54;
 
   const project = (lat, lng, z) => { const s = TILE * 2 ** z, sin = Math.sin(lat * Math.PI / 180); return [(lng + 180) / 360 * s, (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * s]; };

@@ -13,7 +13,7 @@
   function bar(p) {
     if (!p) return '<p class="cc-note">No goal set.</p>';
     return `<div class="cc-kbar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(100, p.pct)}" aria-label="${p.pct}% of goal, even pace today is ${p.pace_pct}%">
-      <i style="width:${Math.min(100, p.pct)}%"></i><s style="left:${p.pace_pct}%" title="Even pace by today"></s></div>
+      <i style="width:${Math.min(100, p.pct)}%"></i><span class="cc-kbar-pace" style="left:${p.pace_pct}%" title="Even pace by today"></span></div>
       <p class="cc-pace ${p.ahead ? 'is-ahead' : 'is-behind'}">${p.pct}% of goal · even pace is ${p.pace_pct}% · ${p.ahead ? 'ahead' : 'behind'}</p>`;
   }
   // Changes use the days already saved in the sheet's Scorecard history. Before a day is 7 or 30 days old, the change since
@@ -55,7 +55,7 @@
     if (C.priv) return '<p class="cc-note">Goals hold dollar amounts, so they show only while money is shown. Tap Show money and contacts at the top.</p>';
     const g = C.data.goals || {};
     return `<form class="cc-goals" onsubmit="CC.saveGoals(event)">${GOALS.map(([k, label, , type]) => `<label>${label}<input name="${k}" type="${type || 'number'}" ${type ? '' : 'min="0" step="any" inputmode="decimal"'} value="${g[k] == null ? '' : esc(String(g[k]))}"></label>`).join('')}
-      <p class="cc-note">Leave a box blank and the Scorecard shows no goal for it. For one number instead of a range, put it in both ends.</p>
+      <p class="cc-note">Leave a box empty and the Scorecard shows no goal for it. For one number instead of a range, put it in both ends.</p>
       <button type="submit" class="cc-primary">Save goals</button></form>`;
   }
   C.saveGoals = async e => {
