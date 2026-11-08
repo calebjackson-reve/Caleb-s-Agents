@@ -577,6 +577,19 @@ def add_history(rows: list[dict], row: dict) -> list[dict]:
     return sorted([r for r in rows if r.get("day") != row["day"]] + [row], key=lambda r: r["day"])[-400:]
 
 
+def saved_days(rows: list[dict], today: date) -> list[dict]:
+    """History rows already saved in the sheet, before today. Today's row is computed, not history."""
+    return [r for r in rows if is_day(r.get("day")) and r["day"] < today.isoformat()]
+
+
+def since_saved(rows: list[dict], row: dict, metric: str) -> dict | None:
+    """The change since the oldest saved day, for when no row is 7 days old yet. None with nothing saved."""
+    past = [r for r in saved_days(rows, date.fromisoformat(row["day"])) if r.get(metric) is not None]
+    if not past:
+        return None
+    return {"since": past[0]["day"], "days": len(past), "value": round(row[metric] - past[0][metric], 2)}
+
+
 def deltas(rows: list[dict], row: dict, metric: str) -> dict:
     out = {}
     for span in (7, 30):
@@ -624,6 +637,8 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         "leads": leads, "lead_counts": lead_counts(leads, today), "commission_mail": commission_mail(_rows(raw["commission_mail"])),
         "scorecard": sc, "goals": goals, "goals_set": bool(goals),
         "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
+        "history_saved": len(saved_days(hist, today)),
+        "since": {m: since_saved(hist, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
         "kw_paid": cfg.get("kw_paid"),
         "bank": bank(_rows(raw["bank_mail"])),
         "news": _rows(raw["news"]),

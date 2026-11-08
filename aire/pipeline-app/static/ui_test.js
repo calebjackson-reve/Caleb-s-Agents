@@ -231,6 +231,19 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   run('S.data = __state');
 }
 
+// Round 2, item 10: the Scorecard uses the saved history and draws no trend line without two saved days.
+{
+  const hist = [{ day: '2026-11-02', gci: 1, pending: 0, closings: 1, leads7: 4, appts7: 0 }, { day: ccdata.today, gci: 1, pending: 0, closings: 1, leads7: 3, appts7: 0 }];
+  run(`CC.data = Object.assign({}, __cc, { history: ${JSON.stringify(hist)}, history_saved: 1, deltas: { gci: {7: null, 30: null}, closings: {7: null, 30: null}, leads7: {7: null, 30: null}, appts7: {7: null, 30: null} },
+    since: { leads7: { since: '2026-11-02', days: 1, value: -1 } } })`);
+  const one = render('scorecard', false);
+  check(!/<svg class="cc-spark"/.test(one) && /No trend line yet: one day is saved/.test(one), 'one saved day draws no trend line, it says so');
+  check(/Since [A-Z][a-z]{2}, Nov 2: <b>−1<\/b>/.test(one) && !/no history yet/.test(one), 'with no day 7 days old, the change since the first saved day shows with its date');
+  run(`CC.data = Object.assign({}, CC.data, { history: ${JSON.stringify([{ day: '2026-11-01', gci: 1, pending: 0, closings: 1, leads7: 2, appts7: 0 }].concat(hist))}, history_saved: 2 })`);
+  check(/<svg class="cc-spark"/.test(render('scorecard', false)), 'two saved days draw the trend line');
+  run('CC.data = __cc');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

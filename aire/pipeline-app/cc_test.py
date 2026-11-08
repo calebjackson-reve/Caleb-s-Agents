@@ -395,5 +395,19 @@ class JudgeRound2(unittest.TestCase):
         self.assertEqual(cc.PACE_MIN, {k: v[0] for k, v in cc_sync.READS.items()})
 
 
+    def test_scorecard_uses_saved_history_and_says_since_when(self):
+        # item 10: three days saved in the sheet, none 7 days old yet
+        saved = [{"day": "2026-11-02", "gci": 100.0, "pending": 0, "closings": 1, "leads7": 4, "appts7": 0},
+                 {"day": "2026-11-03", "gci": 100.0, "pending": 0, "closings": 1, "leads7": 4, "appts7": 0},
+                 {"day": "2026-11-04", "gci": 100.0, "pending": 0, "closings": 1, "leads7": 5, "appts7": 0}]
+        today_row = {"day": T.isoformat(), "gci": 150.0, "pending": 0, "closings": 2, "leads7": 3, "appts7": 0}
+        full = cc.add_history(saved, today_row)
+        self.assertEqual(cc.deltas(full, today_row, "gci"), {"7": None, "30": None})
+        self.assertEqual(cc.since_saved(saved, today_row, "gci"), {"since": "2026-11-02", "days": 3, "value": 50.0})
+        self.assertEqual(cc.since_saved(saved, today_row, "leads7")["value"], -1)
+        self.assertEqual(len(cc.saved_days(full, T)), 3)  # today's computed row is not history
+        self.assertIsNone(cc.since_saved([], today_row, "gci"))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

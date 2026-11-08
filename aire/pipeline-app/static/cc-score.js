@@ -16,14 +16,19 @@
       <i style="width:${Math.min(100, p.pct)}%"></i><s style="left:${p.pace_pct}%" title="Even pace by today"></s></div>
       <p class="cc-pace ${p.ahead ? 'is-ahead' : 'is-behind'}">${p.pct}% of goal · even pace is ${p.pace_pct}% · ${p.ahead ? 'ahead' : 'behind'}</p>`;
   }
+  // Changes use the days already saved in the sheet's Scorecard history. Before a day is 7 or 30 days old, the change since
+  // the first saved day shows instead, with its date, never a made-up zero.
+  const sign = (v, money) => (v > 0 ? '+' : v < 0 ? '−' : '') + (money ? m(Math.abs(v)) : n(Math.abs(v)));
   function delta(metric, money) {
-    const d = C.data.deltas[metric] || {};
-    const f = v => (v == null ? 'no history yet' : (v > 0 ? '+' : v < 0 ? '−' : '') + (money ? m(Math.abs(v)) : n(Math.abs(v))));
-    return `<p class="cc-delta"><span>7 days: <b>${f(d['7'])}</b></span><span>30 days: <b>${f(d['30'])}</b></span></p>`;
+    const d = C.data.deltas[metric] || {}, since = (C.data.since || {})[metric];
+    if (d['7'] == null && d['30'] == null) return since ? `<p class="cc-delta"><span>Since ${C.day(since.since)}: <b>${sign(since.value, money)}</b></span><span>${since.days} saved day${since.days === 1 ? '' : 's'}</span></p>`
+      : '<p class="cc-delta"><span>No saved days yet. Changes show after the first day is saved.</span></p>';
+    return `<p class="cc-delta"><span>7 days: <b>${d['7'] == null ? 'not 7 days yet' : sign(d['7'], money)}</b></span><span>30 days: <b>${d['30'] == null ? 'not 30 days yet' : sign(d['30'], money)}</b></span></p>`;
   }
+  // A trend line needs at least two days saved in the sheet. Today's row is computed, so it never makes a line by itself.
   function spark(metric) {
-    const h = C.data.history.slice(-60);
-    if (h.length < 2) return '<p class="cc-note">History starts today. One row is kept each day.</p>';
+    const saved = C.data.history_saved ?? 0, h = C.data.history.slice(-60);
+    if (saved < 2) return `<p class="cc-note">No trend line yet: ${saved ? 'one day is' : 'no days are'} saved in the Scorecard history. A line shows once two days are saved.</p>`;
     if (C.priv && metric === 'gci') return '<p class="cc-note">Chart hidden with money.</p>';
     const vals = h.map(r => r[metric] || 0), max = Math.max(1, ...vals), w = 240, ht = 48;
     const pts = vals.map((v, i) => `${(i / (vals.length - 1) * w).toFixed(1)},${(ht - v / max * (ht - 4) - 2).toFixed(1)}`).join(' ');
