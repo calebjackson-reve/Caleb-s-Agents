@@ -625,9 +625,9 @@ class State:
                 feed = {**feed, "market": {**feed["market"], "rows": [r for r in feed["market"].get("rows", []) if r.get("id") not in gone]}}
         problems = []
         if not feed:
-            problems.append({"level": "warn", "code": "no_feed", "text": "No feed.json yet. Run the refresh."})
+            problems.append({"level": "warn", "code": "no_feed", "text": "The CRM feed has not been built yet. Press refresh to build it."})
         elif "_error" in feed:
-            problems.append({"level": "warn", "code": "feed_unreadable", "text": f"feed.json could not be read ({feed['_error']})."})
+            problems.append({"level": "warn", "code": "feed_unreadable", "text": "The CRM feed could not be read. Press refresh to rebuild it."})
         elif feed.get("header_ok") is False:
             problems.append({"level": "stop", "code": "header_not_ok",
                              "text": "The Contacts header lost a column the engine needs: " + ", ".join(feed.get("missing_columns", []))})
@@ -1003,7 +1003,7 @@ def send_gmail(to: str, subject: str, body: str) -> str:
         raise CRMError(f"follow-up library not importable: {e}")
     svc = followups.gmail_service_or_none()
     if svc is None:
-        raise CRMError("no Gmail token at aire/follow-up/token.json; run the follow-up auth once")
+        raise CRMError("email can't send yet: Gmail is not connected on this Mac. Ask Claude to connect it once")
     followups.send_email(svc, to, subject, body)
     return "Gmail accepted it"
 
@@ -1486,6 +1486,11 @@ def run_tests() -> int:
     check(feed_run_status(tmp / "nope.log", at) is None and State(demo=True, send_log=tmp / "fr.json").snapshot()["feed_run"] is None, "no log, or demo: no feed run status")
     sfr = State(demo=True, send_log=tmp / "fr2.json"); sfr.feed_run = lambda: {"state": "failed", "at": "x", "at_text": "Nov 8, 12:45 PM", "detail": "crm.py feed failed"}
     check(any(p["code"] == "feed_failed" for p in sfr.snapshot()["problems"]), "a failed feed rebuild becomes a problem row")
+
+    # Round 2, item 14: problem rows say what to do in words, never a file name or a path.
+    s_nofeed = State(demo=True, send_log=tmp / "nf.json"); s_nofeed._demo_cache = {}
+    texts = " ".join(p["text"] for p in s_nofeed.snapshot()["problems"])
+    check(bool(texts) and not re.search(r"\.json|/|~|token", texts), "problem rows never name a file or a path")
 
     # map and market monitor
     sm = State(demo=True, send_log=tmp / "map" / "send-log.json")

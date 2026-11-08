@@ -264,7 +264,8 @@ function modal(title, bodyHTML, onOK, okLabel = 'Save') {
     m._resolve = resolve;
     // resolve with the value first: closeModal() resolves whatever is still pending with null (that is Cancel)
     $('#m-ok').onclick = async () => { const v = onOK(m); if (v === false) return; m._resolve = null; resolve(v); closeModal(); };
-    const first = m.querySelector('input, textarea, select'); if (first) first.focus();
+    m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', title.replace(/<[^>]+>/g, ''));
+    const first = m.querySelector('input, textarea, select'); (first || $('#m-ok')).focus();
     m.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') $('#m-ok').click(); }));
   });
 }
@@ -328,11 +329,12 @@ function openProblems() {
   modal('What needs attention', p.length ? `<div class="rows">${p.map((x, i) => `<div class="row" style="--i:${i};grid-template-columns:auto 1fr"><span class="tag ${x.level}">${x.level.toUpperCase()}</span><div class="why"><b>${esc(x.text)}</b></div></div>`).join('')}</div>` : `<div class="empty"><b>All clear</b></div>`,
     () => (p.some(x => x.code.startsWith('command')) ? 'command' : true), p.some(x => x.code.startsWith('command')) ? 'Open Command' : 'OK').then(v => { if (v === 'command') window.open(S.data.links.command); });
 }
+// Shortcuts in plain sentences: a key is a letter or word you press, never code.
 function openHelp() {
   const label = k => NAV.flatMap(g => g[1]).find(x => x[0] === k)[2];
-  modal('Keys', `<div class="brief"><h4>PAGES</h4><ul>${KEYS.map((k, i) => `<li><kbd>${i}</kbd> ${esc(label(k))}</li>`).join('')}</ul>
-    <h4>EVERYWHERE</h4><ul><li><kbd>c</kbd> open the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the CRM feed</li><li><kbd>/</kbd> search</li><li><kbd>h</kbd> hide or show money and contacts</li><li><kbd>Esc</kbd> close</li></ul>
-    <h4>ON THE MAP</h4><ul><li>Drag to move, scroll or double-click to zoom, click a cluster to open it.</li><li>Drawing a farm: click the corners, double-click or Enter to finish, Backspace undoes a corner, Esc cancels.</li></ul>
+  modal('Keyboard shortcuts', `<div class="brief"><h4>PAGES</h4><p>Press a number to open a page.</p><ul>${KEYS.map((k, i) => `<li><kbd>${i}</kbd> ${esc(label(k))}</li>`).join('')}</ul>
+    <h4>ANYWHERE</h4><ul><li>Press <kbd>C</kbd> to open the next draft.</li><li>Press <kbd>V</kbd> to turn the voice on or off, and <kbd>T</kbd> to type to it.</li><li>Press <kbd>R</kbd> to refresh the CRM.</li><li>Press the slash key <kbd>/</kbd> to search.</li><li>Press <kbd>H</kbd> to hide or show money and contacts.</li><li>Press <kbd>Escape</kbd> to close a window like this one.</li></ul>
+    <h4>ON THE MAP</h4><ul><li>Drag to move, scroll or double-click to zoom, click a cluster to open it.</li><li>Drawing a farm: click the corners, double-click or press Return to finish, Delete takes back a corner, Escape stops drawing.</li></ul>
     <h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li></ul>
     <h4>WHERE THINGS GO</h4><ul><li>Every button that changes something writes to the AIRE CRM sheet and is logged there.</li><li>Every text and email is checked for Do Not Contact and the daily limit before it goes, and lands in Sent today.</li></ul></div>`, () => true, 'OK');
 }
@@ -356,7 +358,10 @@ window.showProposals = showProposals;
 function toast(kind, tag, text) { const t = document.createElement('div'); t.className = 'toast ' + (kind === 'ok' ? '' : kind); t.innerHTML = `<b>${esc(tag)}</b><span>${esc(text)}</span>`; $('#toasts').appendChild(t); setTimeout(() => t.remove(), 3700); }
 function tick() { const d = new Date(); $('#date').textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); $('#time').textContent = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).toLowerCase(); }
 document.addEventListener('keydown', e => {
-  if (e.target.matches('input, textarea, select')) { if (e.key === 'Escape') e.target.blur(); return; }
+  // Escape closes an open window first, wherever the focus is (the search box included), then the compose drawer.
+  if (e.key === 'Escape' && !$('#modal').hidden) { e.preventDefault(); closeModal(); return; }
+  const t = e.target && e.target.matches ? e.target : document.body;
+  if (t.matches('input, textarea, select')) { if (e.key === 'Escape') t.blur(); return; }
   if (/^[0-9]$/.test(e.key)) go(KEYS[Number(e.key)]); else if (e.key === 'h' && window.CC) CC.togglePriv();
   else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
   else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }

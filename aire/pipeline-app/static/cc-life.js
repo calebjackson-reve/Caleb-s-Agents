@@ -17,10 +17,13 @@ const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); retur
 
   // ---------------- Market ----------------
   // A market tile's own source: who published the number and for when, plus whether the last read worked.
-  function msrc(label, period) {
-    const r = (C.data.fresh || {}).market || { state: 'missing' };
-    const bad = r.state === 'failed' ? ' · <b>last read failed</b>' : r.state === 'stale' ? ' · <b>out of date</b>' : '';
-    return `<span class="cc-src is-${r.state}"><i aria-hidden="true"></i>${esc(label)}${period ? ' · ' + esc(period) : ''}${bad}</span>`;
+  // Each tile names its own publisher and period, and its own state: a source that did not load in the last read is red
+  // on its tile even when the others loaded. part is 'rate', 'areas' or 'gbrar' (cc.market_parts).
+  function msrc(label, period, part) {
+    const r = (C.data.fresh || {}).market || { state: 'missing' }, p = part && ((C.data.market || {}).parts || {})[part];
+    const state = p && p.state !== 'ok' ? p.state : r.state;
+    const bad = p && p.state === 'failed' ? ' · <b>did not load in the last read</b>' : r.state === 'failed' ? ' · <b>last read failed</b>' : r.state === 'stale' ? ' · <b>out of date</b>' : r.state === 'late' ? ' · <b>late</b>' : '';
+    return `<span class="cc-src is-${state}"><i aria-hidden="true"></i>${esc(label)}${period ? ' · ' + esc(period) : ''}${bad}</span>`;
   }
   const mtile = (label, value, sub, source) => `<div class="cc-tile"><span class="cc-tile-l">${label}</span><b class="cc-num">${value}</b><span class="cc-sub">${sub || ''}</span>${source}</div>`;
   const mon = k => (k && /^\d{6}$/.test(k) ? new Date(Date.UTC(+k.slice(0, 4), +k.slice(4) - 1, 15)).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : k || '');
@@ -29,12 +32,12 @@ const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); retur
     const m = C.data.market, r = m.rate, gb = m.gbrar && m.gbrar.snapshot;
     const gv = k => gb && gb[k] ? gb[k].now : null;
     const ch = r ? Math.round(r.change * 100) / 100 : 0;
-    const gbSrc = gb ? msrc('GBRAR MLS monthly indicators', m.gbrar.month) : msrc('GBRAR MLS monthly indicators', 'no file yet');
+    const gbSrc = gb ? msrc('GBRAR MLS monthly indicators', m.gbrar.month, 'gbrar') : msrc('GBRAR MLS monthly indicators', 'no file yet', 'gbrar');
     // A ZIP whose numbers are the same as a parish's: say so, so nobody thinks one was copied into the other.
     const same = a => (m.areas || []).find(b => b !== a && b.level !== a.level && ['active', 'median_price', 'dom'].every(k => b[k] === a[k]) && b.month === a.month);
     return `<div class="cc-page">${head('Market', 'Rates, listings by area and the GBRAR monthly numbers. Each number names who published it and for when.')}
       <div class="cc-tiles">
-        ${mtile('30-year fixed', r ? r.rate.toFixed(2) + '<small>%</small>' : '—', r ? `${ch ? (ch < 0 ? '▼ ' : '▲ ') + Math.abs(ch).toFixed(2) + ' from the week before' : 'Same as the week before'}` : 'No read yet', msrc('Freddie Mac PMMS, via FRED', r ? 'week of ' + day(r.date) : ''))}
+        ${mtile('30-year fixed', r ? r.rate.toFixed(2) + '<small>%</small>' : '—', r ? `${ch ? (ch < 0 ? '▼ ' : '▲ ') + Math.abs(ch).toFixed(2) + ' from the week before' : 'Same as the week before'}` : 'No read yet', msrc('Freddie Mac PMMS, via FRED', r ? 'week of ' + day(r.date) : '', 'rate'))}
         ${mtile('Median sale price', gb ? money(gv('median_price')) : '—', gb ? `Greater Baton Rouge · ${n(gv('closed_sales'))} closed` : 'No GBRAR file', gbSrc)}
         ${mtile('Months of supply', gb ? n(gv('months_supply')) : '—', gb ? 'Greater Baton Rouge' : '', gbSrc)}
         ${mtile('Days on market', gb ? n(gv('days_on_market')) : '—', gb ? 'Greater Baton Rouge' : '', gbSrc)}
@@ -44,10 +47,10 @@ const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); retur
           <p><b>${n(a.active)}</b> active ${yy(a.active_yy)}</p><p><b>${money(a.median_price)}</b> median list ${yy(a.median_price_yy)}</p>
           <p><b>${n(a.dom)}</b> median days on market</p>${a.flag ? '<p class="cc-warn">Realtor.com marks this ZIP\'s data as less reliable.</p>' : ''}
           ${twin ? `<p class="cc-note">Same numbers as ${esc(twin.area)} in Realtor.com's own file: every listing ${a.level === 'zip' ? 'in the parish is in this ZIP' : 'is in ZIP ' + esc(twin.id)}.</p>` : ''}
-          ${msrc('Realtor.com inventory', mon(a.month))}</div>`; }).join('')}</div>`
+          ${msrc('Realtor.com inventory', mon(a.month), 'areas')}</div>`; }).join('')}</div>`
         : empty('No area numbers yet.'), [])}
       ${card('Talking points', (m.points || []).length ? `<ul class="cc-points">${m.points.map(p => `<li>${C.scrubMoney(p)}</li>`).join('')}</ul><div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyPoints()">Copy the talking points</button></div><p class="cc-note">Built only from the numbers above, each with its source and date. Check the date before you quote one to a client.</p>` : empty('No numbers yet, so no talking points.'), 'market')}
-      ${(m.warnings || []).length ? `<p class="cc-warn">Not current in the last read: ${m.warnings.map(esc).join('; ')}. The rest of the page is from that read.</p>` : ''}
+      ${(m.warnings || []).length ? `<p class="cc-warn">${m.warnings.map(esc).join('. ')}. Everything else on this page loaded in that read.</p>` : ''}
       <p class="cc-note">For-rent counts are not here: the free sources don't have them, and Zillow's rental data needs a paid feed.</p></div>`;
   }
   C.copyPoints = () => navigator.clipboard.writeText(C.data.market.points.join('\n')).then(() => toast('ok', 'COPIED', 'Talking points copied.'), () => toast('err', 'COPY', 'The browser blocked the clipboard.'));

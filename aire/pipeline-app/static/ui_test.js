@@ -292,6 +292,23 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
   for (const v of ['touches', 'tasks', 'queue', 'sent']) { const h = render(v, true); check(/<header class="cc-head">/.test(h) && /<section class="cc-card">/.test(h), `${v}: the same head and card as the card pages`); }
 }
 
+// Round 2, items 14 and 15: no developer text, Escape closes the Keys window, and each Market tile has its own source.
+{
+  run('var __keys = ""; modal = (t, h) => { __keys = t + "|" + h; return Promise.resolve(null); }; openHelp();');
+  const keysTxt = run('__keys');
+  const kbds = [...keysTxt.matchAll(/<kbd>([^<]+)<\/kbd>/g)].map(m => m[1]);
+  check(/^Keyboard shortcuts\|/.test(keysTxt) && kbds.every(k => !/^[a-z]$/.test(k)) && !/Backspace|\bEsc\b|Enter\b/.test(keysTxt), 'the Keys window names keys in plain words, no lowercase codes', kbds.join(' '));
+  check(/if \(e\.key === 'Escape' && !\$\('#modal'\)\.hidden\) \{ e\.preventDefault\(\); closeModal\(\); return; \}/.test(appjs) && /'role', 'dialog'/.test(appjs), 'Escape closes an open window wherever the focus is');
+  const mk = Object.assign({}, ccdata.market, { rate: null, warnings: ['The mortgage rate (Freddie Mac, via FRED) did not load: the site took too long to answer'],
+    parts: { rate: { state: 'failed', note: 'x' }, areas: { state: 'ok' }, gbrar: { state: 'ok' } } });
+  run(`CC.data = Object.assign({}, __cc, { market: ${JSON.stringify(mk)} })`);
+  const mp = render('ccmarket', true), tiles = (mp.match(/<div class="cc-tile">[^]*?<\/span><\/div>/g) || []);
+  check(tiles.length >= 4 && tiles.every(t => /class="cc-src/.test(t)), 'every Market tile carries its own source line');
+  check(/is-failed"><i aria-hidden="true"><\/i>Freddie Mac PMMS, via FRED[^<]*<b>did not load in the last read/.test(mp) && /is-ok"><i aria-hidden="true"><\/i>GBRAR/.test(mp), 'a failed source is red on its own tile, the others stay current');
+  check(!/Error|Errno|urlopen|Traceback/.test(mp.replace(/<[^>]+>/g, ' ')), 'Market shows no Python error text');
+  run('CC.data = __cc');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

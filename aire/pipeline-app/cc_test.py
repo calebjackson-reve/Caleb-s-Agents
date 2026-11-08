@@ -1,5 +1,6 @@
 """Checks for every Command Center calculation. Made-up deals only. Run: python3 aire/pipeline-app/cc_test.py"""
 import json
+import re
 import tempfile
 import unittest
 from datetime import date, datetime, timedelta
@@ -407,6 +408,19 @@ class JudgeRound2(unittest.TestCase):
         self.assertEqual(cc.since_saved(saved, today_row, "leads7")["value"], -1)
         self.assertEqual(len(cc.saved_days(full, T)), 3)  # today's computed row is not history
         self.assertIsNone(cc.since_saved([], today_row, "gci"))
+
+
+    def test_market_warnings_in_plain_words_and_each_tile_its_own_state(self):
+        # items 14 and 15: no Python errors on Market, and a source that failed is red on its own tile only
+        raw = {"rate": None, "areas": [{"area": "Fake Parish", "level": "county", "id": "1", "month": "202610", "active": 10.0}],
+               "gbrar": None, "warnings": ["rate: TimeoutError: The read operation timed out",
+                                           "Realtor.com zip: URLError: <urlopen error [Errno 54] Connection reset by peer>"]}
+        m = cc.market(raw)
+        self.assertEqual(m["warnings"], ["The mortgage rate (Freddie Mac, via FRED) did not load: the site took too long to answer",
+                                         "Realtor.com inventory by ZIP did not load: the connection dropped"])
+        self.assertFalse(any(re.search(r"Error|Errno|urlopen|<", w) for w in m["warnings"]))
+        self.assertEqual({k: v["state"] for k, v in m["parts"].items()}, {"rate": "failed", "areas": "failed", "gbrar": "missing"})
+        self.assertEqual(cc.market({"rate": {"rate": 6.1, "change": 0, "date": "2026-11-05"}, "warnings": []})["parts"]["rate"]["state"], "ok")
 
 
 if __name__ == "__main__":

@@ -735,10 +735,41 @@ def _pct(x) -> str:
     return "" if x is None else f"{'+' if x > 0 else ''}{round(x * 100)}% vs a year ago"
 
 
+MARKET_PARTS = (("rate", "rate", "The mortgage rate (Freddie Mac, via FRED)"), ("areas", "Realtor.com", "Realtor.com inventory"),
+                ("gbrar", "GBRAR", "The GBRAR monthly file"))
+
+
+def plain_warning(w: str) -> str:
+    """A sync warning in plain words: what did not load and roughly why. Never an exception name or error code."""
+    t = str(w or "")
+    what = next((label for _, key, label in MARKET_PARTS if t.lower().startswith(key.lower())), "One market source")
+    if "zip" in t.lower()[:20]:
+        what += " by ZIP"
+    elif "county" in t.lower()[:24]:
+        what += " by parish"
+    why = ("the site took too long to answer" if re.search(r"timed? ?out|timeout", t, re.I)
+           else "the site refused the request" if re.search(r"\b40[13]\b|forbidden|refused", t, re.I)
+           else "the connection dropped" if re.search(r"reset|broken|closed", t, re.I)
+           else "the site could not be reached" if re.search(r"urlerror|name or service|nodename|unreachable", t, re.I)
+           else "the file could not be read")
+    return f"{what} did not load: {why}"
+
+
+def market_parts(m: dict) -> dict:
+    """Each market tile's own state: ok, or failed when its source did not load in the last read (it then shows the
+    last good number if there is one)."""
+    warns = m.get("warnings") or []
+    out = {}
+    for part, key, label in MARKET_PARTS:
+        bad = [plain_warning(w) for w in warns if str(w).lower().startswith(key.lower())]
+        out[part] = {"state": "failed" if bad else ("ok" if m.get(part) else "missing"), "note": "; ".join(bad), "label": label}
+    return out
+
+
 def market(m: dict) -> dict:
     """Rates, areas and GBRAR, plus talking points written only from those numbers, each naming its source and date."""
     if not m:
-        return {"rate": None, "areas": [], "gbrar": None, "points": []}
+        return {"rate": None, "areas": [], "gbrar": None, "points": [], "warnings": [], "parts": market_parts({})}
     pts, r = [], m.get("rate")
     if r:
         d = "down" if r["change"] < 0 else "up" if r["change"] > 0 else "flat"
@@ -762,7 +793,7 @@ def market(m: dict) -> dict:
             return (s.get(k) or {}).get("now")
         pts.append(f"Greater Baton Rouge, {g['month']}: median sale price ${gv('median_price'):,.0f}, {gv('closed_sales')} closed sales, "
                    f"{gv('months_supply')} months of supply, {gv('days_on_market')} days on market (GBRAR MLS monthly indicators).")
-    return {**m, "points": pts, "warnings": m.get("warnings") or []}
+    return {**m, "points": pts, "warnings": [plain_warning(w) for w in m.get("warnings") or []], "parts": market_parts(m)}
 
 
 def _merge_outbox(rows: dict, outbox: list, tabs: dict) -> dict:
