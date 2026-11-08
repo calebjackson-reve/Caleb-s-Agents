@@ -464,6 +464,20 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
   run('S.data = __state');
 }
 
+// Round 3, item 12: map labels never overlap each other, a pin or a cluster; one with no free spot is left off.
+{
+  const labels = [{ name: 'Baton Rouge city limits (East Baton Rouge)', x: 200, y: 200, on: false }, { name: 'Zachary city limits', x: 210, y: 205, on: false },
+    { name: 'Central city limits', x: 190, y: 195, on: true }, { name: 'Boxed in', x: 600, y: 600, on: false }];
+  const obstacles = [{ x: 200, y: 200, r: 26 }, { x: 260, y: 180, r: 12 }];
+  for (let dx = -200; dx <= 200; dx += 20) for (let dy = -100; dy <= 100; dy += 20) obstacles.push({ x: 600 + dx, y: 600 + dy, r: 12 });
+  const placed = run(`PMap.placeLabels(${JSON.stringify(labels)}, ${JSON.stringify(obstacles)}, t => t.length * 7)`);
+  const ov = (a, b) => a.x1 > b.x0 && a.x0 < b.x1 && a.y1 > b.y0 && a.y0 < b.y1;
+  const obs = obstacles.map(o => ({ x0: o.x - o.r, x1: o.x + o.r, y0: o.y - o.r, y1: o.y + o.r }));
+  const bad = placed.some((a, i) => placed.some((b, j) => i !== j && ov(a, b)) || obs.some(o => ov(a, o)));
+  check(!bad && placed.length >= 2 && !placed.some(p => p.name === 'Boxed in'), 'map labels never overlap each other or a pin, and a boxed-in label is left off', placed.map(p => p.name).join(' | '));
+  check(/drawLabels\(farmLabels\);\s*cancelAnimationFrame/.test(mapjs) && !/rgba\(8,22,46/.test(mapjs), 'labels are drawn after the pins, and clusters are not navy');
+}
+
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');

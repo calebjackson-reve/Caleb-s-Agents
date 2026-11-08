@@ -20,6 +20,22 @@ window.PMap = (function () {
 
   // Street tiles that keep failing (a server that refuses, as OpenStreetMap's did with 403) switch the map to Satellite
   // by itself, so the map is never a blank grid. Six failures with no tile drawn, or failures outnumbering draws three to one.
+  // Area labels: each takes the first free spot around its point (on it, above, below, then further out and to the sides),
+  // never over another label, a pin or a cluster. A label with no free spot is left off rather than overlap.
+  function placeLabels(labels, obstacles, width) {
+    const boxes = obstacles.map(o => ({ x0: o.x - o.r, x1: o.x + o.r, y0: o.y - o.r, y1: o.y + o.r }));
+    const hit = b => boxes.some(o => b.x1 > o.x0 && b.x0 < o.x1 && b.y1 > o.y0 && b.y0 < o.y1);
+    const out = [];
+    for (const l of labels.slice().sort((a, b) => (b.on - a.on) || (b.name.length - a.name.length))) {
+      const w = width(l.name) + 12, h = 20, step = h + 4;
+      const offs = [[0, 0], [0, -step], [0, step], [0, -2 * step], [0, 2 * step], [w / 2 + 14, 0], [-(w / 2 + 14), 0], [w / 2 + 14, -step], [-(w / 2 + 14), step]];
+      const spot = offs.map(([dx, dy]) => ({ x0: l.x + dx - w / 2, x1: l.x + dx + w / 2, y0: l.y + dy - h / 2, y1: l.y + dy + h / 2, dx, dy })).find(b => !hit(b));
+      if (!spot) continue;
+      boxes.push(spot); out.push({ ...l, ...spot, w, h });
+    }
+    return out;
+  }
+
   function streetFailing(errs, oks) { return errs >= 6 && (oks === 0 || errs >= oks * 3); }
 
   function create(el, opts = {}) {
@@ -72,16 +88,12 @@ window.PMap = (function () {
 
     // Area names never sit on top of each other: the selected area goes first, then bigger names, and a label whose
     // box would overlap one already drawn is nudged below, then above, then left out at this zoom.
+    // Drawn last, after every pin and cluster, which are the obstacles (st.hits).
     function drawLabels(labels) {
       ctx.font = '600 12px ' + getComputedStyle(document.body).getPropertyValue('--sans'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      const boxes = [], hit = b => boxes.some(o => b.x1 > o.x0 && b.x0 < o.x1 && b.y1 > o.y0 && b.y0 < o.y1);
-      for (const l of labels.sort((a, b) => (b.on - a.on) || (b.name.length - a.name.length))) {
-        const w = ctx.measureText(l.name).width + 12, h = 20;
-        const spot = [0, h + 2, -(h + 2)].map(dy => ({ x0: l.x - w / 2, x1: l.x + w / 2, y0: l.y + dy - h / 2, y1: l.y + dy + h / 2, dy })).find(b => !hit(b));
-        if (!spot) continue;
-        boxes.push(spot);
-        ctx.fillStyle = 'rgba(10,10,11,.82)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(spot.x0, spot.y0, w, h, 6) : ctx.rect(spot.x0, spot.y0, w, h); ctx.fill();
-        ctx.fillStyle = l.on ? '#e87757' : '#f3eee6'; ctx.fillText(l.name, l.x, l.y + spot.dy + .5);
+      for (const s of placeLabels(labels, st.hits, t => ctx.measureText(t).width)) {
+        ctx.fillStyle = 'rgba(10,10,11,.88)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(s.x0, s.y0, s.w, s.h, 6) : ctx.rect(s.x0, s.y0, s.w, s.h); ctx.fill();
+        ctx.fillStyle = s.on ? '#e87757' : '#f3eee6'; ctx.fillText(s.name, s.x + s.dx, s.y + s.dy + .5);
       }
       ctx.textBaseline = 'alphabetic';
     }
@@ -96,7 +108,6 @@ window.PMap = (function () {
         ctx.setLineDash([6, 4]); ctx.lineWidth = on ? 2.4 : 1.6; ctx.strokeStyle = '#e87757'; ctx.stroke(); ctx.setLineDash([]);
         labels.push({ name: f.name, x: pts.reduce((s, p) => s + p[0], 0) / pts.length, y: pts.reduce((s, p) => s + p[1], 0) / pts.length, on });
       }
-      drawLabels(labels);
       if (st.draw) {
         const pts = st.draw.pts.map(([a, b]) => toScreen(a, b));
         if (st.draw.hover && pts.length) pts.push(st.draw.hover);
@@ -104,6 +115,7 @@ window.PMap = (function () {
         ctx.lineWidth = 2; ctx.strokeStyle = '#c8b596'; ctx.stroke(); ctx.fillStyle = 'rgba(200, 181, 150,.08)'; ctx.fill();
         st.draw.pts.forEach(([a, b], i) => { const [x, y] = toScreen(a, b); dot(x, y, i === 0 ? 6 : 4, '#c8b596'); });
       }
+      return labels;
     }
 
     function draw() {
@@ -112,7 +124,7 @@ window.PMap = (function () {
       const dpr = window.devicePixelRatio || 1;
       if (cv.width !== st.w * dpr || cv.height !== st.h * dpr) { cv.width = st.w * dpr; cv.height = st.h * dpr; cv.style.width = st.w + 'px'; cv.style.height = st.h + 'px'; }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, st.w, st.h);
-      drawFarms();
+      const farmLabels = drawFarms();
       st.hits = [];
       const pad = 20, inView = ([x, y]) => x > -pad && y > -pad && x < st.w + pad && y < st.h + pad;
       const people = st.data.pins.map(p => ({ p, s: toScreen(p.lat, p.lng) })).filter(o => inView(o.s));
@@ -125,7 +137,7 @@ window.PMap = (function () {
           const x = list.reduce((s, o) => s + o.s[0], 0) / list.length, y = list.reduce((s, o) => s + o.s[1], 0) / list.length;
           const top = ['hot', 'warm', 'lukewarm', 'cold', 'ice-cold'].find(b => list.some(o => o.p.band === b)) || '';
           const r = Math.min(26, 10 + Math.sqrt(list.length) * 2.2);
-          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(8,22,46,.86)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = BAND[top]; ctx.stroke();
+          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(16,14,17,.9)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = BAND[top]; ctx.stroke();
           ctx.font = '700 11px ' + getComputedStyle(document.body).getPropertyValue('--mono'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#f3eee6'; ctx.fillText(String(list.length), x, y + .5); ctx.textBaseline = 'alphabetic';
           st.hits.push({ x, y, r: r + 2, cluster: list.map(o => o.p) });
         }
@@ -150,6 +162,7 @@ window.PMap = (function () {
         house(s[0], s[1], sel ? 11 : 8.5, STAGE[d.stage] || '#d9a98c', sel ? '#ffffff' : null);
         st.hits.push({ x: s[0], y: s[1], r: 11, pin: d });
       }
+      drawLabels(farmLabels);
       cancelAnimationFrame(st.raf);
       if (pulsing) st.raf = requestAnimationFrame(() => { st.pulse++; draw(); });
     }
@@ -235,5 +248,5 @@ window.PMap = (function () {
     }
     return inside;
   }
-  return { create, inPolygon, streetFailing, BAND, STAGE, MARKET };
+  return { create, inPolygon, streetFailing, placeLabels, BAND, STAGE, MARKET };
 })();
