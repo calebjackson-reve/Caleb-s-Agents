@@ -67,6 +67,7 @@ import cc  # noqa: E402  (Command Center numbers)
 import auth  # noqa: E402  (the login for anything but this Mac)
 import push  # noqa: E402  (phone alerts)
 import cc_ask  # noqa: E402  (Ask Claude on every Command Center page)
+import handoff  # noqa: E402  (texts and emails Caleb sends himself from the Text and Email buttons)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -327,6 +328,8 @@ class State:
         self.messages = {"checked": False, "ok": None, "detail": ""}
         if self.sender == "live" and not demo and platform.system() == "Darwin":
             threading.Thread(target=self.check_messages, daemon=True).start()
+        self.handoff_state = {"messages_ok": None, "gmail_ok": None, "detail": ""}
+        self._gmail = None
         self.started = now().isoformat(timespec="seconds")
         # Command Center reads: out/cc/ on the Mac (written by the sync), made-up fixtures in demo.
         self.ask_log = (send_log.parent / "ask-usage.json") if send_log else OUT / ("demo-ask-usage.json" if demo else "ask-usage.json")
@@ -634,6 +637,13 @@ class State:
         feed_age = 0 if self.demo else file_age_minutes(self.paths["feed"])
         sent = self.sent_today()
         feed_ok = bool(feed) and "_error" not in feed
+        log = self.send_log()
+        if feed_ok:  # a send Caleb made by hand and Pipeline confirmed is a touch, here only, never in the sheet
+            feed, text_q, email_q, _ = handoff.apply_touches(feed, text_q, email_q, log, today().isoformat())
+        by_person: dict = {}
+        for r in log[-400:]:
+            if r.get("person_id") and r.get("status") in ("sent", "opened"):
+                by_person.setdefault(r["person_id"], []).append({k: (r.get(k) or "")[:140] for k in ("at", "kind", "status", "sent_at", "confirmed_by", "service", "subject", "text")})
         if feed_ok and isinstance(feed.get("market"), dict):
             gone = self.dismissed()
             if gone:
@@ -676,6 +686,8 @@ class State:
             "caps": {"texts": self.max_texts, "emails": self.max_emails, **self.left_today()},
             "sent_today": [r for r in self.send_log() if r.get("at", "").startswith(today().isoformat())][-50:],
             "last_texts": self.last_texts(),
+            "handoff": {**self.handoff_state, "pending": handoff.pending(log, now().timestamp())},
+            "sent_log": {k: v[-5:] for k, v in by_person.items()},
             "refresh": self.refresh,
             "problems": problems,
             "links": {"sheet": SHEET_URL.format(sheet_id=feed.get("sheet_id", "")) if feed.get("sheet_id") else "", "command": COMMAND_URL},
@@ -885,6 +897,71 @@ class State:
         elif self.demo:
             touched = self.crm.run(["touch", person_id, f"{kind} (demo)"])
         return {"ok": True, "result": entry, "touched": touched, "caps": {**self.sent_today(), "texts_cap": self.max_texts, "emails_cap": self.max_emails}}
+
+    # ---- hand-off: Caleb sends it himself in Messages or Gmail, Pipeline finds out (handoff.py)
+    def opened(self, kind: str, person_id: str, to: str, body: str, subject: str = "", display: str = "") -> dict:
+        """The Text or Email button opened Messages or Gmail. Logged as opened. Nothing is sent from here."""
+        if kind not in ("text", "email"):
+            raise CRMError("kind must be text or email")
+        to = (norm_phone(to) or "") if kind == "text" else to.strip()
+        if not to or (kind == "email" and not re.fullmatch(r"[^\s@<>,;]+@[^\s@<>,;]+\.[A-Za-z]{2,}", to)):
+            raise CRMError("not a valid " + ("US number" if kind == "text" else "email address"))
+        with self.lock:
+            log = self.send_log()
+            entry, made = handoff.open_entry(log, now().isoformat(timespec="seconds"), kind, person_id, display, to, body, subject.strip())
+            if made:
+                write_json(self.send_log_path, log)
+        return {"ok": True, "result": entry, "new": made}
+
+    def _save_handoff(self, log: list) -> None:
+        """Write confirmed lines onto the newest copy of the log, so a click that landed meanwhile is kept."""
+        with self.lock:
+            done = {e["id"]: e for e in log if e.get("id") and e.get("status") == "sent"}
+            fresh = [done.get(e.get("id"), e) if handoff.is_open(e) else e for e in self.send_log()]
+            write_json(self.send_log_path, fresh)
+
+    def handoff_check(self, db: Path | None = None, gmail=None) -> dict:
+        """One pass: look for the real send of every message opened in the last 15 minutes. Read only."""
+        log, at = self.send_log(), now().timestamp()
+        live = [e for e in log if handoff.is_open(e) and handoff.age(e, at) <= handoff.WINDOW + 60]
+        if not live:
+            return {"changed": 0}
+        if db is None and not self.demo and platform.system() == "Darwin":
+            db = CHAT_DB
+        if gmail is None and not self.demo and any(e["kind"] == "email" for e in live):
+            try:
+                if self._gmail is None:
+                    import cc_sync  # the read-only Google sign-in the Command Center sync already uses
+                    self._gmail = cc_sync.services()["gmail"]
+                gmail = self._gmail
+            except Exception as e:
+                self.handoff_state.update(gmail_ok=False, detail=f"{type(e).__name__}: {e}"[:160])
+        r = handoff.check(log, at, db, gmail)
+        self.handoff_state.update({k: r[k] for k in ("messages_ok", "gmail_ok") if r[k] is not None})
+        if r["changed"]:
+            self._save_handoff(log)
+        return r
+
+    def handoff_answer(self, entry_id: str, sent: bool) -> dict:
+        """Caleb's answer to "Did that send?": Sent marks it sent by him, Not sent takes the line out."""
+        with self.lock:
+            log = self.send_log()
+            e = handoff.answer(log, entry_id, bool(sent), now().isoformat(timespec="seconds"))
+            if not e:
+                raise CRMError("that message is not waiting on an answer")
+            write_json(self.send_log_path, log)
+        return {"ok": True, "result": e, "sent": bool(sent)}
+
+    def handoff_loop(self, sleep=time.sleep) -> None:
+        if not self.demo and platform.system() == "Darwin":
+            ok, detail = handoff.probe(CHAT_DB)
+            self.handoff_state.update(messages_ok=ok, detail=detail)
+        while True:
+            sleep(60)
+            try:
+                self.handoff_check()
+            except Exception:
+                pass
 
     # ---- refresh
     def start_refresh(self) -> dict:
@@ -1215,6 +1292,11 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.relabel(body.get("person_id", ""), body.get("band", ""), body.get("type", ""), body.get("expect_band", ""))
             elif u.path == "/api/dnc":
                 out = s.dnc(body.get("person_id", ""), body.get("reason", ""))
+            elif u.path == "/api/opened":
+                out = s.opened(body.get("kind", ""), body.get("person_id", ""), body.get("to", ""), body.get("body", ""),
+                               body.get("subject", ""), body.get("display", ""))
+            elif u.path == "/api/opened/answer":
+                out = s.handoff_answer(body.get("id", ""), body.get("sent") is True)
             elif u.path == "/api/send":
                 # Send now: from the Mac only, and a live send needs the confirm step's flag. One message per request.
                 if not auth.Auth.is_local(self.headers, self.server.server_address[1]):
@@ -1297,6 +1379,7 @@ class Server(ThreadingHTTPServer):
 def serve(state: State, port: int, open_browser: bool) -> None:
     Handler.state = state
     httpd = Server(("127.0.0.1", port), Handler)
+    threading.Thread(target=state.handoff_loop, daemon=True).start()
     url = f"http://127.0.0.1:{port}/"
     v = state.voice_info()
     print(f"Pipeline {'(demo) ' if state.demo else ''}on {url}  sender={state.sender}  crm python={getattr(state.crm, 'python', 'demo')}  "
