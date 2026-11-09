@@ -206,8 +206,10 @@
 
   // ---------------- Deals: the AIRE Deals sheet, with the CRM Deals tab checked against it
   // An offer's deadline from its note: expired once it passed, open until a day otherwise. Offers never count down to close.
+  // Expired is checked against this device's clock too, so a page left open past the deadline still says so.
+  C.offerExpired = o => !!o && (o.expired || (o.at && new Date(o.at) < new Date()));
   C.offerPill = r => { const o = r.stage === 'offer' && r.offer; if (!o) return '';
-    return o.expired ? `<span class="cc-pill k-closing">Offer expired ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>` : `<span class="cc-pill k-listing">Offer open until ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>`; };
+    return C.offerExpired(o) ? `<span class="cc-pill k-closing">Offer expired ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>` : `<span class="cc-pill k-listing">Offer open until ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>`; };
   const STAGE = { contract: 'Under contract', offer: 'Offer', appointment: 'Active', closed: 'Closed', out: 'Fell through', other: 'No status' };
   function deals() {
     const g = C.guard(); if (g) return g;

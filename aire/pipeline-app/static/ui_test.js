@@ -562,5 +562,8 @@ check(run('CC.dated(0, 4)') === '0' && run('CC.undatedLine(4)').includes('4 writ
   run('CC.data = __cc;');
 }
 
+// Round 4 item 3: a page left open past an offer's deadline counts it as past, by this device's clock.
+check(run(`CC.offerExpired({ expired: false, at: '2000-01-01T12:00:00-06:00' })`) === true && run(`CC.offerExpired({ expired: false, at: '2999-01-01T12:00:00-06:00' })`) === false, 'an offer is past its deadline by the clock now, not the last read');
+
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

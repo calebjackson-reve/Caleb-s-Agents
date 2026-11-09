@@ -584,5 +584,19 @@ class JudgeRound4History(unittest.TestCase):
         self.assertEqual(cc.flag_history(hist, [], t), hist)  # no sheet read, nothing to compare
 
 
+class JudgeRound4Offers(unittest.TestCase):
+    def test_an_offer_open_until_noon_is_past_its_deadline_at_12_23(self):
+        note = "Seller countered, open until Mon Nov 9 12 PM"
+        at = lambda h, mi: datetime(2026, 11, 9, h, mi, tzinfo=cc.CENTRAL)
+        self.assertFalse(cc.offer_deadline(note, at(11, 59))["expired"])
+        self.assertTrue(cc.offer_deadline(note, at(12, 23))["expired"])
+        self.assertEqual(cc.offer_deadline(note, at(9, 0))["at"], "2026-11-09T12:00:00-06:00")
+        self.assertFalse(cc.offer_deadline("open until Nov 9", at(23, 0))["expired"])  # no time: open all that day
+        self.assertEqual(cc._clock("11:59PM"), (23, 59))
+        self.assertEqual(cc._clock("12 AM"), (0, 0))
+        cards = cc.deal_cards(cc.deal_rows([HEAD, ["1 Demo Ln", "Buyer", "Offer", 1, 1, "", "", "", note, ""]]), date(2026, 11, 9), at(12, 23))
+        self.assertTrue(cards[0]["offer"]["expired"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

@@ -198,10 +198,21 @@ OFFER_DEADLINE = re.compile(r"\b(binding|open|good|valid|expires?|expired|deadli
                             r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b(?:\s+(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?))?", re.I)
 
 
-def offer_deadline(note, today: date) -> dict | None:
+def _clock(t: str | None) -> tuple[int, int]:
+    """"12 PM" -> (12, 0), "11:59 PM" -> (23, 59), "7 AM" -> (7, 0). No time: the end of the day."""
+    m = re.match(r"(\d{1,2})(?::(\d{2}))?\s*([AP])", (t or "").upper().replace(".", ""))
+    if not m:
+        return 23, 59
+    h = int(m.group(1)) % 12 + (12 if m.group(3) == "P" else 0)
+    return h, int(m.group(2) or 0)
+
+
+def offer_deadline(note, today: date | datetime) -> dict | None:
     """An offer's deadline as the Check note says it ("binding until Oct 29 7 AM", "open until Fri Nov 6 5 PM",
     "expired Nov 4 9 AM"). Expired once that day has passed, or when the note says it expired. None when the note
     names no deadline. The year is this year, or last year for a date more than six months ahead."""
+    now = today if isinstance(today, datetime) else None
+    today = today.date() if isinstance(today, datetime) else today
     hits = list(OFFER_DEADLINE.finditer(str(note or "")))
     if not hits:
         return None
@@ -213,11 +224,14 @@ def offer_deadline(note, today: date) -> dict | None:
     if (d - today).days > 183:
         d = d.replace(year=today.year - 1)
     said = m.group(0).strip()
-    return {"date": d.isoformat(), "said": said, "time": (m.group(4) or "").upper().replace(".", "") or None,
-            "expired": d < today or m.group(1).lower() == "expired"}
+    tm = (m.group(4) or "").upper().replace(".", "") or None
+    at = datetime(d.year, d.month, d.day, *_clock(tm), tzinfo=CENTRAL)
+    # Judged against the time now, to the minute when the note gives a time ("open until 12 PM" is past at 12:01).
+    past = at < now if now else d < today
+    return {"date": d.isoformat(), "said": said, "time": tm, "at": at.isoformat(), "expired": past or m.group(1).lower() == "expired"}
 
 
-def deal_cards(deals: list[dict], today: date) -> list[dict]:
+def deal_cards(deals: list[dict], today: date, now: datetime | None = None) -> list[dict]:
     order = {"contract": 0, "offer": 1, "appointment": 2, "other": 3, "closed": 4, "out": 5}
     out = []
     for r in deals:
@@ -228,7 +242,7 @@ def deal_cards(deals: list[dict], today: date) -> list[dict]:
         out.append({**r, "stage": st, "next": next_step(r.get("check")), "days": days,
                     "checklist": checklist(r, today) if st == "contract" else [],
                     # an offer has no closing to count down to: its act date is only an estimate if it is accepted
-                    "offer": offer_deadline(r.get("check"), today) if st == "offer" else None,
+                    "offer": offer_deadline(r.get("check"), now or today) if st == "offer" else None,
                     "to_close": (date.fromisoformat(r["act"]) - today).days if is_day(r.get("act")) and st != "offer" else None})
     return sorted(out, key=lambda r: (order[r["stage"]], r.get("act") or "9"))
 
@@ -785,7 +799,7 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
     evs = cal_events(_rows(raw["calendar"]), coord)
     people = (f.get("new_leads") or []) + (f.get("touches_due") or [])
     leads = merge_leads(attach_crm(_rows(raw["leads"]), people), f.get("new_leads") or [], replied or set(), now)
-    cards, crm_only = merge_deals(deal_cards(deals, today), f.get("deals") or [])
+    cards, crm_only = merge_deals(deal_cards(deals, today, now), f.get("deals") or [])
     dl = contract_deadlines(deal_deadlines(evs), cards)
     goals = (raw.get("goals") or {}).get("rows") or {}
     sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today)

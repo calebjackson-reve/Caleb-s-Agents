@@ -111,7 +111,7 @@
         ${tile('Drafts ready', n(dr), `Written texts and emails to read and send${owes ? ` · ${owes} replies to write are not counted` : ''}`, 'drafts', 'queue')}
         ${tile('Appointments, 7 days', n(sc.appts7.value), sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Showings, listing appts, clients', 'calendar', 'calendar')}
         ${tile('Booked today', n(wk.hours) + '<small>h</small>', `${n(wk.events)} timed event${wk.events === 1 ? '' : 's'}. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}
-        ${tile('Offers out', n(offers.length), offers.length ? `${offers.filter(r => r.offer && r.offer.expired).length} past their deadline` : 'No open offers on the Deals sheet', 'deals', 'deals')}
+        ${tile('Offers out', n(offers.length), offers.length ? `${offers.filter(r => C.offerExpired(r.offer)).length} past their deadline` : 'No open offers on the Deals sheet', 'deals', 'deals')}
         ${tile('Commission to check', n(np), np ? 'Not processed at KW, or paid with no closed deal on the sheet' : 'Nothing waiting at KW', ['commission_mail', 'deals'], 'commission')}
       </div>
 
