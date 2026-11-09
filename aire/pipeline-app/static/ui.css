@@ -349,3 +349,11 @@ body[data-sec="numbers"] { --sec: var(--c-green); } body[data-sec="you"] { --sec
 #sent-ask small { color: var(--cc-tan); margin-left: 8px; }
 #sent-ask button { font: inherit; font-weight: 600; border-radius: 999px; padding: 6px 14px; min-height: 32px; cursor: pointer; border: 1px solid var(--cc-coral); background: var(--cc-coral); color: #160c08; }
 #sent-ask button.no { background: transparent; color: var(--cc-text); border-color: var(--cc-line); }
+/* Scorecard cards: headings on one line across a row, the source line at the bottom, the section rule on top like tiles. */
+.cc-kpi { display: flex; flex-direction: column; border-top: 3px solid color-mix(in srgb, var(--sec) 75%, transparent); }
+.cc-kpi > footer { margin-top: auto; }
+/* A deal with no photo gets a slim stage band, not an empty picture frame. Three deal cards fit one row at 1200. */
+.cc-photo.ph { aspect-ratio: auto; height: 44px; font-size: 20px; }
+.cc-deals { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+/* Phone: tiles two to a row, so the Today list is a short scroll away. */
+@media (max-width: 720px) { .cc-tiles { grid-template-columns: 1fr 1fr; gap: 8px; } .cc-tile { padding: 10px; } .cc-tile .cc-num { font-size: 24px; } }

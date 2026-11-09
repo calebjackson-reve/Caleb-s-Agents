@@ -230,8 +230,9 @@ function renderNav(c) {
   document.body.dataset.sec = sec;
   $('#nav').innerHTML = NAV.map(([g, items]) => `<div class="nav-g g-${g.toLowerCase()}"><span class="nav-h">${g}</span>${items.map(([k, ico, label]) => { const [n, warn] = cnt[k] || [];
     return `<button type="button" class="${view === k ? 'on' : ''}" ${view === k ? 'aria-current="page"' : ''} onclick="go('${k}')"><span class="ico" aria-hidden="true">${ico}</span><span class="lbl">${label}</span>${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`; }).join('')}</div>`).join('');
-  const on = $('#nav .on'), side = $('.side');
-  if (on && side && innerWidth <= 720) { const a = on.getBoundingClientRect(), b = side.getBoundingClientRect(); side.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2); }
+  // On a phone the nav is one strip that scrolls sideways: keep the page you are on in the middle of it.
+  const on = $('#nav .on'), strip = $('#nav');
+  if (on && strip && strip.scrollWidth > strip.clientWidth) { const a = on.getBoundingClientRect(), b = strip.getBoundingClientRect(); strip.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2); }
 }
 function panel(i, title, right, body, extra = '') { return `<section class="panel ${extra}" style="--i:${i}"><div class="ph"><h3>${title}</h3><div class="ph-right">${right || ''}</div></div>${body}</section>`; }
 

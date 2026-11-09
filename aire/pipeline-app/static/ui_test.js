@@ -684,5 +684,8 @@ check(run(`(() => { const r = { what: 'Act of sale' }; return 1; })()`) === 1 &&
   check(/\.modal \.dbody \{ overflow-y: auto; min-height: 0; \}/.test(ui) && /\.k-inspection, \.k-finance, \.cc-ev\.k-inspection, \.cc-ev\.k-finance \{ --k: #e87757/.test(ui) && /\.st-appointment \{ --st: var\(--cc-tan\); \}/.test(ui), 'a tall dialog scrolls, deadlines are one color, an active listing is tan');
   check(/, pulled ' \+ C\.day\(m\.gbrar\.pulled\)/.test(fs.readFileSync(path.join(dir, 'cc-life.js'), 'utf8')), 'the GBRAR tiles say when the numbers were pulled'); }
 
+check(/strip = \$\('#nav'\)/.test(appjs) && /strip\.scrollLeft \+=/.test(appjs), 'the phone nav strip scrolls to the page you are on');
+check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1fr;/.test(ui) && /\.cc-kpi > footer \{ margin-top: auto; \}/.test(ui), 'phone tiles sit two to a row and Scorecard cards line up');
+
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);
