@@ -633,5 +633,23 @@ check(/class="nav-g g-\$\{g\.toLowerCase\(\)\}"/.test(appjs) && /document\.body\
   run('CC.photos = {}'); }
 check(run(`(() => { const r = { what: 'Act of sale' }; return 1; })()`) === 1 && /return \/act of sale\|closing\/i\.test\(t\) \? 'sale'/.test(fs.readFileSync(path.join(dir, 'cc.js'), 'utf8')), 'act of sale reads green, deadlines stay coral');
 
+// Round 5: a later counter replaces an offer's deadline, a wrong weekday is flagged, overdue dates and unaccepted invites show.
+{
+  check(/Countered since, no deadline on the sheet/.test(run(`CC.offerPill({ stage: 'offer', offer: { superseded: true, expired: false } })`)) && !run(`CC.offerExpired({ superseded: true, expired: false, at: null })`), 'an offer countered since its deadline is not past its deadline');
+  check(/Sheet says Sun, but [A-Z][a-z]{2}, Nov 9 is the date/.test(run(`CC.offerPill({ stage: 'offer', offer: { date: '2026-11-09', time: '12 PM', expired: true, wrong_weekday: 'Sun' } })`)), 'a weekday that does not match the date is flagged on the offer');
+  const d5 = JSON.parse(JSON.stringify(ccdata));
+  d5.deadlines.overdue = [{ deal: '100 Fixture Ln', key: '100 fixture', day: '2026-11-07', what: 'Inspection', said: 'reply due Nov 7', from: 'sheet' }];
+  d5.scorecard.appts7.invites = 1; d5.scorecard.gci.blank = 5;
+  run(`CC.data = ${JSON.stringify(d5)}`);
+  const dl = render('deadlines', true), ds = render('dash', true), sc = render('scorecard', true);
+  check(/Overdue <span class="cc-count">1</.test(dl) && /<span class="cc-chip">Overdue<\/span>/.test(dl) && /1 overdue/.test(ds), 'a contract date that has gone by is an Overdue row on Deadlines and on the Dashboard tile');
+  check(/1 invite not accepted, not counted/.test(ds) && /1 more invite not accepted, not counted/.test(sc), 'an invite not accepted is named, never counted as an appointment');
+  check(/5 closed with no commission/.test(ds) && /5 closed with no commission on the sheet/.test(sc), 'every GCI tile says when closed deals have no commission');
+  run('CC.data = __cc');
+  check(/Your note: \$\{C2 \? C2\.note\(/.test(appjs), 'the compose drawer hides your note when contacts are hidden');
+  check(/filter\(s => s\.status === 'sent'\)\.length, false\]/.test(appjs) && /dry run\$\{/.test(fs.readFileSync(path.join(dir, 'crm-pages.js'), 'utf8')), 'a dry run is never counted as sent');
+  check(/res\.parts \? Object\.keys\(res\.parts\)/.test(fs.readFileSync(path.join(dir, 'cc-sources.js'), 'utf8')), 'Sources counts the rows in each tab, not the tabs');
+}
+
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

@@ -224,11 +224,21 @@ def offer_deadline(note, today: date | datetime) -> dict | None:
     if (d - today).days > 183:
         d = d.replace(year=today.year - 1)
     said = m.group(0).strip()
+    # A counter written in a later sentence replaces that deadline: the old one was on the offer it answered.
+    rest = str(note)[m.end() - 1:]  # from the match's last character: "5 PM." may have taken the full stop
+    cut = re.search(r"\.\s+", rest)
+    later = [x.strip().rstrip(".") for x in re.split(r"\.\s+", rest[cut.end():]) if x.strip()] if cut else []
+    counter = next((x for x in later if re.search(r"\bcounter(ed|s)?\b", x, re.I)), None)
+    if counter:
+        return {"superseded": True, "expired": False, "date": None, "time": None, "at": None, "said": counter}
     tm = (m.group(4) or "").upper().replace(".", "") or None
     at = datetime(d.year, d.month, d.day, *_clock(tm), tzinfo=CENTRAL)
     # Judged against the time now, to the minute when the note gives a time ("open until 12 PM" is past at 12:01).
     past = at < now if now else d < today
-    return {"date": d.isoformat(), "said": said, "time": tm, "at": at.isoformat(), "expired": past or m.group(1).lower() == "expired"}
+    wd = re.search(r"\b(mon|tue|wed|thu|fri|sat|sun)", said, re.I)  # "Sun Nov 9" when Nov 9 is a Monday
+    wrong = wd.group(1).title() if wd and WEEKDAYS.index(wd.group(1).lower()) != d.weekday() else None
+    return {"date": d.isoformat(), "said": said, "time": tm, "at": at.isoformat(), "wrong_weekday": wrong,
+            "expired": past or m.group(1).lower() == "expired"}
 
 
 def deal_cards(deals: list[dict], today: date, now: datetime | None = None) -> list[dict]:
@@ -239,10 +249,12 @@ def deal_cards(deals: list[dict], today: date, now: datetime | None = None) -> l
         days = None
         if is_day(r.get("since")) and r["since"] <= today.isoformat():
             days = (today - date.fromisoformat(r["since"])).days
-        out.append({**r, "stage": st, "next": next_step(r.get("check")), "days": days,
+        offer = offer_deadline(r.get("check"), now or today) if st == "offer" else None
+        out.append({**r, "stage": st, "days": days,
+                    "next": offer["said"] if offer and offer.get("superseded") else next_step(r.get("check")),
                     "checklist": checklist(r, today) if st == "contract" else [],
                     # an offer has no closing to count down to: its act date is only an estimate if it is accepted
-                    "offer": offer_deadline(r.get("check"), now or today) if st == "offer" else None,
+                    "offer": offer,
                     "to_close": (date.fromisoformat(r["act"]) - today).days if is_day(r.get("act")) and st != "offer" else None})
     return sorted(out, key=lambda r: (order[r["stage"]], r.get("act") or "9"))
 
@@ -672,7 +684,8 @@ def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
     real = [r for r in leads if not r.get("test")]
     lc = lead_counts(real, today)
     end7 = (today + timedelta(days=6)).isoformat()
-    appts = [r for r in evs if r["kind"] in ("showing", "listing", "client") and today.isoformat() <= r["day"] <= end7]
+    appts_all = [r for r in evs if r["kind"] in ("showing", "listing", "client") and today.isoformat() <= r["day"] <= end7]
+    appts = [r for r in appts_all if booked(r)]  # an invite not accepted is not an appointment yet
     paid = kw_paid.get("value") if kw_paid and kw_paid.get("value") is not None else None
     gci = {"value": paid if paid is not None else sheet_gci,
            "from": "kw_paid" if paid is not None else "sheet",
@@ -703,7 +716,7 @@ def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
             "closings": {"value": len(yr_closed), "goal": prog(len(yr_closed), g.get("closings_high") or g.get("closings_low")),
                          "low": g.get("closings_low"), "high": g.get("closings_high")},
             "leads7": {"value": lc["d7"], "low": g.get("leads_low"), "high": g.get("leads_high"), "undated": lc["undated"]},
-            "appts7": {"value": len(appts), "goal": g.get("appts")},
+            "appts7": {"value": len(appts), "goal": g.get("appts"), "invites": len(appts_all) - len(appts)},
             "cap": cap,
             "response": {"value": None, "note": "Not tracked yet: needs the time of the first reply to each lead."}}
 
@@ -813,6 +826,8 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         "calendar": evs, "week": week_load(evs, today),
         "deadlines": {"all": in_days(dl, today, 30), "d3": in_days(dl, today, 2), "d7": in_days(dl, today, 6),
                       "deals": len({r["key"] for r in in_days(dl, today, 30)}),
+                      # A date read from the sheet's words that has gone by and is not marked done: overdue, never dropped.
+                      "overdue": [r for r in dl if r.get("said") and (today - timedelta(days=30)).isoformat() <= r["day"] < today.isoformat()],
                       # Contract steps written as words with no date: they are deadlines the dates above cannot count.
                       "undated": [{"deal": c["deal"], "key": c["key"], "step": st["step"], "note": st.get("note") or ""}
                                   for c in cards if c["stage"] == "contract" for st in c.get("checklist") or [] if st["state"] in ("undated", "check")],
@@ -1083,6 +1098,9 @@ def workouts(rows: dict, outbox: list, today: date, sched: dict | None = None) -
     last7 = [x for x in log if 0 <= (today - _day(x["date"])).days < 7]
     return {"week": week, "done_7": len({x["date"][:10] for x in last7}), "minutes_7": sum(num(x.get("minutes")) or 0 for x in last7),
             "today": next((w for w in week if w["is_today"]), None), "has_plan": True, "goal": len(sched),
+            # The plan's days and times are Caleb's own (config or the default above). Where the tab says otherwise, say so.
+            "tab_differs": [f"{dn}: {plan[dn].get('focus')}" for dn in DAYS if dn in plan and plan[dn].get("focus")
+                            and (dn in sched) == bool(re.search(r"\brest\b|walk", plan[dn]["focus"], re.I))],
             "planned": sum(1 for w in week if w["planned"]), "done_week": sum(1 for w in week if w["done"] and w["planned"]),
             "recent": sorted(log, key=lambda x: str(x.get("date")), reverse=True)[:10]}
 

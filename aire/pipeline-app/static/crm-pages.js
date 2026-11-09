@@ -211,7 +211,9 @@
   // Expired is checked against this device's clock too, so a page left open past the deadline still says so.
   C.offerExpired = o => !!o && (o.expired || (o.at && new Date(o.at) < new Date()));
   C.offerPill = r => { const o = r.stage === 'offer' && r.offer; if (!o) return '';
-    return C.offerExpired(o) ? `<span class="cc-pill k-past">Offer expired ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>` : `<span class="cc-pill st-offer">Offer open until ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>`; };
+    if (o.superseded) return '<span class="cc-pill st-offer">Countered since, no deadline on the sheet</span>';
+    const wd = o.wrong_weekday ? ` <span class="cc-pill k-past">Sheet says ${esc(o.wrong_weekday)}, but ${esc(C.day(o.date))} is the date. Check it</span>` : '';
+    return C.offerExpired(o) ? `<span class="cc-pill k-past">Offer expired ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>${wd}` : `<span class="cc-pill st-offer">Offer open until ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>${wd}`; };
   // Every Deals row shows the same buttons. One that cannot work is greyed and says why, on the button itself.
   C.offBtn = (label, why) => `<button type="button" class="cc-off" disabled aria-disabled="true" title="${esc(why)}">${esc(label)}<small>${esc(why)}</small></button>`;
   // From search: open Deals, scroll to that deal and light it for a moment.
@@ -257,7 +259,7 @@
     // One owe-a-reply number: Touches due's. Replies to write cover the ones with a usable first name; the rest are named here.
     const owe = owesReply().length, rf = all.filter(d => d.reply).length;
     const why = owe ? ` ${owe} owe a reply (the same number as Touches due). ${rf === owe ? 'Each is under Replies to write.' : `${rf} are under Replies to write. The other ${owe - rf} have no first name on file or were already answered today, so they are on Touches due only.`}` : '';
-    return page('Drafts', `${readyDrafts().length} written texts and emails ready to read and send. ${caps.sent_texts} of ${caps.texts} texts and ${caps.sent_emails} of ${caps.emails} emails sent today.${why}`, body, ['drafts', 'crm']);
+    return page('Drafts', `${readyDrafts().length} written texts and emails ready to read and send. ${caps.sent_texts} of ${caps.texts} texts and ${caps.sent_emails} of ${caps.emails} emails sent today.${(caps.dry_texts || 0) + (caps.dry_emails || 0) ? ` ${(caps.dry_texts || 0) + (caps.dry_emails || 0)} dry run${(caps.dry_texts || 0) + (caps.dry_emails || 0) === 1 ? '' : 's'}, nothing left the Mac.` : ''}${why}`, body, ['drafts', 'crm']);
   }
   function sent() {
     const rows = (S.data.sent_today || []).slice().reverse();

@@ -34,7 +34,7 @@
   }
 
   // Under contract: a card per deal with the countdown to act of sale and the steps from the sheet.
-  const STEP = { done: ['✓', 'Done', 'k-done'], today: ['●', 'Today', 'k-closing'], upcoming: ['○', '', 'k-next'], undated: ['?', 'Written without a date', 'k-deadline'], past: ['✓', 'Past', 'k-past'], check: ['?', 'Contains a date, check it', 'k-deadline'], missing: ['!', 'Nothing on the sheet', 'k-deadline'] };
+  const STEP = { done: ['✓', 'Done', 'k-done'], today: ['●', 'Today', 'k-closing'], upcoming: ['○', '', 'k-next'], undated: ['?', 'Written without a date', 'k-deadline'], past: ['!', 'Past, not marked done', 'k-past'], check: ['?', 'Contains a date, check it', 'k-deadline'], missing: ['!', 'Nothing on the sheet', 'k-deadline'] };
   C.dealCards = rows => !rows.length ? '' : card(`Under contract <span class="cc-count">${rows.length}</span>`, `<div class="cc-deals">${rows.map(r => `
     <article class="cc-deal st-${esc(r.stage)}">${C.cover(r.deal, r.stage)}<header><h3>${esc(r.deal)}</h3><span class="cc-pill ${r.to_close != null && r.to_close <= 7 ? 'k-closing' : 'st-contract'}">${r.to_close == null ? 'No act of sale date' : r.to_close < 0 ? 'Closed ' + Math.abs(r.to_close) + ' days ago?' : r.to_close === 0 ? 'Closes today' : r.to_close + ' days to close'}</span></header>
       <p class="cc-note">${esc(r.side || '')}${r.price != null ? ' · ' + m(r.price) : ''} · your commission, gross ${r.commission == null ? '<em>not on the sheet</em>' : m(r.commission)}</p>
@@ -44,16 +44,17 @@
   // ---------------- Deadlines ----------------
   function deadlines() {
     const g = guard(); if (g) return g;
-    const d = C.data, all = d.deadlines.all, by = {}, und = d.deadlines.undated || [];
+    const d = C.data, all = d.deadlines.all, by = {}, und = d.deadlines.undated || [], ov = d.deadlines.overdue || [];
     all.forEach(r => { (by[r.deal] = by[r.deal] || []).push(r); });  // r.deal is the sheet's name when the street matches
     return `<div class="cc-page">${head('Deadlines', 'Every contract date in the next 30 days: the Deals sheet\'s dates plus your coordinator\'s calendar, one line per deal per day')}
       <div class="cc-tiles">
-        ${tile('Next 3 days', C.dated(d.deadlines.d3.length, und.length), und.length ? `${C.undatedLine(und.length, true)}dated ones only` : 'Due soon', ['deals', 'calendar'])}
+        ${tile('Next 3 days', C.dated(d.deadlines.d3.length, und.length), `${C.overdueLine(ov.length)}${und.length ? `${C.undatedLine(und.length, true)}dated ones only` : 'Due soon'}`, ['deals', 'calendar'])}
         ${tile('Next 30 days', n(all.length), `Dated deadlines on ${n(d.deadlines.deals)} deal${d.deadlines.deals === 1 ? '' : 's'}`, ['deals', 'calendar'])}
         ${tile('Without a date', n(und.length), und.length ? 'Written as words on the Deals sheet, so no countdown. Check each one below' : 'Every contract step has a date or is done', 'deals')}
         ${tile('Act of sale, 30 days', n(d.closings.length), 'Same list as Paydays', ['calendar', 'deals'])}
       </div>
       <div class="cc-grid">
+        ${ov.length ? card(`Overdue <span class="cc-count">${ov.length}</span>`, `<ul class="cc-list">${ov.map(r => `<li class="cc-ev k-past"><span class="cc-when">${day(r.day)}${r.time ? ' ' + esc(r.time) : ''}</span><span class="cc-what">${esc(r.what)}<small>${esc(r.deal)} · Deals sheet</small><small>Read from the words: ${C.scrub(r.said)}</small></span><span class="cc-chip">Overdue</span></li>`).join('')}</ul><p class="cc-note">The date has gone by and the Deals sheet does not say it is done. Mark it done on the sheet and it leaves this list.</p>`, 'deals', 'is-hot') : ''}
         ${card('Next 3 days', deadlineList(d.deadlines.d3), ['deals', 'calendar'], 'is-hot')}
         ${und.length ? card(`Written without a date <span class="cc-count">${und.length}</span>`, `<ul class="cc-list">${und.map(u => `<li class="cc-ev k-deadline"><span class="cc-chip">${esc(u.step)}</span><span class="cc-what">${esc(u.deal)}<small>${C.scrub(u.note)}</small></span></li>`).join('')}</ul><p class="cc-note">These are contract steps the Deals sheet has as words, not a date. Put a date in the sheet and they join the countdown.</p>`, 'deals') : ''}
         ${card('By deal', Object.keys(by).length ? Object.keys(by).map(k => `<h3 class="cc-sub-h cc-sub-photo">${C.thumb(k)}<span>${esc(k)}</span></h3>${deadlineList(by[k])}`).join('') : empty('No deadlines in 30 days.'), ['deals', 'calendar'])}

@@ -97,7 +97,7 @@ const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); retur
     const W = C.data.workouts, t = W.today || {};
     const planned = W.planned ?? W.week.filter(w => w.planned).length, doneWk = W.done_week ?? W.week.filter(w => w.done).length;
     const plan = W.week.filter(w => w.planned).map(w => `${w.day} ${w.time || ''}`.trim()).join(', ');
-    return `<div class="cc-page">${head('Workouts', `Your plan: ${plan}, ${n(planned)} a week. Exercises come from the Workouts tab of your AIRE CRM sheet. Health numbers are at the bottom.`)}
+    return `<div class="cc-page">${head('Workouts', `Your plan: ${plan}, ${n(planned)} a week. Days and times are the plan you gave Pipeline on Nov 9. Exercises come from the Workouts tab of your AIRE CRM sheet.${(W.tab_differs || []).length ? ` That tab still says ${esc(W.tab_differs.join(', '))}, so update the tab to match.` : ''} Health numbers are at the bottom.`)}
       <div class="cc-tiles">
         ${tile('Today', esc(t.focus || 'Rest'), t.done ? 'Done ✓' : [t.time, t.exercises].filter(Boolean).map(esc).join(' · '), 'workouts')}
         ${tile('Workouts, 7 days', n(W.done_7), `Goal ${n(W.goal || planned)} a week`, 'workouts')}

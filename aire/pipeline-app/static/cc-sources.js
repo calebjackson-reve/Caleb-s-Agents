@@ -74,7 +74,7 @@
       const parts = k === 'market' ? Object.values(((d.market || {}).parts) || {}).filter(p => p.state === 'failed') : [];
       const r0 = f[k] || { state: 'missing' }, r = parts.length && r0.state === 'ok' ? Object.assign({}, r0, { state: 'failed', error: 'part', error_text: 'part of it did not load: ' + parts.map(p => p.note).join('. ') }) : r0, res = (sy.results || {})[k];
       return `<tr class="is-${r.state}"><th scope="row">${esc(NAMES[k])}<small>${esc(r.source || '')}</small></th><td><span class="cc-state s-${r.state}">${{ ok: 'Current', late: 'Late', stale: 'Out of date', failed: 'Failed', missing: 'Not synced yet' }[r.state]}</span></td>
-        <td>${esc(when(r.at))}${r.age_min != null ? `<small>${C.ago(r.age_min)}</small>` : ''}</td><td>${r.error ? esc(r.error_text || 'the read did not finish') : res ? (res.ok ? `${res.rows ?? res.read ?? res.pushed ?? ''} rows` : esc(res.error_text || 'the read did not finish')) : ''}</td></tr>`;
+        <td>${esc(when(r.at))}${r.age_min != null ? `<small>${C.ago(r.age_min)}</small>` : ''}</td><td>${r.error ? esc(r.error_text || 'the read did not finish') : res ? (res.ok ? (res.parts ? Object.keys(res.parts).map(k => `${res.parts[k]} ${esc(k)} row${res.parts[k] === 1 ? '' : 's'}`).join(', ') : `${res.rows ?? res.read ?? res.pushed ?? ''} rows`) : esc(res.error_text || 'the read did not finish')) : ''}</td></tr>`;
     }).join('');
     const own = ['crm', 'command', 'drafts', 'permits'].map(k => {
       const r = C.local(k);

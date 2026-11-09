@@ -50,6 +50,7 @@
   const card = (title, body, sources, extra = '') => `<section class="cc-card ${extra}"><h2>${title}</h2>${body}<footer>${src(sources)}</footer></section>`;
   // Deadline tiles: the count in the big spot, and how many have no date on the line beneath (round 4).
   C.dated = (count, undated) => n(count);
+  C.overdueLine = k => (k ? `<b class="cc-overdue">${n(k)} overdue</b> · ` : '');
   C.undatedLine = (undated, more) => (undated ? `<b class="cc-undated">${n(undated)} ${more ? 'more ' : ''}written without a date</b> · ` : '');
   const tile = (label, value, sub, sources, go) => `<${go ? `button type="button" onclick="go('${go}')"` : 'div'} class="cc-tile">
       <span class="cc-tile-l">${label}</span><b class="cc-num">${value}</b><span class="cc-sub">${sub || ''}</span>${src(sources, true)}</${go ? 'button' : 'div'}>`;
@@ -115,14 +116,14 @@
       <div class="cc-acts cc-quick"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button><button type="button" onclick="go('touches')">Touches due</button><button type="button" onclick="openTask('')">＋ Add a task</button></div>
       <div class="cc-tiles">
         ${tile('Pending commission', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals', 'commission')}
-        ${tile('GCI this year', m(sc.gci.value), gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set', ['deals', 'goals'], 'scorecard')}
-        ${tile('Deadlines, 7 days', C.dated(d.deadlines.d7.length, (d.deadlines.undated || []).length), `${C.undatedLine((d.deadlines.undated || []).length)}${d.deadlines.d3.length} in the next 3 days`, ['deals', 'calendar'], 'deadlines')}
+        ${tile('GCI this year', m(sc.gci.value), (gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set') + (sc.gci.blank ? ` · <em>${sc.gci.blank} closed with no commission</em>` : ''), ['deals', 'goals'], 'scorecard')}
+        ${tile('Deadlines, 7 days', C.dated(d.deadlines.d7.length, (d.deadlines.undated || []).length), `${C.overdueLine((d.deadlines.overdue || []).length)}${C.undatedLine((d.deadlines.undated || []).length)}${d.deadlines.d3.length} in the next 3 days`, ['deals', 'calendar'], 'deadlines')}
         ${tile('New leads, 14 days', n(leads), `${n(leads7)} in the last 7 days${sc.leads7.low ? ` · goal ${sc.leads7.low} to ${sc.leads7.high} a week` : ''}`, ['leads', 'crm'], 'ccleads')}
         ${tile('Under contract', n(uc.n), `${mk(uc.volume)} volume on the Deals sheet`, 'deals', 'deals')}
         ${tile('Touches due', n(td.length), owes ? `${owes} owe a reply` : 'Nobody owes a reply', 'crm', 'touches')}
         ${S.data && S.data.feed_ok ? tile('Tasks open', n(tk.length), over ? `<em>${over} overdue</em>` : 'None overdue', 'crm', 'tasks') : tile('Tasks open', '—', "<em>Tasks didn't load</em>", 'crm', 'sources')}
         ${tile('Drafts ready', n(dr), `Written texts and emails to read and send${owes ? ` · ${owes} replies to write are not counted` : ''}`, 'drafts', 'queue')}
-        ${tile('Appointments, 7 days', n(sc.appts7.value), sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Showings, listing appts, clients', 'calendar', 'calendar')}
+        ${tile('Appointments, 7 days', n(sc.appts7.value), `${sc.appts7.invites ? `${sc.appts7.invites} invite${sc.appts7.invites === 1 ? '' : 's'} not accepted, not counted · ` : ''}${sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Accepted showings, listing appts, clients'}`, 'calendar', 'calendar')}
         ${tile('Booked today', C.booked(wk.hours, wk.minutes), `${n(wk.events)} timed event${wk.events === 1 ? '' : 's'}. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}
         ${tile('Offers out', n(offers.length), offers.length ? `${offers.filter(r => C.offerExpired(r.offer)).length} past their deadline` : 'No open offers on the Deals sheet', 'deals', 'deals')}
         ${tile('Commission to check', n(np), np ? 'Not processed at KW, or paid with no closed deal on the sheet' : 'Nothing waiting at KW', ['commission_mail', 'deals'], 'commission')}

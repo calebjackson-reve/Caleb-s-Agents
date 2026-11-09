@@ -222,7 +222,7 @@ function renderNav(c) {
   const cnt = { commission: [np, np > 0], deadlines: [cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0], ccleads: [cd ? (cd.lead_counts || {}).d14 ?? cd.leads.length : 0, false],
     sources: [window.CC && CC.data && CC.attention ? CC.attention().length : 0, true],
     touches: [td.length, td.some(r => r.owes_reply)], tasks: [(feed().tasks || []).length, c.tasks_overdue > 0], deals: [cd ? cd.deals.filter(r => !['closed', 'out'].includes(r.stage)).length : 0, false],
-    queue: [dr.length, false], sent: [(S.data.sent_today || []).length, false] };
+    queue: [dr.length, false], sent: [(S.data.sent_today || []).filter(s => s.status === 'sent').length, false] };
   const view = { cc: 'dash', leads: 'ccleads', market: 'monitor', dealmap: 'deals' }[S.view] || S.view;
   // Each group has its color; the page takes the color of the group it is in (ui.css, the color code).
   const sec = (NAV.find(([, items]) => items.some(([k]) => k === view)) || ['Today'])[0].toLowerCase();
@@ -286,7 +286,7 @@ function renderDrawer() {
   <div class="dbody">
     ${c.last_messages && c.last_messages.length && H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span><div class="bubble">${C2.msg('')} · press Show at the top to read them</div></div>` : ''}
     ${c.last_messages && c.last_messages.length && !H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
-    ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${C2 ? C2.scrub(c.next_action || row.next_action, [c.name]) : esc(c.next_action || row.next_action)}</div>` : ''}
+    ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${C2 ? C2.note(c.next_action || row.next_action, [c.name]) : esc(c.next_action || row.next_action)}</div>` : ''}
     <div class="seg"><button class="${c.kind === 'text' ? 'on' : ''}" ${canText ? '' : 'disabled'} onclick="setKind('text')">▭ TEXT</button><button class="${c.kind === 'email' ? 'on' : ''}" ${canEmail ? '' : 'disabled'} onclick="setKind('email')">✉ EMAIL</button></div>
     <div class="field"><label>TO</label>${H && to ? `<input id="c-to" type="hidden" value="${esc(to)}"><p class="cc-hid">${c.kind === 'text' ? 'Number' : 'Email'} hidden · press Show at the top to see it before you open it</p>` : `<input id="c-to" value="${esc(to)}" inputmode="${c.kind === 'text' ? 'tel' : 'email'}" placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}" oninput="sheetCheck()">`}<p class="hint" id="c-exact"></p></div>
     ${c.kind === 'email' ? `<div class="field"><label>SUBJECT</label><input id="c-subject" value="${esc(c.subject || '')}" placeholder="Subject"></div>` : ''}

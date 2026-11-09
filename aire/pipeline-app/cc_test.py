@@ -611,5 +611,39 @@ class JudgeRound4Workouts(unittest.TestCase):
         self.assertEqual(cc.workouts({"plan": [], "log": []}, [], date(2026, 11, 9), {"Mon": "7 AM"})["planned"], 1)
 
 
+class JudgeRound5(unittest.TestCase):
+    def test_a_later_counter_replaces_an_offer_deadline(self):
+        now = datetime(2026, 11, 9, 14, 0, tzinfo=cc.CENTRAL)
+        o = cc.offer_deadline("Seller countered at $2 as is, open until Fri Nov 6 5 PM. Buyer countered at $1, signed Nov 6. No seller answer found yet", now)
+        self.assertEqual((o["superseded"], o["expired"], o["date"]), (True, False, None))
+        sheet = [HEAD, ["700 Fake Rd", "Buyer", "Offer", "1", "", "", "", "", "Seller countered, open until Fri Nov 6 5 PM. Buyer countered at $1, signed Nov 6. No answer yet", ""]]
+        self.assertEqual(cc.deal_cards(cc.deal_rows(sheet), now.date(), now)[0]["next"], "Buyer countered at $1, signed Nov 6")
+        # a counter in the same sentence as the deadline is still the old offer: it stays expired
+        self.assertTrue(cc.offer_deadline("Fake offer expired Nov 4 9 AM, counter still waiting on signatures. Listed at $1", now)["expired"])
+
+    def test_a_weekday_that_does_not_match_the_date_is_flagged(self):
+        now = datetime(2026, 11, 9, 14, 0, tzinfo=cc.CENTRAL)
+        self.assertEqual(cc.offer_deadline("Good until Sun Nov 9 12 PM, waiting", now)["wrong_weekday"], "Sun")
+        self.assertIsNone(cc.offer_deadline("Good until Mon Nov 9 12 PM, waiting", now)["wrong_weekday"])
+
+    def test_a_date_in_the_words_that_has_gone_by_is_overdue(self):
+        with tempfile.TemporaryDirectory() as d:
+            sheet = [HEAD, ["100 Oak Ln", "Buyer", "Under Contract", "1", "1", "DDI ended Nov 4. Buyer's reply to your response due Nov 7", "", "2026-11-23", "", ""]]
+            Path(d, "deals.json").write_text(json.dumps({"at": NOW.isoformat(), "rows": sheet}))
+            p = cc.build(Path(d), datetime(2026, 11, 9, 14, 0, tzinfo=cc.CENTRAL))
+        self.assertEqual([(r["deal"], r["day"], r["what"]) for r in p["deadlines"]["overdue"]], [("100 Oak Ln", "2026-11-07", "Inspection")])
+
+    def test_an_invite_not_accepted_is_not_an_appointment(self):
+        evs = cc.cal_events([ev("Client meeting", "2026-11-06T13:00:00-06:00", "2026-11-06T14:00:00-06:00", invite=True),
+                             ev("Showing", "2026-11-06T10:00:00-06:00", "2026-11-06T11:00:00-06:00")], [])
+        a = cc.scorecard([], evs, [], {}, None, T)["appts7"]
+        self.assertEqual((a["value"], a["invites"]), (1, 1))
+
+    def test_workouts_says_where_the_tab_differs_from_the_plan(self):
+        plan = [{"day": "Wed", "focus": "Walk or rest"}, {"day": "Sat", "focus": "Optional full body"}, {"day": "Mon", "focus": "Upper push"}, {"day": "Sun", "focus": "Rest"}]
+        w = cc.workouts({"plan": plan, "log": []}, [], date(2026, 11, 9))
+        self.assertEqual(w["tab_differs"], ["Wed: Walk or rest", "Sat: Optional full body"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

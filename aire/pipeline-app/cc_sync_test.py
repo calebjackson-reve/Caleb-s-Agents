@@ -131,6 +131,11 @@ class Pass(unittest.TestCase):
         self.assertIn("Goals", self.sheets.tabs)
         self.assertEqual(self.sheets.tabs["Scorecard history"][1][0], "2026-11-05")
 
+    def test_a_read_with_tabs_counts_rows_not_tabs(self):
+        S.FETCH.update(workouts=lambda s, c, n: {"plan": [{}] * 7, "log": []})
+        r = S.run_read("workouts", self.ok, {}, NOW, self.dir)
+        self.assertEqual((r["rows"], r["parts"]), (7, {"plan": 7, "log": 0}))
+
     def test_not_due_is_skipped_and_force_reads(self):
         S.run_pass(NOW, svc=self.ok, folder=self.dir)
         st = S.run_pass(NOW.replace(minute=5), svc=self.ok, folder=self.dir)

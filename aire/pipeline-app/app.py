@@ -369,6 +369,13 @@ class State:
         rows = [r for r in self.send_log() if r.get("at", "").startswith(d) and r.get("status") in ("sent", "dry-run")]
         return {"texts": sum(1 for r in rows if r["kind"] == "text"), "emails": sum(1 for r in rows if r["kind"] == "email")}
 
+    def left_today(self) -> dict:
+        """What really left the Mac today, and what was only a dry run. The screen never calls a dry run sent."""
+        d = today().isoformat()
+        rows = [r for r in self.send_log() if r.get("at", "").startswith(d)]
+        n = lambda st, k: sum(1 for r in rows if r.get("status") == st and r.get("kind") == k)
+        return {"sent_texts": n("sent", "text"), "sent_emails": n("sent", "email"), "dry_texts": n("dry-run", "text"), "dry_emails": n("dry-run", "email")}
+
     def last_texts(self, days: int = 30, recheck_minutes: int = 30, db: Path | None = None) -> dict:
         """The newest text to each person in the last `days`, for the "Texted 9:42 AM · delivered" line on their card.
         A live text that Messages had not confirmed yet is read again from chat.db (read only) for `recheck_minutes`
@@ -666,7 +673,7 @@ class State:
             "text_queue": text_q if "_error" not in text_q else {},
             "email_queue": email_q if "_error" not in email_q else {},
             "command": command if "_error" not in command else {},
-            "caps": {"texts": self.max_texts, "emails": self.max_emails, "sent_texts": sent["texts"], "sent_emails": sent["emails"]},
+            "caps": {"texts": self.max_texts, "emails": self.max_emails, **self.left_today()},
             "sent_today": [r for r in self.send_log() if r.get("at", "").startswith(today().isoformat())][-50:],
             "last_texts": self.last_texts(),
             "refresh": self.refresh,
@@ -1389,6 +1396,7 @@ def run_tests() -> int:
     r = s.send("text", "312", "+12255550111", "Hey, checking in", display="Demo Person")
     check(r["ok"] and r["result"]["status"] == "dry-run", "demo send is a dry run")
     check(s.sent_today()["texts"] == 1 and (tmp / "send-log.json").exists(), "send log counts today's texts")
+    check(s.left_today()["sent_texts"] == 0 and s.left_today()["dry_texts"] == 1, "a dry run is shown as a dry run, never as sent")
     try:
         s.send("email", "312", "x@example.com", "body", subject=""); check(False, "email needs a subject")
     except CRMError:

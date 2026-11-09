@@ -468,7 +468,9 @@ def run_read(name: str, svc, cfg: dict, now: datetime, folder: Path = OUT) -> di
     try:
         rows = FETCH[name](svc, cfg, now)
         doc = {"at": stamp, "tried_at": stamp, "source": READS[name][1], "error": None, "rows": rows}
-        result = {"ok": True, "rows": len(rows)}
+        # A read with several tabs (Life, Workouts) is a dict: count the rows in each tab, not the tabs.
+        parts = {k: len(v) for k, v in rows.items() if isinstance(v, list)} if isinstance(rows, dict) else None
+        result = {"ok": True, "rows": sum(parts.values()) if parts else len(rows), **({"parts": parts} if parts else {})}
     except Exception as e:  # any failure is shown on screen, never hidden
         err = f"{type(e).__name__}: {str(e)[:160]}"
         doc = {**prev, "tried_at": stamp, "source": READS[name][1], "error": err, "rows": prev.get("rows") or []}
