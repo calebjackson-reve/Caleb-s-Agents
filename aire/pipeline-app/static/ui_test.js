@@ -542,7 +542,18 @@ check(/const BUILD = '__BUILD__'/.test(swjs) && /'pipeline-shell-[^']*' \+ BUILD
 check(/setInterval\(check, 5 \* 60 \* 1000\)/.test(indexHtml) && /visibilitychange/.test(indexHtml), 'an open page asks for a new build every 5 minutes and on return');
 check(/Pipeline updated\. <button type="button">Reload<\/button>/.test(indexHtml), 'a new build shows a small Updated note with Reload');
 check(/if \(u\.pathname\.startsWith\('\/api\/'\)\) return;/.test(swjs) && !/caches\.match\(e\.request\)\s*\|\|\s*fetch/.test(swjs), 'API reads go to the Mac first, never cache first');
-check(run('CC.dated(0, 4)').includes('4 without a date') && run('CC.dated(2, 4)') === '2' && run('CC.dated(0, 0)') === '0', 'a deadline tile says how many have no date instead of 0');
+// Round 4 item 13 reversed round 3's tile: the number stays big, "4 without a date" goes on the line beneath.
+check(run('CC.dated(0, 4)') === '0' && run('CC.undatedLine(4)').includes('4 written without a date') && run('CC.undatedLine(0)') === '', 'a deadline tile keeps its number and says how many have no date beneath');
+
+{ // Round 4 item 1: words holding a date Pipeline cannot read never say "No contract deadlines".
+  const chk = [{ deal: '100 Fixture Ln', key: '100 fixture', step: 'Inspection', note: 'Signed Nov 3, sent Nov 4' }];
+  run(`CC.data = Object.assign({}, __cc, { deadlines: Object.assign({}, __cc.deadlines, { d7: [], d3: [], all: [], check: ${JSON.stringify(chk)} }) })`);
+  const dd = render('dash', true);
+  check(!/No contract deadlines in this window/.test(dd) && /Contains a date, check it/.test(dd), 'a step whose words hold an unread date is shown as check it, never no deadlines');
+  run(`CC.data = Object.assign({}, __cc, { deadlines: Object.assign({}, __cc.deadlines, { d7: [{ deal: '100 Fixture Ln', key: '100 fixture', day: __cc.today, what: 'Inspection', from: 'sheet', time: '11:59PM', said: 'Due diligence ends Nov 10, 11:59 PM' }], check: [] }) })`);
+  check(/11:59PM/.test(render('dash', true)) && /Read from the words/.test(render('dash', true)), 'a date read from the words shows its time and where it came from');
+  run('CC.data = __cc;');
+}
 
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

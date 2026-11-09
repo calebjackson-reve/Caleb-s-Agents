@@ -233,6 +233,41 @@ def deal_cards(deals: list[dict], today: date) -> list[dict]:
     return sorted(out, key=lambda r: (order[r["stage"]], r.get("act") or "9"))
 
 
+WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+TEXT_DATE = re.compile(r"(?:\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?,?\s+)?\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b"
+                       r"(?:,?\s+(\d{4}))?(?:,?\s+(?:at\s+)?(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?))?", re.I)
+DUE_WORD = re.compile(r"\b(ends?|ending|due(?!\s+diligence)|expected|expires?|deadline|until|by|on or before|no later than|scheduled|set for)\W*(?:\w+\W+){0,3}$", re.I)
+PAST_WORD = re.compile(r"\b(ended|signed|sent|received|removed|done|was|on|from|after|since)\W*(?:\w+\W+){0,2}$", re.I)
+
+
+def text_date(v: str, today: date) -> dict | None:
+    """A date written inside a deadline cell ("Due diligence ends Tue Nov 10, 2026, 11:59 PM CT", "Appraisal report
+    expected Nov 9", "reply due Nov 7"). Picks the date after a word like ends, due or expected, or the only date.
+    sure is False when the cell has dates but none can be picked with confidence, or a weekday does not match.
+    None when the cell holds no date."""
+    hits = list(TEXT_DATE.finditer(v or ""))
+    if not hits:
+        return None
+    anchor = lambda m: re.search(r"\b(from|after|since)\W*(?:\w+\W+){0,2}$", v[:m.start()][-25:], re.I)
+    due = [m for m in hits if DUE_WORD.search(v[:m.start()][-40:]) and not anchor(m)]
+    live = [m for m in hits if not PAST_WORD.search(v[:m.start()][-25:])]
+    pick = due[-1] if due else hits[0] if len(hits) == 1 and not anchor(hits[0]) else live[-1] if len(live) == 1 else None
+    if pick is None:
+        return {"date": None, "sure": False, "said": hits[0].group(0)}
+    wd, mon, dd, yy, tm = pick.groups()
+    try:
+        d = date(int(yy) if yy else today.year, MONTHS[mon.lower()[:3]], int(dd))
+    except ValueError:
+        return {"date": None, "sure": False, "said": pick.group(0)}
+    if not yy and (d - today).days > 183:
+        d = d.replace(year=today.year - 1)
+    elif not yy and (today - d).days > 183:
+        d = d.replace(year=today.year + 1)
+    sure = not wd or WEEKDAYS[d.weekday()] == wd.lower()[:3]
+    return {"date": d.isoformat() if sure else None, "sure": sure, "said": pick.group(0).strip(),
+            "time": (tm or "").upper().replace(".", "").replace(" ", "") or None}
+
+
 def checklist(r: dict, today: date) -> list[dict]:
     """A deal under contract, step by step from the sheet: done (date passed), upcoming (date ahead, with days),
     undated (the cell has words but no date, like "7 day due diligence from Nov 3"), or missing (blank). A step whose
@@ -245,6 +280,13 @@ def checklist(r: dict, today: date) -> list[dict]:
             out.append({"step": label, "date": v, "days": n, "state": "done" if n < 0 else "today" if n == 0 else "upcoming"})
         elif re.search(r"\b(done|clear(ed)?|complete[d]?|waived|approved|ok|removed)\b|\bno (?:\w+ )?contingency\b", v, re.I):
             out.append({"step": label, "date": None, "days": None, "state": "done", "note": v[:60]})
+        elif (td := text_date(v, today)) and td["date"]:
+            # A date written in the words counts like a date cell. Past ones say past, never done.
+            n = (date.fromisoformat(td["date"]) - today).days
+            out.append({"step": label, "date": td["date"], "days": n, "time": td.get("time"), "from_text": True,
+                        "state": "past" if n < 0 else "today" if n == 0 else "upcoming", "note": v[:120]})
+        elif td:
+            out.append({"step": label, "date": None, "days": None, "state": "check", "note": v[:120]})
         elif v:
             out.append({"step": label, "date": None, "days": None, "state": "undated", "note": v[:90]})
         else:
@@ -398,7 +440,8 @@ def contract_deadlines(cal: list[dict], cards: list[dict]) -> list[dict]:
         for step in c.get("checklist") or []:
             if step.get("date"):
                 rows.append({"deal": c["deal"], "key": c["key"], "day": step["date"], "whats": [step["step"]],
-                             "from": {"sheet"}, "note": None})
+                             "from": {"sheet"}, "note": None, "time": step.get("time"),
+                             "said": step.get("note") if step.get("from_text") else None})
     for r in cal:
         k = deal_key(r["deal"])
         c = sheet.get(k)
@@ -426,7 +469,8 @@ def contract_deadlines(cal: list[dict], cards: list[dict]) -> list[dict]:
     for r in merged.values():
         frm = "both" if len(r["from"]) > 1 else next(iter(r["from"]))
         out.append({"deal": r["deal"], "key": r["key"], "day": r["day"], "what": ", ".join(r["whats"]),
-                    "title": f"{r['deal']} - {', '.join(r['whats'])}", "from": frm, "note": r["note"], "link": r.get("link")})
+                    "title": f"{r['deal']} - {', '.join(r['whats'])}", "from": frm, "note": r["note"], "link": r.get("link"),
+                    "time": r.get("time"), "said": r.get("said")})
     return sorted(out, key=lambda r: (r["day"], r["deal"]))
 
 
@@ -729,7 +773,10 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
                       "deals": len({r["key"] for r in in_days(dl, today, 30)}),
                       # Contract steps written as words with no date: they are deadlines the dates above cannot count.
                       "undated": [{"deal": c["deal"], "key": c["key"], "step": st["step"], "note": st.get("note") or ""}
-                                  for c in cards if c["stage"] == "contract" for st in c.get("checklist") or [] if st["state"] == "undated"]},
+                                  for c in cards if c["stage"] == "contract" for st in c.get("checklist") or [] if st["state"] in ("undated", "check")],
+                      # Words that hold a date Pipeline could not read with confidence: never shown as no deadlines.
+                      "check": [{"deal": c["deal"], "key": c["key"], "step": st["step"], "note": st.get("note") or ""}
+                                for c in cards if c["stage"] == "contract" for st in c.get("checklist") or [] if st["state"] == "check"]},
         "closings": closings(dl, cards, today),
         "inbox": inbox_sorted(_rows(raw["inbox"]), [r for r in leads if r.get("origin") == "email"], coord),
         "leads": leads, "lead_counts": lead_counts(leads, today), "commission_mail": commission_mail(_rows(raw["commission_mail"]), deals),

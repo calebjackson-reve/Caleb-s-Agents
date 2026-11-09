@@ -457,7 +457,8 @@ class JudgeRound3(unittest.TestCase):
     def test_a_deadline_written_as_words_is_undated_not_missing(self):
         steps = {x["step"]: x["state"] for x in cc.checklist(
             {"inspection": "7 day due diligence from Nov 3 acceptance", "appraisal": "Cash. No appraisal contingency", "act": "2026-11-20"}, T)}
-        self.assertEqual(steps, {"Inspection": "undated", "Appraisal and loan": "done", "Act of sale": "upcoming"})
+        # Round 4 item 1 changed this: words holding a date ("from Nov 3") say "contains a date, check it", not undated.
+        self.assertEqual(steps, {"Inspection": "check", "Appraisal and loan": "done", "Act of sale": "upcoming"})
         self.assertEqual(cc.checklist({"inspection": "Removed Oct 27", "act": ""}, T)[0]["state"], "done")
         with tempfile.TemporaryDirectory() as d:
             sheet = [HEAD, ["100 Oak Ln", "Buyer", "Under Contract", "1", "1", "DDI ends 10 days after acceptance", "", "2026-11-20", "", ""]]
@@ -530,6 +531,38 @@ class JudgeRound3Money(unittest.TestCase):
         sc = cc.scorecard(deals, [], [], {}, None, date(2026, 11, 9))
         self.assertEqual(sc["gci"]["value"], 53574.5)
         self.assertEqual(cc.deal_rows([HEAD, ["1 A St", "", "Closed", "", "$1,234.50"]])[0]["commission"], 1234.5)
+
+
+class JudgeRound4Dates(unittest.TestCase):
+    """Round 4 item 1: dates written inside the Deals sheet's deadline words. Made-up deals."""
+    T = date(2026, 11, 9)
+
+    def test_text_date_reads_the_due_date_not_the_signed_date(self):
+        td = lambda v: cc.text_date(v, self.T)
+        self.assertEqual(td("Due diligence ends Tue Nov 10, 2026, 11:59 PM CT (extended 1 day by Amendment No. 1, signed Nov 5)"),
+                         {"date": "2026-11-10", "sure": True, "said": "Tue Nov 10, 2026, 11:59 PM", "time": "11:59PM"})
+        self.assertEqual(td("DDI ended Nov 4. Reply to your response due Nov 7")["date"], "2026-11-07")
+        self.assertEqual(td("VA. Appraisal report expected Nov 9. Amendatory clause still needed")["date"], "2026-11-09")
+        self.assertEqual(td("Inspection Jan 6")["date"], "2027-01-06")  # early next year, not last January
+        self.assertIsNone(td("10 days from acceptance"))
+        self.assertEqual(td("Wed Nov 10 deadline"), {"date": None, "sure": False, "said": "Wed Nov 10", "time": None})  # Nov 10 is a Tuesday
+        self.assertFalse(td("Signed Nov 3, sent Nov 4")["sure"])
+
+    def test_checklist_counts_word_dates_and_marks_past_and_check(self):
+        sheet = [HEAD, ["1 Demo Ln", "Buyer", "Under Contract", 1, 1, "Due diligence ends Tue Nov 10, 2026, 11:59 PM CT",
+                        "Appraisal report expected Nov 9", "2026-11-20", "", ""],
+                 ["2 Demo Ln", "Buyer", "Under Contract", 1, 1, "Reply due Nov 7", "Signed Nov 3, sent Nov 4", "2026-11-23", "", ""]]
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(sheet), self.T), [])
+        st = {(c["deal"], x["step"]): (x["state"], x["date"]) for c in cards for x in c["checklist"]}
+        self.assertEqual(st[("1 Demo Ln", "Inspection")], ("upcoming", "2026-11-10"))
+        self.assertEqual(st[("1 Demo Ln", "Appraisal and loan")], ("today", "2026-11-09"))
+        self.assertEqual(st[("2 Demo Ln", "Inspection")], ("past", "2026-11-07"))
+        self.assertEqual(st[("2 Demo Ln", "Appraisal and loan")], ("check", None))
+        dl = cc.contract_deadlines([], cards)
+        soon = cc.in_days(dl, self.T, 6)
+        self.assertEqual([(r["day"], r["what"], r["time"]) for r in soon if r["key"] == cc.deal_key("1 Demo Ln")],
+                         [("2026-11-09", "Appraisal and loan", None), ("2026-11-10", "Inspection", "11:59PM")])
+        self.assertTrue(all(r["day"] >= "2026-11-09" for r in soon))  # the past one is on its card, not in the countdown
 
 
 if __name__ == "__main__":

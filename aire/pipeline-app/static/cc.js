@@ -36,8 +36,9 @@
     }).join('');
   }
   const card = (title, body, sources, extra = '') => `<section class="cc-card ${extra}"><h2>${title}</h2>${body}<footer>${src(sources)}</footer></section>`;
-  // A deadline count of 0 is not true when some steps are written as words: say how many have no date instead.
-  C.dated = (count, undated) => (count || !undated ? n(count) : `<span class="cc-undated">${n(undated)} without a date</span>`);
+  // Deadline tiles: the count in the big spot, and how many have no date on the line beneath (round 4).
+  C.dated = (count, undated) => n(count);
+  C.undatedLine = (undated, more) => (undated ? `<b class="cc-undated">${n(undated)} ${more ? 'more ' : ''}written without a date</b> · ` : '');
   const tile = (label, value, sub, sources, go) => `<${go ? `button type="button" onclick="go('${go}')"` : 'div'} class="cc-tile">
       <span class="cc-tile-l">${label}</span><b class="cc-num">${value}</b><span class="cc-sub">${sub || ''}</span>${src(sources, true)}</${go ? 'button' : 'div'}>`;
   const empty = t => `<p class="cc-empty">${t}</p>`;
@@ -102,7 +103,7 @@
       <div class="cc-tiles">
         ${tile('Pending commission', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals', 'commission')}
         ${tile('GCI this year', m(sc.gci.value), gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set', ['deals', 'goals'], 'scorecard')}
-        ${tile('Deadlines, 7 days', C.dated(d.deadlines.d7.length, (d.deadlines.undated || []).length), `${d.deadlines.d3.length} in the next 3 days${(d.deadlines.undated || []).length ? ` · <em>${d.deadlines.undated.length} written without a date</em>` : ''}`, ['deals', 'calendar'], 'deadlines')}
+        ${tile('Deadlines, 7 days', C.dated(d.deadlines.d7.length, (d.deadlines.undated || []).length), `${C.undatedLine((d.deadlines.undated || []).length)}${d.deadlines.d3.length} in the next 3 days`, ['deals', 'calendar'], 'deadlines')}
         ${tile('New leads, 14 days', n(leads), `${n(leads7)} in the last 7 days${sc.leads7.low ? ` · goal ${sc.leads7.low} to ${sc.leads7.high} a week` : ''}`, ['leads', 'crm'], 'ccleads')}
         ${tile('Under contract', n(uc.n), `${mk(uc.volume)} volume on the Deals sheet`, 'deals', 'deals')}
         ${tile('Touches due', n(td.length), owes ? `${owes} owe a reply` : 'Nobody owes a reply', 'crm', 'touches')}
@@ -128,8 +129,11 @@
   const inboxRow = r => `<li class="cc-ev"><span class="cc-chip c-${r.category}">${r.category}</span><span class="cc-what">${C.priv ? '<span class="cc-hid">Subject hidden</span>' : esc(r.subject)}<small>${contact(senderName(r.sender))}</small></span></li>`;
   const senderName = s => String(s || '').replace(/<[^>]*>/g, '').trim();
   function deadlineList(rows) {
-    if (!rows.length) return empty('No contract deadlines in this window.');
-    return `<ul class="cc-list">${rows.map(r => { const k = dlKind(r); return `<li class="cc-ev k-${k} ${r.day <= addDays(C.data.today, 2) ? 'is-soon' : ''}"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.what)}<small>${esc(r.deal)} · ${r.from === 'both' ? 'Deals sheet and calendar' : r.from === 'sheet' ? 'Deals sheet' : 'calendar'}</small>${r.note ? `<small class="cc-warn">Shown from the Deals sheet. ${esc(r.note)}.</small>` : ''}</span><span class="cc-chip">${DL[k]}</span></li>`; }).join('')}</ul>`;
+    // A deal's words can hold a date Pipeline could not read: that is never "no deadlines".
+    const chk = (C.data.deadlines || {}).check || [];
+    const chkList = chk.length ? `<ul class="cc-list">${chk.map(r => `<li class="cc-ev k-deadline"><span class="cc-what">${esc(r.deal)} · ${esc(r.step)}<small>${C.scrub(r.note)}</small></span><span class="cc-chip">Contains a date, check it</span></li>`).join('')}</ul>` : '';
+    if (!rows.length) return chk.length ? `<p class="cc-note">No date Pipeline could read with confidence in this window. ${chk.length === 1 ? 'One step contains' : chk.length + ' steps contain'} a date, check ${chk.length === 1 ? 'it' : 'them'}:</p>${chkList}` : empty('No contract deadlines in this window.');
+    return `<ul class="cc-list">${rows.map(r => { const k = dlKind(r); return `<li class="cc-ev k-${k} ${r.day <= addDays(C.data.today, 2) ? 'is-soon' : ''}"><span class="cc-when">${day(r.day)}${r.time ? ' ' + esc(r.time) : ''}</span><span class="cc-what">${esc(r.what)}<small>${esc(r.deal)} · ${r.from === 'both' ? 'Deals sheet and calendar' : r.from === 'sheet' ? 'Deals sheet' : 'calendar'}</small>${r.note ? `<small class="cc-warn">Shown from the Deals sheet. ${esc(r.note)}.</small>` : ''}${r.said ? `<small>Read from the words: ${C.scrub(r.said)}</small>` : ''}</span><span class="cc-chip">${DL[k]}</span></li>`; }).join('')}</ul>${chkList}`;
   }
   // A contract deadline's type, for its color: act of sale, inspection, appraisal or financing, anything else.
   const DL = { closing: 'Act of sale', inspection: 'Inspection', finance: 'Appraisal / loan', deadline: 'Deadline' };
