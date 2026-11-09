@@ -22,14 +22,20 @@ window.PMap = (function () {
   // by itself, so the map is never a blank grid. Six failures with no tile drawn, or failures outnumbering draws three to one.
   // Area labels: each takes the first free spot around its point (on it, above, below, then further out and to the sides),
   // never over another label, a pin or a cluster. A label with no free spot is left off rather than overlap.
-  function placeLabels(labels, obstacles, width) {
+  // bounds ({w, h}, the map's size): a label is slid inside the edges, never cut off at the left or right (round 4).
+  function placeLabels(labels, obstacles, width, bounds) {
     const boxes = obstacles.map(o => ({ x0: o.x - o.r, x1: o.x + o.r, y0: o.y - o.r, y1: o.y + o.r }));
     const hit = b => boxes.some(o => b.x1 > o.x0 && b.x0 < o.x1 && b.y1 > o.y0 && b.y0 < o.y1);
     const out = [];
     for (const l of labels.slice().sort((a, b) => (b.on - a.on) || (b.name.length - a.name.length))) {
       const w = width(l.name) + 12, h = 20, step = h + 4;
       const offs = [[0, 0], [0, -step], [0, step], [0, -2 * step], [0, 2 * step], [w / 2 + 14, 0], [-(w / 2 + 14), 0], [w / 2 + 14, -step], [-(w / 2 + 14), step]];
-      const spot = offs.map(([dx, dy]) => ({ x0: l.x + dx - w / 2, x1: l.x + dx + w / 2, y0: l.y + dy - h / 2, y1: l.y + dy + h / 2, dx, dy })).find(b => !hit(b));
+      const pad = 4, inside = b => { if (!bounds) return b;
+        const sx = b.x0 < pad ? pad - b.x0 : b.x1 > bounds.w - pad ? bounds.w - pad - b.x1 : 0;
+        const sy = b.y0 < pad ? pad - b.y0 : b.y1 > bounds.h - pad ? bounds.h - pad - b.y1 : 0;
+        return { x0: b.x0 + sx, x1: b.x1 + sx, y0: b.y0 + sy, y1: b.y1 + sy, dx: b.dx + sx, dy: b.dy + sy }; };
+      const spot = offs.map(([dx, dy]) => inside({ x0: l.x + dx - w / 2, x1: l.x + dx + w / 2, y0: l.y + dy - h / 2, y1: l.y + dy + h / 2, dx, dy }))
+        .find(b => !hit(b) && (!bounds || (b.x0 >= 0 && b.x1 <= bounds.w)));
       if (!spot) continue;
       boxes.push(spot); out.push({ ...l, ...spot, w, h });
     }
@@ -91,7 +97,7 @@ window.PMap = (function () {
     // Drawn last, after every pin and cluster, which are the obstacles (st.hits).
     function drawLabels(labels) {
       ctx.font = '600 12px ' + getComputedStyle(document.body).getPropertyValue('--sans'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      for (const s of placeLabels(labels, st.hits, t => ctx.measureText(t).width)) {
+      for (const s of placeLabels(labels, st.hits, t => ctx.measureText(t).width, { w: cv.clientWidth, h: cv.clientHeight })) {
         ctx.fillStyle = 'rgba(10,10,11,.88)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(s.x0, s.y0, s.w, s.h, 6) : ctx.rect(s.x0, s.y0, s.w, s.h); ctx.fill();
         ctx.fillStyle = s.on ? '#e87757' : '#f3eee6'; ctx.fillText(s.name, s.x + s.dx, s.y + s.dy + .5);
       }

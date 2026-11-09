@@ -28,6 +28,7 @@
     return min < 1 ? 'just now' : min < 60 ? Math.round(min) + ' min ago' : min < 1440 ? u(Math.floor(min / 60), 'hour') : u(Math.floor(min / 1440), 'day'); };
   C.ago = ago;
   // Booked time: minutes under an hour ("15 min"), hours with one decimal after ("1.5 h").
+  C.bookedText = (h, mins) => C.booked(h, mins).replace(/<[^>]*>/g, '');
   C.booked = (h, mins) => { const mi = mins ?? (h == null ? null : Math.round(h * 60));
     return mi == null ? '—' : mi < 60 ? `${mi}<small> min</small>` : `${n(Math.round(mi / 6) / 10)}<small> h</small>`; };
 

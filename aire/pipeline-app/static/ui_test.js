@@ -580,5 +580,20 @@ check(run('CC.booked(0.2, 15)').startsWith('15<small> min') && run('CC.booked(1.
 { const wp = render('health', false);
   check(/of 5<\/small>/.test(wp) && /Goal 5 a week/.test(wp) && /Mon 6 AM, Tue 6 AM, Wed 4 PM, Thu 6 AM, Fri 6 AM, 5 a week/.test(wp) && !/4 to 5/.test(wp), 'Workouts counts his 5-day plan and the goal agrees'); }
 
+// Round 4 layout items. The live check at 390 and 1200 px is done in Chrome; these keep the rules from slipping.
+check(/\.cc-ev:has\(> \.cc-chip:first-child\) \{ grid-template-columns: minmax\(0, 1fr\)/.test(ui), 'a row that leads with a badge puts it on its own line, never over the words');
+check(/@media \(max-width: 1300px\) \{ \.top \.clock \.date, \.top \.operator \{ display: none; \} \}/.test(ui) && /\.top \.clock \.date, \.top \.clock \.time \{ white-space: nowrap; \}/.test(ui), 'the header clock is one line and the date steps aside below 1300 px');
+check(/\.cc-days\.week \{ grid-template-columns: repeat\(auto-fit, minmax\(9\.5rem, 1fr\)\); \}/.test(ui) && /\.cc-list\.tight \.cc-chip \{ white-space: normal/.test(ui), 'calendar week columns grow and wrap instead of cutting titles and badges');
+check(/\.side \.nav \{ overflow-x: auto/.test(ui) && /\.side \.brand \{ position: static/.test(ui) && /\.top \{ flex-wrap: nowrap/.test(ui), 'phone: the nav scrolls beside the logo and the header is one row');
+{ const dpg = render('deals', true);
+  check((dpg.match(/class="cc-srcline"/g) || []).length >= 1 && /<p class="cc-srcline">[^]*<footer>/.test(dpg), 'Deals shows its source line at the top as well as the bottom');
+  const rows = dpg.split('<li class="cc-row').slice(1).filter(r => /class="cc-pills" id="deal-/.test(r));
+  check(rows.length > 0 && rows.every(r => /Edit in the CRM/.test(r) && /Message/.test(r)) && (!/disabled/.test(dpg) || /cc-off" disabled aria-disabled="true" title="[^"]+">[^<]+<small>[^<]+<\/small>/.test(dpg)), 'every Deals row shows the same buttons, and a greyed one says why');
+  check(/CC\.showDeal\(/.test(fs.readFileSync(path.join(dir, 'crm-pages.js'), 'utf8')) && /id="deal-/.test(dpg), "search's Open Deals goes to that deal, not the top"); }
+{ const lab = [{ name: 'Edge Farm Name Here', x: 2, y: 40, on: false }];
+  const pl = run(`PMap.placeLabels(${JSON.stringify(lab)}, [], t => t.length * 7, { w: 400, h: 300 })`);
+  check(pl.length === 1 && pl[0].x0 >= 4 && pl[0].x1 <= 396, 'a map label near the left edge slides inside the map, never cut off'); }
+check(run('CC.bookedText(0.2, 15)') === '15 min', 'calendar day headers show minutes under an hour too');
+
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

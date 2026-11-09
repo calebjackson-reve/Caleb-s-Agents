@@ -228,3 +228,41 @@ body { background: #0a0a0b; background-image: none; }
   border: 1px solid var(--line); color: var(--text); font-size: 14px; white-space: nowrap; }
 #sw-updated button { font: inherit; font-weight: 600; color: #160c08; background: var(--cyan); border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer; }
 .cc-undated { color: var(--text); font-weight: 600; }
+
+/* A row that leads with a badge (Written without a date, What needs attention, Commission emails): the badge sits on
+   its own line above the words, at every width, so it never covers them. */
+.cc-ev:has(> .cc-chip:first-child) { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.cc-ev:has(> .cc-chip:first-child) > .cc-chip { display: inline-block; justify-self: start; max-width: 100%; white-space: normal; }
+
+/* Calendar week: a column is never narrower than about 150 px. When seven do not fit, the days wrap to a second row,
+   and event titles and badges wrap inside the column instead of being cut. */
+.cc-days.week { grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); }
+.cc-list.tight .cc-ev > * { min-width: 0; }
+.cc-list.tight .cc-chip { white-space: normal; max-width: 100%; }
+@media (max-width: 560px) { .cc-days.week { grid-template-columns: minmax(0, 1fr); } }
+
+/* Header clock: always one line. Below 1300 px the date steps aside and the time stays. */
+.top .clock { flex: none; }
+.top .clock .date, .top .clock .time { white-space: nowrap; }
+@media (max-width: 1300px) { .top .clock .date, .top .operator { display: none; } }
+
+/* Phone header and nav (round 4). The nav scrolls on its own beside the P mark, never under it. The header is one
+   row: the source pill (short words), Show, and search. Refresh, the bell and keys step aside; the pill opens Sources. */
+@media (max-width: 720px) {
+  .side { overflow: hidden; }
+  .side .brand { position: static; padding-right: 8px; border-right: 1px solid var(--cc-line); }
+  .side .nav { overflow-x: auto; overflow-y: hidden; min-width: 0; flex: 1 1 auto; scrollbar-width: none; }
+  .side .nav::-webkit-scrollbar { display: none; height: 0; }
+  .top { flex-wrap: nowrap; gap: 6px; padding: 6px 10px; }
+  .top .status-chip { display: inline-flex; flex: 0 1 auto; min-width: 0; padding: 6px 14px 6px 10px; }
+  .top .status-chip #status-word { display: none; }
+  .top .status-chip b::after { content: attr(data-short); white-space: nowrap; }
+  .top-right { order: 2; flex: 1 1 auto; flex-wrap: nowrap; min-width: 0; gap: 6px; }
+  .top-right .search { order: 0; flex: 1 1 auto; width: auto; min-width: 0; padding: 6px 8px; }
+  .top-right .search kbd, .top-right #refresh, .top-right #bell, .top-right #help, .top-right .operator { display: none; }
+}
+
+/* Deals: a greyed button says why on its second line. A deal opened from search lights up for a moment. */
+.cc-acts button.cc-off { opacity: .55; cursor: not-allowed; display: inline-grid; text-align: left; line-height: 1.2; }
+.cc-acts button.cc-off small { font-size: 11px; font-weight: 400; color: var(--cc-muted); }
+.cc-row.is-flash { outline: 2px solid var(--cc-coral); outline-offset: 2px; transition: outline-color .4s; }

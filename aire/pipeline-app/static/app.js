@@ -117,6 +117,8 @@ function render() {
   const chip = $('#status-chip'); chip.className = 'status-chip ' + (red.length || statusLevel() === 'stop' ? 'stop' : amb.length ? 'warn' : 'ok');
   $('#status-word').textContent = !d.feed_ok ? 'CRM feed did not load' : statusWords(red.length, amb.length) || (window.CC && CC.data ? 'Every source current' : 'Reading');
   chip.title = att.map(x => x.text).join('\n'); chip.onclick = () => go('sources');
+  // The phone shows a short form of the same count.
+  chip.querySelector('b').dataset.short = !d.feed_ok ? 'CRM feed failed' : att.length ? `${att.length} need${att.length === 1 ? 's' : ''} a look` : 'All current';
   S.systemWord = $('#status-word').textContent; S.systemLevel = chip.className.replace('status-chip ', '');
   const bc = $('#bell-count'); bc.hidden = !att.length; bc.textContent = att.length;
   // send status

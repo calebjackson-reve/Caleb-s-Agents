@@ -70,7 +70,7 @@
     const days = Array.from({ length: span }, (_, i) => C.addDays(from, i));
     const wk = Object.fromEntries(d.week.map(r => [r.day, r]));
     const body = st.mode === 'day' ? (evs.length ? `<ul class="cc-list cc-dayview">${evs.map(evRow).join('')}</ul>` : empty('Nothing booked.'))
-      : `<div class="cc-days ${st.mode}">${days.map(k => { const e = evs.filter(r => r.day === k); return `<div class="cc-day ${k === d.today ? 'is-today' : ''}"><h3>${day(k)}${wk[k] ? `<small>${wk[k].hours}h booked</small>` : ''}</h3>${e.length ? `<ul class="cc-list tight">${e.map(evRow).join('')}</ul>` : '<p class="cc-none">Free</p>'}</div>`; }).join('')}</div>`;
+      : `<div class="cc-days ${st.mode}">${days.map(k => { const e = evs.filter(r => r.day === k); return `<div class="cc-day ${k === d.today ? 'is-today' : ''}"><h3>${day(k)}${wk[k] ? `<small>${C.bookedText(wk[k].hours, wk[k].minutes)} booked</small>` : ''}</h3>${e.length ? `<ul class="cc-list tight">${e.map(evRow).join('')}</ul>` : '<p class="cc-none">Free</p>'}</div>`; }).join('')}</div>`;
     const last = d.week.length ? Math.max(1, ...d.week.map(r => r.hours)) : 1;
     return `<div class="cc-page">${head('Calendar', 'Today through the next 30 days, Baton Rouge time')}
       <div class="cc-bar" role="toolbar" aria-label="Calendar view">
@@ -79,7 +79,7 @@
       </div>
       <div class="cc-filters" role="group" aria-label="Show event kinds">${kinds.map(k => `<button type="button" class="cc-filter k-${k}" aria-pressed="${!st.hide.has(k)}" onclick="CC.calKind('${k}')">${KIND[k]} <b>${d.calendar.filter(r => r.kind === k).length}</b></button>`).join('')}</div>
       ${card('Events', body, 'calendar')}
-      ${card('Hours booked per day', `<div class="cc-bars" role="img" aria-label="${d.week.map(r => day(r.day) + ' ' + r.hours + ' hours').join(', ')}">${d.week.map(r => `<div><i style="height:${Math.round(r.hours / last * 100)}%"></i><b>${r.hours}</b><span>${day(r.day).split(',')[0]}</span></div>`).join('')}</div><p class="cc-note">Timed events that are not free, not counting the working-hours band, work blocks or personal time.</p>`, 'calendar')}
+      ${card('Hours booked per day', `<div class="cc-bars" role="img" aria-label="${d.week.map(r => day(r.day) + ' ' + r.hours + ' hours').join(', ')}">${d.week.map(r => `<div><i style="height:${Math.round(r.hours / last * 100)}%"></i><b>${C.bookedText(r.hours, r.minutes)}</b><span>${day(r.day).split(',')[0]}</span></div>`).join('')}</div><p class="cc-note">Timed events that are not free, not counting the working-hours band, work blocks or personal time.</p>`, 'calendar')}
       </div>`;
   }
   C.calSet = k => { C.cal.mode = k; C.cal.off = 0; render(); };

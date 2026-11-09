@@ -212,6 +212,12 @@
   C.offerExpired = o => !!o && (o.expired || (o.at && new Date(o.at) < new Date()));
   C.offerPill = r => { const o = r.stage === 'offer' && r.offer; if (!o) return '';
     return C.offerExpired(o) ? `<span class="cc-pill k-closing">Offer expired ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>` : `<span class="cc-pill k-listing">Offer open until ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>`; };
+  // Every Deals row shows the same buttons. One that cannot work is greyed and says why, on the button itself.
+  C.offBtn = (label, why) => `<button type="button" class="cc-off" disabled aria-disabled="true" title="${esc(why)}">${esc(label)}<small>${esc(why)}</small></button>`;
+  // From search: open Deals, scroll to that deal and light it for a moment.
+  C.showDeal = deal => { go('deals'); setTimeout(() => { const el = document.getElementById('deal-' + C.dealKey(deal).replace(/\s+/g, '-'));
+    if (!el) return; const li = el.closest('.cc-row') || el, d = el.closest('details'); if (d) d.open = true;
+    li.scrollIntoView({ block: 'center', behavior: 'smooth' }); li.classList.add('is-flash'); setTimeout(() => li.classList.remove('is-flash'), 2400); }, 60); };
   const STAGE = { contract: 'Under contract', offer: 'Offer', appointment: 'Active', closed: 'Closed', out: 'Fell through', other: 'No status' };
   function deals() {
     const g = C.guard(); if (g) return g;
@@ -220,12 +226,12 @@
     const only = (C.data.crm_only_deals || []).filter(r => matches(`${r.deal} ${r.stage}`));
     const row = r => `<li class="cc-row ${r.differs.length ? 'is-warn' : ''}"><span class="cc-av" aria-hidden="true">⌂</span>
       <div class="cc-row-main"><h3>${esc(r.deal)}</h3>
-        <div class="cc-pills"><span class="cc-pill ${r.stage === 'contract' ? 'k-closing' : r.stage === 'closed' ? 'k-listing' : 'k-other'}">${esc(r.status)}</span>${r.side ? `<span class="cc-pill k-other">${esc(r.side)}</span>` : ''}${r.to_close != null && r.to_close >= 0 ? `<span class="cc-pill k-listing">${r.to_close === 0 ? 'Closes today' : r.to_close + ' days to close'}</span>` : ''}${C.offerPill(r)}</div>
+        <div class="cc-pills" id="deal-${esc(C.dealKey(r.deal).replace(/\s+/g, '-'))}"><span class="cc-pill ${r.stage === 'contract' ? 'k-closing' : r.stage === 'closed' ? 'k-listing' : 'k-other'}">${esc(r.status)}</span>${r.side ? `<span class="cc-pill k-other">${esc(r.side)}</span>` : ''}${r.to_close != null && r.to_close >= 0 ? `<span class="cc-pill k-listing">${r.to_close === 0 ? 'Closes today' : r.to_close + ' days to close'}</span>` : ''}${C.offerPill(r)}</div>
         <p class="cc-note">Price ${C.m(r.price)} · Your commission, gross ${r.commission == null ? '<em>not on the sheet</em>' : C.m(r.commission)}${r.act ? (r.stage === 'offer' ? ' · Act of sale if accepted ' : ' · Act of sale ') + esc(C.day(r.act)) : ''}${r.crm && r.crm.display ? ' · ' + C.who(r.crm.display) : ''}</p>
         ${r.next ? `<p class="cc-row-why">${C.scrub(r.next)}</p>` : ''}
         ${r.differs.length ? `<p class="cc-warn">The CRM Deals tab says ${r.differs.map(x => `${esc(x.field)} ${x.field === 'price' ? C.m(x.crm) : esc(x.field === 'act of sale' ? C.day(x.crm) : x.crm)}`).join(', ')}. This page shows the Deals sheet.</p>` : ''}</div>
-      <div class="cc-acts">${r.crm ? `<button type="button" onclick="openDeal(${esc(JSON.stringify(r.crm.address))})">Edit in the CRM</button>` : ''}${r.crm && r.crm.person_id ? `<button type="button" onclick="openCompose('${esc(r.crm.person_id)}')">Message</button>` : ''}</div></li>`;
-    const body = `${live.length ? `<ul class="cc-rows">${live.map(row).join('')}</ul>` : S.q && !past.length ? C.noMatch() : C.empty('No open deals on the Deals sheet.')}
+      <div class="cc-acts">${r.crm ? `<button type="button" onclick="openDeal(${esc(JSON.stringify(r.crm.address))})">Edit in the CRM</button>` : C.offBtn('Edit in the CRM', 'Not in the CRM Deals tab')}${r.crm && r.crm.person_id ? `<button type="button" onclick="openCompose('${esc(r.crm.person_id)}')">Message</button>` : C.offBtn('Message', r.crm ? 'No contact linked in the CRM' : 'No CRM contact for this deal')}</div></li>`;
+    const body = `<p class="cc-srcline">${C.src('deals')}</p>${live.length ? `<ul class="cc-rows">${live.map(row).join('')}</ul>` : S.q && !past.length ? C.noMatch() : C.empty('No open deals on the Deals sheet.')}
       ${past.length ? `<details class="cc-more"><summary>Closed and fell through <span class="cc-count">${past.length}</span></summary><ul class="cc-rows">${past.map(row).join('')}</ul></details>` : ''}`;
     return `<div class="cc-page">${C.head('Deals', 'One list from the AIRE Deals sheet. Commission, Deadlines and the Dashboard read the same rows.')}
       ${C.card(`Deals sheet <span class="cc-count">${live.length} open</span>`, body, 'deals')}
@@ -285,7 +291,7 @@
         <p class="cc-note">${p.city ? esc(p.city) + ' · ' : ''}${quietTxt(p)}</p></div>
         <div class="cc-acts">${textBtn(p.person_id, p)}<button type="button" class="cc-primary" onclick="touched('${esc(p.person_id)}')">✓ Touched</button><button type="button" onclick="openTask('${esc(p.person_id)}')">＋ Task</button></div></li>`, 'Showing 15. Add more of the name or street to narrow it.')
       + group('Tasks', tk, t => `<li class="cc-row"><span class="cc-av" aria-hidden="true">☑</span><div class="cc-row-main"><h3>${C.note(t.task, [t.display], 'Task hidden')}</h3><p class="cc-note">${t.display ? C.who(t.display) + ' · ' : ''}${t.due ? 'Due ' + esc(C.day(t.due)) : 'No due date'}</p></div></li>`, 'Showing 15. Open Tasks for all of them.')
-      + group('Deals', dl, r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">⌂</span><div class="cc-row-main"><h3>${esc(r.deal)}</h3><p class="cc-note">${esc(r.status)} · ${C.m(r.price)}${r.act ? ' · Act of sale ' + esc(C.day(r.act)) : ''}</p></div><div class="cc-acts"><button type="button" onclick="go('deals')">Open Deals</button></div></li>`, '')
+      + group('Deals', dl, r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">⌂</span><div class="cc-row-main"><h3>${esc(r.deal)}</h3><p class="cc-note">${esc(r.status)} · ${C.m(r.price)}${r.act ? ' · Act of sale ' + esc(C.day(r.act)) : ''}</p></div><div class="cc-acts"><button type="button" onclick="CC.showDeal(${esc(JSON.stringify(r.deal))})">Open Deals</button></div></li>`, '')
       + group('Leads', ld, r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">✚</span><div class="cc-row-main"><h3>${C.who(r.name || 'Website lead')}</h3><p class="cc-note">${esc(r.source || '')} · ${esc((r.due || {}).label || '')}</p></div><div class="cc-acts"><button type="button" onclick="go('ccleads')">Open Leads</button></div></li>`, '')
       + group('Drafts', dr, d => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${d.kind === 'text' ? '▭' : '✉'}</span><div class="cc-row-main"><h3>${C.who(d.name)}</h3><p class="cc-note">${d.reply ? 'Reply to write' : d.kind === 'text' ? 'Text draft' : 'Email draft'}</p></div><div class="cc-acts"><button type="button" class="cc-primary" onclick="openCompose('${esc(d.person_id)}', ${all.indexOf(d)})">Open</button></div></li>`, 'Showing 15. Open Drafts for all of them.');
     return page('Search', `${n} match${n === 1 ? '' : 'es'} for “${esc(q)}”.`, body, ['crm', 'deals', 'leads']);
