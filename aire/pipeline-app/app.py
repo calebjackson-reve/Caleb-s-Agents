@@ -838,6 +838,12 @@ class State:
             raise CRMError("the draft is empty")
         if kind == "email" and not subject.strip():
             raise CRMError("an email needs a subject")
+        if kind == "text":
+            to = norm_phone(to) or ""
+            if not to:
+                raise CRMError("not a valid US number: use 10 digits")
+        elif not re.fullmatch(r"[^\s@<>,;]+@[^\s@<>,;]+\.[A-Za-z]{2,}", to.strip()):
+            raise CRMError("not a valid email address")
         sent = self.sent_today()
         cap = self.max_texts if kind == "text" else self.max_emails
         used = sent["texts"] if kind == "text" else sent["emails"]
@@ -859,7 +865,7 @@ class State:
                 raise
             status = "sent"
         entry = {"at": now().isoformat(timespec="seconds"), "kind": kind, "person_id": person_id, "display": display,
-                 "to": to.strip(), "subject": subject.strip(), "chars": len(body), "status": status, "detail": detail,
+                 "to": to.strip(), "subject": subject.strip(), "chars": len(body), "text": body, "status": status, "detail": detail,
                  "delivery": delivery_from_detail(status, detail)}
         with self.lock:
             log = self.send_log()
@@ -903,6 +909,13 @@ class State:
 
         threading.Thread(target=work, daemon=True).start()
         return self.refresh
+
+
+def norm_phone(v: str) -> str | None:
+    """+1 and 10 digits, or None. "(225) 747-0303", "225.747.0303" and "+1 225 747 0303" are all +12257470303."""
+    d = re.sub(r"\D", "", str(v or ""))
+    d = d[1:] if len(d) == 11 and d[0] == "1" else d
+    return "+1" + d if re.fullmatch(r"[2-9]\d{2}[2-9]\d{6}", d) else None
 
 
 def csv_safe(v: str, column: str = "") -> str:
@@ -1067,7 +1080,8 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/login":
             return self._file("login.html")
         if u.path == "/api/state":
-            return self._json(200, self.state.snapshot())
+            # local: this request came from the Mac itself. Send now is offered there only.
+            return self._json(200, {**self.state.snapshot(), "local": auth.Auth.is_local(self.headers, self.server.server_address[1])})
         if u.path == "/api/refresh":
             return self._json(200, self.state.refresh)
         if u.path == "/api/push/key":
@@ -1176,6 +1190,11 @@ class Handler(BaseHTTPRequestHandler):
             elif u.path == "/api/dnc":
                 out = s.dnc(body.get("person_id", ""), body.get("reason", ""))
             elif u.path == "/api/send":
+                # Send now: from the Mac only, and a live send needs the confirm step's flag. One message per request.
+                if not auth.Auth.is_local(self.headers, self.server.server_address[1]):
+                    return self._json(403, {"ok": False, "error": "Send now works on the Mac only. On the phone, use Open in Messages or Open in Gmail."})
+                if s.sender == "live" and not s.demo and body.get("confirmed") is not True:
+                    return self._json(400, {"ok": False, "error": "a send needs the confirm step"})
                 out = s.send(body.get("kind", ""), body.get("person_id", ""), body.get("to", ""), body.get("body", ""),
                              body.get("subject", ""), body.get("display", ""))
             elif u.path == "/api/refresh":
@@ -1670,6 +1689,37 @@ def run_tests() -> int:
         urllib.request.urlopen(base + "/../app.py"); check(False, "no path escape")
     except Exception:
         check(True, "static files never leave static/")
+    # One-tap Text and Email: numbers are +1 and 10 digits, Send now is the Mac's only, a live send needs the confirm step.
+    # Only Caleb's own number and address, and only dry: this state is demo, so nothing can leave the Mac.
+    check(norm_phone("225-747-0303") == norm_phone("(225) 747 0303") == norm_phone("+1 225.747.0303") == "+12257470303", "phone numbers become +1 and 10 digits")
+    check(norm_phone("747-0303") is None and norm_phone("125-747-0303") is None and norm_phone("") is None, "a short or impossible number is refused")
+    def sendreq(data, host=None):
+        h = {"Content-Type": "application/json"}
+        if host:
+            h.update({"Host": host, "X-Forwarded-For": "100.64.0.7", "Cookie": ck2})
+        rq = urllib.request.Request(base + "/api/send", data=json.dumps(data).encode(), headers=h)
+        try:
+            r = urllib.request.urlopen(rq); return r.status, json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read())
+    _c, hd2, _b = remote("/api/login", {"passcode": "correct horse battery"}); ck2 = (hd2.get("Set-Cookie") or "").split(";")[0]
+    mine = {"kind": "text", "person_id": "118", "to": "225-747-0303", "body": "Pipeline test, dry", "display": "Caleb Jackson", "confirmed": True}
+    code, r = sendreq(mine, host="pipeline-mac.tail1234.ts.net")
+    check(code == 403 and "Mac only" in r["error"], "Send now from the phone or tailnet is refused, even signed in")
+    code, r = sendreq(mine)
+    check(code == 200 and r["result"]["status"] == "dry-run" and r["result"]["to"] == "+12257470303" and r["result"]["text"] == "Pipeline test, dry", "a dry send to Caleb's own number logs time, recipient, channel and text")
+    code, r = sendreq({**mine, "to": "747-0303"})
+    check(not r["ok"] and "valid US number" in r["error"], "an invalid number is refused before any send")
+    code, r = sendreq({"kind": "email", "person_id": "118", "to": "aire@calebjackson", "subject": "Test", "body": "x", "confirmed": True})
+    check(not r["ok"] and "valid email" in r["error"], "an invalid email is refused before any send")
+    was = (state.sender, state.demo); state.sender, state.demo = "live", False  # refused before s.send runs, so nothing goes
+    try:
+        code, r = sendreq({k: v for k, v in mine.items() if k != "confirmed"})
+        check(code == 400 and "confirm" in r["error"], "a live send without the confirm step is refused")
+    finally:
+        state.sender, state.demo = was
+    st2 = json.loads(urllib.request.urlopen(base + "/api/state").read())
+    check(st2["local"] is True, "the Mac's own page knows it is local, so Send now shows there")
     httpd.shutdown()
 
     # the engine wrapper parses the engine's contract

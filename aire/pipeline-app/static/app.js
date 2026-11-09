@@ -56,11 +56,47 @@ function personRow(id) { return (feed().touches_due || []).concat(feed().new_lea
 // ---- texting from a card: one button opens the text, SEND sends it, then the card shows what happened
 const firstName = n => (String(n || '').trim().split(/\s+/)[0] || '');
 function lastText(id) { return ((S.data && S.data.last_texts) || {})[id]; }
-function textBtn(id, row) {
+// ---- one-tap Text and Email. A number becomes +1 and 10 digits or it is not used. Pressing Text or Email opens the
+// sheet first (recipient, subject, message, all editable); Open in Messages and Open in Gmail hand it to the app with
+// everything filled in, and nothing leaves until Caleb presses send there.
+function normPhone(v) { const d = String(v || '').replace(/\D/g, ''), t = d.length === 11 && d[0] === '1' ? d.slice(1) : d; return /^[2-9]\d{2}[2-9]\d{6}$/.test(t) ? '+1' + t : null; }
+function phoneWhy(v) { return !String(v || '').trim() ? 'No phone on file' : 'Not a valid US number'; }
+function validEmail(v) { return /^[^\s@<>,;]+@[^\s@<>,;]+\.[a-z]{2,}$/i.test(String(v || '').trim()); }
+function smsLink(phone, body) { return `sms:${phone}&body=${encodeURIComponent(body || '')}`; }
+const GMAIL_USER = 'aire@calebjackson.org';
+function gmailLink(to, subject, body) {
+  const e = encodeURIComponent;
+  return `https://mail.google.com/mail/?authuser=${e(GMAIL_USER)}&view=cm&fs=1&to=${e(to || '')}&su=${e(subject || '')}&body=${e(body || '')}`;
+}
+// Everyone Pipeline knows, by number and by email, to flag two contacts that share one.
+function sharers(kind, value) {
+  const key = kind === 'text' ? normPhone(value) : String(value || '').trim().toLowerCase(); if (!key) return [];
+  const seen = new Map();
+  (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person'))
+    .forEach(r => { const v = kind === 'text' ? normPhone(r.phone) : String(r.email || '').trim().toLowerCase(); if (v === key && r.person_id) seen.set(r.person_id, r.display || r.person_id); });
+  return [...seen.values()];
+}
+// Contacts with no CRM id (a website lead) are kept here, so no number goes into a page attribute.
+S.contacts = S.contacts || {};
+function contactBtns(id, row) {
   row = row || personRow(id) || {};
-  if (!row.phone) return `<button type="button" onclick="openCompose('${id}')">Email</button>`;
-  const n = window.CC && CC.priv ? '' : firstName(row.display);
-  return `<button type="button" class="text-btn" onclick="textNow('${id}')" title="Opens the text. Nothing goes until you press SEND.">Text${n ? ' ' + esc(n) : ''}</button>`;
+  let key = id;
+  if (!id) { const c = { name: row.display || row.name || '', phone: row.phone || '', email: row.email || '' };
+    key = Object.keys(S.contacts).find(k => S.contacts[k].phone === c.phone && S.contacts[k].email === c.email && S.contacts[k].name === c.name) || ('c' + Object.keys(S.contacts).length);
+    S.contacts[key] = c; }
+  const ph = normPhone(row.phone), em = validEmail(row.email);
+  const off = (label, why) => `<button type="button" class="cc-off" disabled aria-disabled="true" title="${esc(why)}">${label}<small>${esc(why)}</small></button>`;
+  return (ph ? `<button type="button" class="text-btn" onclick="openContact('text', '${esc(key)}')" title="Opens the message to check first. Nothing goes until you press send.">Text</button>` : off('Text', phoneWhy(row.phone)))
+    + (em ? `<button type="button" onclick="openContact('email', '${esc(key)}')" title="Opens the email to check first. Nothing goes until you press Send in Gmail.">Email</button>` : off('Email', row.email ? 'Not a valid email' : 'No email on file'));
+}
+const textBtn = contactBtns;  // the old name, used by every card
+function openContact(kind, key) {
+  const loose = S.contacts[key];
+  if (loose) { S.compose = { kind, person_id: '', name: loose.name, to: kind === 'text' ? loose.phone : loose.email, body: '', subject: kind === 'email' ? 'Following up' : '', row: { ...loose, display: loose.name }, last_messages: [], fromCard: true }; S.queueIdx = -1; renderDrawer(); return; }
+  openCompose(key);
+  if (!S.compose) return;
+  if (S.compose.kind !== kind) setKind(kind);
+  S.compose.fromCard = true;
 }
 function textWhen(at) {
   const d = new Date(at); if (isNaN(d)) return '';
@@ -249,19 +285,62 @@ function renderDrawer() {
     ${c.last_messages && c.last_messages.length && !H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
     ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${C2 ? C2.scrub(c.next_action || row.next_action, [c.name]) : esc(c.next_action || row.next_action)}</div>` : ''}
     <div class="seg"><button class="${c.kind === 'text' ? 'on' : ''}" ${canText ? '' : 'disabled'} onclick="setKind('text')">▭ TEXT</button><button class="${c.kind === 'email' ? 'on' : ''}" ${canEmail ? '' : 'disabled'} onclick="setKind('email')">✉ EMAIL</button></div>
-    <div class="field"><label>TO</label>${H && to ? `<input id="c-to" type="hidden" value="${esc(to)}"><p class="cc-hid">${c.kind === 'text' ? 'Number' : 'Email'} hidden · press Show at the top to see it</p>` : `<input id="c-to" value="${esc(to)}" ${to ? 'readonly' : ''} placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}">`}</div>
+    <div class="field"><label>TO</label>${H && to ? `<input id="c-to" type="hidden" value="${esc(to)}"><p class="cc-hid">${c.kind === 'text' ? 'Number' : 'Email'} hidden · press Show at the top to see it before you open it</p>` : `<input id="c-to" value="${esc(to)}" inputmode="${c.kind === 'text' ? 'tel' : 'email'}" placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}" oninput="sheetCheck()">`}<p class="hint" id="c-exact"></p></div>
     ${c.kind === 'email' ? `<div class="field"><label>SUBJECT</label><input id="c-subject" value="${esc(c.subject || '')}" placeholder="Subject"></div>` : ''}
     <div class="field"><label>${c.kind === 'text' ? 'TEXT' : 'EMAIL'} DRAFT${c.reply ? ' · write it yourself, they texted last' : c.pool ? ' · from the ' + esc(c.pool) + ' pool' : ''}</label><textarea id="c-body"${maskAttr()} placeholder="${c.reply ? 'Answer what they said.' : 'Write the message.'}">${esc(c.body || '')}</textarea><div class="hint"><span id="c-count">${(c.body || '').length} chars</span><span>${cap} ${c.kind}${cap === 1 ? '' : 's'} left today</span></div></div>
   </div>
-  <div class="dfoot"><button class="send-btn ${dry ? 'dry' : ''}" id="send" onclick="sendNow()">${dry ? 'DRY RUN SEND' : 'SEND'}</button><button class="ghost-btn" onclick="touchFromCompose()">✓ Touched, no message</button><span class="spacer"></span><span class="mono" style="font-size:9px;color:var(--dim)">${pos}</span><button class="ghost-btn" onclick="nextInQueue()">Skip ›</button></div></section>`;
+  <div class="dfoot"><button class="send-btn" id="open-app" onclick="openInApp()">${c.kind === 'text' ? 'Open in Messages' : 'Open in Gmail'}</button>${sendNowBtn(dry)}<button class="ghost-btn" onclick="touchFromCompose()">✓ Touched, no message</button><span class="spacer"></span><span class="mono" style="font-size:9px;color:var(--dim)">${pos}</span><button class="ghost-btn" onclick="nextInQueue()">Skip ›</button></div></section>`;
   const ta = $('#c-body'); ta.addEventListener('input', () => { $('#c-count').textContent = ta.value.length + ' chars'; }); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  sheetCheck();
 }
-function setKind(k) { const c = S.compose; c.kind = k; c.body = $('#c-body').value; if (k === 'email' && !c.subject) c.subject = 'Checking in'; renderDrawer(); }
+// Send now: desktop only, live mode only, one message per press after a confirm step. Greyed buttons say why.
+function sendNowBtn(dry) {
+  const why = !S.data.local ? 'Send now works on the Mac only' : dry ? 'Sending is off (dry mode)' : !S.compose.person_id ? 'Not in the CRM yet, so it cannot be logged' : '';
+  return why ? `<button type="button" class="ghost-btn cc-off" id="send" disabled aria-disabled="true" title="${esc(why)}">Send now<small>${esc(why)}</small></button>`
+    : `<button type="button" class="ghost-btn" id="send" onclick="confirmSendNow()">Send now</button>`;
+}
+// The exact number or address that will open, and a flag when two contacts share it.
+function sheetCheck() {
+  const c = S.compose, el = $('#c-exact'); if (!c || !el) return;
+  const raw = ($('#c-to') || {}).value || '', ok = c.kind === 'text' ? normPhone(raw) : validEmail(raw) ? raw.trim() : null;
+  const share = ok ? sharers(c.kind, ok).filter(n => !c.person_id || n !== (c.row || {}).display) : [];
+  const shown = hid() ? (c.kind === 'text' ? 'the number on file' : 'the address on file') : esc(ok || '');
+  el.innerHTML = !ok ? `<span class="cc-warn">${c.kind === 'text' ? phoneWhy(raw) + '. Use 10 digits.' : raw.trim() ? 'Not a valid email' : 'No email on file'}</span>`
+    : `Opens to <b>${shown}</b>${share.length ? ` <span class="cc-warn">· ${share.length === 1 ? 'Another contact has' : share.length + ' other contacts have'} this ${c.kind === 'text' ? 'number' : 'email'}${hid() ? '' : ': ' + share.map(esc).join(', ')}. Check it is the right person.</span>` : ''}`;
+  const b = $('#open-app'); if (b) b.disabled = !ok;
+}
+function sheetValues() {
+  const c = S.compose, raw = $('#c-to').value;
+  return { kind: c.kind, to: c.kind === 'text' ? normPhone(raw) : (validEmail(raw) ? raw.trim() : null), body: $('#c-body').value, subject: c.kind === 'email' ? ($('#c-subject') || {}).value || '' : '' };
+}
+// Hands the message to Messages (sms: link) or to a Gmail compose window for aire@. Nothing is sent here.
+function openInApp() {
+  const v = sheetValues(); if (!v.to) { toast('warn', 'CHECK IT', v.kind === 'text' ? 'That is not a valid number.' : 'That is not a valid email.'); return; }
+  if (v.kind === 'text') { location.href = smsLink(v.to, v.body); toast('ok', 'MESSAGES', 'Opened in Messages. Press send there when it looks right.'); }
+  else { window.open(gmailLink(v.to, v.subject, v.body), '_blank', 'noopener'); toast('ok', 'GMAIL', 'Opened in Gmail. Press Send there when it looks right.'); }
+}
+async function confirmSendNow() {
+  const v = sheetValues(), c = S.compose;
+  if (!v.to) { toast('warn', 'CHECK IT', 'That recipient is not valid.'); return; }
+  if (!v.body.trim()) { toast('warn', 'EMPTY', 'Write the message first.'); return; }
+  const ok = await modal(`Send this ${v.kind} now?`, `<p class="cc-note">To <b>${esc(nm(c.name))}</b> at <b>${esc(v.to)}</b>, ${v.kind === 'text' ? 'through Messages (iMessage, or SMS if not)' : 'through Gmail as ' + GMAIL_USER}. One message, sent right away.</p>${v.subject ? `<p><b>Subject:</b> ${esc(v.subject)}</p>` : ''}<pre class="send-preview">${esc(v.body)}</pre>`, () => true, 'Send it');
+  if (ok !== true) return;
+  return sendNow(v);
+}
+function setKind(k) {
+  const c = S.compose; c.kind = k; c.body = $('#c-body') ? $('#c-body').value : c.body;
+  // The draft for that channel from the queue, when there is one.
+  const d = c.person_id && drafts().find(x => x.person_id === c.person_id && x.kind === k && x.body);
+  if (d) { c.body = d.body; c.subject = d.subject || c.subject; c.to = d.to || c.to; }
+  if (k === 'email' && !c.subject) c.subject = 'Checking in';
+  c.to = k === 'text' ? ((c.row || {}).phone || (k === 'text' && d ? d.to : '')) : ((c.row || {}).email || (d ? d.to : ''));
+  renderDrawer();
+}
 function closeDrawer() { $('#drawer').hidden = true; S.compose = null; }
 function nextInQueue() { const items = drafts(); if (!items.length) { closeDrawer(); return; } const n = (S.queueIdx + 1) % items.length; openCompose(items[n].person_id, n); }
-async function sendNow() {
-  const c = S.compose, btn = $('#send'); btn.disabled = true; btn.classList.add('charging');
-  const body = { kind: c.kind, person_id: c.person_id, to: $('#c-to').value, body: $('#c-body').value, subject: c.kind === 'email' ? $('#c-subject').value : '', display: c.name };
+async function sendNow(v) {
+  const c = S.compose, btn = $('#send'); if (!v || !btn) return; btn.disabled = true; btn.classList.add('charging');
+  const body = { kind: v.kind, person_id: c.person_id, to: v.to, body: v.body, subject: v.subject, display: c.name, confirmed: true };
   const r = await api('/api/send', body);
   btn.disabled = false; btn.classList.remove('charging');
   if (!r.ok) { toast('err', 'NOT SENT', r.error); return; }

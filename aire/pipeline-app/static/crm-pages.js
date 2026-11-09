@@ -196,7 +196,7 @@
       <div class="cc-row-main"><h3>${C.note(t.task, [t.display], 'Task hidden')}</h3>
         <div class="cc-pills"><span class="cc-pill ${t.overdue ? 'k-closing' : t.due === today ? 'k-listing' : 'k-other'}">${t.overdue ? 'Overdue · ' : ''}${esc(dayName(t.due) || 'No date')}</span>${t.task_id ? '' : '<span class="cc-pill k-other">From a next action</span>'}</div>
         <p class="cc-note">${t.display ? C.who(t.display) + ' · ' : ''}${t.due ? 'Due ' + esc(C.day(t.due)) : 'No due date'}${t.source ? ' · ' + esc(t.source) : ''}</p></div>
-      <div class="cc-acts"><button type="button" class="cc-primary" onclick="doneTask('${esc(t.task_id)}','${esc(t.person_id)}',${JSON.stringify(String(t.task || '')).replace(/"/g, '&quot;')})">✓ Done</button>${t.person_id ? `<button type="button" onclick="openCompose('${esc(t.person_id)}')">Message</button>` : ''}</div></li>`).join('')}</ul>`
+      <div class="cc-acts"><button type="button" class="cc-primary" onclick="doneTask('${esc(t.task_id)}','${esc(t.person_id)}',${JSON.stringify(String(t.task || '')).replace(/"/g, '&quot;')})">✓ Done</button>${t.person_id ? contactBtns(t.person_id) : ''}</div></li>`).join('')}</ul>`
       : S.q ? C.noMatch() : C.empty('No open tasks here.');
     // Where the open tasks come from: rows on the CRM's Tasks tab, and contacts whose Next_Action column has a step.
     const tab = (feedF().tasks || []).filter(t => t.task_id).length, na = (feedF().tasks || []).length - tab;
@@ -249,7 +249,7 @@
         <div class="cc-pills">${d.reply ? '<span class="cc-pill k-closing">Reply to write</span>' : `<span class="cc-pill k-other">${esc(d.kind === 'text' ? 'Text' : 'Email')}${d.pool ? ' · ' + esc(d.pool) : ''}</span>`}</div>
         <p class="cc-row-why">${d.reply ? 'They texted last. Read what they said and answer in your own words.' : C.priv ? C.msg('') : esc(d.subject || d.body.split('\n')[0])}</p>
         <p class="cc-note">${d.reply ? (C.priv ? C.msg('') : '“' + esc(C.cleanMsg(d.last_messages.slice(-1)[0])) + '”') : C.priv ? '' : esc(d.body.slice(0, 140))}${d.to ? ' · to ' + (d.kind === 'text' ? C.ph(d.to) : C.em(d.to)) : ''}</p></div>
-      <div class="cc-acts"><button type="button" class="cc-primary" onclick="openCompose('${esc(d.person_id)}', ${i})">${d.reply ? 'Write a reply' : 'Open'}</button></div></li>`; };
+      <div class="cc-acts"><button type="button" class="cc-primary" onclick="openCompose('${esc(d.person_id)}', ${i})">${d.reply ? 'Write a reply' : 'Open'}</button>${contactBtns(d.person_id, Object.assign({}, d.row || {}, d.kind === 'text' ? { phone: d.to } : { email: d.to }, { display: d.name }))}</div></li>`; };
     const shown = all.filter(d => matches(`${d.name} ${d.body} ${d.subject}`)), ready = shown.filter(d => !d.reply), reply = shown.filter(d => d.reply);
     const body = !shown.length ? (S.q ? C.noMatch() : C.empty('No drafts waiting. New ones come with the next feed refresh.'))
       : `<h3 class="cc-sub-h">Ready to send <span class="cc-count">${ready.length}</span></h3>${ready.length ? `<ul class="cc-rows">${ready.map(row).join('')}</ul>` : C.empty('No written drafts right now.')}
@@ -264,7 +264,7 @@
     const body = rows.length ? `<ul class="cc-rows">${rows.map(s => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${s.kind === 'text' ? '▭' : '✉'}</span>
       <div class="cc-row-main"><h3>${C.who(s.display || 'No name')}</h3>
         <div class="cc-pills"><span class="cc-pill ${s.status === 'sent' ? 'k-listing' : 'k-other'}">${s.status === 'sent' ? 'Sent' : s.status === 'dry-run' ? 'Dry run, nothing left the Mac' : esc(s.status)}</span>${s.kind === 'text' && s.delivery ? `<span class="cc-pill k-other">${esc(s.delivery)}</span>` : ''}</div>
-        <p class="cc-note">${esc(textWhen(s.at))} · ${s.kind === 'text' ? 'Text' : 'Email'}${s.subject && !C.priv ? ': ' + esc(s.subject) : ''} · to ${s.kind === 'text' ? C.ph(s.to) : C.em(s.to)}</p></div></li>`).join('')}</ul>`
+        <p class="cc-note">${esc(textWhen(s.at))} · ${s.kind === 'text' ? 'Text' : 'Email'}${s.subject && !C.priv ? ': ' + esc(s.subject) : ''} · to ${s.kind === 'text' ? C.ph(s.to) : C.em(s.to)}</p>${s.text ? `<p class="cc-row-why">${C.note(s.text, [s.display], 'Message hidden')}</p>` : ''}</div></li>`).join('')}</ul>`
       : C.empty('Nothing sent today.');
     return page('Sent today', 'Every text and email Pipeline sent or dry-ran today.', body, ['sends']);
   }

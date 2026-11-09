@@ -266,3 +266,9 @@ body { background: #0a0a0b; background-image: none; }
 .cc-acts button.cc-off { opacity: .55; cursor: not-allowed; display: inline-grid; text-align: left; line-height: 1.2; }
 .cc-acts button.cc-off small { font-size: 11px; font-weight: 400; color: var(--cc-muted); }
 .cc-row.is-flash { outline: 2px solid var(--cc-coral); outline-offset: 2px; transition: outline-color .4s; }
+
+/* Text and Email: a greyed button says why. The sheet's confirm step shows the whole message. */
+.acts button.cc-off, .dfoot button.cc-off { opacity: .55; cursor: not-allowed; display: inline-grid; text-align: left; line-height: 1.2; }
+.acts button.cc-off small, .dfoot button.cc-off small { font-size: 11px; font-weight: 400; color: var(--cc-muted); }
+.send-preview { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--cc-raise); border: 1px solid var(--cc-line); border-radius: 10px; padding: 10px 12px; font: inherit; max-height: 40vh; overflow: auto; }
+#c-exact { margin-top: 6px; font-size: 12px; color: var(--cc-muted); }

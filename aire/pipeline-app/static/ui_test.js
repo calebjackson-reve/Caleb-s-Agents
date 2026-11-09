@@ -595,5 +595,29 @@ check(/\.side \.nav \{ overflow-x: auto/.test(ui) && /\.side \.brand \{ position
   check(pl.length === 1 && pl[0].x0 >= 4 && pl[0].x1 <= 396, 'a map label near the left edge slides inside the map, never cut off'); }
 check(run('CC.bookedText(0.2, 15)') === '15 min', 'calendar day headers show minutes under an hour too');
 
+// One-tap Text and Email. Only Caleb's own number and address.
+check(run(`normPhone('225-747-0303')`) === '+12257470303' && run(`normPhone('1 (225) 747-0303')`) === '+12257470303' && run(`normPhone('747-0303')`) === null, 'numbers normalize to +1 and 10 digits');
+check(run(`smsLink('+12257470303', 'Hi there & thanks?')`) === 'sms:+12257470303&body=Hi%20there%20%26%20thanks%3F', 'Text opens an sms: link with the body url-encoded');
+check(run(`gmailLink('aire@calebjackson.org', 'Quick question', 'Line one\\nLine two')`) === 'https://mail.google.com/mail/?authuser=aire%40calebjackson.org&view=cm&fs=1&to=aire%40calebjackson.org&su=Quick%20question&body=Line%20one%0ALine%20two', 'Email opens a Gmail compose for aire@ with To, Subject and Body filled in');
+{ const b = run(`contactBtns('', { display: 'Caleb Jackson', phone: '225-747-0303', email: 'aire@calebjackson.org' })`);
+  check(/class="text-btn" onclick="openContact\('text', 'c\d+'\)"/.test(b) && /openContact\('email', 'c\d+'\)/.test(b) && !/747/.test(b) && !/aire@/.test(b), 'Text and Email buttons, with no number or address in the page');
+  const g = run(`contactBtns('', { display: 'X', phone: '747-03', email: '' })`);
+  check(/cc-off" disabled[^>]*>Text<small>Not a valid US number<\/small>/.test(g) && /Email<small>No email on file<\/small>/.test(g), 'a contact with no valid number or email gets greyed buttons that say why'); }
+{ const pages = ['touches', 'tasks', 'queue', 'dash'].map(k => render(k, false)).join(' ');
+  check((pages.match(/>Text</g) || []).length > 3 && (pages.match(/>Email</g) || []).length > 3, 'Text and Email show on touches, tasks, drafts and the Dashboard'); }
+{ run(`S.data = Object.assign({}, S.data, { local: true, sender: 'dry', demo: false }); S.compose = { kind: 'text', person_id: '118', name: 'Caleb Jackson', row: {}, to: '+12257470303' }`);
+  check(/disabled aria-disabled="true" title="Sending is off \(dry mode\)">Send now<small>Sending is off \(dry mode\)/.test(run('sendNowBtn(true)')), 'Send now is greyed in dry mode and says so');
+  run(`S.data = Object.assign({}, S.data, { local: false })`);
+  check(/Send now works on the Mac only/.test(run('sendNowBtn(false)')), 'Send now is the Mac only, never from the phone');
+  run(`S.data = Object.assign({}, S.data, { local: true })`);
+  check(/onclick="confirmSendNow\(\)"/.test(run('sendNowBtn(false)')), 'live on the Mac, Send now goes to the confirm step first');
+  run(`S.data = __state; S.compose = null;`); }
+{ const tds = (state.feed.touches_due || []).filter(r => r.phone);
+  if (tds.length) { const ph = tds[0].phone;
+    run(`S.data = JSON.parse(JSON.stringify(__state)); S.data.feed.touches_due.push({ person_id: 'dup1', display: 'Dup Fixture', phone: ${JSON.stringify(ph)} })`);
+    check(run(`sharers('text', ${JSON.stringify(ph)})`).length >= 2, 'two contacts with one number are flagged');
+    run('S.data = __state;'); } }
+check(/confirmSendNow[^]*?modal\(`Send this \$\{v\.kind\} now\?`[^]*?esc\(v\.to\)[^]*?send-preview">\$\{esc\(v\.body\)\}/.test(appjs), 'the confirm step names the recipient and shows the full text');
+
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

@@ -113,7 +113,7 @@
       ${r.message ? `<blockquote class="cc-quote">${C.msg(r.message)}</blockquote>` : ''}
       ${extra.length && !C.priv ? `<dl class="cc-fields">${extra.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${/^https?:\/\//i.test(v) ? `<a href="${esc(v)}" target="_blank" rel="noopener">Open link</a>` : esc(v)}</dd></div>`).join('')}</dl>` : ''}
       ${c && (c.last_touch || c.next_action) ? `<p class="cc-note">${c.last_touch ? 'Last touch ' + esc(c.last_touch) : 'No touch logged'}${c.next_action && !/within the hour/i.test(c.next_action) ? ' · Next: ' + C.note(c.next_action, [name]) : ''}</p>` : ''}
-      <div class="cc-acts">${pid ? `${typeof textBtn === 'function' ? textBtn(pid, { phone: r.phone, display: name }) : ''}<button type="button" class="cc-primary" onclick="touched('${esc(pid)}')">✓ Touched</button><button type="button" onclick="openTask('${esc(pid)}')">＋ Task</button>` : `<button type="button" class="cc-primary" onclick="CC.addLead(${i})">Add to the CRM</button>`}<button type="button" onclick="CC.copyLead(${i})">Copy a first text</button></div></li>`;
+      <div class="cc-acts">${typeof contactBtns === 'function' ? contactBtns(pid || '', { phone: r.phone, email: r.email, display: name }) : ''}${pid ? `<button type="button" class="cc-primary" onclick="touched('${esc(pid)}')">✓ Touched</button><button type="button" onclick="openTask('${esc(pid)}')">＋ Task</button>` : `<button type="button" class="cc-primary" onclick="CC.addLead(${i})">Add to the CRM</button>`}<button type="button" onclick="CC.copyLead(${i})">Copy a first text</button></div></li>`;
   }
   function ccleads() {
     const g = guard(); if (g) return g;

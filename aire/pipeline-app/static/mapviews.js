@@ -118,7 +118,7 @@ function pinCard(p) {
       <dl><dt>Stage</dt><dd>${esc(p.stage || 'none')}</dd><dt>Type</dt><dd>${esc(p.type || 'unknown')}</dd><dt>Last touch</dt><dd>${esc(quiet(p))}</dd>
       <dt>Next action</dt><dd>${p.next_action ? CC.note(p.next_action, [p.display]) : 'none'}</dd><dt>Address</dt><dd>${CC.priv ? '<span class="cc-hid">hidden</span>' : esc([p.address, p.city, p.zip].filter(Boolean).join(', ') || 'none')}</dd>
       <dt>Phone</dt><dd>${p.phone ? (CC.priv ? CC.ph(p.phone) : `<a href="tel:${esc(p.phone)}">${esc(fmtPhone(p.phone))}</a>`) : 'none'}</dd>${p.email ? `<dt>Email</dt><dd>${CC.em(p.email)}</dd>` : ''}</dl>
-      <div class="acts"><button class="primary" onclick="openCompose(${jsa(p.person_id)})">✉ Compose</button><button onclick="touched(${jsa(p.person_id)})">✓ Touched</button><button onclick="openTask(${jsa(p.person_id)})">＋ Task</button><button onclick="openNote(${jsa(p.person_id)})">✎ Note</button></div>
+      <div class="acts">${contactBtns(p.person_id, p)}<button onclick="touched(${jsa(p.person_id)})">✓ Touched</button><button onclick="openTask(${jsa(p.person_id)})">＋ Task</button><button onclick="openNote(${jsa(p.person_id)})">✎ Note</button></div>
       <div class="acts"><button onclick="addToList('call', [personListRow(pinByKey(${jsa(p.key)}))])">☎ Call list</button><button onclick="addToList('postcards', [personListRow(pinByKey(${jsa(p.key)}))])">✉ Postcards</button></div></div>`;
   }
   if (p.kind === 'deal') {
