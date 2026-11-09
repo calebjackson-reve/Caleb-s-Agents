@@ -1,5 +1,7 @@
 """Checks for the hand-off log: a made-up chat.db and a faked Gmail. Nothing is sent and no real file is read.
 Run: python3 aire/pipeline-app/handoff_test.py"""
+import base64
+import json
 import os
 import sqlite3
 import tempfile
@@ -50,9 +52,11 @@ class FakeGmail:
     def list(self, userId, q, maxResults):
         self.queries.append(q)
         return Call({"messages": [{"id": m[0]} for m in reversed(self.sent) if f"to:{m[1]}" in q]})
-    def get(self, userId, id, format, metadataHeaders):
+    def get(self, userId, id, format):
         m = next(x for x in self.sent if x[0] == id)
-        return Call({"id": id, "internalDate": str(int((T0 + m[2]) * 1000)), "payload": {"headers": [{"name": "Subject", "value": m[3]}]}})
+        body = base64.urlsafe_b64encode((m[4] if len(m) > 4 else "").encode()).decode().rstrip("=")
+        return Call({"id": id, "internalDate": str(int((T0 + m[2]) * 1000)), "payload": {"headers": [{"name": "Subject", "value": m[3]}], "mimeType": "multipart/alternative",
+                     "parts": [{"mimeType": "text/plain", "body": {"data": body}}, {"mimeType": "text/html", "body": {"data": body}}]}})
 
 
 class Matching(unittest.TestCase):
@@ -183,6 +187,64 @@ class Log(unittest.TestCase):
         n, _ = H.open_entry(self.log, (CLICK + timedelta(minutes=30)).isoformat(), "text", "118", "Taylor Sample", "+12255550101", "Other")
         H.answer(self.log, n["id"], False, CLICK.isoformat())
         self.assertEqual(len(self.log), 1)
+
+
+class Pairs(unittest.TestCase):
+    """Pipeline's draft next to Caleb's real wording, and the running list of his rewrites. Local files only."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(); self.dir = Path(self.tmp.name)
+        import app
+        self.app, self.s = app, app.State(demo=True, send_log=self.dir / "send-log.json")
+        self.out = self.dir / "handoff"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def rows(self, name):
+        p = self.out / name
+        return [json.loads(x) for x in p.read_text().splitlines()] if p.exists() else []
+
+    def test_rewrite_is_saved_side_by_side_and_as_a_style_example(self):
+        mine = "Hey Taylor, a couple new ones popped up near Zachary. Want me to send them over?"
+        self.s.opened("text", "247", "2255550142", DRAFT, display="Taylor Sample", draft=DRAFT, pool="active-buyer")
+        db = make_db(self.dir, [("+12255550142", 5, mine, 1, "iMessage", False)], base=self.app.now().timestamp())
+        self.assertEqual(self.s.handoff_check(db=db)["changed"], 1)
+        self.s.handoff_check(db=db)
+        pair = self.rows("pairs.jsonl")
+        self.assertEqual(len(pair), 1)
+        self.assertEqual((pair[0]["draft"], pair[0]["sent"], pair[0]["rewritten"], pair[0]["wording"], pair[0]["pool"]), (DRAFT, mine, True, "real", "active-buyer"))
+        self.assertEqual(self.rows("style-examples.jsonl"), [{"sent_at": pair[0]["sent_at"], "kind": "text", "pool": "active-buyer", "wording": "real", "draft": DRAFT, "sent": mine}])
+
+    def test_sent_as_written_is_a_pair_but_not_a_rewrite(self):
+        self.s.opened("text", "247", "2255550142", DRAFT, draft=DRAFT, pool="active-buyer")
+        self.s.handoff_check(db=make_db(self.dir, [("+12255550142", 5, DRAFT, 1, "iMessage", False)], base=self.app.now().timestamp()))
+        self.assertEqual(([r["rewritten"] for r in self.rows("pairs.jsonl")], self.rows("style-examples.jsonl")), ([False], []))
+
+    def test_email_wording_comes_from_gmail_and_your_own_answer_is_marked(self):
+        e = self.s.opened("email", "312", "morgan.demo@example.com", "Hi Morgan, checking in.", "Checking in", draft="Hi Morgan, checking in.", pool="past-client")["result"]
+        real = "Hi Morgan, hope the new place is treating you well.\n\nOn Mon, Nov 9, 2026 at 2:00 PM Morgan Demo wrote:\n> old"
+        g = FakeGmail([("m1", "morgan.demo@example.com", self.app.now().timestamp() - T0 + 5, "Checking in", real)])
+        self.assertEqual(self.s.handoff_check(gmail=g)["changed"], 1)
+        t = self.s.opened("text", "247", "2255550142", "Edited in the box", draft=DRAFT)["result"]
+        self.s.handoff_answer(t["id"], True)
+        a, b = self.rows("pairs.jsonl")
+        self.assertEqual((a["sent"], a["rewritten"], a["wording"]), ("Hi Morgan, hope the new place is treating you well.", True, "real"))
+        self.assertEqual((b["sent"], b["rewritten"], b["wording"], b["confirmed_by"]), ("Edited in the box", True, "as opened", "you"))
+        self.assertEqual(len(self.rows("style-examples.jsonl")), 2)
+
+    def test_a_full_rewrite_is_read_from_messages_when_you_answer_sent(self):
+        mine = "Taylor! Two just hit in Copper Mill, one backs up to the course. Free Saturday?"
+        t = self.s.opened("text", "247", "2255550142", DRAFT, draft=DRAFT, pool="active-buyer")["result"]
+        db = make_db(self.dir, [("+12255550142", 5, mine, 1, "iMessage", False)], base=self.app.now().timestamp())
+        self.assertEqual(self.s.handoff_check(db=db)["changed"], 0)
+        r = self.s.handoff_answer(t["id"], True, db=db)["result"]
+        self.assertEqual((r["confirmed_by"], r["service"], r["sent_text"]), ("you", "iMessage", mine))
+        self.assertEqual([(x["sent"], x["wording"], x["rewritten"]) for x in self.rows("style-examples.jsonl") and self.rows("pairs.jsonl")], [(mine, "real", True)])
+
+    def test_not_sent_saves_nothing(self):
+        t = self.s.opened("text", "247", "2255550142", DRAFT, draft=DRAFT)["result"]
+        self.s.handoff_answer(t["id"], False)
+        self.assertFalse(self.out.exists())
 
 
 class Touches(unittest.TestCase):

@@ -330,7 +330,7 @@ function openInApp() {
 // Gmail's Sent folder for 15 minutes. Still open after 2 minutes: a small "Did that send?" bar.
 async function logOpened(v) {
   const c = S.compose || {};
-  try { const r = await api('/api/opened', { kind: v.kind, person_id: c.person_id || '', to: v.to, body: v.body, subject: v.subject, display: c.name || '' });
+  try { const r = await api('/api/opened', { kind: v.kind, person_id: c.person_id || '', to: v.to, body: v.body, subject: v.subject, display: c.name || '', draft: c.body || '', pool: c.pool || '' });
     if (r.ok) { await load(); watchOpened(); } } catch (e) { }
 }
 const openedNow = () => ((S.data && S.data.sent_today) || []).some(s => s.status === 'opened' && Date.now() - new Date(s.at) < 16 * 60e3);

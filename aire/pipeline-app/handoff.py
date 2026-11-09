@@ -6,7 +6,9 @@ open after 2 minutes is asked about in the app. Nothing here sends, and nothing 
 chat.db is opened read only AND immutable: no lock, no -shm or -wal file touched, no copy (the Nov 8 disk leak).
 The price of immutable is that a message still sitting in Messages' write-ahead file is not visible yet, so a
 confirm can lag behind the send. The 15 minute window and the "Did that send?" prompt cover that."""
+import base64
 import difflib
+import json
 import re
 import sqlite3
 import uuid
@@ -102,12 +104,23 @@ def find_sent_email(gmail, to, since: float, subject, skip=()) -> dict | None:
     for m in reversed(res.get("messages") or []):
         if m["id"] in skip:
             continue
-        full = gmail.users().messages().get(userId="me", id=m["id"], format="metadata", metadataHeaders=["Subject"]).execute()
+        full = gmail.users().messages().get(userId="me", id=m["id"], format="full").execute()
         ts = int(full.get("internalDate") or 0) / 1000
         subj = next((h.get("value", "") for h in (full.get("payload") or {}).get("headers", []) if h.get("name", "").lower() == "subject"), "")
         if ts >= since - SLACK and same_subject(subject, subj):
-            return {"sent_at": iso(ts), "service": "Gmail", "msg_id": m["id"]}
+            return {"sent_at": iso(ts), "service": "Gmail", "msg_id": m["id"], "sent_text": mail_text(full.get("payload") or {})}
     return None
+
+
+def mail_text(payload: dict) -> str:
+    """The plain-text body of a Gmail message Caleb sent, quoted history cut off."""
+    parts, stack = [], [payload]
+    while stack:
+        p = stack.pop(0)
+        stack.extend(p.get("parts") or [])
+        if p.get("mimeType", "text/plain") == "text/plain" and (p.get("body") or {}).get("data"):
+            parts.append(base64.urlsafe_b64decode(p["body"]["data"] + "==").decode("utf-8", "replace"))
+    return re.split(r"\n>|\nOn .{10,80} wrote:", "\n".join(parts))[0].replace("\r", "").strip()
 
 
 def is_open(e: dict) -> bool:
@@ -121,7 +134,8 @@ def age(e: dict, now_ts: float) -> float:
         return 1e12
 
 
-def open_entry(log: list, now_iso: str, kind: str, person_id: str, display: str, to: str, text: str, subject: str = "") -> tuple[dict, bool]:
+def open_entry(log: list, now_iso: str, kind: str, person_id: str, display: str, to: str, text: str, subject: str = "",
+               draft: str = "", pool: str = "") -> tuple[dict, bool]:
     """Log a click as "opened". The same message opened again while the first is still open is one line, not two."""
     now_ts = datetime.fromisoformat(now_iso).timestamp()
     for e in log:
@@ -129,6 +143,7 @@ def open_entry(log: list, now_iso: str, kind: str, person_id: str, display: str,
             return e, False
     e = {"id": uuid.uuid4().hex[:12], "at": now_iso, "kind": kind, "person_id": person_id, "display": display, "to": to,
          "channel": "iMessage/SMS" if kind == "text" else "email", "subject": subject, "chars": len(text), "text": text,
+         "draft": draft, "pool": pool,  # what Pipeline wrote, before Caleb touched it, and which template pool it came from
          "status": "opened", "delivery": "opened", "via": "handoff", "detail": "Opened from Pipeline, waiting for the send"}
     log.append(e)
     return e, True
@@ -144,7 +159,7 @@ def mark_sent(e: dict, hit: dict, by: str) -> None:
 def check(log: list, now_ts: float, db: Path | None, gmail=None) -> dict:
     """One pass over the open lines still inside the 15 minute window. Changes `log` in place.
     Returns {"changed": n, "messages_ok": True/False/None, "gmail_ok": True/False/None, "detail": str}."""
-    out = {"changed": 0, "messages_ok": None, "gmail_ok": None, "detail": ""}
+    out = {"changed": 0, "ids": [], "messages_ok": None, "gmail_ok": None, "detail": ""}
     used = {e.get("msg_id") for e in log if e.get("msg_id")}
     for e in log:
         if not is_open(e) or age(e, now_ts) > WINDOW + 60:
@@ -163,6 +178,7 @@ def check(log: list, now_ts: float, db: Path | None, gmail=None) -> dict:
             mark_sent(e, hit, "Messages" if e["kind"] == "text" else "Gmail")
             used.add(hit.get("msg_id"))
             out["changed"] += 1
+            out["ids"].append(e["id"])
     return out
 
 
@@ -176,6 +192,25 @@ def answer(log: list, entry_id: str, sent: bool, now_iso: str) -> dict | None:
                 del log[i]
             return e
     return None
+
+
+def record_pair(folder: Path, e: dict) -> dict:
+    """A confirmed send, kept on this Mac only (out/ is git-ignored): Pipeline's draft and Caleb's real wording side
+    by side in pairs.jsonl. When he rewrote a draft, the pair also joins style-examples.jsonl, the running list of
+    how he really says it. Wording is "real" when Messages or Gmail gave the sent words, "as opened" when only his
+    own Sent answer confirmed it, so the words are what was in the box at the click."""
+    real = bool(e.get("sent_text")) or e.get("confirmed_by") in ("Messages", "Gmail")
+    sent, draft = e.get("sent_text") or e.get("text") or "", e.get("draft") or ""
+    row = {"sent_at": e.get("sent_at", ""), "kind": e.get("kind", ""), "person_id": e.get("person_id", ""), "pool": e.get("pool", ""),
+           "confirmed_by": e.get("confirmed_by", ""), "wording": "real" if real else "as opened",
+           "draft": draft, "opened": e.get("text") or "", "sent": sent, "rewritten": bool(draft and sent and norm(draft) != norm(sent))}
+    folder.mkdir(parents=True, exist_ok=True)
+    with open(folder / "pairs.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    if row["rewritten"]:
+        with open(folder / "style-examples.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps({k: row[k] for k in ("sent_at", "kind", "pool", "wording", "draft", "sent")}, ensure_ascii=False) + "\n")
+    return row
 
 
 def pending(log: list, now_ts: float) -> list[dict]:

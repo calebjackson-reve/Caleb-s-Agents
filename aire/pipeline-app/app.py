@@ -899,7 +899,7 @@ class State:
         return {"ok": True, "result": entry, "touched": touched, "caps": {**self.sent_today(), "texts_cap": self.max_texts, "emails_cap": self.max_emails}}
 
     # ---- hand-off: Caleb sends it himself in Messages or Gmail, Pipeline finds out (handoff.py)
-    def opened(self, kind: str, person_id: str, to: str, body: str, subject: str = "", display: str = "") -> dict:
+    def opened(self, kind: str, person_id: str, to: str, body: str, subject: str = "", display: str = "", draft: str = "", pool: str = "") -> dict:
         """The Text or Email button opened Messages or Gmail. Logged as opened. Nothing is sent from here."""
         if kind not in ("text", "email"):
             raise CRMError("kind must be text or email")
@@ -908,7 +908,7 @@ class State:
             raise CRMError("not a valid " + ("US number" if kind == "text" else "email address"))
         with self.lock:
             log = self.send_log()
-            entry, made = handoff.open_entry(log, now().isoformat(timespec="seconds"), kind, person_id, display, to, body, subject.strip())
+            entry, made = handoff.open_entry(log, now().isoformat(timespec="seconds"), kind, person_id, display, to, body, subject.strip(), draft, pool)
             if made:
                 write_json(self.send_log_path, log)
         return {"ok": True, "result": entry, "new": made}
@@ -940,16 +940,31 @@ class State:
         self.handoff_state.update({k: r[k] for k in ("messages_ok", "gmail_ok") if r[k] is not None})
         if r["changed"]:
             self._save_handoff(log)
+            for e in log:
+                if e.get("id") in r["ids"]:
+                    handoff.record_pair(self.send_log_path.parent / "handoff", e)
         return r
 
-    def handoff_answer(self, entry_id: str, sent: bool) -> dict:
-        """Caleb's answer to "Did that send?": Sent marks it sent by him, Not sent takes the line out."""
+    def handoff_answer(self, entry_id: str, sent: bool, db: Path | None = None) -> dict:
+        """Caleb's answer to "Did that send?": Sent marks it sent by him, Not sent takes the line out. On Sent, a
+        text's real words are read from Messages history when they are there (he may have rewritten all of it)."""
+        if db is None and not self.demo and platform.system() == "Darwin":
+            db = CHAT_DB
         with self.lock:
             log = self.send_log()
             e = handoff.answer(log, entry_id, bool(sent), now().isoformat(timespec="seconds"))
             if not e:
                 raise CRMError("that message is not waiting on an answer")
+            if sent and e.get("kind") == "text" and db is not None:
+                try:
+                    hit = handoff.find_sent_text(e["to"], datetime.fromisoformat(e["at"]).timestamp(), "", db, {x.get("msg_id") for x in log if x.get("msg_id")})
+                except handoff.Unreadable:
+                    hit = None
+                if hit:
+                    e.update(sent_at=hit["sent_at"], service=hit["service"], msg_id=hit["msg_id"], sent_text=hit["sent_text"])
             write_json(self.send_log_path, log)
+        if sent:
+            handoff.record_pair(self.send_log_path.parent / "handoff", e)
         return {"ok": True, "result": e, "sent": bool(sent)}
 
     def handoff_loop(self, sleep=time.sleep) -> None:
@@ -1294,7 +1309,7 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.dnc(body.get("person_id", ""), body.get("reason", ""))
             elif u.path == "/api/opened":
                 out = s.opened(body.get("kind", ""), body.get("person_id", ""), body.get("to", ""), body.get("body", ""),
-                               body.get("subject", ""), body.get("display", ""))
+                               body.get("subject", ""), body.get("display", ""), body.get("draft", ""), body.get("pool", ""))
             elif u.path == "/api/opened/answer":
                 out = s.handoff_answer(body.get("id", ""), body.get("sent") is True)
             elif u.path == "/api/send":

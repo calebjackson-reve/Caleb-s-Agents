@@ -672,7 +672,7 @@ check(run(`(() => { const r = { what: 'Act of sale' }; return 1; })()`) === 1 &&
   run('CC.priv = true'); check(!/Taylor|Sample/.test(run(`askSentHTML(S.data.handoff.pending[0])`)) && !/Hey Taylor|Hi Morgan|2255550142|morgan\.demo/.test(render('sent', true)), 'with privacy on the bar and Sent today hide the name, number and message'); run('CC.priv = false');
   check(/can't read Messages history/.test(render('sources', false)), 'Sources says in one line when Messages history cannot be read');
   check(/SENT FROM PIPELINE/.test(run(`logLines('247')`)) && /opened, waiting for your send/.test(run(`logLines('247')`)) && /confirmed by Gmail/.test(run(`logLines('312')`)) && run(`logLines('999')`) === '', "the compose sheet lists that person's sends");
-  check(run(`TEXT_STATES.opened[1]`) === 'Opened' && /api\('\/api\/opened', \{ kind: v\.kind/.test(appjs) && /logOpened\(v\);/.test(appjs), 'Open in Messages and Open in Gmail log the click');
+  check(run(`TEXT_STATES.opened[1]`) === 'Opened' && /api\('\/api\/opened', \{ kind: v\.kind/.test(appjs) && /logOpened\(v\);/.test(appjs) && /draft: c\.body \|\| '', pool: c\.pool \|\| ''/.test(appjs), 'Open in Messages and Open in Gmail log the click, with the draft Pipeline wrote');
   check(/#sent-ask \{[^}]*background: var\(--cc-ink\)[^}]*border: 1px solid var\(--cc-coral\)/.test(ui) && /#sent-ask small \{ color: var\(--cc-tan\)/.test(ui), 'the bar is black with coral, tan only on the small time');
   ctx.__keep = JSON.parse(keep); run('S.data.sent_today = __keep[0]; S.data.handoff = __keep[1]; S.data.sent_log = __keep[2]'); }
 
