@@ -565,5 +565,17 @@ check(run('CC.dated(0, 4)') === '0' && run('CC.undatedLine(4)').includes('4 writ
 // Round 4 item 3: a page left open past an offer's deadline counts it as past, by this device's clock.
 check(run(`CC.offerExpired({ expired: false, at: '2000-01-01T12:00:00-06:00' })`) === true && run(`CC.offerExpired({ expired: false, at: '2999-01-01T12:00:00-06:00' })`) === false, 'an offer is past its deadline by the clock now, not the last read');
 
+// Round 4 items 7 to 10.
+check(run('statusWords(2, 1)') === '3 sources: 2 failed or out of date, 1 late or never read' && run('statusWords(1, 0)') === '1 source failed or out of date' && run('statusWords(0, 0)') === '', 'the chip counts the same list as the bell');
+check(!/CC\.failing\(\)\.length \+/.test(appjs), 'the Sources nav count is the attention list, not its own sum');
+check(run('CC.ago(18720)') === '13 days ago' && run('CC.ago(60)') === '1 hour ago' && run('CC.ago(300)') === '5 hours ago' && run('CC.ago(18)') === '18 min ago', 'ages read in minutes, then hours, then days');
+check(run('CC.booked(0.2, 15)').startsWith('15<small> min') && run('CC.booked(1.5, 90)').startsWith('1.5<small> h'), 'booked time under an hour shows minutes');
+{ const p0 = run('CC.priv'); run('CC.priv = true');
+  check(run(`CC.note('Ask about her divorce timeline', ['Pat'])`).includes('Note hidden') && !run(`CC.note('Ask about her divorce timeline')`).includes('divorce'), 'with contacts hidden, a next-step note hides whole');
+  const pages = ['touches', 'tasks', 'dash'].map(k => render(k, true).replace(/<[^>]*>/g, ' ')).join(' ');  // what shows on screen
+  const notes = ((state.feed || {}).touches_due || []).map(r => r.next_action).filter(t => t && t.length > 12 && !/within the hour/i.test(t));
+  check(notes.every(t => !pages.includes(t)), 'no next-step note text shows on Touches due, Tasks or the Dashboard with contacts hidden', notes.filter(t => pages.includes(t)).join(' | '));
+  run(`CC.priv = ${p0}`); }
+
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

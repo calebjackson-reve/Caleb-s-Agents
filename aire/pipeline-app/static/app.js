@@ -99,6 +99,13 @@ function problems() { return (S.data && S.data.problems) || []; }
 function statusLevel() { const p = problems(); return p.some(x => x.level === 'stop') ? 'stop' : p.length ? 'warn' : 'ok'; }
 
 // ---------------------------------------------------------------- render
+// The chip, the bell and the Sources count all count the one attention list, so they always say the same number.
+function statusWords(red, amb) {
+  const all = red + amb, s = all === 1 ? 'source' : 'sources';
+  if (!all) return '';
+  if (red && amb) return `${all} ${s}: ${red} failed or out of date, ${amb} late or never read`;
+  return red ? `${all} ${s} failed or out of date` : `${all} ${s} late or never read`;
+}
 function render() {
   if (!S.data) return;
   const f = feed(), c = f.counts || {}, d = S.data;
@@ -108,8 +115,7 @@ function render() {
   // late or never read. The bell counts the same list.
   const att = window.CC && CC.data && CC.attention ? CC.attention() : [], red = att.filter(x => x.level === 'red'), amb = att.filter(x => x.level === 'amber');
   const chip = $('#status-chip'); chip.className = 'status-chip ' + (red.length || statusLevel() === 'stop' ? 'stop' : amb.length ? 'warn' : 'ok');
-  $('#status-word').textContent = !d.feed_ok ? 'CRM feed did not load' : red.length ? `${red.length} source${red.length > 1 ? 's' : ''} failed or out of date`
-    : amb.length ? `${amb.length} source${amb.length > 1 ? 's' : ''} late or not read yet` : window.CC && CC.data ? 'Every source current' : 'Reading';
+  $('#status-word').textContent = !d.feed_ok ? 'CRM feed did not load' : statusWords(red.length, amb.length) || (window.CC && CC.data ? 'Every source current' : 'Reading');
   chip.title = att.map(x => x.text).join('\n'); chip.onclick = () => go('sources');
   S.systemWord = $('#status-word').textContent; S.systemLevel = chip.className.replace('status-chip ', '');
   const bc = $('#bell-count'); bc.hidden = !att.length; bc.textContent = att.length;
@@ -127,7 +133,7 @@ function render() {
   const cmd = d.command || {};
   const age = d.feed_age_minutes;
   $('#foot-chips').innerHTML = [
-    chipHTML('◔', 'Feed', d.demo ? 'demo · as of ' + (f.as_of || '') : age == null ? 'none yet' : age < 60 ? `${age} min ago` : `${Math.floor(age / 60)}h ${age % 60}m ago`, age > 60 ? 'warn' : ''),
+    chipHTML('◔', 'Feed', d.demo ? 'demo · as of ' + (f.as_of || '') : age == null ? 'none yet' : window.CC && CC.ago ? CC.ago(age) : age + ' min ago', age > 60 ? 'warn' : ''),
     chipHTML('⌘', 'Command', cmd.state ? cmd.state : 'no status', cmd.state === 'ok' ? '' : cmd.state ? 'warn' : ''),
     chipHTML('◉', 'Signals', f.signals && f.signals.file ? `${(f.signals.people || 0).toLocaleString()} with texts · ${owesReply().length} owe a reply` : 'sheet only', f.signals && f.signals.file ? '' : 'warn'),
   ].join('');
@@ -176,7 +182,7 @@ function renderNav(c) {
   const cd = window.CC && CC.data, np = cd ? cd.commission_mail.filter(r => r.status === 'Not processed' || r.status === 'No closed deal').length : 0;
   const td = feed().touches_due || [];
   const cnt = { commission: [np, np > 0], deadlines: [cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0], ccleads: [cd ? (cd.lead_counts || {}).d14 ?? cd.leads.length : 0, false],
-    sources: [window.CC && CC.failing ? CC.failing().length + ((cd && cd.problems) || []).filter(p => p.state === 'stale').length : 0, true],
+    sources: [window.CC && CC.data && CC.attention ? CC.attention().length : 0, true],
     touches: [td.length, td.some(r => r.owes_reply)], tasks: [(feed().tasks || []).length, c.tasks_overdue > 0], deals: [cd ? cd.deals.filter(r => !['closed', 'out'].includes(r.stage)).length : 0, false],
     queue: [dr.length, false], sent: [(S.data.sent_today || []).length, false] };
   const view = { cc: 'dash', leads: 'ccleads', market: 'monitor', dealmap: 'deals' }[S.view] || S.view;

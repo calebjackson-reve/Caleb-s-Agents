@@ -18,13 +18,13 @@
       acts: `<button type="button" class="cc-mini" onclick="go('deadlines')">Open Deadlines</button>` }));
     const tasks = (f.tasks || []).filter(t => t.status !== 'done');
     tasks.filter(t => t.overdue).slice(0, 4).concat(tasks.filter(t => !t.overdue && t.due === today).slice(0, 4)).forEach(t => out.push({
-      k: 'task', kind: t.overdue ? 'k-closing' : 'k-client', label: t.overdue ? 'Overdue task' : 'Task due today', title: C.scrub(t.task, [t.display]), sub: [t.display ? C.who(t.display) : '', esc(t.due || '')].filter(Boolean).join(' · '),
+      k: 'task', kind: t.overdue ? 'k-closing' : 'k-client', label: t.overdue ? 'Overdue task' : 'Task due today', title: C.note(t.task, [t.display], 'Task hidden'), sub: [t.display ? C.who(t.display) : '', esc(t.due || '')].filter(Boolean).join(' · '),
       acts: `<button type="button" class="cc-mini" onclick="doneTask(${q(t.task_id)}, ${q(t.person_id)}, ${JSON.stringify(String(t.task || '')).replace(/"/g, '&quot;')})">✓ Done</button>` }));
     d.leads.filter(l => (l.received || '').slice(0, 10) === today).forEach(l => out.push({
       k: 'lead', kind: 'k-showing', label: 'New lead today', title: C.who(l.name || 'Website lead'), sub: esc([(l.due || {}).label, l.source].filter(Boolean).join(' · ')),
       acts: `<button type="button" class="cc-mini" onclick="go('ccleads')">Open Leads</button>` }));
     (f.touches_due || []).filter(r => !r.owes_reply && r.band === 'hot').slice(0, 3).forEach(r => out.push({
-      k: 'hot', kind: 'k-deadline', label: 'Hot, due a touch', title: C.who(r.display), sub: r.next_action ? C.scrub(r.next_action, [r.display]) : esc(r.days_quiet != null ? r.days_quiet + ' days since the last touch' : ''),
+      k: 'hot', kind: 'k-deadline', label: 'Hot, due a touch', title: C.who(r.display), sub: r.next_action ? C.note(r.next_action, [r.display]) : esc(r.days_quiet != null ? r.days_quiet + ' days since the last touch' : ''),
       acts: `${typeof textBtn === 'function' ? textBtn(r.person_id, r) : ''}<button type="button" class="cc-mini" onclick="touched(${q(r.person_id)})">✓ Touched</button>` }));
     ((d.life || {}).upkeep || []).filter(u => u.days != null && u.days < 0).forEach((u, i) => out.push({
       k: 'upkeep', kind: 'k-listing', label: 'Home upkeep overdue', title: esc(u.name), sub: Math.abs(u.days) + ' days overdue',

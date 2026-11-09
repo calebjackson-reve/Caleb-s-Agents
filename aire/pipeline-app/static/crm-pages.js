@@ -72,6 +72,8 @@
     if (crmNameSet().has(l)) return !VERBS.has(l);          // a client's name: hidden, unless it is a task verb like Call
     return !KEEP.has(l) && !lowerWords().has(l);
   };
+  // Next-step notes and task words can carry personal context: with contacts hidden, the whole note hides (round 4).
+  C.note = (t, names, label) => (C.priv ? `<span class="cc-hid">${label || 'Note hidden'}</span>` : C.scrub(t, names));
   C.scrub = function (t, names) {
     let s = String(t || '');
     if (!C.priv) return esc(s);
@@ -103,7 +105,7 @@
       const failed = !d.feed_ok || (run && run.state === 'failed');
       return { source: 'CRM feed, AIRE CRM sheet', at: f.generated_at, age_min: a,
         state: failed ? 'failed' : a == null ? 'missing' : a > 60 ? 'stale' : a > 30 ? 'late' : 'ok',  // no build time: never green
-        error: !d.feed_ok ? 'the CRM feed did not load' : failed ? `the rebuild at ${run.at_text} failed (${run.detail}), showing the feed from ${a} min ago` : null };
+        error: !d.feed_ok ? 'the CRM feed did not load' : failed ? `the rebuild at ${run.at_text} failed (${run.detail}), showing the feed from ${C.ago(a)}` : null };
     }
     if (k === 'command') { const c = d.command || {}; return { source: 'KW Command reader', at: c.at, age_min: age(c.at),
       state: !c.state ? 'missing' : c.state === 'ok' ? 'ok' : 'failed', error: c.state && c.state !== 'ok' ? c.state + (c.detail ? ', ' + c.detail : '') : null }; }
@@ -177,7 +179,7 @@
     return `<li class="cc-row ${r.owes_reply ? 'is-hot' : ''}"><span class="cc-av" aria-hidden="true">${C.ini(r.display)}</span>
       <div class="cc-row-main"><h3>${C.who(r.display || 'No name')}</h3>
         <div class="cc-pills">${r.band ? `<span class="cc-pill ${band(r.band)}">${esc(r.band)}</span>` : ''}${r.owes_reply ? '<span class="cc-pill k-closing">Owes a reply</span>' : ''}${r.stage ? `<span class="cc-pill k-other">${esc(r.stage)}</span>` : ''}${textStatus(r.person_id)}</div>
-        <p class="cc-row-why">${C.scrub(r.next_action || (r.owes_reply ? 'They texted last. Answer first.' : 'Time for a touch'), [r.display])}</p>
+        <p class="cc-row-why">${r.next_action ? C.note(r.next_action, [r.display]) : r.owes_reply ? 'They texted last. Answer first.' : 'Time for a touch'}</p>
         <p class="cc-note">${last ? `Last text: ${C.priv ? C.msg('') : '“' + esc(C.cleanMsg(last)) + '”'}` : quietTxt(r)}${r.phone ? ' · ' + C.ph(r.phone) : r.email ? ' · ' + C.em(r.email) : ''}</p></div>
       <div class="cc-acts">${textBtn(r.person_id, r)}<button type="button" class="cc-primary" onclick="touched('${esc(r.person_id)}')">✓ Touched</button><button type="button" onclick="openTask('${esc(r.person_id)}')">＋ Task</button><button type="button" onclick="openNote('${esc(r.person_id)}')">Note</button><button type="button" class="cc-danger" onclick="openDNC('${esc(r.person_id)}')" aria-label="Do Not Contact">Do Not Contact</button></div></li>`;
   }
@@ -191,7 +193,7 @@
     let rows = S.filter === 'over' ? all.filter(t => t.overdue) : S.filter === 'today' ? all.filter(t => t.due === today) : all;
     rows = rows.slice().sort((a, b) => (b.overdue - a.overdue) || (a.due || '9').localeCompare(b.due || '9'));
     const body = rows.length ? `<ul class="cc-rows cc-tasks">${rows.map(t => `<li class="cc-row ${t.overdue ? 'is-hot' : ''}"><span class="cc-av" aria-hidden="true">${t.overdue ? '!' : '☑'}</span>
-      <div class="cc-row-main"><h3>${C.scrub(t.task, [t.display])}</h3>
+      <div class="cc-row-main"><h3>${C.note(t.task, [t.display], 'Task hidden')}</h3>
         <div class="cc-pills"><span class="cc-pill ${t.overdue ? 'k-closing' : t.due === today ? 'k-listing' : 'k-other'}">${t.overdue ? 'Overdue · ' : ''}${esc(dayName(t.due) || 'No date')}</span>${t.task_id ? '' : '<span class="cc-pill k-other">From a next action</span>'}</div>
         <p class="cc-note">${t.display ? C.who(t.display) + ' · ' : ''}${t.due ? 'Due ' + esc(C.day(t.due)) : 'No due date'}${t.source ? ' · ' + esc(t.source) : ''}</p></div>
       <div class="cc-acts"><button type="button" class="cc-primary" onclick="doneTask('${esc(t.task_id)}','${esc(t.person_id)}',${JSON.stringify(String(t.task || '')).replace(/"/g, '&quot;')})">✓ Done</button>${t.person_id ? `<button type="button" onclick="openCompose('${esc(t.person_id)}')">Message</button>` : ''}</div></li>`).join('')}</ul>`
@@ -282,7 +284,7 @@
         <div class="cc-pills">${p.band ? `<span class="cc-pill ${band(p.band)}">${esc(p.band)}</span>` : ''}${p.stage ? `<span class="cc-pill k-other">${esc(p.stage)}</span>` : ''}</div>
         <p class="cc-note">${p.city ? esc(p.city) + ' · ' : ''}${quietTxt(p)}</p></div>
         <div class="cc-acts">${textBtn(p.person_id, p)}<button type="button" class="cc-primary" onclick="touched('${esc(p.person_id)}')">✓ Touched</button><button type="button" onclick="openTask('${esc(p.person_id)}')">＋ Task</button></div></li>`, 'Showing 15. Add more of the name or street to narrow it.')
-      + group('Tasks', tk, t => `<li class="cc-row"><span class="cc-av" aria-hidden="true">☑</span><div class="cc-row-main"><h3>${C.scrub(t.task, [t.display])}</h3><p class="cc-note">${t.display ? C.who(t.display) + ' · ' : ''}${t.due ? 'Due ' + esc(C.day(t.due)) : 'No due date'}</p></div></li>`, 'Showing 15. Open Tasks for all of them.')
+      + group('Tasks', tk, t => `<li class="cc-row"><span class="cc-av" aria-hidden="true">☑</span><div class="cc-row-main"><h3>${C.note(t.task, [t.display], 'Task hidden')}</h3><p class="cc-note">${t.display ? C.who(t.display) + ' · ' : ''}${t.due ? 'Due ' + esc(C.day(t.due)) : 'No due date'}</p></div></li>`, 'Showing 15. Open Tasks for all of them.')
       + group('Deals', dl, r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">⌂</span><div class="cc-row-main"><h3>${esc(r.deal)}</h3><p class="cc-note">${esc(r.status)} · ${C.m(r.price)}${r.act ? ' · Act of sale ' + esc(C.day(r.act)) : ''}</p></div><div class="cc-acts"><button type="button" onclick="go('deals')">Open Deals</button></div></li>`, '')
       + group('Leads', ld, r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">✚</span><div class="cc-row-main"><h3>${C.who(r.name || 'Website lead')}</h3><p class="cc-note">${esc(r.source || '')} · ${esc((r.due || {}).label || '')}</p></div><div class="cc-acts"><button type="button" onclick="go('ccleads')">Open Leads</button></div></li>`, '')
       + group('Drafts', dr, d => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${d.kind === 'text' ? '▭' : '✉'}</span><div class="cc-row-main"><h3>${C.who(d.name)}</h3><p class="cc-note">${d.reply ? 'Reply to write' : d.kind === 'text' ? 'Text draft' : 'Email draft'}</p></div><div class="cc-acts"><button type="button" class="cc-primary" onclick="openCompose('${esc(d.person_id)}', ${all.indexOf(d)})">Open</button></div></li>`, 'Showing 15. Open Drafts for all of them.');

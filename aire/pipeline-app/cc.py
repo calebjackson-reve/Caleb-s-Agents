@@ -367,7 +367,7 @@ def week_load(evs: list[dict], today: date) -> list[dict]:
     for n in range(7):
         k = (today + timedelta(days=n)).isoformat()
         ev = [r for r in busy if r["day"] == k]
-        out.append({"day": k, "hours": round(sum(_hours(r) for r in ev), 1), "events": len(ev)})
+        out.append({"day": k, "hours": round(sum(_hours(r) for r in ev), 1), "minutes": round(sum(_hours(r) for r in ev) * 60), "events": len(ev)})
     return out
 
 

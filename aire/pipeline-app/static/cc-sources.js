@@ -24,7 +24,7 @@
     Object.values(((d.market || {}).parts) || {}).forEach(p => { if (p.state === 'failed' && p.note && !out.some(x => x.text.includes(p.note))) add('red', 'Market: ' + p.note); });
     const crm = C.local('crm'), cmd = C.local('command');
     if (crm.state === 'failed') add('red', 'CRM feed: ' + crm.error);
-    else if (crm.state === 'stale' || crm.state === 'late') add(crm.state === 'stale' ? 'red' : 'amber', `CRM feed: rebuilt ${crm.age_min} min ago, it rebuilds every 15 minutes`);
+    else if (crm.state === 'stale' || crm.state === 'late') add(crm.state === 'stale' ? 'red' : 'amber', `CRM feed: rebuilt ${C.ago(crm.age_min)}, it rebuilds every 15 minutes`);
     else if (crm.state === 'missing') add('amber', 'CRM feed: no build time on file');
     const pm = C.local('permits');
     if (pm.state === 'stale' || pm.state === 'late') add(pm.state === 'stale' ? 'red' : 'amber', `Listings and permits: newest pull ${when(pm.at).replace(/,? \d+:\d+ [AP]M$/, '')}, ${Math.round(pm.age_min / 1440)} days old`);
@@ -48,7 +48,7 @@
     const lines = (sy.error ? [`Sync could not sign in: ${esc(sy.error_text || 'Google sign-in did not work')}`] : []).concat(bad.map(p => `${esc(NAMES[p.name] || p.name)}: ${p.state === 'failed' ? 'read failed, ' + esc(p.error_text || 'the read did not finish') + ', showing the last good read' : p.state === 'late' ? `late, last read ${esc(when(p.at))}, it reads every ${p.pace_min} minutes` : 'out of date, last read ' + esc(when(p.at))}`));
     const crm = C.local('crm');
     if (crm.state === 'failed') lines.unshift('CRM feed: ' + esc(crm.error));
-    if (['late', 'stale'].includes(crm.state)) lines.unshift(`CRM feed: ${crm.state === 'late' ? 'late' : 'out of date'}, rebuilt ${crm.age_min} min ago, it rebuilds every 15 minutes`);
+    if (['late', 'stale'].includes(crm.state)) lines.unshift(`CRM feed: ${crm.state === 'late' ? 'late' : 'out of date'}, rebuilt ${C.ago(crm.age_min)}, it rebuilds every 15 minutes`);
     const red = bad.some(p => p.state !== 'late') || sy.error || ['failed', 'stale'].includes(crm.state);
     return `<div class="cc-banner ${red ? 'is-red' : 'is-amber'}" role="alert"><b>${bad.some(p => p.state === 'failed') || sy.error || crm.state === 'failed' ? 'Some numbers are not current' : red ? 'Some numbers are out of date' : 'Some numbers are late'}</b><ul>${lines.map(l => `<li>${l}</li>`).join('')}</ul><button type="button" onclick="go('sources')">Open Sources</button></div>`;
   };
@@ -74,12 +74,12 @@
       const parts = k === 'market' ? Object.values(((d.market || {}).parts) || {}).filter(p => p.state === 'failed') : [];
       const r0 = f[k] || { state: 'missing' }, r = parts.length && r0.state === 'ok' ? Object.assign({}, r0, { state: 'failed', error: 'part', error_text: 'part of it did not load: ' + parts.map(p => p.note).join('. ') }) : r0, res = (sy.results || {})[k];
       return `<tr class="is-${r.state}"><th scope="row">${esc(NAMES[k])}<small>${esc(r.source || '')}</small></th><td><span class="cc-state s-${r.state}">${{ ok: 'Current', late: 'Late', stale: 'Out of date', failed: 'Failed', missing: 'Not synced yet' }[r.state]}</span></td>
-        <td>${esc(when(r.at))}${r.age_min != null ? `<small>${r.age_min} min ago</small>` : ''}</td><td>${r.error ? esc(r.error_text || 'the read did not finish') : res ? (res.ok ? `${res.rows ?? res.read ?? res.pushed ?? ''} rows` : esc(res.error_text || 'the read did not finish')) : ''}</td></tr>`;
+        <td>${esc(when(r.at))}${r.age_min != null ? `<small>${C.ago(r.age_min)}</small>` : ''}</td><td>${r.error ? esc(r.error_text || 'the read did not finish') : res ? (res.ok ? `${res.rows ?? res.read ?? res.pushed ?? ''} rows` : esc(res.error_text || 'the read did not finish')) : ''}</td></tr>`;
     }).join('');
     const own = ['crm', 'command', 'drafts', 'permits'].map(k => {
       const r = C.local(k);
       return `<tr class="is-${r.state}"><th scope="row">${esc(r.source)}</th><td><span class="cc-state s-${r.state}">${{ ok: 'Current', late: 'Late', stale: 'Out of date', failed: 'Failed', missing: 'Not read yet' }[r.state]}</span></td>
-        <td>${esc(when(r.at))}${r.age_min != null ? `<small>${r.age_min} min ago</small>` : ''}</td><td>${r.error ? esc(r.error) : k === 'crm' ? 'People, tasks, touches, drafts' : k === 'command' ? 'New leads in KW Command' : k === 'permits' ? 'Listings and permits, the map\'s market signals' : 'Texts and emails waiting'}</td></tr>`;
+        <td>${esc(when(r.at))}${r.age_min != null ? `<small>${C.ago(r.age_min)}</small>` : ''}</td><td>${r.error ? esc(r.error) : k === 'crm' ? 'People, tasks, touches, drafts' : k === 'command' ? 'New leads in KW Command' : k === 'permits' ? 'Listings and permits, the map\'s market signals' : 'Texts and emails waiting'}</td></tr>`;
     }).join('');
     const sd = S.data || {};
     return `<div class="cc-page">${C.banner()}${head('Sources', 'Every read that feeds these pages, when it last worked, and what went wrong')}

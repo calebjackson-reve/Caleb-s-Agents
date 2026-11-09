@@ -23,7 +23,13 @@
   const day = k => (k ? fmtDay.format(new Date(k + 'T12:00:00Z')) : '');
   const time = s => (s && s.length > 10 ? fmtTime.format(new Date(s)) : 'All day');
   const n = v => (v == null ? '—' : Number(v).toLocaleString());
-  const ago = min => (min == null ? '' : min < 1 ? 'just now' : min < 60 ? min + ' min ago' : min < 1440 ? Math.floor(min / 60) + 'h ago' : Math.floor(min / 1440) + 'd ago');
+  // Minutes, then hours, then days: "18 min ago", "5 hours ago", "13 days ago". Never "18720 min ago".
+  const ago = min => { if (min == null) return ''; const u = (k, w) => `${k} ${w}${k === 1 ? '' : 's'} ago`;
+    return min < 1 ? 'just now' : min < 60 ? Math.round(min) + ' min ago' : min < 1440 ? u(Math.floor(min / 60), 'hour') : u(Math.floor(min / 1440), 'day'); };
+  C.ago = ago;
+  // Booked time: minutes under an hour ("15 min"), hours with one decimal after ("1.5 h").
+  C.booked = (h, mins) => { const mi = mins ?? (h == null ? null : Math.round(h * 60));
+    return mi == null ? '—' : mi < 60 ? `${mi}<small> min</small>` : `${n(Math.round(mi / 6) / 10)}<small> h</small>`; };
 
   function src(names, short) {
     const f = (C.data && C.data.fresh) || {};
@@ -110,7 +116,7 @@
         ${S.data && S.data.feed_ok ? tile('Tasks open', n(tk.length), over ? `<em>${over} overdue</em>` : 'None overdue', 'crm', 'tasks') : tile('Tasks open', '—', "<em>Tasks didn't load</em>", 'crm', 'sources')}
         ${tile('Drafts ready', n(dr), `Written texts and emails to read and send${owes ? ` · ${owes} replies to write are not counted` : ''}`, 'drafts', 'queue')}
         ${tile('Appointments, 7 days', n(sc.appts7.value), sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Showings, listing appts, clients', 'calendar', 'calendar')}
-        ${tile('Booked today', n(wk.hours) + '<small>h</small>', `${n(wk.events)} timed event${wk.events === 1 ? '' : 's'}. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}
+        ${tile('Booked today', C.booked(wk.hours, wk.minutes), `${n(wk.events)} timed event${wk.events === 1 ? '' : 's'}. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}
         ${tile('Offers out', n(offers.length), offers.length ? `${offers.filter(r => C.offerExpired(r.offer)).length} past their deadline` : 'No open offers on the Deals sheet', 'deals', 'deals')}
         ${tile('Commission to check', n(np), np ? 'Not processed at KW, or paid with no closed deal on the sheet' : 'Nothing waiting at KW', ['commission_mail', 'deals'], 'commission')}
       </div>
