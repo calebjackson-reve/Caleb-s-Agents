@@ -542,6 +542,7 @@ check(/const BUILD = '__BUILD__'/.test(swjs) && /'pipeline-shell-[^']*' \+ BUILD
 check(/setInterval\(check, 5 \* 60 \* 1000\)/.test(indexHtml) && /visibilitychange/.test(indexHtml), 'an open page asks for a new build every 5 minutes and on return');
 check(/Pipeline updated\. <button type="button">Reload<\/button>/.test(indexHtml), 'a new build shows a small Updated note with Reload');
 check(/if \(u\.pathname\.startsWith\('\/api\/'\)\) return;/.test(swjs) && !/caches\.match\(e\.request\)\s*\|\|\s*fetch/.test(swjs), 'API reads go to the Mac first, never cache first');
+check(run('CC.dated(0, 4)').includes('4 without a date') && run('CC.dated(2, 4)') === '2' && run('CC.dated(0, 0)') === '0', 'a deadline tile says how many have no date instead of 0');
 
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

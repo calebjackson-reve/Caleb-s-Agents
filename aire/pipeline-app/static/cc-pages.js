@@ -48,7 +48,7 @@
     all.forEach(r => { (by[r.deal] = by[r.deal] || []).push(r); });  // r.deal is the sheet's name when the street matches
     return `<div class="cc-page">${head('Deadlines', 'Every contract date in the next 30 days: the Deals sheet\'s dates plus your coordinator\'s calendar, one line per deal per day')}
       <div class="cc-tiles">
-        ${tile('Next 3 days', n(d.deadlines.d3.length), und.length ? `Dated ones only · ${und.length} more written without a date` : 'Due soon', ['deals', 'calendar'])}
+        ${tile('Next 3 days', C.dated(d.deadlines.d3.length, und.length), und.length ? `Dated ones only · ${und.length} more written without a date` : 'Due soon', ['deals', 'calendar'])}
         ${tile('Next 30 days', n(all.length), `Dated deadlines on ${n(d.deadlines.deals)} deal${d.deadlines.deals === 1 ? '' : 's'}`, ['deals', 'calendar'])}
         ${tile('Without a date', n(und.length), und.length ? 'Written as words on the Deals sheet, so no countdown. Check each one below' : 'Every contract step has a date or is done', 'deals')}
         ${tile('Act of sale, 30 days', n(d.closings.length), 'Same list as Paydays', ['calendar', 'deals'])}
