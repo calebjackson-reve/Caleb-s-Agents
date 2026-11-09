@@ -577,5 +577,8 @@ check(run('CC.booked(0.2, 15)').startsWith('15<small> min') && run('CC.booked(1.
   check(notes.every(t => !pages.includes(t)), 'no next-step note text shows on Touches due, Tasks or the Dashboard with contacts hidden', notes.filter(t => pages.includes(t)).join(' | '));
   run(`CC.priv = ${p0}`); }
 
+{ const wp = render('health', false);
+  check(/of 5<\/small>/.test(wp) && /Goal 5 a week/.test(wp) && /Mon 6 AM, Tue 6 AM, Wed 4 PM, Thu 6 AM, Fri 6 AM, 5 a week/.test(wp) && !/4 to 5/.test(wp), 'Workouts counts his 5-day plan and the goal agrees'); }
+
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

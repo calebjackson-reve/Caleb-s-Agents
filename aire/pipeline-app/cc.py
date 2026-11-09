@@ -835,7 +835,7 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         "news": news_rows(_rows(raw["news"])),
         "market": market((raw.get("market") or {}).get("rows") or {}),
         "life": life((raw.get("life") or {}).get("rows") or {}, _rows(raw["outbox"]), today),
-        "workouts": workouts((raw.get("workouts") or {}).get("rows") or {}, _rows(raw["outbox"]), today),
+        "workouts": workouts((raw.get("workouts") or {}).get("rows") or {}, _rows(raw["outbox"]), today, cfg.get("workout_plan")),
         "health": {"source": None, "note": "Health is skipped: no source chosen (Caleb, 2026-11-05)."},
         "sync": ({**raw["sync-status"], "error_text": plain_error(raw["sync-status"].get("error")),
                   "results": {k: ({**v, "error_text": plain_error(v.get("error"))} if isinstance(v, dict) and v.get("error") else v)
@@ -1058,9 +1058,13 @@ def life(rows: dict, outbox: list, today: date) -> dict:
 
 
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+# Caleb's plan (2026-11-09): weights Mon, Tue, Thu and Fri at 6 AM, and Wed at 4 PM. Five a week. out/cc/config.json
+# "workout_plan" ({"Mon": "6 AM", ...}) replaces it. The Workouts tab only adds the exercises for each day.
+WORKOUT_PLAN = {"Mon": "6 AM", "Tue": "6 AM", "Wed": "4 PM", "Thu": "6 AM", "Fri": "6 AM"}
 
 
-def workouts(rows: dict, outbox: list, today: date) -> dict:
+def workouts(rows: dict, outbox: list, today: date, sched: dict | None = None) -> dict:
+    sched = sched or WORKOUT_PLAN
     r = _merge_outbox(rows, outbox, {"Workouts": "plan", "Workout log": "log"})
     plan = {str(p.get("day", ""))[:3].title(): p for p in r["plan"]}
     log = [x for x in r["log"] if _day(x.get("date"))]
@@ -1070,12 +1074,16 @@ def workouts(rows: dict, outbox: list, today: date) -> dict:
         d = monday + timedelta(days=i)
         hits = [x for x in log if _day(x["date"]) == d]
         p = plan.get(dn) or {}
-        week.append({"day": dn, "date": d.isoformat(), "focus": p.get("focus", ""), "exercises": p.get("exercises", ""),
+        on = dn in sched
+        week.append({"day": dn, "date": d.isoformat(), "planned": on, "time": sched.get(dn),
+                     "focus": (p.get("focus") if on and not re.search(r"\brest\b|walk", p.get("focus") or "", re.I) else "") or ("Weights" if on else "Rest"),
+                     "exercises": p.get("exercises", "") if on and not re.search(r"\brest\b|walk", p.get("focus") or "", re.I) else "",
                      "done": bool(hits), "minutes": sum(num(x.get("minutes")) or 0 for x in hits), "is_today": d == today,
                      "pending": any(x.get("pending") for x in hits)})
     last7 = [x for x in log if 0 <= (today - _day(x["date"])).days < 7]
     return {"week": week, "done_7": len({x["date"][:10] for x in last7}), "minutes_7": sum(num(x.get("minutes")) or 0 for x in last7),
-            "today": next((w for w in week if w["is_today"]), None), "has_plan": bool(plan),
+            "today": next((w for w in week if w["is_today"]), None), "has_plan": True, "goal": len(sched),
+            "planned": sum(1 for w in week if w["planned"]), "done_week": sum(1 for w in week if w["done"] and w["planned"]),
             "recent": sorted(log, key=lambda x: str(x.get("date")), reverse=True)[:10]}
 
 

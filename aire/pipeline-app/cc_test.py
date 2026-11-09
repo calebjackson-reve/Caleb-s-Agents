@@ -598,5 +598,18 @@ class JudgeRound4Offers(unittest.TestCase):
         self.assertTrue(cards[0]["offer"]["expired"])
 
 
+class JudgeRound4Workouts(unittest.TestCase):
+    def test_the_plan_is_five_a_week_at_his_times_whatever_the_tab_says(self):
+        tab = [{"day": d, "focus": f, "exercises": "x"} for d, f in (("Mon", "Upper push"), ("Wed", "Walk or rest"), ("Sat", "Optional full body"))]
+        log = [{"date": "2026-11-09", "minutes": "45"}, {"date": "2026-11-08", "minutes": "20"}]  # Sun is not planned
+        W = cc.workouts({"plan": tab, "log": log}, [], date(2026, 11, 9))
+        self.assertEqual((W["planned"], W["goal"], W["done_week"]), (5, 5, 1))
+        wk = {w["day"]: w for w in W["week"]}
+        self.assertEqual((wk["Mon"]["focus"], wk["Mon"]["time"]), ("Upper push", "6 AM"))
+        self.assertEqual((wk["Wed"]["focus"], wk["Wed"]["time"]), ("Weights", "4 PM"))  # the tab's walk or rest is not his plan
+        self.assertEqual((wk["Sat"]["focus"], wk["Sat"]["planned"]), ("Rest", False))
+        self.assertEqual(cc.workouts({"plan": [], "log": []}, [], date(2026, 11, 9), {"Mon": "7 AM"})["planned"], 1)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
