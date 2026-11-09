@@ -565,5 +565,24 @@ class JudgeRound4Dates(unittest.TestCase):
         self.assertTrue(all(r["day"] >= "2026-11-09" for r in soon))  # the past one is on its card, not in the countdown
 
 
+class JudgeRound4History(unittest.TestCase):
+    def test_a_saved_day_that_no_longer_matches_the_sheet_is_flagged_not_growth(self):
+        deals = cc.deal_rows([HEAD, ["1 Demo Ln", "Buyer", "Closed", 1, 1000, "", "", "2026-09-09", "", ""],
+                              ["2 Demo Ln", "Buyer", "Closed", 1, 500.5, "", "", "2026-10-01", "", ""]])
+        t = date(2026, 11, 9)
+        hist = [{"day": "2026-11-01", "gci": 1500.5, "closings": 2, "leads7": 3},   # matches the sheet
+                {"day": "2026-11-05", "gci": 500.5, "closings": 1, "leads7": 4}]    # the sheet has changed since
+        f = cc.flag_history(hist, deals, t)
+        self.assertNotIn("mismatch", f[0])
+        self.assertEqual(f[1]["mismatch"], ["gci", "closings"])
+        self.assertEqual(cc.sheet_as_of(deals, "2026-09-30"), {"gci": 1000, "closings": 1})
+        row = {"day": "2026-11-09", "gci": 1500.5, "closings": 2, "leads7": 1}
+        self.assertEqual(cc.since_saved(f, row, "closings")["since"], "2026-11-01")  # the flagged day is skipped
+        self.assertEqual(cc.since_saved(f, row, "closings")["value"], 0)
+        self.assertEqual(cc.since_saved(f, row, "leads7")["value"], -2)            # leads are not checked against the sheet
+        self.assertEqual(cc.deltas(f, {**row, "day": "2026-11-12"}, "gci")["7"], 0)  # Nov 5 is flagged, so Nov 1 is used
+        self.assertEqual(cc.flag_history(hist, [], t), hist)  # no sheet read, nothing to compare
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

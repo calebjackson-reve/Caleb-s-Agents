@@ -711,17 +711,45 @@ def saved_days(rows: list[dict], today: date) -> list[dict]:
 
 def since_saved(rows: list[dict], row: dict, metric: str) -> dict | None:
     """The change since the oldest saved day, for when no row is 7 days old yet. None with nothing saved."""
-    past = [r for r in saved_days(rows, date.fromisoformat(row["day"])) if r.get(metric) is not None]
+    past = [r for r in saved_days(rows, date.fromisoformat(row["day"])) if r.get(metric) is not None and _ok(r, metric)]
     if not past:
         return None
     return {"since": past[0]["day"], "days": len(past), "value": round(row[metric] - past[0][metric], 2)}
+
+
+def sheet_as_of(deals: list[dict], day: str) -> dict:
+    """GCI and closings as the Deals sheet says they stood on a day: Closed deals with an act of sale that year, on or
+    before that day."""
+    yr = [r for r in deals if stage_of(r["status"]) == "closed" and is_day(r.get("act")) and r["act"][:4] == day[:4] and r["act"] <= day]
+    return {"gci": round(sum(r["commission"] or 0 for r in yr), 2), "closings": len(yr)}
+
+
+def flag_history(rows: list[dict], deals: list[dict], today: date) -> list[dict]:
+    """Saved days whose GCI or closings no longer match the Deals sheet for that day get "mismatch": the metrics that
+    disagree. Those rows are left out of every change and line, so an edit to the sheet never shows as growth.
+    With no Deals sheet rows (never read), nothing is flagged."""
+    if not deals:
+        return rows
+    out = []
+    for r in rows:
+        if not is_day(r.get("day")) or r["day"] >= today.isoformat():
+            out.append(r)
+            continue
+        live = sheet_as_of(deals, r["day"])
+        bad = [k for k in ("gci", "closings") if isinstance(r.get(k), (int, float)) and abs(r[k] - live[k]) > 0.5]
+        out.append({**r, "mismatch": bad, "sheet_now": live} if bad else r)
+    return out
+
+
+def _ok(r: dict, metric: str) -> bool:
+    return isinstance(r.get(metric), (int, float)) and metric not in (r.get("mismatch") or [])
 
 
 def deltas(rows: list[dict], row: dict, metric: str) -> dict:
     out = {}
     for span in (7, 30):
         k = (date.fromisoformat(row["day"]) - timedelta(days=span)).isoformat()
-        past = [r for r in rows if str(r.get("day") or "") <= k and isinstance(r.get(metric), (int, float))]
+        past = [r for r in rows if str(r.get("day") or "") <= k and _ok(r, metric)]
         out[str(span)] = None if not past or row.get(metric) is None else round(row[metric] - past[-1][metric], 2)
     return out
 
@@ -761,7 +789,7 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
     dl = contract_deadlines(deal_deadlines(evs), cards)
     goals = (raw.get("goals") or {}).get("rows") or {}
     sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today)
-    hist = _rows(raw["history"])
+    hist = flag_history(_rows(raw["history"]), deals, today)
     sheet_days = len({r["day"] for r in hist if is_day(r.get("day")) and r["day"] <= today.isoformat()})
     hrow = history_row(sc, today)
     full = add_history(hist, hrow)
@@ -785,6 +813,8 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         # Rows in the sheet's Scorecard history tab, today's included once the sync has saved it: the same number the
         # Sources page shows for that tab.
         "history_saved": sheet_days,
+        "history_mismatch": [{"day": r["day"], "metrics": r["mismatch"], "saved": {k: r[k] for k in r["mismatch"]}, "sheet_now": r["sheet_now"]}
+                             for r in hist if r.get("mismatch")],
         "since": {m: (lambda x: {**x, "days": sheet_days} if x else None)(since_saved(hist, hrow, m)) for m in ("gci", "closings", "leads7", "appts7")},
         "kw_paid": cfg.get("kw_paid"),
         "bank": bank(_rows(raw["bank_mail"])),

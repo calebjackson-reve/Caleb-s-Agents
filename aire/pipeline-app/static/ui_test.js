@@ -555,5 +555,12 @@ check(run('CC.dated(0, 4)') === '0' && run('CC.undatedLine(4)').includes('4 writ
   run('CC.data = __cc;');
 }
 
+{ // Round 4 item 2: a saved day that no longer matches the Deals sheet is flagged, never shown as growth.
+  run(`CC.data = Object.assign({}, __cc, { deltas: { gci: {}, closings: {}, leads7: {}, appts7: {} }, since: {}, history_mismatch: [{ day: '2026-11-05', metrics: ['gci', 'closings'], saved: { gci: 19710, closings: 2 }, sheet_now: { gci: 30377.5, closings: 4 } }] })`);
+  const sc = render('scorecard', false);
+  check(/1 saved day no longer matches the Deals sheet/.test(sc) && !/\+2/.test(sc) && /\$30,377\.50/.test(sc), 'a saved day that no longer matches the sheet is flagged, not counted as growth');
+  run('CC.data = __cc;');
+}
+
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

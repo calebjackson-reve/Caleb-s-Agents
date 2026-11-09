@@ -21,13 +21,16 @@
   const sign = (v, money) => (v > 0 ? '+' : v < 0 ? '−' : '') + (money ? m(Math.abs(v)) : n(Math.abs(v)));
   function delta(metric, money) {
     const d = C.data.deltas[metric] || {}, since = (C.data.since || {})[metric];
-    if (d['7'] == null && d['30'] == null) return since ? `<p class="cc-delta"><span>Since ${C.day(since.since)}: <b>${sign(since.value, money)}</b></span><span>${since.days} saved day${since.days === 1 ? '' : 's'}</span></p>`
-      : '<p class="cc-delta"><span>No saved days yet. Changes show after the first day is saved.</span></p>';
-    return `<p class="cc-delta"><span>7 days: <b>${d['7'] == null ? 'not 7 days yet' : sign(d['7'], money)}</b></span><span>30 days: <b>${d['30'] == null ? 'not 30 days yet' : sign(d['30'], money)}</b></span></p>`;
+    const bad = (C.data.history_mismatch || []).filter(r => r.metrics.includes(metric));
+    const flag = bad.length ? `<p class="cc-warn">${bad.length} saved day${bad.length === 1 ? ' no longer matches' : 's no longer match'} the Deals sheet (${bad.map(r => C.day(r.day)).join(', ')}: saved ${bad[0].saved[metric] == null ? '' : money ? m(bad[0].saved[metric]) : n(bad[0].saved[metric])}, the sheet now says ${money ? m(bad[0].sheet_now[metric]) : n(bad[0].sheet_now[metric])}). ${bad.length === 1 ? 'It is' : 'They are'} left out of the change and the line, so a sheet edit never shows as growth.</p>` : '';
+    if (d['7'] == null && d['30'] == null) return flag + (since ? `<p class="cc-delta"><span>Since ${C.day(since.since)}: <b>${sign(since.value, money)}</b></span><span>${since.days} saved day${since.days === 1 ? '' : 's'}</span></p>`
+      : bad.length ? '' : '<p class="cc-delta"><span>No saved days yet. Changes show after the first day is saved.</span></p>');
+    return flag + `<p class="cc-delta"><span>7 days: <b>${d['7'] == null ? 'not 7 days yet' : sign(d['7'], money)}</b></span><span>30 days: <b>${d['30'] == null ? 'not 30 days yet' : sign(d['30'], money)}</b></span></p>`;
   }
   // A trend line needs at least two days saved in the sheet. Today's row is computed, so it never makes a line by itself.
   function spark(metric) {
-    const saved = C.data.history_saved ?? 0, h = C.data.history.slice(-60);
+    const h = C.data.history.slice(-60).filter(r => !(r.mismatch || []).includes(metric));
+    const saved = Math.min(C.data.history_saved ?? 0, h.filter(r => r.day < C.data.today).length + (h.some(r => r.day === C.data.today) ? 1 : 0));
     if (saved < 2) return `<p class="cc-note">No trend line yet: ${saved ? 'one day is' : 'no days are'} saved in the Scorecard history. A line shows once two days are saved.</p>`;
     if (C.priv && metric === 'gci') return '<p class="cc-note">Chart hidden with money.</p>';
     const vals = h.map(r => r[metric] || 0), max = Math.max(1, ...vals), w = 240, ht = 48;
