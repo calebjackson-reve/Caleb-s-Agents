@@ -21,7 +21,7 @@ def blob(words: str) -> bytes:
     return b"\x04\x0bstreamtyped\x81\xe8\x03\x84\x01@\x84\x84\x84\x08NSString\x01\x94\x84\x01+" + size + raw + b"\x86\x84\x02iI"
 
 
-def make_db(folder: Path, rows) -> Path:
+def make_db(folder: Path, rows, base: float = T0) -> Path:
     """rows: (handle, seconds after the click, words, is_from_me, service, words kept in attributedBody)."""
     db = folder / "chat.db"
     con = sqlite3.connect(db)
@@ -32,7 +32,7 @@ def make_db(folder: Path, rows) -> Path:
         hid = handles.setdefault(handle, len(handles) + 1)
         con.execute("INSERT OR IGNORE INTO handle VALUES (?, ?)", (hid, handle))
         con.execute("INSERT INTO message VALUES (?,?,?,?,?,?,?,?)", (i + 1, f"guid-{i}", None if as_blob else words, blob(words) if as_blob else None,
-                                                                    hid, int((T0 + after - H.APPLE_EPOCH) * 1e9), mine, service))
+                                                                    hid, int((base + after - H.APPLE_EPOCH) * 1e9), mine, service))
     con.commit(); con.close()
     return db
 
@@ -219,6 +219,62 @@ class Touches(unittest.TestCase):
         log = [self.sent("118", "2026-11-01T10:00:00-06:00"), self.sent("120", "2026-11-01T10:00:00-06:00")]
         f = self.feed(); f["touches_due"][0].update(owes_reply=False)
         self.assertEqual(H.apply_touches(f, {}, {}, log, "2026-11-09")[3], {"120"})
+
+
+class Server(unittest.TestCase):
+    """The whole path through Pipeline in demo mode: made-up people, a made-up chat.db, no Google."""
+    def setUp(self):
+        import app
+        self.app = app
+        self.tmp = tempfile.TemporaryDirectory(); self.dir = Path(self.tmp.name)
+        self.s = app.State(demo=True, send_log=self.dir / "send-log.json")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_click_then_confirm_then_touch(self):
+        s, before = self.s, self.s.snapshot()
+        self.assertIn("247", [r["person_id"] for r in before["feed"]["touches_due"]])
+        r = s.opened("text", "247", "(225) 555-0142", DRAFT, display="Taylor Sample")
+        self.assertEqual((r["result"]["status"], r["result"]["to"], r["new"]), ("opened", "+12255550142", True))
+        self.assertFalse(s.opened("text", "247", "225-555-0142", DRAFT, display="Taylor Sample")["new"])
+        snap = s.snapshot()
+        self.assertEqual((len(snap["sent_today"]), snap["sent_today"][0]["status"], snap["caps"]["sent_texts"], snap["last_texts"]["247"]["delivery"]), (1, "opened", 0, "opened"))
+        self.assertIn("247", [r["person_id"] for r in snap["feed"]["touches_due"]])
+        db = make_db(self.dir, [("+12255550142", 5, DRAFT, 1, "iMessage", False)], base=self.app.now().timestamp())
+        self.assertEqual(s.handoff_check(db=db)["changed"], 1)
+        snap = s.snapshot()
+        row = snap["sent_today"][0]
+        self.assertEqual((row["status"], row["confirmed_by"], row["service"], row["text"], snap["caps"]["sent_texts"]), ("sent", "Messages", "iMessage", DRAFT, 1))
+        self.assertNotIn("247", [r["person_id"] for r in snap["feed"]["touches_due"]])
+        self.assertEqual(snap["feed"]["counts"]["touches_due"], before["feed"]["counts"]["touches_due"] - 1)
+        self.assertEqual(snap["feed"]["signals"]["owes_reply"], before["feed"]["signals"]["owes_reply"] - 1)
+        self.assertEqual((snap["sent_log"]["247"][-1]["status"], snap["handoff"]["messages_ok"], snap["handoff"]["pending"]), ("sent", True, []))
+        self.assertEqual(s.handoff_check(db=db)["changed"], 0)
+        self.assertEqual(len(s.send_log()), 1)
+
+    def test_no_access_falls_back_to_the_prompt(self):
+        s = self.s
+        e = s.opened("email", "312", "morgan.demo@example.com", "Hi Morgan", "Checking in", "Morgan Demo")["result"]
+        t = s.opened("text", "", "2255550190", "", display="Walk-in lead")["result"]
+        self.assertEqual(s.handoff_check(db=self.dir / "missing.db")["messages_ok"], False)
+        self.assertEqual(s.snapshot()["handoff"]["messages_ok"], False)
+        log = s.send_log()
+        for row in log:
+            row["at"] = (self.app.now() - timedelta(minutes=3)).isoformat(timespec="seconds")
+        self.app.write_json(s.send_log_path, log)
+        self.assertEqual({p["id"] for p in s.snapshot()["handoff"]["pending"]}, {e["id"], t["id"]})
+        self.assertEqual(s.handoff_answer(e["id"], True)["result"]["confirmed_by"], "you")
+        s.handoff_answer(t["id"], False)
+        self.assertEqual([(r["kind"], r["status"]) for r in s.send_log()], [("email", "sent")])
+        self.assertEqual(s.snapshot()["caps"]["sent_emails"], 1)
+        with self.assertRaises(self.app.CRMError):
+            s.handoff_answer(e["id"], True)
+
+    def test_bad_recipient_is_refused(self):
+        for kind, to in (("text", "555"), ("email", "not-an-email"), ("call", "+12255550142")):
+            with self.assertRaises(self.app.CRMError):
+                self.s.opened(kind, "247", to, "Hi")
 
 
 if __name__ == "__main__":

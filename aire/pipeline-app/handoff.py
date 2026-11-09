@@ -223,13 +223,15 @@ def apply_touches(feed: dict, text_q: dict, email_q: dict, log: list, today_iso:
     if not gone:
         return feed, text_q, email_q, gone
     due = [r for r in feed["touches_due"] if r["person_id"] not in gone]
-    counts = {**feed.get("counts", {}), "touches_due": len(due)}
+    out = [r for r in feed["touches_due"] if r["person_id"] in gone]
+    counts = {**feed.get("counts", {})}
+    counts["touches_due"] = max(0, counts.get("touches_due", len(feed["touches_due"])) - len(out))
     if "by_band" in counts:
-        counts["by_band"] = {b: sum(1 for r in due if r.get("band") == b) for b in counts["by_band"]}
+        counts["by_band"] = {b: max(0, n - sum(1 for r in out if r.get("band") == b)) for b, n in counts["by_band"].items()}
     people = [{**p, "last_touch": sent[p["person_id"]][:10]} if p.get("person_id") in sent and (p.get("last_touch") or "")[:10] < sent[p["person_id"]][:10] else p
               for p in feed.get("people", [])]
     feed = {**feed, "touches_due": due, "counts": counts, "people": people,
-            "signals": {**feed.get("signals", {}), "owes_reply": sum(1 for r in due if r.get("owes_reply"))}}
+            "signals": {**feed.get("signals", {}), "owes_reply": max(0, feed.get("signals", {}).get("owes_reply", 0) - sum(1 for r in out if r.get("owes_reply")))}}
     keep = lambda rows: [r for r in rows or [] if r.get("person_id") not in gone]
     text_q = {**text_q, **{k: keep(text_q.get(k)) for k in ("reply_first", "drafts") if k in text_q}}
     email_q = {**email_q, **{k: keep(email_q.get(k)) for k in ("drafts",) if k in email_q}}
