@@ -33,7 +33,8 @@ class FakeSheets:
     def spreadsheets(self): return self
     def values(self): return self
 
-    def get(self, spreadsheetId, range=None, fields=None):
+    def get(self, spreadsheetId, range=None, fields=None, **render):
+        self.render = getattr(self, "render", {}) | {range: render}  # valueRenderOption etc., per range read
         if fields:
             return Call({"sheets": [{"properties": {"title": t}} for t in self.tabs]})
         tab = range.split("!")[0].strip("'")
@@ -225,6 +226,14 @@ class Pass(unittest.TestCase):
             S.http_get = real
         self.assertEqual((m["rate"]["rate"], m["areas"][0]["active"]), (7.18, 1889))
         self.assertIn("Realtor.com zip", m["warnings"][0])
+
+
+class JudgeRound3Sync(unittest.TestCase):
+    def test_deals_are_read_unformatted_so_cents_survive(self):
+        sheets = FakeSheets({"Deals": [["Deal", "Status", "Commission"], ["1 Demo Ln", "Closed", 1234.5]]})
+        rows = S.fetch_deals({"sheets": sheets}, {"deals_sheet_id": "x"}, None)
+        self.assertEqual(rows[1][2], 1234.5)
+        self.assertEqual(sheets.render["Deals!A1:L300"], {"valueRenderOption": "UNFORMATTED_VALUE", "dateTimeRenderOption": "FORMATTED_STRING"})
 
 
 class Public(unittest.TestCase):

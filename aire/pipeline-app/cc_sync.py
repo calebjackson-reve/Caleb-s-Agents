@@ -271,7 +271,9 @@ def fetch_deals(svc, cfg, now):
     sid = cfg.get("deals_sheet_id")
     if not sid:
         raise RuntimeError("no deals_sheet_id in out/cc/config.json")
-    return svc["sheets"].spreadsheets().values().get(spreadsheetId=sid, range="Deals!A1:L300").execute().get("values") or []
+    return svc["sheets"].spreadsheets().values().get(spreadsheetId=sid, range="Deals!A1:L300",
+        # The numbers as stored (1234.5), not as shown ($1,235), so cents survive. Dates stay as the sheet shows them.
+        valueRenderOption="UNFORMATTED_VALUE", dateTimeRenderOption="FORMATTED_STRING").execute().get("values") or []
 
 
 # ---------------- public reads: news and market (no account, read only) ----------------

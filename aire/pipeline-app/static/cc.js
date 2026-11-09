@@ -5,6 +5,9 @@
 (function () {
   const C = window.CC = { after: {}, data: null, priv: true, privTimer: null, cal: { mode: 'week', off: 0, hide: new Set() }, err: null };
   const money0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const money2 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Cents show when the sheet holds them ($1,234.50), whole dollars otherwise ($45,000).
+  const dollars = v => (Math.abs(Math.round(v * 100) % 100) ? money2 : money0).format(v);
   const TZ = 'America/Chicago';
   const fmtDay = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
   const fmtTime = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });
@@ -14,8 +17,8 @@
     commission_mail: 'Commission mail', goals: 'Goals', history: 'Scorecard history' };
 
   // ---- formatting, with the privacy lock
-  const m = v => (v == null ? '—' : C.priv ? '$•••' : money0.format(v));
-  const mk = v => (v == null ? '—' : C.priv ? '$•••' : v >= 1e6 ? '$' + (v / 1e6).toFixed(2) + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'K' : money0.format(v));
+  const m = v => (v == null ? '—' : C.priv ? '$•••' : dollars(v));
+  const mk = v => (v == null ? '—' : C.priv ? '$•••' : v >= 1e6 ? '$' + (v / 1e6).toFixed(2) + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'K' : dollars(v));
   const contact = v => (!v ? '' : C.priv ? '•••' : esc(v));
   const day = k => (k ? fmtDay.format(new Date(k + 'T12:00:00Z')) : '');
   const time = s => (s && s.length > 10 ? fmtTime.format(new Date(s)) : 'All day');

@@ -496,5 +496,33 @@ class JudgeRound3(unittest.TestCase):
         self.assertEqual((p["history_saved"], p["since"]["gci"]["days"], p["since"]["gci"]["since"]), (4, 4, "2026-11-02"))
 
 
+class JudgeRound3Money(unittest.TestCase):
+    """Part 1 items 17 and 18. Made-up deals."""
+    SHEET = [HEAD, ["8100 63rd St", "Buyer", "Closed", 161500, 1234.5, "", "", "2026-09-09", "", ""],
+             ["12 Pecan Chapel Rd", "Listing", "Closed", 300000, 26340, "", "", "2026-08-01", "", ""],
+             ["77 Main St", "Listing", "Under Contract", 200000, 6000, "", "", "2026-12-01", "", ""]]
+
+    def test_commission_matches_a_numbered_street_by_name(self):
+        st = {r["subject"]: r["status"] for r in cc.commission_mail(
+            [{"subject": "Commission for 63rd"}, {"subject": "Commission for 8100 63rd St"}, {"subject": "Commission for 8102 63rd"},
+             {"subject": "Commission for 64th"}, {"subject": "Commission for Pecan Chapel"}, {"subject": "Commission for Main"}],
+            cc.deal_rows(self.SHEET))}
+        self.assertEqual(st, {"Commission for 63rd": "Paid", "Commission for 8100 63rd St": "Paid",
+                              "Commission for 8102 63rd": "No closed deal",  # same street, another house
+                              "Commission for 64th": "No closed deal", "Commission for Pecan Chapel": "Paid",
+                              "Commission for Main": "No closed deal"})  # under contract, not closed
+
+    def test_street_words_keep_numbered_streets_and_drop_suffixes(self):
+        self.assertEqual(cc._street_words("8100 63rd St"), {"63rd"})
+        self.assertEqual(cc._street_words("Commission for 12 Pecan Tree Drive"), {"pecan", "tree"})
+        self.assertFalse(cc._same_street("Commission for St", "8100 63rd St"))
+
+    def test_gci_keeps_the_cents_the_sheet_holds(self):
+        deals = cc.deal_rows(self.SHEET + [["9 Oak Ln", "Buyer", "Closed", 1, "$26,000.00", "", "", "2026-03-01", "", ""]])
+        sc = cc.scorecard(deals, [], [], {}, None, date(2026, 11, 9))
+        self.assertEqual(sc["gci"]["value"], 53574.5)
+        self.assertEqual(cc.deal_rows([HEAD, ["1 A St", "", "Closed", "", "$1,234.50"]])[0]["commission"], 1234.5)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

@@ -549,9 +549,20 @@ def _street(t: str) -> str:
     return re.sub(r"[^a-z ]", "", s).strip()
 
 
+def _street_words(t: str) -> set[str]:
+    """The street name's words: letters-only words of three or more ('pecan', 'tree') and numbered streets ('63rd').
+    The house number and suffixes like St or Dr are left out, so '8100 63rd St' and 'Commission for 63rd' share '63rd'."""
+    s = re.sub(r"^.*?(not processed|commission for)\s*-?\s*", "", str(t or "").lower())
+    s = re.sub(r"^\d+\s+", "", s)
+    words = re.findall(r"[a-z0-9]+", s)
+    return {w for w in words if re.fullmatch(r"\d+(st|nd|rd|th)", w) or (w.isalpha() and len(w) >= 3
+            and w not in {"drive", "lane", "road", "ave", "avenue", "street", "court", "blvd", "hwy", "highway"})}
+
+
 def _same_street(a: str, b: str) -> bool:
-    """Whole words of three letters or more: 'pecan tree' matches 'pecan tree', and '41st' (which reads as 'st') matches nothing."""
-    wa, wb = {w for w in a.split() if len(w) >= 3}, {w for w in b.split() if len(w) >= 3}
+    """Every street word of the shorter side is in the other: 'pecan tree' matches 'pecan tree', '63rd' matches
+    '8100 63rd St'. Takes the raw texts."""
+    wa, wb = _street_words(a), _street_words(b)
     return bool(wa) and bool(wb) and (wa <= wb or wb <= wa)
 
 
@@ -560,8 +571,9 @@ def commission_mail(rows: list[dict], deals: list[dict] | None = None) -> list[d
     Commission for email is Paid when a closed deal on the sheet has that street, and No closed deal when none does, so
     money that came in for a deal the sheet does not show as closed gets looked at."""
     paid = {_street(r["subject"]) for r in rows if re.search(r"commission for", r.get("subject") or "", re.I)}
-    num = lambda t: (re.search(r"\b(\d{2,6})\s+[a-z]", str(t or ""), re.I) or [None, None])[1]  # a house number, not "41st"
-    closed = [(_street(d.get("deal")), num(d.get("deal"))) for d in deals or [] if stage_of(d.get("status")) == "closed"]
+    # a house number ("8100 63rd St" is 8100), never the "63" of "63rd"
+    num = lambda t: (re.search(r"\b(\d{2,6})\s+(?:[a-z]|\d+(?:st|nd|rd|th)\b)", str(t or ""), re.I) or [None, None])[1]
+    closed = [(d.get("deal"), num(d.get("deal"))) for d in deals or [] if stage_of(d.get("status")) == "closed"]
     out = []
     for r in rows:
         s = r.get("subject") or ""
@@ -569,7 +581,7 @@ def commission_mail(rows: list[dict], deals: list[dict] | None = None) -> list[d
             st = "Resolved" if _street(s) in paid else "Not processed"
         elif deals is not None and re.search(r"commission for", s, re.I):
             n = num(re.sub(r"^.*?commission for\s*", "", s, flags=re.I))  # "Commission for 12 Oak Ln" is house 12 only
-            st = "Paid" if any(_same_street(_street(s), c) and (not n or not cn or n == cn) for c, cn in closed) else "No closed deal"
+            st = "Paid" if any(_same_street(s, c) and (not n or not cn or n == cn) for c, cn in closed) else "No closed deal"
         else:
             st = "Notice"
         out.append({**r, "status": st})
@@ -593,7 +605,7 @@ def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
     yr = str(today.year)
     closed = [r for r in deals if stage_of(r["status"]) == "closed"]
     yr_closed = [r for r in closed if is_day(r.get("act")) and r["act"][:4] == yr]
-    sheet_gci = sum(r["commission"] or 0 for r in yr_closed)
+    sheet_gci = round(sum(r["commission"] or 0 for r in yr_closed), 2)
     real = [r for r in leads if not r.get("test")]
     lc = lead_counts(real, today)
     end7 = (today + timedelta(days=6)).isoformat()
