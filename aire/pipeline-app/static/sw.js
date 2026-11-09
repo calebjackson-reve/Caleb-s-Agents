@@ -3,7 +3,7 @@
 // BUILD is filled in by the Mac when it serves this file: a hash of every file in static/. Any change to the app
 // changes this file, so every browser installs the new worker and the cache name moves on by itself.
 const BUILD = '__BUILD__';
-const SHELL = 'pipeline-shell-v3-judge4.' + BUILD, DATA = 'pipeline-data-v1';
+const SHELL = 'pipeline-shell-v4-sendlog.' + BUILD, DATA = 'pipeline-data-v1';
 const FILES = ['/', '/app.css', '/cc.css', '/ui.css', '/app.js', '/voice.js', '/map.js', '/mapviews.js', '/cc.js', '/cc-pages.js',
   '/crm-pages.js', '/cc-score.js', '/cc-life.js', '/cc-today.js', '/cc-sources.js', '/favicon.svg', '/icon-192.png', '/manifest.webmanifest'];
 const READS = ['/api/cc', '/api/state', '/api/alerts'];

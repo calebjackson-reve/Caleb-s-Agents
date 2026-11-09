@@ -515,7 +515,7 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
 }
 
 // Round 3: the cache name moves on again so browsers drop the round 2 shell.
-check(/pipeline-shell-v3-judge4/.test(fs.readFileSync(path.join(dir, 'sw.js'), 'utf8')), 'service worker cache is v3-judge4');
+check(/pipeline-shell-v4-sendlog/.test(fs.readFileSync(path.join(dir, 'sw.js'), 'utf8')), 'service worker cache is v4-sendlog');
 // Reviewer findings on round 3 masking: a client's name hides even when it is also a common word, a lowercase mention
 // never makes a name safe, capitals and accents hide, dates read, and ordinary words read on a quiet day.
 {
@@ -650,6 +650,24 @@ check(run(`(() => { const r = { what: 'Act of sale' }; return 1; })()`) === 1 &&
   check(/filter\(s => s\.status === 'sent'\)\.length, false\]/.test(appjs) && /dry run\$\{/.test(fs.readFileSync(path.join(dir, 'crm-pages.js'), 'utf8')), 'a dry run is never counted as sent');
   check(/res\.parts \? Object\.keys\(res\.parts\)/.test(fs.readFileSync(path.join(dir, 'cc-sources.js'), 'utf8')), 'Sources counts the rows in each tab, not the tabs');
 }
+
+// Hand-off log: a Text or Email click shows as opened, a confirmed send says who confirmed it, and the app asks.
+{ const keep = run('JSON.stringify([S.data.sent_today, S.data.handoff || null, S.data.sent_log || null])');
+  const at = new Date().toISOString();
+  ctx.__rows = [{ id: 'a1', at, kind: 'text', person_id: '247', display: 'Taylor Sample', to: '+12255550142', text: 'Hey Taylor', status: 'opened', delivery: 'opened', via: 'handoff' },
+    { id: 'a2', at, kind: 'email', person_id: '312', display: 'Morgan Demo', to: 'morgan.demo@example.com', subject: 'Checking in', text: 'Hi Morgan', status: 'sent', delivery: 'sent', via: 'handoff', confirmed_by: 'Gmail', sent_at: at, service: 'Gmail' }];
+  run(`S.data.sent_today = __rows; S.data.handoff = { messages_ok: false, gmail_ok: null, pending: [{ id: 'a1', at: __rows[0].at, kind: 'text', display: 'Taylor Sample' }] }; S.data.sent_log = { '247': [__rows[0]], '312': [__rows[1]] }`);
+  const sp = render('sent', false);
+  check(/Opened, waiting for your send/.test(sp) && /answerSent\('a1', true\)/.test(sp) && /answerSent\('a1', false\)/.test(sp), 'Sent today shows an opened text with Sent and Not sent');
+  check(/confirmed by Gmail/.test(sp) && (sp.match(/answerSent/g) || []).length === 2, 'a confirmed email says Gmail confirmed it and asks nothing');
+  const bar = run(`askSentHTML(S.data.handoff.pending[0])`);
+  check(/Did the text to <b>Taylor Sample<\/b> send\?/.test(bar) && />Sent<\/button>/.test(bar) && />Not sent<\/button>/.test(bar), 'the Did that send bar names the person and offers Sent and Not sent');
+  run('CC.priv = true'); check(!/Taylor|Sample/.test(run(`askSentHTML(S.data.handoff.pending[0])`)) && !/Hey Taylor|Hi Morgan|2255550142|morgan\.demo/.test(render('sent', true)), 'with privacy on the bar and Sent today hide the name, number and message'); run('CC.priv = false');
+  check(/can't read Messages history/.test(render('sources', false)), 'Sources says in one line when Messages history cannot be read');
+  check(/SENT FROM PIPELINE/.test(run(`logLines('247')`)) && /opened, waiting for your send/.test(run(`logLines('247')`)) && /confirmed by Gmail/.test(run(`logLines('312')`)) && run(`logLines('999')`) === '', "the compose sheet lists that person's sends");
+  check(run(`TEXT_STATES.opened[1]`) === 'Opened' && /api\('\/api\/opened', \{ kind: v\.kind/.test(appjs) && /logOpened\(v\);/.test(appjs), 'Open in Messages and Open in Gmail log the click');
+  check(/#sent-ask \{[^}]*background: var\(--cc-ink\)[^}]*border: 1px solid var\(--cc-coral\)/.test(ui) && /#sent-ask small \{ color: var\(--cc-tan\)/.test(ui), 'the bar is black with coral, tan only on the small time');
+  ctx.__keep = JSON.parse(keep); run('S.data.sent_today = __keep[0]; S.data.handoff = __keep[1]; S.data.sent_log = __keep[2]'); }
 
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

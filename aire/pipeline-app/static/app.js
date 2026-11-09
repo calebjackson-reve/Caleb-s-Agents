@@ -104,7 +104,7 @@ function textWhen(at) {
   const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   return iso === todayISO() ? t : `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${t}`;
 }
-const TEXT_STATES = { delivered: ['ok', 'Texted', 'delivered'], sent: ['ok', 'Texted', 'sent'], pending: ['wait', 'Texted', 'checking delivery'], unknown: ['wait', 'Texted', 'checking delivery'], error: ['bad', 'Text failed', 'not delivered'], 'dry-run': ['dry', 'Dry run', 'nothing sent'] };
+const TEXT_STATES = { delivered: ['ok', 'Texted', 'delivered'], sent: ['ok', 'Texted', 'sent'], pending: ['wait', 'Texted', 'checking delivery'], unknown: ['wait', 'Texted', 'checking delivery'], error: ['bad', 'Text failed', 'not delivered'], 'dry-run': ['dry', 'Dry run', 'nothing sent'], opened: ['wait', 'Opened', 'waiting for your send'] };
 function textStatus(id) {
   const t = lastText(id); if (!t) return '';
   const [cls, lead, tail] = TEXT_STATES[t.delivery] || TEXT_STATES.sent;
@@ -198,6 +198,7 @@ function render() {
     document.querySelectorAll('.gauge .arc').forEach(el => el.style.strokeDashoffset = el.dataset.off);
     document.querySelectorAll('[data-count]').forEach(countUp);
   }));
+  askSent();
 }
 function chipHTML(ico, label, val, cls = '') { return `<div class="chip ${cls}"><span class="ico">${ico}</span><div><span>${label}</span><b>${esc(val)}</b></div></div>`; }
 function countUp(el) {
@@ -287,6 +288,7 @@ function renderDrawer() {
     ${c.last_messages && c.last_messages.length && H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span><div class="bubble">${C2.msg('')} · press Show at the top to read them</div></div>` : ''}
     ${c.last_messages && c.last_messages.length && !H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
     ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${C2 ? C2.note(c.next_action || row.next_action, [c.name]) : esc(c.next_action || row.next_action)}</div>` : ''}
+    ${logLines(c.person_id)}
     <div class="seg"><button class="${c.kind === 'text' ? 'on' : ''}" ${canText ? '' : 'disabled'} onclick="setKind('text')">▭ TEXT</button><button class="${c.kind === 'email' ? 'on' : ''}" ${canEmail ? '' : 'disabled'} onclick="setKind('email')">✉ EMAIL</button></div>
     <div class="field"><label>TO</label>${H && to ? `<input id="c-to" type="hidden" value="${esc(to)}"><p class="cc-hid">${c.kind === 'text' ? 'Number' : 'Email'} hidden · press Show at the top to see it before you open it</p>` : `<input id="c-to" value="${esc(to)}" inputmode="${c.kind === 'text' ? 'tel' : 'email'}" placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}" oninput="sheetCheck()">`}<p class="hint" id="c-exact"></p></div>
     ${c.kind === 'email' ? `<div class="field"><label>SUBJECT</label><input id="c-subject" value="${esc(c.subject || '')}" placeholder="Subject"></div>` : ''}
@@ -319,8 +321,46 @@ function sheetValues() {
 // Hands the message to Messages (sms: link) or to a Gmail compose window for aire@. Nothing is sent here.
 function openInApp() {
   const v = sheetValues(); if (!v.to) { toast('warn', 'CHECK IT', v.kind === 'text' ? 'That is not a valid number.' : 'That is not a valid email.'); return; }
-  if (v.kind === 'text') { location.href = smsLink(v.to, v.body); toast('ok', 'MESSAGES', 'Opened in Messages. Press send there when it looks right.'); }
-  else { window.open(gmailLink(v.to, v.subject, v.body), '_blank', 'noopener'); toast('ok', 'GMAIL', 'Opened in Gmail. Press Send there when it looks right.'); }
+  if (v.kind === 'text') { location.href = smsLink(v.to, v.body); toast('ok', 'MESSAGES', 'Opened in Messages. Press send there. Pipeline logs it once it goes.'); }
+  else { window.open(gmailLink(v.to, v.subject, v.body), '_blank', 'noopener'); toast('ok', 'GMAIL', 'Opened in Gmail. Press Send there. Pipeline logs it once it goes.'); }
+  logOpened(v);
+}
+// ---- hand-off log: the click is logged as opened, then the Mac looks for the real send in Messages history or
+// Gmail's Sent folder for 15 minutes. Still open after 2 minutes: a small "Did that send?" bar.
+async function logOpened(v) {
+  const c = S.compose || {};
+  try { const r = await api('/api/opened', { kind: v.kind, person_id: c.person_id || '', to: v.to, body: v.body, subject: v.subject, display: c.name || '' });
+    if (r.ok) { await load(); watchOpened(); } } catch (e) { }
+}
+const openedNow = () => ((S.data && S.data.sent_today) || []).some(s => s.status === 'opened' && Date.now() - new Date(s.at) < 16 * 60e3);
+function watchOpened() {
+  if (S.openedTimer) return;
+  S.openedTimer = setInterval(async () => {
+    if (!openedNow()) { clearInterval(S.openedTimer); S.openedTimer = null; return; }
+    if (!$('#modal').hidden) return;
+    try { S.data = await api('/api/state'); if (S.compose || S.map) askSent(); else render(); } catch (e) { }
+  }, 20000);
+}
+function askSent() {
+  const p = ((S.data && S.data.handoff) || {}).pending || [], bar = document.getElementById('sent-ask');
+  if (!p.length) { if (bar && bar.remove) bar.remove(); return; }
+  const el = bar && bar.id === 'sent-ask' ? bar : document.body.appendChild(Object.assign(document.createElement('div'), { id: 'sent-ask' }));
+  el.setAttribute('role', 'status'); el.innerHTML = askSentHTML(p[0]);
+}
+function askSentHTML(e) {
+  return `<span>Did the ${e.kind === 'text' ? 'text' : 'email'} to <b>${window.CC ? CC.who(e.display || 'this person') : esc(e.display || 'this person')}</b> send?<small>Opened ${esc(textWhen(e.at))}</small></span><button type="button" onclick="answerSent('${esc(e.id)}', true)">Sent</button><button type="button" class="no" onclick="answerSent('${esc(e.id)}', false)">Not sent</button>`;
+}
+async function answerSent(id, sent) {
+  const r = await api('/api/opened/answer', { id, sent });
+  if (r.ok) toast('ok', sent ? 'LOGGED' : 'CLEARED', sent ? 'Marked sent by you. It counts as a touch.' : 'Taken off the log. Nothing was counted.');
+  else toast('err', 'NOT SAVED', r.error || 'no reason given');
+  await load();
+}
+const sentWord = r => r.status === 'opened' ? 'opened, waiting for your send' : r.confirmed_by === 'you' ? 'sent, you said so' : r.confirmed_by ? `sent, confirmed by ${r.confirmed_by}` : r.status === 'sent' ? 'sent by Pipeline' : r.status;
+// What Pipeline has on record for this person: the last five texts and emails, newest first.
+function logLines(id) {
+  const rows = ((S.data.sent_log || {})[id] || []).slice().reverse(); if (!id || !rows.length) return '';
+  return `<div class="msgs"><span class="lbl">SENT FROM PIPELINE</span>${rows.map(r => `<div class="bubble note"><small>${esc(textWhen(r.sent_at || r.at))} · ${r.kind === 'text' ? 'Text' : 'Email'} · ${esc(sentWord(r))}</small>${hid() ? '' : esc(r.subject || r.text || '')}</div>`).join('')}</div>`;
 }
 async function confirmSendNow() {
   const v = sheetValues(), c = S.compose;
@@ -522,6 +562,9 @@ $('#talk').onclick = async () => {
 };
 $('#type-form').addEventListener('submit', e => { e.preventDefault(); const v = $('#type-cmd').value; $('#type-cmd').value = ''; Voice.type(v); });
 $('#open-sheet').onclick = () => window.open(S.data.links.sheet);
+// Back in the Pipeline window: read again, so a send made in Messages or Gmail shows, or the bar asks about it.
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.data && $('#modal').hidden) load(); });
+window.addEventListener('focus', () => { if (S.data && $('#modal').hidden) load(); });
 
 async function boot() {
   const steps = ['reading the CRM', 'loading drafts', 'checking Command', 'counting today\'s sends', 'ready'];

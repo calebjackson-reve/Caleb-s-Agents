@@ -265,10 +265,10 @@
     const rows = (S.data.sent_today || []).slice().reverse();
     const body = rows.length ? `<ul class="cc-rows">${rows.map(s => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${s.kind === 'text' ? '▭' : '✉'}</span>
       <div class="cc-row-main"><h3>${C.who(s.display || 'No name')}</h3>
-        <div class="cc-pills"><span class="cc-pill ${s.status === 'sent' ? 'k-listing' : 'k-other'}">${s.status === 'sent' ? 'Sent' : s.status === 'dry-run' ? 'Dry run, nothing left the Mac' : esc(s.status)}</span>${s.kind === 'text' && s.delivery ? `<span class="cc-pill k-other">${esc(s.delivery)}</span>` : ''}</div>
-        <p class="cc-note">${esc(textWhen(s.at))} · ${s.kind === 'text' ? 'Text' : 'Email'}${s.subject && !C.priv ? ': ' + esc(s.subject) : ''} · to ${s.kind === 'text' ? C.ph(s.to) : C.em(s.to)}</p>${s.text ? `<p class="cc-row-why">${C.note(s.text, [s.display], 'Message hidden')}</p>` : ''}</div></li>`).join('')}</ul>`
+        <div class="cc-pills"><span class="cc-pill ${s.status === 'sent' ? 'k-listing' : 'k-other'}">${s.status === 'sent' ? 'Sent' : s.status === 'dry-run' ? 'Dry run, nothing left the Mac' : s.status === 'opened' ? 'Opened, waiting for your send' : esc(s.status)}</span>${s.via === 'handoff' ? (s.confirmed_by ? `<span class="cc-pill k-other">${s.confirmed_by === 'you' ? 'you said so' : 'confirmed by ' + esc(s.confirmed_by)} · ${esc(textWhen(s.sent_at))}${s.service && s.service !== 'Gmail' ? ' · ' + esc(s.service) : ''}</span>` : '') : s.kind === 'text' && s.delivery ? `<span class="cc-pill k-other">${esc(s.delivery)}</span>` : ''}</div>
+        <p class="cc-note">${esc(textWhen(s.at))} · ${s.kind === 'text' ? 'Text' : 'Email'}${s.subject && !C.priv ? ': ' + esc(s.subject) : ''} · to ${s.kind === 'text' ? C.ph(s.to) : C.em(s.to)}</p>${s.text ? `<p class="cc-row-why">${C.note(s.sent_text || s.text, [s.display], 'Message hidden')}</p>` : ''}</div>${s.status === 'opened' ? `<div class="cc-acts"><button type="button" class="cc-primary" onclick="answerSent('${esc(s.id)}', true)">Sent</button><button type="button" onclick="answerSent('${esc(s.id)}', false)">Not sent</button></div>` : ''}</li>`).join('')}</ul>`
       : C.empty('Nothing sent today.');
-    return page('Sent today', 'Every text and email Pipeline sent or dry-ran today.', body, ['sends']);
+    return page('Sent today', 'Every text and email from today: sent by Pipeline, sent by you from the Text and Email buttons, or dry-run.', body, ['sends']);
   }
 
   // ---------------- Search: the header box from any page. Pages with a list filter themselves; the rest come here.
