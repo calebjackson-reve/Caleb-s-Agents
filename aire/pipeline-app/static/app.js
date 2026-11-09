@@ -564,8 +564,13 @@ $('#talk').onclick = async () => {
 $('#type-form').addEventListener('submit', e => { e.preventDefault(); const v = $('#type-cmd').value; $('#type-cmd').value = ''; Voice.type(v); });
 $('#open-sheet').onclick = () => window.open(S.data.links.sheet);
 // Back in the Pipeline window: read again, so a send made in Messages or Gmail shows, or the bar asks about it.
-document.addEventListener('visibilitychange', () => { if (!document.hidden && S.data && $('#modal').hidden) load(); });
-window.addEventListener('focus', () => { if (S.data && $('#modal').hidden) load(); });
+// The map and an open compose sheet are left as they are: only the bar is checked there.
+async function backInWindow() {
+  if (!S.data || !$('#modal').hidden) return;
+  try { S.data = await api('/api/state'); if (S.compose || S.map) askSent(); else render(); } catch (e) { }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) backInWindow(); });
+window.addEventListener('focus', backInWindow);
 
 async function boot() {
   const steps = ['reading the CRM', 'loading drafts', 'checking Command', 'counting today\'s sends', 'ready'];

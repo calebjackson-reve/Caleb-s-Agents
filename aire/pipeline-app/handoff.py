@@ -157,8 +157,8 @@ def check(log: list, now_ts: float, db: Path | None, gmail=None) -> dict:
                 hit, out["gmail_ok"] = find_sent_email(gmail, e["to"], since, e.get("subject"), used), True
         except Unreadable as x:
             out["messages_ok"], out["detail"] = False, str(x)[:160]
-        except Exception as x:  # Gmail offline or signed out: the prompt in the app covers it
-            out["gmail_ok"], out["detail"] = False, f"{type(x).__name__}: {x}"[:160]
+        except Exception as x:  # Gmail offline or signed out, or an odd row: the prompt in the app covers it
+            out["gmail_ok" if e["kind"] == "email" else "messages_ok"], out["detail"] = False, f"{type(x).__name__}: {x}"[:160]
         if hit:
             mark_sent(e, hit, "Messages" if e["kind"] == "text" else "Gmail")
             used.add(hit.get("msg_id"))
@@ -206,7 +206,13 @@ def apply_touches(feed: dict, text_q: dict, email_q: dict, log: list, today_iso:
     for e in log:
         if e.get("via") == "handoff" and e.get("status") == "sent" and e.get("person_id") and e.get("sent_at"):
             sent[e["person_id"]] = max(sent.get(e["person_id"], ""), e["sent_at"])
-    if not sent or not feed.get("touches_due"):
+    if not sent:
+        return feed, text_q, email_q, set()
+    moved = [p for p in feed.get("people", []) if p.get("person_id") in sent and (p.get("last_touch") or "")[:10] < sent[p["person_id"]][:10]]
+    if moved:  # the last touch moves to the send date, whether or not the person was due
+        ids = {p["person_id"] for p in moved}
+        feed = {**feed, "people": [{**p, "last_touch": sent[p["person_id"]][:10]} if p.get("person_id") in ids else p for p in feed["people"]]}
+    if not feed.get("touches_due"):
         return feed, text_q, email_q, set()
     cadence, built, day = feed.get("cadence_days") or {}, feed.get("generated_at", ""), date.fromisoformat(today_iso)
 
@@ -228,9 +234,7 @@ def apply_touches(feed: dict, text_q: dict, email_q: dict, log: list, today_iso:
     counts["touches_due"] = max(0, counts.get("touches_due", len(feed["touches_due"])) - len(out))
     if "by_band" in counts:
         counts["by_band"] = {b: max(0, n - sum(1 for r in out if r.get("band") == b)) for b, n in counts["by_band"].items()}
-    people = [{**p, "last_touch": sent[p["person_id"]][:10]} if p.get("person_id") in sent and (p.get("last_touch") or "")[:10] < sent[p["person_id"]][:10] else p
-              for p in feed.get("people", [])]
-    feed = {**feed, "touches_due": due, "counts": counts, "people": people,
+    feed = {**feed, "touches_due": due, "counts": counts,
             "signals": {**feed.get("signals", {}), "owes_reply": max(0, feed.get("signals", {}).get("owes_reply", 0) - sum(1 for r in out if r.get("owes_reply")))}}
     keep = lambda rows: [r for r in rows or [] if r.get("person_id") not in gone]
     text_q = {**text_q, **{k: keep(text_q.get(k)) for k in ("reply_first", "drafts") if k in text_q}}

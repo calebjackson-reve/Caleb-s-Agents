@@ -398,7 +398,7 @@ class State:
                 continue
             if "delivery" not in r:
                 r["delivery"] = delivery_from_detail(r.get("status", ""), r.get("detail", ""))
-            if live and r.get("status") == "sent" and r["delivery"] in ("pending", "sent", "unknown") and now().timestamp() - t < recheck_minutes * 60:
+            if live and r.get("via") != "handoff" and r.get("status") == "sent" and r["delivery"] in ("pending", "sent", "unknown") and now().timestamp() - t < recheck_minutes * 60:
                 st = delivery_state(r.get("to", ""), t, db or CHAT_DB)
                 if st in ("delivered", "error", "sent") and st != r["delivery"]:
                     r["delivery"], changed = st, True

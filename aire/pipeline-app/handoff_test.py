@@ -206,6 +206,11 @@ class Touches(unittest.TestCase):
         self.assertEqual(([p["last_touch"] for p in f["people"]], t["reply_first"], t["drafts"], e["drafts"]), (["2026-11-09", "2026-11-09"], [{"person_id": "119"}], [], [{"person_id": "121"}]))
         self.assertEqual(len(src["touches_due"]), 3)
 
+    def test_last_touch_moves_even_when_not_due(self):
+        src = self.feed(); src["touches_due"] = [r for r in src["touches_due"] if r["person_id"] != "118"]
+        f, _, _, gone = H.apply_touches(src, {}, {}, [self.sent("118", "2026-11-09T14:01:00-06:00")], "2026-11-09")
+        self.assertEqual((gone, f["people"][0]["last_touch"], src["people"][0]["last_touch"]), (set(), "2026-11-09", "2026-10-01"))
+
     def test_opened_only_changes_nothing(self):
         src = self.feed()
         self.assertIs(H.apply_touches(src, {}, {}, [{"via": "handoff", "status": "opened", "person_id": "118"}], "2026-11-09")[0], src)
