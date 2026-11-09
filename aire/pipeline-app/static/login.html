@@ -35,6 +35,8 @@
   <footer>Five wrong tries lock this device out for 10 minutes. The passcode is set on the Mac.</footer>
 </main>
 <script>
+// Signed out: drop the data copy kept for offline use, so nothing from the last session shows without the passcode.
+if (window.caches) caches.delete('pipeline-data-v1').catch(() => {});
 document.getElementById('f').addEventListener('submit', async e => {
   e.preventDefault();
   const m = document.getElementById('msg'); m.textContent = '';

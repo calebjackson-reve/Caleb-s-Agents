@@ -221,3 +221,9 @@ body { background: #0a0a0b; background-image: none; }
 
 
 .cc-head .cc-privnote { display: inline-block; margin-top: 10px; }
+
+/* A new build is live: one small note, coral button, black panel. */
+#sw-updated { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 1000;
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-radius: 12px; background: var(--panel);
+  border: 1px solid var(--line); color: var(--text); font-size: 14px; white-space: nowrap; }
+#sw-updated button { font: inherit; font-weight: 600; color: #160c08; background: var(--cyan); border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer; }

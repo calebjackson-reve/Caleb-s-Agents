@@ -87,10 +87,27 @@
 <script>
 // The home-screen install: the service worker keeps the shell and the last data for when the Mac can't be reached.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => {});
-  // When a new worker takes over, load the page once more so the new screens show, not the old shell.
-  let swReloaded = false, hadSw = !!navigator.serviceWorker.controller;
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadSw && !swReloaded) { swReloaded = true; location.reload(); } });
+  // Ask the Mac for a new build on load, every 5 minutes and whenever the window comes back, so an app left open
+  // for days still finds out.
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(r => {
+    const check = () => r.update().catch(() => {});
+    check(); setInterval(check, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  }).catch(() => {});
+  // A new build took over: a small note with Reload. If the window is in the background, reload quietly.
+  let hadSw = !!navigator.serviceWorker.controller, noted = false;
+  const fresh = () => location.reload();
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadSw) { hadSw = true; return; }
+    if (document.hidden) return fresh();
+    if (noted) return; noted = true;
+    const n = document.createElement('div');
+    n.id = 'sw-updated'; n.setAttribute('role', 'status');
+    n.innerHTML = 'Pipeline updated. <button type="button">Reload</button>';
+    n.querySelector('button').addEventListener('click', fresh);
+    document.body.appendChild(n);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) fresh(); });
+  });
   navigator.serviceWorker.addEventListener('message', e => { if (window.CC && e.data && 'online' in e.data && CC.offline !== !e.data.online) { CC.offline = !e.data.online; CC.rerender(); } });
 }
 </script>

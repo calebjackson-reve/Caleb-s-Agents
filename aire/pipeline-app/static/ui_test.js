@@ -538,6 +538,10 @@ check(/updateViaCache: 'none'/.test(indexHtml) && /controllerchange/.test(indexH
 const shell = (swjs.match(/const FILES = \[([^\]]+)\]/) || [])[1] || '';
 const scripts = [...indexHtml.matchAll(/<script src="([^"]+)"/g)].map(m => '/' + m[1]);
 check(scripts.every(s => shell.includes(`'${s}'`)), 'every script the page loads is in the offline shell', scripts.filter(s => !shell.includes(`'${s}'`)).join(' '));
+check(/const BUILD = '__BUILD__'/.test(swjs) && /'pipeline-shell-[^']*' \+ BUILD/.test(swjs), 'the cache name carries the build the Mac fills in');
+check(/setInterval\(check, 5 \* 60 \* 1000\)/.test(indexHtml) && /visibilitychange/.test(indexHtml), 'an open page asks for a new build every 5 minutes and on return');
+check(/Pipeline updated\. <button type="button">Reload<\/button>/.test(indexHtml), 'a new build shows a small Updated note with Reload');
+check(/if \(u\.pathname\.startsWith\('\/api\/'\)\) return;/.test(swjs) && !/caches\.match\(e\.request\)\s*\|\|\s*fetch/.test(swjs), 'API reads go to the Mac first, never cache first');
 
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

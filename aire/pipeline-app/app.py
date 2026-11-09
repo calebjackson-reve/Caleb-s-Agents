@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import platform
@@ -1047,6 +1048,8 @@ class Handler(BaseHTTPRequestHandler):
         ctype = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
                  ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json"}.get(path.suffix, "application/octet-stream")
         raw = path.read_bytes()
+        if path.name == "sw.js":
+            raw = raw.replace(b"__BUILD__", static_build().encode())
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(raw)))
@@ -1206,6 +1209,17 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": False, "error": str(e)})
         except Exception as e:
             return self._json(200, {"ok": False, "error": f"{type(e).__name__}: {e}"[:300]})
+
+
+def static_build(root: Path | None = None) -> str:
+    """A short hash of every file in static/ (names and bytes). It goes into sw.js, so any change to the app gives
+    browsers a new service worker and a new cache name, and the page shows its Updated note."""
+    root = root or STATIC
+    h = hashlib.sha256()
+    for f in sorted(root.rglob("*")):
+        if f.is_file():
+            h.update(f.relative_to(root).as_posix().encode() + b"\0" + f.read_bytes())
+    return h.hexdigest()[:12]
 
 
 class Server(ThreadingHTTPServer):
@@ -1622,8 +1636,19 @@ def run_tests() -> int:
     check(code == 200 and json.loads(body)["demo"], "with the session the phone reads /api/cc")
     code, hd, _ = remote("/", cookie=None)
     check(code == 302 and hd.get("Location") == "/login", "a page without a session goes to /login")
-    code, _, _ = remote("/sw.js")
+    code, _, body = remote("/sw.js")
     check(code in (200, 404), "the service worker needs no session")
+    check(b"__BUILD__" not in body and static_build().encode() in body, "sw.js carries the build hash of static/")
+    sb = tmp / "sb"; sb.mkdir(); (sb / "a.js").write_text("one"); b1 = static_build(sb)
+    (sb / "a.js").write_text("two"); b2 = static_build(sb)
+    check(b1 != b2 and len(b1) == 12, "any change in static/ gives a new build, so the cache name moves on")
+    for hdr in ("X-Forwarded-Proto", "Tailscale-User-Login", "Tailscale-User-Name", "X-Forwarded-For"):
+        check(not auth.Auth.is_local({"Host": f"127.0.0.1:{port}", hdr: "x"}, port), f"a request carrying {hdr} needs the login")
+    check(not auth.Auth.is_local({"Host": "calebs-mac-mini.tail512a6c.ts.net"}, port), "the tailnet name needs the login even with no proxy headers")
+    code, hd, _ = remote("/")
+    check(code == 302 and hd.get("Location") == "/login", "the tailnet address with no cookie goes to the sign-in page")
+    code, _, body = remote("/login")
+    check(code == 200 and b"caches.delete('pipeline-data-v1')" in body, "the sign-in page drops the offline data copy")
     lock = auth.Auth(tmp / "s2.json", login_file=state.auth.login_file)
     for _i in range(5):
         try:
