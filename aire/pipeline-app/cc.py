@@ -549,6 +549,11 @@ def _street(t: str) -> str:
     return re.sub(r"[^a-z ]", "", s).strip()
 
 
+# Street types, short and long, so "12 Oak Cir" and "12 Oak Circle" are the same street.
+SUFFIXES = {"drive", "lane", "road", "ave", "avenue", "street", "court", "blvd", "boulevard", "hwy", "highway", "cir", "circle",
+            "way", "place", "pkwy", "parkway", "trl", "trail", "ter", "terrace", "cove", "loop", "bend", "run", "row", "sq", "square"}
+
+
 def _street_words(t: str) -> set[str]:
     """The street name's words: letters-only words of three or more ('pecan', 'tree') and numbered streets ('63rd').
     The house number and suffixes like St or Dr are left out, so '8100 63rd St' and 'Commission for 63rd' share '63rd'."""
@@ -556,7 +561,7 @@ def _street_words(t: str) -> set[str]:
     s = re.sub(r"^\d+\s+", "", s)
     words = re.findall(r"[a-z0-9]+", s)
     return {w for w in words if re.fullmatch(r"\d+(st|nd|rd|th)", w) or (w.isalpha() and len(w) >= 3
-            and w not in {"drive", "lane", "road", "ave", "avenue", "street", "court", "blvd", "hwy", "highway"})}
+            and w not in SUFFIXES)}
 
 
 def _same_street(a: str, b: str) -> bool:
@@ -572,7 +577,7 @@ def commission_mail(rows: list[dict], deals: list[dict] | None = None) -> list[d
     money that came in for a deal the sheet does not show as closed gets looked at."""
     paid = {_street(r["subject"]) for r in rows if re.search(r"commission for", r.get("subject") or "", re.I)}
     # a house number ("8100 63rd St" is 8100), never the "63" of "63rd"
-    num = lambda t: (re.search(r"\b(\d{2,6})\s+(?:[a-z]|\d+(?:st|nd|rd|th)\b)", str(t or ""), re.I) or [None, None])[1]
+    num = lambda t: (re.search(r"\b(\d{1,6})\s+(?:[a-z]|\d+(?:st|nd|rd|th)\b)", str(t or ""), re.I) or [None, None])[1]
     closed = [(d.get("deal"), num(d.get("deal"))) for d in deals or [] if stage_of(d.get("status")) == "closed"]
     out = []
     for r in rows:

@@ -517,6 +517,14 @@ class JudgeRound3Money(unittest.TestCase):
         self.assertEqual(cc._street_words("Commission for 12 Pecan Tree Drive"), {"pecan", "tree"})
         self.assertFalse(cc._same_street("Commission for St", "8100 63rd St"))
 
+    def test_reviewer_single_digit_house_and_short_suffixes(self):
+        sheet = [HEAD, ["7 Oak Ln", "Buyer", "Closed", 1, 1, "", "", "2026-09-01", "", ""],
+                 ["12 Elm Circle", "Buyer", "Closed", 1, 1, "", "", "2026-09-01", "", ""]]
+        st = {r["subject"]: r["status"] for r in cc.commission_mail(
+            [{"subject": "Commission for 5 Oak Ln"}, {"subject": "Commission for 7 Oak"}, {"subject": "Commission for 12 Elm Cir"}],
+            cc.deal_rows(sheet))}
+        self.assertEqual(st, {"Commission for 5 Oak Ln": "No closed deal", "Commission for 7 Oak": "Paid", "Commission for 12 Elm Cir": "Paid"})
+
     def test_gci_keeps_the_cents_the_sheet_holds(self):
         deals = cc.deal_rows(self.SHEET + [["9 Oak Ln", "Buyer", "Closed", 1, "$26,000.00", "", "", "2026-03-01", "", ""]])
         sc = cc.scorecard(deals, [], [], {}, None, date(2026, 11, 9))
