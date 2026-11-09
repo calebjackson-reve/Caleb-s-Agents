@@ -1089,6 +1089,25 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/api/alerts":
             d = push._read(self.state.cc_dir / "alerts.json", {"rows": []})
             return self._json(200, {"ok": True, "rows": d.get("rows", [])[:20], "phones": len(push._read(self.state.push_subs, []))})
+        if u.path == "/api/photos":
+            # Which deals have photos and how many. Names only by deal key, never a file path.
+            return self._json(200, {"ok": True, "deals": {k: len(v) for k, v in deal_photos().items()}})
+        m = re.fullmatch(r"/photo/([a-z0-9 %+-]+)/(\d{1,3})", u.path)
+        if m:
+            # One photo by deal key and number, from the list above. No path from the request reaches the disk.
+            files = deal_photos().get(urllib.parse.unquote_plus(m.group(1)).replace("-", " "), [])
+            i = int(m.group(2))
+            if not 0 <= i < len(files):
+                return self._json(404, {"ok": False, "error": "no such photo"})
+            raw = files[i].read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", PHOTO_EXT[files[i].suffix.lower()])
+            self.send_header("Content-Length", str(len(raw)))
+            self.send_header("Cache-Control", "private, max-age=86400")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.wfile.write(raw)
+            return
         if u.path == "/api/cc":
             p = self.state.cc_payload()
             p["ask"] = {"on": bool(self.state.ask_key) or self.state.demo, "cap": cc_ask.CAP, "model": cc_ask.MODEL, "pages": list(cc_ask.PAGES),
@@ -1228,6 +1247,26 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": False, "error": str(e)})
         except Exception as e:
             return self._json(200, {"ok": False, "error": f"{type(e).__name__}: {e}"[:300]})
+
+
+PHOTO_ROOT = Path(os.getenv("PIPELINE_PHOTOS") or Path.home() / "Pictures" / "Pipeline").expanduser()
+PHOTO_EXT = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+
+
+def deal_photos(root: Path = PHOTO_ROOT) -> dict:
+    """Deal photos Caleb owns: one folder per deal in ~/Pictures/Pipeline, named by its street address ("90108 Basil
+    Ln"). Keyed like the Deals sheet (cc.deal_key), each a sorted list of image files. A folder may be a link."""
+    out = {}
+    try:
+        folders = sorted(p for p in root.iterdir() if p.is_dir())
+    except OSError:
+        return out
+    for f in folders:
+        files = sorted((x for x in f.iterdir() if x.is_file() and x.suffix.lower() in PHOTO_EXT and not x.name.startswith(".")),
+                       key=lambda x: (0 if "cover" in x.name.lower() else 1 if "front" in x.name.lower() else 2, x.name))  # the cover first
+        if files:
+            out[cc.deal_key(f.name)] = files
+    return out
 
 
 def static_build(root: Path | None = None) -> str:
@@ -1718,6 +1757,29 @@ def run_tests() -> int:
         check(code == 400 and "confirm" in r["error"], "a live send without the confirm step is refused")
     finally:
         state.sender, state.demo = was
+    # Deal photos: one folder per deal in the photo root, served by key and number only, behind the login.
+    proot = tmp / "photos"; (proot / "100 Fixture Ln").mkdir(parents=True); (proot / "Notes").mkdir()
+    (proot / "100 Fixture Ln" / "b-kitchen.jpg").write_bytes(b"\xff\xd8kitchen"); (proot / "100 Fixture Ln" / "a-front.jpg").write_bytes(b"\xff\xd8front")
+    (proot / "100 Fixture Ln" / "notes.txt").write_text("not a photo"); (proot / "Notes" / "x.txt").write_text("x")
+    dp = deal_photos(proot)
+    check(list(dp) == ["100 fixture"] and [f.name for f in dp["100 fixture"]] == ["a-front.jpg", "b-kitchen.jpg"], "deal photos: one list per deal folder, the front first, images only")
+    global PHOTO_ROOT
+    was_root, PHOTO_ROOT = PHOTO_ROOT, proot
+    deal_photos.__defaults__ = (proot,)
+    try:
+        check(json.loads(urllib.request.urlopen(base + "/api/photos").read())["deals"] == {"100 fixture": 2}, "/api/photos lists deals by key and count, never a path")
+        r = urllib.request.urlopen(base + "/photo/100-fixture/0")
+        check(r.headers["Content-Type"] == "image/jpeg" and r.read() == b"\xff\xd8front", "a deal photo is served by key and number")
+        for bad in ("/photo/100-fixture/9", "/photo/..%2F..%2Fapp.py/0", "/photo/notes/0"):
+            try:
+                urllib.request.urlopen(base + bad); check(False, f"{bad} is refused")
+            except urllib.error.HTTPError as e:
+                check(e.code == 404, f"{bad} is refused")
+        code, _, _ = remote("/photo/100-fixture/0")
+        check(code == 302, "a deal photo needs the login from the tailnet")
+    finally:
+        PHOTO_ROOT = was_root
+        deal_photos.__defaults__ = (was_root,)
     st2 = json.loads(urllib.request.urlopen(base + "/api/state").read())
     check(st2["local"] is True, "the Mac's own page knows it is local, so Send now shows there")
     httpd.shutdown()

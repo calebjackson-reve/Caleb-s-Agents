@@ -224,7 +224,10 @@ function renderNav(c) {
     touches: [td.length, td.some(r => r.owes_reply)], tasks: [(feed().tasks || []).length, c.tasks_overdue > 0], deals: [cd ? cd.deals.filter(r => !['closed', 'out'].includes(r.stage)).length : 0, false],
     queue: [dr.length, false], sent: [(S.data.sent_today || []).length, false] };
   const view = { cc: 'dash', leads: 'ccleads', market: 'monitor', dealmap: 'deals' }[S.view] || S.view;
-  $('#nav').innerHTML = NAV.map(([g, items]) => `<div class="nav-g"><span class="nav-h">${g}</span>${items.map(([k, ico, label]) => { const [n, warn] = cnt[k] || [];
+  // Each group has its color; the page takes the color of the group it is in (ui.css, the color code).
+  const sec = (NAV.find(([, items]) => items.some(([k]) => k === view)) || ['Today'])[0].toLowerCase();
+  document.body.dataset.sec = sec;
+  $('#nav').innerHTML = NAV.map(([g, items]) => `<div class="nav-g g-${g.toLowerCase()}"><span class="nav-h">${g}</span>${items.map(([k, ico, label]) => { const [n, warn] = cnt[k] || [];
     return `<button type="button" class="${view === k ? 'on' : ''}" ${view === k ? 'aria-current="page"' : ''} onclick="go('${k}')"><span class="ico" aria-hidden="true">${ico}</span><span class="lbl">${label}</span>${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`; }).join('')}</div>`).join('');
   const on = $('#nav .on'), side = $('.side');
   if (on && side && innerWidth <= 720) { const a = on.getBoundingClientRect(), b = side.getBoundingClientRect(); side.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2); }

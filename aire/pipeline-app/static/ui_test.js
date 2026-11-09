@@ -97,7 +97,10 @@ run('S.data = __state');
 // 10. Tags: only coral, tan and the neutral muted color.
 const ui = fs.readFileSync(path.join(dir, 'ui.css'), 'utf8');
 const kcolors = [...ui.matchAll(/--k:\s*(#[0-9a-f]{6})/gi)].map(m => m[1].toLowerCase());
-check(kcolors.length && kcolors.every(c => ['#e87757', '#c8b596', '#aaa298'].includes(c)), 'tag colors are coral, tan or neutral', kcolors.join(' '));
+// 2026-11-09: Caleb chose "keep black, add a color code". The palette is coral and tan plus the status colors below,
+// nothing else (this replaces round 2's coral-and-tan-only rule).
+const PALETTE = ['#e87757', '#c8b596', '#aaa298', '#ff5a5f', '#f5b041', '#4ea8ff', '#3ecf8e', '#a78bfa', '#2dd4bf', '#8f877e', '#8fa3b8'];
+check(kcolors.length && kcolors.every(c => PALETTE.includes(c)), 'tag colors come only from the approved palette', kcolors.filter(c => !PALETTE.includes(c)).join(' '));
 check(!/text-decoration:\s*line-through/.test(ui) && /cc-filter\[aria-pressed="false"\][^}]*text-decoration:\s*none/.test(ui), 'filter chips are never struck through');
 // 9. No particle orb.
 check(!fs.existsSync(path.join(dir, 'core.js')) && !fs.readFileSync(path.join(dir, 'index.html'), 'utf8').includes('src="core.js"'), 'the particle core is gone');
@@ -281,8 +284,8 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
     if (mx === mn) return null; const sat = l > .5 ? (mx - mn) / (2 - mx - mn) : (mx - mn) / (mx + mn); if (sat < .3 || l < .15 || l > .93) return null;
     let h = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4; h *= 60; return h < 0 ? h + 360 : h; };
   const coolIn = f => (fs.readFileSync(path.join(dir, f), 'utf8').match(/#[0-9a-f]{6}\b/gi) || []).filter(c => { const h = hueOf(c); return h !== null && h >= 75 && h <= 290; });
-  const cool = ['ui.css', 'cc.css', 'map.js'].flatMap(f => coolIn(f).map(c => f + ' ' + c));
-  check(!cool.length, 'no blue or green in the page styles or the map pins', cool.join(' '));
+  const cool = ['ui.css', 'cc.css', 'map.js'].flatMap(f => coolIn(f).filter(c => !PALETTE.includes(c.toLowerCase())).map(c => f + ' ' + c));
+  check(!cool.length, 'no blue or green outside the color code, in the page styles or the map pins', cool.join(' '));
   const cssAll = ['ui.css', 'cc.css', 'app.css'].map(x => fs.readFileSync(path.join(dir, x), 'utf8')).join('\n');
   check(!/line-through/.test(cssAll), 'no strikethrough rule anywhere');
   const words = [], strikes = [];
@@ -618,6 +621,17 @@ check(run(`gmailLink('aire@calebjackson.org', 'Quick question', 'Line one\\nLine
     check(run(`sharers('text', ${JSON.stringify(ph)})`).length >= 2, 'two contacts with one number are flagged');
     run('S.data = __state;'); } }
 check(/confirmSendNow[^]*?modal\(`Send this \$\{v\.kind\} now\?`[^]*?esc\(v\.to\)[^]*?send-preview">\$\{esc\(v\.body\)\}/.test(appjs), 'the confirm step names the recipient and shows the full text');
+
+// The color code and deal photos.
+check(/body\[data-sec="people"\] \{ --sec: var\(--c-purple\); \}/.test(ui) && /\.st-closed \{ --st: var\(--c-green\); \}/.test(ui) && /\.st-offer \{ --st: var\(--c-amber\); \}/.test(ui), 'sections and stages each have their own color');
+check(/class="nav-g g-\$\{g\.toLowerCase\(\)\}"/.test(appjs) && /document\.body\.dataset\.sec = sec/.test(appjs), 'each nav group carries its section class and the page takes its color');
+{ run(`CC.photos = { '100 fixture': 3 }`);
+  check(run(`CC.thumb('100 Fixture Ln')`) === '<img class="cc-thumb" src="/photo/100-fixture/0" alt="" loading="lazy">' && run(`CC.thumb('9 Nowhere Rd')`) === '<span class="cc-av" aria-hidden="true">⌂</span>', 'a deal with a photo shows it, one without keeps the house mark');
+  check(/class="cc-photo ph st-offer"/.test(run(`CC.cover('9 Nowhere Rd', 'offer')`)), 'a card with no photo gets its stage color');
+  const dp = render('deals', true);
+  check(/<li class="cc-row st-(contract|offer|closed|appointment|out|other)/.test(dp) && /cc-pill st-/.test(dp), 'every Deals row and status pill carries its stage color');
+  run('CC.photos = {}'); }
+check(run(`(() => { const r = { what: 'Act of sale' }; return 1; })()`) === 1 && /return \/act of sale\|closing\/i\.test\(t\) \? 'sale'/.test(fs.readFileSync(path.join(dir, 'cc.js'), 'utf8')), 'act of sale reads green, deadlines stay coral');
 
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

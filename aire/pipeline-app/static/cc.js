@@ -27,6 +27,11 @@
   const ago = min => { if (min == null) return ''; const u = (k, w) => `${k} ${w}${k === 1 ? '' : 's'} ago`;
     return min < 1 ? 'just now' : min < 60 ? Math.round(min) + ' min ago' : min < 1440 ? u(Math.floor(min / 60), 'hour') : u(Math.floor(min / 1440), 'day'); };
   C.ago = ago;
+  // Deal photos from ~/Pictures/Pipeline/<street address>/ on the Mac, behind the login. No photo: the stage color.
+  C.photos = C.photos || {};
+  C.photoUrl = (deal, i) => { const k = C.dealKey(deal); return C.photos[k] ? `/photo/${encodeURIComponent(k.replace(/\s+/g, '-'))}/${i || 0}` : null; };
+  C.thumb = deal => { const u = C.photoUrl(deal); return u ? `<img class="cc-thumb" src="${u}" alt="" loading="lazy">` : '<span class="cc-av" aria-hidden="true">⌂</span>'; };
+  C.cover = (deal, stage) => { const u = C.photoUrl(deal); return u ? `<img class="cc-photo" src="${u}" alt="${esc(deal)}" loading="lazy">` : `<div class="cc-photo ph st-${esc(stage || 'other')}" aria-hidden="true">⌂</div>`; };
   // Booked time: minutes under an hour ("15 min"), hours with one decimal after ("1.5 h").
   C.bookedText = (h, mins) => C.booked(h, mins).replace(/<[^>]*>/g, '');
   C.booked = (h, mins) => { const mi = mins ?? (h == null ? null : Math.round(h * 60));
@@ -85,6 +90,7 @@
   document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('privacy'); if (b) b.onclick = () => C.togglePriv(); C.syncPrivBtn(); });
   C.rerender = function () { render(); };
   C.load = async function () {
+    try { const ph = await api('/api/photos'); if (ph && ph.ok) C.photos = ph.deals || {}; } catch (e) { }
     try { const d = await api('/api/cc'); if (d && d.fresh) { C.data = d; C.err = null; } else if (!C.data) C.err = d && d.error === 'offline' ? "can't reach the Mac and there is no saved copy on this device yet" : (d && d.error) || 'no answer'; } catch (e) { if (!C.data) C.err = 'Pipeline did not answer /api/cc'; }
     C.rerender();
   };
@@ -132,7 +138,7 @@
   function greet() { const h = Number(new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', hour12: false }).format(new Date())); return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'; }
   // Event titles carry client names; with privacy on, only contract dates (addresses) and blocks keep their titles.
   const evTitle = r => (C.priv && !['closing', 'deadline', 'inspection', 'block'].includes(r.kind) ? '<span class="cc-hid">Details hidden</span>' : esc(r.title));
-  const evRow = r => `<li class="cc-ev k-${r.kind}"><span class="cc-when">${time(r.start)}</span><span class="cc-what">${evTitle(r)}</span><span class="cc-chip">${r.invite ? 'Invite, not accepted' : KIND[r.kind]}</span></li>`;
+  const evRow = r => `<li class="cc-ev k-${r.kind === 'closing' ? 'sale' : r.kind}"><span class="cc-when">${time(r.start)}</span><span class="cc-what">${evTitle(r)}</span><span class="cc-chip">${r.invite ? 'Invite, not accepted' : KIND[r.kind]}</span></li>`;
   const inboxRow = r => `<li class="cc-ev"><span class="cc-chip c-${r.category}">${r.category}</span><span class="cc-what">${C.priv ? '<span class="cc-hid">Subject hidden</span>' : esc(r.subject)}<small>${contact(senderName(r.sender))}</small></span></li>`;
   const senderName = s => String(s || '').replace(/<[^>]*>/g, '').trim();
   function deadlineList(rows) {
@@ -143,8 +149,8 @@
     return `<ul class="cc-list">${rows.map(r => { const k = dlKind(r); return `<li class="cc-ev k-${k} ${r.day <= addDays(C.data.today, 2) ? 'is-soon' : ''}"><span class="cc-when">${day(r.day)}${r.time ? ' ' + esc(r.time) : ''}</span><span class="cc-what">${esc(r.what)}<small>${esc(r.deal)} · ${r.from === 'both' ? 'Deals sheet and calendar' : r.from === 'sheet' ? 'Deals sheet' : 'calendar'}</small>${r.note ? `<small class="cc-warn">Shown from the Deals sheet. ${esc(r.note)}.</small>` : ''}${r.said ? `<small>Read from the words: ${C.scrub(r.said)}</small>` : ''}</span><span class="cc-chip">${DL[k]}</span></li>`; }).join('')}</ul>${chkList}`;
   }
   // A contract deadline's type, for its color: act of sale, inspection, appraisal or financing, anything else.
-  const DL = { closing: 'Act of sale', inspection: 'Inspection', finance: 'Appraisal / loan', deadline: 'Deadline' };
-  function dlKind(r) { const t = (r.what || '') + ' ' + (r.title || ''); return /act of sale|closing/i.test(t) ? 'closing' : /inspect/i.test(t) ? 'inspection' : /apprais|financ|loan|mortgage/i.test(t) ? 'finance' : 'deadline'; }
+  const DL = { sale: 'Act of sale', inspection: 'Inspection', finance: 'Appraisal / loan', deadline: 'Deadline' };
+  function dlKind(r) { const t = (r.what || '') + ' ' + (r.title || ''); return /act of sale|closing/i.test(t) ? 'sale' : /inspect/i.test(t) ? 'inspection' : /apprais|financ|loan|mortgage/i.test(t) ? 'finance' : 'deadline'; }
   function addDays(k, x) { const t = new Date(k + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + x); return t.toISOString().slice(0, 10); }
 
   // ---------------- One deal source, one lead list ----------------

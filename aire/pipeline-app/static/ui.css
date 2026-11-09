@@ -92,16 +92,24 @@ body { background: #0a0a0b; background-image: none; }
 .chip span { font: 11px var(--sans); letter-spacing: 0; text-transform: none; }
 
 /* ---------- tags: coral, tan, or black with a neutral line. Nothing else. */
-.k-closing, .k-deadline { --k: #e87757; }
-.k-showing, .k-listing, .k-finance, .k-inspection, .k-client { --k: #c8b596; }
+.k-deadline, .k-closing { --k: #e87757; } .k-sale { --k: #3ecf8e; } .k-inspection { --k: #f5b041; } .k-finance { --k: #4ea8ff; }
+.k-showing, .k-listing, .k-client { --k: #c8b596; }
+.cc-ev.k-showing, .cc-ev.k-listing, .cc-ev.k-client, .cc-filter.k-showing, .cc-filter.k-listing, .cc-filter.k-client { --k: #a78bfa; }
+.k-hot { --k: #ff5a5f; } .k-warm { --k: #f5b041; } .k-cold { --k: #4ea8ff; } .k-past { --k: #ff5a5f; } .k-done { --k: #3ecf8e; } .k-next { --k: #4ea8ff; }
 .k-block, .k-personal, .k-other { --k: #aaa298; }
 .cc-pill { background: transparent; }
 .cc-pill.k-closing { background: var(--cc-coral-soft); }
 .cc-ev.k-inspection, .cc-ev.k-finance { border-left-color: var(--cc-tan); }
 .cc-yy.up { color: var(--cc-tan); } .cc-yy.down { color: var(--cc-coral); }
 .tag { border: 1px solid var(--cc-line); color: var(--cc-muted); background: transparent; border-radius: 999px; font: 12px var(--sans); letter-spacing: 0; text-transform: none; padding: 2px 9px; box-shadow: none; }
-.tag.hot, .tag.reply, .tag.stop, .tag.live, .tag.bad { color: var(--cc-coral); border-color: rgba(232, 119, 87, .55); }
-.tag.warm, .tag.lukewarm, .tag.info, .tag.violet, .tag.warn { color: var(--cc-tan); border-color: rgba(200, 181, 150, .5); }
+.tag.reply, .tag.stop, .tag.live, .tag.bad { color: var(--cc-coral); border-color: rgba(232, 119, 87, .55); }
+.tag.info, .tag.violet { color: var(--cc-tan); border-color: rgba(200, 181, 150, .5); }
+/* Lead temperature: hot red, warm amber, lukewarm tan, cold blue, ice-cold slate. */
+.tag.hot { color: var(--c-red); border-color: color-mix(in srgb, var(--c-red) 55%, transparent); }
+.tag.warm, .tag.warn { color: var(--c-amber); border-color: color-mix(in srgb, var(--c-amber) 55%, transparent); }
+.tag.lukewarm { color: var(--cc-tan); border-color: rgba(200, 181, 150, .5); }
+.tag.cold { color: var(--c-blue); border-color: color-mix(in srgb, var(--c-blue) 50%, transparent); }
+.tag.ice-cold { color: #8fa3b8; border-color: rgba(143, 163, 184, .45); }
 .txs { font: 600 11px var(--sans); }
 .txs.ok { color: var(--cc-tan); } .txs.wait { color: var(--cc-warn); } .txs.bad { color: var(--cc-bad); } .txs.dry { color: var(--cc-muted); }
 .cc-hid { color: var(--cc-muted); font-style: italic; }
@@ -275,3 +283,38 @@ body { background: #0a0a0b; background-image: none; }
 .drawer .dfoot, #drawer .dfoot { flex-wrap: wrap; row-gap: 8px; }
 #drawer .dfoot .spacer { flex: 1 1 0; }
 #c-exact { display: block; }
+
+
+/* ---------- Color code (2026-11-09, Caleb's pick: black and coral stay the brand, plus a status code).
+   Sections color the nav and page heads: Today coral, People purple, Deals blue, Numbers green, You teal, System grey.
+   Items carry stage and urgency: offer amber, under contract blue, closed green, fell through grey, overdue red. */
+:root { --c-red: #ff5a5f; --c-amber: #f5b041; --c-blue: #4ea8ff; --c-green: #3ecf8e; --c-purple: #a78bfa; --c-teal: #2dd4bf; --c-grey: #8f877e; --sec: var(--cc-coral); }
+body[data-sec="today"] { --sec: var(--cc-coral); } body[data-sec="people"] { --sec: var(--c-purple); } body[data-sec="deals"] { --sec: var(--c-blue); }
+body[data-sec="numbers"] { --sec: var(--c-green); } body[data-sec="you"] { --sec: var(--c-teal); } body[data-sec="system"] { --sec: var(--c-grey); }
+.nav-g { --g: var(--cc-coral); } .nav-g.g-people { --g: var(--c-purple); } .nav-g.g-deals { --g: var(--c-blue); } .nav-g.g-numbers { --g: var(--c-green); }
+.nav-g.g-you { --g: var(--c-teal); } .nav-g.g-system { --g: var(--c-grey); }
+.nav-g .nav-h { color: var(--g); }
+.nav-g button .ico { color: var(--g); }
+.nav-g button.on { background: color-mix(in srgb, var(--g) 18%, transparent); box-shadow: inset 3px 0 0 var(--g); }
+.nav-g button.on .ico { color: var(--g); }
+.cc-head h1 { box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--sec) 70%, transparent); display: inline-block; padding-bottom: 2px; }
+.cc-tile { border-top: 3px solid color-mix(in srgb, var(--sec) 75%, transparent); }
+/* Stage: one color per stage, on pills, deal rows and placeholders. */
+.st-offer { --st: var(--c-amber); } .st-contract { --st: var(--c-blue); } .st-closed { --st: var(--c-green); } .st-out { --st: var(--c-grey); }
+.st-appointment { --st: var(--c-purple); } .st-other { --st: var(--cc-tan); }
+.cc-pill[class*="st-"] { color: var(--st); border-color: color-mix(in srgb, var(--st) 55%, transparent); background: color-mix(in srgb, var(--st) 12%, transparent); }
+.cc-row[class*="st-"] { border-left: 4px solid var(--st); }
+.cc-deal[class*="st-"] { border-top: 4px solid var(--st); }
+/* Urgency: due within 2 days amber, past red. */
+.cc-ev.is-soon { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-amber) 70%, transparent); }
+.cc-ev.is-past, .cc-steps li.k-past { --k: var(--c-red); }
+/* Deal photos: a cover on cards, a thumbnail on rows. No photo: the stage color with a house mark. */
+.cc-photo { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; background: color-mix(in srgb, var(--st, var(--cc-coral)) 22%, #141215); }
+.cc-photo.ph { display: grid; place-items: center; color: var(--st, var(--cc-coral)); font-size: 28px; }
+.cc-thumb { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex: none; background: color-mix(in srgb, var(--st, var(--cc-coral)) 22%, #141215); }
+.cc-thumb.ph { display: grid; place-items: center; color: var(--st, var(--cc-coral)); font-size: 20px; }
+.cc-ev .cc-thumb { width: 40px; height: 40px; }
+.cc-sub-photo { display: flex; align-items: center; gap: 10px; }
+.cc-sub-photo .cc-thumb, .cc-sub-photo .cc-av { width: 40px; height: 40px; }
+.cc-deal > .cc-photo { margin: -2px 0 10px; }
+.cc-row > .cc-thumb { align-self: start; }

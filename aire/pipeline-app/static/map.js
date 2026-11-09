@@ -10,8 +10,9 @@ window.PMap = (function () {
     sat: { url: (z, x, y) => `https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/${z}/${y}/${x}`, max: 16, attr: 'Imagery: USGS The National Map' },
   };
   // Bands on a coral-to-grey ramp (KW First Choice coral, tan as the accent, warm greys), no blue or green.
-  const BAND = { hot: '#e87757', warm: '#f2a585', lukewarm: '#c8b596', cold: '#9a9188', 'ice-cold': '#6d665f', '': '#4a4540' };
-  const STAGE = { lead: '#bdb4a9', consult: '#a8997f', active: '#c8b596', showing: '#e87757', under_contract: '#d9a98c' };
+  // The app's color code: lead temperature and deal stage read the same on the map as on the cards.
+  const BAND = { hot: '#ff5a5f', warm: '#f5b041', lukewarm: '#c8b596', cold: '#4ea8ff', 'ice-cold': '#8fa3b8', '': '#4a4540' };
+  const STAGE = { lead: '#a78bfa', consult: '#a8997f', active: '#c8b596', showing: '#e87757', under_contract: '#4ea8ff' };
   const MARKET = { permit: '#ffb547', new_listing: '#c8b596', price_change: '#e87757', back_on_market: '#e87757', pending: '#d9a98c', sold: '#e87757', listing_change: '#bdb4a9' };
   const CLUSTER_PAST = 200, CELL = 54;
 

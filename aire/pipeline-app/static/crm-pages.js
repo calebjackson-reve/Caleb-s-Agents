@@ -183,7 +183,7 @@
         <p class="cc-note">${last ? `Last text: ${C.priv ? C.msg('') : '“' + esc(C.cleanMsg(last)) + '”'}` : quietTxt(r)}${r.phone ? ' · ' + C.ph(r.phone) : r.email ? ' · ' + C.em(r.email) : ''}</p></div>
       <div class="cc-acts">${textBtn(r.person_id, r)}<button type="button" class="cc-primary" onclick="touched('${esc(r.person_id)}')">✓ Touched</button><button type="button" onclick="openTask('${esc(r.person_id)}')">＋ Task</button><button type="button" onclick="openNote('${esc(r.person_id)}')">Note</button><button type="button" class="cc-danger" onclick="openDNC('${esc(r.person_id)}')" aria-label="Do Not Contact">Do Not Contact</button></div></li>`;
   }
-  const band = b => ({ hot: 'k-closing', warm: 'k-listing' }[b] || 'k-other');
+  const band = b => ({ hot: 'k-hot', warm: 'k-warm', lukewarm: 'k-listing', cold: 'k-cold', 'ice-cold': 'k-cold' }[b] || 'k-other');
 
   // ---------------- Tasks
   function tasks() {
@@ -211,7 +211,7 @@
   // Expired is checked against this device's clock too, so a page left open past the deadline still says so.
   C.offerExpired = o => !!o && (o.expired || (o.at && new Date(o.at) < new Date()));
   C.offerPill = r => { const o = r.stage === 'offer' && r.offer; if (!o) return '';
-    return C.offerExpired(o) ? `<span class="cc-pill k-closing">Offer expired ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>` : `<span class="cc-pill k-listing">Offer open until ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>`; };
+    return C.offerExpired(o) ? `<span class="cc-pill k-past">Offer expired ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>` : `<span class="cc-pill st-offer">Offer open until ${esc(C.day(o.date))}${o.time ? ' ' + esc(o.time) : ''}</span>`; };
   // Every Deals row shows the same buttons. One that cannot work is greyed and says why, on the button itself.
   C.offBtn = (label, why) => `<button type="button" class="cc-off" disabled aria-disabled="true" title="${esc(why)}">${esc(label)}<small>${esc(why)}</small></button>`;
   // From search: open Deals, scroll to that deal and light it for a moment.
@@ -224,9 +224,9 @@
     const all = C.data.deals.filter(r => matches(`${r.deal} ${r.status} ${r.side} ${r.next}`));
     const live = all.filter(r => !['closed', 'out'].includes(r.stage)), past = all.filter(r => ['closed', 'out'].includes(r.stage));
     const only = (C.data.crm_only_deals || []).filter(r => matches(`${r.deal} ${r.stage}`));
-    const row = r => `<li class="cc-row ${r.differs.length ? 'is-warn' : ''}"><span class="cc-av" aria-hidden="true">⌂</span>
+    const row = r => `<li class="cc-row st-${esc(r.stage)} ${r.differs.length ? 'is-warn' : ''}">${C.thumb(r.deal)}
       <div class="cc-row-main"><h3>${esc(r.deal)}</h3>
-        <div class="cc-pills" id="deal-${esc(C.dealKey(r.deal).replace(/\s+/g, '-'))}"><span class="cc-pill ${r.stage === 'contract' ? 'k-closing' : r.stage === 'closed' ? 'k-listing' : 'k-other'}">${esc(r.status)}</span>${r.side ? `<span class="cc-pill k-other">${esc(r.side)}</span>` : ''}${r.to_close != null && r.to_close >= 0 ? `<span class="cc-pill k-listing">${r.to_close === 0 ? 'Closes today' : r.to_close + ' days to close'}</span>` : ''}${C.offerPill(r)}</div>
+        <div class="cc-pills" id="deal-${esc(C.dealKey(r.deal).replace(/\s+/g, '-'))}"><span class="cc-pill st-${esc(r.stage)}">${esc(r.status)}</span>${r.side ? `<span class="cc-pill k-other">${esc(r.side)}</span>` : ''}${r.to_close != null && r.to_close >= 0 ? `<span class="cc-pill k-listing">${r.to_close === 0 ? 'Closes today' : r.to_close + ' days to close'}</span>` : ''}${C.offerPill(r)}</div>
         <p class="cc-note">Price ${C.m(r.price)} · Your commission, gross ${r.commission == null ? '<em>not on the sheet</em>' : C.m(r.commission)}${r.act ? (r.stage === 'offer' ? ' · Act of sale if accepted ' : ' · Act of sale ') + esc(C.day(r.act)) : ''}${r.crm && r.crm.display ? ' · ' + C.who(r.crm.display) : ''}</p>
         ${r.next ? `<p class="cc-row-why">${C.scrub(r.next)}</p>` : ''}
         ${r.differs.length ? `<p class="cc-warn">The CRM Deals tab says ${r.differs.map(x => `${esc(x.field)} ${x.field === 'price' ? C.m(x.crm) : esc(x.field === 'act of sale' ? C.day(x.crm) : x.crm)}`).join(', ')}. This page shows the Deals sheet.</p>` : ''}</div>

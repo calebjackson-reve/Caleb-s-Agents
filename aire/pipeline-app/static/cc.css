@@ -144,7 +144,7 @@ button.cc-tile:hover { background: var(--cc-raise); }
 .cc-state.s-failed, .cc-state.s-stale { color: var(--cc-bad); border-color: rgba(255, 138, 112, .5); }
 
 /* Color by kind, on the calendar and on deadlines. Each color is legible on the dark panel; the label always says the kind too. */
-.k-closing, .k-deadline { --k: #e87757; } .k-finance, .k-inspection, .k-showing, .k-listing, .k-client { --k: #c8b596; }
+.k-closing, .k-deadline { --k: #e87757; } .k-sale { --k: #3ecf8e; } .k-inspection { --k: #f5b041; } .k-finance { --k: #4ea8ff; } .k-showing, .k-listing, .k-client { --k: #c8b596; }
 .k-block, .k-personal, .k-other { --k: #aaa298; }
 .cc-ev[class*="k-"] { border-left: 4px solid var(--k); background: color-mix(in srgb, var(--k) 11%, transparent); margin-bottom: 3px; }
 .cc-ev[class*="k-"]:hover { background: color-mix(in srgb, var(--k) 20%, transparent); }
