@@ -43,7 +43,7 @@
     const g = guard(); if (g) return g;
     const d = C.data, sc = d.scorecard, cap = sc.cap;
     const cl = sc.closings, lw = sc.leads7;
-    return `<div class="cc-page">${head('Scorecard', 'Your numbers against your own goals. KW 70/30 split.')}
+    return `<div class="cc-page">${head('Scorecard', 'Your numbers against your own goals. The 70/30 split is the one you gave Pipeline for KW First Choice, not read from KW.')}
       <div class="cc-kpis">
         ${kpi('GCI this year', m(sc.gci.value), `${bar(sc.gci.goal)}<p class="cc-note">Paid plus pending: <b>${m(sc.gci.with_pending)}</b>${sc.gci.goal_with_pending ? ` (${sc.gci.goal_with_pending.pct}% of goal)` : ''}. ${sc.gci.from === 'kw_paid' ? 'From KW commission forms.' : 'From Closed deals in your sheet with an act of sale this year.'}${sc.gci.blank ? ` <em>${sc.gci.blank} closed with no commission on the sheet, so this is low.</em>` : ''}</p>${delta('gci', true)}${spark('gci')}`, ['deals', 'history'])}
         ${kpi('Closings this year', n(cl.value), `${bar(cl.goal)}${cl.low ? `<p class="cc-note">Goal ${cl.low} to ${cl.high}.</p>` : ''}${sc.gci.undated ? `<p class="cc-warn">${sc.gci.undated} closed deal${sc.gci.undated > 1 ? 's have' : ' has'} no act of sale date and ${sc.gci.undated > 1 ? 'are' : 'is'} not counted.</p>` : ''}${delta('closings')}${spark('closings')}`, ['deals', 'history'])}

@@ -35,6 +35,9 @@
    'week weeks month months year years day days morning afternoon evening tonight noon midnight early late soon now asap hour hours minute minutes ' +
    'yes okay sure maybe not none all any some every each both either neither few many more most less least much lot lots ' +
    'buyer seller agent lender title inspector appraiser contractor tenant landlord owner family kids wife husband mom dad son daughter friend').split(/\s+/).forEach(w => KEEP.add(w));
+  // Contract and CRM words that read as names when capitalized (round 5): they are never people.
+  ('addendum amendment extension extended counteroffer acceptance contingency disclosure addenda cultivate capture connect ' +
+   'date dates deadline financing loan approval earnest money deposit survey termite repairs response report expected').split(/\s+/).forEach(w => KEEP.add(w));
   // Template verbs that start CRM task text. They stay readable even when a client has the same name ("Call before Monday").
   const VERBS = new Set('call text send ask reply check confirm follow thank partner offer paid cash command ninja reach handwritten congrats'.split(' '));
   // Words in capitals that are real acronyms. Any other all-caps word is treated like a capitalized one (SMITH hides).
@@ -82,7 +85,7 @@
       s = s.replace(new RegExp('(?<![\\p{L}])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\p{L}])', 'giu'), '•••');
     }));
     // Any word that starts with a capital (accents included): hidden if it is a name by the rule above.
-    s = s.replace(/(?<![\p{L}])\p{Lu}[\p{L}'’]*/gu, w => (C.isNameWord(w) ? '•••' : w));
+    s = s.replace(/(?<![\p{L}])\p{Lu}[\p{L}'’]*/gu, (w, at, all) => (w === 'Good' && /^ (until|through|thru)\b/.test(all.slice(at + 4)) ? w : C.isNameWord(w) ? '•••' : w));
     s = s.replace(/•••(?:[ -]•••)+/g, '•••');
     return esc(s);
   };
@@ -169,7 +172,7 @@
     const all = (feedF().touches_due || []).filter(r => matches(`${r.display} ${r.phone} ${r.email} ${r.next_action} ${r.stage}`));
     const n = { reply: all.filter(r => r.owes_reply).length, hot: all.filter(r => r.band === 'hot').length, warm: all.filter(r => r.band === 'warm').length };
     const rows = S.filter === 'reply' ? all.filter(r => r.owes_reply) : S.filter === 'hot' || S.filter === 'warm' ? all.filter(r => r.band === S.filter) : all;
-    const body = rows.length ? `<ul class="cc-rows">${rows.slice(0, 200).map(touchRow).join('')}</ul>${rows.length > 200 ? `<p class="cc-note">Showing the first 200 of ${rows.length}.</p>` : ''}`
+    const body = rows.length ? `<ul class="cc-rows">${rows.slice(0, S.touchN || 200).map(touchRow).join('')}</ul>${rows.length > (S.touchN || 200) ? `<p class="cc-note">Showing the first ${S.touchN || 200} of ${rows.length}. <button type="button" class="cc-mini" onclick="S.touchN = (S.touchN || 200) + 200; render()">Show 200 more</button></p>` : ''}`
       : S.q ? C.noMatch() : C.empty('Every touch is logged.');
     return page('Touches due', 'People due a touch from your cadence, replies owed first. Touched logs it in the CRM.', body, ['crm'],
       seg([['all', 'All', all.length], ['reply', 'Owe a reply', n.reply], ['hot', 'Hot', n.hot], ['warm', 'Warm', n.warm]], S.filter, 'CC.setFilter'));

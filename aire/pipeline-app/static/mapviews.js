@@ -195,7 +195,7 @@ async function addToList(kind, rows) {
 function marketDetail(r) {
   const amt = r.type === 'permit' ? (r.value ? `${CC.m(r.value)} project` : 'no value given') : r.price ? CC.m(r.price) + (r.price_was ? ` (was ${CC.m(r.price_was)})` : '') : 'no price given';
   const near = r.nearest && r.nearest.person_id ? `<a href="#" onclick="S.pick=${jsa('person:' + r.nearest.person_id)};S.mapView={center:[${r.lat},${r.lng}],zoom:15};go('map');return false">${CC.who(r.nearest.display)}</a> · ${esc(r.nearest.band || 'no band')} · ${r.nearest.miles} mi` : 'nobody you know within 2 miles';
-  return `<dl><dt>When</dt><dd>${esc(r.date)} · ${CC.scrub(r.subtype || r.label)}</dd><dt>Amount</dt><dd>${amt}</dd>${r.description && r.description !== r.subtype ? `<dt>Detail</dt><dd>${CC.scrub(r.description)}</dd>` : ''}
+  return `<dl><dt>When</dt><dd>${esc(r.date)} · ${CC.scrubMoney(r.subtype || r.label)}</dd><dt>Amount</dt><dd>${amt}</dd>${r.description && r.description !== r.subtype ? `<dt>Detail</dt><dd>${CC.scrub(r.description)}</dd>` : ''}
     <dt>Farm</dt><dd>${esc(farmName(r.farm) || 'outside your farms')}</dd><dt>Nearest</dt><dd>${near}</dd><dt>Source</dt><dd>${esc(r.source)} · ${esc(r.source_date)}${r.source_ref ? ' · #' + esc(r.source_ref) : ''}</dd></dl>`;
 }
 function marketActs(r) {
@@ -218,11 +218,11 @@ function viewMarket() {
   const body = rows.length ? `<ul class="cc-rows">${rows.slice(0, 300).map(r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${r.type === 'permit' ? '⚒' : '◆'}</span>
     <div class="cc-row-main"><h3>${esc(r.address)}</h3>
       <div class="cc-pills"><span class="cc-pill ${r.type === 'permit' ? 'k-listing' : 'k-closing'}">${esc(r.label)}</span><span class="cc-pill k-other">${esc(r.city)}</span>${r.farm ? `<span class="cc-pill k-other">${esc(farmName(r.farm))}</span>` : ''}</div>
-      <p class="cc-row-why">${r.type === 'permit' ? (r.value ? CC.m(r.value) + ' · ' : '') + CC.scrub(r.subtype) : (r.price ? CC.m(r.price) : 'No price given') + (r.price_was ? ` · was ${CC.m(r.price_was)}` : '')}</p>
+      <p class="cc-row-why">${r.type === 'permit' ? (r.value ? CC.m(r.value) + ' · ' : '') + CC.scrubMoney(r.subtype) : (r.price ? CC.m(r.price) : 'No price given') + (r.price_was ? ` · was ${CC.m(r.price_was)}` : '')}</p>
       <p class="cc-note">${esc(C_day(r.date))}${r.nearest && r.nearest.person_id ? ` · ${r.nearest.miles} mi from ${CC.who(r.nearest.display)}` : ''} · ${esc(r.source)}, ${esc(C_day(r.source_date))}</p></div>
     <div class="cc-acts">${marketActs(r)}</div></li>`).join('')}</ul>${rows.length > 300 ? `<p class="cc-note">Showing the newest 300 of ${rows.length}.</p>` : ''}`
     : S.q ? CC.noMatch() : CC.empty(all.length ? 'Nothing matches these filters.' : 'No permits or listing changes in the last read.');
-  return CC.crmPage('Listings and permits', `New listings, price changes and building permits near your farms, newest first. ${rows.length} shown.`, body, ['permits'], tools);
+  return CC.crmPage('Listings and permits', `New listings, price changes and building permits near your farms, newest first. ${rows.length} shown.${all.length - permits ? '' : ' Listings 0 means no Flexmls alert rows are in this feed. That is no listing data, not a quiet market.'}`, body, ['permits'], tools);
 }
 const C_day = k => (k && /^\d{4}-\d{2}-\d{2}/.test(k) ? CC.day(k.slice(0, 10)) : k || '');
 function mktSet(k, v) { S.mktF[k] = v; render(); }

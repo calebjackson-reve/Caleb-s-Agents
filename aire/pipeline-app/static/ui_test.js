@@ -651,6 +651,13 @@ check(run(`(() => { const r = { what: 'Act of sale' }; return 1; })()`) === 1 &&
   check(/res\.parts \? Object\.keys\(res\.parts\)/.test(fs.readFileSync(path.join(dir, 'cc-sources.js'), 'utf8')), 'Sources counts the rows in each tab, not the tabs');
 }
 
+// Round 5: contract words and "Good until" are not names, and a permit's type is public record.
+{ run('CC.priv = true');
+  const t = run(`CC.scrub('Closing Date extended 1 day by Amendment No. 1. Addendum signed. Good until Mon Nov 9 12 PM. Command has it in Cultivate')`);
+  check(!/•••/.test(t), 'contract words, Good until and Command stages stay readable when hidden', t);
+  check(/CC\.scrubMoney\(r\.subtype\)/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')), 'a permit type is shown as the public record has it');
+  run('CC.priv = false'); }
+
 // Hand-off log: a Text or Email click shows as opened, a confirmed send says who confirmed it, and the app asks.
 { const keep = run('JSON.stringify([S.data.sent_today, S.data.handoff || null, S.data.sent_log || null])');
   const at = new Date().toISOString();
@@ -668,6 +675,14 @@ check(run(`(() => { const r = { what: 'Act of sale' }; return 1; })()`) === 1 &&
   check(run(`TEXT_STATES.opened[1]`) === 'Opened' && /api\('\/api\/opened', \{ kind: v\.kind/.test(appjs) && /logOpened\(v\);/.test(appjs), 'Open in Messages and Open in Gmail log the click');
   check(/#sent-ask \{[^}]*background: var\(--cc-ink\)[^}]*border: 1px solid var\(--cc-coral\)/.test(ui) && /#sent-ask small \{ color: var\(--cc-tan\)/.test(ui), 'the bar is black with coral, tan only on the small time');
   ctx.__keep = JSON.parse(keep); run('S.data.sent_today = __keep[0]; S.data.handoff = __keep[1]; S.data.sent_log = __keep[2]'); }
+
+// Round 5, look and flow: the Today list follows the four headline tiles, Touches due pages, A adds a lead, and a tall dialog scrolls.
+{ const ds = render('dash', true);
+  check(ds.indexOf('GCI this year') < ds.indexOf('cc-todaycard') || ds.indexOf('GCI this year') < ds.indexOf('Under contract</span>') && ds.split('class="cc-tiles"').length === 3, 'the Dashboard shows four headline tiles, then Today, then the rest');
+  check(/e\.key === 'a' && window\.CC && CC\.addLead/.test(appjs) && /<kbd>A<\/kbd> to add a lead/.test(appjs), 'the A key adds a lead and the shortcuts list says so');
+  check(/Show 200 more/.test(fs.readFileSync(path.join(dir, 'crm-pages.js'), 'utf8')), 'Touches due can load more than the first 200');
+  check(/\.modal \.dbody \{ overflow-y: auto; min-height: 0; \}/.test(ui) && /\.k-inspection, \.k-finance, \.cc-ev\.k-inspection, \.cc-ev\.k-finance \{ --k: #e87757/.test(ui) && /\.st-appointment \{ --st: var\(--cc-tan\); \}/.test(ui), 'a tall dialog scrolls, deadlines are one color, an active listing is tan');
+  check(/, pulled ' \+ C\.day\(m\.gbrar\.pulled\)/.test(fs.readFileSync(path.join(dir, 'cc-life.js'), 'utf8')), 'the GBRAR tiles say when the numbers were pulled'); }
 
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);

@@ -18,7 +18,7 @@
       acts: `<button type="button" class="cc-mini" onclick="go('deadlines')">Open Deadlines</button>` }));
     const tasks = (f.tasks || []).filter(t => t.status !== 'done');
     tasks.filter(t => t.overdue).slice(0, 4).concat(tasks.filter(t => !t.overdue && t.due === today).slice(0, 4)).forEach(t => out.push({
-      k: 'task', kind: t.overdue ? 'k-closing' : 'k-client', label: t.overdue ? 'Overdue task' : 'Task due today', title: C.note(t.task, [t.display], 'Task hidden'), sub: [t.display ? C.who(t.display) : '', esc(t.due || '')].filter(Boolean).join(' · '),
+      k: 'task', kind: t.overdue ? 'k-past' : 'k-closing', label: t.overdue ? 'Overdue task' : 'Task due today', title: C.note(t.task, [t.display], 'Task hidden'), sub: [t.display ? C.who(t.display) : '', esc(t.due || '')].filter(Boolean).join(' · '),
       acts: `<button type="button" class="cc-mini" onclick="doneTask(${q(t.task_id)}, ${q(t.person_id)}, ${JSON.stringify(String(t.task || '')).replace(/"/g, '&quot;')})">✓ Done</button>` }));
     d.leads.filter(l => (l.received || '').slice(0, 10) === today).forEach(l => out.push({
       k: 'lead', kind: 'k-showing', label: 'New lead today', title: C.who(l.name || 'Website lead'), sub: esc([(l.due || {}).label, l.source].filter(Boolean).join(' · ')),

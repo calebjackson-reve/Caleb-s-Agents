@@ -118,7 +118,10 @@
         ${tile('Pending commission', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals', 'commission')}
         ${tile('GCI this year', m(sc.gci.value), (gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set') + (sc.gci.blank ? ` · <em>${sc.gci.blank} closed with no commission</em>` : ''), ['deals', 'goals'], 'scorecard')}
         ${tile('Deadlines, 7 days', C.dated(d.deadlines.d7.length, (d.deadlines.undated || []).length), `${C.overdueLine((d.deadlines.overdue || []).length)}${C.undatedLine((d.deadlines.undated || []).length)}${d.deadlines.d3.length} in the next 3 days`, ['deals', 'calendar'], 'deadlines')}
-        ${tile('New leads, 14 days', n(leads), `${n(leads7)} in the last 7 days${sc.leads7.low ? ` · goal ${sc.leads7.low} to ${sc.leads7.high} a week` : ''}`, ['leads', 'crm'], 'ccleads')}
+        ${tile('New leads, 14 days', n(leads), `${n(leads7)} in the last 7 days${sc.leads7.low ? ` · goal ${sc.leads7.low} to ${sc.leads7.high} a week` : ''}${C.local && !C.local('command').at ? ' · <em>KW Command leads not checked, its reader has never run</em>' : ''}`, ['leads', 'crm'], 'ccleads')}
+      </div>
+      ${C.todayCard ? C.todayCard() : ''}
+      <div class="cc-tiles">
         ${tile('Under contract', n(uc.n), `${mk(uc.volume)} volume on the Deals sheet`, 'deals', 'deals')}
         ${tile('Touches due', n(td.length), owes ? `${owes} owe a reply` : 'Nobody owes a reply', 'crm', 'touches')}
         ${S.data && S.data.feed_ok ? tile('Tasks open', n(tk.length), over ? `<em>${over} overdue</em>` : 'None overdue', 'crm', 'tasks') : tile('Tasks open', '—', "<em>Tasks didn't load</em>", 'crm', 'sources')}
@@ -128,8 +131,6 @@
         ${tile('Offers out', n(offers.length), offers.length ? `${offers.filter(r => C.offerExpired(r.offer)).length} past their deadline` : 'No open offers on the Deals sheet', 'deals', 'deals')}
         ${tile('Commission to check', n(np), np ? 'Not processed at KW, or paid with no closed deal on the sheet' : 'Nothing waiting at KW', ['commission_mail', 'deals'], 'commission')}
       </div>
-
-      ${C.todayCard ? C.todayCard() : ''}
       <div class="cc-grid">
         ${card('On the calendar today', (today.length ? `<ul class="cc-list">${today.map(evRow).join('')}</ul>` : empty('Nothing on the calendar today.')) + '<p class="cc-note">Work blocks and invites you have not accepted are left out.</p>', 'calendar')}
         ${card('Deadlines, next 7 days', deadlineList(d.deadlines.d7), ['deals', 'calendar'])}

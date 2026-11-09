@@ -285,12 +285,12 @@ function renderDrawer() {
   const H = hid(), C2 = window.CC;
   $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${H ? '•' : initials(c.name)}</span><div class="who"><b>${H ? '<span class="cc-hid">Name hidden</span>' : esc(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
   <div class="dbody">
-    ${c.last_messages && c.last_messages.length && H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span><div class="bubble">${C2.msg('')} · press Show at the top to read them</div></div>` : ''}
+    ${c.last_messages && c.last_messages.length && H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span><div class="bubble">${C2.msg('')} · press the H key to read them</div></div>` : ''}
     ${c.last_messages && c.last_messages.length && !H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
     ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${C2 ? C2.note(c.next_action || row.next_action, [c.name]) : esc(c.next_action || row.next_action)}</div>` : ''}
     ${logLines(c.person_id)}
     <div class="seg"><button class="${c.kind === 'text' ? 'on' : ''}" ${canText ? '' : 'disabled'} onclick="setKind('text')">▭ TEXT</button><button class="${c.kind === 'email' ? 'on' : ''}" ${canEmail ? '' : 'disabled'} onclick="setKind('email')">✉ EMAIL</button></div>
-    <div class="field"><label>TO</label>${H && to ? `<input id="c-to" type="hidden" value="${esc(to)}"><p class="cc-hid">${c.kind === 'text' ? 'Number' : 'Email'} hidden · press Show at the top to see it before you open it</p>` : `<input id="c-to" value="${esc(to)}" inputmode="${c.kind === 'text' ? 'tel' : 'email'}" placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}" oninput="sheetCheck()">`}<p class="hint" id="c-exact"></p></div>
+    <div class="field"><label>TO</label>${H && to ? `<input id="c-to" type="hidden" value="${esc(to)}"><p class="cc-hid">${c.kind === 'text' ? 'Number' : 'Email'} hidden · press the H key to see it before you open it</p>` : `<input id="c-to" value="${esc(to)}" inputmode="${c.kind === 'text' ? 'tel' : 'email'}" placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}" oninput="sheetCheck()">`}<p class="hint" id="c-exact"></p></div>
     ${c.kind === 'email' ? `<div class="field"><label>SUBJECT</label><input id="c-subject" value="${esc(c.subject || '')}" placeholder="Subject"></div>` : ''}
     <div class="field"><label>${c.kind === 'text' ? 'TEXT' : 'EMAIL'} DRAFT${c.reply ? ' · write it yourself, they texted last' : c.pool ? ' · from the ' + esc(c.pool) + ' pool' : ''}</label><textarea id="c-body"${maskAttr()} placeholder="${c.reply ? 'Answer what they said.' : 'Write the message.'}">${esc(c.body || '')}</textarea><div class="hint"><span id="c-count">${(c.body || '').length} chars</span><span>${cap} ${c.kind}${cap === 1 ? '' : 's'} left today</span></div></div>
   </div>
@@ -487,7 +487,7 @@ const C_empty = t => `<p class="cc-empty">${esc(t)}</p>`;
 function openHelp() {
   const label = k => NAV.flatMap(g => g[1]).find(x => x[0] === k)[2];
   modal('Keyboard shortcuts', `<div class="brief"><h4>PAGES</h4><p>Press a number to open a page.</p><ul>${KEYS.map((k, i) => `<li><kbd>${i}</kbd> ${esc(label(k))}</li>`).join('')}</ul>
-    <h4>ANYWHERE</h4><ul><li>Press <kbd>C</kbd> to open the next draft.</li><li>Press <kbd>V</kbd> to turn the voice on or off, and <kbd>T</kbd> to type to it.</li><li>Press <kbd>R</kbd> to refresh the CRM.</li><li>Press the slash key <kbd>/</kbd> to search.</li><li>Press <kbd>H</kbd> to hide or show money and contacts.</li><li>Press <kbd>Escape</kbd> to close a window like this one.</li></ul>
+    <h4>ANYWHERE</h4><ul><li>Press <kbd>A</kbd> to add a lead.</li><li>Press <kbd>C</kbd> to open the next draft.</li><li>Press <kbd>V</kbd> to turn the voice on or off, and <kbd>T</kbd> to type to it.</li><li>Press <kbd>R</kbd> to refresh the CRM.</li><li>Press the slash key <kbd>/</kbd> to search.</li><li>Press <kbd>H</kbd> to hide or show money and contacts.</li><li>Press <kbd>Escape</kbd> to close a window like this one.</li></ul>
     <h4>ON THE MAP</h4><ul><li>Drag to move, scroll or double-click to zoom, click a cluster to open it.</li><li>Drawing a farm: click the corners, double-click or press Return to finish, Delete takes back a corner, Escape stops drawing.</li></ul>
     <h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li></ul>
     <h4>WHERE THINGS GO</h4><ul><li>Every button that changes something writes to the AIRE CRM sheet and is logged there.</li><li>Every text and email is checked for Do Not Contact and the daily limit before it goes, and lands in Sent today.</li></ul></div>`, () => true, 'OK', { info: true });
@@ -518,7 +518,7 @@ document.addEventListener('keydown', e => {
   const t = e.target && e.target.matches ? e.target : document.body;
   if (t.matches('input, textarea, select')) { if (e.key === 'Escape') t.blur(); return; }
   if (/^[0-9]$/.test(e.key)) go(KEYS[Number(e.key)]); else if (e.key === 'h' && window.CC) CC.togglePriv();
-  else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
+  else if (e.key === 'a' && window.CC && CC.addLead) { e.preventDefault(); CC.addLead(); } else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
   else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }
   else if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else closeDrawer(); }
 });

@@ -6,7 +6,7 @@
   const money = v => (v == null ? '—' : C.priv ? '$•••' : '$' + Math.round(v).toLocaleString());
   // The arrow follows the rounded number: 0% gets no arrow.
 const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); return `<span class="cc-yy ${p > 0 ? 'up' : p < 0 ? 'down' : ''}">${p > 0 ? '▲ ' : p < 0 ? '▼ ' : ''}${Math.abs(p)}% vs last year</span>`; };
-  const NEWS = { local: ['Local', 'k-closing'], market: ['Market', 'k-showing'], rates: ['Rates', 'k-client'] };
+  const NEWS = { local: ['Local', 'k-closing'], market: ['Market', 'k-tan'], rates: ['Rates', 'k-other'] };
   const when = s => (s ? new Date(s).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
   C.news = { kind: 'all' };
 
@@ -32,7 +32,7 @@ const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); retur
     const m = C.data.market, r = m.rate, gb = m.gbrar && m.gbrar.snapshot;
     const gv = k => gb && gb[k] ? gb[k].now : null;
     const ch = r ? Math.round(r.change * 100) / 100 : 0;
-    const gbSrc = gb ? msrc('GBRAR MLS monthly indicators', m.gbrar.month, 'gbrar') : msrc('GBRAR MLS monthly indicators', 'no file yet', 'gbrar');
+    const gbSrc = gb ? msrc('GBRAR MLS monthly indicators', m.gbrar.month + (m.gbrar.pulled ? ', pulled ' + C.day(m.gbrar.pulled) : ''), 'gbrar') : msrc('GBRAR MLS monthly indicators', 'no file yet', 'gbrar');
     // A ZIP whose numbers are the same as a parish's: say so, so nobody thinks one was copied into the other.
     const same = a => (m.areas || []).find(b => b !== a && b.level !== a.level && ['active', 'median_price', 'dom'].every(k => b[k] === a[k]) && b.month === a.month);
     return `<div class="cc-page">${head('Market', 'Rates, listings by area and the GBRAR monthly numbers. Each number names who published it and for when.')}

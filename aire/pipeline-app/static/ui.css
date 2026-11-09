@@ -322,6 +322,27 @@ body[data-sec="numbers"] { --sec: var(--c-green); } body[data-sec="you"] { --sec
 .cc-row:has(> .cc-thumb) { grid-template-columns: 72px minmax(0, 1fr) auto; }
 .cc-row > .cc-thumb { width: 72px; height: 72px; }
 @media (max-width: 720px) { .cc-row:has(> .cc-thumb) { grid-template-columns: 56px minmax(0, 1fr); } .cc-row > .cc-thumb { width: 56px; height: 56px; } }
+
+/* ---- Round 5 ---- */
+/* A dialog taller than the window scrolls inside itself, so its last lines and its button are always reachable. */
+.modal .panel { max-height: calc(100dvh - 32px); display: flex; flex-direction: column; }
+.modal .dbody { overflow-y: auto; min-height: 0; }
+.modal .dfoot { flex: none; }
+/* Color code: one meaning per color. Contract deadlines are coral whatever their type (amber is an offer, blue is under
+   contract), act of sale stays green, an active listing is tan, no status is grey, overdue is red. */
+.k-inspection, .k-finance, .cc-ev.k-inspection, .cc-ev.k-finance { --k: #e87757; border-left-color: #e87757; }
+.st-appointment { --st: var(--cc-tan); } .st-other { --st: var(--c-grey); }
+.k-tan, .cc-ev.k-tan, .cc-filter.k-tan { --k: #c8b596; }
+.cc-overdue { color: var(--c-red); font-weight: 600; }
+.cc-lead { --av: var(--sec) !important; }
+/* One type style in dialogs and the compose drawer: sentence case sans, the same pill toggle as everywhere else. */
+.field label, .drawer .lbl, .brief h4 { display: block; text-transform: lowercase !important; }
+.field label::first-letter, .drawer .lbl::first-letter, .brief h4::first-letter { text-transform: uppercase; }
+.seg { border-radius: 999px; border-color: var(--cc-line); }
+.seg button { font: 600 13px var(--sans); letter-spacing: 0; padding: 8px 16px; text-transform: lowercase; }
+.seg button::first-letter { text-transform: uppercase; }
+/* Header: the chip, clock and search never touch. */
+.top { column-gap: 12px; } .top-right { column-gap: 10px; }
 /* "Did that send?": one small bar over the footer. Black, coral edge and button, tan for the time. */
 #sent-ask { position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 900; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap;
   width: max-content; max-width: calc(100vw - 24px); padding: 10px 14px; border-radius: 14px; background: var(--cc-ink); color: var(--cc-text); border: 1px solid var(--cc-coral); font: 500 13px var(--sans); box-shadow: 0 8px 30px rgba(0, 0, 0, .5); }
