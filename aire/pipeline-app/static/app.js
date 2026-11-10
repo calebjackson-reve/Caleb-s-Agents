@@ -1,7 +1,7 @@
 /* Pipeline front end. Vanilla JS, no build step. Talks to app.py over /api. */
 'use strict';
 
-const S = { data: null, view: 'dash', q: '', filter: 'all', queueIdx: 0, pollTimer: null, bootDone: false };
+const S = { data: null, view: 'home', q: '', filter: 'all', queueIdx: 0, pollTimer: null, bootDone: false };
 const $ = (sel, el = document) => el.querySelector(sel);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const initials = n => (n || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -225,9 +225,10 @@ function render() {
   if (S.view === 'cc') S.view = 'dash';
   if (S.view === 'leads') S.view = 'ccleads';
   if (S.view === 'market') S.view = 'monitor';
-  const page = window.CC && (CC.views[S.view] || CC.views.dash);
+  const page = window.CC && (CC.views[S.view] || CC.views.home || CC.views.dash);
   const ae = document.activeElement; if (ae && ae.closest && ae.closest('.cc-goals')) return;
   if (S.map) { S.map.destroy(); S.map = null; }
+  if (S.mini) { S.mini.destroy(); S.mini = null; }
   main.innerHTML = page ? page() : '';
   if (window.CC && CC.after[S.view]) CC.after[S.view]();
   reflectVoice();
@@ -248,15 +249,17 @@ function countUp(el) {
   (function step(t) { const p = Math.min(1, (t - t0) / dur), v = Math.round(target * (1 - Math.pow(1 - p, 3))); el.textContent = v.toLocaleString(); if (p < 1) requestAnimationFrame(step); })(t0);
 }
 // The nav, in groups, one distinct icon each. KEYS: the number keys open the same pages, in this order.
+// Main is the three primary screens (Home, Map, People). Every other page sits under More, and on Home's link row.
+// The older Dashboard is still a page (Home links to it, and #dash opens it); it gave its nav slot to Home.
 const NAV = [
-  ['Today', [['dash', '◧', 'Dashboard'], ['touches', '☎', 'Touches due'], ['tasks', '☑', 'Tasks'], ['queue', '✎', 'Drafts'], ['sent', '➚', 'Sent today']]],
-  ['People', [['ccleads', '✚', 'Leads'], ['map', '⌖', 'Map']]],
+  ['Main', [['home', '◐', 'Home'], ['map', '⌖', 'Map'], ['people', '☺', 'People']]],
+  ['Today', [['touches', '☎', 'Touches due'], ['tasks', '☑', 'Tasks'], ['queue', '✎', 'Drafts'], ['sent', '➚', 'Sent today'], ['ccleads', '✚', 'Leads']]],
   ['Deals', [['deals', '⌂', 'Deals'], ['commission', '$', 'Commission'], ['deadlines', '⚑', 'Deadlines'], ['calendar', '▦', 'Calendar']]],
   ['Numbers', [['scorecard', '▲', 'Scorecard'], ['ccmarket', '◆', 'Market'], ['monitor', '⚒', 'Listings and permits'], ['news', '▤', 'News'], ['bank', '◫', 'Bank']]],
   ['You', [['life', '❀', 'Life'], ['health', '♥', 'Workouts']]],
   ['System', [['sources', '⇄', 'Sources']]],
 ];
-const KEYS = ['dash', 'touches', 'tasks', 'queue', 'ccleads', 'deals', 'commission', 'deadlines', 'calendar', 'map'];
+const KEYS = ['home', 'touches', 'tasks', 'queue', 'ccleads', 'deals', 'commission', 'deadlines', 'calendar', 'map'];
 function renderNav(c) {
   const dr = S.data ? readyDrafts() : [];
   const cd = window.CC && CC.data, np = cd ? cd.commission_mail.filter(r => r.status === 'Not processed' || r.status === 'No closed deal').length : 0;
@@ -269,8 +272,11 @@ function renderNav(c) {
   // Each group has its color; the page takes the color of the group it is in (ui.css, the color code).
   const sec = (NAV.find(([, items]) => items.some(([k]) => k === view)) || ['Today'])[0].toLowerCase();
   document.body.dataset.sec = sec;
-  $('#nav').innerHTML = NAV.map(([g, items]) => `<div class="nav-g g-${g.toLowerCase()}"><span class="nav-h">${g}</span>${items.map(([k, ico, label]) => { const [n, warn] = cnt[k] || [];
-    return `<button type="button" class="${view === k ? 'on' : ''}" ${view === k ? 'aria-current="page"' : ''} onclick="go('${k}')"><span class="ico" aria-hidden="true">${ico}</span><span class="lbl">${label}</span>${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`; }).join('')}</div>`).join('');
+  const grp = ([g, items]) => `<div class="nav-g g-${g.toLowerCase()}"><span class="nav-h">${g}</span>${items.map(([k, ico, label]) => { const [n, warn] = cnt[k] || [];
+    return `<button type="button" class="${view === k ? 'on' : ''}" ${view === k ? 'aria-current="page"' : ''} onclick="go('${k}')"><span class="ico" aria-hidden="true">${ico}</span><span class="lbl">${label}</span>${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`; }).join('')}</div>`;
+  // More opens by itself when the page you are on lives under it, and stays how you left it otherwise.
+  const more = S.navMore == null ? NAV.slice(1).some(([, items]) => items.some(([k]) => k === view)) || view === 'dash' : S.navMore;
+  $('#nav').innerHTML = grp(NAV[0]) + `<button type="button" class="nav-more" aria-expanded="${more}" onclick="S.navMore = ${!more}; renderNav(feed().counts || {})">${more ? 'Less' : 'More'}</button>` + (more ? NAV.slice(1).map(grp).join('') : '');
   // On a phone the nav is one strip that scrolls sideways: keep the page you are on in the middle of it.
   const on = $('#nav .on'), strip = $('#nav');
   if (on && strip && strip.scrollWidth > strip.clientWidth) { const a = on.getBoundingClientRect(), b = strip.getBoundingClientRect(); strip.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2); }
@@ -285,7 +291,7 @@ function stopScreen(f) {
 }
 
 // ---------------------------------------------------------------- navigation
-function go(v) { if (S.view === 'search' && v !== 'search' && S.q) { S.q = ''; const sb = $('#search'); if (sb) sb.value = ''; } S.view = v; S.filter = 'all'; try { history.replaceState(null, '', '#' + v); } catch (e) { } render(); $('#main').scrollTop = 0; }
+function go(v) { if (S.view === 'search' && v !== 'search' && S.q) { S.q = ''; const sb = $('#search'); if (sb) sb.value = ''; } S.view = v; S.navMore = null; S.filter = 'all'; try { history.replaceState(null, '', '#' + v); } catch (e) { } render(); $('#main').scrollTop = 0; }
 // A link like 127.0.0.1:4747/#commission opens that page.
 (function () { const h = location.hash.slice(1); if (/^[a-z]+$/.test(h)) S.view = h; })();
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (/^[a-z]+$/.test(h) && h !== S.view) go(h); });
@@ -532,7 +538,7 @@ function openHelp() {
   const label = k => NAV.flatMap(g => g[1]).find(x => x[0] === k)[2];
   modal('Keyboard shortcuts', `<div class="brief"><h4>PAGES</h4><p>Press a number to open a page.</p><ul>${KEYS.map((k, i) => `<li><kbd>${i}</kbd> ${esc(label(k))}</li>`).join('')}</ul>
     <h4>ANYWHERE</h4><ul><li>Press <kbd>A</kbd> to add a lead.</li><li>Press <kbd>C</kbd> to open the next draft.</li><li>Press <kbd>V</kbd> to turn the voice on or off, and <kbd>T</kbd> to type to it.</li><li>Press <kbd>R</kbd> to refresh the CRM.</li><li>Press the slash key <kbd>/</kbd> to search.</li><li>Press <kbd>H</kbd> to hide or show money and contacts.</li><li>Press <kbd>Escape</kbd> to close a window like this one.</li></ul>
-    <h4>ON THE MAP</h4><ul><li>Drag to move, scroll or double-click to zoom, click a cluster to open it.</li><li>Drawing a farm: click the corners, double-click or press Return to finish, Delete takes back a corner, Escape stops drawing.</li></ul>
+    <h4>ON THE MAP</h4><ul><li>Drag to move, scroll or double-click to zoom, click a pin for the person.</li><li>Drawing a farm: click the corners, double-click or press Return to finish, Delete takes back a corner, Escape stops drawing.</li></ul>
     <h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li></ul>
     <h4>WHERE THINGS GO</h4><ul><li>Every button that changes something writes to the AIRE CRM sheet and is logged there.</li><li>Every text and email is checked for Do Not Contact and the daily limit before it goes, and lands in Sent today.</li></ul></div>`, () => true, 'OK', { info: true });
 }
@@ -555,7 +561,7 @@ async function showProposals(list) {
 }
 window.showProposals = showProposals;
 function toast(kind, tag, text) { const t = document.createElement('div'); t.className = 'toast ' + (kind === 'ok' ? '' : kind); t.innerHTML = `<b>${esc(tag)}</b><span>${esc(text)}</span>`; $('#toasts').appendChild(t); setTimeout(() => t.remove(), 3700); }
-function tick() { const d = new Date(); $('#date').textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); $('#time').textContent = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).toLowerCase(); }
+function tick() { const d = new Date(); $('#date').textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }); $('#time').textContent = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).toLowerCase(); }
 document.addEventListener('keydown', e => {
   // Escape closes an open window first, wherever the focus is (the search box included), then the compose drawer.
   if (e.key === 'Escape' && !$('#modal').hidden) { e.preventDefault(); closeModal(); return; }
@@ -571,7 +577,7 @@ document.addEventListener('keydown', e => {
 $('#search').addEventListener('input', e => {
   S.q = e.target.value;
   if (S.q && S.view !== 'search') { S.before = S.view; S.view = 'search'; }
-  else if (!S.q && S.view === 'search') S.view = S.before || 'dash';
+  else if (!S.q && S.view === 'search') S.view = S.before || 'home';
   render(); const b = $('#search'); if (document.activeElement !== b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
 });
 $('#refresh').onclick = refresh; $('#bell').onclick = openProblems; $('#help').onclick = openHelp; $('#brief').onclick = openBrief; $('#compose-next').onclick = composeNext;
