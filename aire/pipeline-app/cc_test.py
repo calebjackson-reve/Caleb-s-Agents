@@ -684,6 +684,14 @@ class Growth(unittest.TestCase):
         self.assertEqual(p["volume"]["seasonal"], round(400000 / ((100000 / 400000 + 200000 / 400000) / 2)))
         self.assertIsNone(self.g["cagr"])  # one full year is not a trend
 
+    def test_a_sale_with_no_date_is_listed_and_counted_outside_the_years(self):
+        g = cc.growth(self.SALES + [{"close": "", "address": "77 Made Up Blank", "side": "", "price": "", "source": "FSBO"}], cc.deal_rows(SHEET), T)
+        self.assertEqual(g["undated"], 1)
+        self.assertEqual(g["totals"], self.g["totals"])
+        self.assertEqual(g["sales"][0], {"day": None, "address": "77 Made Up Blank", "side": None, "price": None, "type": None, "source": "FSBO"})
+        self.assertEqual(len(g["sales"]), 7)  # six past rows with the lease, plus the blank one; the future row is left out
+        self.assertEqual(g["sales"][1]["day"], "2026-03-01")
+
     def test_no_sales(self):
         self.assertIsNone(cc.growth([], [], T))
         self.assertIsNone(cc.growth(None, cc.deal_rows([HEAD]), T))

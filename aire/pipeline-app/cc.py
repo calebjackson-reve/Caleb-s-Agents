@@ -799,14 +799,21 @@ def news_rows(rows: list[dict]) -> list[dict]:
 def growth(sales: list, deals: list, today: date) -> dict | None:
     """Closed sales by year: the sales history (sales.json, one row a closing: close, address, side, price, type) plus
     Closed deals on the Deals sheet the history does not hold yet, matched by street and year. Leases are counted apart.
+    A sale with no close date is listed and counted as undated, outside every year.
     Both sides of one sale is one deal and two sides. Year to date runs through today's month and day in every year.
     The year end figures are estimates from past pace, never a promise."""
-    t, rows, seen, leases, added = today.isoformat(), [], set(), 0, 0
+    t, rows, seen, leases, added, undated, every = today.isoformat(), [], set(), 0, 0, 0, []
     for r in sales or []:
-        if not is_day(r.get("close")) or r["close"] > t:
+        day = r.get("close") if is_day(r.get("close")) else None
+        if day and day > t:
             continue
+        every.append({"day": day, "address": r.get("address"), "side": r.get("side") or None, "price": num(r.get("price")),
+                      "type": r.get("type") or None, "source": r.get("source") or "MLS"})
         if re.search(r"lease", str(r.get("type") or ""), re.I):
             leases += 1
+            continue
+        if not day:  # a sale with no close date yet is listed and counted, never placed in a year
+            undated += 1
             continue
         rows.append((r["close"], num(r.get("price")) or 0, 2 if re.search(r"both|dual", str(r.get("side") or ""), re.I) else 1))
         seen.add((deal_key(r.get("address")), r["close"][:4]))
@@ -815,6 +822,7 @@ def growth(sales: list, deals: list, today: date) -> dict | None:
             continue
         rows.append((d["act"], d["price"] or 0, 2 if re.search(r"both|dual", str(d.get("side") or ""), re.I) else 1))
         added += 1
+        every.append({"day": d["act"], "address": d["deal"], "side": d.get("side"), "price": d["price"], "type": None, "source": "Deals sheet"})
     if not rows:
         return None
     blank = lambda: {"deals": 0, "sides": 0, "volume": 0, "side_volume": 0, "ytd_deals": 0, "ytd_volume": 0}
@@ -846,7 +854,8 @@ def growth(sales: list, deals: list, today: date) -> dict | None:
         a, b, n = full[0], full[-1], full[-1]["year"] - full[0]["year"]
         cagr = {"from": a["year"], "to": b["year"], "deals": round(((b["deals"] / a["deals"]) ** (1 / n) - 1) * 100, 1),
                 "volume": round(((b["volume"] / a["volume"]) ** (1 / n) - 1) * 100, 1)}
-    return {"years": years, "since": first, "through": t, "leases": leases, "from_sheet": added,
+    return {"years": years, "since": first, "through": t, "leases": leases, "from_sheet": added, "undated": undated,
+            "sales": sorted(every, key=lambda x: (x["day"] is None, x["day"] or ""), reverse=True),
             "ytd": {"deals": cur["ytd_deals"], "volume": cur["ytd_volume"], "last_deals": last["ytd_deals"], "last_volume": last["ytd_volume"]},
             "projection": {"deals": project("deals"), "volume": project("volume")}, "cagr": cagr,
             "totals": {k: sum(y[k] for y in years) for k in ("deals", "sides", "volume", "side_volume")}}
