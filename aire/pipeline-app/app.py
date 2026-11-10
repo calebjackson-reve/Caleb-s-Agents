@@ -556,9 +556,10 @@ class State:
         mkt = (f.get("market") or {}).get("counts") or {}
         mp = (f.get("map") or {}).get("counts") or {}
         sent = self.sent_today()
-        review = [{"name": r.get("display"), "rule": r.get("rule"), "now": r.get("band") or r.get("type") or "blank",
-                   "suggest": r.get("suggest_band") or r.get("suggest_type"), "why": r.get("why")}
-                  for r in f.get("label_review", []) if (r.get("display") or "").strip()][:15]
+        review = [{"name": r.get("display") or "(no name)", "rule": r.get("rule"),
+                   "now": (r.get("stage") or "blank") if r.get("rule") == "stage_mismatch" else (r.get("band") or r.get("type") or "blank"),
+                   "suggest": r.get("suggest_stage") or r.get("suggest_band") or r.get("suggest_type"), "why": r.get("why")}
+                  for r in f.get("label_review", []) if (r.get("display") or "").strip() or r.get("rule") == "stage_mismatch"][:15]
         return {"today": today().isoformat(), "feed_as_of": f.get("as_of"), "counts": f.get("counts"), "cadence_days": f.get("cadence_days"),
                 "label_review_top": review,
                 "touches_due_top": due, "hot_warm_quiet_longest": quiet, "waiting_on_a_reply": owes,

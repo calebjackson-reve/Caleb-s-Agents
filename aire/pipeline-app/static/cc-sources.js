@@ -30,6 +30,19 @@
     if (pm.state === 'stale' || pm.state === 'late') add(pm.state === 'stale' ? 'red' : 'amber', `Listings and permits: newest pull ${when(pm.at).replace(/,? \d+:\d+ [AP]M$/, '')}, ${Math.round(pm.age_min / 1440)} days old`);
     if (cmd.state === 'failed') add('red', 'KW Command reader: ' + cmd.error);
     else if (cmd.state === 'missing') add('amber', 'KW Command reader: never run on this Mac, so new leads in Command are not checked');
+    // A live deal that disagrees with the sheet Stage. The card's button is the only write, through crm.py stage.
+    const feed = (typeof S !== 'undefined' && S.data && S.data.feed) || {};
+    const seen = new Set();
+    const mismatches = [];
+    (feed.label_review || []).forEach(r => { if (r.rule === 'stage_mismatch' && !seen.has(String(r.person_id))) { seen.add(String(r.person_id)); mismatches.push(r); } });
+    (feed.people || []).forEach(p => { if (p.stage_mismatch && p.stage_mismatch.suggest_stage && !seen.has(String(p.person_id))) { seen.add(String(p.person_id)); mismatches.push(p); } });
+    mismatches.forEach(r => {
+      const mm = r.stage_mismatch || r;
+      const sheet = r.sheet_stage || (r.rule === 'stage_mismatch' ? r.stage : '') || 'blank';
+      const deal = String(mm.deal_stage || '').replace(/_/g, ' ');
+      const where = mm.address ? ` at ${mm.address}` : '';
+      add('amber', `Stage to fix: ${C.fallbackName(r)}. The sheet says ${sheet}. The live deal${where} is ${deal}.`);
+    });
     const skip = new Set(['feed_failed', 'feed_stale', 'no_feed', 'feed_unreadable', 'command_login', 'command_layout']);
     ((typeof S !== 'undefined' && S.data && S.data.problems) || []).forEach(p => { if (!skip.has(p.code)) add(p.level === 'stop' ? 'red' : 'amber', p.text); });
     return out.sort((a, b) => (a.level === 'red' ? 0 : 1) - (b.level === 'red' ? 0 : 1));

@@ -49,7 +49,7 @@ function owesReply() { return (feed().touches_due || []).filter(r => r.owes_repl
 // Drafts ready: written texts and emails only. Reply-first rows have no template, so they are never counted as ready.
 function readyDrafts() { return drafts().filter(d => !d.reply); }
 function heatList(t) { return ((feed().heat || {})[t]) || []; }
-function personRow(id) { return (feed().touches_due || []).concat(feed().new_leads || [], heatList('hot'), heatList('warm'), feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person')).find(r => r.person_id === id); }
+function personRow(id) { return (feed().touches_due || []).concat(feed().new_leads || [], heatList('hot'), heatList('warm'), feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person'), feed().people || []).find(r => r.person_id === id); }
 // ---- texting from a card: one button opens the text, SEND sends it, then the card shows what happened
 const firstName = n => (String(n || '').trim().split(/\s+/)[0] || '');
 function lastText(id) { return ((S.data && S.data.last_texts) || {})[id]; }
@@ -360,7 +360,8 @@ function renderDrawer() {
   const items = drafts(); const pos = S.queueIdx >= 0 ? `${S.queueIdx + 1} of ${items.length}` : 'not in queue';
   $('#drawer').hidden = false;
   const C2 = window.CC;
-  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${initials(c.name)}</span><div class="who"><b>${CC.pname(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
+  const shown = { display: c.name, phone: row.phone || (c.kind === 'text' ? c.to : ''), email: row.email || (c.kind === 'email' ? c.to : '') };
+  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${initials(CC.fallbackName(shown) === CC.NO_NAME ? '' : CC.fallbackName(shown))}</span><div class="who"><b>${CC.pname(shown)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
   <div class="dbody">
     ${c.last_messages && c.last_messages.length ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
     ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${C2 ? C2.note(c.next_action || row.next_action, [c.name]) : esc(c.next_action || row.next_action)}</div>` : ''}
@@ -444,7 +445,8 @@ async function confirmSendNow() {
   const v = sheetValues(), c = S.compose;
   if (!v.to) { toast('warn', 'CHECK IT', 'That recipient is not valid.'); return; }
   if (!v.body.trim()) { toast('warn', 'EMPTY', 'Write the message first.'); return; }
-  const ok = await modal(`Send this ${v.kind} now?`, `<p class="cc-note">To <b>${CC.pname(c.name)}</b> at <b>${esc(v.to)}</b>, ${v.kind === 'text' ? 'through Messages (iMessage, or SMS if not)' : 'through Gmail as ' + GMAIL_USER}. One message, sent right away.</p>${v.subject ? `<p><b>Subject:</b> ${esc(v.subject)}</p>` : ''}<pre class="send-preview">${esc(v.body)}</pre>`, () => true, 'Send it');
+  const who = CC.fallbackName({ display: c.name, phone: (c.row || {}).phone || (c.kind === 'text' ? v.to : ''), email: (c.row || {}).email || (c.kind === 'email' ? v.to : '') });
+  const ok = await modal(`Send this ${v.kind} now?`, `<p class="cc-note">To <b>${esc(who)}</b> at <b>${esc(v.to)}</b>, ${v.kind === 'text' ? 'through Messages (iMessage, or SMS if not)' : 'through Gmail as ' + GMAIL_USER}. One message, sent right away.</p>${v.subject ? `<p><b>Subject:</b> ${esc(v.subject)}</p>` : ''}<pre class="send-preview">${esc(v.body)}</pre>`, () => true, 'Send it');
   if (ok !== true) return;
   return sendNow(v);
 }
@@ -502,21 +504,26 @@ function touchForm(who) {
 function ask(title, label, placeholder) { return modal(title, `<div class="field"><label>${esc(label.toUpperCase())}</label><input id="m-in" placeholder="${esc(placeholder)}"></div>`, m => { const v = $('#m-in', m).value.trim(); return v || false; }, 'Log it'); }
 function personSelect(selected) {
   const rows = (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || []);
-  return `<select id="m-person"><option value="">pick a person</option>${rows.map(r => `<option value="${esc(r.person_id)}" ${r.person_id === selected ? 'selected' : ''}>${esc(r.display)} · ${esc(r.band || r.source || '')}</option>`).join('')}</select>`;
+  return `<select id="m-person"><option value="">pick a person</option>${rows.map(r => `<option value="${esc(r.person_id)}" ${r.person_id === selected ? 'selected' : ''}>${esc(CC.fallbackName(r))} · ${esc(r.band || r.source || '')}</option>`).join('')}</select>`;
 }
 async function openTask(person_id = '') {
   const v = await modal('New task', `<div class="field"><label>PERSON</label>${personSelect(person_id)}</div><div class="field"><label>TASK</label><input id="m-task" placeholder="Call back about the inspection"></div><div class="field"><label>DUE</label><input id="m-due" type="date" value="${todayISO()}"></div>`,
     m => ({ person_id: $('#m-person', m).value, task: $('#m-task', m).value.trim(), due: $('#m-due', m).value }) , 'Add task');
   if (v) await act('/api/task', v, { tag: 'TASK', text: v.task });
 }
+async function fixStage(person_id, stage, expect) {
+  // The only stage write: the existing gated crm.py stage command, and only because this button was pressed.
+  const r = (window.Person && Person.get(person_id)) || personRow(person_id) || {};
+  await act('/api/stage', { person_id, stage, expect: expect || '' }, { tag: 'STAGE', text: `Sheet Stage set to ${stage} for ${CC.fallbackName(r)}` });
+}
 async function openNote(person_id) {
   const r = personRow(person_id);
-  const v = await modal(`Note on ${CC.pname(r && r.display)}`, `<div class="field"><label>NOTE</label><textarea id="m-note" style="min-height:90px" placeholder="What you learned"></textarea></div>`, m => $('#m-note', m).value.trim() || false, 'Save note');
+  const v = await modal(`Note on ${CC.pname(r || '')}`, `<div class="field"><label>NOTE</label><textarea id="m-note" style="min-height:90px" placeholder="What you learned"></textarea></div>`, m => $('#m-note', m).value.trim() || false, 'Save note');
   if (v) await act('/api/note', { person_id, text: v }, { tag: 'NOTE', text: 'Saved to the CRM' });
 }
 async function openDNC(person_id) {
   const r = personRow(person_id);
-  const v = await modal(`Do Not Contact: ${CC.pname(r && r.display)}`, `<p style="color:var(--amber);margin:0 0 6px">One way. The engine never sets it back to NO. They drop off every list.</p><div class="field"><label>REASON</label><input id="m-reason" placeholder="Asked us to stop"></div>`, m => $('#m-reason', m).value.trim() || false, 'Set Do Not Contact');
+  const v = await modal(`Do Not Contact: ${CC.pname(r || '')}`, `<p style="color:var(--amber);margin:0 0 6px">One way. The engine never sets it back to NO. They drop off every list.</p><div class="field"><label>REASON</label><input id="m-reason" placeholder="Asked us to stop"></div>`, m => $('#m-reason', m).value.trim() || false, 'Set Do Not Contact');
   if (v) await act('/api/dnc', { person_id, reason: v }, { tag: 'DNC', text: `${CC.name(r && r.display)} will not be contacted` });
 }
 async function openDeal(address = '') {

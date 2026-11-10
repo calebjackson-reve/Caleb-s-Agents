@@ -10,13 +10,24 @@
   // they are. Only the Bank page masks its own figures (cc-sources.js).
   C.who = v => (!v ? '' : esc(v));
   // A person's name wherever one shows: the name on the contact (the feed sends display, or first and last when display
-  // is blank), and when the sheet has none it says so. Never made up, never written back.
+  // is blank). No display and no first+last shows the formatted phone, then the email, then this line. Never made up,
+  // never written back. A plain string is only a name, so the send log can keep an empty name.
   C.NO_NAME = 'No name on the sheet';
   C.name = v => String(v || '').trim() || C.NO_NAME;
-  C.pname = v => esc(C.name(v));
+  C.fallbackName = function (r) {
+    if (r == null || typeof r !== 'object') return C.name(r);
+    const n = String(r.display || r.name || '').trim();
+    if (n) return n;
+    const ph = typeof normPhone === 'function' ? normPhone(r.phone || r.to || '') : null;
+    if (ph && typeof fmtPhone === 'function') return fmtPhone(ph);
+    const em = String(r.email || '').trim();
+    if (em && (typeof validEmail !== 'function' || validEmail(em))) return em;
+    return C.NO_NAME;
+  };
+  C.pname = v => esc(C.fallbackName(v));
   C.ph = v => (!v ? '' : esc(fmtPhone(v)));
   C.em = v => (!v ? '' : esc(v));
-  C.ini = v => esc(initials(v));
+  C.ini = v => { const s = C.fallbackName(v); return (!s || s === C.NO_NAME || s.startsWith('(') || s.includes('@')) ? '?' : esc(initials(s)); };
   C.note = t => esc(String(t || ''));
   C.scrub = C.note;
   // A text message as it should read: no date prefix, no attachment placeholder, a photo said in words.
@@ -107,8 +118,8 @@
   }
   function touchRow(r) {
     const last = (r.last_messages || []).slice(-1)[0];
-    return `<li class="cc-row ${r.owes_reply ? 'is-hot' : ''}"><span class="cc-av" aria-hidden="true">${C.ini(r.display)}</span>
-      <div class="cc-row-main"><h3>${C.pname(r.display)}</h3>
+    return `<li class="cc-row ${r.owes_reply ? 'is-hot' : ''}"><span class="cc-av" aria-hidden="true">${C.ini(r)}</span>
+      <div class="cc-row-main"><h3>${C.pname(r)}</h3>
         <div class="cc-pills">${r.band ? `<span class="cc-pill ${band(r.band)}">${esc(r.band)}</span>` : ''}${r.owes_reply ? '<span class="cc-pill k-closing">Owes a reply</span>' : ''}${r.stage ? `<span class="cc-pill k-other">${esc(r.stage)}</span>` : ''}${textStatus(r.person_id)}</div>
         <p class="cc-row-why">${r.next_action ? C.note(r.next_action, [r.display]) : r.owes_reply ? 'They texted last. Answer first.' : 'Time for a touch'}</p>
         <p class="cc-note">${last ? `Last text: “${esc(C.cleanMsg(last))}”` : quietTxt(r)}${r.phone ? ' · ' + C.ph(r.phone) : r.email ? ' · ' + C.em(r.email) : ''}</p></div>
@@ -198,7 +209,7 @@
   function sent() {
     const rows = (S.data.sent_today || []).slice().reverse();
     const body = rows.length ? `<ul class="cc-rows">${rows.map(s => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${s.kind === 'text' ? '▭' : '✉'}</span>
-      <div class="cc-row-main"><h3>${C.pname(s.display)}</h3>
+      <div class="cc-row-main"><h3>${C.pname({ display: s.display, phone: s.kind === 'text' ? s.to : '', email: s.kind === 'email' ? s.to : '' })}</h3>
         <div class="cc-pills"><span class="cc-pill ${s.status === 'sent' ? 'k-listing' : 'k-other'}">${s.status === 'sent' ? 'Sent' : s.status === 'dry-run' ? 'Dry run, nothing left the Mac' : s.status === 'opened' ? 'Opened, waiting for your send' : esc(s.status)}</span>${s.via === 'handoff' ? (s.confirmed_by ? `<span class="cc-pill k-other">${s.confirmed_by === 'you' ? 'you said so' : 'confirmed by ' + esc(s.confirmed_by)} · ${esc(textWhen(s.sent_at))}${s.service && s.service !== 'Gmail' ? ' · ' + esc(s.service) : ''}</span>` : '') : s.kind === 'text' && s.delivery ? `<span class="cc-pill k-other">${esc(s.delivery)}</span>` : ''}</div>
         <p class="cc-note">${esc(textWhen(s.at))} · ${s.kind === 'text' ? 'Text' : 'Email'}${s.subject ? ': ' + esc(s.subject) : ''} · to ${s.kind === 'text' ? C.ph(s.to) : C.em(s.to)}</p>${s.text ? `<p class="cc-row-why">${C.note(s.sent_text || s.text, [s.display], 'Message hidden')}</p>` : ''}</div>${s.status === 'opened' ? `<div class="cc-acts"><button type="button" class="cc-primary" onclick="answerSent('${esc(s.id)}', true)">Sent</button><button type="button" onclick="answerSent('${esc(s.id)}', false)">Not sent</button></div>` : ''}</li>`).join('')}</ul>`
       : C.empty('Nothing sent today.');
@@ -222,7 +233,7 @@
     const all = typeof drafts === 'function' ? drafts() : [], dr = all.filter(d => matches(`${d.name} ${d.subject || ''} ${d.body || ''}`));
     const n = people.length + tk.length + dl.length + ld.length + dr.length;
     const group = (title, rows, li, more) => rows.length ? `<h3 class="cc-sub-h">${title} <span class="cc-count">${rows.length}</span></h3><ul class="cc-rows">${rows.slice(0, 15).map(li).join('')}</ul>${rows.length > 15 ? `<p class="cc-note">${more}</p>` : ''}` : '';
-    const body = !n ? C.noMatch() : group('People', people, p => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${C.ini(p.display)}</span><div class="cc-row-main"><h3>${C.pname(p.display)}</h3>
+    const body = !n ? C.noMatch() : group('People', people, p => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${C.ini(p)}</span><div class="cc-row-main"><h3>${C.pname(p)}</h3>
         <div class="cc-pills">${p.band ? `<span class="cc-pill ${band(p.band)}">${esc(p.band)}</span>` : ''}${p.stage ? `<span class="cc-pill k-other">${esc(p.stage)}</span>` : ''}</div>
         <p class="cc-note">${p.city ? esc(p.city) + ' · ' : ''}${quietTxt(p)}</p></div>
         <div class="cc-acts">${textBtn(p.person_id, p)}<button type="button" class="cc-primary" onclick="touched('${esc(p.person_id)}')">✓ Touched</button><button type="button" onclick="openTask('${esc(p.person_id)}')">＋ Task</button></div></li>`, 'Showing 15. Add more of the name or street to narrow it.')
@@ -242,15 +253,19 @@
     const need = j => j.state === 'waiting' || j.state === 'dial_card_shown'
       ? (j.job_type === 'call' ? 'Open Grok and tap the Call card. It lasts 30 minutes.' : 'Grok is writing it. It shows here when it is ready.')
       : j.state === 'draft_ready' ? 'Open it, read it, and send it yourself.' : '';
-    const row = j => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${j.job_type === 'call' ? '✆' : '✎'}</span>
-      <div class="cc-row-main"><h3>${C.pname(j.display)}</h3>
+    const row = j => {
+      const bits = (typeof personRow === 'function' && personRow(j.person_id)) || {};
+      const pe = ((feedF().people) || []).find(p => String(p.person_id) === String(j.person_id)) || {};
+      const who = { display: j.display || bits.display || pe.display || '', phone: bits.phone || pe.phone || j.to || '', email: bits.email || pe.email || '' };
+      return `<li class="cc-row"><span class="cc-av" aria-hidden="true">${j.job_type === 'call' ? '✆' : '✎'}</span>
+      <div class="cc-row-main"><h3>${C.pname(who)}</h3>
         <div class="cc-pills"><span class="cc-pill ${tone(j)}">${esc(WORD[j.state] || j.state)}</span><span class="cc-pill k-other">${j.job_type === 'call' ? esc((b.purposes || {})[j.purpose] || 'Call') : 'Hard draft'}</span></div>
         <p class="cc-note">${esc(textWhen(j.at))}${j.to ? ' · to ' + C.ph(j.to) : ''}${need(j) ? ' · ' + esc(need(j)) : ''}</p>
-        ${j.ask ? `<p class="cc-row-why">You asked: ${C.note(j.ask, [j.display], 'Request hidden')}</p>` : ''}
-        ${j.job_type === 'call' && (j.summary || j.outcome) ? `<p class="cc-row-why">${C.note([j.outcome, j.summary].filter(Boolean).join('. '), [j.display], 'Result hidden')}</p>` : ''}
-        ${j.draft_text ? `<p class="cc-row-why">${C.note(j.draft_text, [j.display], 'Draft hidden')}</p>` : ''}
+        ${j.ask ? `<p class="cc-row-why">You asked: ${C.note(j.ask, [who.display], 'Request hidden')}</p>` : ''}
+        ${j.job_type === 'call' && (j.summary || j.outcome) ? `<p class="cc-row-why">${C.note([j.outcome, j.summary].filter(Boolean).join('. '), [who.display], 'Result hidden')}</p>` : ''}
+        ${j.draft_text ? `<p class="cc-row-why">${C.note(j.draft_text, [who.display], 'Draft hidden')}</p>` : ''}
         ${j.touch_error ? `<p class="cc-note">Not logged in the CRM: ${esc(j.touch_error)}</p>` : ''}</div>
-      <div class="cc-acts"><button type="button" class="${j.state === 'draft_ready' ? 'cc-primary' : ''}" onclick="openGrok('${esc(j.person_id)}', '${j.job_type === 'call' ? 'call' : 'draft'}')">${j.state === 'draft_ready' ? 'Open the draft' : 'Open'}</button></div></li>`;
+      <div class="cc-acts"><button type="button" class="${j.state === 'draft_ready' ? 'cc-primary' : ''}" onclick="openGrok('${esc(j.person_id)}', '${j.job_type === 'call' ? 'call' : 'draft'}')">${j.state === 'draft_ready' ? 'Open the draft' : 'Open'}</button></div></li>`; };
     const open = rows.filter(j => ['waiting', 'dial_card_shown', 'draft_ready'].includes(j.state)), rest = rows.filter(j => !open.includes(j));
     const body = !rows.length ? C.empty('Nothing has been handed to Grok yet. Use the Call button on a card, or the Grok panel in any message box.')
       : `<h3 class="cc-sub-h">Needs you <span class="cc-count">${open.length}</span></h3>${open.length ? `<ul class="cc-rows">${open.map(row).join('')}</ul>` : C.empty('Nothing is waiting on you.')}
@@ -264,9 +279,9 @@
     const row = r => {
       const last = (r.last_messages || []).slice(-1)[0];
       const differs = r.band && r.band !== r.temp;
-      return `<li class="cc-row cc-click" role="button" tabindex="0" data-person="${esc(r.person_id)}" onclick="openPerson('${esc(r.person_id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPerson('${esc(r.person_id)}')}" aria-label="Open ${esc(r.display)}">
-        <span class="cc-av" aria-hidden="true">${esc(initials(r.display))}</span>
-        <div class="cc-row-main"><h3>${C.pname(r.display)}</h3>
+      return `<li class="cc-row cc-click" role="button" tabindex="0" data-person="${esc(r.person_id)}" onclick="openPerson('${esc(r.person_id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPerson('${esc(r.person_id)}')}" aria-label="Open ${esc(C.fallbackName(r))}">
+        <span class="cc-av" aria-hidden="true">${C.ini(r)}</span>
+        <div class="cc-row-main"><h3>${C.pname(r)}</h3>
           <div class="cc-pills"><span class="cc-pill ${band(r.temp)}">${esc(r.temp)}</span>${r.owes_reply ? '<span class="cc-pill k-closing">Owes a reply</span>' : ''}${r.stage ? `<span class="cc-pill k-other">${esc(r.stage)}</span>` : ''}${differs ? `<span class="cc-pill k-other">Sheet says ${esc(r.band)}</span>` : ''}${textStatus(r.person_id)}</div>
           <ul class="cc-why">${(r.reasons || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
           ${last ? `<p class="cc-note">Last text: ${C.note('“' + last.replace(/^\d{4}-\d{2}-\d{2}: /, '') + '”', [r.display], 'Message hidden')}</p>` : ''}</div>

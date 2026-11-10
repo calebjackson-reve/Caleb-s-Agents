@@ -141,7 +141,7 @@ function pinCard(p) {
   if (p.kind === 'person') {
     // Name, stage as its color chip, cadence as a word, then the facts. Compose and Note open the same sheets as before.
     const id = jsa(p.person_id), row = `personListRow(pinByKey(${jsa(p.key)}))`;
-    return `<div class="pin-card pc-person">${x}<h3>${CC.pname(p.display)}</h3>${Stage.chip(p.stage)}
+    return `<div class="pin-card pc-person">${x}<h3>${CC.pname(p)}</h3>${Stage.chip(p.stage, p.stage_from)}
       <p class="pc-cad">${Stage.cadence(p.band) || 'no cadence set'}${p.owes_reply ? ' · you owe a reply' : ''}${p.new_lead ? ' · new lead' : ''}</p>
       <dl><dt>Type</dt><dd>${esc(p.type || 'unknown')}</dd><dt>Last touch</dt><dd>${esc(lastTouch(p))}</dd>
       <dt>Next</dt><dd>${p.next_action ? CC.note(p.next_action, [p.display]) : 'none'}</dd><dt>Address</dt><dd>${esc([p.address, p.city, p.zip].filter(Boolean).join(', ') || 'none')}</dd></dl>

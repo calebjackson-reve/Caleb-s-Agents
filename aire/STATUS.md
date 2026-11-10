@@ -2,6 +2,29 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-10, night: People board, shown stage, unnamed contacts
+
+**Confirmed by Caleb**
+- The build is handed over. Do not merge. Draft pull request only.
+
+**Found**
+- The People board was built from map pins, touches due and new leads, so a sheet stage of under contract with no pin never showed, and most nurture contacts never showed.
+- Sheet Stage is blank on most contacts. The raw values are only blank, nurture, past client, new lead and under contract.
+- 1,737 contacts have no name in the sheet. `shown_name` is already correct. The screen was saying "No name on the sheet" even when a phone or email was there.
+
+**Done (branch `cursor/people-board-stage-names-9b76`, draft PR)**
+- The People board is every contactable person in `feed.people`. Partners, including recruits, stay off it.
+- `crm.py` computes a shown stage and never writes it. Sheet Stage wins. Otherwise the furthest-along deal sets it. Otherwise the `past_client_review` tag. Everyone else is "No stage yet", uncolored, sorted by heat.
+- A stage from a deal or a tag is marked "from deal" or "from tag". The card shows the sheet value when it differs.
+- A live deal that disagrees with a set sheet Stage is on the card and in the attention list. The button calls the existing `stage` command. Nothing writes on its own.
+- Where a name shows and the sheet has none, the screen uses the phone, then the email, then "No name on the sheet". The card adds "No name on the sheet. Add one?" which opens a note.
+
+**Not verified**
+- Not run on the live sheet. The counts in the handoff (about 95 missing nurture people, 4 mismatched deals, 1,737 unnamed) are from the read-only diagnosis, not from this session.
+
+**Needs Caleb**
+- Look at the draft, then the demo on made-up people. Merge only if it is right. A feed refresh on the mini is what fills the shown stage from the real sheet.
+
 ## 2026-11-10, evening: only Bank hides, names on the map, the contact card and its plan
 
 **Confirmed by Caleb**
