@@ -2,6 +2,34 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-10, evening: only Bank hides, names on the map, the contact card and its plan
+
+**Confirmed by Caleb**
+- Hide only bank account info. Names, contacts and money always show.
+- The map shows first and last names. Keep the 150 pin label rule for now.
+- Ask Claude keeps sending names and amounts, never phones or emails. Bank figures stay out while hidden.
+- Clicking a person opens a contact card with that person's own plan, not the message box.
+- Coral moves to `#E04E28`. Hover, focus, short motion, Start here, Text and Call beside a name, color in More.
+
+**Done (branch `claude/pipeline-light-stage-tabs`, draft PR 105)**
+- `f574431`: the sitewide Show and Hide is gone. Only the Bank page hides its own figures. Map pins show the whole name on hover and as labels once 150 or fewer share the view.
+- This commit: `static/person.js` (the contact card and plan), Start here and row buttons in `stage.js`, the name fallback in `crm.py` feed rows and on every page, the lead form Save test, and the coral, hover, motion and More colors in `light.css`.
+- A fresh checker reviewed both rounds. Its findings were fixed before each commit: two ways the bank figures could stay shown, a wrong "no last touch" for people known only from the map, a message box that stayed open after a send, and a placeholder name that could reach the send log and Grok.
+- Tests: `ui_test.py` 405 checks, `app.py --test` 148, `bridge.py --test` 28, `crm.py --test` and `heat.py --test` pass. Client-data check clean.
+
+**Not verified**
+- Nothing here has run as the live app on 4747. Seen only on the demo on 4811 with made up people, in Chrome on the mini.
+- Hover, focus and reduced motion are checked by reading the stylesheet, not on a phone.
+- How many blank names the first and last fallback fills on the real sheet. The live feed had 1,738 of 3,655 people with no display name before it.
+
+**Inference**
+- Group colors in More are my pick from the stage palette: Today yellow, Deals purple, Numbers blue, You green, System ink, Hot pink, Warm yellow. Coral stays off them so it only means under contract or a highlight.
+- After a send, a message opened for someone with no draft in the queue now closes. It used to stay open with Send live again. That is one line in `sendNow`, after the send, and it changes nothing about what is sent.
+
+**Needs Caleb**
+- Look at the demo, then mark PR 105 ready and merge if it is right.
+- On a phone the More groups are a sideways strip and get no color tab. Say so if you want one there.
+
 ## 2026-11-10, late afternoon: heat score, Hot and Warm lists, and the audit
 
 **Confirmed by Caleb**

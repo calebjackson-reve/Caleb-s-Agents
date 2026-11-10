@@ -55,15 +55,16 @@
 
   function bank() {
     const g = guard(); if (g) return g;
-    const b = C.data.bank;
-    return `<div class="cc-page">${C.banner()}${head('Bank', 'Read only. From Chase alert emails, nothing new to pay for. Nothing here can move money.')}
+    const b = C.data.bank, hide = C.bankHide, bm = v => (hide && v != null ? '$•••' : m(v));
+    const btn = `<p><button type="button" class="cc-priv" id="bank-show" aria-pressed="${!hide}" onclick="CC.toggleBank()">${hide ? 'Show bank figures' : 'Hide bank figures'}</button></p>`;
+    return `<div class="cc-page">${C.banner()}${head('Bank', 'Read only. From Chase alert emails, nothing new to pay for. Nothing here can move money.')}${btn}
       <div class="cc-tiles">
-        ${tile('Cash', b.cash ? m(b.cash.value) : '—', b.cash ? 'Balance in the alert of ' + when(b.cash.at) : 'No balance alert in 30 days. Turn on Chase\'s daily balance alert to fill this in.', 'bank_mail')}
-        ${tile('Last deposit', b.last_deposit ? m(b.last_deposit.value) : '—', b.last_deposit ? when(b.last_deposit.at) : 'None in 30 days', 'bank_mail')}
+        ${tile('Cash', b.cash ? bm(b.cash.value) : '—', b.cash ? 'Balance in the alert of ' + when(b.cash.at) : 'No balance alert in 30 days. Turn on Chase\'s daily balance alert to fill this in.', 'bank_mail')}
+        ${tile('Last deposit', b.last_deposit ? bm(b.last_deposit.value) : '—', b.last_deposit ? when(b.last_deposit.at) : 'None in 30 days', 'bank_mail')}
         ${tile('Chase alerts', n(b.alerts), `${b.deposits} deposit${b.deposits === 1 ? '' : 's'}, last 30 days`, 'bank_mail')}
-        ${tile('Deposits, 30 days', m(b.rows.filter(r => r.type === 'Deposit' && r.amount != null).reduce((s, r) => s + r.amount, 0) || (b.deposits ? 0 : null)), b.deposits ? `Total of ${b.deposits} deposit alert${b.deposits === 1 ? '' : 's'}` : 'No deposit alerts in 30 days', 'bank_mail')}
+        ${tile('Deposits, 30 days', bm(b.rows.filter(r => r.type === 'Deposit' && r.amount != null).reduce((s, r) => s + r.amount, 0) || (b.deposits ? 0 : null)), b.deposits ? `Total of ${b.deposits} deposit alert${b.deposits === 1 ? '' : 's'}` : 'No deposit alerts in 30 days', 'bank_mail')}
       </div>
-      ${card('Alerts', b.rows.length ? `<ul class="cc-list">${b.rows.map(r => `<li class="cc-ev"><span class="cc-chip">${esc(r.type)}</span><span class="cc-what">${C.scrubMoney(r.subject)}<small>${esc(when(r.received))}</small></span><b class="cc-amt">${r.amount == null ? '' : m(r.amount)}</b></li>`).join('')}</ul>` : empty('No Chase alerts in the last 30 days.'), 'bank_mail')}
+      ${card('Alerts', b.rows.length ? `<ul class="cc-list">${b.rows.map(r => `<li class="cc-ev"><span class="cc-chip">${esc(r.type)}</span><span class="cc-what">${hide ? '<span class="cc-hid">Details hidden</span>' : esc(r.subject)}<small>${esc(when(r.received))}</small></span><b class="cc-amt">${r.amount == null ? '' : bm(r.amount)}</b></li>`).join('')}</ul>` : empty('No Chase alerts in the last 30 days.'), 'bank_mail')}
       <p class="cc-note">The balance is only as current as Chase's last alert email. A live balance would need a paid bank connection, and none is set up.</p></div>`;
   }
 

@@ -3,7 +3,7 @@
 (function () {
   const C = window.CC;
   const { n, day, card, tile, empty, head, guard } = C;
-  const money = v => (v == null ? '—' : C.priv ? '$•••' : '$' + Math.round(v).toLocaleString());
+  const money = v => (v == null ? '—' : '$' + Math.round(v).toLocaleString());
   // The arrow follows the rounded number: 0% gets no arrow.
 const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); return `<span class="cc-yy ${p > 0 ? 'up' : p < 0 ? 'down' : ''}">${p > 0 ? '▲ ' : p < 0 ? '▼ ' : ''}${Math.abs(p)}% vs last year</span>`; };
   const NEWS = { local: ['Local', 'k-closing'], market: ['Market', 'k-tan'], rates: ['Rates', 'k-other'] };
@@ -49,7 +49,7 @@ const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); retur
           ${twin ? `<p class="cc-note">Same numbers as ${esc(twin.area)} in Realtor.com's own file: every listing ${a.level === 'zip' ? 'in the parish is in this ZIP' : 'is in ZIP ' + esc(twin.id)}.</p>` : ''}
           ${msrc('Realtor.com inventory', mon(a.month), 'areas_' + a.level)}</div>`; }).join('')}</div>`
         : empty('No area numbers yet.'), [])}
-      ${card('Talking points', (m.points || []).length ? `<ul class="cc-points">${m.points.map(p => `<li>${C.scrubMoney(p)}</li>`).join('')}</ul><div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyPoints()">Copy the talking points</button></div><p class="cc-note">Built only from the numbers above, each with its source and date. Check the date before you quote one to a client.</p>` : empty('No numbers yet, so no talking points.'), 'market')}
+      ${card('Talking points', (m.points || []).length ? `<ul class="cc-points">${m.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul><div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyPoints()">Copy the talking points</button></div><p class="cc-note">Built only from the numbers above, each with its source and date. Check the date before you quote one to a client.</p>` : empty('No numbers yet, so no talking points.'), 'market')}
       ${(m.warnings || []).length ? `<p class="cc-warn">${m.warnings.map(esc).join('. ')}. Everything else on this page loaded in that read.</p>` : ''}
       <p class="cc-note">For-rent counts are not here: the free sources don't have them, and Zillow's rental data needs a paid feed.</p></div>`;
   }
