@@ -8,6 +8,7 @@
     ['leads_low', 'New leads a week, low end'], ['leads_high', 'New leads a week, high end'], ['appts', 'Appointments a week'],
     ['cap_amount', 'Cap amount, dollars', true], ['royalty', 'Royalty, dollars (separate from cap)', true],
     ['cap_start', 'Cap year starts', false, 'date'], ['cap_by', 'Hit cap by', false, 'date'],
+    ['tax_rate', 'Set aside for taxes, percent of your take'],
   ];
 
   function bar(p) {
@@ -75,6 +76,7 @@
         ${kpi('Leads per week', n(lw.value), `<p class="cc-note">${lw.low ? `Goal ${lw.low} to ${lw.high}. ` : ''}Website leads received in the last 7 days. Test leads are not counted.</p>${delta('leads7')}${spark('leads7')}`, ['leads', 'history'])}
         ${kpi('Appointments per week', n(sc.appts7.value), `<p class="cc-note">${sc.appts7.goal ? `Goal ${sc.appts7.goal}. ` : ''}Accepted showings, listing appointments and client meetings, today through the next 6 days. ${sc.appts7.invites ? `${sc.appts7.invites} more invite${sc.appts7.invites === 1 ? '' : 's'} not accepted, not counted. ` : ''}</p>${delta('appts7')}${spark('appts7')}`, ['calendar', 'history'])}
         ${kpi('Cap progress', cap ? m(cap.paid) : 'Not set', cap ? `${bar({ pct: cap.pct, pace_pct: 0, ahead: true })}<p class="cc-note">Company dollar is 30% of your commission on deals closed since ${C.day(cap.start)}. ${m(cap.left)} left of ${m(cap.amount)}. The royalty is separate and is not counted toward cap.</p>` : '<p class="cc-note">Add the cap amount and the cap year start below. The number shows once both are saved.</p>', ['deals', 'goals'])}
+        ${(tx => kpi('Tax savings', tx ? m(tx.set_aside) : 'Not set', tx ? `<p class="cc-note">${tx.rate}% of your take this year. Take: <b>${m(tx.take)}</b>, which is ${m(tx.gci)} in commission less ${m(tx.company)} company dollar and ${m(tx.royalty)} royalty.${tx.n_est ? ` <em>${m(tx.est_gci)} of the commission is the estimate for ${tx.n_est} closings, so part of this is a guess.</em>` : ''} A number to save toward, not tax advice.</p>` : '<p class="cc-note">Add a tax percent below and this shows what to set aside from your take this year.</p>', ['deals', 'sales', 'goals']))(d.tax)}
         ${kpi('Lead response time', 'Not tracked yet', `<p class="cc-note">${sc.response.note}</p>`, [])}
       </div>
       ${growth()}

@@ -718,6 +718,30 @@ class Growth(unittest.TestCase):
         paid = cc.scorecard(deals, [], [], {}, {"value": 5000}, T, sales, 0.025)["gci"]
         self.assertEqual((paid["value"], paid["est"]), (5000, None))                              # a KW paid figure is never padded
 
+    def test_tax_savings_is_the_rate_times_the_take_after_cap_and_royalty(self):
+        sheet = SHEET[:1] + [["1 Tax Ln", "Buyer", "Closed", "", "40000", "", "", "2026-01-10", "", ""],
+                             ["2 Tax Ln", "Buyer", "Closed", "", "60000", "", "", "2026-06-10", "", ""],
+                             ["3 Tax Ln", "Buyer", "Closed", "400000", "", "", "", "2026-11-03", "", ""]]
+        deals = cc.deal_rows(sheet)
+        self.assertIsNone(cc.tax_savings([], deals, {}, T, 0.025))
+        flat = cc.tax_savings([], deals, {"tax_rate": 20}, T, 0.025)                 # no cap set: 30% off everything, no royalty
+        self.assertEqual((flat["gci"], flat["company"], flat["royalty"], flat["take"], flat["set_aside"]), (110000, 33000, 0, 77000, 15400))
+        self.assertEqual((flat["n"], flat["n_est"], flat["est_gci"]), (3, 1, 10000))
+        g = {"tax_rate": 20, "cap_amount": 21000, "royalty": 3000, "cap_start": "2026-11-01"}
+        t = cc.tax_savings([], deals, g, T, 0.025)
+        # Cap year from Nov 1, 2025: 12,000 then 9,000 company dollar (cap reached), royalty 2,400 then 600.
+        # New cap year from Nov 1, 2026: 3,000 company dollar and 600 royalty on the 10,000 estimate.
+        self.assertEqual((t["company"], t["royalty"], t["take"], t["set_aside"]), (24000, 3600, 82400, 16480))
+        self.assertEqual(cc.tax_savings([], deals, g, T)["gci"], 100000)             # no estimate rate: real commission only
+        self.assertEqual(cc.clean_goals({"tax_rate": 18}), {"tax_rate": 18})
+
+    def test_commission_rows_add_up_to_the_gci(self):
+        deals = cc.deal_rows(SHEET[:1] + [["300 Pine Dr", "Listing", "Closed", "400,000", "12,000", "", "", "2026-03-01", "", ""],
+                                          ["700 Blank Rd", "Both", "Closed", "100000", "", "", "", "2026-04-01", "", ""]])
+        sales = self.SALES + [{"close": "2026-05-05", "address": "8 Made Up Ct", "side": "Buyer", "price": 200000, "type": "Land"}]
+        rows = [r for r in cc.commissions(sales, deals, 0.025) if r["day"][:4] == "2026" and r["day"] <= T.isoformat()]
+        self.assertEqual(sum(r["amount"] for r in rows), cc.scorecard(deals, [], [], {}, None, T, sales, 0.025)["gci"]["value"])
+
     def test_no_sales(self):
         self.assertIsNone(cc.growth([], [], T))
         self.assertIsNone(cc.growth(None, cc.deal_rows([HEAD]), T))
