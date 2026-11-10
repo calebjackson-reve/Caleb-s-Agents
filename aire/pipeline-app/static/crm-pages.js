@@ -329,5 +329,28 @@
          ${rest.length ? `<h3 class="cc-sub-h">Earlier <span class="cc-count">${rest.length}</span></h3><ul class="cc-rows">${rest.map(row).join('')}</ul>` : ''}`;
     return page('Grok calls', `Calls and hard drafts handed to Grok. ${dry ? 'Dry run: jobs are logged here and nothing leaves the Mac.' : 'Live: jobs go to Grok.'} ${b.calls_24h || 0} of ${b.calls_cap || 10} calls in the last 24 hours, ${b.drafts_today || 0} of ${b.drafts_cap || 10} hard drafts today. Grok never sends a text or email, and nothing dials until you tap its Call card.`, body, ['sends']);
   }
-  Object.assign(C.views, { touches, tasks, deals, queue, sent, grok, search });
+  // ---------------- Hot and Warm: who to work now, scored by aire/crm/heat.py. The whole row is the button.
+  function heatPage(temp) {
+    const h = feedF().heat || {}, rows = (h[temp] || []).filter(r => matches(`${r.display} ${r.phone || ''} ${r.email || ''} ${r.stage || ''}`));
+    const cnt = h.counts || {}, th = h.thresholds || {}, v = h.versus_band || {};
+    const row = r => {
+      const last = (r.last_messages || []).slice(-1)[0];
+      const differs = r.band && r.band !== r.temp;
+      return `<li class="cc-row cc-click" role="button" tabindex="0" data-person="${esc(r.person_id)}" onclick="openPerson('${esc(r.person_id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPerson('${esc(r.person_id)}')}" aria-label="Open ${C.priv ? 'this person' : esc(r.display)}">
+        <span class="cc-av" aria-hidden="true">${C.priv ? '•' : esc(initials(r.display))}</span>
+        <div class="cc-row-main"><h3>${C.who(r.display || 'No name')}</h3>
+          <div class="cc-pills"><span class="cc-pill ${band(r.temp)}">${esc(r.temp)}</span>${r.owes_reply ? '<span class="cc-pill k-closing">Owes a reply</span>' : ''}${r.stage ? `<span class="cc-pill k-other">${esc(r.stage)}</span>` : ''}${differs ? `<span class="cc-pill k-other">Sheet says ${esc(r.band)}</span>` : ''}${textStatus(r.person_id)}</div>
+          <ul class="cc-why">${(r.reasons || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+          ${last ? `<p class="cc-note">Last text: ${C.note('“' + last.replace(/^\d{4}-\d{2}-\d{2}: /, '') + '”', [r.display], 'Message hidden')}</p>` : ''}</div>
+        <div class="cc-heat" aria-label="Heat ${n0(r.heat)} of 100"><b>${n0(r.heat)}</b><small>heat</small></div></li>`;
+    };
+    const floor = temp === 'hot' ? th.hot : th.warm, top = temp === 'hot' ? 100 : (th.hot || 50) - 1;
+    const sub = `${n0((h[temp] || []).length)} ${temp} right now, hottest first. Click a person to open them. Heat is ${n0(floor)} to ${n0(top)} for ${temp}, worked out from what they said and did and when, not from the band on the sheet.`;
+    const note = `<p class="cc-note cc-how"><b>How heat is scored.</b> Buying or selling talk in their own words, by how recent. A live deal. A new lead, hot for its first 7 days. Texting both ways. A referral or life change. Your own band, which fades when nothing happens. Silence cools everyone but a live deal, and three texts with no answer cools them faster. Of ${n0(h.scored)} people scored: ${TEMPS.map(t => `${n0(cnt[t])} ${t}`).join(', ')}. Next to the sheet's band, heat agrees on ${n0(v.same)}, runs hotter on ${n0(v.hotter_than_band)} and cooler on ${n0(v.cooler_than_band)}. The sheet is not changed.</p>${h.dated_intent === false ? '<p class="cc-note">Buying and selling talk is not counted yet: the texts file is from before the dates were added. It fills in on the next feed refresh.</p>' : ''}`;
+    const body = (rows.length ? `<ul class="cc-rows">${rows.map(row).join('')}</ul>` : (S.q ? C.noMatch() : C.empty(temp === 'hot' ? 'Nobody is hot right now.' : 'Nobody is warm right now.'))) + note;
+    return page(temp === 'hot' ? 'Hot' : 'Warm', sub, body, ['crm']);
+  }
+  const TEMPS = ['hot', 'warm', 'lukewarm', 'cold', 'ice-cold'];
+  const hot = () => heatPage('hot'), warm = () => heatPage('warm');
+  Object.assign(C.views, { touches, tasks, deals, queue, sent, grok, hot, warm, search });
 })();

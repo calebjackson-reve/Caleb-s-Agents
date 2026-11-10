@@ -52,7 +52,7 @@ def fake_chat_db(path: Path):
         (3, d(10), 0, "saw your post, congrats on the closing", None),
         (3, d(8), 0, "lol", None),
         (3, d(5), 0, "coffee soon?", None),
-        (4, d(20), 0, None, b"\x00NSString\x01\x94\x84\x01+\x12we want to rent out our condo"),
+        (4, d(20), 0, None, b"\x00NSString\x01\x94\x84\x01+\x1dwe want to rent out our condo"),
         (4, d(19), 0, "closing is next friday right?", None),
         (4, d(18), 0, "and the appraisal came back fine", None),
     ]
@@ -103,6 +103,9 @@ s1 = sig["+12255550101"]
 check("intent keywords found", s1["keyword_hits"].get("sell", 0) >= 1 and s1["keyword_hits"].get("referral", 0) == 1)
 check("unanswered computed", s1["unanswered_days"] == 1)
 check("name hint recovered", sig["+12255550102"]["name_hints"] == ["Marcus Pelt"])
+check("each intent hit is dated", s1["kw_last"].get("sell") == (NOW - timedelta(days=3)).astimezone().strftime("%Y-%m-%d") and s1["kw_30"].get("sell") == 1
+      and sig["+12255550102"]["kw_30"].get("buy") is None and sig["+12255550102"]["kw_90"].get("buy") == 1)
+check("everyday words are not intent", not sig["jordan@example.com"]["keyword_hits"])
 check("blob body decoded into keywords", sig["+12255550199"]["keyword_hits"].get("rent") == 1 and sig["+12255550199"]["keyword_hits"].get("deal") == 2)
 (out / "imessage-signals.json").write_text(json.dumps(sig))
 check("link, greeting, emoji, tapback and mass texts need no reply",

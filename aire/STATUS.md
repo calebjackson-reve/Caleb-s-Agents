@@ -2,6 +2,30 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-10, late afternoon: heat score, Hot and Warm lists, and the audit
+
+**Confirmed by Caleb**
+- "Build an algorithm and a hot and warm list under my leads, where I can go and click on them specifically, and it doesn't have a button that I have to press." And: audit how hot, warm and cold are established and build a better automated way to find these leads.
+
+**Found (the audit, `enrichment/AUDIT-2026-11-10-temperature.md`)**
+- The scorer was never wired into the live app. Hot, warm and cold on screen were the sheet's band column, and the ranking inside a band was a count of texts. Intent words had no dates and fired on everyday talk. A hot band kept itself hot. "inactive" read as "active". Nothing cooled.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `crm/heat.py`: one deterministic score, 0 to 100, with reasons. No model, no writes. 19 checks.
+- `enrichment/execution/imessage_signals.py`: intent words are dated and the patterns are tighter.
+- `crm/crm.py`: the feed carries `heat`. `crm.py heat` prints counts only. 158 checks.
+- Pipeline: Hot and Warm pages under Leads. The whole row is the click target, no buttons. Demo screenshots 27 to 30.
+
+**Not verified**
+- Not run on real data. No count of real people at each temperature. No backtest against closed deals. The thresholds are a starting point.
+
+**Inference**
+- Reading "doesn't have a button that I have to press" as: the lists fill themselves, and a row opens on one click with no button inside it.
+
+**Needs Caleb**
+- Merge, pull on the mini, let one feed refresh run, then open Hot and Warm. Run `crm.py heat --signals ...` on the mini and send back the counts line.
+- Say which names on the Hot list are wrong and why, so the weights get tuned on his book.
+
 ## 2026-11-10, afternoon: Grok on the screen, and the mini on main
 
 **Confirmed by Caleb**

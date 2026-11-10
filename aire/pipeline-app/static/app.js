@@ -52,7 +52,8 @@ const maskAttr = () => (hid() ? ' class="cc-masked" autocomplete="off"' : '');
 function owesReply() { return (feed().touches_due || []).filter(r => r.owes_reply); }
 // Drafts ready: written texts and emails only. Reply-first rows have no template, so they are never counted as ready.
 function readyDrafts() { return drafts().filter(d => !d.reply); }
-function personRow(id) { return (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person')).find(r => r.person_id === id); }
+function heatList(t) { return ((feed().heat || {})[t]) || []; }
+function personRow(id) { return (feed().touches_due || []).concat(feed().new_leads || [], heatList('hot'), heatList('warm'), feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person')).find(r => r.person_id === id); }
 // ---- texting from a card: one button opens the text, SEND sends it, then the card shows what happened
 const firstName = n => (String(n || '').trim().split(/\s+/)[0] || '');
 function lastText(id) { return ((S.data && S.data.last_texts) || {})[id]; }
@@ -152,6 +153,8 @@ function grokBlock(c, row) {
 const grokTone = j => ({ completed: 'ok', draft_ready: 'ok', waiting: 'wait', dial_card_shown: 'wait', 'dry-run': 'wait' }[j.state] || 'bad');
 function grokKeep() { const a = $('#g-ask'), p = $('#g-purpose'), t = $('#c-body'); if (a) S.grokAsk = a.value; if (p) S.grokPurpose = p.value; if (t && S.compose) S.compose.body = t.value; }
 function grokTab(m) { grokKeep(); S.grokMode = m; renderDrawer(); const a = $('#g-ask'); if (a) a.focus(); }
+// A row on the Hot and Warm pages is the button: one click opens the person with their texts, the draft and Grok.
+function openPerson(id) { S.grokMode = 'call'; S.grokAsk = ''; openCompose(id); if (S.compose) S.compose.fromCard = true; }
 // The Call button on a card: the compose box opens with the Grok panel on the Call tab and in view.
 function openGrok(id, mode) {
   S.grokMode = mode || 'call'; S.grokAsk = ''; openCompose(id); if (!S.compose) return;
@@ -268,10 +271,11 @@ function countUp(el) {
   const t0 = performance.now(), dur = 900;
   (function step(t) { const p = Math.min(1, (t - t0) / dur), v = Math.round(target * (1 - Math.pow(1 - p, 3))); el.textContent = v.toLocaleString(); if (p < 1) requestAnimationFrame(step); })(t0);
 }
+// A fourth entry on an item is its sub-pages, drawn indented under it (Hot and Warm under Leads, Caleb 2026-11-10).
 // The nav, in groups, one distinct icon each. KEYS: the number keys open the same pages, in this order.
 const NAV = [
   ['Today', [['dash', '◧', 'Dashboard'], ['touches', '☎', 'Touches due'], ['tasks', '☑', 'Tasks'], ['queue', '✎', 'Drafts'], ['sent', '➚', 'Sent today'], ['grok', '✆', 'Grok calls']]],
-  ['People', [['ccleads', '✚', 'Leads'], ['map', '⌖', 'Map']]],
+  ['People', [['ccleads', '✚', 'Leads', [['hot', 'Hot'], ['warm', 'Warm']]], ['map', '⌖', 'Map']]],
   ['Deals', [['deals', '⌂', 'Deals'], ['commission', '$', 'Commission'], ['deadlines', '⚑', 'Deadlines'], ['calendar', '▦', 'Calendar']]],
   ['Numbers', [['scorecard', '▲', 'Scorecard'], ['ccmarket', '◆', 'Market'], ['monitor', '⚒', 'Listings and permits'], ['news', '▤', 'News'], ['bank', '◫', 'Bank']]],
   ['You', [['life', '❀', 'Life'], ['health', '♥', 'Workouts']]],
@@ -286,13 +290,15 @@ function renderNav(c) {
     sources: [window.CC && CC.data && CC.attention ? CC.attention().length : 0, true],
     touches: [td.length, td.some(r => r.owes_reply)], tasks: [(feed().tasks || []).length, c.tasks_overdue > 0], deals: [cd ? cd.deals.filter(r => !['closed', 'out'].includes(r.stage)).length : 0, false],
     queue: [dr.length, false], sent: [(S.data.sent_today || []).filter(s => s.status === 'sent').length, false],
+    hot: [heatList('hot').length, heatList('hot').some(r => r.owes_reply)], warm: [heatList('warm').length, false],
     grok: [grokOpen().length, grokOpen().some(j => j.state === 'waiting' || j.state === 'dial_card_shown')] };
   const view = { cc: 'dash', leads: 'ccleads', market: 'monitor', dealmap: 'deals' }[S.view] || S.view;
   // Each group has its color; the page takes the color of the group it is in (ui.css, the color code).
-  const sec = (NAV.find(([, items]) => items.some(([k]) => k === view)) || ['Today'])[0].toLowerCase();
+  const sec = (NAV.find(([, items]) => items.some(([k, , , kids]) => k === view || (kids || []).some(([s]) => s === view))) || ['Today'])[0].toLowerCase();
   document.body.dataset.sec = sec;
-  $('#nav').innerHTML = NAV.map(([g, items]) => `<div class="nav-g g-${g.toLowerCase()}"><span class="nav-h">${g}</span>${items.map(([k, ico, label]) => { const [n, warn] = cnt[k] || [];
-    return `<button type="button" class="${view === k ? 'on' : ''}" ${view === k ? 'aria-current="page"' : ''} onclick="go('${k}')"><span class="ico" aria-hidden="true">${ico}</span><span class="lbl">${label}</span>${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`; }).join('')}</div>`).join('');
+  $('#nav').innerHTML = NAV.map(([g, items]) => `<div class="nav-g g-${g.toLowerCase()}"><span class="nav-h">${g}</span>${items.map(([k, ico, label, kids]) => { const [n, warn] = cnt[k] || [];
+    return `<button type="button" class="${view === k ? 'on' : ''}" ${view === k ? 'aria-current="page"' : ''} onclick="go('${k}')"><span class="ico" aria-hidden="true">${ico}</span><span class="lbl">${label}</span>${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`
+      + (kids || []).map(([s, sl]) => { const [sn, sw] = cnt[s] || []; return `<button type="button" class="sub ${view === s ? 'on' : ''}" ${view === s ? 'aria-current="page"' : ''} onclick="go('${s}')"><span class="ico" aria-hidden="true"></span><span class="lbl">${sl}</span>${sn ? `<span class="cnt ${sw ? 'warn' : ''}">${sn}</span>` : ''}</button>`; }).join(''); }).join('')}</div>`).join('');
   // On a phone the nav is one strip that scrolls sideways: keep the page you are on in the middle of it.
   const on = $('#nav .on'), strip = $('#nav');
   if (on && strip && strip.scrollWidth > strip.clientWidth) { const a = on.getBoundingClientRect(), b = strip.getBoundingClientRect(); strip.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2); }

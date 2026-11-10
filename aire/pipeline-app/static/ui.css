@@ -376,3 +376,14 @@ body[data-sec="numbers"] { --sec: var(--c-green); } body[data-sec="you"] { --sec
 .grok-status button { justify-self: start; }
 /* The compose box was a fixed 520px, so a phone showed only its right half. */
 @media (max-width: 560px) { .drawer { left: 8px; right: 8px; top: 8px; bottom: 8px; width: auto; } }
+
+/* ---------- Hot and Warm: the whole row is the click target, so there is no button to hunt for */
+.cc-row.cc-click { cursor: pointer; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; transition: border-color .15s, background .15s, transform .15s; }
+.cc-row.cc-click:hover, .cc-row.cc-click:focus-visible { border-color: var(--cc-coral); background: rgba(232, 119, 87, .06); outline: 0; transform: translateY(-1px); }
+.cc-why { margin: 6px 0 0; padding: 0 0 0 18px; display: grid; gap: 2px; font-size: 14px; line-height: 1.4; }
+.cc-heat { display: grid; justify-items: center; min-width: 56px; padding: 6px 10px; border-radius: 12px; border: 1px solid var(--cc-line); }
+.cc-heat b { font: 600 22px var(--sans); line-height: 1; }
+.cc-heat small { font-size: 11px; color: var(--cc-muted); }
+@media (max-width: 560px) { .cc-row.cc-click { grid-template-columns: auto minmax(0, 1fr); } .cc-heat { grid-column: 2; justify-self: start; grid-auto-flow: column; gap: 6px; align-items: baseline; } }
+.nav button.sub { min-height: 30px; padding-top: 4px; padding-bottom: 4px; font-size: 12.5px; }
+.nav button.sub .lbl::before { content: "\2514"; margin-right: 6px; color: var(--cc-line); }

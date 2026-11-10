@@ -94,6 +94,10 @@ Pipeline is the one sender (Caleb, 2026-10-20). Every send from the compose box 
 
 After a real send the engine logs it with `touch`, so the person drops off tomorrow's list. The Sent today view and the Send monitor gauges read the same log. A person already in today's log is hidden from the queue.
 
+### Hot and Warm, under Leads
+
+Two pages indented under Leads in the menu (Caleb, 2026-11-10). Each lists the people `aire/crm/heat.py` scores hot (50 and up) or warm (30 to 49), hottest first, with the reasons in plain words and the heat number. A row has no buttons: the whole row is the click target and opens the person, by mouse or by Enter. Where the sheet's band disagrees the row says so. The lists fill themselves on every feed refresh. Nothing here writes to the sheet. The audit that led to it: `aire/enrichment/AUDIT-2026-11-10-temperature.md`.
+
 ### Grok bridge: calls and hard drafts
 
 Contract: `CONTRACT-grok-bridge.md`. Code: `bridge.py` (28 offline checks, `python3 aire/pipeline-app/bridge.py --test`) and `State.bridge_job()` in `app.py`.

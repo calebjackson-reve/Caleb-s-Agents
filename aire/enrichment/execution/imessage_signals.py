@@ -23,13 +23,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from identity import handle_key  # noqa: E402
 
 APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
+# Tightened 2026-11-10 (aire/enrichment/AUDIT-2026-11-10-temperature.md). Bare words that fire in everyday talk
+# (value, list, offer, showing, closing, title, transfer, rent) now need a housing word beside them.
+_HOME = r"(house|home|place|property|condo|townhome|townhouse|lot|land|acreage)"
 KEYWORDS = {
-    "sell": r"\b(sell|selling|list(ing)?|what('s| is) (my|our) (house|home) worth|cma|value)\b",
-    "buy": r"\b(buy|buying|looking at (houses|homes)|house hunt|showing|offer|pre[- ]?approv\w*)\b",
-    "move": r"\b(moving|relocat|transfer|downsiz|upsiz|new job)\b",
-    "rent": r"\b(rent|rental|lease|tenant|landlord)\b",
-    "invest": r"\b(invest|flip|airbnb|duplex|rental property)\b",
-    "deal": r"\b(inspection|appraisal|closing|under contract|title|lender|escrow|act of sale)\b",
+    "sell": (r"\b(sell(ing)? (my|our|the|this|mom'?s|dad'?s|her|his|their) " + _HOME + r"|sell(ing)? (it|soon|next year|this year|in the spring)|"
+             r"list(ing)? (my|our|the|it|this) ?" + _HOME + r"?|put (it|" + _HOME + r"|the " + _HOME + r"|our " + _HOME + r"|my " + _HOME + r") on the market|"
+             r"what('s| is|s)? (my|our|the) " + _HOME + r" worth|what (it|" + _HOME + r")('s| is) worth|home valu\w*|house valu\w*|cma|"
+             r"thinking (about|of) (selling|listing)|ready to (sell|list))\b"),
+    "buy": (r"\b(buy(ing)? (a|an|our|my|another|the|that|this) " + _HOME + r"|looking (at|for) (a |an |some )?(houses|homes|" + _HOME + r")|house hunt\w*|"
+            r"(see|tour|show me|look at|schedule a showing)( \w+){0,3} (house|home|place|property|listing)|make an offer|put in an offer|"
+            r"pre[- ]?approv\w*|first[- ]time (home ?)?buyer|ready to buy|want to buy|down payment)\b"),
+    "move": r"\b(moving (to|back|out|closer|in)|relocat\w*|downsiz\w*|upsiz\w*|need more (space|room)|outgr\w+ (the|our|this) (house|home|place))\b",
+    "rent": r"\b(rent(ing)? (out|a|an|my|our|the) ?" + _HOME + r"?|rental (property|house|home)|lease (is )?(up|ends|ending)|my landlord|our landlord|tenant)\b",
+    "invest": r"\b(invest(ing|ment)? (in )?(real estate|property|properties)|investment property|flip(ping)? (a |houses|homes)|airbnb|duplex|rental property)\b",
+    "deal": (r"\b(inspection|appraisal|under contract|closing (date|day|costs?|on|is|was)|close on|title (company|work)|escrow|act of sale|"
+             r"earnest money|counter ?offer|clear to close)\b"),
     "referral": r"\b(my (friend|sister|brother|cousin|coworker|neighbor)|referr|knows? (someone|anybody)|looking for an agent)\b",
     "life": r"\b(engaged|married|wedding|baby|pregnant|retir|divorc|passed away|new job|promotion)\b",
 }
@@ -132,12 +141,15 @@ def build_signals(messages: list[tuple[str, datetime, bool, str]], now: datetime
         if not k:
             continue
         s = sig.setdefault(k, {"last_inbound": "", "last_outbound": "", "in_30": 0, "in_90": 0, "in_365": 0, "out_90": 0,
-                               "keyword_hits": {}, "recent_inbound": [], "name_hints": [], "last_reply_inbound": ""})
+                               "out_30": 0, "keyword_hits": {}, "kw_last": {}, "kw_30": {}, "kw_90": {},
+                               "recent_inbound": [], "name_hints": [], "last_reply_inbound": ""})
         age = (now - ts).days
         iso = ts.astimezone().strftime("%Y-%m-%d")
         if from_me:
             if age <= 90:
                 s["out_90"] += 1
+            if age <= 30:
+                s["out_30"] += 1
             s["last_outbound"] = max(s["last_outbound"], iso)
         else:
             s["last_inbound"] = max(s["last_inbound"], iso)
@@ -150,6 +162,10 @@ def build_signals(messages: list[tuple[str, datetime, bool, str]], now: datetime
             for kw, pat in KEYWORDS.items():
                 if re.search(pat, low):
                     s["keyword_hits"][kw] = s["keyword_hits"].get(kw, 0) + 1
+                    # When they said it, not only that they said it: a word from last spring is not this month's intent.
+                    s["kw_last"][kw] = max(s["kw_last"].get(kw, ""), iso)
+                    if age <= 30: s["kw_30"][kw] = s["kw_30"].get(kw, 0) + 1
+                    if age <= 90: s["kw_90"][kw] = s["kw_90"].get(kw, 0) + 1
             if body.strip():
                 s["recent_inbound"].append(f"{iso}: {body.strip()[:160]}")
                 s["recent_inbound"] = s["recent_inbound"][-12:]

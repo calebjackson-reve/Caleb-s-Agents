@@ -920,6 +920,51 @@ class CRM:
                                                                 else f"no touch or text in {quiet} days") + ". Call them today or cool the band"})
         return sorted(out, key=lambda r: (REVIEW_RULES.index(r["rule"]), r["display"]))
 
+    def heat(self, as_of: date | None = None, signals: dict | None = None) -> dict:
+        """Everyone Caleb may contact, scored by heat.py: what they did and when, not the band column. Returns the
+        Hot and Warm lists (hottest first), the count at each temperature, and how the score compares with the
+        sheet's band. Read only: the band column is never written from here."""
+        import heat as heat_mod
+        as_of = as_of or today()
+        signals = signals or {}
+        deal_by = {}
+        for d in self.live_deals():
+            if d.get("person_id"):
+                deal_by.setdefault(str(d["person_id"]), d.get("stage", ""))
+        rows, counts = [], {t: 0 for t in heat_mod.TEMPS}
+        versus = {"same": 0, "hotter_than_band": 0, "cooler_than_band": 0, "no_band": 0}
+        dated = any(v.get("dated") for v in signals.values())
+        for c in self.contacts():
+            sig = signals.get(c["person_id"], {})
+            lead_age = None
+            if "lead" in (c.get("Stage") or "").lower():
+                m = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", c.get("Source", "") or "")
+                if m and m.group(1) <= as_of.isoformat():
+                    lead_age = (as_of - date.fromisoformat(m.group(1))).days
+            h = heat_mod.score(c, sig, as_of, deal_stage=deal_by.get(str(c["person_id"]), ""), lead_age=lead_age,
+                               last_touch=parse_touch(c.get("Last_Touch", ""), as_of))
+            if h["status"] != "ok":
+                continue
+            counts[h["temp"]] += 1
+            band = norm_band(c.get("band"))
+            if not band:
+                versus["no_band"] += 1
+            else:
+                a, b = BAND_ORDER[h["temp"]], BAND_ORDER[band]
+                versus["same" if a == b else "hotter_than_band" if a < b else "cooler_than_band"] += 1
+            if h["temp"] in ("hot", "warm"):
+                rows.append({"person_id": c["person_id"], "display": c.get("display", ""), "temp": h["temp"], "heat": h["heat"],
+                             "reasons": h["reasons"], "band": band, "stage": c.get("Stage", ""), "type": (c.get("Type") or "").lower(),
+                             "phone": c.get("primary_phone", ""), "email": c.get("email", ""), "days_quiet": h.get("days_quiet"),
+                             "owes_reply": bool(sig.get("owes_reply")), "last_inbound": sig.get("last_inbound", ""),
+                             "last_outbound": sig.get("last_outbound", ""), "last_messages": sig.get("last_messages", []),
+                             "last_touch": c.get("Last_Touch", ""), "next_action": c.get("Next_Action", "")})
+        rows.sort(key=lambda r: (-r["heat"], r["days_quiet"] if r["days_quiet"] is not None else 99999, r["display"]))
+        return {"hot": [r for r in rows if r["temp"] == "hot"], "warm": [r for r in rows if r["temp"] == "warm"],
+                "counts": counts, "versus_band": versus, "scored": sum(counts.values()),
+                # False means the signals file predates dated intent words, so intent is not being counted yet.
+                "dated_intent": dated, "thresholds": dict(heat_mod.THRESHOLDS)}
+
     def people(self, signals: dict | None = None) -> list[dict]:
         """Everyone Caleb may contact, compact, so Pipeline's voice can find anyone by name, street or town, not only
         the people due today. Do_Not_Contact people are left out. Read only."""
@@ -1137,6 +1182,7 @@ class CRM:
             "touches_due": due, "tasks": sorted(tasks, key=lambda t: t["due"] or "9999"), "deals": deals,
             "new_leads": self.new_leads(as_of=as_of),
             "no_text_consent": self.no_text_consent(),
+            "heat": self.heat(as_of, signals),
             "partners": self.partners(as_of),
             "label_review": self.label_review(as_of, signals),
             "people": self.people(signals),
@@ -1201,6 +1247,11 @@ def load_signals(path: Path, contacts: list[dict]) -> dict:
                                "last_inbound_at": ask,
                                "signal_score": int(sig.get("in_90", 0)),
                                "in_30": int(sig.get("in_30", 0) or 0),
+                               # What heat.py scores on: counts both ways and intent words with their dates.
+                               "in_90": int(sig.get("in_90", 0) or 0), "out_30": int(sig.get("out_30", 0) or 0),
+                               "out_90": int(sig.get("out_90", 0) or 0), "kw_30": sig.get("kw_30") or {},
+                               "kw_90": sig.get("kw_90") or {}, "kw_last": sig.get("kw_last") or {},
+                               "dated": "kw_last" in sig,
                                # The last three things they actually said, so the Pipeline app can show them above the
                                # compose box. Stays in feed.json on the Mac, never in the sheet or git.
                                "last_messages": recent[-3:]}
@@ -2050,6 +2101,20 @@ def run_tests() -> int:
     check("relabel writes Type and the audit log has it", c4.by_id(pro["person_id"])["Type"] == "vendor"
           and any(x["Tool"] == "update_contact" and "Type='vendor'" in x["Detail"] for x in c4.b.read("Connector Log")))
     check("feed carries label_review and people", {"label_review", "people"} <= set(c4.feed(as_of, sig4)))
+    hf = c4.feed(as_of, sig4)["heat"]
+    ids = {x["person_id"] for x in c4.contacts() if (x.get("Do_Not_Contact") or "").upper() != "YES" and (x.get("Type") or "").lower() not in ("vendor", "agent", "lender", "recruit")}
+    check("heat scores everyone who may be contacted and nobody else", hf["scored"] == len(ids) == sum(hf["counts"].values())
+          and sum(hf["versus_band"].values()) == hf["scored"] and "5" not in {r["person_id"] for r in hf["hot"] + hf["warm"]})
+    check("the hot and warm lists are sorted hottest first and carry their reasons",
+          all(r["reasons"] and r["temp"] == "hot" and r["heat"] >= 50 for r in hf["hot"]) and all(30 <= r["heat"] < 50 for r in hf["warm"])
+          and [r["heat"] for r in hf["hot"]] == sorted((r["heat"] for r in hf["hot"]), reverse=True))
+    hs = c4.heat(as_of, {**sig4, "3": {**sig4.get("3", {}), "kw_30": {"sell": 2}, "kw_90": {"sell": 2}, "kw_last": {"sell": as_of.isoformat()}, "in_30": 3,
+                                      "out_30": 2, "last_inbound": as_of.isoformat(), "last_outbound": as_of.isoformat(), "dated": True}})
+    check("someone the sheet calls cold who is talking about selling this week lands on the hot list",
+          "3" in {r["person_id"] for r in hs["hot"]} and hs["dated_intent"] and hs["versus_band"]["hotter_than_band"] >= 1)
+    before = json.dumps(c4.contacts(), sort_keys=True)
+    c4.heat(as_of, sig4)
+    check("scoring heat writes nothing to the sheet", json.dumps(c4.contacts(), sort_keys=True) == before)
 
     print(f"\n{'ALL PASS' if not fails else str(len(fails)) + ' FAILED'}")
     return 1 if fails else 0
@@ -2123,6 +2188,7 @@ def main(argv=None) -> int:
     p.add_argument("--email", default=""); p.add_argument("--band", default="warm", choices=sorted(CADENCE_DAYS))
     p.add_argument("--next-action", default=""); p.add_argument("--note", default="")
     p = sub.add_parser("due"); p.add_argument("--signals")
+    p = sub.add_parser("heat"); p.add_argument("--signals"); p.add_argument("--names", action="store_true")
     sub.add_parser("tasks")
     sub.add_parser("deals")
     p = sub.add_parser("ingest"); p.add_argument("--hours", type=int, default=26); p.add_argument("--messages", help="JSON file of messages instead of Gmail")
@@ -2214,6 +2280,22 @@ def main(argv=None) -> int:
             days = "never" if d["days_quiet"] is None else f"{d['days_quiet']}d"
             flag = "REPLY" if d["owes_reply"] else "     "
             print(f"{flag} {d['band']:8} {days:>6}  #{d['person_id']:<5} {d['display']:30} {d['phone']:14} {d['next_action']}")
+    elif a.cmd == "heat":
+        # The audit view: counts only, so it is safe to paste. --names adds the Hot and Warm rows for Caleb's eyes.
+        sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
+        h = crm.heat(as_of, sig)
+        if a.json:
+            print(json.dumps({"ok": True, "result": {k: h[k] for k in ("counts", "versus_band", "scored", "dated_intent", "thresholds")}}))
+        else:
+            print(f"scored {h['scored']} people who may be contacted, as of {as_of.isoformat()}")
+            print("by heat:      " + ", ".join(f"{t} {n}" for t, n in h["counts"].items()))
+            v = h["versus_band"]
+            print(f"next to the sheet's band: same {v['same']}, heat says hotter {v['hotter_than_band']}, heat says cooler {v['cooler_than_band']}, no band on the sheet {v['no_band']}")
+            if not h["dated_intent"]:
+                print("note: the signals file has no dated intent words yet. Run the feed refresh once so buying and selling talk is counted.")
+            if a.names:
+                for r in h["hot"] + h["warm"]:
+                    print(f"{r['temp']:5} {r['heat']:3}  #{r['person_id']:<5} {r['display']:30} " + " | ".join(r["reasons"][:2]))
     elif a.cmd == "tasks":
         for t in crm.open_tasks(as_of) + crm.next_action_tasks(as_of):
             print(f"{'OVERDUE' if t.get('overdue') else '       '} {t['due']} #{t['person_id']:<5} {t['display']:28} {t['task']} [{t.get('task_id', 'next_action')}]")
