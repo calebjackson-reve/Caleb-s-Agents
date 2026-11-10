@@ -39,8 +39,8 @@ function drafts() {
   (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || []).forEach(r => { byId[r.person_id] = r; });
   const items = [];
   (tq.reply_first || []).forEach(r => items.push({ kind: 'text', reply: true, person_id: r.person_id, name: r.name, to: r.phone, email: r.email, last_messages: r.last_messages || [], next_action: r.next_action || '', body: '', row: byId[r.person_id] }));
-  (tq.drafts || []).forEach(d => items.push({ kind: 'text', person_id: d.person_id, name: d.name, to: d.phone, body: d.text, pool: d.pool, days_quiet: d.days_quiet, row: byId[d.person_id], last_messages: (byId[d.person_id] || {}).last_messages || [] }));
-  (eq.drafts || []).forEach(d => items.push({ kind: 'email', person_id: d.person_id, name: d.name, to: d.email, subject: d.subject, body: d.body, pool: d.pool, days_quiet: d.days_quiet, row: byId[d.person_id], last_messages: (byId[d.person_id] || {}).last_messages || [] }));
+  (tq.drafts || []).forEach(d => items.push({ kind: 'text', person_id: d.person_id, name: d.name, to: d.phone, body: d.text, pool: d.pool, by: d.by, days_quiet: d.days_quiet, row: byId[d.person_id], last_messages: (byId[d.person_id] || {}).last_messages || [] }));
+  (eq.drafts || []).forEach(d => items.push({ kind: 'email', person_id: d.person_id, name: d.name, to: d.email, subject: d.subject, body: d.body, pool: d.pool, by: d.by, days_quiet: d.days_quiet, row: byId[d.person_id], last_messages: (byId[d.person_id] || {}).last_messages || [] }));
   const sentIds = new Set((S.data.sent_today || []).map(s => s.person_id));
   return items.filter(i => !sentIds.has(i.person_id));
 }

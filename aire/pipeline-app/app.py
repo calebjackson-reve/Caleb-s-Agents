@@ -67,6 +67,7 @@ import cc  # noqa: E402  (Command Center numbers)
 import auth  # noqa: E402  (the login for anything but this Mac)
 import push  # noqa: E402  (phone alerts)
 import cc_ask  # noqa: E402  (Ask Claude on every Command Center page)
+import drafter  # noqa: E402  (Claude writes each draft from the template, in Caleb's voice)
 import handoff  # noqa: E402  (texts and emails Caleb sends himself from the Text and Email buttons)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
@@ -330,6 +331,8 @@ class State:
             threading.Thread(target=self.check_messages, daemon=True).start()
         self.handoff_state = {"messages_ok": None, "gmail_ok": None, "detail": ""}
         self._gmail = None
+        self._signoff: str | None = None
+        self.draft_note = ""
         self.started = now().isoformat(timespec="seconds")
         # Command Center reads: out/cc/ on the Mac (written by the sync), made-up fixtures in demo.
         self.ask_log = (send_log.parent / "ask-usage.json") if send_log else OUT / ("demo-ask-usage.json" if demo else "ask-usage.json")
@@ -637,6 +640,8 @@ class State:
         feed_age = 0 if self.demo else file_age_minutes(self.paths["feed"])
         sent = self.sent_today()
         feed_ok = bool(feed) and "_error" not in feed
+        out_dir = self.send_log_path.parent
+        text_q, email_q, by_claude = drafter.apply(text_q, email_q, read_json(out_dir / "handoff" / "claude-drafts.json", {}), self.signoff())
         log = self.send_log()
         if feed_ok:  # a send Caleb made by hand and Pipeline confirmed is a touch, here only, never in the sheet
             feed, text_q, email_q, _ = handoff.apply_touches(feed, text_q, email_q, log, today().isoformat())
@@ -688,6 +693,8 @@ class State:
             "last_texts": self.last_texts(),
             "handoff": {**self.handoff_state, "pending": handoff.pending(log, now().timestamp())},
             "sent_log": {k: v[-5:] for k, v in by_person.items()},
+            "drafts_by": {"on": drafter.ON and bool(self.ask_key or by_claude), "model": drafter.MODEL, "written": by_claude, "cap": drafter.CAP,
+                          "spent": cc_ask.spent_today(out_dir / "draft-usage.json", now()), "note": self.draft_note},
             "refresh": self.refresh,
             "problems": problems,
             "links": {"sheet": SHEET_URL.format(sheet_id=feed.get("sheet_id", "")) if feed.get("sheet_id") else "", "command": COMMAND_URL},
@@ -966,6 +973,44 @@ class State:
         if sent:
             handoff.record_pair(self.send_log_path.parent / "handoff", e)
         return {"ok": True, "result": e, "sent": bool(sent)}
+
+    # ---- Claude writes each draft (drafter.py)
+    def signoff(self) -> str:
+        """The email sign-off the follow-up library adds. Claude never rewrites it."""
+        if self._signoff is None:
+            try:
+                sys.path.insert(0, str(AIRE / "follow-up"))
+                import followups
+                self._signoff = followups.SIGNOFF
+            except Exception:
+                self._signoff = ""
+        return self._signoff
+
+    def draft_pass(self, client=None) -> dict:
+        """Have Claude write the drafts that have no kept version yet. Never raises: the templates stay on a failure."""
+        out_dir = self.send_log_path.parent
+        if client is None:
+            if self.demo or not drafter.ON or not self.ask_key:
+                self.draft_note = "turned off" if not drafter.ON else "" if self.demo else "no Anthropic key on this Mac"
+                return {"written": 0, "note": self.draft_note}
+            try:
+                import anthropic
+                client = anthropic.Anthropic(api_key=self.ask_key, timeout=120.0)
+            except ImportError:
+                self.draft_note = "the anthropic package is not installed"
+                return {"written": 0, "note": self.draft_note}
+        try:
+            r = drafter.run(client, read_json(self.paths["text_queue"], {}), read_json(self.paths["email_queue"], {}),
+                            out_dir / "handoff", out_dir / "draft-usage.json", now(), self.signoff())
+        except Exception as e:
+            r = {"written": 0, "note": f"{type(e).__name__}: {e}"[:160]}
+        self.draft_note = r["note"]
+        return r
+
+    def draft_loop(self, sleep=time.sleep) -> None:
+        while True:
+            self.draft_pass()
+            sleep(300)
 
     def handoff_loop(self, sleep=time.sleep) -> None:
         if not self.demo and platform.system() == "Darwin":
@@ -1395,6 +1440,7 @@ def serve(state: State, port: int, open_browser: bool) -> None:
     Handler.state = state
     httpd = Server(("127.0.0.1", port), Handler)
     threading.Thread(target=state.handoff_loop, daemon=True).start()
+    threading.Thread(target=state.draft_loop, daemon=True).start()
     url = f"http://127.0.0.1:{port}/"
     v = state.voice_info()
     print(f"Pipeline {'(demo) ' if state.demo else ''}on {url}  sender={state.sender}  crm python={getattr(state.crm, 'python', 'demo')}  "
