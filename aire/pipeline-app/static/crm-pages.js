@@ -305,5 +305,52 @@
     return page('Search', `${n} match${n === 1 ? '' : 'es'} for “${esc(q)}”.`, body, ['crm', 'deals', 'leads']);
   }
 
-  Object.assign(C.views, { touches, tasks, deals, queue, sent, search });
+  // ---------------- Grok: every call and hard draft handed to Grok, newest first, and what each one needs from Caleb
+  function grok() {
+    const b = S.data.bridge || {}, rows = b.recent || [], dry = S.data.demo || b.caller !== 'live';
+    const WORD = { 'dry-run': 'Dry run, nothing left the Mac', waiting: 'Waiting on you', dial_card_shown: 'Waiting on you', completed: 'Call done', draft_ready: 'Draft ready',
+      expired: 'Expired, no call made', canceled: 'Canceled, no call made', post_failed: 'Grok did not take it', failed: 'Failed' };
+    const tone = j => ({ completed: 'k-listing', draft_ready: 'k-listing', waiting: 'k-closing', dial_card_shown: 'k-closing' }[j.state] || 'k-other');
+    const need = j => j.state === 'waiting' || j.state === 'dial_card_shown'
+      ? (j.job_type === 'call' ? 'Open Grok and tap the Call card. It lasts 30 minutes.' : 'Grok is writing it. It shows here when it is ready.')
+      : j.state === 'draft_ready' ? 'Open it, read it, and send it yourself.' : '';
+    const row = j => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${j.job_type === 'call' ? '✆' : '✎'}</span>
+      <div class="cc-row-main"><h3>${C.who(j.display || 'No name')}</h3>
+        <div class="cc-pills"><span class="cc-pill ${tone(j)}">${esc(WORD[j.state] || j.state)}</span><span class="cc-pill k-other">${j.job_type === 'call' ? esc((b.purposes || {})[j.purpose] || 'Call') : 'Hard draft'}</span></div>
+        <p class="cc-note">${esc(textWhen(j.at))}${j.to ? ' · to ' + C.ph(j.to) : ''}${need(j) ? ' · ' + esc(need(j)) : ''}</p>
+        ${j.ask ? `<p class="cc-row-why">You asked: ${C.note(j.ask, [j.display], 'Request hidden')}</p>` : ''}
+        ${j.job_type === 'call' && (j.summary || j.outcome) ? `<p class="cc-row-why">${C.note([j.outcome, j.summary].filter(Boolean).join('. '), [j.display], 'Result hidden')}</p>` : ''}
+        ${j.draft_text ? `<p class="cc-row-why">${C.note(j.draft_text, [j.display], 'Draft hidden')}</p>` : ''}
+        ${j.touch_error ? `<p class="cc-note">Not logged in the CRM: ${esc(j.touch_error)}</p>` : ''}</div>
+      <div class="cc-acts"><button type="button" class="${j.state === 'draft_ready' ? 'cc-primary' : ''}" onclick="openGrok('${esc(j.person_id)}', '${j.job_type === 'call' ? 'call' : 'draft'}')">${j.state === 'draft_ready' ? 'Open the draft' : 'Open'}</button></div></li>`;
+    const open = rows.filter(j => ['waiting', 'dial_card_shown', 'draft_ready'].includes(j.state)), rest = rows.filter(j => !open.includes(j));
+    const body = !rows.length ? C.empty('Nothing has been handed to Grok yet. Use the Call button on a card, or the Grok panel in any message box.')
+      : `<h3 class="cc-sub-h">Needs you <span class="cc-count">${open.length}</span></h3>${open.length ? `<ul class="cc-rows">${open.map(row).join('')}</ul>` : C.empty('Nothing is waiting on you.')}
+         ${rest.length ? `<h3 class="cc-sub-h">Earlier <span class="cc-count">${rest.length}</span></h3><ul class="cc-rows">${rest.map(row).join('')}</ul>` : ''}`;
+    return page('Grok calls', `Calls and hard drafts handed to Grok. ${dry ? 'Dry run: jobs are logged here and nothing leaves the Mac.' : 'Live: jobs go to Grok.'} ${b.calls_24h || 0} of ${b.calls_cap || 10} calls in the last 24 hours, ${b.drafts_today || 0} of ${b.drafts_cap || 10} hard drafts today. Grok never sends a text or email, and nothing dials until you tap its Call card.`, body, ['sends']);
+  }
+  // ---------------- Hot and Warm: who to work now, scored by aire/crm/heat.py. The whole row is the button.
+  function heatPage(temp) {
+    const h = feedF().heat || {}, rows = (h[temp] || []).filter(r => matches(`${r.display} ${r.phone || ''} ${r.email || ''} ${r.stage || ''}`));
+    const cnt = h.counts || {}, th = h.thresholds || {}, v = h.versus_band || {};
+    const row = r => {
+      const last = (r.last_messages || []).slice(-1)[0];
+      const differs = r.band && r.band !== r.temp;
+      return `<li class="cc-row cc-click" role="button" tabindex="0" data-person="${esc(r.person_id)}" onclick="openPerson('${esc(r.person_id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPerson('${esc(r.person_id)}')}" aria-label="Open ${C.priv ? 'this person' : esc(r.display)}">
+        <span class="cc-av" aria-hidden="true">${C.priv ? '•' : esc(initials(r.display))}</span>
+        <div class="cc-row-main"><h3>${C.who(r.display || 'No name')}</h3>
+          <div class="cc-pills"><span class="cc-pill ${band(r.temp)}">${esc(r.temp)}</span>${r.owes_reply ? '<span class="cc-pill k-closing">Owes a reply</span>' : ''}${r.stage ? `<span class="cc-pill k-other">${esc(r.stage)}</span>` : ''}${differs ? `<span class="cc-pill k-other">Sheet says ${esc(r.band)}</span>` : ''}${textStatus(r.person_id)}</div>
+          <ul class="cc-why">${(r.reasons || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+          ${last ? `<p class="cc-note">Last text: ${C.note('“' + last.replace(/^\d{4}-\d{2}-\d{2}: /, '') + '”', [r.display], 'Message hidden')}</p>` : ''}</div>
+        <div class="cc-heat" aria-label="Heat ${n0(r.heat)} of 100"><b>${n0(r.heat)}</b><small>heat</small></div></li>`;
+    };
+    const floor = temp === 'hot' ? th.hot : th.warm, top = temp === 'hot' ? 100 : (th.hot || 50) - 1;
+    const sub = `${n0((h[temp] || []).length)} ${temp} right now, hottest first. Click a person to open them. Heat is ${n0(floor)} to ${n0(top)} for ${temp}, worked out from what they said and did and when, not from the band on the sheet.`;
+    const note = `<p class="cc-note cc-how"><b>How heat is scored.</b> Buying or selling talk in their own words, by how recent. A live deal. A new lead, hot for its first 7 days. Texting both ways. A referral or life change. Your own band, which fades when nothing happens. Silence cools everyone but a live deal, and three texts with no answer cools them faster. Of ${n0(h.scored)} people scored: ${TEMPS.map(t => `${n0(cnt[t])} ${t}`).join(', ')}. Next to the sheet's band, heat agrees on ${n0(v.same)}, runs hotter on ${n0(v.hotter_than_band)} and cooler on ${n0(v.cooler_than_band)}. The sheet is not changed.</p>${h.dated_intent === false ? '<p class="cc-note">Buying and selling talk is not counted yet: the texts file is from before the dates were added. It fills in on the next feed refresh.</p>' : ''}`;
+    const body = (rows.length ? `<ul class="cc-rows">${rows.map(row).join('')}</ul>` : (S.q ? C.noMatch() : C.empty(temp === 'hot' ? 'Nobody is hot right now.' : 'Nobody is warm right now.'))) + note;
+    return page(temp === 'hot' ? 'Hot' : 'Warm', sub, body, ['crm']);
+  }
+  const TEMPS = ['hot', 'warm', 'lukewarm', 'cold', 'ice-cold'];
+  const hot = () => heatPage('hot'), warm = () => heatPage('warm');
+  Object.assign(C.views, { touches, tasks, deals, queue, sent, grok, hot, warm, search });
 })();
