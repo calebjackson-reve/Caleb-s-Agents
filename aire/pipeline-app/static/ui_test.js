@@ -23,7 +23,7 @@ ctx.window = ctx;
 ctx.document = { querySelector: () => el(), querySelectorAll: () => [], getElementById: () => el(), addEventListener() {}, createElement: () => el(), activeElement: null, body: el(), documentElement: el() };
 vm.createContext(ctx);
 const dir = __dirname;
-for (const f of ['voice.js', 'app.js', 'cc.js', 'cc-pages.js', 'crm-pages.js', 'map.js', 'mapviews.js', 'stage.js', 'cc-score.js', 'cc-life.js', 'cc-today.js', 'cc-sources.js'])
+for (const f of ['voice.js', 'app.js', 'cc.js', 'cc-pages.js', 'crm-pages.js', 'map.js', 'mapviews.js', 'stage.js', 'person.js', 'cc-score.js', 'cc-life.js', 'cc-today.js', 'cc-sources.js'])
   vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8'), ctx, { filename: f });
 ctx.__state = state; ctx.__cc = ccdata;
 const run = js => vm.runInContext(js, ctx);
@@ -435,6 +435,10 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
     const h = run('__lf.h');
     check(h.includes('value="' + run(`esc(${JSON.stringify(lead.name)})`) + '"') && !/placeholder="Hidden/.test(h), 'a lead copied from a card arrives with its name filled in');
   }
+  run('CC.addLead()');
+  const saved = run(`__lf.ok({ querySelector: s => ({ value: ({ '#m-lname': '  Pat Typed ', '#m-lphone': ' 225-555-0100 ', '#m-lemail': 'pat@example.com', '#m-lsrc': 'Referral' })[s] || '', focus() {} }) })`);
+  check(saved && saved.name === 'Pat Typed' && saved.phone === '225-555-0100' && saved.email === 'pat@example.com' && /^Referral /.test(saved.source), 'Save in the lead form sends the values typed in the boxes', JSON.stringify(saved));
+  check(run(`__lf.ok({ querySelector: s => ({ value: '', focus() {} }) })`) === false, 'Save with no name typed sends nothing');
   check(!/<input[^>]*\$\{maskAttr\(\)\}/.test(appjs) && /type="button" class="send-btn" id="m-ok"/.test(appjs), 'no masked input in the compose drawer, and dialog buttons are not submit buttons');
 }
 
@@ -676,7 +680,7 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
 {
   const stagejs = fs.readFileSync(path.join(dir, 'stage.js'), 'utf8'), light = fs.readFileSync(path.join(dir, 'light.css'), 'utf8'), mv = fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8');
   const crm = fs.readFileSync(path.join(dir, '..', '..', 'crm', 'crm.py'), 'utf8'), SEVEN = JSON.parse((crm.match(/^STAGES = (\[[^\]]+\])/m) || [])[1] || '[]');
-  const WANT = { 'new lead': '#F5C518', contacted: '#3A8FDD', nurture: '#2DB87A', 'showing scheduled': '#8B5CF6', 'under contract': '#E87757', closed: '#14100E', 'past client': '#D4537E' };
+  const WANT = { 'new lead': '#F5C518', contacted: '#3A8FDD', nurture: '#2DB87A', 'showing scheduled': '#8B5CF6', 'under contract': '#E04E28', closed: '#14100E', 'past client': '#D4537E' };
   const tabs = run('Stage.TABS');
   check(SEVEN.length === 7 && JSON.stringify(tabs.map(t => t[0])) === JSON.stringify(SEVEN), 'the stage tabs are the CRM writer\'s seven stages, same names, same order', tabs.map(t => t[0]).join(', '));
   check(tabs.every(t => WANT[t[0]] === t[1]), 'each stage has its approved color');
@@ -697,7 +701,7 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   const one = shown[0]; run(`Stage.q = ${JSON.stringify(one)}`);
   const filtered = [...run('CC.views.people()').matchAll(/onclick="Stage\.open/g)].length; run('Stage.q = ""');
   check(filtered >= 1 && filtered < shown.length && /oninput="Stage\.find\(this\.value\)"/.test(ppl) && /placeholder="Find someone"/.test(ppl), 'Find someone filters the board');
-  check(/ST\.open = id => openCompose\(id\)/.test(stagejs), 'a row opens that person in the sheet Pipeline already has');
+  check(/ST\.open = id => openPerson\(id\)/.test(stagejs) && /function openPerson\(id\) \{[^}]*Person\.open\(id\); \}/.test(appjs), 'a row opens that person\'s contact card, never straight into the message box');
   // Home: the Claude and Grok lists lead into what already exists. No second way to call or send.
   const hm = render('home');
   check(/>Claude<\/span>/.test(hm) && /onclick="openBrief\(\)"/.test(hm) && /go\('scorecard'\)/.test(hm) && /go\('queue'\)/.test(hm), 'Home\'s Claude list opens the brief, the Scorecard and the drafts');
@@ -721,7 +725,7 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(!!pp, 'the demo has a past client on the map to check the card with');
   if (pp) { const pc = run(`pinCard(${JSON.stringify(pp)})`);
     check(/class="stg-chip stg-past-client">Past client</.test(pc) && /class="pc-cad"/.test(pc) && /<dt>Type<\/dt>/.test(pc) && /<dt>Last touch<\/dt>/.test(pc) && /<dt>Next<\/dt>/.test(pc) && /<dt>Address<\/dt>/.test(pc)
-      && /class="pc-compose" onclick="openCompose\(/.test(pc) && /onclick="openNote\(/.test(pc), 'the map card shows the stage chip, the cadence word, the facts, Compose and Note'); }
+      && /class="pc-compose" onclick="openPerson\(/.test(pc) && /onclick="openNote\(/.test(pc), 'the map card shows the stage chip, the cadence word, the facts, a button to their card and plan, and Note'); }
   const lg = run('mapLegend()');
   check(SEVEN.every(s2 => lg.includes(`</i>${s2}</li>`)) && /Pins by stage/.test(lg), 'the map legend lists the seven stages');
   check(/onclick="drawFarm\(\)">Draw farm</.test(run('mapBar()')) && /onclick="mapFit\(\)">Fit</.test(run('mapBar()')), 'Draw farm and Fit stay on the map');
@@ -730,6 +734,102 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(/--ivory: #FBF8F3; --ink: #14100E; --hair: #F1EFEC;/.test(light), 'canvas, ink and hairline are the approved three');
   const main3 = run('NAV')[0][1].map(i => i[2]);
   check(JSON.stringify(main3) === JSON.stringify(['Home', 'Map', 'People']) && run('S.view = "home"; 1') && views.includes('dash'), 'the main nav is Home, Map, People, and the older Dashboard is still a page');
+}
+
+// The contact card (person.js): a person's real facts and a plan built only from their record.
+{
+  const pjs = fs.readFileSync(path.join(dir, 'person.js'), 'utf8');
+  const P = id => run(`JSON.stringify(Person.plan(Person.get(${JSON.stringify(id)})))`), plan = id => JSON.parse(P(id));
+  const card = id => run(`Person.html(${JSON.stringify(id)})`), txt = h => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  const td = state.feed.touches_due || [], owes = td.find(r => r.owes_reply && (r.last_messages || []).length);
+  if (owes) { const pl = plan(owes.person_id), said = run(`CC.cleanMsg(${JSON.stringify(owes.last_messages.slice(-1)[0])})`);
+    check(pl.now === `Answer their last message: “${said}”` && /^Now\./.test(pl.when) && pl.why.length > 10, 'plan, a reply is owed: answer their last message, now, with the real reason', JSON.stringify(pl)); }
+  const lead = (state.feed.new_leads || [])[0];
+  if (lead) { const pl = plan(lead.person_id);
+    check(pl.now === 'Send the first reply.' && /^Now\./.test(pl.when) && (!lead.source || pl.why.includes(lead.source)), 'plan, a new lead: the first reply, now, naming where the lead came from', JSON.stringify(pl)); }
+  const dealRow = (state.feed.deals || []).find(d => d.person_id && !td.some(r => r.person_id === d.person_id && r.owes_reply) && !(state.feed.new_leads || []).some(r => r.person_id === d.person_id) && run(`!!Person.get(${JSON.stringify(d.person_id)})`));
+  if (dealRow) { const pl = plan(dealRow.person_id);
+    check(pl.now.includes(dealRow.address) && /^Live deal, /.test(pl.why), 'plan, a live deal: the deal\'s own next step or date', JSON.stringify(pl)); }
+  else check(false, 'plan, a live deal: the demo feed has a person with a live deal to test');
+  const pl2 = o => JSON.parse(run(`JSON.stringify(Person.plan(${JSON.stringify(Object.assign({ deals: [] }, o))}, '2026-11-10'))`));
+  const hotP = pl2({ temp: 'hot', band: 'hot', reasons: ['Texting both ways, 4 from them in 30 days', 'Talked about selling 12 days ago'], last_touch: '2026-11-08' });
+  check(hotP.now === 'Reach out about it: talked about selling 12 days ago.' && hotP.why === 'Talked about selling 12 days ago.', 'plan, hot with a selling reason: reach out about that reason, quoted as the feed has it', JSON.stringify(hotP));
+  const warmP = pl2({ band: 'warm', last_touch: '2026-11-01', next_action: 'Send the Zachary comps' });
+  check(warmP.now === 'Do your logged next step: Send the Zachary comps' && warmP.why === 'Last touch 9 days ago, on Sun, Nov 1.' && warmP.when === 'Due Sun, Nov 15, in 5 days (warm cadence, every 14 days).', 'plan, otherwise: the logged next step, the last touch, and the due date from their cadence', JSON.stringify(warmP));
+  const lateP = pl2({ band: 'hot', last_touch: '2026-10-20' });
+  check(lateP.now === 'Check in. No next step logged.' && lateP.when === 'It was due Tue, Oct 27, 14 days ago (hot cadence, every 7 days).', 'plan, overdue with no next step: says no next step is logged and how late it is', JSON.stringify(lateP));
+  const bare = pl2({});
+  check(bare.now === 'Check in. No next step logged.' && bare.why === 'No last touch on the sheet.' && bare.when === 'No cadence on the sheet, so there is no due date.', 'plan, missing data: each missing fact is said, nothing is padded', JSON.stringify(bare));
+  const noPhone = td.find(r => !r.phone);
+  if (noPhone) { const h = card(noPhone.person_id);
+    check(/No phone on the sheet/.test(h) && !/, 'call'\)/.test(h), 'the card says No phone on the sheet and shows no Call button without a valid number'); }
+  if (owes) { const h = card(owes.person_id), t2 = txt(h);
+    check(h.includes(run(`CC.pname(${JSON.stringify(owes.display)})`)) && /class="stg-chip/.test(h) && /Plan for /.test(t2) && /Now /.test(t2) && /Why /.test(t2) && /When /.test(t2)
+      && ['Heat', 'Phone', 'Email', 'Place', 'Last touch', 'Next step', 'Reply', 'Last message', 'Grok'].every(k => h.includes(`<dt>${k}</dt>`)) && /You owe them a reply/.test(h),
+      'the card shows the name, stage chip, cadence, the plan and every fact row');
+    check(/class="pc-primary" onclick="openCompose\(/.test(h) && /onclick="openGrok\([^)]*, 'call'\)"/.test(h) && /onclick="openNote\(/.test(h) && /onclick="touched\(/.test(h) && /onclick="openGrok\([^)]*, 'draft'\)"/.test(h)
+      && (h.match(/class="pc-primary"/g) || []).length === 1, 'the card has Text as its one primary button, then Call, Note, Log touch and Hard draft, all on sheets that already exist'); }
+  check(!/\/api\//.test(pjs) && !/fetch\(|XMLHttpRequest/.test(pjs), 'the contact card starts no send, call or draft path of its own');
+  const pinOnly = pl2({ band: 'warm', days_quiet: 40 });
+  check(pinOnly.why === 'Last touch 40 days ago.' && pinOnly.when === 'It was due Thu, Oct 15, 26 days ago (warm cadence, every 14 days).', 'plan, a map pin with days quiet but no date: the due date is worked back from the days, never called missing', JSON.stringify(pinOnly));
+  const pinP = ((state.feed.map || {}).pins || []).find(x => x.kind === 'person' && x.days_quiet != null && !td.some(r => r.person_id === x.person_id));
+  if (pinP) check(!/No last touch on the sheet/.test(card(pinP.person_id)) && new RegExp(`<dt>Last touch</dt><dd>${pinP.days_quiet} days? ago</dd>`).test(card(pinP.person_id)), 'the card of a person known only from the map shows how long they have been quiet');
+  run(`var __dr = {}, __q2 = document.querySelector; document.querySelector = s => s === '#drawer' ? __dr : (s === '#c-body' ? { addEventListener() {}, focus() {}, setSelectionRange() {}, value: '' } : __q2(s));`);
+  run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { touches_due: [${JSON.stringify(Object.assign({}, td[0], { person_id: 'zz-raw', display: '' }))}].concat(__state.feed.touches_due) }) }); openCompose('zz-raw')`);
+  check(run('S.compose.name') === '' && /No name on the sheet/.test(run('__dr.innerHTML')) && run('S.queueIdx') === -1 && /if \(c\.fromCard \|\| S\.queueIdx < 0\) \{ closeDrawer\(\);/.test(appjs),
+    'a message for someone with no name shows No name on the sheet but never sends or logs that as their name, and it closes after sending');
+  run(`openPerson('zz-raw')`);
+  check(run('S.card') === 'zz-raw' && run('S.compose') === null && /Plan for No name on the sheet/.test(run('__dr.innerHTML').replace(/<[^>]+>/g, '')), 'opening a person shows their card and clears any open message');
+  run(`document.querySelector = __q2; S.compose = null; S.card = null; S.data = __state;`);
+  const eid = 'x"\'><b', erow = { person_id: eid, display: '<img src=x onerror=1>', band: 'hot', stage: 'nurture', next_action: '<script>1</script>', last_messages: ['2026-11-01: <i>hi</i>'], owes_reply: true, phone: '2255550100' };
+  const evil = () => run(`(() => { S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { touches_due: [${JSON.stringify(erow)}] }) }); const h = Person.html(${JSON.stringify(eid)}); S.data = __state; return h; })()`);
+  const eh = evil();
+  check(!/<img src=x|<script>|<i>hi<\/i>|"'><b/.test(eh) && /&lt;img src=x/.test(eh), 'a name, id, note or message with markup in it is shown as text on the card, never run');
+  check(/Not in the feed/.test(card('no-such-id')), 'a person who is not in the feed gets a card that says so, with nothing made up');
+  // The name fallback everywhere a person shows: the sheet's name, or it says there is none.
+  const blank = Object.assign({}, td[0], { person_id: 'zz-blank', display: '', stage: 'nurture', owes_reply: false, last_messages: [] });
+  run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { touches_due: [${JSON.stringify(blank)}].concat(__state.feed.touches_due), heat: Object.assign({}, __state.feed.heat, { hot: [Object.assign({ temp: 'hot', heat: 90, reasons: ['Talked about buying 2 days ago'] }, ${JSON.stringify(blank)})].concat((__state.feed.heat || {}).hot || []) }) }) })`);
+  const shows = ['touches', 'home', 'people', 'hot'].filter(v => !/No name on the sheet/.test(render(v)));
+  run(`S.q = 'zz-none'`);
+  check(!shows.length && /No name on the sheet/.test(card('zz-blank')) && run(`CC.pname('')`) === 'No name on the sheet' && run(`CC.pname('  Pat Fixture ')`) === 'Pat Fixture',
+    'a person with no name on the sheet reads No name on the sheet on Touches due, Home, People, Hot and their card', shows.join(', '));
+  run(`S.q = ''; S.data = __state;`);
+}
+
+// Coral, hover, motion, color in More, Start here, and Text and Call beside a name (2026-11-10, later).
+{
+  const light = fs.readFileSync(path.join(dir, 'light.css'), 'utf8'), stagejs = fs.readFileSync(path.join(dir, 'stage.js'), 'utf8');
+  const lum = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4)); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+  const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + .05) / (y + .05); };
+  check(/--coral: #E04E28;/.test(light) && /\.stg-under-contract \{ --stg: #E04E28; --stg-ink: #14100E; \}/.test(light) && /\['under contract', '#E04E28', '#14100E'\]/.test(stagejs)
+    && !/E87757/i.test(light + stagejs + fs.readFileSync(path.join(dir, 'person.js'), 'utf8')), 'coral is #E04E28 for the wordmark period, the under contract stage and the highlight, and the old coral is gone from the light look');
+  check(ratio('#E04E28', '#14100E') >= 4.5, 'ink type on the coral tab and the coral button reads at 4.5 to 1 or better', ratio('#E04E28', '#14100E').toFixed(2));
+  const stg = (light.match(/\.stg-[a-z-]+ \{ --stg: #[0-9A-Fa-f]{6}/g) || []).filter(s => /E04E28/i.test(s));
+  check(stg.length === 1 && /under-contract/.test(stg[0]) && !/cad[^{]*\{[^}]*coral/.test(light), 'coral is on no other stage tab and never on a cadence word');
+  check(/\.nav button:hover[^{]*\{ color: var\(--coral\); \}/.test(light) && /button:focus-visible, a:focus-visible[^{]*\{ outline: 2px solid var\(--coral\)/.test(light)
+    && /\.cc-page button:hover[^{]*\{ border-color: var\(--coral\); \}/.test(light), 'buttons and links take a coral highlight on hover and on keyboard focus');
+  check(/\.send-btn:hover[^{]*\{ border-color: var\(--coral\) !important; box-shadow: inset 0 -3px 0 var\(--coral\); \}/.test(light) && !/\.send-btn:hover[^{]*\{[^}]*background/.test(light), 'hovering a send button draws a coral line and never fills it, so it cannot read as sent');
+  const durs = (light.match(/(?:animation: lt-[a-z]+ |--t: |transform )(\d+)ms/g) || []).map(s => Number(s.match(/(\d+)ms/)[1]));
+  check(durs.length >= 4 && durs.every(d => d >= 150 && d <= 220) && !/cubic-bezier|bounce/.test(light.slice(light.indexOf('2026-11-10, later'))), 'motion runs 150 to 220ms with a plain ease and no bounce', durs.join(', '));
+  const rm = (light.match(/@media \(prefers-reduced-motion: reduce\) \{[^]*?\n\}/) || [''])[0];
+  check(/animation: none !important/.test(rm) && /transition-property: color, background-color, border-color !important/.test(rm) && /transform: none/.test(rm), 'with reduced motion only color changes: no slide, no fade, no press shift');
+  check(/\.g-today \{ --grp: #F5C518; \} \.g-deals \{ --grp: #8B5CF6; \} \.g-numbers \{ --grp: #3A8FDD; \} \.g-you \{ --grp: #2DB87A; \} \.g-system \{ --grp: #14100E; \}/.test(light)
+    && /button\.nav-hot \.lbl::before \{ background: #D4537E; \}/.test(light) && /button\.nav-warm \.lbl::before \{ background: #F5C518; \}/.test(light)
+    && /\.nav-h \{[^}]*color: var\(--ink\); \}/.test(light) && /class="\$\{sub \? `sub nav-\$\{k\} ` : ''\}/.test(appjs), 'More shows a tab of stage color on each group and a dot on Hot and Warm, with the words still ink');
+  // Start here
+  const first = JSON.parse(run('JSON.stringify(Stage.startHere())')), home = render('home');
+  const owing = (state.feed.touches_due || []).some(r => r.owes_reply);
+  check(first && (!owing || first.owes_reply), 'Start here picks the most pressing due person, a reply owed first', first && first.display);
+  const sh = (home.match(/<section class="lt-start"[^]*?<\/section>/) || [''])[0];
+  check(sh.includes(run(`CC.pname(${JSON.stringify(first.display)})`)) && /class="lt-go" onclick="openCompose\(/.test(sh) && />(Text|Email) them<\/button>/.test(sh)
+    && (!run(`normPhone(${JSON.stringify(first.phone || '')})`) || /onclick="openGrok\([^)]*, 'call'\)">Call<\/button>/.test(sh)) && /onclick="Stage\.open\(/.test(sh), 'Start here shows their name, a Text them button and Call when they have a number');
+  run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { touches_due: [], new_leads: [] }) })`);
+  check(run('Stage.startHere()') === null && !/lt-start/.test(render('home')), 'Start here is left out when nobody is due');
+  run('S.data = __state');
+  const ppl = render('people'), rows = (home + ppl).match(/<li><button type="button" onclick="Stage\.open\([^]*?<\/li>/g) || [];
+  check(rows.length > 5 && rows.some(r => /class="ra" onclick="openCompose\(/.test(r)) && rows.some(r => /class="ra" onclick="openGrok\([^)]*, 'call'\)"/.test(r))
+    && rows.every(r => !/<button[^>]*>(?:(?!<\/button>)[^])*<button/.test(r)), 'Home due rows and People rows carry Text and Call beside the name, and no button sits inside another');
+  check(!/\/api\/(send|call|draft)/.test(stagejs), 'stage.js still calls no send, call or draft endpoint');
 }
 
 console.log(`\n${fails} failure(s)`);

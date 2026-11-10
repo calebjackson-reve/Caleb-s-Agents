@@ -141,11 +141,11 @@ function pinCard(p) {
   if (p.kind === 'person') {
     // Name, stage as its color chip, cadence as a word, then the facts. Compose and Note open the same sheets as before.
     const id = jsa(p.person_id), row = `personListRow(pinByKey(${jsa(p.key)}))`;
-    return `<div class="pin-card pc-person">${x}<h3>${CC.who(p.display) || 'No name on the sheet'}</h3>${Stage.chip(p.stage)}
+    return `<div class="pin-card pc-person">${x}<h3>${CC.pname(p.display)}</h3>${Stage.chip(p.stage)}
       <p class="pc-cad">${Stage.cadence(p.band) || 'no cadence set'}${p.owes_reply ? ' · you owe a reply' : ''}${p.new_lead ? ' · new lead' : ''}</p>
       <dl><dt>Type</dt><dd>${esc(p.type || 'unknown')}</dd><dt>Last touch</dt><dd>${esc(lastTouch(p))}</dd>
       <dt>Next</dt><dd>${p.next_action ? CC.note(p.next_action, [p.display]) : 'none'}</dd><dt>Address</dt><dd>${esc([p.address, p.city, p.zip].filter(Boolean).join(', ') || 'none')}</dd></dl>
-      <div class="pc-main"><button type="button" class="pc-compose" onclick="openCompose(${id})">Compose</button><button type="button" onclick="openNote(${id})">Note</button></div>
+      <div class="pc-main"><button type="button" class="pc-compose" onclick="openPerson(${id})">Open their card and plan</button><button type="button" onclick="openNote(${id})">Note</button></div>
       <div class="pc-more">${normPhone(p.phone) ? `<button type="button" onclick="openGrok(${id}, 'call')" title="Grok places the call. Nothing dials until you tap the Call card in Grok.">Call</button>` : ''}<button type="button" onclick="touched(${id})">Touched</button><button type="button" onclick="openTask(${id})">Task</button><button type="button" onclick="addToList('call', [${row}])">Call list</button><button type="button" onclick="addToList('postcards', [${row}])">Postcards</button></div></div>`;
   }
   if (p.kind === 'deal') {

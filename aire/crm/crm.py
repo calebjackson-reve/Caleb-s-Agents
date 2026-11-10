@@ -805,7 +805,7 @@ class CRM:
             days = (as_of - date.fromisoformat(last)).days if last else None
             owes = bool(sig.get("owes_reply"))
             if owes or days is None or days >= CADENCE_DAYS[band]:
-                out.append({"person_id": c["person_id"], "display": c.get("display", ""), "band": band,
+                out.append({"person_id": c["person_id"], "display": shown_name(c), "band": band,
                             "phone": c.get("primary_phone", ""), "email": c.get("email", ""),
                             "days_quiet": days, "last_touch": c.get("Last_Touch", ""),
                             "last_inbound": sig.get("last_inbound", ""), "last_outbound": sig.get("last_outbound", ""),
@@ -844,7 +844,7 @@ class CRM:
             if (c["person_id"], nxt) in existing:
                 continue
             due = as_of if band == "hot" else as_of + timedelta(days=3)
-            out.append({"person_id": c["person_id"], "display": c.get("display", ""), "task": nxt,
+            out.append({"person_id": c["person_id"], "display": shown_name(c), "task": nxt,
                         "due": due.isoformat(), "source": "Next_Action", "band": band})
         return out
 
@@ -875,7 +875,7 @@ class CRM:
             last = parse_touch(c.get("Last_Touch", ""), as_of)
             days = (as_of - date.fromisoformat(last)).days if last else None
             if days is None or days >= PARTNER_CADENCE_DAYS:
-                out.append({"person_id": c["person_id"], "display": c.get("display", ""), "type": typ, "band": band,
+                out.append({"person_id": c["person_id"], "display": shown_name(c), "type": typ, "band": band,
                             "phone": c.get("primary_phone", ""), "email": c.get("email", ""), "days_quiet": days,
                             "last_touch": c.get("Last_Touch", ""), "next_action": nxt})
         return sorted(out, key=lambda x: -(x["days_quiet"] if x["days_quiet"] is not None else 99999))
@@ -896,7 +896,7 @@ class CRM:
                 continue
             sig = signals.get(c["person_id"], {})
             band, typ = norm_band(c.get("band")), (c.get("Type") or "").lower()
-            row = {"person_id": c["person_id"], "display": c.get("display", ""), "band": band, "type": typ,
+            row = {"person_id": c["person_id"], "display": shown_name(c), "band": band, "type": typ,
                    "stage": c.get("Stage", ""), "suggest_band": "", "suggest_type": ""}
             pro = pro_kind(c)
             if pro and typ not in NEVER_TOUCH_TYPES:
@@ -961,7 +961,7 @@ class CRM:
                 a, b = BAND_ORDER[h["temp"]], BAND_ORDER[band]
                 versus["same" if a == b else "hotter_than_band" if a < b else "cooler_than_band"] += 1
             if h["temp"] in ("hot", "warm"):
-                rows.append({"person_id": c["person_id"], "display": c.get("display", ""), "temp": h["temp"], "heat": h["heat"],
+                rows.append({"person_id": c["person_id"], "display": shown_name(c), "temp": h["temp"], "heat": h["heat"],
                              "reasons": h["reasons"], "band": band, "stage": c.get("Stage", ""), "type": (c.get("Type") or "").lower(),
                              "phone": c.get("primary_phone", ""), "email": c.get("email", ""), "days_quiet": h.get("days_quiet"),
                              "owes_reply": bool(sig.get("owes_reply")), "last_inbound": sig.get("last_inbound", ""),
@@ -982,7 +982,7 @@ class CRM:
             if (c.get("Do_Not_Contact") or "").upper() == "YES":
                 continue
             sig = signals.get(c["person_id"], {})
-            out.append({"person_id": c["person_id"], "display": c.get("display", ""), "band": norm_band(c.get("band")),
+            out.append({"person_id": c["person_id"], "display": shown_name(c), "band": norm_band(c.get("band")),
                         "stage": c.get("Stage", ""), "type": (c.get("Type") or "").lower(), "street": c.get("street", ""),
                         "city": c.get("city", ""), "last_touch": c.get("Last_Touch", ""), "next_action": c.get("Next_Action", ""),
                         "last_inbound": sig.get("last_inbound", ""), "last_outbound": sig.get("last_outbound", ""),
@@ -1008,7 +1008,7 @@ class CRM:
             if (c.get("Do_Not_Contact") or "").upper() == "YES":
                 continue
             if (c.get("Stage") or "") == "new lead" and m and m.group(1) >= cutoff:
-                out.append({"person_id": c["person_id"], "display": c.get("display", ""), "phone": c.get("primary_phone", ""),
+                out.append({"person_id": c["person_id"], "display": shown_name(c), "phone": c.get("primary_phone", ""),
                             "email": c.get("email", ""), "source": c.get("Source", ""), "received": m.group(1),
                             "next_action": c.get("Next_Action", "")})
         return sorted(out, key=lambda x: x["received"], reverse=True)

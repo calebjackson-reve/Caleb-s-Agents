@@ -7,7 +7,7 @@
   const C = window.CC;
   // [stage, tab color, type on the tab]. light.css carries the same hexes as .stg-* classes.
   const TABS = [['new lead', '#F5C518', '#14100E'], ['contacted', '#3A8FDD', '#FFFFFF'], ['nurture', '#2DB87A', '#FFFFFF'],
-    ['showing scheduled', '#8B5CF6', '#FFFFFF'], ['under contract', '#E87757', '#14100E'], ['closed', '#14100E', '#FBF8F3'], ['past client', '#D4537E', '#FFFFFF']];
+    ['showing scheduled', '#8B5CF6', '#FFFFFF'], ['under contract', '#E04E28', '#14100E'], ['closed', '#14100E', '#FBF8F3'], ['past client', '#D4537E', '#FFFFFF']];
   const INK = '#14100E', STONE = '#B9B2A8', CADENCE = ['hot', 'warm', 'lukewarm', 'cold', 'ice-cold'];
   const key = s => String(s || '').trim().toLowerCase();
   const ST = window.Stage = { TABS, INK, STONE, CADENCE, names: TABS.map(t => t[0]), q: '' };
@@ -40,8 +40,13 @@
     ST.names.forEach(s => g[s].sort(order));
     return g;
   };
-  ST.open = id => openCompose(id);
-  const who = r => C.who(r.display || 'No name');
+  ST.open = id => openPerson(id);  // the contact card, never straight into the message box
+  const who = r => C.pname(r.display);
+  // Text and Call sit next to the name, as buttons of their own (never inside the name's button). They open the same
+  // message box and Grok panel every card uses, so nothing new can send or dial from here.
+  const way = r => (normPhone(r.phone) ? 'Text' : validEmail(r.email) ? 'Email' : '');
+  const acts = (r, lead) => { const id = jsa(r.person_id), w = way(r); if (!w) return '';
+    return `<span class="row-acts"><button type="button" class="${lead ? 'lt-go' : 'ra'}" onclick="openCompose(${id})">${lead ? w + ' them' : w}</button>${normPhone(r.phone) ? `<button type="button" class="ra" onclick="openGrok(${id}, 'call')">Call</button>` : ''}</span>`; };
   const srcLine = () => `<p class="cc-srcline lt-src">${C.src('crm')}</p>`;
   const today = () => new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
   const feedDown = () => !(S.data && S.data.feed_ok);
@@ -53,7 +58,7 @@
     const q = key(ST.q), all = ST.people(), rows = all.filter(r => !q || key(`${r.display || ''} ${r.city || ''} ${r.band || ''}`).includes(q)), g = ST.groups(rows);
     const off = rows.filter(r => !ST.is(r.stage)).length;
     return `<div class="ppl-board">${ST.names.map(s => `<section class="ppl-col" aria-label="${esc(s)}">${ST.tab(s, g[s].length)}
-        <ul>${g[s].slice(0, MAXROWS).map(r => `<li><button type="button" onclick="Stage.open(${jsa(r.person_id)})"><b>${who(r)}</b><small>${[ST.cadence(r.band), esc(r.city || '')].filter(Boolean).join('<i> · </i>')}</small></button></li>`).join('')}</ul>
+        <ul>${g[s].slice(0, MAXROWS).map(r => `<li><button type="button" onclick="Stage.open(${jsa(r.person_id)})"><b>${who(r)}</b><small>${[ST.cadence(r.band), esc(r.city || '')].filter(Boolean).join('<i> · </i>')}</small></button>${acts(r)}</li>`).join('')}</ul>
         ${g[s].length > MAXROWS ? `<p class="lt-quiet">${g[s].length - MAXROWS} more. Search to find them.</p>` : ''}</section>`).join('')}</div>
       ${off ? `<p class="lt-quiet">${off.toLocaleString()} ${off === 1 ? 'person has' : 'people have'} a stage in the CRM that is not one of these seven, or none at all, so ${off === 1 ? 'that person is' : 'they are'} not on the board. <button type="button" class="lt-link" onclick="go('touches')">Touches due</button> still lists everyone who is due.</p>` : ''}`;
   }
@@ -77,6 +82,14 @@
     return (j.state === 'waiting' || j.state === 'draft_ready') && sameDay;
   };
   ST.grokWaiting = () => Object.entries(((S.data && S.data.bridge) || {}).jobs || {}).filter(([, j]) => ST.isWaiting(j)).map(([id, j]) => ({ id, j, row: personRow(id) || {} }));
+  // Start here: the one most pressing person who is due. A reply owed comes first, then cadence order. Nobody due, no block.
+  ST.startHere = () => ST.people().filter(r => r.due).sort(order)[0] || null;
+  function startHTML() {
+    const r = ST.startHere(); if (!r) return '';
+    const whyNow = r.owes_reply ? 'You owe them a reply' : key(r.stage) === 'new lead' ? 'New lead, no first reply yet' : r.band ? `Due a touch on their ${r.band} cadence` : 'Due a touch';
+    return `<section class="lt-start" aria-label="Start here"><span class="lt-eyebrow">Start here</span>
+      <div class="lt-start-row"><button type="button" class="lt-start-name" onclick="Stage.open(${jsa(r.person_id)})"><b>${who(r)}</b><small>${esc(whyNow)}</small></button>${acts(r, true)}</div></section>`;
+  }
   ST.PLACES = ['Baton Rouge', 'Zachary', 'St. Francisville', 'New Roads', 'The Felicianas'];
   function home() {
     const f = feed(), dr = readyDrafts(), owes = owesReply(), td = f.touches_due || [], gw = ST.grokWaiting();
@@ -84,16 +97,17 @@
     const claude = [item('Morning brief', owes.length ? `${owes.length} ${owes.length === 1 ? 'reply' : 'replies'} to answer first` : 'Ready to read', 'openBrief()'),
       item('Scorecard', `${td.length.toLocaleString()} ${td.length === 1 ? 'person' : 'people'} due a touch`, "go('scorecard')")]
       .concat(dr.slice(0, 3).map(d => item(`${C.who(d.name)} follow-up`, `${d.kind === 'email' ? 'Email' : 'Text'} draft waiting`, `openCompose(${jsa(d.person_id)})`))).join('');
-    const grok = gw.slice(0, 4).map(({ id, j, row }) => item(j.job_type === 'call' ? `Call ${C.who(row.display || 'this person')}` : 'Hard draft',
-      j.job_type === 'call' ? C.note(j.ask || grokText(j), [row.display], 'Details hidden') : `${j.state === 'draft_ready' ? 'Ready to read' : 'Being written'} for ${C.who(row.display || 'this person')}`, `openGrok(${jsa(id)}, '${j.job_type === 'call' ? 'call' : 'draft'}')`)).join('');
+    const grok = gw.slice(0, 4).map(({ id, j, row }) => item(j.job_type === 'call' ? `Call ${C.pname(row.display)}` : 'Hard draft',
+      j.job_type === 'call' ? C.note(j.ask || grokText(j), [row.display], 'Details hidden') : `${j.state === 'draft_ready' ? 'Ready to read' : 'Being written'} for ${C.pname(row.display)}`, `openGrok(${jsa(id)}, '${j.job_type === 'call' ? 'call' : 'draft'}')`)).join('');
     const need = ST.people().filter(r => r.due), g = ST.groups(need), shown = ST.names.filter(s => g[s].length), off = need.filter(r => !ST.is(r.stage)).length;
     return `<div class="cc-page cc-wide lt-page lt-home"><header class="lt-head"><div><h1>Good ${C.greet()}.</h1><p>${duet}</p></div><div class="lt-meta"><span>${esc(today())}</span></div></header>
+      ${feedDown() ? '' : startHTML()}
       <div class="lt-duet"><section><span class="lt-eyebrow">Claude</span><h2>Everyday drafts</h2><ul class="lt-list">${claude}</ul>
           <p class="lt-links"><button type="button" class="lt-link" onclick="openBrief()">Open morning brief</button><button type="button" class="lt-link" onclick="go('queue')">All drafts${dr.length ? ' · ' + dr.length : ''}</button></p></section>
         <section><span class="lt-eyebrow">Grok</span><h2>Waiting on your tap</h2>${grok ? `<ul class="lt-list">${grok}</ul>` : '<p class="lt-quiet">No call or hard draft is waiting. Ask for one from any person: the Call button on a card, or the Grok panel in their message box.</p>'}
           <p class="lt-links"><button type="button" class="lt-link" onclick="go('grok')">Review calls</button></p><p class="lt-quiet">Nothing leaves the Mac until you press it. A call only dials from Grok's own Call card.</p></section></div>
       <section class="lt-need"><div class="lt-row"><h2>People who need you</h2><button type="button" class="lt-link" onclick="go('people')">View all people</button></div>
-        ${feedDown() ? noFeed() : shown.length ? `<div class="need-grid">${shown.map(s => `<div>${ST.tab(s, g[s].length)}<ul>${g[s].slice(0, 3).map(r => `<li><button type="button" onclick="Stage.open(${jsa(r.person_id)})"><b>${who(r)}</b>${ST.cadence(r.band)}</button></li>`).join('')}</ul></div>`).join('')}</div>` : '<p class="lt-quiet">Nobody with one of the seven stages is due right now.</p>'}
+        ${feedDown() ? noFeed() : shown.length ? `<div class="need-grid">${shown.map(s => `<div>${ST.tab(s, g[s].length)}<ul>${g[s].slice(0, 3).map(r => `<li><button type="button" onclick="Stage.open(${jsa(r.person_id)})"><b>${who(r)}</b>${ST.cadence(r.band)}</button>${acts(r)}</li>`).join('')}</ul></div>`).join('')}</div>` : '<p class="lt-quiet">Nobody with one of the seven stages is due right now.</p>'}
         ${off ? `<p class="lt-quiet">${off.toLocaleString()} more ${off === 1 ? 'is' : 'are'} due with a stage outside these seven, or none. <button type="button" class="lt-link" onclick="go('touches')">Touches due</button> lists them.</p>` : ''}</section>
       <section class="lt-market"><div><h2>The market</h2><ul class="lt-places">${ST.PLACES.map(p => `<li>${esc(p)}</li>`).join('')}</ul><p class="lt-links"><button type="button" class="lt-link" onclick="go('map')">Open map</button></p></div>
         <button type="button" class="lt-mini" onclick="go('map')" aria-label="Open map"><div id="mini-map"></div></button></section>

@@ -140,15 +140,14 @@
     const SRC = ['Website', 'Referral', 'Sign call', 'Open house', 'Social', 'Past client', 'Other'];
     // A lead copied from a card arrives with its details filled in.
     const fill = v => (!v ? '' : `value="${esc(v)}"`);
-    const keep = id => $(id).value.trim();
     const v = await modal('Add a lead', `
       <div class="field"><label for="m-lname">Name</label><input id="m-lname" autocomplete="off" ${fill(r.name)} required></div>
       <div class="field"><label for="m-lphone">Phone</label><input id="m-lphone" type="tel" inputmode="tel" autocomplete="off" ${fill(r.phone)}></div>
       <div class="field"><label for="m-lemail">Email</label><input id="m-lemail" type="email" autocomplete="off" ${fill(r.email)}></div>
       <div class="field"><label for="m-lsrc">Source</label><select id="m-lsrc">${SRC.map(x => `<option ${(r.source ? /luxury|website/i.test(r.source) && x === 'Website' : x === 'Website') ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
       <p class="cc-note">Saved to the CRM as a new lead. Refused if the name, phone or email is already there or on Do Not Contact.</p>`,
-      m => { const name = keep('#m-lname', r.name); if (!name) { $('#m-lname', m).focus(); return false; }
-        return { name, phone: keep('#m-lphone', r.phone), email: keep('#m-lemail', r.email), source: $('#m-lsrc', m).value + ' ' + (C.data ? C.data.today : todayISO()), next_action: 'Reach out: new lead' }; }, 'Save lead');
+      m => { const typed = id => $(id, m).value.trim(), name = typed('#m-lname'); if (!name) { $('#m-lname', m).focus(); return false; }
+        return { name, phone: typed('#m-lphone'), email: typed('#m-lemail'), source: $('#m-lsrc', m).value + ' ' + (C.data ? C.data.today : todayISO()), next_action: 'Reach out: new lead' }; }, 'Save lead');
     if (v) await act('/api/lead', v, { tag: 'LEAD', text: `${v.name} is in the CRM as a new lead` }).then(ok => { if (ok) C.load(); });
   };
   Object.assign(C.views, { commission, deadlines, calendar, ccleads });

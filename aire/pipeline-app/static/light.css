@@ -4,7 +4,7 @@
    Amber and red stay for warnings only (a late or failed read). */
 :root {
   color-scheme: light;
-  --ivory: #FBF8F3; --ink: #14100E; --hair: #F1EFEC; --rule: #E4DFD8; --stone: #8A837B; --graphite: #5A5550; --coral: #E87757;
+  --ivory: #FBF8F3; --ink: #14100E; --hair: #F1EFEC; --rule: #E4DFD8; --stone: #8A837B; --graphite: #5A5550; --coral: #E04E28; --t: 180ms ease;
   --serif: "Instrument Serif", "Iowan Old Style", Palatino, Georgia, serif;
   --sans: Nunito, -apple-system, "SF Pro Text", "Helvetica Neue", Segoe UI, Roboto, sans-serif;
   --mono: var(--sans);
@@ -18,7 +18,7 @@
 }
 body[data-sec] { --sec: var(--ink); }
 .stg-new-lead { --stg: #F5C518; --stg-ink: #14100E; } .stg-contacted { --stg: #3A8FDD; --stg-ink: #FFFFFF; } .stg-nurture { --stg: #2DB87A; --stg-ink: #FFFFFF; }
-.stg-showing-scheduled { --stg: #8B5CF6; --stg-ink: #FFFFFF; } .stg-under-contract { --stg: #E87757; --stg-ink: #14100E; }
+.stg-showing-scheduled { --stg: #8B5CF6; --stg-ink: #FFFFFF; } .stg-under-contract { --stg: #E04E28; --stg-ink: #14100E; }
 .stg-closed { --stg: #14100E; --stg-ink: #FBF8F3; } .stg-past-client { --stg: #D4537E; --stg-ink: #FFFFFF; } .stg-none { --stg: #B9B2A8; --stg-ink: #14100E; }
 .stg-tab { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; padding: 6px 12px; border-radius: 6px; background: var(--stg); color: var(--stg-ink); font: 600 12.5px/1.25 var(--sans); }
 .stg-tab b { font-weight: 600; }
@@ -187,3 +187,71 @@ body { color: var(--ink); font: 14px/1.5 var(--sans); background-image: none; }
 
 /* The map: a person's full name on hover. */
 .pm-tip { position: absolute; transform: translate(-50%, -100%); background: var(--ink); color: var(--ivory); font: 500 12px var(--sans); padding: 4px 9px; border-radius: 6px; white-space: nowrap; pointer-events: none; z-index: 3; }
+
+/* ---- 2026-11-10, later: coral that moves you, color in More, the contact card, Start here.
+   Coral (#E04E28) is the wordmark period, the under contract stage, and the highlight a button or link takes on hover,
+   keyboard focus and press. At rest everything stays ink, except the one primary button (Text them, Text). A hover is a
+   line of color, never a filled state, so it cannot be read as "sent". Ink on coral is 4.8 to 1. */
+.nav button:hover, .side .nav button:hover, .nav .nav-more:hover, a:hover, .main .cc-page.lt-page .lt-link:hover, .lt-page li button:hover b,
+.main .lt-map .map-bar button:hover, .main .lt-map .pc-more button:hover, .bottom .talk:hover, .bottom .ghost-btn:hover, .side .ghost-btn:hover, #app .icon-btn:hover { color: var(--coral); }
+.cc-page button:hover, .acts button:hover, .dfoot button:hover, .ghost-btn:hover, .modal button:hover, .drawer button:hover, .seg button:hover, .cc-seg button:hover, .cc-filter:hover,
+.main .lt-map .pc-main button:hover, .pm-zoom button:hover { border-color: var(--coral); }
+.cc-acts button:hover, .acts button:not(.primary):hover, .ghost-btn:hover, .pc-acts button:not(.pc-primary):not(:disabled):hover, .seg button:not(.on):hover, .cc-filter[aria-pressed="false"]:hover { color: var(--coral); }
+.cc-primary:hover, .cc-page .cc-primary:hover, .acts .primary:hover, .send-btn:hover, .main .lt-map .pc-main .pc-compose:hover { border-color: var(--coral) !important; box-shadow: inset 0 -3px 0 var(--coral); }
+button:focus-visible, a:focus-visible, select:focus-visible, .lt-page li button:focus-visible, .lt-link:focus-visible, .nav button:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+button:active:not(:disabled) { transform: translateY(1px); }
+.lt-go, .pc-acts .pc-primary, .main .cc-page.lt-page .lt-go { all: unset; cursor: pointer; display: inline-flex; align-items: center; min-height: 36px; padding: 0 16px; border-radius: 4px; background: var(--coral); color: var(--ink); font: 700 13.5px var(--sans); }
+.lt-go:hover, .pc-acts .pc-primary:hover, .main .cc-page.lt-page .lt-go:hover { box-shadow: 0 0 0 2px var(--ink); color: var(--ink); }
+.lt-go:focus-visible, .pc-acts .pc-primary:focus-visible, .main .cc-page.lt-page .lt-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* Motion: 150 to 220ms, a plain ease. */
+button, a, .nav button, .lt-link, .lt-page li button b, .cc-row, .lt-page li, input, select, textarea { transition: color var(--t), background-color var(--t), border-color var(--t), box-shadow var(--t), transform 150ms ease; }
+@keyframes lt-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes lt-slide { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+.nav-g[data-in], .map-filters, .grok-status, .lt-start { animation: lt-in 200ms ease both; }
+.drawer { animation: lt-slide 220ms ease both; }
+.cc-rows .cc-row:hover, .need-grid li:hover, .ppl-col li:hover, .lt-list li:hover { background-color: #F6F2EC; }
+@media (prefers-reduced-motion: reduce) {
+  .nav-g[data-in], .map-filters, .grok-status, .lt-start, .drawer, .panel { animation: none !important; }
+  button, a, .nav button, .lt-link, .lt-page li button b, .cc-row, .lt-page li, input, select, textarea { transition-property: color, background-color, border-color !important; }
+  button:active:not(:disabled) { transform: none; }
+}
+
+/* Color in More: a small tab of stage color on each group, and a dot on Hot and Warm. The words stay ink on ivory. */
+@media (min-width: 721px) {
+  .nav .nav-g:not(.g-main) .nav-h { display: flex; align-items: center; gap: 8px; margin: 8px 0 2px 4px; padding: 0; font: 600 10px var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--ink); }
+  .nav .nav-g:not(.g-main) .nav-h::before { content: ""; width: 14px; height: 8px; border-radius: 2px; background: var(--grp, var(--rule)); }
+}
+.g-today { --grp: #F5C518; } .g-deals { --grp: #8B5CF6; } .g-numbers { --grp: #3A8FDD; } .g-you { --grp: #2DB87A; } .g-system { --grp: #14100E; }
+.nav .nav-g button.nav-hot .lbl::before, .nav .nav-g button.nav-warm .lbl::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+.nav .nav-g button.nav-hot .lbl::before { background: #D4537E; } .nav .nav-g button.nav-warm .lbl::before { background: #F5C518; }
+
+/* Start here, and Text and Call next to a name. */
+.lt-start { margin-top: 32px; padding: 18px 20px; border: 1px solid var(--rule); border-left: 4px solid var(--ink); border-radius: 6px; }
+.lt-start .lt-eyebrow { margin-bottom: 8px; color: var(--ink); }
+.lt-start-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.main .cc-page.lt-page .lt-start-name { all: unset; cursor: pointer; display: block; color: var(--ink); } .lt-start-name b { display: block; font: 400 28px/1.1 var(--serif); } .lt-start-name small { color: var(--stone); font-size: 13px; }
+.main .cc-page.lt-page .lt-start-name:hover b { color: var(--coral); }
+/* These three are reset with all: unset under a long selector, so their hover, focus and ease are restated at the same weight. */
+.main .cc-page.lt-page li .row-acts .ra, .main .cc-page.lt-page .row-acts .ra, .main .cc-page.lt-page .lt-start-name, .main .cc-page.lt-page .lt-go { transition: color var(--t), border-color var(--t), box-shadow var(--t); }
+.main .cc-page.lt-page li .row-acts .ra:hover, .main .cc-page.lt-page .row-acts .ra:hover { color: var(--coral); border-color: var(--coral); }
+.main .cc-page.lt-page li .row-acts .ra:focus-visible, .main .cc-page.lt-page .row-acts .ra:focus-visible, .main .cc-page.lt-page .lt-start-name:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+.row-acts { display: inline-flex; align-items: center; gap: 8px; flex: none; }
+.main .cc-page.lt-page li .row-acts .ra, .main .cc-page.lt-page .row-acts .ra, .row-acts .ra { all: unset; cursor: pointer; display: inline-flex; align-items: center; min-height: 26px; padding: 0 9px; border: 1px solid var(--rule); border-radius: 4px; font: 600 11.5px var(--sans); color: var(--ink); }
+.need-grid li, .ppl-col li { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-radius: 4px; }
+.ppl-col li { align-items: flex-start; flex-wrap: wrap; } .ppl-col .row-acts { margin-top: 2px; }
+@media (max-width: 720px) { .row-acts .ra, .lt-go { min-height: 44px; } }
+
+/* The contact card: the plan first, the buttons, then the facts. */
+.pcard .dh .who small { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.pc-plan h3 { margin: 0 0 10px; font: 400 24px/1.15 var(--serif); color: var(--ink); }
+.pc-plan ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.pc-plan li { display: grid; grid-template-columns: 52px 1fr; gap: 10px; font-size: 14.5px; line-height: 1.45; }
+.pc-plan li b { font: 600 10px/2 var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--stone); }
+.pc-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 6px; padding-bottom: 16px; border-bottom: 1px solid var(--hair); }
+.pc-acts button:not(.pc-primary) { cursor: pointer; min-height: 36px; padding: 0 12px; border-radius: 4px; background: var(--ivory); color: var(--ink); border: 1px solid var(--rule); font: 600 13px var(--sans); }
+.pc-acts .pc-off { opacity: .6; cursor: not-allowed; display: inline-grid; text-align: left; line-height: 1.2; padding: 4px 12px; } .pc-acts .pc-off small { font-size: 11px; font-weight: 400; color: var(--graphite); }
+.pc-facts { display: grid; grid-template-columns: 92px 1fr; gap: 8px 12px; margin: 0; font-size: 14px; }
+.pc-facts dt { color: var(--stone); font-size: 12px; padding-top: 2px; } .pc-facts dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; } .pc-facts dd.pc-missing { color: var(--graphite); font-style: italic; }
+.pc-facts dd ul { margin: 4px 0 0; padding-left: 16px; color: var(--graphite); font-size: 13px; }
+@media (max-width: 720px) { .pc-acts button, .pc-acts .pc-primary { min-height: 44px; } }

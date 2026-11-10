@@ -150,7 +150,9 @@ const grokTone = j => ({ completed: 'ok', draft_ready: 'ok', waiting: 'wait', di
 function grokKeep() { const a = $('#g-ask'), p = $('#g-purpose'), t = $('#c-body'); if (a) S.grokAsk = a.value; if (p) S.grokPurpose = p.value; if (t && S.compose) S.compose.body = t.value; }
 function grokTab(m) { grokKeep(); S.grokMode = m; renderDrawer(); const a = $('#g-ask'); if (a) a.focus(); }
 // A row on the Hot and Warm pages is the button: one click opens the person with their texts, the draft and Grok.
-function openPerson(id) { S.grokMode = 'call'; S.grokAsk = ''; openCompose(id); if (S.compose) S.compose.fromCard = true; }
+// Clicking a person opens their contact card (person.js): the facts and their plan first, then Text, Call, Note,
+// Log touch or Hard draft from there. It never jumps straight into the message box.
+function openPerson(id) { S.grokMode = 'call'; S.grokAsk = ''; Person.open(id); }
 // The Call button on a card: the compose box opens with the Grok panel on the Call tab and in view.
 function openGrok(id, mode) {
   S.grokMode = mode || 'call'; S.grokAsk = ''; openCompose(id); if (!S.compose) return;
@@ -205,6 +207,7 @@ function statusWords(red, amb) {
 }
 function render() {
   if (window.CC && CC.leaveBank) CC.leaveBank();
+  if (window.Person) Person.refresh();
   if (!S.data) return;
   const f = feed(), c = f.counts || {}, d = S.data;
   renderNav(c);
@@ -297,11 +300,12 @@ function renderNav(c) {
   const sec = (NAV.find(([, items]) => items.some(([k, , , kids]) => k === view || (kids || []).some(([s]) => s === view))) || ['Today'])[0].toLowerCase();
   document.body.dataset.sec = sec;
   const btn = (k, ico, label, sub) => { const [n, warn] = cnt[k] || [];
-    return `<button type="button" class="${sub ? 'sub ' : ''}${view === k ? 'on' : ''}" ${view === k ? 'aria-current="page"' : ''} onclick="go('${k}')"><span class="ico" aria-hidden="true">${ico}</span><span class="lbl">${label}</span>${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`; };
-  const grp = ([g, items]) => `<div class="nav-g g-${g.toLowerCase()}"><span class="nav-h">${g}</span>${items.map(([k, ico, label, kids]) => btn(k, ico, label) + (kids || []).map(([s, sl]) => btn(s, '', sl, true)).join('')).join('')}</div>`;
+    return `<button type="button" class="${sub ? `sub nav-${k} ` : ''}${view === k ? 'on' : ''}" ${view === k ? 'aria-current="page"' : ''} onclick="go('${k}')"><span class="ico" aria-hidden="true">${ico}</span><span class="lbl">${label}</span>${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`; };
+  const anim = S.navAnim ? ' data-in' : ''; S.navAnim = false;
+  const grp = ([g, items], i) => `<div class="nav-g g-${g.toLowerCase()}"${i == null ? '' : anim}><span class="nav-h">${g}</span>${items.map(([k, ico, label, kids]) => btn(k, ico, label) + (kids || []).map(([s, sl]) => btn(s, '', sl, true)).join('')).join('')}</div>`;
   // More opens by itself when the page you are on lives under it, and stays how you left it otherwise.
   const more = S.navMore == null ? NAV.slice(1).some(([, items]) => items.some(([k, , , kids]) => k === view || (kids || []).some(([s]) => s === view))) || view === 'dash' : S.navMore;
-  $('#nav').innerHTML = grp(NAV[0]) + `<button type="button" class="nav-more" aria-expanded="${more}" onclick="S.navMore = ${!more}; renderNav(feed().counts || {})">${more ? 'Less' : 'More'}</button>` + (more ? NAV.slice(1).map(grp).join('') : '');
+  $('#nav').innerHTML = grp(NAV[0]) + `<button type="button" class="nav-more" aria-expanded="${more}" onclick="S.navMore = ${!more}; S.navAnim = true; renderNav(feed().counts || {})">${more ? 'Less' : 'More'}</button>` + (more ? NAV.slice(1).map((g, i) => grp(g, i)).join('') : '');
   // On a phone the nav is one strip that scrolls sideways: keep the page you are on in the middle of it.
   const on = $('#nav .on'), strip = $('#nav');
   if (on && strip && strip.scrollWidth > strip.clientWidth) { const a = on.getBoundingClientRect(), b = strip.getBoundingClientRect(); strip.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2); }
@@ -330,7 +334,7 @@ async function refresh() {
 
 // ---------------------------------------------------------------- actions
 async function touched(id) {
-  const r = personRow(id), who = (r ? r.display : 'this person'); const what = await touchForm(who); if (what == null) return;
+  const r = personRow(id), who = CC.name(r && r.display); const what = await touchForm(who); if (what == null) return;
   await act('/api/touch', { person_id: id, what }, { tag: 'LOGGED', text: `Touch logged for ${who}` });
 }
 async function doneTask(task_id, person_id, task) {
@@ -343,8 +347,8 @@ function composeNext() { const items = drafts(); if (!items.length) { toast('war
 function openCompose(person_id, idx) {
   const items = drafts(); let item = idx != null ? items[idx] : items.find(d => d.person_id === person_id);
   const row = personRow(person_id) || (item && item.row) || {};
-  if (!item) item = { kind: row.phone ? 'text' : 'email', person_id, name: row.display || person_id, to: row.phone || row.email || '', body: '', subject: '', last_messages: row.last_messages || [], next_action: row.next_action || '' };
-  S.compose = { ...item, row, kind: item.kind };
+  if (!item) item = { kind: row.phone ? 'text' : 'email', person_id, name: row.display || '', to: row.phone || row.email || '', body: '', subject: '', last_messages: row.last_messages || [], next_action: row.next_action || '' };
+  S.compose = { ...item, row, kind: item.kind }; S.card = null;
   S.queueIdx = items.indexOf(item);
   renderDrawer();
 }
@@ -356,7 +360,7 @@ function renderDrawer() {
   const items = drafts(); const pos = S.queueIdx >= 0 ? `${S.queueIdx + 1} of ${items.length}` : 'not in queue';
   $('#drawer').hidden = false;
   const C2 = window.CC;
-  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${initials(c.name)}</span><div class="who"><b>${esc(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
+  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${initials(c.name)}</span><div class="who"><b>${CC.pname(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
   <div class="dbody">
     ${c.last_messages && c.last_messages.length ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
     ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${C2 ? C2.note(c.next_action || row.next_action, [c.name]) : esc(c.next_action || row.next_action)}</div>` : ''}
@@ -422,7 +426,7 @@ function askSent() {
   el.setAttribute('role', 'status'); el.innerHTML = askSentHTML(p[0]);
 }
 function askSentHTML(e) {
-  return `<span>Did the ${e.kind === 'text' ? 'text' : 'email'} to <b>${window.CC ? CC.who(e.display || 'this person') : esc(e.display || 'this person')}</b> send?<small>Opened ${esc(textWhen(e.at))}</small></span><button type="button" onclick="answerSent('${esc(e.id)}', true)">Sent</button><button type="button" class="no" onclick="answerSent('${esc(e.id)}', false)">Not sent</button>`;
+  return `<span>Did the ${e.kind === 'text' ? 'text' : 'email'} to <b>${CC.pname(e.display)}</b> send?<small>Opened ${esc(textWhen(e.at))}</small></span><button type="button" onclick="answerSent('${esc(e.id)}', true)">Sent</button><button type="button" class="no" onclick="answerSent('${esc(e.id)}', false)">Not sent</button>`;
 }
 async function answerSent(id, sent) {
   const r = await api('/api/opened/answer', { id, sent });
@@ -440,7 +444,7 @@ async function confirmSendNow() {
   const v = sheetValues(), c = S.compose;
   if (!v.to) { toast('warn', 'CHECK IT', 'That recipient is not valid.'); return; }
   if (!v.body.trim()) { toast('warn', 'EMPTY', 'Write the message first.'); return; }
-  const ok = await modal(`Send this ${v.kind} now?`, `<p class="cc-note">To <b>${esc(c.name)}</b> at <b>${esc(v.to)}</b>, ${v.kind === 'text' ? 'through Messages (iMessage, or SMS if not)' : 'through Gmail as ' + GMAIL_USER}. One message, sent right away.</p>${v.subject ? `<p><b>Subject:</b> ${esc(v.subject)}</p>` : ''}<pre class="send-preview">${esc(v.body)}</pre>`, () => true, 'Send it');
+  const ok = await modal(`Send this ${v.kind} now?`, `<p class="cc-note">To <b>${CC.pname(c.name)}</b> at <b>${esc(v.to)}</b>, ${v.kind === 'text' ? 'through Messages (iMessage, or SMS if not)' : 'through Gmail as ' + GMAIL_USER}. One message, sent right away.</p>${v.subject ? `<p><b>Subject:</b> ${esc(v.subject)}</p>` : ''}<pre class="send-preview">${esc(v.body)}</pre>`, () => true, 'Send it');
   if (ok !== true) return;
   return sendNow(v);
 }
@@ -453,7 +457,7 @@ function setKind(k) {
   c.to = k === 'text' ? ((c.row || {}).phone || (k === 'text' && d ? d.to : '')) : ((c.row || {}).email || (d ? d.to : ''));
   renderDrawer();
 }
-function closeDrawer() { $('#drawer').hidden = true; S.compose = null; }
+function closeDrawer() { $('#drawer').hidden = true; S.compose = null; S.card = null; }
 function nextInQueue() { const items = drafts(); if (!items.length) { closeDrawer(); return; } const n = (S.queueIdx + 1) % items.length; openCompose(items[n].person_id, n); }
 async function sendNow(v) {
   const c = S.compose, btn = $('#send'); if (!v || !btn) return; btn.disabled = true; btn.classList.add('charging');
@@ -461,14 +465,14 @@ async function sendNow(v) {
   const r = await api('/api/send', body);
   btn.disabled = false; btn.classList.remove('charging');
   if (!r.ok) { toast('err', 'NOT SENT', r.error); return; }
-  toast(r.result.status === 'sent' ? 'ok' : 'warn', r.result.status === 'sent' ? 'SENT' : 'DRY RUN', `${c.kind} to ${c.name} ${r.result.status === 'sent' ? 'is on its way and logged in the CRM' : 'logged, nothing left the Mac'}`);
+  toast(r.result.status === 'sent' ? 'ok' : 'warn', r.result.status === 'sent' ? 'SENT' : 'DRY RUN', `${c.kind} to ${CC.name(c.name)} ${r.result.status === 'sent' ? 'is on its way and logged in the CRM' : 'logged, nothing left the Mac'}`);
   if (c.kind === 'text') S.justTexted = c.person_id;
   await load();
   watchDelivery();
-  if (c.fromCard) { closeDrawer(); setTimeout(() => { if (S.justTexted === c.person_id) { S.justTexted = null; } }, 4000); return; }
+  if (c.fromCard || S.queueIdx < 0) { closeDrawer(); setTimeout(() => { if (S.justTexted === c.person_id) { S.justTexted = null; } }, 4000); return; }
   const items = drafts(); if (items.length) openCompose(items[Math.min(S.queueIdx, items.length - 1)].person_id, Math.min(S.queueIdx, items.length - 1)); else closeDrawer();
 }
-async function touchFromCompose() { const c = S.compose; const what = await touchForm(c.name); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${c.name}` }); if (r) nextInQueue(); }
+async function touchFromCompose() { const c = S.compose; const what = await touchForm(CC.name(c.name)); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${CC.name(c.name)}` }); if (r) nextInQueue(); }
 
 // ---- modals
 // opts.info: a window that only shows something gets one OK button, no Cancel.
@@ -507,13 +511,13 @@ async function openTask(person_id = '') {
 }
 async function openNote(person_id) {
   const r = personRow(person_id);
-  const v = await modal(`Note on ${esc((r ? r.display : 'this person'))}`, `<div class="field"><label>NOTE</label><textarea id="m-note" style="min-height:90px" placeholder="What you learned"></textarea></div>`, m => $('#m-note', m).value.trim() || false, 'Save note');
+  const v = await modal(`Note on ${CC.pname(r && r.display)}`, `<div class="field"><label>NOTE</label><textarea id="m-note" style="min-height:90px" placeholder="What you learned"></textarea></div>`, m => $('#m-note', m).value.trim() || false, 'Save note');
   if (v) await act('/api/note', { person_id, text: v }, { tag: 'NOTE', text: 'Saved to the CRM' });
 }
 async function openDNC(person_id) {
   const r = personRow(person_id);
-  const v = await modal(`Do Not Contact: ${esc((r ? r.display : 'this person'))}`, `<p style="color:var(--amber);margin:0 0 6px">One way. The engine never sets it back to NO. They drop off every list.</p><div class="field"><label>REASON</label><input id="m-reason" placeholder="Asked us to stop"></div>`, m => $('#m-reason', m).value.trim() || false, 'Set Do Not Contact');
-  if (v) await act('/api/dnc', { person_id, reason: v }, { tag: 'DNC', text: `${(r ? r.display : 'This person')} will not be contacted` });
+  const v = await modal(`Do Not Contact: ${CC.pname(r && r.display)}`, `<p style="color:var(--amber);margin:0 0 6px">One way. The engine never sets it back to NO. They drop off every list.</p><div class="field"><label>REASON</label><input id="m-reason" placeholder="Asked us to stop"></div>`, m => $('#m-reason', m).value.trim() || false, 'Set Do Not Contact');
+  if (v) await act('/api/dnc', { person_id, reason: v }, { tag: 'DNC', text: `${CC.name(r && r.display)} will not be contacted` });
 }
 async function openDeal(address = '') {
   // The CRM Deals tab row being edited, prefilled with the Deals sheet's numbers: the sheet is the one deal source, so
