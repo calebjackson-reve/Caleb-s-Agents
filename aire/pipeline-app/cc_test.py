@@ -692,6 +692,17 @@ class Growth(unittest.TestCase):
         self.assertEqual(len(g["sales"]), 7)  # six past rows with the lease, plus the blank one; the future row is left out
         self.assertEqual(g["sales"][1]["day"], "2026-03-01")
 
+    def test_scorecard_closings_count_the_whole_record(self):
+        deals = cc.deal_rows(SHEET)
+        self.assertEqual(cc.scorecard(deals, [], [], {}, None, T)["closings"]["value"], 1)       # sheet alone: 300 Pine Dr
+        sc = cc.scorecard(deals, [], [], {}, None, T, self.SALES + [{"close": "2026-05-05", "address": "8 Made Up Ct", "price": 1, "type": "Land"},
+                                                                  {"close": "2026-06-06", "address": "9 Rent Rd", "price": 2000, "type": "Residential Lease"}])
+        self.assertEqual((sc["closings"]["value"], sc["closings"]["on_sheet"]), (2, 1))          # Pine Dr once, the land sale, no lease, no future sale
+        self.assertEqual(sc["gci"]["n"], 1)                                                       # GCI still counts the sheet's deals only
+        self.assertEqual(cc.sheet_as_of(deals, "2026-04-01", self.SALES)["closings"], 1)
+        saved = [{"day": "2026-11-01", "gci": 12000.0, "closings": 1}]
+        self.assertNotIn("mismatch", cc.flag_history(saved, deals, T, self.SALES)[0])
+
     def test_no_sales(self):
         self.assertIsNone(cc.growth([], [], T))
         self.assertIsNone(cc.growth(None, cc.deal_rows([HEAD]), T))

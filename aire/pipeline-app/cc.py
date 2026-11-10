@@ -676,8 +676,23 @@ def bank(rows: list[dict]) -> dict:
 
 # ---------------- Scorecard, goals, history ----------------
 
-def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
+def closing_days(sales, deals) -> list[str]:
+    """Every closing day on record: the sales history (dated, leases left out) plus Closed deals on the Deals sheet the
+    history does not hold, matched by street and year. With no sales history this is the Deals sheet alone."""
+    days, seen = [], set()
+    for r in sales or []:
+        if is_day(r.get("close")) and not re.search(r"lease", str(r.get("type") or ""), re.I):
+            days.append(r["close"])
+            seen.add((deal_key(r.get("address")), r["close"][:4]))
+    for d in deals or []:
+        if stage_of(d["status"]) == "closed" and is_day(d.get("act")) and (deal_key(d["deal"]), d["act"][:4]) not in seen:
+            days.append(d["act"])
+    return days
+
+
+def scorecard(deals, evs, leads, goals, kw_paid, today: date, sales=None) -> dict:
     yr = str(today.year)
+    n_closed = sum(1 for d in closing_days(sales, deals) if d[:4] == yr and d <= today.isoformat())
     closed = [r for r in deals if stage_of(r["status"]) == "closed"]
     yr_closed = [r for r in closed if is_day(r.get("act")) and r["act"][:4] == yr]
     sheet_gci = round(sum(r["commission"] or 0 for r in yr_closed), 2)
@@ -713,7 +728,7 @@ def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
     return {"gci": {**gci, "goal": prog(gci["value"], g.get("gci_goal")),
                     "goal_with_pending": prog(gci["with_pending"], g.get("gci_goal"))},
             "pending": pend,
-            "closings": {"value": len(yr_closed), "goal": prog(len(yr_closed), g.get("closings_high") or g.get("closings_low")),
+            "closings": {"value": n_closed, "on_sheet": len(yr_closed), "goal": prog(n_closed, g.get("closings_high") or g.get("closings_low")),
                          "low": g.get("closings_low"), "high": g.get("closings_high")},
             "leads7": {"value": lc["d7"], "low": g.get("leads_low"), "high": g.get("leads_high"), "undated": lc["undated"]},
             "appts7": {"value": len(appts), "goal": g.get("appts"), "invites": len(appts_all) - len(appts)},
@@ -744,14 +759,15 @@ def since_saved(rows: list[dict], row: dict, metric: str) -> dict | None:
     return {"since": past[0]["day"], "days": len(past), "value": round(row[metric] - past[0][metric], 2)}
 
 
-def sheet_as_of(deals: list[dict], day: str) -> dict:
+def sheet_as_of(deals: list[dict], day: str, sales=None) -> dict:
     """GCI and closings as the Deals sheet says they stood on a day: Closed deals with an act of sale that year, on or
     before that day."""
     yr = [r for r in deals if stage_of(r["status"]) == "closed" and is_day(r.get("act")) and r["act"][:4] == day[:4] and r["act"] <= day]
-    return {"gci": round(sum(r["commission"] or 0 for r in yr), 2), "closings": len(yr)}
+    return {"gci": round(sum(r["commission"] or 0 for r in yr), 2),
+            "closings": sum(1 for d in closing_days(sales, deals) if d[:4] == day[:4] and d <= day)}
 
 
-def flag_history(rows: list[dict], deals: list[dict], today: date) -> list[dict]:
+def flag_history(rows: list[dict], deals: list[dict], today: date, sales=None) -> list[dict]:
     """Saved days whose GCI or closings no longer match the Deals sheet for that day get "mismatch": the metrics that
     disagree. Those rows are left out of every change and line, so an edit to the sheet never shows as growth.
     With no Deals sheet rows (never read), nothing is flagged."""
@@ -762,7 +778,7 @@ def flag_history(rows: list[dict], deals: list[dict], today: date) -> list[dict]
         if not is_day(r.get("day")) or r["day"] >= today.isoformat():
             out.append(r)
             continue
-        live = sheet_as_of(deals, r["day"])
+        live = sheet_as_of(deals, r["day"], sales)
         bad = [k for k in ("gci", "closings") if isinstance(r.get(k), (int, float)) and abs(r[k] - live[k]) > 0.5]
         out.append({**r, "mismatch": bad, "sheet_now": live} if bad else r)
     return out
@@ -882,8 +898,9 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
     cards, crm_only = merge_deals(deal_cards(deals, today, now), f.get("deals") or [])
     dl = contract_deadlines(deal_deadlines(evs), cards)
     goals = (raw.get("goals") or {}).get("rows") or {}
-    sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today)
-    hist = flag_history(_rows(raw["history"]), deals, today)
+    sales = _rows(raw.get("sales"))
+    sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today, sales)
+    hist = flag_history(_rows(raw["history"]), deals, today, sales)
     sheet_days = len({r["day"] for r in hist if is_day(r.get("day")) and r["day"] <= today.isoformat()})
     hrow = history_row(sc, today)
     full = add_history(hist, hrow)
