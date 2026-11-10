@@ -13,47 +13,48 @@
 <meta name="apple-mobile-web-app-title" content="Pipeline">
 <link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="cc.css">
+<link rel="stylesheet" href="ui.css">
 </head>
 <body>
 <div id="boot" class="boot">
-  <div class="boot-ring"><span></span><span></span><span></span></div>
-  <div class="boot-title">PIPELINE</div>
-  <div class="boot-sub mono" id="boot-sub">reading feed.json</div>
+  <div class="boot-title">Pipeline</div>
+  <div class="boot-sub" id="boot-sub">reading the CRM</div>
   <div class="boot-bar"><i id="boot-bar"></i></div>
 </div>
 
 <div id="app" class="app" hidden>
   <aside class="side panel" style="--i:0">
     <div class="brand">
-      <div class="brand-ring"><i></i><i></i><i></i></div>
-      <div><div class="brand-name">PIPELINE</div><div class="brand-sub mono">AIRE DAILY</div></div>
+      <div class="brand-mark" aria-hidden="true">P</div>
+      <div><div class="brand-name">Pipeline</div><div class="brand-sub">Keller Williams First Choice</div></div>
     </div>
     <nav class="nav" id="nav"></nav>
     <div class="voice-status" id="voice-status">
-      <div class="mini-h">VOICE <span class="chev">›</span></div>
-      <div class="wave" id="wave"></div>
-      <button class="orb" id="mic" title="Talk to Pipeline (v)"><i></i><i></i><span>🎙</span></button>
-      <div class="voice-state mono" id="voice-state">tap to talk</div>
+      <div class="mini-h">Voice</div>
+      <div class="wave" id="wave" hidden></div>
+      <button type="button" class="orb" id="mic" title="Talk to Pipeline (v)">🎙 Voice</button>
+      <div class="voice-state" id="voice-state">tap to talk</div>
       <form class="type-cmd" id="type-form"><input id="type-cmd" placeholder="or type a command" autocomplete="off"></form>
     </div>
     <div class="send-status">
-      <div class="mini-h">SEND STATUS <span class="chev">›</span></div>
-      <div class="mode mono" id="mode">DRY RUN</div>
+      <div class="mini-h">Sending</div>
+      <div class="mode" id="mode">DRY RUN</div>
       <div class="caps-mini" id="caps-mini"></div>
-      <div class="mode-sub mono" id="mode-sub">set PIPELINE_SENDER=live to send</div>
+      <div class="mode-sub" id="mode-sub">sends are logged, nothing leaves the Mac</div>
     </div>
-    <button class="ghost-btn" id="open-sheet">⌗ Open the CRM sheet</button>
+    <button type="button" class="ghost-btn" id="open-sheet">Open the CRM sheet</button>
   </aside>
 
   <header class="top panel" style="--i:1">
-    <div class="status-chip" id="status-chip"><span class="mono">SYSTEM STATUS</span><b><i class="dot"></i><span id="status-word">READING</span></b></div>
-    <div class="clock"><div class="date mono" id="date"></div><div class="time" id="time"></div></div>
+    <button type="button" class="status-chip" id="status-chip" title="Open Sources"><b><i class="dot"></i><span id="status-word">Reading</span></b></button>
+    <div class="clock"><div class="date" id="date"></div><div class="time" id="time"></div></div>
     <div class="top-right">
       <label class="search"><span>⌕</span><input id="search" placeholder="Search people, deals, tasks" autocomplete="off"><kbd>/</kbd></label>
-      <button class="icon-btn" id="refresh" title="Refresh feed (r)">⟳</button>
-      <button class="icon-btn" id="bell" title="Problems"><span>♪</span><b id="bell-count" hidden></b></button>
-      <button class="icon-btn" id="help" title="Keys">?</button>
-      <div class="operator"><div><div class="op-name">Caleb Jackson</div><div class="op-sub mono">REALTOR · KW First Choice</div></div><div class="avatar">CJ</div></div>
+      <button type="button" class="icon-btn" id="privacy" title="Hide or show money and contacts (h)" aria-pressed="false">Hide</button>
+      <button type="button" class="icon-btn" id="refresh" title="Refresh the CRM feed (r)" aria-label="Refresh the CRM feed">⟳</button>
+      <button type="button" class="icon-btn" id="bell" title="What needs attention" aria-label="What needs attention"><span>!</span><b id="bell-count" hidden></b></button>
+      <button type="button" class="icon-btn" id="help" title="Keys" aria-label="Keys">?</button>
+      <div class="operator"><div><div class="op-name">Caleb Jackson</div><div class="op-sub">REALTOR · KW First Choice</div></div><div class="avatar">CJ</div></div>
     </div>
   </header>
 
@@ -61,10 +62,10 @@
 
   <footer class="bottom panel" style="--i:12">
     <div class="foot-chips" id="foot-chips"></div>
-    <button class="talk" id="talk"><span class="wave small"></span><span class="talk-text"><b id="talk-title">TALK TO PIPELINE</b><i id="talk-sub">say "hey Pipeline"</i></span><span class="wave small"></span></button>
+    <button type="button" class="talk" id="talk"><span class="talk-text"><b id="talk-title">TALK TO PIPELINE</b><i id="talk-sub">say "hey Pipeline"</i></span></button>
     <div class="foot-right">
-      <button class="ghost-btn" id="compose-next">✉ Compose next</button>
-      <button class="ghost-btn" id="brief">▣ Morning brief</button>
+      <button type="button" class="ghost-btn" id="compose-next">Next draft</button>
+      <button type="button" class="ghost-btn" id="brief">Morning brief</button>
     </div>
   </footer>
 </div>
@@ -72,13 +73,13 @@
 <div id="drawer" class="drawer" hidden></div>
 <div id="modal" class="modal" hidden></div>
 <div id="toasts" class="toasts"></div>
-<script src="core.js"></script>
 <script src="voice.js"></script>
 <script src="app.js"></script>
-<script src="map.js"></script>
-<script src="mapviews.js"></script>
 <script src="cc.js"></script>
 <script src="cc-pages.js"></script>
+<script src="crm-pages.js"></script>
+<script src="map.js"></script>
+<script src="mapviews.js"></script>
 <script src="cc-score.js"></script>
 <script src="cc-life.js"></script>
 <script src="cc-today.js"></script>
@@ -86,7 +87,27 @@
 <script>
 // The home-screen install: the service worker keeps the shell and the last data for when the Mac can't be reached.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  // Ask the Mac for a new build on load, every 5 minutes and whenever the window comes back, so an app left open
+  // for days still finds out.
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(r => {
+    const check = () => r.update().catch(() => {});
+    check(); setInterval(check, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  }).catch(() => {});
+  // A new build took over: a small note with Reload. If the window is in the background, reload quietly.
+  let hadSw = !!navigator.serviceWorker.controller, noted = false;
+  const fresh = () => location.reload();
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadSw) { hadSw = true; return; }
+    if (document.hidden) return fresh();
+    if (noted) return; noted = true;
+    const n = document.createElement('div');
+    n.id = 'sw-updated'; n.setAttribute('role', 'status');
+    n.innerHTML = 'Pipeline updated. <button type="button">Reload</button>';
+    n.querySelector('button').addEventListener('click', fresh);
+    document.body.appendChild(n);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) fresh(); });
+  });
   navigator.serviceWorker.addEventListener('message', e => { if (window.CC && e.data && 'online' in e.data && CC.offline !== !e.data.online) { CC.offline = !e.data.online; CC.rerender(); } });
 }
 </script>

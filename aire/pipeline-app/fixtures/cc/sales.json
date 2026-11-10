@@ -1,0 +1,11 @@
+{"at": "{{NOW-20}}", "source": "Sales history (demo, made up)", "error": null, "rows": [
+ {"close": "{{Y3-06-10}}", "address": "12 Willow Bend", "side": "Buyer", "price": 180000, "type": "Residential"},
+ {"close": "{{Y3-10-02}}", "address": "40 Tupelo Lane", "side": "Listing", "price": 220000, "type": "Residential"},
+ {"close": "{{Y2-02-20}}", "address": "7 Gum Springs Rd", "side": "Buyer", "price": 240000, "type": "Residential"},
+ {"close": "{{Y2-08-15}}", "address": "91 Camellia Ct", "side": "Both", "price": 300000, "type": "Residential"},
+ {"close": "{{Y2-12-05}}", "address": "3 Persimmon Way", "side": "Listing", "price": 260000, "type": "Residential"},
+ {"close": "{{Y1-01-25}}", "address": "58 Mayhaw St", "side": "Buyer", "price": 275000, "type": "Residential"},
+ {"close": "{{Y1-05-30}}", "address": "600 Satsuma Dr", "side": "Listing", "price": 410000, "type": "Residential"},
+ {"close": "{{Y1-09-12}}", "address": "22 Muscadine Rd", "side": "Buyer", "price": 1900, "type": "Residential Lease"},
+ {"close": "{{Y1-11-28}}", "address": "14 Sassafras Ln", "side": "Buyer", "price": 320000, "type": "Residential"},
+ {"close": "{{Y-03-14}}", "address": "310 Sugar Mill Way", "side": "Listing", "price": 540000, "type": "Residential"}]}

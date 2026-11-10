@@ -1,14 +1,18 @@
 /* Pipeline service worker: the app shell for the home-screen icon, the last copy of the data for when the Mac
    can't be reached, and the phone alerts. It never caches a send, and nothing it stores leaves the phone. */
-const SHELL = 'pipeline-shell-v1', DATA = 'pipeline-data-v1';
-const FILES = ['/', '/app.css', '/cc.css', '/app.js', '/core.js', '/voice.js', '/map.js', '/mapviews.js', '/cc.js', '/cc-pages.js',
-  '/cc-score.js', '/cc-life.js', '/cc-sources.js', '/favicon.svg', '/icon-192.png', '/manifest.webmanifest'];
+// BUILD is filled in by the Mac when it serves this file: a hash of every file in static/. Any change to the app
+// changes this file, so every browser installs the new worker and the cache name moves on by itself.
+const BUILD = '__BUILD__';
+const SHELL = 'pipeline-shell-v4-sendlog.' + BUILD, DATA = 'pipeline-data-v1';
+const FILES = ['/', '/app.css', '/cc.css', '/ui.css', '/app.js', '/voice.js', '/map.js', '/mapviews.js', '/cc.js', '/cc-pages.js',
+  '/crm-pages.js', '/cc-score.js', '/cc-life.js', '/cc-today.js', '/cc-sources.js', '/favicon.svg', '/icon-192.png', '/manifest.webmanifest'];
 const READS = ['/api/cc', '/api/state', '/api/alerts'];
 
 self.addEventListener('install', e => e.waitUntil(caches.open(SHELL).then(c => c.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== SHELL && k !== DATA).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 
 async function tell(msg) { (await self.clients.matchAll()).forEach(c => c.postMessage(msg)); }
+self.addEventListener('message', e => { if (e.data === 'build' && e.source) e.source.postMessage({ build: BUILD }); });
 
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
@@ -19,8 +23,10 @@ self.addEventListener('fetch', e => {
       .catch(async () => { const hit = await caches.match(u.pathname, { cacheName: DATA }); tell({ online: false }); return hit || new Response(JSON.stringify({ ok: false, error: 'offline' }), { status: 503, headers: { 'Content-Type': 'application/json' } }); }));
     return;
   }
-  if (u.pathname.startsWith('/api/')) return;
-  e.respondWith(fetch(e.request).then(r => { if (r.ok && FILES.includes(u.pathname)) { const c = r.clone(); caches.open(SHELL).then(x => x.put(e.request, c)); } return r; })
+  if (u.pathname.startsWith('/api/')) return;  // every other read goes straight to the Mac, never a kept copy
+  // HTML, JS and CSS come from the Mac every time (no browser cache), so a new build shows on the next load.
+  // The kept copy is only for when the Mac can't be reached.
+  e.respondWith(fetch(e.request, { cache: 'no-store' }).then(r => { if (r.ok && FILES.includes(u.pathname)) { const c = r.clone(); caches.open(SHELL).then(x => x.put(e.request, c)); } return r; })
     .catch(() => caches.match(e.request, { cacheName: SHELL }).then(h => h || caches.match('/', { cacheName: SHELL }))));
 });
 

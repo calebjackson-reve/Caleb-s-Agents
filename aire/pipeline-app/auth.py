@@ -23,7 +23,7 @@ LOGIN_FILE = Path(os.getenv("PIPELINE_LOGIN_FILE") or Path.home() / ".aire" / "p
 SESSION_DAYS = 30
 COOKIE = "pl_session"
 LOCAL_HOSTS = ("127.0.0.1", "localhost", "[::1]")
-PROXY_HEADERS = ("X-Forwarded-For", "X-Forwarded-Host", "Tailscale-User-Login", "Forwarded")
+PROXY_HEADERS = ("X-Forwarded-For", "X-Forwarded-Host", "X-Forwarded-Proto", "Tailscale-User-Login", "Tailscale-User-Name", "Forwarded")
 PUBLIC_PATHS = {"/login", "/api/login", "/manifest.webmanifest", "/sw.js", "/icon-192.png", "/icon-512.png",
                 "/apple-touch-icon.png", "/favicon.svg", "/login.css"}
 

@@ -1,0 +1,359 @@
+/* One design for every page. Loaded last, so it settles the older HUD styles in app.css onto the Command Center look:
+   Keller Williams First Choice black and coral, tan only as an accent, flat panels, no glow, one button style.
+   Status colors (amber for out of date, red-coral for failed) are kept for warnings only, never for tags. */
+:root {
+  --cc-ok: #c8b596;
+  --text: #f3eee6; --muted: #aaa298; --dim: #8f877e; --cyan: #e87757; --teal: #c8b596; --amber: #ffb547; --red: #ff8a70; --violet: #c8b596;
+  --line: rgba(255, 255, 255, .09); --line-soft: rgba(255, 255, 255, .09); --panel: #141215; --glow: none;
+}
+body { background: #0a0a0b; background-image: none; }
+*, *::before, *::after { text-shadow: none !important; }
+.cc-what, .cc-src, .cc-num, .cc-contact li, .cc-fields dd, .cc-lead-id h3, .pin-card dd, .cc-wday > small { overflow-wrap: break-word; word-break: normal; hyphens: manual; }
+
+/* ---------- panels: flat, rounded, no cut corners, no corner ticks, no blur-in */
+.panel { background: var(--cc-panel); border: 1px solid var(--cc-line); border-radius: 14px; clip-path: none; animation: none; }
+.panel::before, .panel::after { display: none; }
+
+/* ---------- boot */
+.boot { display: grid; place-content: center; justify-items: center; gap: 12px; }
+.boot-title { font: 400 34px/1 "Iowan Old Style", Palatino, Georgia, serif; letter-spacing: 0; color: var(--cc-text); }
+.boot-sub { font-size: 13px; color: var(--cc-muted); letter-spacing: 0; text-transform: none; }
+.boot-bar { width: 180px; height: 3px; background: var(--cc-raise); border-radius: 3px; overflow: hidden; }
+.boot-bar i { display: block; height: 100%; background: var(--cc-coral); box-shadow: none; }
+
+/* ---------- sidebar and grouped nav */
+.brand { border-bottom: 1px solid var(--cc-line); }
+.brand-mark { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--cc-coral); color: #160c08; font: 700 18px/1 "Iowan Old Style", Palatino, Georgia, serif; flex: none; }
+.brand-name { font: 400 20px/1 "Iowan Old Style", Palatino, Georgia, serif; letter-spacing: 0; color: var(--cc-text); }
+.brand-sub { font-size: 11px; color: var(--cc-muted); letter-spacing: 0; }
+.side { overflow-y: auto; scrollbar-width: thin; }
+.nav { gap: 10px; }
+.nav-g { display: flex; flex-direction: column; gap: 1px; }
+.nav-h { font-size: 11px; font-weight: 600; color: var(--cc-muted); padding: 0 10px 2px; letter-spacing: .02em; }
+.nav button { border-left: 0; border-radius: 10px; padding: 7px 10px; min-height: 36px; color: var(--cc-muted); font-size: 13px; }
+.nav button .ico { width: 20px; font-size: 14px; opacity: 1; color: var(--cc-tan); }
+.nav button:hover { background: var(--cc-raise); color: var(--cc-text); }
+.nav button.on { background: var(--cc-coral-soft); color: var(--cc-text); }
+.nav button.on .ico { color: var(--cc-coral); }
+.nav button .cnt { background: var(--cc-raise); color: var(--cc-muted); font: 600 11px var(--sans); border-radius: 999px; }
+.nav button .cnt.warn { background: var(--cc-coral-soft); color: var(--cc-coral); }
+.voice-status, .send-status { border: 1px solid var(--cc-line); border-radius: 12px; background: transparent; padding: 10px 12px; }
+.mini-h { font: 600 12px var(--sans); letter-spacing: 0; color: var(--cc-muted); }
+.mode { font: 600 13px var(--sans); letter-spacing: .02em; color: var(--cc-warn); }
+.mode.live { color: var(--cc-coral); }
+.mode-sub { font-size: 11px; color: var(--cc-muted); letter-spacing: 0; }
+.caps-mini { font: 12px var(--sans); }
+.voice-state { font-size: 12px; letter-spacing: 0; text-transform: none; }
+.wave, .wave.small { display: none !important; }
+
+/* ---------- one button style: a pill, 40 px tall, coral when it is the main action */
+.ghost-btn, .icon-btn, .orb, .status-chip, .talk, .cc-mini, .cc-btn, .cc-page button:not(.cc-tile):not(.cc-check), .acts button, .dfoot button,
+.map-side .acts button, .pm-zoom button, .seg button, .modal .send-btn, .drawer .send-btn, .stop-screen button {
+  font: 13px var(--sans); color: var(--cc-text); background: var(--cc-raise); border: 1px solid var(--cc-line);
+  border-radius: 999px; padding: 8px 16px; min-height: 40px; cursor: pointer; box-shadow: none; clip-path: none; letter-spacing: 0; text-transform: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; transition: border-color .15s, background .15s;
+}
+.ghost-btn:hover, .icon-btn:hover, .orb:hover, .status-chip:hover, .talk:hover, .cc-page button:hover, .acts button:hover, .dfoot button:hover { border-color: var(--cc-coral); box-shadow: none; transform: none; }
+.cc-primary, .cc-page .cc-primary, .acts .primary, .send-btn, .seg button.on, .modal .send-btn, .drawer .send-btn, .cc-priv[aria-pressed="true"], .icon-btn[aria-pressed="true"] {
+  background: var(--cc-coral) !important; border-color: var(--cc-coral) !important; color: #160c08 !important; font-weight: 600;
+}
+.send-btn.dry { background: var(--cc-tan) !important; border-color: var(--cc-tan) !important; }
+.cc-danger, .acts .danger { color: var(--cc-muted) !important; }
+.cc-danger:hover, .acts .danger:hover { border-color: var(--cc-bad) !important; color: var(--cc-bad) !important; }
+.icon-btn { min-width: 40px; width: auto; height: 40px; padding: 0 12px; color: var(--cc-text); font-size: 14px; }
+.icon-btn b { background: var(--cc-coral); color: #160c08; font: 700 10px var(--sans); }
+.cc-mini { min-height: 36px; padding: 6px 12px; }
+.orb { width: 100%; height: auto; font-size: 13px; }
+.orb.on, .orb.listening, .orb.thinking, .orb.speaking { background: var(--cc-coral-soft); border-color: var(--cc-coral); box-shadow: none; color: var(--cc-text); }
+.orb i { display: none; }
+.cc-page button:disabled { opacity: .4; }
+
+/* ---------- top bar */
+.status-chip { padding: 8px 14px; font-size: 13px; }
+.status-chip b { font: 600 13px var(--sans); letter-spacing: 0; color: var(--cc-text); }
+.status-chip .dot { box-shadow: none; animation: none; background: var(--cc-ok); }
+.status-chip.warn .dot { background: var(--cc-warn); } .status-chip.stop .dot { background: var(--cc-bad); }
+.status-chip.warn b, .status-chip.stop b { color: var(--cc-text); }
+.time { font: 400 24px/1.1 "Iowan Old Style", Palatino, Georgia, serif; color: var(--cc-text); letter-spacing: 0; }
+.date { font-size: 12px; letter-spacing: 0; }
+.search { border: 1px solid var(--cc-line); border-radius: 999px; background: var(--cc-raise); min-height: 40px; padding: 0 14px; }
+.search:focus-within { border-color: var(--cc-coral); box-shadow: none; }
+.operator { border: 1px solid var(--cc-line); border-radius: 999px; }
+.op-sub { font-size: 11px; letter-spacing: 0; }
+.avatar { background: var(--cc-coral); color: #160c08; box-shadow: none; font: 700 11px var(--sans); }
+
+/* ---------- bottom bar */
+.talk { min-width: 260px; flex-direction: column; gap: 0; padding: 6px 18px; }
+.talk-text b { font: 600 13px var(--sans); letter-spacing: .02em; color: var(--cc-text); }
+.talk-text i { font: 12px var(--sans); color: var(--cc-muted); font-style: normal; }
+.talk.on { border-color: var(--cc-coral); box-shadow: none; background: var(--cc-coral-soft); }
+.chip { border: 1px solid var(--cc-line); border-radius: 12px; clip-path: none; background: transparent; }
+.chip .ico { color: var(--cc-tan); text-shadow: none; }
+.chip span { font: 11px var(--sans); letter-spacing: 0; text-transform: none; }
+
+/* ---------- tags: coral, tan, or black with a neutral line. Nothing else. */
+.k-deadline, .k-closing { --k: #e87757; } .k-sale { --k: #3ecf8e; } .k-inspection { --k: #f5b041; } .k-finance { --k: #4ea8ff; }
+.k-showing, .k-listing, .k-client { --k: #c8b596; }
+.cc-ev.k-showing, .cc-ev.k-listing, .cc-ev.k-client, .cc-filter.k-showing, .cc-filter.k-listing, .cc-filter.k-client { --k: #a78bfa; }
+.k-hot { --k: #ff5a5f; } .k-warm { --k: #f5b041; } .k-cold { --k: #4ea8ff; } .k-past { --k: #ff5a5f; } .k-done { --k: #3ecf8e; } .k-next { --k: #4ea8ff; }
+.k-block, .k-personal, .k-other { --k: #aaa298; }
+.cc-pill { background: transparent; }
+.cc-pill.k-closing { background: var(--cc-coral-soft); }
+.cc-ev.k-inspection, .cc-ev.k-finance { border-left-color: var(--cc-tan); }
+.cc-yy.up { color: var(--cc-tan); } .cc-yy.down { color: var(--cc-coral); }
+.tag { border: 1px solid var(--cc-line); color: var(--cc-muted); background: transparent; border-radius: 999px; font: 12px var(--sans); letter-spacing: 0; text-transform: none; padding: 2px 9px; box-shadow: none; }
+.tag.reply, .tag.stop, .tag.live, .tag.bad { color: var(--cc-coral); border-color: rgba(232, 119, 87, .55); }
+.tag.info, .tag.violet { color: var(--cc-tan); border-color: rgba(200, 181, 150, .5); }
+/* Lead temperature: hot red, warm amber, lukewarm tan, cold blue, ice-cold slate. */
+.tag.hot { color: var(--c-red); border-color: color-mix(in srgb, var(--c-red) 55%, transparent); }
+.tag.warm, .tag.warn { color: var(--c-amber); border-color: color-mix(in srgb, var(--c-amber) 55%, transparent); }
+.tag.lukewarm { color: var(--cc-tan); border-color: rgba(200, 181, 150, .5); }
+.tag.cold { color: var(--c-blue); border-color: color-mix(in srgb, var(--c-blue) 50%, transparent); }
+.tag.ice-cold { color: #8fa3b8; border-color: rgba(143, 163, 184, .45); }
+.txs { font: 600 11px var(--sans); }
+.txs.ok { color: var(--cc-tan); } .txs.wait { color: var(--cc-warn); } .txs.bad { color: var(--cc-bad); } .txs.dry { color: var(--cc-muted); }
+.cc-hid { color: var(--cc-muted); font-style: italic; }
+
+/* ---------- filter chips: off is plain, on is coral. No strike-through. */
+.cc-filter[aria-pressed="false"] { opacity: 1; text-decoration: none; }
+.cc-filter[aria-pressed="true"] { background: var(--cc-coral-soft) !important; border-color: var(--cc-coral) !important; color: var(--cc-text) !important; font-weight: 600; }
+.cc-filter b { color: var(--cc-muted); font-weight: 600; margin-left: 2px; }
+.cc-filters, .cc-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cc-tools { flex-direction: column; align-items: stretch; gap: 10px; }
+.cc-selects { display: flex; flex-wrap: wrap; gap: 10px; }
+.cc-selects label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--cc-muted); }
+.cc-selects select, .modal select, .modal input, .drawer input, .drawer textarea, .modal textarea {
+  font: 14px var(--sans); color: var(--cc-text); background: var(--cc-ink); border: 1px solid var(--cc-line); border-radius: 10px; padding: 8px 10px; min-height: 40px; max-width: 100%;
+}
+.cc-quick { margin-top: -4px; }
+.cc-more summary { cursor: pointer; color: var(--cc-muted); font-weight: 600; min-height: 40px; display: flex; align-items: center; gap: 8px; }
+
+/* ---------- the list row used by Touches, Tasks, Deals, Drafts, Sent, Listings */
+.cc-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.cc-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px 14px; align-items: start; padding: 14px; border: 1px solid var(--cc-line); border-radius: 12px; background: var(--cc-raise); border-left: 3px solid var(--cc-line); }
+.cc-row.is-hot { border-left-color: var(--cc-coral); }
+.cc-row.is-warn { border-left-color: var(--cc-warn); }
+.cc-row .cc-av { width: 40px; height: 40px; font-size: 14px; background: var(--cc-ink); color: var(--cc-tan); border: 1px solid var(--cc-line); }
+.cc-row-main { display: grid; gap: 6px; min-width: 0; }
+.cc-row-main h3 { margin: 0; font-size: 15px; font-weight: 600; overflow-wrap: break-word; }
+.cc-row-why { margin: 0; font-size: 14px; line-height: 1.45; overflow-wrap: break-word; }
+.cc-row .cc-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; max-width: 26rem; }
+.cc-lead .cc-av { color: #160c08; }
+
+/* ---------- map */
+.cc-wide .cc-card { padding: 14px; }
+.map-tools { padding: 0; gap: 10px; }
+.map-wrap { padding: 0; height: calc(100vh - 330px); }
+.pmap { border: 1px solid var(--cc-line); border-radius: 12px; background: #141215; }
+.pm-tiles.is-dark img { filter: invert(.9) hue-rotate(180deg) saturate(.35) brightness(.85) contrast(.95); }
+.pm-zoom button { width: 40px; height: 40px; padding: 0; min-height: 40px; }
+.map-side { border: 1px solid var(--cc-line); border-radius: 12px; background: transparent; }
+.map-side h4 { font: 600 13px var(--sans); letter-spacing: 0; color: var(--cc-text); }
+.pin-card dt { font: 12px var(--sans); letter-spacing: 0; text-transform: none; color: var(--cc-muted); }
+.pc-h .ico { color: var(--cc-tan); border-color: var(--cc-line); font-family: var(--sans); }
+.iv-n small { font: 11px var(--sans); letter-spacing: 0; text-transform: none; }
+
+/* ---------- drawer and modal */
+.drawer .panel, .modal .panel { border-radius: 16px; }
+.dh .who b, .modal .who b { font: 400 22px/1.2 "Iowan Old Style", Palatino, Georgia, serif; letter-spacing: 0; color: var(--cc-text); text-transform: none; }
+.field label, .lbl { font: 600 12px var(--sans) !important; letter-spacing: 0 !important; color: var(--cc-muted) !important; text-transform: none !important; }
+.brief h4 { font: 600 12px var(--sans); letter-spacing: .02em; color: var(--cc-tan); }
+.toast { border-radius: 12px; clip-path: none; box-shadow: none; }
+
+/* ---------- phone, 390 px and up: nothing scrolls sideways, no text sits on a button */
+@media (max-width: 720px) {
+  .side { flex-direction: row; overflow-x: auto; overflow-y: hidden; }
+  .nav { flex-direction: row; gap: 4px; }
+  .nav-g { flex-direction: row; gap: 4px; }
+  /* Phone: the nav is one sideways strip. The P mark stays pinned at its left edge, never clipped or scrolled away, and
+     each group keeps its name as a small divider so the strip still reads Today, People, Deals, Numbers, You, System. */
+  .side .brand { position: sticky; left: 0; z-index: 2; background: var(--cc-panel); border-bottom: 0; padding: 0 8px 0 0; flex: none; }
+  .side .brand-name, .side .brand-sub { display: none; }
+  .nav-g + .nav-g { border-left: 1px solid var(--cc-line); padding-left: 8px; margin-left: 4px; }
+  .side { scrollbar-width: none; } .side::-webkit-scrollbar { display: none; height: 0; }  /* no light scrollbar line under the strip */
+  .nav-h { display: inline-flex; align-items: center; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--cc-muted); padding: 0 2px; white-space: nowrap; }
+  .nav button { min-height: 40px; padding: 8px 12px; }
+  .top { gap: 8px; }
+  .top .operator, .top .clock { display: none; }
+  .top .status-chip { display: inline-flex; order: 1; flex: 1 1 auto; justify-content: flex-start; }
+  .top-right { order: 2; flex: 1 1 100%; flex-wrap: wrap; gap: 8px; }
+  .search { order: 5; width: 100%; flex: 1 1 100%; }
+  .main { padding: 0 12px; overflow-x: hidden; }
+  .cc-row { grid-template-columns: 40px minmax(0, 1fr); padding: 12px; }
+  .cc-row .cc-acts { grid-column: 1 / -1; justify-content: flex-start; max-width: none; }
+  .cc-acts button, .cc-acts a.cc-btn { flex: 0 1 auto; }
+  .cc-ev { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .cc-ev .cc-chip { justify-self: start; }
+  .cc-table { font-size: 13px; }
+  .cc-head h1 { font-size: 26px; }
+  .cc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .cc-tile { padding: 12px; }
+  .cc-num { font-size: 28px; }
+  .bottom { gap: 8px; }
+  .foot-right { flex: 1 1 100%; }
+  .foot-right .ghost-btn { flex: 1 1 0; }
+  .map-wrap { height: auto; }
+  .cc-ask form { flex-direction: column; }
+}
+@media (max-width: 400px) { .cc-tiles { grid-template-columns: minmax(0, 1fr); } }
+
+.foot-chips { display: none !important; }
+.cc-privnote { font-size: 12px; color: var(--cc-muted); border: 1px solid var(--cc-line); border-radius: 999px; padding: 6px 12px; }
+/* The source name stays on phone tiles too: a number without its source is a guess. */
+@media (max-width: 560px) {
+  .cc-tile .cc-src-n { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .cc-ev .cc-chip { display: inline-block; }
+  .cc-lead-top { align-items: flex-start; }
+}
+
+/* Long words, links and numbers in notes wrap instead of pushing the row sideways (Touches due, Tasks, the Dashboard). */
+.cc-row-main, .cc-what, .cc-note, .cc-row-why, .cc-lead, .cc-deal { min-width: 0; overflow-wrap: anywhere; }
+/* Phone: a table becomes labelled rows, each cell with its column name, so nothing scrolls sideways unlabelled. */
+@media (max-width: 720px) {
+  .cc-table.cc-stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .cc-table.cc-stack, .cc-table.cc-stack tbody, .cc-table.cc-stack tr, .cc-table.cc-stack th, .cc-table.cc-stack td { display: block; width: 100%; }
+  .cc-table.cc-stack tr { padding: 10px 0; border-bottom: 1px solid var(--cc-line); }
+  .cc-table.cc-stack td { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; text-align: right; border: 0; }
+  .cc-table.cc-stack td::before { content: attr(data-label); color: var(--cc-muted); text-align: left; flex: none; }
+  .cc-table.cc-stack th[scope="row"] { padding: 0 0 4px; border: 0; }
+  .cc-tasks .cc-row .cc-acts button { min-height: 40px; }
+  .cc-tasks .cc-pills { margin: 4px 0; }
+}
+
+/* Commission mail: a paid commission with no closed deal on the sheet is flagged in coral, like Not processed. */
+.cc-chip.s-Nocloseddeal { color: var(--cc-coral); border-color: rgba(232, 119, 87, .55); }
+.cc-chip.s-Paid { color: var(--cc-tan); }
+
+/* With money and contacts hidden, a contact or message typed or prefilled in a dialog shows as dots, like a password. */
+.cc-masked { -webkit-text-security: disc; text-security: disc; }
+
+
+.cc-head .cc-privnote { display: inline-block; margin-top: 10px; }
+
+/* A new build is live: one small note, coral button, black panel. */
+#sw-updated { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 1000;
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-radius: 12px; background: var(--panel);
+  border: 1px solid var(--line); color: var(--text); font-size: 14px; white-space: nowrap; }
+#sw-updated button { font: inherit; font-weight: 600; color: #160c08; background: var(--cyan); border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.cc-undated { color: var(--text); font-weight: 600; }
+
+/* A row that leads with a badge (Written without a date, What needs attention, Commission emails): the badge sits on
+   its own line above the words, at every width, so it never covers them. */
+.cc-ev:has(> .cc-chip:first-child) { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.cc-ev:has(> .cc-chip:first-child) > .cc-chip { display: inline-block; justify-self: start; max-width: 100%; white-space: normal; }
+
+/* Calendar week: a column is never narrower than about 150 px. When seven do not fit, the days wrap to a second row,
+   and event titles and badges wrap inside the column instead of being cut. */
+.cc-days.week { grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); }
+.cc-list.tight .cc-ev > * { min-width: 0; }
+.cc-list.tight .cc-chip { white-space: normal; max-width: 100%; }
+@media (max-width: 560px) { .cc-days.week { grid-template-columns: minmax(0, 1fr); } }
+
+/* Header clock: always one line. Below 1300 px the date steps aside and the time stays. */
+.top .clock { flex: none; }
+.top .clock .date, .top .clock .time { white-space: nowrap; }
+@media (max-width: 1300px) { .top .clock .date, .top .operator { display: none; } }
+
+/* Phone header and nav (round 4). The nav scrolls on its own beside the P mark, never under it. The header is one
+   row: the source pill (short words), Show, and search. Refresh, the bell and keys step aside; the pill opens Sources. */
+@media (max-width: 720px) {
+  .side { overflow: hidden; }
+  .side .brand { position: static; padding-right: 8px; border-right: 1px solid var(--cc-line); }
+  .side .nav { overflow-x: auto; overflow-y: hidden; min-width: 0; flex: 1 1 auto; scrollbar-width: none; }
+  .side .nav::-webkit-scrollbar { display: none; height: 0; }
+  .top { flex-wrap: nowrap; gap: 6px; padding: 6px 10px; }
+  .top .status-chip { display: inline-flex; flex: 0 1 auto; min-width: 0; padding: 6px 14px 6px 10px; }
+  .top .status-chip #status-word { display: none; }
+  .top .status-chip b::after { content: attr(data-short); white-space: nowrap; }
+  .top-right { order: 2; flex: 1 1 auto; flex-wrap: nowrap; min-width: 0; gap: 6px; }
+  .top-right .search { order: 0; flex: 1 1 auto; width: auto; min-width: 0; padding: 6px 8px; }
+  .top-right .search kbd, .top-right #refresh, .top-right #bell, .top-right #help, .top-right .operator { display: none; }
+}
+
+/* Deals: a greyed button says why on its second line. A deal opened from search lights up for a moment. */
+.cc-acts button.cc-off { opacity: .55; cursor: not-allowed; display: inline-grid; text-align: left; line-height: 1.2; }
+.cc-acts button.cc-off small { font-size: 11px; font-weight: 400; color: var(--cc-muted); }
+.cc-row.is-flash { outline: 2px solid var(--cc-coral); outline-offset: 2px; transition: outline-color .4s; }
+
+/* Text and Email: a greyed button says why. The sheet's confirm step shows the whole message. */
+.acts button.cc-off, .dfoot button.cc-off { opacity: .55; cursor: not-allowed; display: inline-grid; text-align: left; line-height: 1.2; }
+.acts button.cc-off small, .dfoot button.cc-off small { font-size: 11px; font-weight: 400; color: var(--cc-muted); }
+.send-preview { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--cc-raise); border: 1px solid var(--cc-line); border-radius: 10px; padding: 10px 12px; font: inherit; max-height: 40vh; overflow: auto; }
+#c-exact { margin-top: 6px; font-size: 12px; color: var(--cc-muted); justify-content: flex-start; gap: 4px; }
+.drawer .dfoot, #drawer .dfoot { flex-wrap: wrap; row-gap: 8px; }
+#drawer .dfoot .spacer { flex: 1 1 0; }
+#c-exact { display: block; }
+
+
+/* ---------- Color code (2026-11-09, Caleb's pick: black and coral stay the brand, plus a status code).
+   Sections color the nav and page heads: Today coral, People purple, Deals blue, Numbers green, You teal, System grey.
+   Items carry stage and urgency: offer amber, under contract blue, closed green, fell through grey, overdue red. */
+:root { --c-red: #ff5a5f; --c-amber: #f5b041; --c-blue: #4ea8ff; --c-green: #3ecf8e; --c-purple: #a78bfa; --c-teal: #2dd4bf; --c-grey: #8f877e; --sec: var(--cc-coral); }
+body[data-sec="today"] { --sec: var(--cc-coral); } body[data-sec="people"] { --sec: var(--c-purple); } body[data-sec="deals"] { --sec: var(--c-blue); }
+body[data-sec="numbers"] { --sec: var(--c-green); } body[data-sec="you"] { --sec: var(--c-teal); } body[data-sec="system"] { --sec: var(--c-grey); }
+.nav-g { --g: var(--cc-coral); } .nav-g.g-people { --g: var(--c-purple); } .nav-g.g-deals { --g: var(--c-blue); } .nav-g.g-numbers { --g: var(--c-green); }
+.nav-g.g-you { --g: var(--c-teal); } .nav-g.g-system { --g: var(--c-grey); }
+.nav-g .nav-h { color: var(--g); }
+.nav-g button .ico { color: var(--g); }
+.nav-g button.on { background: color-mix(in srgb, var(--g) 18%, transparent); box-shadow: inset 3px 0 0 var(--g); }
+.nav-g button.on .ico { color: var(--g); }
+.cc-head h1 { box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--sec) 70%, transparent); display: inline-block; padding-bottom: 2px; }
+.cc-tile { border-top: 3px solid color-mix(in srgb, var(--sec) 75%, transparent); }
+/* Stage: one color per stage, on pills, deal rows and placeholders. */
+.st-offer { --st: var(--c-amber); } .st-contract { --st: var(--c-blue); } .st-closed { --st: var(--c-green); } .st-out { --st: var(--c-grey); }
+.st-appointment { --st: var(--c-purple); } .st-other { --st: var(--cc-tan); }
+.cc-pill[class*="st-"] { color: var(--st); border-color: color-mix(in srgb, var(--st) 55%, transparent); background: color-mix(in srgb, var(--st) 12%, transparent); }
+.cc-row[class*="st-"] { border-left: 4px solid var(--st); }
+.cc-deal[class*="st-"] { border-top: 4px solid var(--st); }
+/* Urgency: due within 2 days amber, past red. */
+.cc-ev.is-soon { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-amber) 70%, transparent); }
+.cc-ev.is-past, .cc-steps li.k-past { --k: var(--c-red); }
+/* Deal photos: a cover on cards, a thumbnail on rows. No photo: the stage color with a house mark. */
+.cc-photo { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; background: color-mix(in srgb, var(--st, var(--cc-coral)) 22%, #141215); }
+.cc-photo.ph { display: grid; place-items: center; place-content: center; text-align: center; color: var(--st, var(--cc-coral)); font-size: 28px; }
+.cc-thumb { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex: none; background: color-mix(in srgb, var(--st, var(--cc-coral)) 22%, #141215); }
+.cc-thumb.ph { display: grid; place-items: center; color: var(--st, var(--cc-coral)); font-size: 20px; }
+.cc-ev .cc-thumb { width: 40px; height: 40px; }
+.cc-sub-photo { display: flex; align-items: center; gap: 10px; }
+.cc-sub-photo .cc-thumb, .cc-sub-photo .cc-av { width: 40px; height: 40px; }
+.cc-deal > .cc-photo { margin: -2px 0 10px; }
+.cc-row > .cc-thumb { align-self: start; }
+/* A row with a deal photo gets a wider first column so the photo never runs into the address. */
+.cc-row:has(> .cc-thumb) { grid-template-columns: 72px minmax(0, 1fr) auto; }
+.cc-row > .cc-thumb { width: 72px; height: 72px; }
+@media (max-width: 720px) { .cc-row:has(> .cc-thumb) { grid-template-columns: 56px minmax(0, 1fr); } .cc-row > .cc-thumb { width: 56px; height: 56px; } }
+
+/* ---- Round 5 ---- */
+/* A dialog taller than the window scrolls inside itself, so its last lines and its button are always reachable. */
+.modal .panel { max-height: calc(100dvh - 32px); display: flex; flex-direction: column; }
+.modal .dbody { overflow-y: auto; min-height: 0; }
+.modal .dfoot { flex: none; }
+/* Color code: one meaning per color. Contract deadlines are coral whatever their type (amber is an offer, blue is under
+   contract), act of sale stays green, an active listing is tan, no status is grey, overdue is red. */
+.k-inspection, .k-finance, .cc-ev.k-inspection, .cc-ev.k-finance { --k: #e87757; border-left-color: #e87757; }
+.st-appointment { --st: var(--cc-tan); } .st-other { --st: var(--c-grey); }
+.k-tan, .cc-ev.k-tan, .cc-filter.k-tan { --k: #c8b596; }
+.cc-overdue { color: var(--c-red); font-weight: 600; }
+.cc-lead { --av: var(--sec) !important; }
+/* One type style in dialogs and the compose drawer: sentence case sans, the same pill toggle as everywhere else. */
+.field label, .drawer .lbl, .brief h4 { display: block; text-transform: lowercase !important; }
+.field label::first-letter, .drawer .lbl::first-letter, .brief h4::first-letter { text-transform: uppercase; }
+.seg { border-radius: 999px; border-color: var(--cc-line); }
+.seg button { font: 600 13px var(--sans); letter-spacing: 0; padding: 8px 16px; text-transform: lowercase; }
+.seg button::first-letter { text-transform: uppercase; }
+/* Header: the chip, clock and search never touch. */
+.top { column-gap: 12px; } .top-right { column-gap: 10px; }
+/* "Did that send?": one small bar over the footer. Black, coral edge and button, tan for the time. */
+#sent-ask { position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 900; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap;
+  width: max-content; max-width: calc(100vw - 24px); padding: 10px 14px; border-radius: 14px; background: var(--cc-ink); color: var(--cc-text); border: 1px solid var(--cc-coral); font: 500 13px var(--sans); box-shadow: 0 8px 30px rgba(0, 0, 0, .5); }
+#sent-ask small { color: var(--cc-tan); margin-left: 8px; }
+#sent-ask button { font: inherit; font-weight: 600; border-radius: 999px; padding: 6px 14px; min-height: 32px; cursor: pointer; border: 1px solid var(--cc-coral); background: var(--cc-coral); color: #160c08; }
+#sent-ask button.no { background: transparent; color: var(--cc-text); border-color: var(--cc-line); }
+/* Scorecard cards: headings on one line across a row, the source line at the bottom, the section rule on top like tiles. */
+.cc-kpi { display: flex; flex-direction: column; border-top: 3px solid color-mix(in srgb, var(--sec) 75%, transparent); }
+.cc-kpi > footer { margin-top: auto; }
+/* A deal with no photo gets a slim stage band, not an empty picture frame. Three deal cards fit one row at 1200. */
+.cc-photo.ph { aspect-ratio: auto; height: 44px; font-size: 20px; }
+.cc-deals { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+/* Phone: tiles two to a row, so the Today list is a short scroll away. */
+@media (max-width: 720px) { .cc-tiles { grid-template-columns: 1fr 1fr; gap: 8px; } .cc-tile { padding: 10px; } .cc-tile .cc-num { font-size: 24px; } }

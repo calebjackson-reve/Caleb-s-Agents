@@ -1,8 +1,9 @@
 """Checks for every Command Center calculation. Made-up deals only. Run: python3 aire/pipeline-app/cc_test.py"""
 import json
+import re
 import tempfile
 import unittest
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import cc
@@ -93,7 +94,8 @@ class Calendar(unittest.TestCase):
                              ev("800 Old Rd - Act of sale", "2026-12-25")], self.COORD)
         dl = cc.deal_deadlines(evs)
         self.assertEqual(len(cc.in_days(dl, T, 6)), 1)
-        cl = cc.closings(dl, cc.deal_rows(SHEET), T)
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(SHEET), T), [])
+        cl = cc.closings(cc.contract_deadlines(dl, cards), cards, T)
         self.assertEqual([(r["deal"], r["from"], r["money"]) for r in cl], [("100 Oak Ln", "both", 7500.0)])
 
 
@@ -253,6 +255,496 @@ class Checklist(unittest.TestCase):
         cards = cc.deal_cards(cc.deal_rows(SHEET), T)
         self.assertEqual((cards[0]["to_close"], len(cards[0]["checklist"])), (15, 3))
         self.assertEqual([c for c in cards if c["stage"] == "closed"][0]["checklist"], [])
+
+
+class JudgeRound1(unittest.TestCase):
+    """Fixes from the blind judge, round 1. Made-up deals and people."""
+    COORD = ["example.com"]
+
+    def test_deal_key_matches_spellings(self):
+        self.assertEqual(cc.deal_key("2179 South Fake Avenue, Zachary, LA"), cc.deal_key("2179 S Fake Ave"))
+        self.assertEqual(cc.deal_key("90108 Pretend Lane - Act of sale"), "90108 pretend")
+        self.assertNotEqual(cc.deal_key("100 Oak Ln"), cc.deal_key("100 Elm St"))
+
+    def test_one_deal_source_sheet_wins_and_says_where_crm_differs(self):
+        cards = cc.deal_cards(cc.deal_rows(SHEET), T)
+        crm = [{"address": "100 Oak Lane, Somewhere, LA", "stage": "active", "price": "260000", "expected_close": "2026-11-29"},
+               {"address": "900 Nowhere Rd", "stage": "under_contract", "price": "1"},
+               {"address": "901 Gone Rd", "stage": "lost"}]
+        out, only = cc.merge_deals(cards, crm)
+        oak = next(c for c in out if c["deal"] == "100 Oak Ln")
+        self.assertEqual((oak["price"], oak["act"], oak["status"]), (250000.0, "2026-11-20", "Under Contract"))
+        self.assertEqual(sorted(d["field"] for d in oak["differs"]), ["act of sale", "price", "status"])
+        self.assertEqual([o["deal"] for o in only], ["900 Nowhere Rd"])  # lost CRM rows are not shown
+        self.assertEqual(cc.pending_commission(cc.deal_rows(SHEET))["value"], 7500)  # CRM rows never add money
+
+    def test_deadlines_one_per_deal_per_day(self):
+        evs = cc.cal_events([ev("100 Oak Ln - Act of sale", "2026-11-20"), ev("100 Oak Lane - Closing", "2026-11-20"),
+                             ev("700 Gum St - Inspection deadline", "2026-11-07"),
+                             ev("700 Gum St - Appraisal deadline", "2026-11-07")], self.COORD)
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(SHEET), T), [])
+        dl = cc.contract_deadlines(cc.deal_deadlines(evs), cards)
+        oak = [r for r in dl if r["key"] == "100 oak"]
+        self.assertEqual(len(oak), 1)
+        self.assertEqual((oak[0]["what"], oak[0]["from"]), ("Act of sale", "both"))
+        gum = [r for r in dl if r["key"] == "700 gum"]
+        self.assertEqual(len(gum), 1)
+        self.assertIn("Appraisal", gum[0]["what"])
+
+    def test_calendar_act_of_sale_on_another_day_does_not_double_count(self):
+        evs = cc.cal_events([ev("100 Oak Ln - Act of sale", "2026-11-22")], self.COORD)
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(SHEET), T), [])
+        dl = cc.contract_deadlines(cc.deal_deadlines(evs), cards)
+        oak = [r for r in dl if r["key"] == "100 oak"]
+        self.assertEqual([(r["day"], r["from"]) for r in oak], [("2026-11-20", "sheet")])
+        self.assertIn("2026-11-22", oak[0]["note"])
+
+    def test_one_lead_list(self):
+        email = [{"name": "Pat Example", "phone": "(225) 555-0101", "email": "pat@example.com", "received": "2026-11-05T08:30:00-06:00",
+                  "crm": {"person_id": "P1"}},
+                 {"name": "Test Lead", "test": True, "received": "2026-11-05T08:00:00-06:00"},
+                 {"name": "Lee Sample", "phone": "", "email": "lee@example.com", "received": "2026-11-03T10:00:00-06:00", "crm": None}]
+        crm = [{"person_id": "P1", "display": "Pat Example", "received": "2026-11-05"},
+               {"person_id": "P2", "display": "Kim Madeup", "phone": "2255550102", "received": "2026-11-04", "source": "Luxury Presence 2026-11-04"}]
+        rows = cc.merge_leads(email, crm, set(), NOW)
+        self.assertEqual([r["name"] for r in rows], ["Pat Example", "Kim Madeup", "Lee Sample"])
+        self.assertEqual([r["origin"] for r in rows], ["email", "crm", "email"])
+
+    def test_call_within_the_hour_from_age_and_reply(self):
+        d = cc.lead_due("2026-11-05T08:30:00-06:00", False, NOW)
+        self.assertEqual((d["level"], d["label"]), ("now", "Call within the hour (30 min left)"))
+        self.assertEqual(cc.lead_due("2026-11-05T06:00:00-06:00", False, NOW)["label"], "3h with no reply")
+        self.assertEqual(cc.lead_due("2026-11-05T08:30:00-06:00", True, NOW)["label"], "Replied")
+        self.assertEqual(cc.lead_due("2026-11-03", False, NOW)["label"], "2 days with no reply")
+        rows = cc.merge_leads([], [{"person_id": "P3", "display": "Jo Fake", "received": "2026-11-04", "last_touch": "2026-11-04"}], set(), NOW)
+        self.assertEqual(rows[0]["due"]["level"], "done")  # a touch logged on the lead's day counts as a reply
+
+    def test_outside_invites_are_not_booked(self):
+        evs = cc.cal_events([ev("Showing", "2026-11-05T10:00:00-06:00", "2026-11-05T11:00:00-06:00"),
+                             ev("Vendor webinar", "2026-11-05T12:00:00-06:00", "2026-11-05T13:00:00-06:00", invite=True),
+                             ev("Sales block", "2026-11-05T14:00:00-06:00", "2026-11-05T16:00:00-06:00")], self.COORD)
+        w = cc.week_load(evs, T)
+        self.assertEqual((w[0]["hours"], w[0]["events"]), (1.0, 1))
+
+    def test_build_with_feed_counts_leads_once(self):
+        with tempfile.TemporaryDirectory() as t:
+            folder = Path(t)
+            meta = {"at": NOW.isoformat(), "source": "test", "error": None}
+            (folder / "leads.json").write_text(json.dumps({**meta, "rows": [{"name": "Pat Example", "phone": "2255550101", "received": "2026-11-05T08:30:00-06:00"}]}))
+            (folder / "deals.json").write_text(json.dumps({**meta, "rows": SHEET}))
+            feed = {"new_leads": [{"person_id": "P1", "display": "Pat Example", "phone": "+1 225 555 0101", "received": "2026-11-05"},
+                                  {"person_id": "P2", "display": "Kim Madeup", "received": "2026-11-04"}],
+                    "deals": [{"address": "100 Oak Lane", "stage": "under_contract", "price": "250000"}]}
+            p = cc.build(folder, NOW, feed=feed)
+            self.assertEqual(len(p["leads"]), 2)
+            self.assertEqual(p["scorecard"]["leads7"]["value"], 2)
+            self.assertEqual(p["stages"][0]["n"], 2)
+            self.assertEqual(next(c for c in p["deals"] if c["deal"] == "100 Oak Ln")["differs"], [])
+
+
+
+class JudgeRound2(unittest.TestCase):
+    """Fixes from the blind judge, round 2. Made-up deals and people."""
+    COORD = ["example.com"]
+
+    def test_deal_key_finds_the_address_after_a_label(self):
+        # item 5: a coordinator event titled "Act of Sale · <address>" keyed as "act of" and was counted twice
+        self.assertEqual(cc.deal_key("Act of Sale · 2179 South Fake"), "2179 fake")
+        self.assertEqual(cc.deal_key("Inspection 11/20 - 14150 Pretend Ln"), "14150 pretend")
+        self.assertEqual(cc.deal_key("42553 Hwy 42"), "42553 hwy")
+        self.assertEqual(cc.deal_key("Commission for 41st"), "commission for")
+
+    def test_deadline_titled_label_first_merges_with_the_sheet(self):
+        evs = cc.cal_events([ev("100 Oak Ln - Act of sale", "2026-11-20"), ev("Act of Sale · 100 Oak Lane", "2026-11-20")], self.COORD)
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(SHEET), T), [])
+        dl = cc.contract_deadlines(cc.deal_deadlines(evs), cards)
+        on_day = [r for r in dl if r["day"] == "2026-11-20"]
+        self.assertEqual([(r["deal"], r["what"], r["from"]) for r in on_day], [("100 Oak Ln", "Act of sale", "both")])
+        self.assertEqual(len([c for c in cc.closings(dl, cards, T) if c["day"] == "2026-11-20"]), 1)
+
+
+    def test_one_new_lead_rule_rolling_7_and_14_days_no_test_leads(self):
+        # item 4: one rule for the Dashboard, Scorecard, Leads, the nav and the brief
+        day = lambda n: (T - timedelta(days=n)).isoformat()
+        email = [{"name": "Pat Fixture", "received": day(0) + "T08:00:00-06:00", "threadId": "a"},
+                 {"name": "Jo Fixture", "received": day(6) + "T08:00:00-06:00", "threadId": "b"},
+                 {"name": "Lee Fixture", "received": day(7) + "T08:00:00-06:00", "threadId": "c"},
+                 {"name": "Old Fixture", "received": day(14) + "T08:00:00-06:00", "threadId": "d"},
+                 {"name": "Form Test", "received": day(1), "threadId": "e", "test": False}]
+        crm = [{"person_id": "71", "display": "Kim Fixture", "received": day(13)},
+               {"person_id": "72", "display": "Test Lead", "received": day(2)},
+               {"person_id": "73", "display": "No Date Fixture"}]
+        leads = cc.merge_leads(email, crm, set(), NOW)
+        names = {r["name"] for r in leads}
+        self.assertEqual(names, {"Pat Fixture", "Jo Fixture", "Lee Fixture", "Kim Fixture", "No Date Fixture"})
+        lc = cc.lead_counts(leads, T)
+        self.assertEqual((lc["d14"], lc["d7"], lc["undated"]), (5, 2, 1))
+        sc = cc.scorecard([], [], leads, {}, None, T)
+        self.assertEqual(sc["leads7"]["value"], lc["d7"])
+
+
+    def test_reads_turn_amber_past_their_refresh_and_red_when_stale_or_failed(self):
+        # item 6: the Deals sheet reads every 30 minutes
+        at = lambda mins: (NOW - timedelta(minutes=mins)).isoformat()
+        st = lambda m: cc.freshness(m, "deals", NOW)["state"]
+        self.assertEqual([st({"at": at(m)}) for m in (20, 44, 50, 104, 110)], ["ok", "ok", "late", "late", "stale"])
+        self.assertEqual(st({"at": at(1), "error": "quota"}), "failed")  # a failed read is never ok, however new
+        self.assertEqual(cc.freshness({"at": at(50)}, "deals", NOW)["late_after"], 45)
+
+    def test_pace_matches_the_sync(self):
+        import cc_sync
+        self.assertEqual(cc.PACE_MIN, {k: v[0] for k, v in cc_sync.READS.items()})
+
+
+    def test_scorecard_uses_saved_history_and_says_since_when(self):
+        # item 10: three days saved in the sheet, none 7 days old yet
+        saved = [{"day": "2026-11-02", "gci": 100.0, "pending": 0, "closings": 1, "leads7": 4, "appts7": 0},
+                 {"day": "2026-11-03", "gci": 100.0, "pending": 0, "closings": 1, "leads7": 4, "appts7": 0},
+                 {"day": "2026-11-04", "gci": 100.0, "pending": 0, "closings": 1, "leads7": 5, "appts7": 0}]
+        today_row = {"day": T.isoformat(), "gci": 150.0, "pending": 0, "closings": 2, "leads7": 3, "appts7": 0}
+        full = cc.add_history(saved, today_row)
+        self.assertEqual(cc.deltas(full, today_row, "gci"), {"7": None, "30": None})
+        self.assertEqual(cc.since_saved(saved, today_row, "gci"), {"since": "2026-11-02", "days": 3, "value": 50.0})
+        self.assertEqual(cc.since_saved(saved, today_row, "leads7")["value"], -1)
+        self.assertEqual(len(cc.saved_days(full, T)), 3)  # today's computed row is not history
+        self.assertIsNone(cc.since_saved([], today_row, "gci"))
+
+
+    def test_market_warnings_in_plain_words_and_each_tile_its_own_state(self):
+        # items 14 and 15: no Python errors on Market, and a source that failed is red on its own tile only
+        raw = {"rate": None, "areas": [{"area": "Fake Parish", "level": "county", "id": "1", "month": "202610", "active": 10.0}],
+               "gbrar": None, "warnings": ["rate: TimeoutError: The read operation timed out",
+                                           "Realtor.com zip: URLError: <urlopen error [Errno 54] Connection reset by peer>"]}
+        m = cc.market(raw)
+        self.assertEqual(m["warnings"], ["The mortgage rate (Freddie Mac, via FRED) did not load: the site took too long to answer",
+                                         "Realtor.com inventory by ZIP did not load: the connection dropped"])
+        self.assertFalse(any(re.search(r"Error|Errno|urlopen|<", w) for w in m["warnings"]))
+        self.assertEqual({k: v["state"] for k, v in m["parts"].items()},
+                         {"rate": "failed", "areas": "failed", "gbrar": "missing", "areas_county": "ok", "areas_zip": "failed"})
+        self.assertEqual(cc.market({"rate": {"rate": 6.1, "change": 0, "date": "2026-11-05"}, "warnings": []})["parts"]["rate"]["state"], "ok")
+
+
+    def test_paid_commission_with_no_closed_deal_is_flagged(self):
+        # item 16: money in for a deal the sheet does not show as closed
+        mail = [{"subject": "Commission for 300 Pine"}, {"subject": "Re: Commission for Pine Dr"}, {"subject": "Commission for Fake Chapel"},
+                {"subject": "Commission for 41st"}, {"subject": "Commission Not Processed - 300 Pine Dr"}, {"subject": "Your CDA is ready"}]
+        out = cc.commission_mail(mail, cc.deal_rows(SHEET))
+        st = {r["subject"]: r["status"] for r in out}
+        self.assertEqual(st["Commission for 300 Pine"], "Paid")          # 300 Pine Dr is Closed on the sheet
+        self.assertEqual(st["Re: Commission for Pine Dr"], "Paid")
+        self.assertEqual(st["Commission for Fake Chapel"], "No closed deal")
+        self.assertEqual(st["Commission for 41st"], "No closed deal")    # too short to match any street
+        self.assertEqual(st["Commission Not Processed - 300 Pine Dr"], "Resolved")
+        self.assertEqual(st["Your CDA is ready"], "Notice")
+        self.assertEqual({r["status"] for r in out[:2]}, {"No closed deal"})  # flags come first
+        self.assertEqual(cc.commission_mail([{"subject": "Commission for 100 Oak Ln"}], cc.deal_rows(SHEET))[0]["status"], "No closed deal")  # under contract, not closed
+
+
+    def test_reviewer_round2_commission_house_number_and_short_history_rows(self):
+        sheet = [HEAD, ["500 Oak Ridge Dr", "Listing", "Closed", "1", "1", "", "", "2026-10-01", "", ""],
+                 ["300 Pine Dr", "Listing", "Closed", "1", "1", "", "", "2026-10-02", "", ""]]
+        st = {r["subject"]: r["status"] for r in cc.commission_mail(
+            [{"subject": "Commission for 12 Oak Ridge"}, {"subject": "Commission for 300 Pine"}, {"subject": "Commission for Pine Dr"}], cc.deal_rows(sheet))}
+        self.assertEqual(st, {"Commission for 12 Oak Ridge": "No closed deal", "Commission for 300 Pine": "Paid", "Commission for Pine Dr": "Paid"})
+        rows = [{"day": "2026-10-01", "gci": 10.0}, {"day": "2026-10-20"}]  # the second row lost its trailing cells
+        self.assertEqual(cc.deltas(rows, {"day": "2026-11-05", "gci": 15.0}, "gci"), {"7": 5.0, "30": 5.0})
+        self.assertEqual(cc.deltas(rows, {"day": "2026-11-05", "gci": 15.0}, "closings"), {"7": None, "30": None})
+
+
+class JudgeRound3(unittest.TestCase):
+    """Fixes from the blind judge, round 3. Made-up deals and people."""
+
+    def test_a_deadline_written_as_words_is_undated_not_missing(self):
+        steps = {x["step"]: x["state"] for x in cc.checklist(
+            {"inspection": "7 day due diligence from Nov 3 acceptance", "appraisal": "Cash. No appraisal contingency", "act": "2026-11-20"}, T)}
+        # Round 4 item 1 changed this: words holding a date ("from Nov 3") say "contains a date, check it", not undated.
+        self.assertEqual(steps, {"Inspection": "check", "Appraisal and loan": "done", "Act of sale": "upcoming"})
+        self.assertEqual(cc.checklist({"inspection": "Removed Oct 27", "act": ""}, T)[0]["state"], "done")
+        with tempfile.TemporaryDirectory() as d:
+            sheet = [HEAD, ["100 Oak Ln", "Buyer", "Under Contract", "1", "1", "DDI ends 10 days after acceptance", "", "2026-11-20", "", ""]]
+            Path(d, "deals.json").write_text(json.dumps({"at": NOW.isoformat(), "rows": sheet}))
+            p = cc.build(Path(d), NOW)
+        self.assertEqual([(u["deal"], u["step"]) for u in p["deadlines"]["undated"]], [("100 Oak Ln", "Inspection")])
+
+
+    def test_offers_past_their_deadline_are_expired_and_never_count_down_to_close(self):
+        t = date(2026, 11, 8)
+        self.assertTrue(cc.offer_deadline("Offer was binding until Oct 29 7 AM. No answer found", t)["expired"])
+        o = cc.offer_deadline("Seller countered at $2.8M as is, open until Fri Nov 6 5 PM. Not in Command", t)
+        self.assertEqual((o["date"], o["time"], o["expired"]), ("2026-11-06", "5 PM", True))
+        self.assertEqual(cc.offer_deadline("Fake offer expired Nov 4 9 AM, counter still waiting", t)["date"], "2026-11-04")
+        self.assertFalse(cc.offer_deadline("Counter open until Nov 12 5 PM", t)["expired"])
+        self.assertIsNone(cc.offer_deadline("Offer and pre-approval sent Nov 4, no answer yet", t))
+        sheet = [HEAD, ["700 Fake Rd", "Buyer", "Offer", "1", "", "", "", "2026-12-04", "Offer open until Fri Nov 6 5 PM", ""]]
+        card = cc.deal_cards(cc.deal_rows(sheet), t)[0]
+        self.assertEqual((card["to_close"], card["offer"]["expired"]), (None, True))
+
+
+    def test_news_leaves_out_obituaries_and_school_sports(self):
+        titles = ["Pat Fixture Obituary (2026) - Zachary, LA - Fake Funeral Home", "Tara vs West Feliciana - Boys Varsity Basketball 01/25/2027",
+                  "University Lab Girls Varsity Volleyball @ West Feliciana", "Collegiate Academy vs West Feliciana Football - Nov 6, 2026",
+                  "Zachary High School (LA) Basketball", "Where Baton Rouge's short-term rental market currently stands",
+                  "Mortgage rates fall for third straight week", "Incumbents fall in Zachary City Council races, but hold on to School Board"]
+        kept = [r["title"] for r in cc.news_rows([{"title": t} for t in titles])]
+        self.assertEqual(kept, titles[5:])
+
+
+    def test_saved_days_match_the_history_rows_in_the_sheet(self):
+        rows = [{"day": d, "gci": 1.0, "pending": 0, "closings": 1, "leads7": 1, "appts7": 0} for d in ("2026-11-02", "2026-11-03", "2026-11-04", T.isoformat())]
+        with tempfile.TemporaryDirectory() as d:
+            Path(d, "history.json").write_text(json.dumps({"at": NOW.isoformat(), "rows": rows}))
+            p = cc.build(Path(d), NOW)
+        self.assertEqual((p["history_saved"], p["since"]["gci"]["days"], p["since"]["gci"]["since"]), (4, 4, "2026-11-02"))
+
+
+class JudgeRound3Money(unittest.TestCase):
+    """Part 1 items 17 and 18. Made-up deals."""
+    SHEET = [HEAD, ["8100 63rd St", "Buyer", "Closed", 161500, 1234.5, "", "", "2026-09-09", "", ""],
+             ["12 Pecan Chapel Rd", "Listing", "Closed", 300000, 26340, "", "", "2026-08-01", "", ""],
+             ["77 Main St", "Listing", "Under Contract", 200000, 6000, "", "", "2026-12-01", "", ""]]
+
+    def test_commission_matches_a_numbered_street_by_name(self):
+        st = {r["subject"]: r["status"] for r in cc.commission_mail(
+            [{"subject": "Commission for 63rd"}, {"subject": "Commission for 8100 63rd St"}, {"subject": "Commission for 8102 63rd"},
+             {"subject": "Commission for 64th"}, {"subject": "Commission for Pecan Chapel"}, {"subject": "Commission for Main"}],
+            cc.deal_rows(self.SHEET))}
+        self.assertEqual(st, {"Commission for 63rd": "Paid", "Commission for 8100 63rd St": "Paid",
+                              "Commission for 8102 63rd": "No closed deal",  # same street, another house
+                              "Commission for 64th": "No closed deal", "Commission for Pecan Chapel": "Paid",
+                              "Commission for Main": "No closed deal"})  # under contract, not closed
+
+    def test_street_words_keep_numbered_streets_and_drop_suffixes(self):
+        self.assertEqual(cc._street_words("8100 63rd St"), {"63rd"})
+        self.assertEqual(cc._street_words("Commission for 12 Pecan Tree Drive"), {"pecan", "tree"})
+        self.assertFalse(cc._same_street("Commission for St", "8100 63rd St"))
+
+    def test_reviewer_single_digit_house_and_short_suffixes(self):
+        sheet = [HEAD, ["7 Oak Ln", "Buyer", "Closed", 1, 1, "", "", "2026-09-01", "", ""],
+                 ["12 Elm Circle", "Buyer", "Closed", 1, 1, "", "", "2026-09-01", "", ""]]
+        st = {r["subject"]: r["status"] for r in cc.commission_mail(
+            [{"subject": "Commission for 5 Oak Ln"}, {"subject": "Commission for 7 Oak"}, {"subject": "Commission for 12 Elm Cir"}],
+            cc.deal_rows(sheet))}
+        self.assertEqual(st, {"Commission for 5 Oak Ln": "No closed deal", "Commission for 7 Oak": "Paid", "Commission for 12 Elm Cir": "Paid"})
+
+    def test_gci_keeps_the_cents_the_sheet_holds(self):
+        deals = cc.deal_rows(self.SHEET + [["9 Oak Ln", "Buyer", "Closed", 1, "$26,000.00", "", "", "2026-03-01", "", ""]])
+        sc = cc.scorecard(deals, [], [], {}, None, date(2026, 11, 9))
+        self.assertEqual(sc["gci"]["value"], 53574.5)
+        self.assertEqual(cc.deal_rows([HEAD, ["1 A St", "", "Closed", "", "$1,234.50"]])[0]["commission"], 1234.5)
+
+
+class JudgeRound4Dates(unittest.TestCase):
+    """Round 4 item 1: dates written inside the Deals sheet's deadline words. Made-up deals."""
+    T = date(2026, 11, 9)
+
+    def test_text_date_reads_the_due_date_not_the_signed_date(self):
+        td = lambda v: cc.text_date(v, self.T)
+        self.assertEqual(td("Due diligence ends Tue Nov 10, 2026, 11:59 PM CT (extended 1 day by Amendment No. 1, signed Nov 5)"),
+                         {"date": "2026-11-10", "sure": True, "said": "Tue Nov 10, 2026, 11:59 PM", "time": "11:59PM"})
+        self.assertEqual(td("DDI ended Nov 4. Reply to your response due Nov 7")["date"], "2026-11-07")
+        self.assertEqual(td("VA. Appraisal report expected Nov 9. Amendatory clause still needed")["date"], "2026-11-09")
+        self.assertEqual(td("Inspection Jan 6")["date"], "2027-01-06")  # early next year, not last January
+        self.assertIsNone(td("10 days from acceptance"))
+        self.assertEqual(td("Wed Nov 10 deadline"), {"date": None, "sure": False, "said": "Wed Nov 10", "time": None})  # Nov 10 is a Tuesday
+        self.assertFalse(td("Signed Nov 3, sent Nov 4")["sure"])
+
+    def test_checklist_counts_word_dates_and_marks_past_and_check(self):
+        sheet = [HEAD, ["1 Demo Ln", "Buyer", "Under Contract", 1, 1, "Due diligence ends Tue Nov 10, 2026, 11:59 PM CT",
+                        "Appraisal report expected Nov 9", "2026-11-20", "", ""],
+                 ["2 Demo Ln", "Buyer", "Under Contract", 1, 1, "Reply due Nov 7", "Signed Nov 3, sent Nov 4", "2026-11-23", "", ""]]
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(sheet), self.T), [])
+        st = {(c["deal"], x["step"]): (x["state"], x["date"]) for c in cards for x in c["checklist"]}
+        self.assertEqual(st[("1 Demo Ln", "Inspection")], ("upcoming", "2026-11-10"))
+        self.assertEqual(st[("1 Demo Ln", "Appraisal and loan")], ("today", "2026-11-09"))
+        self.assertEqual(st[("2 Demo Ln", "Inspection")], ("past", "2026-11-07"))
+        self.assertEqual(st[("2 Demo Ln", "Appraisal and loan")], ("check", None))
+        dl = cc.contract_deadlines([], cards)
+        soon = cc.in_days(dl, self.T, 6)
+        self.assertEqual([(r["day"], r["what"], r["time"]) for r in soon if r["key"] == cc.deal_key("1 Demo Ln")],
+                         [("2026-11-09", "Appraisal and loan", None), ("2026-11-10", "Inspection", "11:59PM")])
+        self.assertTrue(all(r["day"] >= "2026-11-09" for r in soon))  # the past one is on its card, not in the countdown
+
+
+class JudgeRound4History(unittest.TestCase):
+    def test_a_saved_day_that_no_longer_matches_the_sheet_is_flagged_not_growth(self):
+        deals = cc.deal_rows([HEAD, ["1 Demo Ln", "Buyer", "Closed", 1, 1000, "", "", "2026-09-09", "", ""],
+                              ["2 Demo Ln", "Buyer", "Closed", 1, 500.5, "", "", "2026-10-01", "", ""]])
+        t = date(2026, 11, 9)
+        hist = [{"day": "2026-11-01", "gci": 1500.5, "closings": 2, "leads7": 3},   # matches the sheet
+                {"day": "2026-11-05", "gci": 500.5, "closings": 1, "leads7": 4}]    # the sheet has changed since
+        f = cc.flag_history(hist, deals, t)
+        self.assertNotIn("mismatch", f[0])
+        self.assertEqual(f[1]["mismatch"], ["gci", "closings"])
+        self.assertEqual(cc.sheet_as_of(deals, "2026-09-30"), {"gci": 1000, "closings": 1})
+        row = {"day": "2026-11-09", "gci": 1500.5, "closings": 2, "leads7": 1}
+        self.assertEqual(cc.since_saved(f, row, "closings")["since"], "2026-11-01")  # the flagged day is skipped
+        self.assertEqual(cc.since_saved(f, row, "closings")["value"], 0)
+        self.assertEqual(cc.since_saved(f, row, "leads7")["value"], -2)            # leads are not checked against the sheet
+        self.assertEqual(cc.deltas(f, {**row, "day": "2026-11-12"}, "gci")["7"], 0)  # Nov 5 is flagged, so Nov 1 is used
+        self.assertEqual(cc.flag_history(hist, [], t), hist)  # no sheet read, nothing to compare
+
+
+class JudgeRound4Offers(unittest.TestCase):
+    def test_an_offer_open_until_noon_is_past_its_deadline_at_12_23(self):
+        note = "Seller countered, open until Mon Nov 9 12 PM"
+        at = lambda h, mi: datetime(2026, 11, 9, h, mi, tzinfo=cc.CENTRAL)
+        self.assertFalse(cc.offer_deadline(note, at(11, 59))["expired"])
+        self.assertTrue(cc.offer_deadline(note, at(12, 23))["expired"])
+        self.assertEqual(cc.offer_deadline(note, at(9, 0))["at"], "2026-11-09T12:00:00-06:00")
+        self.assertFalse(cc.offer_deadline("open until Nov 9", at(23, 0))["expired"])  # no time: open all that day
+        self.assertEqual(cc._clock("11:59PM"), (23, 59))
+        self.assertEqual(cc._clock("12 AM"), (0, 0))
+        cards = cc.deal_cards(cc.deal_rows([HEAD, ["1 Demo Ln", "Buyer", "Offer", 1, 1, "", "", "", note, ""]]), date(2026, 11, 9), at(12, 23))
+        self.assertTrue(cards[0]["offer"]["expired"])
+
+
+class JudgeRound4Workouts(unittest.TestCase):
+    def test_the_plan_is_five_a_week_at_his_times_whatever_the_tab_says(self):
+        tab = [{"day": d, "focus": f, "exercises": "x"} for d, f in (("Mon", "Upper push"), ("Wed", "Walk or rest"), ("Sat", "Optional full body"))]
+        log = [{"date": "2026-11-09", "minutes": "45"}, {"date": "2026-11-08", "minutes": "20"}]  # Sun is not planned
+        W = cc.workouts({"plan": tab, "log": log}, [], date(2026, 11, 9))
+        self.assertEqual((W["planned"], W["goal"], W["done_week"]), (5, 5, 1))
+        wk = {w["day"]: w for w in W["week"]}
+        self.assertEqual((wk["Mon"]["focus"], wk["Mon"]["time"]), ("Upper push", "6 AM"))
+        self.assertEqual((wk["Wed"]["focus"], wk["Wed"]["time"]), ("Weights", "4 PM"))  # the tab's walk or rest is not his plan
+        self.assertEqual((wk["Sat"]["focus"], wk["Sat"]["planned"]), ("Rest", False))
+        self.assertEqual(cc.workouts({"plan": [], "log": []}, [], date(2026, 11, 9), {"Mon": "7 AM"})["planned"], 1)
+
+
+class JudgeRound5(unittest.TestCase):
+    def test_a_later_counter_replaces_an_offer_deadline(self):
+        now = datetime(2026, 11, 9, 14, 0, tzinfo=cc.CENTRAL)
+        o = cc.offer_deadline("Seller countered at $2 as is, open until Fri Nov 6 5 PM. Buyer countered at $1, signed Nov 6. No seller answer found yet", now)
+        self.assertEqual((o["superseded"], o["expired"], o["date"]), (True, False, None))
+        sheet = [HEAD, ["700 Fake Rd", "Buyer", "Offer", "1", "", "", "", "", "Seller countered, open until Fri Nov 6 5 PM. Buyer countered at $1, signed Nov 6. No answer yet", ""]]
+        self.assertEqual(cc.deal_cards(cc.deal_rows(sheet), now.date(), now)[0]["next"], "Buyer countered at $1, signed Nov 6")
+        # a counter in the same sentence as the deadline is still the old offer: it stays expired
+        self.assertTrue(cc.offer_deadline("Fake offer expired Nov 4 9 AM, counter still waiting on signatures. Listed at $1", now)["expired"])
+
+    def test_a_weekday_that_does_not_match_the_date_is_flagged(self):
+        now = datetime(2026, 11, 9, 14, 0, tzinfo=cc.CENTRAL)
+        self.assertEqual(cc.offer_deadline("Good until Sun Nov 9 12 PM, waiting", now)["wrong_weekday"], "Sun")
+        self.assertIsNone(cc.offer_deadline("Good until Mon Nov 9 12 PM, waiting", now)["wrong_weekday"])
+
+    def test_a_date_in_the_words_that_has_gone_by_is_overdue(self):
+        with tempfile.TemporaryDirectory() as d:
+            sheet = [HEAD, ["100 Oak Ln", "Buyer", "Under Contract", "1", "1", "DDI ended Nov 4. Buyer's reply to your response due Nov 7", "", "2026-11-23", "", ""]]
+            Path(d, "deals.json").write_text(json.dumps({"at": NOW.isoformat(), "rows": sheet}))
+            p = cc.build(Path(d), datetime(2026, 11, 9, 14, 0, tzinfo=cc.CENTRAL))
+        self.assertEqual([(r["deal"], r["day"], r["what"]) for r in p["deadlines"]["overdue"]], [("100 Oak Ln", "2026-11-07", "Inspection")])
+
+    def test_an_invite_not_accepted_is_not_an_appointment(self):
+        evs = cc.cal_events([ev("Client meeting", "2026-11-06T13:00:00-06:00", "2026-11-06T14:00:00-06:00", invite=True),
+                             ev("Showing", "2026-11-06T10:00:00-06:00", "2026-11-06T11:00:00-06:00")], [])
+        a = cc.scorecard([], evs, [], {}, None, T)["appts7"]
+        self.assertEqual((a["value"], a["invites"]), (1, 1))
+
+    def test_workouts_says_where_the_tab_differs_from_the_plan(self):
+        plan = [{"day": "Wed", "focus": "Walk or rest"}, {"day": "Sat", "focus": "Optional full body"}, {"day": "Mon", "focus": "Upper push"}, {"day": "Sun", "focus": "Rest"}]
+        w = cc.workouts({"plan": plan, "log": []}, [], date(2026, 11, 9))
+        self.assertEqual(w["tab_differs"], ["Wed: Walk or rest", "Sat: Optional full body"])
+
+
+class Growth(unittest.TestCase):
+    SALES = [{"close": "2024-03-01", "address": "1 Made Up Ln", "side": "Buyer", "price": 100000, "type": "Residential"},
+             {"close": "2024-12-20", "address": "2 Made Up Ln", "side": "Both", "price": 300000, "type": "Residential"},
+             {"close": "2025-06-01", "address": "3 Made Up Ln", "side": "Listing", "price": "$200,000", "type": "Land"},
+             {"close": "2025-07-01", "address": "9 Rent Rd", "side": "Listing", "price": 2400, "type": "Residential Lease"},
+             {"close": "2025-12-01", "address": "400 Ash Court", "side": "Buyer", "price": 200000, "type": "Residential"},
+             {"close": "2026-03-01", "address": "300 Pine Drive, Zachary", "side": "Listing", "price": 400000, "type": "Residential"},
+             {"close": "2026-12-25", "address": "5 Not Yet St", "side": "Buyer", "price": 1, "type": "Residential"}]
+
+    def setUp(self):
+        self.g = cc.growth(self.SALES, cc.deal_rows(SHEET), T)
+        self.y = {r["year"]: r for r in self.g["years"]}
+
+    def test_years_sides_and_leases(self):
+        self.assertEqual([(y["year"], y["deals"], y["sides"], y["volume"]) for y in self.g["years"]],
+                         [(2024, 2, 3, 400000), (2025, 2, 2, 400000), (2026, 1, 1, 400000)])
+        self.assertEqual(self.y[2024]["side_volume"], 700000)
+        self.assertEqual(self.g["leases"], 1)
+        self.assertEqual(self.g["totals"], {"deals": 5, "sides": 6, "volume": 1200000, "side_volume": 1500000})
+
+    def test_sheet_deals_already_in_history_count_once(self):
+        self.assertEqual(self.g["from_sheet"], 0)  # 300 Pine Dr and 400 Ash Ct match the history by street and year
+        g = cc.growth(self.SALES[:3], cc.deal_rows(SHEET), T)
+        self.assertEqual(g["from_sheet"], 2)
+        self.assertEqual(g["totals"]["deals"], 5)
+
+    def test_this_year_compares_the_same_dates(self):
+        self.assertEqual(self.g["ytd"], {"deals": 1, "volume": 400000, "last_deals": 1, "last_volume": 200000})
+        self.assertEqual(self.y[2026]["yoy_volume"], 100.0)   # 400,000 against 200,000 by November 5 last year
+        self.assertEqual(self.y[2025]["yoy_volume"], 0.0)     # full year against full year
+        self.assertIsNone(self.y[2024]["yoy_deals"])
+        self.assertTrue(self.y[2024]["partial"] and self.y[2026]["partial"] and not self.y[2025]["partial"])
+
+    def test_year_end_estimates(self):
+        p = self.g["projection"]
+        self.assertEqual(p["deals"]["even"], round(1 / (309 / 365)))
+        self.assertEqual(p["volume"]["seasonal"], round(400000 / ((100000 / 400000 + 200000 / 400000) / 2)))
+        self.assertIsNone(self.g["cagr"])  # one full year is not a trend
+
+    def test_a_sale_with_no_date_is_listed_and_counted_outside_the_years(self):
+        g = cc.growth(self.SALES + [{"close": "", "address": "77 Made Up Blank", "side": "", "price": "", "source": "FSBO"}], cc.deal_rows(SHEET), T)
+        self.assertEqual(g["undated"], 1)
+        self.assertEqual(g["totals"], self.g["totals"])
+        self.assertEqual(g["sales"][0], {"day": None, "address": "77 Made Up Blank", "side": None, "price": None, "type": None, "source": "FSBO"})
+        self.assertEqual(len(g["sales"]), 7)  # six past rows with the lease, plus the blank one; the future row is left out
+        self.assertEqual(g["sales"][1]["day"], "2026-03-01")
+
+    def test_scorecard_closings_count_the_whole_record(self):
+        deals = cc.deal_rows(SHEET)
+        self.assertEqual(cc.scorecard(deals, [], [], {}, None, T)["closings"]["value"], 1)       # sheet alone: 300 Pine Dr
+        sc = cc.scorecard(deals, [], [], {}, None, T, self.SALES + [{"close": "2026-05-05", "address": "8 Made Up Ct", "price": 1, "type": "Land"},
+                                                                  {"close": "2026-06-06", "address": "9 Rent Rd", "price": 2000, "type": "Residential Lease"}])
+        self.assertEqual((sc["closings"]["value"], sc["closings"]["on_sheet"]), (2, 1))          # Pine Dr once, the land sale, no lease, no future sale
+        self.assertEqual(sc["gci"]["n"], 1)                                                       # GCI still counts the sheet's deals only
+        self.assertEqual(cc.sheet_as_of(deals, "2026-04-01", self.SALES)["closings"], 1)
+        saved = [{"day": "2026-11-01", "gci": 12000.0, "closings": 1}]
+        self.assertNotIn("mismatch", cc.flag_history(saved, deals, T, self.SALES)[0])
+
+    def test_gci_estimate_fills_only_what_has_no_commission(self):
+        head = SHEET[:1] + [["300 Pine Dr", "Listing", "Closed", "400,000", "12,000", "", "", "2026-03-01", "", ""],
+                            ["700 Blank Rd", "Both", "Closed", "100000", "", "", "", "2026-04-01", "", ""]]
+        deals = cc.deal_rows(head)
+        sales = self.SALES + [{"close": "2026-05-05", "address": "8 Made Up Ct", "side": "Buyer", "price": 200000, "type": "Land"},
+                              {"close": "2026-06-06", "address": "9 Rent Rd", "price": 2000, "type": "Residential Lease"}]
+        self.assertEqual(cc.scorecard(deals, [], [], {}, None, T, sales)["gci"]["value"], 12000)   # no rate, nothing estimated
+        self.assertEqual(cc.scorecard(deals, [], [], {}, None, T, sales)["gci"]["blank"], 1)
+        g = cc.scorecard(deals, [], [], {}, None, T, sales, 0.025)["gci"]
+        # 700 Blank Rd: 2.5% of 100,000 on two sides. 8 Made Up Ct: 2.5% of 200,000. Pine Dr keeps its real 12,000.
+        self.assertEqual((g["value"], g["sheet_value"], g["est"], g["blank"]), (22000, 12000, {"value": 10000, "n": 2, "rate": 0.025}, 0))
+        self.assertEqual(cc.sheet_as_of(deals, "2026-04-15", sales, 0.025)["gci"], 17000)
+        paid = cc.scorecard(deals, [], [], {}, {"value": 5000}, T, sales, 0.025)["gci"]
+        self.assertEqual((paid["value"], paid["est"]), (5000, None))                              # a KW paid figure is never padded
+
+    def test_tax_savings_is_the_rate_times_the_take_after_cap_and_royalty(self):
+        sheet = SHEET[:1] + [["1 Tax Ln", "Buyer", "Closed", "", "40000", "", "", "2026-01-10", "", ""],
+                             ["2 Tax Ln", "Buyer", "Closed", "", "60000", "", "", "2026-06-10", "", ""],
+                             ["3 Tax Ln", "Buyer", "Closed", "400000", "", "", "", "2026-11-03", "", ""]]
+        deals = cc.deal_rows(sheet)
+        self.assertIsNone(cc.tax_savings([], deals, {}, T, 0.025))
+        flat = cc.tax_savings([], deals, {"tax_rate": 20}, T, 0.025)                 # no cap set: 30% off everything, no royalty
+        self.assertEqual((flat["gci"], flat["company"], flat["royalty"], flat["take"], flat["set_aside"]), (110000, 33000, 0, 77000, 15400))
+        self.assertEqual((flat["n"], flat["n_est"], flat["est_gci"]), (3, 1, 10000))
+        g = {"tax_rate": 20, "cap_amount": 21000, "royalty": 3000, "cap_start": "2026-11-01"}
+        t = cc.tax_savings([], deals, g, T, 0.025)
+        # Cap year from Nov 1, 2025: 12,000 then 9,000 company dollar (cap reached), royalty 2,400 then 600.
+        # New cap year from Nov 1, 2026: 3,000 company dollar and 600 royalty on the 10,000 estimate.
+        self.assertEqual((t["company"], t["royalty"], t["take"], t["set_aside"]), (24000, 3600, 82400, 16480))
+        self.assertEqual(cc.tax_savings([], deals, g, T)["gci"], 100000)             # no estimate rate: real commission only
+        self.assertEqual(cc.clean_goals({"tax_rate": 18}), {"tax_rate": 18})
+
+    def test_commission_rows_add_up_to_the_gci(self):
+        deals = cc.deal_rows(SHEET[:1] + [["300 Pine Dr", "Listing", "Closed", "400,000", "12,000", "", "", "2026-03-01", "", ""],
+                                          ["700 Blank Rd", "Both", "Closed", "100000", "", "", "", "2026-04-01", "", ""]])
+        sales = self.SALES + [{"close": "2026-05-05", "address": "8 Made Up Ct", "side": "Buyer", "price": 200000, "type": "Land"}]
+        rows = [r for r in cc.commissions(sales, deals, 0.025) if r["day"][:4] == "2026" and r["day"] <= T.isoformat()]
+        self.assertEqual(sum(r["amount"] for r in rows), cc.scorecard(deals, [], [], {}, None, T, sales, 0.025)["gci"]["value"])
+
+    def test_no_sales(self):
+        self.assertIsNone(cc.growth([], [], T))
+        self.assertIsNone(cc.growth(None, cc.deal_rows([HEAD]), T))
 
 
 if __name__ == "__main__":

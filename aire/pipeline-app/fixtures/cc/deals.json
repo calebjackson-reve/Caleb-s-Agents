@@ -1,7 +1,7 @@
 {"at": "{{NOW-20}}", "source": "AIRE Deals sheet (demo, made up)", "error": null, "rows": [
  ["Deal","Side","Status","Price","Commission","Inspection","Appraisal / financing","Act of sale","Check","Source","Stage since"],
  ["1418 Magnolia Bend","Buyer","Under Contract","$318,000","$9,540","{{D-4}}","{{D+6}}","{{D+14}}","Inspection response signed. Waiting on appraisal","demo contract","{{D-12}}"],
- ["77 Cypress Hollow","Listing","Under Contract","$465,000","","{{D-2}}","{{D+9}}","{{D+26}}","Commission blank on the sheet. Needs the listing agreement","demo","{{D-6}}"],
+ ["77 Cypress Hollow","Listing","Under Contract","$465,000","","{{D-2}}","{{D+9}}","{{D+26}}","No commission on the sheet yet. Needs the listing agreement","demo","{{D-6}}"],
  ["902 Bayou Ridge","Listing","Active Listing","$389,900","$11,697","","","","Price review due next week","demo","{{D-31}}"],
  ["5 Live Oak Court","Buyer","Offer","$255,000","$7,650","","","","Offer out, open until Friday","demo","{{D-1}}"],
  ["310 Sugar Mill Way","Listing","Closed","$540,000","$16,200","","","{{Y-03-14}}","","demo",""],

@@ -117,6 +117,24 @@ def cmd_auth() -> None:
 
 # ---------------- mappers: API answers to cached rows (pure, tested) ----------------
 
+def crm_feed() -> dict:
+    """The CRM feed, so the Scorecard history and the alerts count the same leads and deals as the screen."""
+    try:
+        return json.loads((HERE.parent / "crm" / "feed.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def is_invite(e: dict) -> bool:
+    """Someone else's event Caleb has not said yes to. It shows on the calendar but is not booked time."""
+    if (e.get("organizer") or {}).get("self") or (e.get("creator") or {}).get("self"):
+        return False
+    me = next((a for a in e.get("attendees") or [] if a.get("self")), None)
+    if me is None:
+        return bool(e.get("organizer") or e.get("creator"))
+    return me.get("responseStatus") != "accepted"
+
+
 def calendar_rows(items: list[dict]) -> list[dict]:
     out = []
     for e in items:
@@ -125,7 +143,7 @@ def calendar_rows(items: list[dict]) -> list[dict]:
                     "start": st.get("dateTime") or st.get("date") or "", "end": en.get("dateTime") or en.get("date") or "",
                     "allDay": "dateTime" not in st, "eventType": e.get("eventType") or "default",
                     "creator": (e.get("creator") or {}).get("email") or "", "free": e.get("transparency") == "transparent",
-                    "link": e.get("htmlLink") or ""})
+                    "invite": is_invite(e), "link": e.get("htmlLink") or ""})
     return out
 
 
@@ -253,7 +271,9 @@ def fetch_deals(svc, cfg, now):
     sid = cfg.get("deals_sheet_id")
     if not sid:
         raise RuntimeError("no deals_sheet_id in out/cc/config.json")
-    return svc["sheets"].spreadsheets().values().get(spreadsheetId=sid, range="Deals!A1:L300").execute().get("values") or []
+    return svc["sheets"].spreadsheets().values().get(spreadsheetId=sid, range="Deals!A1:L300",
+        # The numbers as stored (1234.5), not as shown ($1,235), so cents survive. Dates stay as the sheet shows them.
+        valueRenderOption="UNFORMATTED_VALUE", dateTimeRenderOption="FORMATTED_STRING").execute().get("values") or []
 
 
 # ---------------- public reads: news and market (no account, read only) ----------------
@@ -448,7 +468,9 @@ def run_read(name: str, svc, cfg: dict, now: datetime, folder: Path = OUT) -> di
     try:
         rows = FETCH[name](svc, cfg, now)
         doc = {"at": stamp, "tried_at": stamp, "source": READS[name][1], "error": None, "rows": rows}
-        result = {"ok": True, "rows": len(rows)}
+        # A read with several tabs (Life, Workouts) is a dict: count the rows in each tab, not the tabs.
+        parts = {k: len(v) for k, v in rows.items() if isinstance(v, list)} if isinstance(rows, dict) else None
+        result = {"ok": True, "rows": sum(parts.values()) if parts else len(rows), **({"parts": parts} if parts else {})}
     except Exception as e:  # any failure is shown on screen, never hidden
         err = f"{type(e).__name__}: {str(e)[:160]}"
         doc = {**prev, "tried_at": stamp, "source": READS[name][1], "error": err, "rows": prev.get("rows") or []}
@@ -510,7 +532,7 @@ def sync_history(svc, cfg, now, folder: Path = OUT) -> dict:
     added = False
     today = now.astimezone(cc.CENTRAL)
     if today.hour >= HISTORY_HOUR and today.date().isoformat() not in days:
-        row = cc.history_row(cc.build(folder, now)["scorecard"], today.date())
+        row = cc.history_row(cc.build(folder, now, feed=crm_feed())["scorecard"], today.date())
         sh.spreadsheets().values().append(spreadsheetId=sid, range=f"'{HISTORY_TAB}'!A1", valueInputOption="RAW",
                                           insertDataOption="INSERT_ROWS", body={"values": [[row[c] for c in HISTORY_COLS]]}).execute()
         vals.append([row[c] for c in HISTORY_COLS])
@@ -555,7 +577,7 @@ def run_pass(now: datetime | None = None, force: bool = False, svc=None, folder:
 def alert(now: datetime, folder: Path, status: dict) -> None:
     """New leads, deadlines within 24 hours and failed reads become phone alerts (push.py). Never stops the sync."""
     try:
-        status["results"]["alerts"] = push.run(cc.build(folder, now), now, folder, subs_path=folder.parent / "push-subs.json")
+        status["results"]["alerts"] = push.run(cc.build(folder, now, feed=crm_feed()), now, folder, subs_path=folder.parent / "push-subs.json")
     except Exception as e:
         status["results"]["alerts"] = {"ok": False, "error": f"{type(e).__name__}: {str(e)[:160]}"}
     write_doc("sync-status", status, folder)
