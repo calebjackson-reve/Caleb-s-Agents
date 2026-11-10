@@ -933,6 +933,8 @@ class CRM:
                 deal_by.setdefault(str(d["person_id"]), d.get("stage", ""))
         rows, counts = [], {t: 0 for t in heat_mod.TEMPS}
         versus = {"same": 0, "hotter_than_band": 0, "cooler_than_band": 0, "no_band": 0}
+        # The sheet's band down the side, heat across: where the 'cooler' people actually sit.
+        cross = {b: {t: 0 for t in heat_mod.TEMPS} for b in list(heat_mod.TEMPS) + ["none"]}
         dated = any(v.get("dated") for v in signals.values())
         for c in self.contacts():
             sig = signals.get(c["person_id"], {})
@@ -947,6 +949,7 @@ class CRM:
                 continue
             counts[h["temp"]] += 1
             band = norm_band(c.get("band"))
+            cross[band or "none"][h["temp"]] += 1
             if not band:
                 versus["no_band"] += 1
             else:
@@ -961,7 +964,7 @@ class CRM:
                              "last_touch": c.get("Last_Touch", ""), "next_action": c.get("Next_Action", "")})
         rows.sort(key=lambda r: (-r["heat"], r["days_quiet"] if r["days_quiet"] is not None else 99999, r["display"]))
         return {"hot": [r for r in rows if r["temp"] == "hot"], "warm": [r for r in rows if r["temp"] == "warm"],
-                "counts": counts, "versus_band": versus, "scored": sum(counts.values()),
+                "counts": counts, "versus_band": versus, "band_by_heat": cross, "scored": sum(counts.values()),
                 # False means the signals file predates dated intent words, so intent is not being counted yet.
                 "dated_intent": dated, "thresholds": dict(heat_mod.THRESHOLDS)}
 
@@ -2103,6 +2106,8 @@ def run_tests() -> int:
     check("feed carries label_review and people", {"label_review", "people"} <= set(c4.feed(as_of, sig4)))
     hf = c4.feed(as_of, sig4)["heat"]
     ids = {x["person_id"] for x in c4.contacts() if (x.get("Do_Not_Contact") or "").upper() != "YES" and (x.get("Type") or "").lower() not in ("vendor", "agent", "lender", "recruit")}
+    check("the band by heat table adds up to everyone scored", sum(sum(r.values()) for r in hf["band_by_heat"].values()) == hf["scored"]
+          and sum(hf["band_by_heat"]["none"].values()) == hf["versus_band"]["no_band"])
     check("heat scores everyone who may be contacted and nobody else", hf["scored"] == len(ids) == sum(hf["counts"].values())
           and sum(hf["versus_band"].values()) == hf["scored"] and "5" not in {r["person_id"] for r in hf["hot"] + hf["warm"]})
     check("the hot and warm lists are sorted hottest first and carry their reasons",
@@ -2285,12 +2290,17 @@ def main(argv=None) -> int:
         sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
         h = crm.heat(as_of, sig)
         if a.json:
-            print(json.dumps({"ok": True, "result": {k: h[k] for k in ("counts", "versus_band", "scored", "dated_intent", "thresholds")}}))
+            print(json.dumps({"ok": True, "result": {k: h[k] for k in ("counts", "versus_band", "band_by_heat", "scored", "dated_intent", "thresholds")}}))
         else:
             print(f"scored {h['scored']} people who may be contacted, as of {as_of.isoformat()}")
             print("by heat:      " + ", ".join(f"{t} {n}" for t, n in h["counts"].items()))
             v = h["versus_band"]
             print(f"next to the sheet's band: same {v['same']}, heat says hotter {v['hotter_than_band']}, heat says cooler {v['cooler_than_band']}, no band on the sheet {v['no_band']}")
+            temps = list(h["counts"])
+            print("sheet band down, heat across:")
+            print(f"  {'':10}" + "".join(f"{t:>10}" for t in temps))
+            for b, row in h["band_by_heat"].items():
+                print(f"  {b:10}" + "".join(f"{row[t]:>10}" for t in temps))
             if not h["dated_intent"]:
                 print("note: the signals file has no dated intent words yet. Run the feed refresh once so buying and selling talk is counted.")
             if a.names:
