@@ -933,6 +933,16 @@ class CRM:
                         "has_phone": bool(c.get("primary_phone")), "has_email": bool(c.get("email"))})
         return out
 
+    def no_text_consent(self) -> list[str]:
+        """person_ids whose newest website form said not to text them (lead_note writes the line). Pipeline refuses
+        a text to anyone here. Someone with no form on file is not listed: no answer is not a no. Read only."""
+        last: dict[str, str] = {}
+        for n in self.notes():
+            m = re.search(r"texting consent: (yes|NO)", n.get("Note", "") or "")
+            if m and n.get("person_id"):
+                last[str(n["person_id"])] = m.group(1)
+        return sorted(pid for pid, v in last.items() if v == "NO")
+
     def new_leads(self, days: int = 14, as_of: date | None = None) -> list[dict]:
         as_of = as_of or today()
         cutoff = (as_of - timedelta(days=days)).isoformat()
@@ -1123,6 +1133,7 @@ class CRM:
                        "deals_live": len(deals)},
             "touches_due": due, "tasks": sorted(tasks, key=lambda t: t["due"] or "9999"), "deals": deals,
             "new_leads": self.new_leads(as_of=as_of),
+            "no_text_consent": self.no_text_consent(),
             "partners": self.partners(as_of),
             "label_review": self.label_review(as_of, signals),
             "people": self.people(signals),
@@ -1992,6 +2003,12 @@ def run_tests() -> int:
     check("every processed row gets a mark so it never imports twice", set(rep["marks"]) == {0, 1, 2, 3})
     check("texting consent lands in the note", any("consent: yes" in n.get("Note", "") for n in c3.notes())
           and any("do not text" in n.get("Note", "") for n in c3.notes()))
+    said_no = c3.no_text_consent()
+    check("a form without the consent box puts that person on the no-text list, a yes does not",
+          known["person_id"] in said_no and c3.contacts()[-1]["person_id"] not in said_no
+          and c3.feed(as_of)["no_text_consent"] == said_no)
+    c3.note(known["person_id"], lead_note({"at": "2026-10-30", "kind": "contact", "consent": "yes"}))
+    check("a later form with the box checked takes them back off", known["person_id"] not in c3.no_text_consent())
     rep2 = import_website_leads(c3, [dict(leads[i], **{LEAD_MARK: rep["marks"].get(i, "x")}) for i in range(len(leads))], as_of)
     check("a second run over marked rows does nothing", rep2["created"] + rep2["matched"] + rep2["dnc"] + rep2["skipped"] == 0)
 

@@ -61,14 +61,55 @@ function textWhen(at) {
   return iso === todayISO() ? t : `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${t}`;
 }
 const TEXT_STATES = { delivered: ['ok', 'Texted', 'delivered'], sent: ['ok', 'Texted', 'sent'], pending: ['wait', 'Texted', 'checking delivery'], unknown: ['wait', 'Texted', 'checking delivery'], error: ['bad', 'Text failed', 'not delivered'], 'dry-run': ['dry', 'Dry run', 'nothing sent'] };
+// ---- Grok bridge: a call or a hard draft is a job handed to Grok. Nothing dials until Caleb taps Grok's own Call card.
+function grokJob(id) { return (((S.data && S.data.bridge) || {}).jobs || {})[id]; }
+function grokText(j) {
+  const call = j.job_type === 'call', when = textWhen(j.at);
+  switch (j.state) {
+    case 'dry-run': return `Dry run ${when}: ${call ? 'call' : 'hard draft'} job logged, nothing left the Mac`;
+    case 'waiting': case 'dial_card_shown': return call ? `Call asked ${when}: open Grok and tap the Call card within 30 minutes` : `Hard draft asked ${when}: Grok is writing it`;
+    case 'completed': return `Call ${when}: ${[j.outcome, j.summary].filter(Boolean).join('. ') || 'done'}${j.touch_error ? ' (not logged in the CRM: ' + j.touch_error + ')' : ''}`;
+    case 'draft_ready': return `Grok's draft is ready ${when}`;
+    case 'expired': return `Call ${when} expired: the card was not tapped. No call was made.`;
+    case 'canceled': return `Call ${when} canceled. No call was made.`;
+    case 'post_failed': return `Grok did not take the job ${when}`;
+    default: return `${call ? 'Call' : 'Hard draft'} ${when} failed${j.summary ? ': ' + j.summary : ''}`;
+  }
+}
+function grokStatus(id) {
+  const j = grokJob(id); if (!j) return '';
+  const cls = { completed: 'ok', draft_ready: 'ok', waiting: 'wait', dial_card_shown: 'wait', 'dry-run': 'wait' }[j.state] || 'bad';
+  return `<span class="txs ${cls}" title="${esc(j.ask || '')}"><i></i>${esc(grokText(j))}</span>`;
+}
+function grokBlock(c, row) {
+  const b = (S.data && S.data.bridge) || {}, j = grokJob(c.person_id), dry = S.data.demo || b.caller !== 'live';
+  const opts = Object.entries(b.purposes || {}).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
+  const phone = row.phone || (c.kind === 'text' ? c.to : '');
+  return `<div class="field"><label>GROK · CALL OR HARD DRAFT${dry ? ' · dry run' : ''}</label>
+    ${j ? `<div class="bubble note">${esc(grokText(j))}${j.draft_text ? `<br>${esc(j.draft_text)}<br><button class="ghost-btn" onclick="useGrokDraft()">Use this draft</button>` : ''}</div>` : ''}
+    <input id="g-ask" placeholder="One line: what the call or the draft has to do">
+    <select id="g-purpose" title="What the call is for">${opts}</select>
+    <div class="hint"><span>${b.calls_24h || 0} of ${b.calls_cap || 10} calls in 24h</span><span>${b.drafts_today || 0} of ${b.drafts_cap || 10} hard drafts today</span></div>
+    <div class="acts"><button onclick="grokCall()" ${phone ? '' : 'disabled'} title="Grok shows you a Call card. Nothing dials until you tap it.">☎ Call through Grok</button><button onclick="grokDraft()" title="Grok writes it. You still press SEND here.">✎ Hard draft from Grok</button></div></div>`;
+}
+async function grokSend(path, body, okText) {
+  const r = await api(path, body);
+  if (!r.ok) { toast('err', 'NOT ASKED', r.error); return; }
+  toast(r.result.status === 'posted' ? 'ok' : 'warn', r.result.status === 'posted' ? 'GROK' : 'DRY RUN', r.result.status === 'posted' ? okText : 'job logged, nothing left the Mac');
+  const keep = $('#c-body') ? $('#c-body').value : ''; await load(); if (S.compose) { S.compose.body = keep; renderDrawer(); }
+}
+function grokCall() { const c = S.compose, row = c.row || {}; return grokSend('/api/call', { person_id: c.person_id, display: c.name, to: row.phone || c.to, purpose: $('#g-purpose').value, objective: $('#g-ask').value, context: c.next_action || row.next_action || '' }, 'Open Grok and tap the Call card within 30 minutes.'); }
+function grokDraft() { const c = S.compose, row = c.row || {}; return grokSend('/api/draft/escalate', { person_id: c.person_id, display: c.name, instructions: $('#g-ask').value, context: [c.next_action || row.next_action || '', ...(c.last_messages || [])].filter(Boolean).join(' | ').slice(0, 1200) }, 'Grok is writing it. It shows here when it is ready.'); }
+function useGrokDraft() { const j = grokJob(S.compose.person_id); if (j && j.draft_text) { $('#c-body').value = j.draft_text; $('#c-count').textContent = j.draft_text.length + ' chars'; } }
+function grokPending() { const now = Date.now(); return Object.values(((S.data && S.data.bridge) || {}).jobs || {}).some(j => (j.state === 'waiting' || j.state === 'dial_card_shown') && now - new Date(j.at) < 45 * 60e3); }
 function textStatus(id) {
-  const t = lastText(id); if (!t) return '';
+  const t = lastText(id); if (!t) return grokStatus(id);
   const [cls, lead, tail] = TEXT_STATES[t.delivery] || TEXT_STATES.sent;
-  return `<span class="txs ${cls}${S.justTexted === id ? ' flash' : ''}" title="${esc(t.detail || '')}"><i></i>${lead} ${esc(textWhen(t.at))} · ${tail}</span>`;
+  return grokStatus(id) + `<span class="txs ${cls}${S.justTexted === id ? ' flash' : ''}" title="${esc(t.detail || '')}"><i></i>${lead} ${esc(textWhen(t.at))} · ${tail}</span>`;
 }
 function textPending() {
   const now = Date.now();
-  return Object.values((S.data && S.data.last_texts) || {}).some(t => { const age = now - new Date(t.at); return ((t.delivery === 'pending' || t.delivery === 'unknown') && age < 30 * 60e3) || (t.delivery === 'sent' && age < 3 * 60e3); });
+  return grokPending() || Object.values((S.data && S.data.last_texts) || {}).some(t => { const age = now - new Date(t.at); return ((t.delivery === 'pending' || t.delivery === 'unknown') && age < 30 * 60e3) || (t.delivery === 'sent' && age < 3 * 60e3); });
 }
 function watchDelivery() {
   if (S.deliveryTimer || !textPending()) return;
@@ -385,6 +426,7 @@ function renderDrawer() {
     <div class="field"><label>TO</label><input id="c-to" value="${esc(to)}" ${to ? 'readonly' : ''} placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}"></div>
     ${c.kind === 'email' ? `<div class="field"><label>SUBJECT</label><input id="c-subject" value="${esc(c.subject || '')}" placeholder="Subject"></div>` : ''}
     <div class="field"><label>${c.kind === 'text' ? 'TEXT' : 'EMAIL'} DRAFT${c.reply ? ' · write it yourself, they texted last' : c.pool ? ' · from the ' + esc(c.pool) + ' pool' : ''}</label><textarea id="c-body" placeholder="${c.reply ? 'Answer what they said.' : 'Write the message.'}">${esc(c.body || '')}</textarea><div class="hint"><span id="c-count">${(c.body || '').length} chars</span><span>${cap} ${c.kind}${cap === 1 ? '' : 's'} left today</span></div></div>
+    ${grokBlock(c, row)}
   </div>
   <div class="dfoot"><button class="send-btn ${dry ? 'dry' : ''}" id="send" onclick="sendNow()">${dry ? 'DRY RUN SEND' : 'SEND'}</button><button class="ghost-btn" onclick="touchFromCompose()">✓ Touched, no message</button><span class="spacer"></span><span class="mono" style="font-size:9px;color:var(--dim)">${pos}</span><button class="ghost-btn" onclick="nextInQueue()">Skip ›</button></div></section>`;
   const ta = $('#c-body'); ta.addEventListener('input', () => { $('#c-count').textContent = ta.value.length + ' chars'; }); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);

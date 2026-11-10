@@ -2,6 +2,50 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-10, later: the Grok bridge, dry
+
+**Confirmed by Caleb**
+- Passed on Grok's word that its Pipeline bridge webhook routine is ready, takes only `call` and `hard_draft` jobs, and writes one result file per `job_id`.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `pipeline-app/bridge.py`: builds the job in the contract's shape, checks Grok's limits before it leaves, posts it, reads result files. 28 offline checks.
+- `pipeline-app/app.py`: `/api/call` and `/api/draft/escalate`, through Do Not Contact, quiet hours and the live host. A finished call is logged once as a touch. A card nobody tapped reads expired. 14 new checks, 113 in all, 0 failures.
+- The compose box has a GROK block: Call through Grok, Hard draft from Grok, Use this draft. Each card shows the job's state.
+- Demo screenshots on made up people: `screenshots/20-grok-call-dry-run.png`, `21-grok-hard-draft.png`.
+
+**Not verified**
+- No job has been posted to Grok's real webhook. The cloud session has no URL or key and should not. How the key and header are sent is a best reading of the three values Grok named.
+- Nothing has run on the mini.
+
+**Needs Caleb**
+- On the mini, in `~/.aire/pipeline.env`: `PIPELINE_GROK_WEBHOOK_URL`, `PIPELINE_GROK_AUTH_HEADER` (and `PIPELINE_GROK_WEBHOOK_KEY` if the panel shows the key apart from the header), `PIPELINE_TRANSFER_TO`. Leave `PIPELINE_CALLER` off until he wants the first real job.
+- Either register the mini with Grok, or install Google Drive for desktop on the mini and point `PIPELINE_BRIDGE_RESULTS` at the Pipeline Bridge Results folder. Without one of those, results cannot reach Pipeline.
+
+## 2026-11-10: Grok bridge plan, and three new send gates
+
+**Confirmed by Caleb**
+- Pipeline stays the one CRM screen and sender. Grok adds approved phone calls and the harder drafts through a webhook. The 2026-10-19 rule keeping Grok to reading and briefs is lifted. Every text and call still waits for his press. Obsidian is the notes layer, the Sheet stays the record.
+- "Live Pipeline is the Mac mini." The MacBook Air is a second checkout and never sends.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `pipeline-app/CONTRACT-grok-bridge.md`: the build contract, with Grok's job and result format and its calling limits.
+- `STACK.md`: Grok row rewritten, Obsidian row added, one live host noted, plain code and Grok added to the model table.
+- `crm/crm.py`: the feed carries `no_text_consent`, the people whose newest website form left the texting box unchecked. 2 new checks, 153 in all (`python3 aire/crm/crm.py --test`).
+- `pipeline-app/app.py` `State.send()`: a text to someone on that list is refused. Nothing goes between 8 pm and 8 am Central, except a text back to someone waiting on a reply. `PIPELINE_SENDER=live` only works on the Mac named in `PIPELINE_LIVE_HOST`. 13 new checks, 99 in all, 0 failures (`python3 aire/pipeline-app/app.py --test`).
+- README: gate order now matches the code (cap first), test count corrected.
+- The Command Center pages, iPhone access over Tailscale, phone alerts and Ask Claude (PR 95, merged 2026-11-06) never got an entry here. They are documented in `pipeline-app/README.md`.
+
+**Not verified**
+- Nothing here has run on the mini. Everything Grok said about its calling (limits, the Call card, no number needed) is Grok's word, not a test.
+- KW Command reading is still a login heartbeat only. Which Deals sheet the Scorecard reads is still unchecked.
+
+**Inference**
+- The quiet hours exception for replies is my call, not Caleb's words. It is one line to remove.
+
+**Needs Caleb**
+- After merge, on the mini: add `PIPELINE_LIVE_HOST=<name from hostname -s>` to `~/.aire/pipeline.env` and restart Pipeline. Until then sending is dry and the screen says so.
+- One live text to his own number. Register the mini with Grok. Then tell Grok to create the webhook routine.
+
 ## 2026-11-05: Text button on each card, delivery shows on its own
 
 **Confirmed by Caleb**
