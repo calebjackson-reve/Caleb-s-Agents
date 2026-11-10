@@ -39,6 +39,29 @@
   }
   function kpi(title, value, body, sources) { return `<section class="cc-card cc-kpi"><h2>${title}</h2><b class="cc-num">${value}</b>${body}<footer>${src(sources)}</footer></section>`; }
 
+  // Sales by year: every closing in the sales history plus Closed deals on the sheet. Year end figures are estimates.
+  function bars(years, key, money) {
+    if (money && C.priv) return '<p class="cc-note">Chart hidden with money.</p>';
+    const max = Math.max(1, ...years.map(y => y[key])), bw = 240 / years.length;
+    return `<svg class="cc-ybars" viewBox="0 0 240 86" role="img" aria-label="${key} by year: ${years.map(y => y.year + ' ' + Math.round(y[key])).join(', ')}">${years.map((y, i) => {
+      const h = y[key] / max * 60;
+      return `<rect x="${(i * bw + bw * .18).toFixed(1)}" y="${(70 - h).toFixed(1)}" width="${(bw * .64).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--cc-coral)" opacity="${y.partial ? .55 : 1}"/><text x="${(i * bw + bw / 2).toFixed(1)}" y="82" text-anchor="middle" font-size="9" fill="currentColor">${y.year}</text>`;
+    }).join('')}</svg>`;
+  }
+  function growth() {
+    const g = C.data.growth;
+    if (!g) return card('Sales by year', '<p class="cc-note">No sales history yet. It shows once the sales history file is saved or a Closed deal on the sheet has an act of sale date.</p>', ['sales', 'deals']);
+    const ch = v => (v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '%'), p = g.projection, yr = g.years[g.years.length - 1];
+    const rows = g.years.map(y => `<tr><th>${y.year}${y.partial ? ' <small>' + (y === yr ? 'to date' : 'partial year') + '</small>' : ''}</th><td class="r">${n(y.deals)}</td><td class="r">${n(y.sides)}</td><td class="r">${m(y.volume)}</td><td class="r">${m(y.avg)}</td><td class="r">${ch(y.yoy_deals)}</td><td class="r">${ch(y.yoy_volume)}</td></tr>`).join('');
+    return `<section class="cc-card"><h2>Sales by year</h2>
+      <p class="cc-note"><b>${n(g.totals.deals)}</b> closed sales, <b>${m(g.totals.volume)}</b> since ${new Date(g.since + 'T12:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. Counted by side: <b>${n(g.totals.sides)}</b> sides, <b>${m(g.totals.side_volume)}</b>.${g.leases ? ` ${g.leases} lease${g.leases === 1 ? '' : 's'} left out.` : ''}${g.from_sheet ? ` ${g.from_sheet} from the Deals sheet, not in the history yet.` : ''}</p>
+      <div class="cc-kpis"><div><p class="cc-note">Closed sales</p>${bars(g.years, 'deals')}</div><div><p class="cc-note">Sales volume</p>${bars(g.years, 'volume', true)}</div></div>
+      <div class="cc-tablewrap"><table class="cc-table"><thead><tr><th>Year</th><th class="r">Sales</th><th class="r">Sides</th><th class="r">Volume</th><th class="r">Average price</th><th class="r">Sales change</th><th class="r">Volume change</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="cc-note">${yr.year} to date: <b>${n(g.ytd.deals)}</b> sales and <b>${m(g.ytd.volume)}</b>, against ${n(g.ytd.last_deals)} and ${m(g.ytd.last_volume)} by this date last year. This year's change compares the same dates.</p>
+      <p class="cc-note">Year end estimate: <b>${n(p.deals.even)}</b> sales and <b>${m(p.volume.even)}</b> at even pace${p.deals.seasonal == null ? '' : `, <b>${n(p.deals.seasonal)}</b> and <b>${m(p.volume.seasonal)}</b> at your usual pace for this time of year`}.${g.cagr ? ` Growth a year from ${g.cagr.from} to ${g.cagr.to}: ${ch(g.cagr.deals)} in sales, ${ch(g.cagr.volume)} in volume.` : ''} Estimates from past pace, not a promise.</p>
+      <footer>${src(['sales', 'deals'])}</footer></section>`;
+  }
+
   function scorecard() {
     const g = guard(); if (g) return g;
     const d = C.data, sc = d.scorecard, cap = sc.cap;
@@ -52,6 +75,7 @@
         ${kpi('Cap progress', cap ? m(cap.paid) : 'Not set', cap ? `${bar({ pct: cap.pct, pace_pct: 0, ahead: true })}<p class="cc-note">Company dollar is 30% of your commission on deals closed since ${C.day(cap.start)}. ${m(cap.left)} left of ${m(cap.amount)}. The royalty is separate and is not counted toward cap.</p>` : '<p class="cc-note">Add the cap amount and the cap year start below. The number shows once both are saved.</p>', ['deals', 'goals'])}
         ${kpi('Lead response time', 'Not tracked yet', `<p class="cc-note">${sc.response.note}</p>`, [])}
       </div>
+      ${growth()}
       ${card('Set goals', goalForm(), 'goals')}</div>`;
   }
   function goalForm() {

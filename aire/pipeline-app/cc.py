@@ -25,7 +25,7 @@ PACE_MIN = {"calendar": 15, "inbox": 10, "leads": 10, "deals": 30, "commission_m
             "market": 720, "life": 15, "workouts": 15}
 GRACE_MIN = 15
 DATASETS = ["deals", "calendar", "inbox", "leads", "commission_mail", "bank_mail", "goals", "history", "news", "market",
-            "life", "workouts", "config", "sync-status", "outbox"]
+            "life", "workouts", "config", "sync-status", "outbox", "sales"]
 
 
 def central_today(now: datetime | None = None) -> date:
@@ -794,6 +794,64 @@ def news_rows(rows: list[dict]) -> list[dict]:
     return [r for r in rows if not NEWS_SKIP.search(str(r.get("title") or ""))]
 
 
+# ---------------- Sales by year and growth ----------------
+
+def growth(sales: list, deals: list, today: date) -> dict | None:
+    """Closed sales by year: the sales history (sales.json, one row a closing: close, address, side, price, type) plus
+    Closed deals on the Deals sheet the history does not hold yet, matched by street and year. Leases are counted apart.
+    Both sides of one sale is one deal and two sides. Year to date runs through today's month and day in every year.
+    The year end figures are estimates from past pace, never a promise."""
+    t, rows, seen, leases, added = today.isoformat(), [], set(), 0, 0
+    for r in sales or []:
+        if not is_day(r.get("close")) or r["close"] > t:
+            continue
+        if re.search(r"lease", str(r.get("type") or ""), re.I):
+            leases += 1
+            continue
+        rows.append((r["close"], num(r.get("price")) or 0, 2 if re.search(r"both|dual", str(r.get("side") or ""), re.I) else 1))
+        seen.add((deal_key(r.get("address")), r["close"][:4]))
+    for d in deals or []:
+        if stage_of(d["status"]) != "closed" or not is_day(d.get("act")) or d["act"] > t or (deal_key(d["deal"]), d["act"][:4]) in seen:
+            continue
+        rows.append((d["act"], d["price"] or 0, 2 if re.search(r"both|dual", str(d.get("side") or ""), re.I) else 1))
+        added += 1
+    if not rows:
+        return None
+    blank = lambda: {"deals": 0, "sides": 0, "volume": 0, "side_volume": 0, "ytd_deals": 0, "ytd_volume": 0}
+    by, first = {}, min(r[0] for r in rows)
+    for day, price, sides in rows:
+        y = by.setdefault(int(day[:4]), blank())
+        y["deals"] += 1; y["sides"] += sides; y["volume"] += price; y["side_volume"] += price * sides
+        if day[4:] <= t[4:]:
+            y["ytd_deals"] += 1; y["ytd_volume"] += price
+    pct = lambda a, b: round((a - b) / b * 100, 1) if b else None
+    years = []
+    for yr in range(int(first[:4]), today.year + 1):
+        y, prev, now = by.get(yr) or blank(), by.get(yr - 1), yr == today.year
+        k = ("ytd_deals", "ytd_volume") if now else ("deals", "volume")
+        years.append({"year": yr, **y, "avg": round(y["volume"] / y["deals"]) if y["deals"] else None,
+                      "yoy_deals": pct(y[k[0]], prev[k[0]]) if prev else None, "yoy_volume": pct(y[k[1]], prev[k[1]]) if prev else None,
+                      "partial": now or (yr == int(first[:4]) and first[5:] > "01-31")})
+    cur, last = by.get(today.year) or blank(), by.get(today.year - 1) or blank()
+    start = date(today.year, 1, 1)
+    frac = ((today - start).days + 1) / (date(today.year + 1, 1, 1) - start).days
+
+    def project(key):
+        shares = [y["ytd_" + key] / y[key] for yr, y in by.items() if yr < today.year and y[key] and y["ytd_" + key]]
+        return {"even": round(cur["ytd_" + key] / frac), "seasonal": round(cur["ytd_" + key] / (sum(shares) / len(shares))) if shares else None}
+
+    full = [y for y in years if not y["partial"] and y["deals"]]
+    cagr = None
+    if len(full) >= 2 and full[0]["volume"]:
+        a, b, n = full[0], full[-1], full[-1]["year"] - full[0]["year"]
+        cagr = {"from": a["year"], "to": b["year"], "deals": round(((b["deals"] / a["deals"]) ** (1 / n) - 1) * 100, 1),
+                "volume": round(((b["volume"] / a["volume"]) ** (1 / n) - 1) * 100, 1)}
+    return {"years": years, "since": first, "through": t, "leases": leases, "from_sheet": added,
+            "ytd": {"deals": cur["ytd_deals"], "volume": cur["ytd_volume"], "last_deals": last["ytd_deals"], "last_volume": last["ytd_volume"]},
+            "projection": {"deals": project("deals"), "volume": project("volume")}, "cagr": cagr,
+            "totals": {k: sum(y[k] for y in years) for k in ("deals", "sides", "volume", "side_volume")}}
+
+
 def _rows(d):
     return (d or {}).get("rows") or []
 
@@ -838,6 +896,7 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         "inbox": inbox_sorted(_rows(raw["inbox"]), [r for r in leads if r.get("origin") == "email"], coord),
         "leads": leads, "lead_counts": lead_counts(leads, today), "commission_mail": commission_mail(_rows(raw["commission_mail"]), deals),
         "scorecard": sc, "goals": goals, "goals_set": bool(goals),
+        "growth": growth(_rows(raw.get("sales")), deals, today),
         "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
         # Rows in the sheet's Scorecard history tab, today's included once the sync has saved it: the same number the
         # Sources page shows for that tab.
@@ -861,7 +920,7 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
 
 
 def demo_folder(src: Path, dest: Path, now: datetime | None = None) -> Path:
-    """Copy the made-up fixtures with dates moved to today: {{D+3}}, {{Y-03-14}}, {{NOW-20}} (minutes ago)."""
+    """Copy the made-up fixtures with dates moved to today: {{D+3}}, {{Y-03-14}}, {{Y2-06-10}} (two years back), {{NOW-20}} (minutes ago)."""
     now = (now or datetime.now(CENTRAL)).astimezone(CENTRAL)
     today = now.date()
 
@@ -871,6 +930,8 @@ def demo_folder(src: Path, dest: Path, now: datetime | None = None) -> Path:
             return (now - timedelta(minutes=int(k[4:]))).isoformat(timespec="seconds")
         if k.startswith("Y-"):
             return f"{today.year}{k[1:]}"
+        if re.match(r"Y\d-", k):  # {{Y2-06-10}} is June 10 two years back
+            return f"{today.year - int(k[1])}{k[2:]}"
         return (today + timedelta(days=int(k[1:]))).isoformat()
 
     dest.mkdir(parents=True, exist_ok=True)

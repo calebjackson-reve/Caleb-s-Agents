@@ -645,5 +645,49 @@ class JudgeRound5(unittest.TestCase):
         self.assertEqual(w["tab_differs"], ["Wed: Walk or rest", "Sat: Optional full body"])
 
 
+class Growth(unittest.TestCase):
+    SALES = [{"close": "2024-03-01", "address": "1 Made Up Ln", "side": "Buyer", "price": 100000, "type": "Residential"},
+             {"close": "2024-12-20", "address": "2 Made Up Ln", "side": "Both", "price": 300000, "type": "Residential"},
+             {"close": "2025-06-01", "address": "3 Made Up Ln", "side": "Listing", "price": "$200,000", "type": "Land"},
+             {"close": "2025-07-01", "address": "9 Rent Rd", "side": "Listing", "price": 2400, "type": "Residential Lease"},
+             {"close": "2025-12-01", "address": "400 Ash Court", "side": "Buyer", "price": 200000, "type": "Residential"},
+             {"close": "2026-03-01", "address": "300 Pine Drive, Zachary", "side": "Listing", "price": 400000, "type": "Residential"},
+             {"close": "2026-12-25", "address": "5 Not Yet St", "side": "Buyer", "price": 1, "type": "Residential"}]
+
+    def setUp(self):
+        self.g = cc.growth(self.SALES, cc.deal_rows(SHEET), T)
+        self.y = {r["year"]: r for r in self.g["years"]}
+
+    def test_years_sides_and_leases(self):
+        self.assertEqual([(y["year"], y["deals"], y["sides"], y["volume"]) for y in self.g["years"]],
+                         [(2024, 2, 3, 400000), (2025, 2, 2, 400000), (2026, 1, 1, 400000)])
+        self.assertEqual(self.y[2024]["side_volume"], 700000)
+        self.assertEqual(self.g["leases"], 1)
+        self.assertEqual(self.g["totals"], {"deals": 5, "sides": 6, "volume": 1200000, "side_volume": 1500000})
+
+    def test_sheet_deals_already_in_history_count_once(self):
+        self.assertEqual(self.g["from_sheet"], 0)  # 300 Pine Dr and 400 Ash Ct match the history by street and year
+        g = cc.growth(self.SALES[:3], cc.deal_rows(SHEET), T)
+        self.assertEqual(g["from_sheet"], 2)
+        self.assertEqual(g["totals"]["deals"], 5)
+
+    def test_this_year_compares_the_same_dates(self):
+        self.assertEqual(self.g["ytd"], {"deals": 1, "volume": 400000, "last_deals": 1, "last_volume": 200000})
+        self.assertEqual(self.y[2026]["yoy_volume"], 100.0)   # 400,000 against 200,000 by November 5 last year
+        self.assertEqual(self.y[2025]["yoy_volume"], 0.0)     # full year against full year
+        self.assertIsNone(self.y[2024]["yoy_deals"])
+        self.assertTrue(self.y[2024]["partial"] and self.y[2026]["partial"] and not self.y[2025]["partial"])
+
+    def test_year_end_estimates(self):
+        p = self.g["projection"]
+        self.assertEqual(p["deals"]["even"], round(1 / (309 / 365)))
+        self.assertEqual(p["volume"]["seasonal"], round(400000 / ((100000 / 400000 + 200000 / 400000) / 2)))
+        self.assertIsNone(self.g["cagr"])  # one full year is not a trend
+
+    def test_no_sales(self):
+        self.assertIsNone(cc.growth([], [], T))
+        self.assertIsNone(cc.growth(None, cc.deal_rows([HEAD]), T))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
