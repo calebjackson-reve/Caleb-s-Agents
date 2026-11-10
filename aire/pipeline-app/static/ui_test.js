@@ -60,7 +60,10 @@ const pin = ((f.map || {}).pins || []).find(p => p.kind === 'person' && p.phone)
 if (pin) {
   const card = run(`pinCard(${JSON.stringify(pin)})`);
   check(/\s/.test(pin.display) && card.includes(run(`esc(${JSON.stringify(pin.display)})`)) && !/Name hidden/.test(card), 'map pin card shows the first and last name');
-  check(/No name on the sheet/.test(run(`pinCard(${JSON.stringify(Object.assign({}, pin, { display: '' }))})`)), 'a pin with no name on the sheet says so, and no name is made up');
+  const phoneCard = run(`pinCard(${JSON.stringify(Object.assign({}, pin, { display: '' }))})`);
+  const noneCard = run(`pinCard(${JSON.stringify(Object.assign({}, pin, { display: '', phone: '', email: '' }))})`);
+  const formatted = run(`fmtPhone(normPhone(${JSON.stringify(pin.phone)}))`);
+  check(phoneCard.includes(formatted) && !phoneCard.includes(pin.display) && /No name on the sheet/.test(noneCard), 'a pin with no name shows the phone, and says so when there is no phone or email');
 }
 { const t0 = (f.touches_due || []).find(r => r.display && /\s/.test(r.display));
   if (t0) check(render('touches').includes(run(`esc(${JSON.stringify(t0.display)})`)), 'Touches due shows first and last names'); }
@@ -488,7 +491,7 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
   check(!bad && placed.length >= 2 && !placed.some(p => p.name === 'Boxed in'), 'map labels never overlap each other or a pin, and a boxed-in label is left off', placed.map(p => p.name).join(' | '));
   check(/drawLabels\(farmLabels\.concat\(named\), drawPlaces\(\)\);\s*cancelAnimationFrame/.test(mapjs) && !/rgba\(8,22,46/.test(mapjs) && !/CLUSTER_PAST|cluster:/.test(mapjs), 'labels are drawn after the pins, and no pins are merged into numbered discs');
   check(/people\.filter\(o => nameOf\(o\.p\) && \(people\.length <= NAME_ROOM \|\| o\.p\.key === st\.data\.selected\)\)/.test(mapjs) && /name: nameOf\(o\.p\)/.test(mapjs)
-    && /const nameOf = p => String\(\(p && p\.display\) \|\| ''\)\.trim\(\);/.test(mapjs), 'pin labels are the whole display name, drawn once the pins have room, never shortened');
+    && /const nameOf = p => \{ const n = window\.CC && CC\.fallbackName \? CC\.fallbackName\(p\)/.test(mapjs) && !/nameOf[\s\S]{0,180}\.slice\(/.test(mapjs), 'pin labels are the whole name, or the phone when the sheet has none, drawn once the pins have room, never shortened');
   check(/tip\.textContent = nameOf\(p\) \|\| NO_NAME/.test(mapjs) && /class="pm-tip" hidden/.test(mapjs), 'hovering a pin shows the full name at any zoom');
   { const two = run(`PMap.placeLabels([{ name: 'Avery Example', x: 100, y: 100, on: -1 }, { name: 'Jordan Sample', x: 102, y: 101, on: -1 }], [{ x: 100, y: 87, r: 8 }], t => t.length * 6, { w: 400, h: 300 })`);
     const over = two.length === 2 && two[0].x1 > two[1].x0 && two[0].x0 < two[1].x1 && two[0].y1 > two[1].y0 && two[0].y0 < two[1].y1;
@@ -694,7 +697,7 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   run('Stage.q = ""');
   const ppl = render('people'), cols = [...ppl.matchAll(/<section class="ppl-col" aria-label="([^"]+)">/g)].map(m => m[1]);
   check(JSON.stringify(cols) === JSON.stringify(SEVEN), 'People has exactly the seven stage columns', cols.join(', '));
-  const known = new Set(run('Stage.people().map(r => r.display)')), shown = [...ppl.matchAll(/<li><button type="button" onclick="Stage\.open\([^)]*\)"><b>([^<]*)<\/b>/g)].map(m => m[1]);
+  const known = new Set(run('Stage.people().map(r => CC.fallbackName(r))')), shown = [...ppl.matchAll(/<li><button type="button" onclick="Stage\.open\([^)]*\)"><b>([^<]*)<\/b>/g)].map(m => m[1]);
   check(shown.length > 0 && shown.every(n => known.has(n.replace(/&#39;/g, "'").replace(/&amp;/g, '&'))), 'every name on the board is a person in the feed', shown.filter(n => !known.has(n)).slice(0, 3).join(', '));
   check(run(`Stage.groups(Stage.people())['new lead'].length`) === (f.new_leads || []).length || (f.new_leads || []).length === 0, 'new leads sit under new lead, and nobody is given a stage the CRM does not have');
   check(!/Sam Newlead|Taylor Sample|Morgan Demo|Riley Quiet|Casey Night/.test(stagejs + mv + mapjs), 'no fixture name is written into the live screens');
@@ -776,10 +779,11 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   if (pinP) check(!/No last touch on the sheet/.test(card(pinP.person_id)) && new RegExp(`<dt>Last touch</dt><dd>${pinP.days_quiet} days? ago</dd>`).test(card(pinP.person_id)), 'the card of a person known only from the map shows how long they have been quiet');
   run(`var __dr = {}, __q2 = document.querySelector; document.querySelector = s => s === '#drawer' ? __dr : (s === '#c-body' ? { addEventListener() {}, focus() {}, setSelectionRange() {}, value: '' } : __q2(s));`);
   run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { touches_due: [${JSON.stringify(Object.assign({}, td[0], { person_id: 'zz-raw', display: '' }))}].concat(__state.feed.touches_due) }) }); openCompose('zz-raw')`);
-  check(run('S.compose.name') === '' && /No name on the sheet/.test(run('__dr.innerHTML')) && run('S.queueIdx') === -1 && /if \(c\.fromCard \|\| S\.queueIdx < 0\) \{ closeDrawer\(\);/.test(appjs),
-    'a message for someone with no name shows No name on the sheet but never sends or logs that as their name, and it closes after sending');
+  const rawFmt = run(`fmtPhone(normPhone(${JSON.stringify(td[0].phone)}))`);
+  check(run('S.compose.name') === '' && run('__dr.innerHTML').includes(rawFmt) && run('S.queueIdx') === -1 && /name: row\.display \|\| ''/.test(appjs) && /if \(c\.fromCard \|\| S\.queueIdx < 0\) \{ closeDrawer\(\);/.test(appjs),
+    'a message for someone with no name shows their phone and never sends or logs that phone as their name, and it closes after sending');
   run(`openPerson('zz-raw')`);
-  check(run('S.card') === 'zz-raw' && run('S.compose') === null && /Plan for No name on the sheet/.test(run('__dr.innerHTML').replace(/<[^>]+>/g, '')), 'opening a person shows their card and clears any open message');
+  check(run('S.card') === 'zz-raw' && run('S.compose') === null && run('__dr.innerHTML').replace(/<[^>]+>/g, ' ').includes('Plan for ' + rawFmt) && /No name on the sheet\. Add one\?/.test(run('__dr.innerHTML')), 'opening a person shows their card, the phone as the heading, and clears any open message');
   run(`document.querySelector = __q2; S.compose = null; S.card = null; S.data = __state;`);
   const eid = 'x"\'><b', erow = { person_id: eid, display: '<img src=x onerror=1>', band: 'hot', stage: 'nurture', next_action: '<script>1</script>', last_messages: ['2026-11-01: <i>hi</i>'], owes_reply: true, phone: '2255550100' };
   const evil = () => run(`(() => { S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { touches_due: [${JSON.stringify(erow)}] }) }); const h = Person.html(${JSON.stringify(eid)}); S.data = __state; return h; })()`);
@@ -787,12 +791,13 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(!/<img src=x|<script>|<i>hi<\/i>|"'><b/.test(eh) && /&lt;img src=x/.test(eh), 'a name, id, note or message with markup in it is shown as text on the card, never run');
   check(/Not in the feed/.test(card('no-such-id')), 'a person who is not in the feed gets a card that says so, with nothing made up');
   // The name fallback everywhere a person shows: the sheet's name, or it says there is none.
-  const blank = Object.assign({}, td[0], { person_id: 'zz-blank', display: '', stage: 'nurture', owes_reply: false, last_messages: [] });
-  run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { touches_due: [${JSON.stringify(blank)}].concat(__state.feed.touches_due), heat: Object.assign({}, __state.feed.heat, { hot: [Object.assign({ temp: 'hot', heat: 90, reasons: ['Talked about buying 2 days ago'] }, ${JSON.stringify(blank)})].concat((__state.feed.heat || {}).hot || []) }) }) })`);
-  const shows = ['touches', 'home', 'people', 'hot'].filter(v => !/No name on the sheet/.test(render(v)));
+  const blank = Object.assign({}, td[0], { person_id: 'zz-blank', display: '', stage: 'nurture', owes_reply: true, last_messages: [] });
+  run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { people: [${JSON.stringify(blank)}].concat(__state.feed.people || []), touches_due: [${JSON.stringify(blank)}].concat(__state.feed.touches_due), heat: Object.assign({}, __state.feed.heat, { hot: [Object.assign({ temp: 'hot', heat: 90, reasons: ['Talked about buying 2 days ago'] }, ${JSON.stringify(blank)})].concat((__state.feed.heat || {}).hot || []) }) }) })`);
+  const blankFmt = run(`fmtPhone(normPhone(${JSON.stringify(blank.phone)}))`);
+  const showsPhone = ['touches', 'home', 'people', 'hot'].filter(v => !render(v).includes(blankFmt));
   run(`S.q = 'zz-none'`);
-  check(!shows.length && /No name on the sheet/.test(card('zz-blank')) && run(`CC.pname('')`) === 'No name on the sheet' && run(`CC.pname('  Pat Fixture ')`) === 'Pat Fixture',
-    'a person with no name on the sheet reads No name on the sheet on Touches due, Home, People, Hot and their card', shows.join(', '));
+  check(!showsPhone.length && card('zz-blank').includes(blankFmt) && /No name on the sheet\. Add one\?/.test(card('zz-blank')) && run(`CC.pname('')`) === 'No name on the sheet' && run(`CC.pname('  Pat Fixture ')`) === 'Pat Fixture',
+    'a person with no name and a phone reads as that phone on Touches due, Home, People, Hot and their card', showsPhone.join(', '));
   run(`S.q = ''; S.data = __state;`);
 }
 
@@ -830,6 +835,57 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(rows.length > 5 && rows.some(r => /class="ra" onclick="openCompose\(/.test(r)) && rows.some(r => /class="ra" onclick="openGrok\([^)]*, 'call'\)"/.test(r))
     && rows.every(r => !/<button[^>]*>(?:(?!<\/button>)[^])*<button/.test(r)), 'Home due rows and People rows carry Text and Call beside the name, and no button sits inside another');
   check(!/\/api\/(send|call|draft)/.test(stagejs), 'stage.js still calls no send, call or draft endpoint');
+}
+
+// People board from feed.people, shown stage, mismatch, No stage yet, and the phone / email / no-name order.
+{
+  const light = fs.readFileSync(path.join(dir, 'light.css'), 'utf8');
+  const phone = '+12255550191', email = 'noname.fixture@example.com';
+  const fmt = run(`fmtPhone(normPhone(${JSON.stringify(phone)}))`);
+  const people = [
+    { person_id: 'uc-sheet', display: 'Uma Contract', stage: 'under contract', stage_from: 'sheet', sheet_stage: 'under contract', type: 'client', band: 'hot', city: 'Zachary', phone: '+12255550190', heat: 10 },
+    { person_id: 'deal-show', display: 'Dee Showing', stage: 'showing scheduled', stage_from: 'deal', sheet_stage: '', type: 'client', band: 'warm', city: 'Baker', phone: '+12255550192', heat: 20 },
+    { person_id: 'tag-past', display: 'Terry Tag', stage: 'past client', stage_from: 'tag', sheet_stage: '', type: 'client', band: 'cold', heat: 5 },
+    { person_id: 'sheet-nur', display: 'Sam Mismatch', stage: 'nurture', stage_from: 'sheet', sheet_stage: 'nurture', type: 'client', band: 'hot', heat: 40, stage_mismatch: { suggest_stage: 'under contract', deal_stage: 'under_contract', address: '21 Fixture Nurture Ln' } },
+    { person_id: 'yet-hot', display: 'No Stage Hot', stage: '', stage_from: '', sheet_stage: '', type: 'client', band: 'cold', heat: 80, city: 'Zachary' },
+    { person_id: 'yet-cold', display: 'No Stage Cold', stage: '', stage_from: '', sheet_stage: '', type: 'client', band: 'cold', heat: 3 },
+    { person_id: 'ph-only', display: '', stage: 'nurture', stage_from: 'sheet', sheet_stage: 'nurture', type: 'client', phone, band: 'hot', owes_reply: true },
+    { person_id: 'em-only', display: '', stage: '', stage_from: '', sheet_stage: '', type: 'client', email, heat: 70 },
+    { person_id: 'noname', display: '', stage: '', stage_from: '', sheet_stage: '', type: 'client', heat: 1 },
+    { person_id: 'recruit-1', display: 'Rookie Partner', stage: 'nurture', stage_from: 'sheet', sheet_stage: 'nurture', type: 'recruit' },
+    { person_id: 'lender-1', display: 'Lender Fixture', stage: 'nurture', stage_from: 'sheet', sheet_stage: 'nurture', type: 'lender' },
+  ];
+  const due = [{ person_id: 'ph-only', display: '', phone, owes_reply: true, band: 'hot', stage: 'nurture' }];
+  const review = [{ person_id: 'sheet-nur', display: 'Sam Mismatch', rule: 'stage_mismatch', stage: 'nurture', sheet_stage: 'nurture', suggest_stage: 'under contract', deal_stage: 'under_contract', address: '21 Fixture Nurture Ln', why: 'sheet Stage is nurture, and the live deal at 21 Fixture Nurture Ln is under contract' }];
+  run(`Stage.q = ""; S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { people: ${JSON.stringify(people)}, touches_due: ${JSON.stringify(due)}, new_leads: [], label_review: ${JSON.stringify(review)} }) })`);
+  const ids = run('Stage.people().map(r => r.person_id)');
+  check(ids.includes('uc-sheet') && !ids.includes('recruit-1') && !ids.includes('lender-1'), 'the People board is built from feed.people, and partners and recruits stay off it');
+  const board = render('people');
+  const ucAt = board.indexOf('aria-label="under contract"'), closedAt = board.indexOf('aria-label="closed"'), uma = board.indexOf('Uma Contract');
+  check(uma > ucAt && uma < closedAt && !/person:uc-sheet|uc-sheet/.test(JSON.stringify((state.feed.map || {}).pins || [])) && !((state.feed.touches_due || []).some(r => r.person_id === 'uc-sheet')), 'a sheet-stage under contract person with no pin and no due row appears on the board');
+  check(/from deal/.test(board) && board.includes('Dee Showing') && /from tag/.test(board) && board.includes('Terry Tag') && !/from sheet/.test(board), 'a stage that came from a deal or a tag is marked, and a sheet stage is not');
+  const yet = (board.match(/<section class="ppl-yet"[\s\S]*?<\/section>/) || [''])[0];
+  check(/No stage yet/.test(yet) && /Not guessed/.test(yet) && yet.indexOf('No Stage Hot') !== -1 && yet.indexOf('No Stage Hot') < yet.indexOf(email) && yet.indexOf(email) < yet.indexOf('No Stage Cold') && !/#(?:F5C518|3A8FDD|2DB87A|8B5CF6|E04E28|D4537E|14100E)/i.test(yet), 'No stage yet is a separate group at the end, sorted by heat, with none of the seven stage colors');
+  check(/\.stg-tab\.stg-yet \{[^}]*background: transparent/.test(light) && !/\.stg-tab\.stg-yet \{[^}]*#(?:F5C518|3A8FDD|2DB87A|8B5CF6|E04E28|D4537E)/i.test(light), 'the No stage yet tab is a neutral outline, not a stage color');
+  const g = run('Stage.groups(Stage.people())');
+  check(g['under contract'].some(r => r.person_id === 'uc-sheet' && r.stage_from === 'sheet') && g['showing scheduled'].some(r => r.person_id === 'deal-show' && r.stage_from === 'deal') && g['past client'].some(r => r.person_id === 'tag-past' && r.stage_from === 'tag') && g.nurture.some(r => r.person_id === 'sheet-nur' && r.stage_from === 'sheet') && g.yet.some(r => r.person_id === 'yet-hot' && !r.stage), 'sheet, then deal, then tag, then No stage yet, and a mismatch keeps the sheet stage');
+  const cardOf = id => run(`Person.html(${JSON.stringify(id)})`);
+  check(!/from deal|from tag/.test(cardOf('uc-sheet')) && /stg-under-contract/.test(cardOf('uc-sheet')), 'the card shows a sheet stage with no source mark');
+  check(/from deal/.test(cardOf('deal-show')) && /Sheet stage: blank on the sheet/.test(cardOf('deal-show')), 'the card marks a deal stage and shows the blank sheet value');
+  check(/from tag/.test(cardOf('tag-past')) && /Sheet stage: blank on the sheet/.test(cardOf('tag-past')), 'the card marks a tag stage the same way');
+  const mm = cardOf('sheet-nur');
+  check(/The sheet says nurture/.test(mm) && /21 Fixture Nurture Ln/.test(mm) && /is under contract/.test(mm) && /onclick="fixStage\(/.test(mm) && /Set the sheet Stage to under contract/.test(mm), 'a stage mismatch is on the card, with one button to set the sheet stage');
+  check(/async function fixStage\(/.test(appjs) && /act\('\/api\/stage'/.test(appjs) && !/\/api\/(send|call|draft)/.test(fs.readFileSync(path.join(dir, 'person.js'), 'utf8')) && !/\/api\/(send|call|draft)/.test(fs.readFileSync(path.join(dir, 'stage.js'), 'utf8')), 'that button uses the existing stage command, and the card and the board start no send, call or draft');
+  const att = run('CC.attention()').map(x => x.text).join('\n');
+  check(/Stage to fix: Sam Mismatch/.test(att) && /The sheet says nurture/.test(att) && /under contract/.test(att), 'the attention list names the stage mismatch as something to fix');
+  const home = render('home'), start = (home.match(/<section class="lt-start"[\s\S]*?<\/section>/) || [''])[0];
+  check(start.includes(fmt) && !/No name on the sheet/.test(start), 'Start here shows the formatted phone when the sheet has no name');
+  check(board.includes(fmt) && board.includes(email), 'the board shows the phone, and the email when there is no phone');
+  const none = cardOf('noname'), phCard = cardOf('ph-only'), emCard = cardOf('em-only');
+  check(none.includes('No name on the sheet') && /No name on the sheet\. Add one\?/.test(none) && /onclick="openNote\(/.test(none), 'with no phone and no email the card says there is no name, and that line opens a note');
+  check(phCard.includes(fmt) && /No name on the sheet\. Add one\?/.test(phCard) && !phCard.includes(email), 'the card heading is the phone when that is all the sheet has');
+  check(emCard.includes(email) && /No name on the sheet\. Add one\?/.test(emCard) && !emCard.includes(fmt), 'with no phone, the card shows the email and does not invent a name');
+  run('Stage.q = ""; S.data = __state;');
 }
 
 console.log(`\n${fails} failure(s)`);

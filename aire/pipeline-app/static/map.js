@@ -33,9 +33,9 @@ window.PMap = (function () {
   // Area labels: each takes the first free spot around its point (on it, above, below, then further out and to the sides),
   // never over another label, a pin or a cluster. A label with no free spot is left off rather than overlap.
   // bounds ({w, h}, the map's size): a label is slid inside the edges, never cut off at the left or right (round 4).
-  // A person's name on the map is the CRM display name, whole. No name on the sheet is said, never guessed.
+  // A person's name on the map is the whole display name. No name shows the phone, then the email. Nothing is shortened or invented.
   const NAME_ROOM = 150, NO_NAME = 'No name on the sheet';
-  const nameOf = p => String((p && p.display) || '').trim();
+  const nameOf = p => { const n = window.CC && CC.fallbackName ? CC.fallbackName(p) : String((p && p.display) || '').trim(); return !n || n === (window.CC && CC.NO_NAME) ? '' : n; };
   function placeLabels(labels, obstacles, width, bounds) {
     const boxes = obstacles.map(o => (o.x0 != null ? o : { x0: o.x - o.r, x1: o.x + o.r, y0: o.y - o.r, y1: o.y + o.r }));  // a pin (x, y, r) or a box
     const hit = b => boxes.some(o => b.x1 > o.x0 && b.x0 < o.x1 && b.y1 > o.y0 && b.y0 < o.y1);

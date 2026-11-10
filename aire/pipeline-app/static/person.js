@@ -22,6 +22,14 @@
     const lead = (f.new_leads || []).find(same); put(lead);
     const due = (f.touches_due || []).find(same); put(due);
     put(heatList('hot').concat(heatList('warm')).find(same));
+    const person = (f.people || []).find(same); put(person);
+    // The people row carries the shown stage. A blank shown stage must replace a pin's sheet stage, not lose to it.
+    if (person && Object.prototype.hasOwnProperty.call(person, 'stage_from')) {
+      rec.stage = person.stage || '';
+      rec.stage_from = person.stage_from || '';
+      rec.sheet_stage = person.sheet_stage || '';
+      rec.stage_mismatch = person.stage_mismatch || null;
+    }
     if (!Object.keys(rec).length) return null;
     return Object.assign(rec, { person_id: String(id), new_lead: !!lead || key(rec.stage) === 'new lead', owes_reply: !!rec.owes_reply,
       deals: (f.deals || []).filter(d => same(d) && !DEAD.has(key(d.stage))), job: grokJob(String(id)) || null });
@@ -70,7 +78,7 @@
 
   P.planHTML = function (p) {
     const pl = P.plan(p);
-    return `<section class="pc-plan" aria-label="Plan"><h3>Plan for ${C.pname(p.display)}</h3>
+    return `<section class="pc-plan" aria-label="Plan"><h3>Plan for ${C.pname(p)}</h3>
       <ol><li><b>Now</b><span>${esc(pl.now)}</span></li><li><b>Why</b><span>${esc(pl.why)}</span></li><li><b>When</b><span>${esc(pl.when)}</span></li></ol></section>`;
   };
 
@@ -92,10 +100,17 @@
     const today = (C.data && C.data.today) || todayISO(), ph = normPhone(p.phone), lastTouch = dayK(p.last_touch), quiet = p.days_quiet != null ? Number(p.days_quiet) : null;
     const last = (p.last_messages || []).slice(-1)[0], place = [p.address, p.city, p.zip].filter(Boolean).join(', ');
     const fact = (k, v, missing) => `<dt>${k}</dt><dd${v ? '' : ' class="pc-missing"'}>${v || esc(missing)}</dd>`;
-    const heat = p.heat != null ? `${esc(String(p.heat))} of 100, ${esc(p.temp || '')}${(p.reasons || []).length ? `<ul>${p.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}` : '';
-    return `<section class="panel pcard" aria-label="Contact card"><div class="dh"><span class="ico">${esc(initials(String(p.display || '').trim()))}</span>
-        <div class="who"><b>${C.pname(p.display)}</b><small>${Stage.chip(p.stage)}${Stage.cadence(key(p.band)) || '<span class="cad">no cadence set</span>'}</small></div>${x}</div>
-      <div class="dbody">${P.planHTML(p)}${P.actsHTML(p)}
+    const heat = p.temp && p.heat != null && p.heat !== '' ? `${esc(String(p.heat))} of 100, ${esc(p.temp)}${(p.reasons || []).length ? `<ul>${p.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}` : '';
+    const named = String(p.display || '').trim();
+    const av = named ? initials(named) : '?';
+    const sheet = key(p.sheet_stage), shown = key(p.stage), from = key(p.stage_from);
+    const sheetLine = (from === 'deal' || from === 'tag') && sheet !== shown ? `<p class="pc-sheet">Sheet stage: ${esc(sheet ? sheet : 'blank on the sheet')}.</p>` : '';
+    const mm = p.stage_mismatch;
+    const fix = mm && mm.suggest_stage ? `<p class="pc-fix">The sheet says ${esc(sheet || 'blank')}. The live deal${mm.address ? ' at ' + esc(mm.address) : ''} is ${esc(words(mm.deal_stage || ''))}. <button type="button" onclick="fixStage(${jsa(p.person_id)}, ${jsa(mm.suggest_stage)}, ${jsa(p.sheet_stage || '')})">Set the sheet Stage to ${esc(mm.suggest_stage)}</button></p>` : '';
+    const ask = named ? '' : `<p class="pc-noname"><button type="button" class="lt-link" onclick="openNote(${jsa(p.person_id)})">No name on the sheet. Add one?</button></p>`;
+    return `<section class="panel pcard" aria-label="Contact card"><div class="dh"><span class="ico">${esc(av)}</span>
+        <div class="who"><b>${C.pname(p)}</b><small>${Stage.chip(p.stage, p.stage_from)}${Stage.cadence(key(p.band)) || '<span class="cad">no cadence set</span>'}</small></div>${x}</div>
+      <div class="dbody">${ask}${P.planHTML(p)}${sheetLine}${fix}${P.actsHTML(p)}
         <dl class="pc-facts">
           ${fact('Heat', heat, 'Not hot or warm right now, so the feed carries no score for them')}
           ${fact('Phone', ph ? esc(fmtPhone(ph)) : p.phone ? esc(p.phone) + ' (not a valid US number)' : '', 'No phone on the sheet')}

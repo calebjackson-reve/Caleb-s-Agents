@@ -72,10 +72,11 @@ TOOLS = [
     {"name": "person_detail", "description": "Everything on one person: band, stage, type, address, last touch, last "
      "texts, owes_reply, days quiet, next action, their tasks and deals, label problems, market activity near them.",
      "input_schema": {"type": "object", "properties": {"person_id": {"type": "string"}}, "required": ["person_id"]}},
-    {"name": "label_review", "description": "Contacts whose band or Type looks wrong. Rules: texting_but_cold, "
-     "hot_gone_quiet, past_client_no_band, pro_as_client. Each row has the suggested fix and why.",
+    {"name": "label_review", "description": "Contacts whose band, Type or Stage looks wrong. Rules: texting_but_cold, "
+     "hot_gone_quiet, past_client_no_band, pro_as_client, stage_mismatch (sheet Stage disagrees with a live deal). "
+     "Each row has the suggested fix and why. A stage fix is Caleb's button, not a write from here.",
      "input_schema": {"type": "object", "properties": {
-         "rule": {"type": "string", "enum": ["texting_but_cold", "hot_gone_quiet", "past_client_no_band", "pro_as_client"]},
+         "rule": {"type": "string", "enum": ["texting_but_cold", "hot_gone_quiet", "past_client_no_band", "pro_as_client", "stage_mismatch"]},
          "limit": {"type": "integer", "description": "default 8"}}}},
     {"name": "count_people", "description": "Count and sample the whole book by band, stage, type and town, e.g. how "
      "many past clients in Zachary.",
@@ -225,8 +226,8 @@ class Tools:
         # Named people first: a fix Caleb can picture beats one he cannot.
         rows = sorted(rows, key=lambda r: not (r.get("display") or "").strip())
         return {"matching": len(rows), "rows": [{"person_id": r["person_id"], "name": self.name(r["person_id"], r), "rule": r["rule"],
-                                                 "now": r.get("band") or r.get("type") or "blank",
-                                                 "suggest": r.get("suggest_band") or r.get("suggest_type"), "why": r["why"]}
+                                                 "now": (r.get("stage") or "blank") if r.get("rule") == "stage_mismatch" else (r.get("band") or r.get("type") or "blank"),
+                                                 "suggest": r.get("suggest_stage") or r.get("suggest_band") or r.get("suggest_type"), "why": r["why"]}
                                                 for r in _clip(rows, limit, 8)]}
 
     def count_people(self, band=None, stage=None, type=None, city=None, limit=None) -> dict:

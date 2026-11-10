@@ -122,7 +122,7 @@ NEVER_TOUCH_TYPES = {"vendor", "agent", "lender"}
 REVIEW_TEXTING_DAYS = 30   # texts both ways this recently: the relationship is live, cold or blank is wrong
 REVIEW_QUIET_DAYS = 60     # hot or warm with no touch and no text this long is not hot
 PAST_CLIENT_BAND = "cold"  # a past client with no band never comes up; quarterly is the floor
-REVIEW_RULES = ["texting_but_cold", "hot_gone_quiet", "past_client_no_band", "pro_as_client"]
+REVIEW_RULES = ["texting_but_cold", "hot_gone_quiet", "past_client_no_band", "pro_as_client", "stage_mismatch"]
 PRO_PATTERNS = [  # checked against display and email; first match wins
     ("lender", re.compile(r"\b(mortgage|lending|lender|loans?|home ?loans?)\b|@(rocketmortgage|guildmortgage|fairwaymc|movement|cmgfi|bankplus|b1bank|redriverbank)\.", re.I)),
     ("agent", re.compile(r"\b(realty|realtors?|real estate|keller ?williams|re/?max|exp realty|coldwell|century ?21|latter ?& ?blum)\b|@(kw|kwrealty|remax|exprealty|cbrealty|latterblum|c21)\.", re.I)),
@@ -143,6 +143,15 @@ LIVE_DEAL_STAGES = {"lead", "consult", "active", "showing", "under_contract", "u
 DEAL_STAGES = LIVE_DEAL_STAGES | {"closed", "fell_through"}
 # Contact stages, the same list the Mac's ~/aire/crm/execution/crm_client.py enforces.
 STAGES = ["new lead", "contacted", "nurture", "showing scheduled", "under contract", "closed", "past client"]
+# A deal stage, as the Deals tab writes it, and the contact stage it implies when the sheet's Stage is blank.
+# Closed is not a live deal. It still fills a blank sheet. Fell through and unknown imply nothing.
+DEAL_CONTACT_STAGE = {
+    "under_contract": "under contract", "showing": "showing scheduled",
+    "active": "contacted", "consult": "contacted", "lead": "contacted", "closed": "past client",
+}
+# When one person has several deals, the furthest along wins. A closed deal never beats a live one.
+SHOWN_RANK = {"past client": 1, "contacted": 2, "showing scheduled": 3, "under contract": 4}
+PAST_CLIENT_TAG = "past_client_review"
 
 
 # ------------------------------------------------------------------ helpers
@@ -179,6 +188,40 @@ def email_key(email: str) -> str:
 def shown_name(c: dict) -> str:
     """The name to show for a contact: the display name, or first and last when display is blank. Never invented."""
     return str(c.get("display") or "").strip() or " ".join(p for p in (str(c.get("first") or "").strip(), str(c.get("last") or "").strip()) if p)
+
+
+def contact_stage(c: dict, deals: list | None = None) -> dict:
+    """The stage to show, computed and never written. The sheet's Stage wins when it is set. Otherwise the
+    furthest-along deal sets it, and otherwise the past_client_review tag. stage_from is sheet, deal, tag or blank.
+    A live deal that maps to a different stage than the sheet is a mismatch to fix by hand, not a rewrite."""
+    raw = (c.get("Stage") or c.get("stage") or "").strip().lower()
+    best_fill = None
+    best_live = None
+    for d in deals or []:
+        ds = (d.get("stage") or "").strip()
+        mapped = DEAL_CONTACT_STAGE.get(ds)
+        if not mapped:
+            continue
+        item = (SHOWN_RANK[mapped], mapped, d)
+        if best_fill is None or item[0] > best_fill[0]:
+            best_fill = item
+        if ds in LIVE_DEAL_STAGES and (best_live is None or item[0] > best_live[0]):
+            best_live = item
+    tokens = set(re.findall(r"[a-z0-9_]+", (c.get("opportunity_types") or "").lower()))
+    if raw:
+        shown, src = raw, "sheet"
+    elif best_fill:
+        shown, src = best_fill[1], "deal"
+    elif PAST_CLIENT_TAG in tokens:
+        shown, src = "past client", "tag"
+    else:
+        shown, src = "", ""
+    mismatch = None
+    if raw and best_live and best_live[1] != raw:
+        d = best_live[2]
+        mismatch = {"suggest_stage": best_live[1], "deal_stage": (d.get("stage") or "").strip(),
+                    "address": d.get("address") or "", "deal_id": d.get("deal_id") or ""}
+    return {"stage": shown, "stage_from": src, "sheet_stage": raw, "stage_mismatch": mismatch}
 
 
 def name_key(name: str) -> str:
@@ -923,7 +966,28 @@ class CRM:
                     out.append({**row, "rule": "hot_gone_quiet", "suggest_band": "lukewarm", "days_quiet": quiet,
                                 "why": f"marked {band} but " + ("nothing logged or texted, ever" if quiet is None
                                                                 else f"no touch or text in {quiet} days") + ". Call them today or cool the band"})
-        return sorted(out, key=lambda r: (REVIEW_RULES.index(r["rule"]), r["display"]))
+        deals_by: dict[str, list] = {}
+        for d in self.deals():
+            pid = str(d.get("person_id") or "")
+            if pid:
+                deals_by.setdefault(pid, []).append(d)
+        for c in self.contacts():
+            if (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
+            view = contact_stage(c, deals_by.get(str(c["person_id"]), []))
+            mm = view["stage_mismatch"]
+            if not mm:
+                continue
+            band, typ = norm_band(c.get("band")), (c.get("Type") or "").lower()
+            where = f" at {mm['address']}" if mm.get("address") else ""
+            deal_words = (mm.get("deal_stage") or "").replace("_", " ")
+            sheet = view["sheet_stage"] or "blank"
+            out.append({"person_id": c["person_id"], "display": shown_name(c), "band": band, "type": typ,
+                        "stage": view["sheet_stage"], "suggest_band": "", "suggest_type": "",
+                        "suggest_stage": mm["suggest_stage"], "rule": "stage_mismatch",
+                        "deal_stage": mm.get("deal_stage") or "", "address": mm.get("address") or "",
+                        "why": f"sheet Stage is {sheet}, and the live deal{where} is {deal_words}"})
+        return sorted(out, key=lambda r: (REVIEW_RULES.index(r["rule"]), r["display"], r.get("suggest_stage", "")))
 
     def heat(self, as_of: date | None = None, signals: dict | None = None) -> dict:
         """Everyone Caleb may contact, scored by heat.py: what they did and when, not the band column. Returns the
@@ -973,19 +1037,42 @@ class CRM:
                 # False means the signals file predates dated intent words, so intent is not being counted yet.
                 "dated_intent": dated, "thresholds": dict(heat_mod.THRESHOLDS)}
 
-    def people(self, signals: dict | None = None) -> list[dict]:
+    def people(self, signals: dict | None = None, as_of: date | None = None) -> list[dict]:
         """Everyone Caleb may contact, compact, so Pipeline's voice can find anyone by name, street or town, not only
-        the people due today. Do_Not_Contact people are left out. Read only."""
+        the people due today. Do_Not_Contact people are left out. `stage` is the shown stage (sheet, else a deal,
+        else the past_client_review tag). Nothing here is written back to the sheet."""
+        import heat as heat_mod
+        as_of = as_of or today()
         signals = signals or {}
+        deals_by: dict[str, list] = {}
+        live_by: dict[str, str] = {}
+        for d in self.deals():
+            pid = str(d.get("person_id") or "")
+            if not pid:
+                continue
+            deals_by.setdefault(pid, []).append(d)
+            if (d.get("stage") or "unknown") in LIVE_DEAL_STAGES:
+                live_by.setdefault(pid, d.get("stage", ""))
         out = []
         for c in self.contacts():
             if (c.get("Do_Not_Contact") or "").upper() == "YES":
                 continue
             sig = signals.get(c["person_id"], {})
+            view = contact_stage(c, deals_by.get(str(c["person_id"]), []))
+            lead_age = None
+            if "lead" in (c.get("Stage") or "").lower():
+                m = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", c.get("Source", "") or "")
+                if m and m.group(1) <= as_of.isoformat():
+                    lead_age = (as_of - date.fromisoformat(m.group(1))).days
+            h = heat_mod.score(c, sig, as_of, deal_stage=live_by.get(str(c["person_id"]), ""), lead_age=lead_age,
+                               last_touch=parse_touch(c.get("Last_Touch", ""), as_of))
             out.append({"person_id": c["person_id"], "display": shown_name(c), "band": norm_band(c.get("band")),
-                        "stage": c.get("Stage", ""), "type": (c.get("Type") or "").lower(), "street": c.get("street", ""),
-                        "city": c.get("city", ""), "last_touch": c.get("Last_Touch", ""), "next_action": c.get("Next_Action", ""),
-                        "last_inbound": sig.get("last_inbound", ""), "last_outbound": sig.get("last_outbound", ""),
+                        "stage": view["stage"], "stage_from": view["stage_from"], "sheet_stage": view["sheet_stage"],
+                        "stage_mismatch": view["stage_mismatch"], "type": (c.get("Type") or "").lower(),
+                        "street": c.get("street", ""), "city": c.get("city", ""), "last_touch": c.get("Last_Touch", ""),
+                        "next_action": c.get("Next_Action", ""), "last_inbound": sig.get("last_inbound", ""),
+                        "last_outbound": sig.get("last_outbound", ""), "phone": c.get("primary_phone", ""),
+                        "email": c.get("email", ""), "heat": h["heat"] if h["status"] == "ok" else None,
                         "has_phone": bool(c.get("primary_phone")), "has_email": bool(c.get("email"))})
         return out
 
@@ -1193,7 +1280,7 @@ class CRM:
             "heat": self.heat(as_of, signals),
             "partners": self.partners(as_of),
             "label_review": self.label_review(as_of, signals),
-            "people": self.people(signals),
+            "people": self.people(signals, as_of),
             "cadence_days": CADENCE_DAYS,
             "map": {**pins, "farms": self.farm_counts(farms, pins["pins"])},
             "market": self.market(market_rows or [], farms, pins["pins"], dismissed),
@@ -2128,6 +2215,70 @@ def run_tests() -> int:
     before = json.dumps(c4.contacts(), sort_keys=True)
     c4.heat(as_of, sig4)
     check("scoring heat writes nothing to the sheet", json.dumps(c4.contacts(), sort_keys=True) == before)
+
+    # Shown stage: sheet wins, else the furthest-along deal, else the past_client_review tag. Never written.
+    sheet_uc = c4.create_contact("Uma Contract", "+12255550191", "", band="hot", stage="under contract", source="test")
+    blank_show = c4.create_contact("Dee Showing", "+12255550192", "", band="warm", stage="", source="test")
+    blank_two = c4.create_contact("Casey Two Deal", "+12255550193", "", band="warm", stage="", source="test")
+    blank_closed = c4.create_contact("Pat Closed", "+12255550194", "", band="", stage="", source="test")
+    tagged = c4.create_contact("Terry Tag", "+12255550195", "terry.tag@example.com", band="cold", stage="", source="test")
+    both = c4.create_contact("Sam Sheet Deal", "+12255550196", "", band="hot", stage="nurture", source="test")
+    agree = c4.create_contact("Alex Agree", "+12255550197", "", band="hot", stage="under contract", source="test")
+    active_past = c4.create_contact("Riley Active", "+12255550198", "", band="warm", stage="past client", source="test")
+    phone_only = c4.create_contact("", "+12255550181", "", band="cold", stage="", source="test")
+    email_only = c4.create_contact("", "", "noname.fixture@example.com", band="", stage="", source="test")
+    c4.by_id(tagged["person_id"])["opportunity_types"] = "mover, past_client_review"
+    c4.by_id(sheet_uc["person_id"])["opportunity_types"] = "past_client_review"
+    c4.ensure_tabs()
+    c4.upsert_deal("18 Fixture Contract Ln, Zachary, LA", "seeded", "2026-10-20", person_id=blank_show["person_id"], stage="showing")
+    c4.upsert_deal("19 Fixture Live Ln, Zachary, LA", "seeded", "2026-10-20", person_id=blank_two["person_id"], stage="showing")
+    c4.upsert_deal("19 Fixture Live Ln unit B", "seeded", "2026-10-21", person_id=blank_two["person_id"], stage="under_contract")
+    c4.upsert_deal("20 Fixture Closed Ln", "seeded", "2026-09-01", person_id=blank_closed["person_id"], stage="closed")
+    c4.upsert_deal("21 Fixture Nurture Ln", "seeded", "2026-10-20", person_id=both["person_id"], stage="under_contract")
+    c4.upsert_deal("22 Fixture Agree Ln", "seeded", "2026-10-20", person_id=agree["person_id"], stage="under_contract")
+    c4.upsert_deal("23 Fixture Active Ln", "seeded", "2026-10-20", person_id=active_past["person_id"], stage="active")
+    c4.upsert_deal("24 Fixture Consult Ln", "seeded", "2026-10-20", person_id=tagged["person_id"], stage="fell_through")
+    by = {p["person_id"]: p for p in c4.people(as_of=as_of)}
+    uc, sh, two = by[sheet_uc["person_id"]], by[blank_show["person_id"]], by[blank_two["person_id"]]
+    cl, tg, mm = by[blank_closed["person_id"]], by[tagged["person_id"]], by[both["person_id"]]
+    ag, ap = by[agree["person_id"]], by[active_past["person_id"]]
+    check("sheet stage wins over a tag", uc["stage"] == "under contract" and uc["stage_from"] == "sheet" and not uc["stage_mismatch"])
+    check("a blank sheet takes the live deal: showing becomes showing scheduled, from the deal",
+          sh["stage"] == "showing scheduled" and sh["stage_from"] == "deal" and sh["sheet_stage"] == "" and not sh["stage_mismatch"])
+    check("two deals: the furthest along wins, under contract over showing",
+          two["stage"] == "under contract" and two["stage_from"] == "deal")
+    check("a closed deal on a blank sheet shows past client, from the deal", cl["stage"] == "past client" and cl["stage_from"] == "deal")
+    check("past_client_review tag shows past client when there is no sheet stage and no mapped deal",
+          tg["stage"] == "past client" and tg["stage_from"] == "tag" and not tg["stage_mismatch"])
+    check("a live deal that disagrees with the sheet stage is flagged and the sheet stage still wins",
+          mm["stage"] == "nurture" and mm["stage_from"] == "sheet" and mm["stage_mismatch"]["suggest_stage"] == "under contract"
+          and mm["stage_mismatch"]["deal_stage"] == "under_contract")
+    check("a live deal that matches the sheet stage is not a mismatch", not ag["stage_mismatch"])
+    check("an active deal on a past client is a mismatch suggesting contacted",
+          ap["stage"] == "past client" and ap["stage_mismatch"]["suggest_stage"] == "contacted")
+    check("no sheet, no deal and no tag stays blank, so the board can say No stage yet",
+          by["1"]["stage"] == "" and by["1"]["stage_from"] == "" and by["1"]["stage_mismatch"] is None)
+    check("a blank display stays blank: the phone and email ride along and no name is invented",
+          by[phone_only["person_id"]]["display"] == "" and by[phone_only["person_id"]]["phone"] == "+12255550181"
+          and by[email_only["person_id"]]["display"] == "" and by[email_only["person_id"]]["email"] == "noname.fixture@example.com")
+    lr5 = [r for r in c4.label_review(as_of) if r["rule"] == "stage_mismatch"]
+    lr_ids = {r["person_id"]: r for r in lr5}
+    check("label review lists the stage mismatch and not the deal that already agrees",
+          both["person_id"] in lr_ids and agree["person_id"] not in lr_ids and blank_show["person_id"] not in lr_ids
+          and "under contract" in lr_ids[both["person_id"]]["why"] and lr_ids[both["person_id"]]["suggest_stage"] == "under contract")
+    snap = json.dumps(c4.contacts(), sort_keys=True)
+    c4.people(as_of=as_of)
+    c4.label_review(as_of)
+    check("shown stage and the mismatch list write nothing to the sheet", json.dumps(c4.contacts(), sort_keys=True) == snap)
+    # consult and lead map to contacted. unknown and fell_through map to nothing.
+    lone = {"Stage": "", "opportunity_types": ""}
+    check("consult and lead map to contacted",
+          contact_stage(lone, [{"stage": "consult"}])["stage"] == "contacted"
+          and contact_stage(lone, [{"stage": "lead"}])["stage"] == "contacted")
+    check("unknown and fell_through set no stage",
+          contact_stage(lone, [{"stage": "unknown"}, {"stage": "fell_through"}])["stage"] == ""
+          and contact_stage(lone, [{"stage": "unknown"}, {"stage": "fell_through"}])["stage_from"] == "")
+    check("a deal beats the tag", contact_stage({"Stage": "", "opportunity_types": "past_client_review"}, [{"stage": "showing"}])["stage_from"] == "deal")
 
     print(f"\n{'ALL PASS' if not fails else str(len(fails)) + ' FAILED'}")
     return 1 if fails else 0
