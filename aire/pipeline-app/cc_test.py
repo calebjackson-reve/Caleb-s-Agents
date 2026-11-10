@@ -703,6 +703,21 @@ class Growth(unittest.TestCase):
         saved = [{"day": "2026-11-01", "gci": 12000.0, "closings": 1}]
         self.assertNotIn("mismatch", cc.flag_history(saved, deals, T, self.SALES)[0])
 
+    def test_gci_estimate_fills_only_what_has_no_commission(self):
+        head = SHEET[:1] + [["300 Pine Dr", "Listing", "Closed", "400,000", "12,000", "", "", "2026-03-01", "", ""],
+                            ["700 Blank Rd", "Both", "Closed", "100000", "", "", "", "2026-04-01", "", ""]]
+        deals = cc.deal_rows(head)
+        sales = self.SALES + [{"close": "2026-05-05", "address": "8 Made Up Ct", "side": "Buyer", "price": 200000, "type": "Land"},
+                              {"close": "2026-06-06", "address": "9 Rent Rd", "price": 2000, "type": "Residential Lease"}]
+        self.assertEqual(cc.scorecard(deals, [], [], {}, None, T, sales)["gci"]["value"], 12000)   # no rate, nothing estimated
+        self.assertEqual(cc.scorecard(deals, [], [], {}, None, T, sales)["gci"]["blank"], 1)
+        g = cc.scorecard(deals, [], [], {}, None, T, sales, 0.025)["gci"]
+        # 700 Blank Rd: 2.5% of 100,000 on two sides. 8 Made Up Ct: 2.5% of 200,000. Pine Dr keeps its real 12,000.
+        self.assertEqual((g["value"], g["sheet_value"], g["est"], g["blank"]), (22000, 12000, {"value": 10000, "n": 2, "rate": 0.025}, 0))
+        self.assertEqual(cc.sheet_as_of(deals, "2026-04-15", sales, 0.025)["gci"], 17000)
+        paid = cc.scorecard(deals, [], [], {}, {"value": 5000}, T, sales, 0.025)["gci"]
+        self.assertEqual((paid["value"], paid["est"]), (5000, None))                              # a KW paid figure is never padded
+
     def test_no_sales(self):
         self.assertIsNone(cc.growth([], [], T))
         self.assertIsNone(cc.growth(None, cc.deal_rows([HEAD]), T))

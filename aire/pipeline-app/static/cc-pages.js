@@ -12,7 +12,7 @@
     const live = d.deals.filter(r => r.stage !== 'out');
     return `<div class="cc-page">${head('Commission', 'Amounts are gross, before the KW 70/30 split · ' + (cap ? 'cap year from ' + day(cap.start) : 'cap and cap year not set yet, add them on Scorecard'))}
       <div class="cc-tiles">
-        ${tile('GCI paid', m(sc.gci.value), paidFrom + (sc.gci.blank ? ` · <em>${sc.gci.blank} closed with no commission</em>` : ''), 'deals')}
+        ${tile(sc.gci.est ? 'GCI, part estimated' : 'GCI paid', m(sc.gci.value), paidFrom + (sc.gci.blank ? ` · <em>${sc.gci.blank} closed with no commission</em>` : '') + `${sc.gci.est ? ` · <em>includes ${m(sc.gci.est.value)} estimated at ${sc.gci.est.rate * 100}% of price for ${sc.gci.est.n} closings</em>` : ''}`, ['deals', 'sales'])}
         ${tile('Paid plus pending', m(sc.gci.with_pending), 'Paid, plus every deal under contract', 'deals')}
         ${tile('Pending, gross', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals')}
         ${tile('Toward cap', cap ? m(cap.paid) : '—', cap ? `${cap.pct}% of ${m(cap.amount)} · ${m(cap.left)} to go` : 'Set the cap amount and start date on Scorecard', ['deals', 'goals'])}

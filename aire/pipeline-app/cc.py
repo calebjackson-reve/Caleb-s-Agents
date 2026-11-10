@@ -690,7 +690,33 @@ def closing_days(sales, deals) -> list[str]:
     return days
 
 
-def scorecard(deals, evs, leads, goals, kw_paid, today: date, sales=None) -> dict:
+def gci_estimate(sales, deals, day: str, rate) -> dict:
+    """An estimate for closings that year, on or before day, with no commission on record: rate times the price, per
+    side. That is Closed deals on the sheet with a blank commission (the price from the sheet, else the sales history)
+    and sales in the history the sheet does not hold. Leases are left out. With no rate set, nothing is estimated."""
+    if not rate:
+        return {"value": 0, "n": 0, "rate": None}
+    sides = lambda v: 2 if re.search(r"both|dual", str(v or ""), re.I) else 1
+    hist = {(deal_key(r.get("address")), r["close"][:4]): r for r in sales or []
+            if is_day(r.get("close")) and not re.search(r"lease", str(r.get("type") or ""), re.I)}
+    total, n, on_sheet = 0.0, 0, set()
+    for d in deals or []:
+        if stage_of(d["status"]) != "closed" or not is_day(d.get("act")):
+            continue
+        k = (deal_key(d["deal"]), d["act"][:4])
+        on_sheet.add(k)
+        if d["commission"] is None and d["act"][:4] == day[:4] and d["act"] <= day:
+            h = hist.get(k) or {}
+            total += rate * (d["price"] or num(h.get("price")) or 0) * sides(d.get("side") or h.get("side"))
+            n += 1
+    for k, r in hist.items():
+        if k not in on_sheet and r["close"][:4] == day[:4] and r["close"] <= day:
+            total += rate * (num(r.get("price")) or 0) * sides(r.get("side"))
+            n += 1
+    return {"value": round(total, 2), "n": n, "rate": rate}
+
+
+def scorecard(deals, evs, leads, goals, kw_paid, today: date, sales=None, est_rate=None) -> dict:
     yr = str(today.year)
     n_closed = sum(1 for d in closing_days(sales, deals) if d[:4] == yr and d <= today.isoformat())
     closed = [r for r in deals if stage_of(r["status"]) == "closed"]
@@ -702,10 +728,12 @@ def scorecard(deals, evs, leads, goals, kw_paid, today: date, sales=None) -> dic
     appts_all = [r for r in evs if r["kind"] in ("showing", "listing", "client") and today.isoformat() <= r["day"] <= end7]
     appts = [r for r in appts_all if booked(r)]  # an invite not accepted is not an appointment yet
     paid = kw_paid.get("value") if kw_paid and kw_paid.get("value") is not None else None
-    gci = {"value": paid if paid is not None else sheet_gci,
+    est = gci_estimate(sales, deals, today.isoformat(), est_rate if paid is None else None)
+    gci = {"value": paid if paid is not None else round(sheet_gci + est["value"], 2),
            "from": "kw_paid" if paid is not None else "sheet",
-           "sheet_value": sheet_gci, "n": len(yr_closed),
-           "blank": sum(1 for r in yr_closed if r["commission"] is None),
+           "sheet_value": sheet_gci, "n": len(yr_closed), "est": est if est["n"] else None,
+           # A blank commission that is estimated is no longer missing from the number.
+           "blank": 0 if est["n"] else sum(1 for r in yr_closed if r["commission"] is None),
            "undated": sum(1 for r in closed if not is_day(r.get("act")))}
     pend = pending_commission(deals)
     gci["with_pending"] = gci["value"] + pend["value"]
@@ -759,15 +787,15 @@ def since_saved(rows: list[dict], row: dict, metric: str) -> dict | None:
     return {"since": past[0]["day"], "days": len(past), "value": round(row[metric] - past[0][metric], 2)}
 
 
-def sheet_as_of(deals: list[dict], day: str, sales=None) -> dict:
+def sheet_as_of(deals: list[dict], day: str, sales=None, est_rate=None) -> dict:
     """GCI and closings as the Deals sheet says they stood on a day: Closed deals with an act of sale that year, on or
     before that day."""
     yr = [r for r in deals if stage_of(r["status"]) == "closed" and is_day(r.get("act")) and r["act"][:4] == day[:4] and r["act"] <= day]
-    return {"gci": round(sum(r["commission"] or 0 for r in yr), 2),
+    return {"gci": round(sum(r["commission"] or 0 for r in yr) + gci_estimate(sales, deals, day, est_rate)["value"], 2),
             "closings": sum(1 for d in closing_days(sales, deals) if d[:4] == day[:4] and d <= day)}
 
 
-def flag_history(rows: list[dict], deals: list[dict], today: date, sales=None) -> list[dict]:
+def flag_history(rows: list[dict], deals: list[dict], today: date, sales=None, est_rate=None) -> list[dict]:
     """Saved days whose GCI or closings no longer match the Deals sheet for that day get "mismatch": the metrics that
     disagree. Those rows are left out of every change and line, so an edit to the sheet never shows as growth.
     With no Deals sheet rows (never read), nothing is flagged."""
@@ -778,7 +806,7 @@ def flag_history(rows: list[dict], deals: list[dict], today: date, sales=None) -
         if not is_day(r.get("day")) or r["day"] >= today.isoformat():
             out.append(r)
             continue
-        live = sheet_as_of(deals, r["day"], sales)
+        live = sheet_as_of(deals, r["day"], sales, est_rate)
         bad = [k for k in ("gci", "closings") if isinstance(r.get(k), (int, float)) and abs(r[k] - live[k]) > 0.5]
         out.append({**r, "mismatch": bad, "sheet_now": live} if bad else r)
     return out
@@ -899,8 +927,9 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
     dl = contract_deadlines(deal_deadlines(evs), cards)
     goals = (raw.get("goals") or {}).get("rows") or {}
     sales = _rows(raw.get("sales"))
-    sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today, sales)
-    hist = flag_history(_rows(raw["history"]), deals, today, sales)
+    rate = cfg.get("gci_est_rate")  # Caleb, 2026-11-09: 0.025, an average of 2.5% of price where no commission is on record
+    sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today, sales, rate)
+    hist = flag_history(_rows(raw["history"]), deals, today, sales, rate)
     sheet_days = len({r["day"] for r in hist if is_day(r.get("day")) and r["day"] <= today.isoformat()})
     hrow = history_row(sc, today)
     full = add_history(hist, hrow)

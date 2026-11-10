@@ -116,7 +116,7 @@
       <div class="cc-acts cc-quick"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button><button type="button" onclick="go('touches')">Touches due</button><button type="button" onclick="openTask('')">＋ Add a task</button></div>
       <div class="cc-tiles">
         ${tile('Pending commission', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals', 'commission')}
-        ${tile('GCI this year', m(sc.gci.value), (gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set') + (sc.gci.blank ? ` · <em>${sc.gci.blank} closed with no commission</em>` : ''), ['deals', 'goals'], 'scorecard')}
+        ${tile('GCI this year', m(sc.gci.value), (gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set') + (sc.gci.blank ? ` · <em>${sc.gci.blank} closed with no commission</em>` : '') + `${sc.gci.est ? ` · <em>includes ${m(sc.gci.est.value)} estimated at ${sc.gci.est.rate * 100}% of price for ${sc.gci.est.n} closings</em>` : ''}`, ['deals', 'goals'], 'scorecard')}
         ${tile('Deadlines, 7 days', C.dated(d.deadlines.d7.length, (d.deadlines.undated || []).length), `${C.overdueLine((d.deadlines.overdue || []).length)}${C.undatedLine((d.deadlines.undated || []).length)}${d.deadlines.d3.length} in the next 3 days`, ['deals', 'calendar'], 'deadlines')}
         ${tile('New leads, 14 days', n(leads), `${n(leads7)} in the last 7 days${sc.leads7.low ? ` · goal ${sc.leads7.low} to ${sc.leads7.high} a week` : ''}${C.local && !C.local('command').at ? ' · <em>KW Command leads not checked, its reader has never run</em>' : ''}`, ['leads', 'crm'], 'ccleads')}
       </div>
