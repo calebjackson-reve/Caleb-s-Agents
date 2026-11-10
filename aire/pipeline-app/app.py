@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import platform
@@ -68,6 +69,7 @@ import auth  # noqa: E402  (the login for anything but this Mac)
 import push  # noqa: E402  (phone alerts)
 import cc_ask  # noqa: E402  (Ask Claude on every Command Center page)
 import bridge  # noqa: E402  (jobs out to Grok bot, result files back)
+import handoff  # noqa: E402  (texts and emails Caleb sends himself from the Text and Email buttons)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -369,6 +371,8 @@ class State:
         self.messages = {"checked": False, "ok": None, "detail": ""}
         if self.sender == "live" and not demo and platform.system() == "Darwin":
             threading.Thread(target=self.check_messages, daemon=True).start()
+        self.handoff_state = {"messages_ok": None, "gmail_ok": None, "detail": ""}
+        self._gmail = None
         self.started = now().isoformat(timespec="seconds")
         # Command Center reads: out/cc/ on the Mac (written by the sync), made-up fixtures in demo.
         self.ask_log = (send_log.parent / "ask-usage.json") if send_log else OUT / ("demo-ask-usage.json" if demo else "ask-usage.json")
@@ -400,10 +404,23 @@ class State:
         log = read_json(self.send_log_path, [])
         return log if isinstance(log, list) else []
 
+    def cc_payload(self) -> dict:
+        """The Command Center payload: one lead list, one deal source, built with the CRM feed. A lead counts as
+        replied once a real (not dry run) text or email went to that person."""
+        sent = {r.get("person_id") for r in self.send_log() if r.get("status") == "sent" and r.get("person_id")}
+        return cc.build(self.cc_dir, feed=self.feed() or {}, replied=sent)
+
     def sent_today(self) -> dict:
         d = today().isoformat()
         rows = [r for r in self.send_log() if r.get("at", "").startswith(d) and r.get("status") in ("sent", "dry-run")]
         return {"texts": sum(1 for r in rows if r["kind"] == "text"), "emails": sum(1 for r in rows if r["kind"] == "email")}
+
+    def left_today(self) -> dict:
+        """What really left the Mac today, and what was only a dry run. The screen never calls a dry run sent."""
+        d = today().isoformat()
+        rows = [r for r in self.send_log() if r.get("at", "").startswith(d)]
+        n = lambda st, k: sum(1 for r in rows if r.get("status") == st and r.get("kind") == k)
+        return {"sent_texts": n("sent", "text"), "sent_emails": n("sent", "email"), "dry_texts": n("dry-run", "text"), "dry_emails": n("dry-run", "email")}
 
     def last_texts(self, days: int = 30, recheck_minutes: int = 30, db: Path | None = None) -> dict:
         """The newest text to each person in the last `days`, for the "Texted 9:42 AM · delivered" line on their card.
@@ -424,7 +441,7 @@ class State:
                 continue
             if "delivery" not in r:
                 r["delivery"] = delivery_from_detail(r.get("status", ""), r.get("detail", ""))
-            if live and r.get("status") == "sent" and r["delivery"] in ("pending", "sent", "unknown") and now().timestamp() - t < recheck_minutes * 60:
+            if live and r.get("via") != "handoff" and r.get("status") == "sent" and r["delivery"] in ("pending", "sent", "unknown") and now().timestamp() - t < recheck_minutes * 60:
                 st = delivery_state(r.get("to", ""), t, db or CHAT_DB)
                 if st in ("delivered", "error", "sent") and st != r["delivery"]:
                     r["delivery"], changed = st, True
@@ -498,7 +515,7 @@ class State:
         try:
             from elevenlabs import ElevenLabs
         except ImportError:
-            raise CRMError("the elevenlabs package is not installed in Pipeline's Python (pip install elevenlabs)")
+            raise CRMError("Call mode needs a voice package that is not installed on this Mac yet. Ask Claude to install it")
         try:
             resp = ElevenLabs(api_key=self.eleven_key).conversational_ai.conversations.get_webrtc_token(agent_id=self.speech_engine_id)
         except Exception as e:
@@ -517,9 +534,16 @@ class State:
                 "has_phone": bool(r.get("phone")), "has_email": bool(r.get("email"))} for r in f.get("touches_due", [])[:25]]
         tasks = [{"task": t.get("task"), "who": t.get("display"), "due": t.get("due"), "overdue": t.get("overdue"), "source": t.get("source")}
                  for t in f.get("tasks", [])[:20]]
-        deals = [{"address": d.get("address"), "who": d.get("display"), "side": d.get("side"), "stage": d.get("stage"), "price": d.get("price"),
-                  "expected_close": d.get("expected_close"), "next_step": d.get("next_step"), "last_event": d.get("last_event")} for d in f.get("deals", [])[:15]]
-        leads = [{"name": l.get("display"), "source": l.get("source"), "received": l.get("received"), "next_action": l.get("next_action")} for l in f.get("new_leads", [])[:15]]
+        # Deals and leads as the screens show them: the AIRE Deals sheet (the one deal source) and the one lead list
+        # (14 days, test leads out), so a spoken answer never disagrees with a page.
+        try:
+            cp = self.cc_payload()
+        except Exception:  # noqa: BLE001  (a missing Command Center cache must not break the voice)
+            cp = {}
+        deals = [{"address": d.get("deal"), "status": d.get("status"), "side": d.get("side"), "price": d.get("price"),
+                  "act_of_sale": d.get("act"), "next_step": d.get("next")} for d in cp.get("deals", []) if d.get("stage") not in ("closed", "out")][:15]
+        leads = [{"name": l.get("name"), "source": l.get("source"), "received": l.get("received"), "needs": (l.get("due") or {}).get("label")}
+                 for l in cp.get("leads", [])][:15]
         # The whole due list is too big to send, so the people a question most often reaches past the top 25 for:
         # hot and warm contacts quiet the longest, and everyone waiting on a reply.
         allrows = f.get("touches_due", [])
@@ -554,7 +578,7 @@ class State:
         try:
             import anthropic
         except ImportError:
-            raise CRMError("the anthropic package is not installed in Pipeline's Python (pip install anthropic in ~/.aire/venv)")
+            raise CRMError("Claude answers need a package that is not installed on this Mac yet. Ask Claude to install it")
         client = anthropic.Anthropic(api_key=self.ask_key)
         tools = jarvis.Tools(self.feed(), self.sent_today(), {"texts": self.max_texts, "emails": self.max_emails}, today().isoformat())
         r = self._ask_call(anthropic, lambda: jarvis.ask(client, self.ask_model, tools, question))
@@ -574,10 +598,8 @@ class State:
         try:
             import anthropic
         except ImportError:
-            raise CRMError("the anthropic package is not installed in Pipeline's Python")
-        f = self.feed() or {}
-        p = cc.build(self.cc_dir)
-        p["leads"] = cc.attach_crm(p["leads"], (f.get("new_leads") or []) + (f.get("touches_due") or []))
+            raise CRMError("Claude answers need a package that is not installed on this Mac yet. Ask Claude to install it")
+        p = self.cc_payload()
         client = anthropic.Anthropic(api_key=self.ask_key, timeout=60.0)
         try:
             r = self._ask_call(anthropic, lambda: cc_ask.ask(client, p, page, question, private, self.ask_log, now()))
@@ -642,32 +664,50 @@ class State:
         self._bump_usage(spoken_chars=len(text))
         return audio
 
+    def feed_run(self) -> dict | None:
+        """How the last feed rebuild went, from the end of its log (refresh_feed.sh). None in demo or with no log."""
+        p = self.paths.get("feed_log")
+        if self.demo or not p:
+            return None
+        return feed_run_status(p, now())
+
     def snapshot(self) -> dict:
         feed = self.feed()
+        run = self.feed_run()
         text_q = read_json(self.paths["text_queue"], {})
         email_q = read_json(self.paths["email_queue"], {})
         command = read_json(self.paths["command_status"], {})
         feed_age = 0 if self.demo else file_age_minutes(self.paths["feed"])
         sent = self.sent_today()
         feed_ok = bool(feed) and "_error" not in feed
+        log = self.send_log()
+        if feed_ok:  # a send Caleb made by hand and Pipeline confirmed is a touch, here only, never in the sheet
+            feed, text_q, email_q, _ = handoff.apply_touches(feed, text_q, email_q, log, today().isoformat())
+        by_person: dict = {}
+        for r in log[-400:]:
+            if r.get("person_id") and r.get("status") in ("sent", "opened"):
+                by_person.setdefault(r["person_id"], []).append({k: (r.get(k) or "")[:140] for k in ("at", "kind", "status", "sent_at", "confirmed_by", "service", "subject", "text")})
         if feed_ok and isinstance(feed.get("market"), dict):
             gone = self.dismissed()
             if gone:
                 feed = {**feed, "market": {**feed["market"], "rows": [r for r in feed["market"].get("rows", []) if r.get("id") not in gone]}}
         problems = []
         if not feed:
-            problems.append({"level": "warn", "code": "no_feed", "text": "No feed.json yet. Run the refresh."})
+            problems.append({"level": "warn", "code": "no_feed", "text": "The CRM feed has not been built yet. Press refresh to build it."})
         elif "_error" in feed:
-            problems.append({"level": "warn", "code": "feed_unreadable", "text": f"feed.json could not be read ({feed['_error']})."})
+            problems.append({"level": "warn", "code": "feed_unreadable", "text": "The CRM feed could not be read. Press refresh to rebuild it."})
         elif feed.get("header_ok") is False:
             problems.append({"level": "stop", "code": "header_not_ok",
                              "text": "The Contacts header lost a column the engine needs: " + ", ".join(feed.get("missing_columns", []))})
+        if run and run["state"] == "failed":
+            problems.append({"level": "warn", "code": "feed_failed", "text": f"The CRM feed rebuild failed at {run['at_text']}: {run['detail']}. "
+                                                                          "The screens show the last good feed."})
         if feed_age is not None and feed_age > 60:
             problems.append({"level": "warn", "code": "feed_stale", "text": f"Feed is {feed_age // 60}h {feed_age % 60}m old."})
         if self.messages.get("checked") and not self.messages.get("ok"):
             problems.append({"level": "warn", "code": "messages_permission",
                              "text": "Pipeline cannot control Messages yet, so texts will not send. System Settings, Privacy and Security, Automation: "
-                                     "turn on Messages for Pipeline's Python, then restart Pipeline. (" + self.messages.get("detail", "")[:80] + ")"})
+                                     "turn on Messages for the Python entry Pipeline runs on, then restart Pipeline."})
         if self.sender_blocked:
             problems.append({"level": "warn", "code": "not_live_host", "text": self.sender_blocked})
         elif self.caller_blocked:
@@ -686,14 +726,17 @@ class State:
             "platform": platform.system(),
             "feed_ok": feed_ok,
             "feed_age_minutes": feed_age,
+            "feed_run": run,
             "feed": feed if feed_ok else {},
             "text_queue": text_q if "_error" not in text_q else {},
             "email_queue": email_q if "_error" not in email_q else {},
             "command": command if "_error" not in command else {},
-            "caps": {"texts": self.max_texts, "emails": self.max_emails, "sent_texts": sent["texts"], "sent_emails": sent["emails"]},
+            "caps": {"texts": self.max_texts, "emails": self.max_emails, **self.left_today()},
             "sent_today": [r for r in self.send_log() if r.get("at", "").startswith(today().isoformat())][-50:],
             "last_texts": self.last_texts(),
             "bridge": self.bridge_view(),
+            "handoff": {**self.handoff_state, "pending": handoff.pending(log, now().timestamp())},
+            "sent_log": {k: v[-5:] for k, v in by_person.items()},
             "refresh": self.refresh,
             "problems": problems,
             "links": {"sheet": SHEET_URL.format(sheet_id=feed.get("sheet_id", "")) if feed.get("sheet_id") else "", "command": COMMAND_URL},
@@ -804,11 +847,11 @@ class State:
             write_json(self.paths["dismissed"], {"ids": ids})
         return {"ok": True, "result": {"id": row_id, "dismissed": len(ids)}}
 
-    def make_lead(self, name: str, source: str, phone: str = "", email: str = "", note: str = "") -> dict:
+    def make_lead(self, name: str, source: str, phone: str = "", email: str = "", note: str = "", next_action: str = "") -> dict:
         if not name.strip() or not source.strip():
             raise CRMError("a lead needs a name and a source")
         args = ["lead", name.strip(), "--source", source.strip()]
-        for flag, v in (("--phone", phone), ("--email", email), ("--note", note)):
+        for flag, v in (("--phone", phone), ("--email", email), ("--note", note), ("--next-action", next_action)):
             if v and v.strip():
                 args += [flag, v.strip()]
         return self.crm.run(args)
@@ -863,6 +906,12 @@ class State:
             raise CRMError("the draft is empty")
         if kind == "email" and not subject.strip():
             raise CRMError("an email needs a subject")
+        if kind == "text":
+            to = norm_phone(to) or ""
+            if not to:
+                raise CRMError("not a valid US number: use 10 digits")
+        elif not re.fullmatch(r"[^\s@<>,;]+@[^\s@<>,;]+\.[A-Za-z]{2,}", to.strip()):
+            raise CRMError("not a valid email address")
         sent = self.sent_today()
         cap = self.max_texts if kind == "text" else self.max_emails
         used = sent["texts"] if kind == "text" else sent["emails"]
@@ -893,7 +942,7 @@ class State:
                 raise
             status = "sent"
         entry = {"at": now().isoformat(timespec="seconds"), "kind": kind, "person_id": person_id, "display": display,
-                 "to": to.strip(), "subject": subject.strip(), "chars": len(body), "status": status, "detail": detail,
+                 "to": to.strip(), "subject": subject.strip(), "chars": len(body), "text": body, "status": status, "detail": detail,
                  "delivery": delivery_from_detail(status, detail)}
         with self.lock:
             log = self.send_log()
@@ -1010,6 +1059,87 @@ class State:
         drafts = sum(1 for e in log if e["job_type"] == "hard_draft" and e["at"][:10] == at.date().isoformat())
         return {"caller": self.caller, "purposes": bridge.PURPOSES, "jobs": jobs,
                 "calls_24h": calls, "calls_cap": bridge.MAX_CALLS_24H, "drafts_today": drafts, "drafts_cap": self.max_hard_drafts}
+    # ---- hand-off: Caleb sends it himself in Messages or Gmail, Pipeline finds out (handoff.py)
+    def opened(self, kind: str, person_id: str, to: str, body: str, subject: str = "", display: str = "", draft: str = "", pool: str = "") -> dict:
+        """The Text or Email button opened Messages or Gmail. Logged as opened. Nothing is sent from here."""
+        if kind not in ("text", "email"):
+            raise CRMError("kind must be text or email")
+        to = (norm_phone(to) or "") if kind == "text" else to.strip()
+        if not to or (kind == "email" and not re.fullmatch(r"[^\s@<>,;]+@[^\s@<>,;]+\.[A-Za-z]{2,}", to)):
+            raise CRMError("not a valid " + ("US number" if kind == "text" else "email address"))
+        if kind == "text" and person_id and str(person_id) in {str(x) for x in (self.feed() or {}).get("no_text_consent", [])}:
+            raise CRMError("no text consent: their website form did not check the box to be texted. Email or call instead.")
+        with self.lock:
+            log = self.send_log()
+            entry, made = handoff.open_entry(log, now().isoformat(timespec="seconds"), kind, person_id, display, to, body, subject.strip(), draft, pool)
+            if made:
+                write_json(self.send_log_path, log)
+        return {"ok": True, "result": entry, "new": made}
+
+    def _save_handoff(self, log: list) -> None:
+        """Write confirmed lines onto the newest copy of the log, so a click that landed meanwhile is kept."""
+        with self.lock:
+            done = {e["id"]: e for e in log if e.get("id") and e.get("status") == "sent"}
+            fresh = [done.get(e.get("id"), e) if handoff.is_open(e) else e for e in self.send_log()]
+            write_json(self.send_log_path, fresh)
+
+    def handoff_check(self, db: Path | None = None, gmail=None) -> dict:
+        """One pass: look for the real send of every message opened in the last 15 minutes. Read only."""
+        log, at = self.send_log(), now().timestamp()
+        live = [e for e in log if handoff.is_open(e) and handoff.age(e, at) <= handoff.WINDOW + 60]
+        if not live:
+            return {"changed": 0}
+        if db is None and not self.demo and platform.system() == "Darwin":
+            db = CHAT_DB
+        if gmail is None and not self.demo and any(e["kind"] == "email" for e in live):
+            try:
+                if self._gmail is None:
+                    import cc_sync  # the read-only Google sign-in the Command Center sync already uses
+                    self._gmail = cc_sync.services()["gmail"]
+                gmail = self._gmail
+            except Exception as e:
+                self.handoff_state.update(gmail_ok=False, detail=f"{type(e).__name__}: {e}"[:160])
+        r = handoff.check(log, at, db, gmail)
+        self.handoff_state.update({k: r[k] for k in ("messages_ok", "gmail_ok") if r[k] is not None})
+        if r["changed"]:
+            self._save_handoff(log)
+            for e in log:
+                if e.get("id") in r["ids"]:
+                    handoff.record_pair(self.send_log_path.parent / "handoff", e)
+        return r
+
+    def handoff_answer(self, entry_id: str, sent: bool, db: Path | None = None) -> dict:
+        """Caleb's answer to "Did that send?": Sent marks it sent by him, Not sent takes the line out. On Sent, a
+        text's real words are read from Messages history when they are there (he may have rewritten all of it)."""
+        if db is None and not self.demo and platform.system() == "Darwin":
+            db = CHAT_DB
+        with self.lock:
+            log = self.send_log()
+            e = handoff.answer(log, entry_id, bool(sent), now().isoformat(timespec="seconds"))
+            if not e:
+                raise CRMError("that message is not waiting on an answer")
+            if sent and e.get("kind") == "text" and db is not None:
+                try:
+                    hit = handoff.find_sent_text(e["to"], datetime.fromisoformat(e["at"]).timestamp(), "", db, {x.get("msg_id") for x in log if x.get("msg_id")})
+                except handoff.Unreadable:
+                    hit = None
+                if hit:
+                    e.update(sent_at=hit["sent_at"], service=hit["service"], msg_id=hit["msg_id"], sent_text=hit["sent_text"])
+            write_json(self.send_log_path, log)
+        if sent:
+            handoff.record_pair(self.send_log_path.parent / "handoff", e)
+        return {"ok": True, "result": e, "sent": bool(sent)}
+
+    def handoff_loop(self, sleep=time.sleep) -> None:
+        if not self.demo and platform.system() == "Darwin":
+            ok, detail = handoff.probe(CHAT_DB)
+            self.handoff_state.update(messages_ok=ok, detail=detail)
+        while True:
+            sleep(60)
+            try:
+                self.handoff_check()
+            except Exception:
+                pass
 
     # ---- refresh
     def start_refresh(self) -> dict:
@@ -1041,6 +1171,13 @@ class State:
 
         threading.Thread(target=work, daemon=True).start()
         return self.refresh
+
+
+def norm_phone(v: str) -> str | None:
+    """+1 and 10 digits, or None. "(225) 747-0303", "225.747.0303" and "+1 225 747 0303" are all +12257470303."""
+    d = re.sub(r"\D", "", str(v or ""))
+    d = d[1:] if len(d) == 11 and d[0] == "1" else d
+    return "+1" + d if re.fullmatch(r"[2-9]\d{2}[2-9]\d{6}", d) else None
 
 
 def csv_safe(v: str, column: str = "") -> str:
@@ -1149,7 +1286,7 @@ def send_gmail(to: str, subject: str, body: str) -> str:
         raise CRMError(f"follow-up library not importable: {e}")
     svc = followups.gmail_service_or_none()
     if svc is None:
-        raise CRMError("no Gmail token at aire/follow-up/token.json; run the follow-up auth once")
+        raise CRMError("email can't send yet: Gmail is not connected on this Mac. Ask Claude to connect it once")
     followups.send_email(svc, to, subject, body)
     return "Gmail accepted it"
 
@@ -1186,6 +1323,8 @@ class Handler(BaseHTTPRequestHandler):
         ctype = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
                  ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json"}.get(path.suffix, "application/octet-stream")
         raw = path.read_bytes()
+        if path.name == "sw.js":
+            raw = raw.replace(b"__BUILD__", static_build().encode())
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(raw)))
@@ -1203,7 +1342,8 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/login":
             return self._file("login.html")
         if u.path == "/api/state":
-            return self._json(200, self.state.snapshot())
+            # local: this request came from the Mac itself. Send now is offered there only.
+            return self._json(200, {**self.state.snapshot(), "local": auth.Auth.is_local(self.headers, self.server.server_address[1])})
         if u.path == "/api/refresh":
             return self._json(200, self.state.refresh)
         if u.path == "/api/push/key":
@@ -1211,11 +1351,28 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/api/alerts":
             d = push._read(self.state.cc_dir / "alerts.json", {"rows": []})
             return self._json(200, {"ok": True, "rows": d.get("rows", [])[:20], "phones": len(push._read(self.state.push_subs, []))})
+        if u.path == "/api/photos":
+            # Which deals have photos and how many. Names only by deal key, never a file path.
+            return self._json(200, {"ok": True, "deals": {k: len(v) for k, v in deal_photos().items()}})
+        m = re.fullmatch(r"/photo/([a-z0-9 %+-]+)/(\d{1,3})", u.path)
+        if m:
+            # One photo by deal key and number, from the list above. No path from the request reaches the disk.
+            files = deal_photos().get(urllib.parse.unquote_plus(m.group(1)).replace("-", " "), [])
+            i = int(m.group(2))
+            if not 0 <= i < len(files):
+                return self._json(404, {"ok": False, "error": "no such photo"})
+            raw = files[i].read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", PHOTO_EXT[files[i].suffix.lower()])
+            self.send_header("Content-Length", str(len(raw)))
+            self.send_header("Cache-Control", "private, max-age=86400")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.wfile.write(raw)
+            return
         if u.path == "/api/cc":
-            p = cc.build(self.state.cc_dir)
-            f = self.state.feed() or {}
-            p["leads"] = cc.attach_crm(p["leads"], (f.get("new_leads") or []) + (f.get("touches_due") or []))
-            p["ask"] = {"on": bool(self.state.ask_key) or self.state.demo, "cap": cc_ask.CAP, "model": cc_ask.MODEL,
+            p = self.state.cc_payload()
+            p["ask"] = {"on": bool(self.state.ask_key) or self.state.demo, "cap": cc_ask.CAP, "model": cc_ask.MODEL, "pages": list(cc_ask.PAGES),
                         "spent": cc_ask.spent_today(self.state.ask_log, now())}
             return self._json(200, {**p, "demo": self.state.demo})
         if u.path == "/api/voice/token":
@@ -1313,7 +1470,17 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.relabel(body.get("person_id", ""), body.get("band", ""), body.get("type", ""), body.get("expect_band", ""))
             elif u.path == "/api/dnc":
                 out = s.dnc(body.get("person_id", ""), body.get("reason", ""))
+            elif u.path == "/api/opened":
+                out = s.opened(body.get("kind", ""), body.get("person_id", ""), body.get("to", ""), body.get("body", ""),
+                               body.get("subject", ""), body.get("display", ""), body.get("draft", ""), body.get("pool", ""))
+            elif u.path == "/api/opened/answer":
+                out = s.handoff_answer(body.get("id", ""), body.get("sent") is True)
             elif u.path == "/api/send":
+                # Send now: from the Mac only, and a live send needs the confirm step's flag. One message per request.
+                if not auth.Auth.is_local(self.headers, self.server.server_address[1]):
+                    return self._json(403, {"ok": False, "error": "Send now works on the Mac only. On the phone, use Open in Messages or Open in Gmail."})
+                if s.sender == "live" and not s.demo and body.get("confirmed") is not True:
+                    return self._json(400, {"ok": False, "error": "a send needs the confirm step"})
                 out = s.send(body.get("kind", ""), body.get("person_id", ""), body.get("to", ""), body.get("body", ""),
                              body.get("subject", ""), body.get("display", ""))
             elif u.path == "/api/call":
@@ -1329,7 +1496,8 @@ class Handler(BaseHTTPRequestHandler):
             elif u.path == "/api/dismiss":
                 out = s.dismiss(body.get("id", ""))
             elif u.path == "/api/lead":
-                out = s.make_lead(body.get("name", ""), body.get("source", ""), body.get("phone", ""), body.get("email", ""), body.get("note", ""))
+                out = s.make_lead(body.get("name", ""), body.get("source", ""), body.get("phone", ""), body.get("email", ""), body.get("note", ""),
+                                 body.get("next_action", ""))
             elif u.path == "/api/list":
                 out = s.add_to_list(body.get("kind", ""), body.get("rows", []))
             elif u.path == "/api/ask/warm":
@@ -1354,9 +1522,48 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"ok": False, "error": f"{type(e).__name__}: {e}"[:300]})
 
 
+PHOTO_ROOT = Path(os.getenv("PIPELINE_PHOTOS") or Path.home() / "Pictures" / "Pipeline").expanduser()
+PHOTO_EXT = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+
+
+def deal_photos(root: Path = PHOTO_ROOT) -> dict:
+    """Deal photos Caleb owns: one folder per deal in ~/Pictures/Pipeline, named by its street address ("90108 Basil
+    Ln"). Keyed like the Deals sheet (cc.deal_key), each a sorted list of image files. A folder may be a link."""
+    out = {}
+    try:
+        folders = sorted(p for p in root.iterdir() if p.is_dir())
+    except OSError:
+        return out
+    for f in folders:
+        files = sorted((x for x in f.iterdir() if x.is_file() and x.suffix.lower() in PHOTO_EXT and not x.name.startswith(".")),
+                       key=lambda x: (0 if "cover" in x.name.lower() else 1 if "front" in x.name.lower() else 2, x.name))  # the cover first
+        if files:
+            out[cc.deal_key(f.name)] = files
+    return out
+
+
+def static_build(root: Path | None = None) -> str:
+    """A short hash of every file in static/ (names and bytes). It goes into sw.js, so any change to the app gives
+    browsers a new service worker and a new cache name, and the page shows its Updated note."""
+    root = root or STATIC
+    h = hashlib.sha256()
+    for f in sorted(root.rglob("*")):
+        if f.is_file():
+            h.update(f.relative_to(root).as_posix().encode() + b"\0" + f.read_bytes())
+    return h.hexdigest()[:12]
+
+
+class Server(ThreadingHTTPServer):
+    # Older Pythons listen with a queue of 5. A page load through `tailscale serve` opens about 15 connections at once,
+    # so the rest were refused and the phone got 502s on its scripts (2026-11-06).
+    request_queue_size = 128
+    daemon_threads = True
+
+
 def serve(state: State, port: int, open_browser: bool) -> None:
     Handler.state = state
-    httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    httpd = Server(("127.0.0.1", port), Handler)
+    threading.Thread(target=state.handoff_loop, daemon=True).start()
     url = f"http://127.0.0.1:{port}/"
     v = state.voice_info()
     print(f"Pipeline {'(demo) ' if state.demo else ''}on {url}  sender={state.sender}  crm python={getattr(state.crm, 'python', 'demo')}  "
@@ -1367,6 +1574,39 @@ def serve(state: State, port: int, open_browser: bool) -> None:
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
+
+
+FEED_RUN_MAX_MIN = 10  # a rebuild that started this long ago and never wrote ok or failed is counted as failed
+
+
+def feed_run_status(log: Path, at: datetime) -> dict | None:
+    """The last run in refresh_feed.sh's log: ok, or failed with why. Lines look like '2026-11-08 12:46:37 start',
+    '... feed ok', '... feed failed, previous feed.json kept', '... imessage_signals failed, ...'."""
+    try:
+        with log.open("rb") as fh:
+            fh.seek(0, 2)
+            fh.seek(max(0, fh.tell() - 16000))
+            lines = fh.read().decode("utf-8", "replace").splitlines()
+    except OSError:
+        return None
+    starts = [i for i, ln in enumerate(lines) if re.match(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} start$", ln.strip())]
+    if not starts:
+        return None
+    block = lines[starts[-1]:]
+    stamp = lambda ln: datetime.strptime(ln[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=CENTRAL)
+    began = stamp(block[0])
+    end = next((ln for ln in block if re.search(r"\bfeed (ok|failed)\b", ln)), None)
+    signals_failed = any("imessage_signals failed" in ln for ln in block)
+    if end and " feed ok" in end:
+        state, detail, t = "ok", "signals failed, the feed used the last signals" if signals_failed else "", stamp(end)
+    elif end:
+        state, detail, t = "failed", "the step that builds the feed from the CRM sheet failed", stamp(end)
+    elif (at - began).total_seconds() > FEED_RUN_MAX_MIN * 60:
+        state, detail, t = "failed", "the last run started and never finished", began
+    else:
+        state, detail, t = "running", "", began
+    return {"state": state, "at": t.isoformat(timespec="seconds"), "at_text": t.strftime("%b %-d, %-I:%M %p"), "detail": detail,
+            "signals_failed": signals_failed}
 
 
 # ----------------------------------------------------------------------- tests
@@ -1430,6 +1670,7 @@ def run_tests() -> int:
     r = s.send("text", "312", "+12255550111", "Hey, checking in", display="Demo Person")
     check(r["ok"] and r["result"]["status"] == "dry-run", "demo send is a dry run")
     check(s.sent_today()["texts"] == 1 and (tmp / "send-log.json").exists(), "send log counts today's texts")
+    check(s.left_today()["sent_texts"] == 0 and s.left_today()["dry_texts"] == 1, "a dry run is shown as a dry run, never as sent")
     try:
         s.send("email", "312", "x@example.com", "body", subject=""); check(False, "email needs a subject")
     except CRMError:
@@ -1458,6 +1699,11 @@ def run_tests() -> int:
     except CRMError as e:
         check("consent" in str(e), "a form that said do not text refuses the text")
     check(nc.send("email", other_id, "x@example.com", "body", subject="Hi")["ok"], "the same person can still be emailed")
+    n_log = len(nc.send_log())
+    try:
+        nc.opened("text", other_id, "+12255550118", "hi"); check(False, "the Text button is refused for them too")
+    except CRMError as e:
+        check("consent" in str(e) and len(nc.send_log()) == n_log, "the Text button hand-off is refused for them too, and nothing is logged")
     nc._demo_cache = {**feed0, "no_text_consent": []}
     nc.clock = lambda: datetime(2026, 11, 10, 21, 30, tzinfo=CENTRAL)
     try:
@@ -1707,6 +1953,27 @@ def run_tests() -> int:
     snap_lt = sd.snapshot()["last_texts"]
     check(snap_lt.get("118", {}).get("delivery") == "dry-run" and snap_lt["118"]["display"] == "Riley Quiet", "a demo send shows on the card as a dry run")
 
+    # Round 2, item 6: the CRM feed's last rebuild, read from its log. A failure shows; a run that never ended is a failure.
+    lg = tmp / "feed.log"
+    at = datetime(2026, 11, 8, 13, 0, tzinfo=CENTRAL)
+    lg.write_text("2026-11-08 12:30:00 start\n2026-11-08 12:30:04 feed ok\n2026-11-08 12:45:00 start\n2026-11-08 12:45:03 feed failed, previous feed.json kept\n")
+    r = feed_run_status(lg, at)
+    check(r["state"] == "failed" and r["at"].startswith("2026-11-08T12:45:03") and "failed" in r["detail"], "a failed feed rebuild is read from the log")
+    lg.write_text("2026-11-08 12:45:00 start\n2026-11-08 12:45:01 imessage_signals failed, feed keeps the last signals file\n2026-11-08 12:45:03 feed ok\n")
+    r = feed_run_status(lg, at)
+    check(r["state"] == "ok" and r["signals_failed"] and "signals" in r["detail"], "a rebuild that kept old signals is ok and says so")
+    lg.write_text("2026-11-08 12:30:00 start\n2026-11-08 12:30:04 feed ok\n2026-11-08 12:40:00 start\n")
+    check(feed_run_status(lg, at)["state"] == "failed" and feed_run_status(lg, datetime(2026, 11, 8, 12, 45, tzinfo=CENTRAL))["state"] == "running",
+          "a rebuild that never finished is a failure after 10 minutes, running before")
+    check(feed_run_status(tmp / "nope.log", at) is None and State(demo=True, send_log=tmp / "fr.json").snapshot()["feed_run"] is None, "no log, or demo: no feed run status")
+    sfr = State(demo=True, send_log=tmp / "fr2.json"); sfr.feed_run = lambda: {"state": "failed", "at": "x", "at_text": "Nov 8, 12:45 PM", "detail": "crm.py feed failed"}
+    check(any(p["code"] == "feed_failed" for p in sfr.snapshot()["problems"]), "a failed feed rebuild becomes a problem row")
+
+    # Round 2, item 14: problem rows say what to do in words, never a file name or a path.
+    s_nofeed = State(demo=True, send_log=tmp / "nf.json"); s_nofeed._demo_cache = {}
+    texts = " ".join(p["text"] for p in s_nofeed.snapshot()["problems"])
+    check(bool(texts) and not re.search(r"\.json|/|~|token", texts), "problem rows never name a file or a path")
+
     # map and market monitor
     sm = State(demo=True, send_log=tmp / "map" / "send-log.json")
     snap = sm.snapshot()
@@ -1729,6 +1996,15 @@ def run_tests() -> int:
         sm.make_lead("Owner at 1 Fixture Way", "Market Monitor permit 2026-10-26"); check(False, "a duplicate lead is refused")
     except CRMError:
         check(True, "a duplicate lead is refused")
+    # Add a lead from the Dashboard or Leads: name, phone, email, source, one Save, one crm.py lead call (round 2, item 2).
+    sm.make_lead("Fixture Newlead", "Referral 2026-11-08", phone="225-555-0188", email="newlead@example.com", next_action="Reach out: new lead")
+    last = sm.crm.log[-1]
+    check(last[:4] == ["lead", "Fixture Newlead", "--source", "Referral 2026-11-08"] and last[last.index("--phone") + 1] == "225-555-0188"
+          and last[last.index("--email") + 1] == "newlead@example.com" and "--next-action" in last, "Add a lead sends name, phone, email and source in one crm.py lead call")
+    try:
+        sm.make_lead("", "Website 2026-11-08"); check(False, "a lead with no name is refused")
+    except CRMError:
+        check(True, "a lead with no name is refused")
     people = [{"kind": "person", "person_id": "1", "display": "A Fixture", "phone": "+12255550001", "address": "1 Fixture St", "city": "Baton Rouge", "zip": "70808"},
               {"kind": "person", "person_id": "2", "display": "B Fixture", "phone": "", "address": "2 Fixture St", "city": "Baton Rouge", "zip": "70808"}]
     c1 = sm.add_to_list("call", people)
@@ -1821,8 +2097,19 @@ def run_tests() -> int:
     check(code == 200 and json.loads(body)["demo"], "with the session the phone reads /api/cc")
     code, hd, _ = remote("/", cookie=None)
     check(code == 302 and hd.get("Location") == "/login", "a page without a session goes to /login")
-    code, _, _ = remote("/sw.js")
+    code, _, body = remote("/sw.js")
     check(code in (200, 404), "the service worker needs no session")
+    check(b"__BUILD__" not in body and static_build().encode() in body, "sw.js carries the build hash of static/")
+    sb = tmp / "sb"; sb.mkdir(); (sb / "a.js").write_text("one"); b1 = static_build(sb)
+    (sb / "a.js").write_text("two"); b2 = static_build(sb)
+    check(b1 != b2 and len(b1) == 12, "any change in static/ gives a new build, so the cache name moves on")
+    for hdr in ("X-Forwarded-Proto", "Tailscale-User-Login", "Tailscale-User-Name", "X-Forwarded-For"):
+        check(not auth.Auth.is_local({"Host": f"127.0.0.1:{port}", hdr: "x"}, port), f"a request carrying {hdr} needs the login")
+    check(not auth.Auth.is_local({"Host": "calebs-mac-mini.tail512a6c.ts.net"}, port), "the tailnet name needs the login even with no proxy headers")
+    code, hd, _ = remote("/")
+    check(code == 302 and hd.get("Location") == "/login", "the tailnet address with no cookie goes to the sign-in page")
+    code, _, body = remote("/login")
+    check(code == 200 and b"caches.delete('pipeline-data-v1')" in body, "the sign-in page drops the offline data copy")
     lock = auth.Auth(tmp / "s2.json", login_file=state.auth.login_file)
     for _i in range(5):
         try:
@@ -1844,6 +2131,60 @@ def run_tests() -> int:
         urllib.request.urlopen(base + "/../app.py"); check(False, "no path escape")
     except Exception:
         check(True, "static files never leave static/")
+    # One-tap Text and Email: numbers are +1 and 10 digits, Send now is the Mac's only, a live send needs the confirm step.
+    # Only Caleb's own number and address, and only dry: this state is demo, so nothing can leave the Mac.
+    check(norm_phone("225-747-0303") == norm_phone("(225) 747 0303") == norm_phone("+1 225.747.0303") == "+12257470303", "phone numbers become +1 and 10 digits")
+    check(norm_phone("747-0303") is None and norm_phone("125-555-0103") is None and norm_phone("") is None, "a short or impossible number is refused")
+    def sendreq(data, host=None):
+        h = {"Content-Type": "application/json"}
+        if host:
+            h.update({"Host": host, "X-Forwarded-For": "100.64.0.7", "Cookie": ck2})
+        rq = urllib.request.Request(base + "/api/send", data=json.dumps(data).encode(), headers=h)
+        try:
+            r = urllib.request.urlopen(rq); return r.status, json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read())
+    _c, hd2, _b = remote("/api/login", {"passcode": "correct horse battery"}); ck2 = (hd2.get("Set-Cookie") or "").split(";")[0]
+    mine = {"kind": "text", "person_id": "118", "to": "225-747-0303", "body": "Pipeline test, dry", "display": "Caleb Jackson", "confirmed": True}
+    code, r = sendreq(mine, host="pipeline-mac.tail1234.ts.net")
+    check(code == 403 and "Mac only" in r["error"], "Send now from the phone or tailnet is refused, even signed in")
+    code, r = sendreq(mine)
+    check(code == 200 and r["result"]["status"] == "dry-run" and r["result"]["to"] == "+12257470303" and r["result"]["text"] == "Pipeline test, dry", "a dry send to Caleb's own number logs time, recipient, channel and text")
+    code, r = sendreq({**mine, "to": "747-0303"})
+    check(not r["ok"] and "valid US number" in r["error"], "an invalid number is refused before any send")
+    code, r = sendreq({"kind": "email", "person_id": "118", "to": "aire@calebjackson", "subject": "Test", "body": "x", "confirmed": True})
+    check(not r["ok"] and "valid email" in r["error"], "an invalid email is refused before any send")
+    was = (state.sender, state.demo); state.sender, state.demo = "live", False  # refused before s.send runs, so nothing goes
+    try:
+        code, r = sendreq({k: v for k, v in mine.items() if k != "confirmed"})
+        check(code == 400 and "confirm" in r["error"], "a live send without the confirm step is refused")
+    finally:
+        state.sender, state.demo = was
+    # Deal photos: one folder per deal in the photo root, served by key and number only, behind the login.
+    proot = tmp / "photos"; (proot / "100 Fixture Ln").mkdir(parents=True); (proot / "Notes").mkdir()
+    (proot / "100 Fixture Ln" / "b-kitchen.jpg").write_bytes(b"\xff\xd8kitchen"); (proot / "100 Fixture Ln" / "a-front.jpg").write_bytes(b"\xff\xd8front")
+    (proot / "100 Fixture Ln" / "notes.txt").write_text("not a photo"); (proot / "Notes" / "x.txt").write_text("x")
+    dp = deal_photos(proot)
+    check(list(dp) == ["100 fixture"] and [f.name for f in dp["100 fixture"]] == ["a-front.jpg", "b-kitchen.jpg"], "deal photos: one list per deal folder, the front first, images only")
+    global PHOTO_ROOT
+    was_root, PHOTO_ROOT = PHOTO_ROOT, proot
+    deal_photos.__defaults__ = (proot,)
+    try:
+        check(json.loads(urllib.request.urlopen(base + "/api/photos").read())["deals"] == {"100 fixture": 2}, "/api/photos lists deals by key and count, never a path")
+        r = urllib.request.urlopen(base + "/photo/100-fixture/0")
+        check(r.headers["Content-Type"] == "image/jpeg" and r.read() == b"\xff\xd8front", "a deal photo is served by key and number")
+        for bad in ("/photo/100-fixture/9", "/photo/..%2F..%2Fapp.py/0", "/photo/notes/0"):
+            try:
+                urllib.request.urlopen(base + bad); check(False, f"{bad} is refused")
+            except urllib.error.HTTPError as e:
+                check(e.code == 404, f"{bad} is refused")
+        code, _, _ = remote("/photo/100-fixture/0")
+        check(code == 302, "a deal photo needs the login from the tailnet")
+    finally:
+        PHOTO_ROOT = was_root
+        deal_photos.__defaults__ = (was_root,)
+    st2 = json.loads(urllib.request.urlopen(base + "/api/state").read())
+    check(st2["local"] is True, "the Mac's own page knows it is local, so Send now shows there")
     httpd.shutdown()
 
     # the engine wrapper parses the engine's contract

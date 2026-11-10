@@ -21,7 +21,7 @@ async function load() {
     S.data = await api('/api/state');
     render();
   } catch (e) {
-    toast('err', 'SERVER', 'app.py is not answering. Start it with: python3 aire/pipeline-app/app.py');
+    toast('err', 'NOT ANSWERING', 'Pipeline on the Mac is not answering. It restarts by itself within a minute.');
   }
 }
 async function act(path, body, okText) {
@@ -44,15 +44,59 @@ function drafts() {
   const sentIds = new Set((S.data.sent_today || []).map(s => s.person_id));
   return items.filter(i => !sentIds.has(i.person_id));
 }
+// The one owe-a-reply list: people in Touches due whose last text was theirs. Every count on every page is this length.
+// With money and contacts hidden, dialogs and toasts say "this person" instead of a name, and contact fields are masked.
+const hid = () => !!(window.CC && CC.priv);
+const nm = v => (hid() ? 'this person' : v);
+const maskAttr = () => (hid() ? ' class="cc-masked" autocomplete="off"' : '');
+function owesReply() { return (feed().touches_due || []).filter(r => r.owes_reply); }
+// Drafts ready: written texts and emails only. Reply-first rows have no template, so they are never counted as ready.
+function readyDrafts() { return drafts().filter(d => !d.reply); }
 function personRow(id) { return (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person')).find(r => r.person_id === id); }
 // ---- texting from a card: one button opens the text, SEND sends it, then the card shows what happened
 const firstName = n => (String(n || '').trim().split(/\s+/)[0] || '');
 function lastText(id) { return ((S.data && S.data.last_texts) || {})[id]; }
-function textBtn(id, row) {
+// ---- one-tap Text and Email. A number becomes +1 and 10 digits or it is not used. Pressing Text or Email opens the
+// sheet first (recipient, subject, message, all editable); Open in Messages and Open in Gmail hand it to the app with
+// everything filled in, and nothing leaves until Caleb presses send there.
+function normPhone(v) { const d = String(v || '').replace(/\D/g, ''), t = d.length === 11 && d[0] === '1' ? d.slice(1) : d; return /^[2-9]\d{2}[2-9]\d{6}$/.test(t) ? '+1' + t : null; }
+function phoneWhy(v) { return !String(v || '').trim() ? 'No phone on file' : 'Not a valid US number'; }
+function validEmail(v) { return /^[^\s@<>,;]+@[^\s@<>,;]+\.[a-z]{2,}$/i.test(String(v || '').trim()); }
+function smsLink(phone, body) { return `sms:${phone}&body=${encodeURIComponent(body || '')}`; }
+const GMAIL_USER = 'aire@calebjackson.org';
+function gmailLink(to, subject, body) {
+  const e = encodeURIComponent;
+  return `https://mail.google.com/mail/?authuser=${e(GMAIL_USER)}&view=cm&fs=1&to=${e(to || '')}&su=${e(subject || '')}&body=${e(body || '')}`;
+}
+// Everyone Pipeline knows, by number and by email, to flag two contacts that share one.
+function sharers(kind, value) {
+  const key = kind === 'text' ? normPhone(value) : String(value || '').trim().toLowerCase(); if (!key) return [];
+  const seen = new Map();
+  (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || [], ((feed().map || {}).pins || []).filter(p => p.kind === 'person'))
+    .forEach(r => { const v = kind === 'text' ? normPhone(r.phone) : String(r.email || '').trim().toLowerCase(); if (v === key && r.person_id) seen.set(r.person_id, r.display || r.person_id); });
+  return [...seen.values()];
+}
+// Contacts with no CRM id (a website lead) are kept here, so no number goes into a page attribute.
+S.contacts = S.contacts || {};
+function contactBtns(id, row) {
   row = row || personRow(id) || {};
-  if (!row.phone) return `<button class="primary" onclick="openCompose('${id}')">✉ Compose</button>`;
-  const n = firstName(row.display);
-  return `<button class="primary text-btn" onclick="textNow('${id}')" title="Opens the text. Nothing goes until you press SEND.">▭ Text${n ? ' ' + esc(n) : ''}</button>`;
+  let key = id;
+  if (!id) { const c = { name: row.display || row.name || '', phone: row.phone || '', email: row.email || '' };
+    key = Object.keys(S.contacts).find(k => S.contacts[k].phone === c.phone && S.contacts[k].email === c.email && S.contacts[k].name === c.name) || ('c' + Object.keys(S.contacts).length);
+    S.contacts[key] = c; }
+  const ph = normPhone(row.phone), em = validEmail(row.email);
+  const off = (label, why) => `<button type="button" class="cc-off" disabled aria-disabled="true" title="${esc(why)}">${label}<small>${esc(why)}</small></button>`;
+  return (ph ? `<button type="button" class="text-btn" onclick="openContact('text', '${esc(key)}')" title="Opens the message to check first. Nothing goes until you press send.">Text</button>` : off('Text', phoneWhy(row.phone)))
+    + (em ? `<button type="button" onclick="openContact('email', '${esc(key)}')" title="Opens the email to check first. Nothing goes until you press Send in Gmail.">Email</button>` : off('Email', row.email ? 'Not a valid email' : 'No email on file'));
+}
+const textBtn = contactBtns;  // the old name, used by every card
+function openContact(kind, key) {
+  const loose = S.contacts[key];
+  if (loose) { S.compose = { kind, person_id: '', name: loose.name, to: kind === 'text' ? loose.phone : loose.email, body: '', subject: kind === 'email' ? 'Following up' : '', row: { ...loose, display: loose.name }, last_messages: [], fromCard: true }; S.queueIdx = -1; renderDrawer(); return; }
+  openCompose(key);
+  if (!S.compose) return;
+  if (S.compose.kind !== kind) setKind(kind);
+  S.compose.fromCard = true;
 }
 function textWhen(at) {
   const d = new Date(at); if (isNaN(d)) return '';
@@ -60,7 +104,7 @@ function textWhen(at) {
   const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   return iso === todayISO() ? t : `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${t}`;
 }
-const TEXT_STATES = { delivered: ['ok', 'Texted', 'delivered'], sent: ['ok', 'Texted', 'sent'], pending: ['wait', 'Texted', 'checking delivery'], unknown: ['wait', 'Texted', 'checking delivery'], error: ['bad', 'Text failed', 'not delivered'], 'dry-run': ['dry', 'Dry run', 'nothing sent'] };
+const TEXT_STATES = { delivered: ['ok', 'Texted', 'delivered'], sent: ['ok', 'Texted', 'sent'], pending: ['wait', 'Texted', 'checking delivery'], unknown: ['wait', 'Texted', 'checking delivery'], error: ['bad', 'Text failed', 'not delivered'], 'dry-run': ['dry', 'Dry run', 'nothing sent'], opened: ['wait', 'Opened', 'waiting for your send'] };
 // ---- Grok bridge: a call or a hard draft is a job handed to Grok. Nothing dials until Caleb taps Grok's own Call card.
 function grokJob(id) { return (((S.data && S.data.bridge) || {}).jobs || {})[id]; }
 function grokText(j) {
@@ -117,7 +161,7 @@ function watchDelivery() {
   S.deliveryTimer = setInterval(async () => {
     if (++n > 120 || !textPending()) { clearInterval(S.deliveryTimer); S.deliveryTimer = null; return; }
     if (S.compose || !$('#modal').hidden) return;
-    try { S.data = await api('/api/state'); if (S.view !== 'cc' && !S.map) render(); } catch (e) { }
+    try { S.data = await api('/api/state'); if (!S.map) render(); } catch (e) { }
   }, 4000);
 }
 function textNow(id) {
@@ -132,47 +176,60 @@ function problems() { return (S.data && S.data.problems) || []; }
 function statusLevel() { const p = problems(); return p.some(x => x.level === 'stop') ? 'stop' : p.length ? 'warn' : 'ok'; }
 
 // ---------------------------------------------------------------- render
+// The chip, the bell and the Sources count all count the one attention list, so they always say the same number.
+function statusWords(red, amb) {
+  const all = red + amb, s = all === 1 ? 'source' : 'sources';
+  if (!all) return '';
+  if (red && amb) return `${all} ${s}: ${red} failed or out of date, ${amb} late or never read`;
+  return red ? `${all} ${s} failed or out of date` : `${all} ${s} late or never read`;
+}
 function render() {
   if (!S.data) return;
   const f = feed(), c = f.counts || {}, d = S.data;
   renderNav(c);
-  // top status
-  const lvl = statusLevel();
-  const chip = $('#status-chip'); chip.className = 'status-chip ' + lvl;
-  $('#status-word').textContent = !d.feed_ok ? 'NO FEED' : lvl === 'stop' ? 'STOP' : lvl === 'warn' ? 'ATTENTION' : 'OPTIMAL';
-  S.systemWord = $('#status-word').textContent; S.systemLevel = lvl;
-  const bc = $('#bell-count'); bc.hidden = !problems().length; bc.textContent = problems().length;
+  // top status: what is actually true. A failed read is named, never covered by an all-clear word.
+  // The chip shows the worst thing on the one attention list (cc-sources.js): red for failed or out of date, amber for
+  // late or never read. The bell counts the same list.
+  const att = window.CC && CC.data && CC.attention ? CC.attention() : [], red = att.filter(x => x.level === 'red'), amb = att.filter(x => x.level === 'amber');
+  const chip = $('#status-chip'); chip.className = 'status-chip ' + (red.length || statusLevel() === 'stop' ? 'stop' : amb.length ? 'warn' : 'ok');
+  $('#status-word').textContent = !d.feed_ok ? 'CRM feed did not load' : statusWords(red.length, amb.length) || (window.CC && CC.data ? 'Every source current' : 'Reading');
+  chip.title = att.map(x => x.text).join('\n'); chip.onclick = () => go('sources');
+  // The phone shows a short form of the same count.
+  chip.querySelector('b').dataset.short = !d.feed_ok ? 'CRM feed failed' : att.length ? `${att.length} need${att.length === 1 ? 's' : ''} a look` : 'All current';
+  S.systemWord = $('#status-word').textContent; S.systemLevel = chip.className.replace('status-chip ', '');
+  const bc = $('#bell-count'); bc.hidden = !att.length; bc.textContent = att.length;
   // send status
   const mode = $('#mode'); mode.textContent = d.demo ? 'DEMO · DRY RUN' : d.sender === 'live' ? 'LIVE' : 'DRY RUN'; mode.className = 'mode mono' + (d.sender === 'live' && !d.demo ? ' live' : '');
-  $('#mode-sub').textContent = d.demo ? 'made-up people, nothing is written' : d.sender === 'live' ? 'texts via Messages, email via Gmail' : 'set PIPELINE_SENDER=live to send';
+  $('#mode-sub').textContent = d.demo ? 'made-up people, nothing is written' : d.sender === 'live' ? 'texts via Messages, email via Gmail' : 'sends are logged, nothing leaves the Mac';
   const vst = $('#voice-state'); if (vst && d.voice) vst.title = (d.voice.ask ? 'Claude Q&A on' : 'Claude Q&A off') + ' · ' + (d.voice.tts === 'elevenlabs' ? 'ElevenLabs voice' : 'browser voice');
   $('#caps-mini').innerHTML = `<div><b>${d.caps.sent_texts}/${d.caps.texts}</b>texts</div><div><b>${d.caps.sent_emails}/${d.caps.emails}</b>emails</div>`;
   const wave = $('#wave'); if (!wave.children.length) wave.innerHTML = Array.from({ length: 28 }, (_, i) => `<i style="--d:${(i * 37) % 900}"></i>`).join('');
   document.querySelectorAll('.wave.small').forEach(w => { if (!w.children.length) w.innerHTML = Array.from({ length: 9 }, (_, i) => `<i style="--d:${(i * 97) % 700}"></i>`).join(''); });
   // bottom
   const items = drafts(), replies = items.filter(i => i.reply).length;
-  $('#compose-next').textContent = !items.length ? '✉ Queue clear' : `✉ Compose next · ${replies ? replies + ' owed, ' : ''}${items.length} ready`;
+  const ready = items.length - replies;
+  $('#compose-next').textContent = !items.length ? 'No drafts waiting' : ready ? `Next draft · ${ready} ready` : `${replies} replies to write`;
   const cmd = d.command || {};
   const age = d.feed_age_minutes;
   $('#foot-chips').innerHTML = [
-    chipHTML('◔', 'Feed', d.demo ? 'demo · as of ' + (f.as_of || '') : age == null ? 'none yet' : age < 60 ? `${age} min ago` : `${Math.floor(age / 60)}h ${age % 60}m ago`, age > 60 ? 'warn' : ''),
+    chipHTML('◔', 'Feed', d.demo ? 'demo · as of ' + (f.as_of || '') : age == null ? 'none yet' : window.CC && CC.ago ? CC.ago(age) : age + ' min ago', age > 60 ? 'warn' : ''),
     chipHTML('⌘', 'Command', cmd.state ? cmd.state : 'no status', cmd.state === 'ok' ? '' : cmd.state ? 'warn' : ''),
-    chipHTML('◉', 'Signals', f.signals && f.signals.file ? `${(f.signals.people || 0).toLocaleString()} people · ${f.signals.owes_reply || 0} owe a reply` : 'sheet only', f.signals && f.signals.file ? '' : 'warn'),
+    chipHTML('◉', 'Signals', f.signals && f.signals.file ? `${(f.signals.people || 0).toLocaleString()} with texts · ${owesReply().length} owe a reply` : 'sheet only', f.signals && f.signals.file ? '' : 'warn'),
   ].join('');
   $('#refresh').classList.toggle('spin', !!(d.refresh && d.refresh.running));
   $('#refresh').innerHTML = '<span>⟳</span>';
   $('#open-sheet').hidden = !(d.links && d.links.sheet);
-  // main
+  // main: every page is a Command Center page now (cc.js and friends), so one design and one privacy switch.
   const main = $('#main');
-  // Command Center pages read /api/cc, not feed.json, so they work even when the feed is missing.
-  if (window.CC && CC.views[S.view]) { const ae = document.activeElement; if (ae && ae.closest && ae.closest('.cc-goals')) return; if (S.map) { S.map.destroy(); S.map = null; } main.innerHTML = CC.views[S.view](); return; }
   if (d.feed_ok && f.header_ok === false) { main.innerHTML = stopScreen(f); return; }
-  if (!d.feed_ok) { main.innerHTML = `<div class="stop-screen"><div class="big">NO FEED</div><p>${esc((problems()[0] || {}).text || 'feed.json is missing.')}</p><div class="acts"><button class="primary" onclick="refresh()">Run the refresh</button></div></div>`; return; }
-  const views = { cc: viewCC, touches: viewTouches, tasks: viewTasks, deals: viewDeals, leads: viewLeads, queue: viewQueue, sent: viewSent, map: viewMap, market: viewMarket };
+  if (S.view === 'cc') S.view = 'dash';
+  if (S.view === 'leads') S.view = 'ccleads';
+  if (S.view === 'market') S.view = 'monitor';
+  const page = window.CC && (CC.views[S.view] || CC.views.dash);
+  const ae = document.activeElement; if (ae && ae.closest && ae.closest('.cc-goals')) return;
   if (S.map) { S.map.destroy(); S.map = null; }
-  main.innerHTML = (views[S.view] || viewCC)();
-  if (S.view === 'map') mountMap(false); else if (S.view === 'deals' && S.dealsMode === 'map') mountMap(true);
-  if (S.view === 'cc' && window.Core) { const cv = $('#core'); if (cv) Core.mount(cv, (f.counts || {}).by_band || {}); }
+  main.innerHTML = page ? page() : '';
+  if (window.CC && CC.after[S.view]) CC.after[S.view]();
   reflectVoice();
   // the hero's header is absolute, so the svg gets the whole panel
   // deferred animations: bars, gauges, counters
@@ -182,6 +239,7 @@ function render() {
     document.querySelectorAll('.gauge .arc').forEach(el => el.style.strokeDashoffset = el.dataset.off);
     document.querySelectorAll('[data-count]').forEach(countUp);
   }));
+  askSent();
 }
 function chipHTML(ico, label, val, cls = '') { return `<div class="chip ${cls}"><span class="ico">${ico}</span><div><span>${label}</span><b>${esc(val)}</b></div></div>`; }
 function countUp(el) {
@@ -189,197 +247,45 @@ function countUp(el) {
   const t0 = performance.now(), dur = 900;
   (function step(t) { const p = Math.min(1, (t - t0) / dur), v = Math.round(target * (1 - Math.pow(1 - p, 3))); el.textContent = v.toLocaleString(); if (p < 1) requestAnimationFrame(step); })(t0);
 }
+// The nav, in groups, one distinct icon each. KEYS: the number keys open the same pages, in this order.
+const NAV = [
+  ['Today', [['dash', '◧', 'Dashboard'], ['touches', '☎', 'Touches due'], ['tasks', '☑', 'Tasks'], ['queue', '✎', 'Drafts'], ['sent', '➚', 'Sent today']]],
+  ['People', [['ccleads', '✚', 'Leads'], ['map', '⌖', 'Map']]],
+  ['Deals', [['deals', '⌂', 'Deals'], ['commission', '$', 'Commission'], ['deadlines', '⚑', 'Deadlines'], ['calendar', '▦', 'Calendar']]],
+  ['Numbers', [['scorecard', '▲', 'Scorecard'], ['ccmarket', '◆', 'Market'], ['monitor', '⚒', 'Listings and permits'], ['news', '▤', 'News'], ['bank', '◫', 'Bank']]],
+  ['You', [['life', '❀', 'Life'], ['health', '♥', 'Workouts']]],
+  ['System', [['sources', '⇄', 'Sources']]],
+];
+const KEYS = ['dash', 'touches', 'tasks', 'queue', 'ccleads', 'deals', 'commission', 'deadlines', 'calendar', 'map'];
 function renderNav(c) {
-  const dr = drafts();
-  const cd = window.CC && CC.data, np = cd ? cd.commission_mail.filter(r => r.status === 'Not processed').length : 0;
-  const items = [
-    ['dash', '◧', 'Dashboard'], ['commission', '$', 'Commission', np, np > 0], ['deadlines', '⚑', 'Deadlines', cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0],
-    ['calendar', '▦', 'Calendar'], ['ccleads', '✧', 'Leads', cd ? cd.leads.filter(r => !r.test).length : 0], ['scorecard', '▲', 'Scorecard'],
-    ['ccmarket', '◆', 'Market'], ['news', '▤', 'News'], ['life', '❀', 'Life'], ['health', '♥', 'Workouts'],
-    ['bank', '◎', 'Bank'], ['sources', '◉', 'Sources', cd ? (cd.problems || []).length + (cd.sync && cd.sync.error ? 1 : 0) : 0, true],
-    ['cc', '⌂', 'Command Center'], ['touches', '◎', 'Touches due', (feed().touches_due || []).length, (feed().touches_due || []).some(r => r.owes_reply)],
-    ['tasks', '☑', 'Tasks', (feed().tasks || []).length, c.tasks_overdue > 0], ['deals', '⌂', 'Deals', (feed().deals || []).length],
-    ['leads', '✦', 'New leads', (feed().new_leads || []).length, (feed().new_leads || []).length > 0], ['queue', '✉', 'Drafts', dr.length],
-    ['sent', '↗', 'Sent today', (S.data.sent_today || []).length],
-    ['map', '◈', 'Map', ((feed().map || {}).counts || {}).persons || 0], ['market', '◆', 'Market Monitor', ((feed().market || {}).rows || []).length],
-  ];
-  $('#nav').innerHTML = items.map(([k, ico, label, n, warn]) => `<button class="${S.view === k ? 'on' : ''}" onclick="go('${k}')"><span class="ico">${ico}</span>${label}${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`).join('');
-  const on = $('#nav .on'), side = $('.side');
-  if (on && side && innerWidth <= 720) { const a = on.getBoundingClientRect(), b = side.getBoundingClientRect(); side.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2); }
+  const dr = S.data ? readyDrafts() : [];
+  const cd = window.CC && CC.data, np = cd ? cd.commission_mail.filter(r => r.status === 'Not processed' || r.status === 'No closed deal').length : 0;
+  const td = feed().touches_due || [];
+  const cnt = { commission: [np, np > 0], deadlines: [cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0], ccleads: [cd ? (cd.lead_counts || {}).d14 ?? cd.leads.length : 0, false],
+    sources: [window.CC && CC.data && CC.attention ? CC.attention().length : 0, true],
+    touches: [td.length, td.some(r => r.owes_reply)], tasks: [(feed().tasks || []).length, c.tasks_overdue > 0], deals: [cd ? cd.deals.filter(r => !['closed', 'out'].includes(r.stage)).length : 0, false],
+    queue: [dr.length, false], sent: [(S.data.sent_today || []).filter(s => s.status === 'sent').length, false] };
+  const view = { cc: 'dash', leads: 'ccleads', market: 'monitor', dealmap: 'deals' }[S.view] || S.view;
+  // Each group has its color; the page takes the color of the group it is in (ui.css, the color code).
+  const sec = (NAV.find(([, items]) => items.some(([k]) => k === view)) || ['Today'])[0].toLowerCase();
+  document.body.dataset.sec = sec;
+  $('#nav').innerHTML = NAV.map(([g, items]) => `<div class="nav-g g-${g.toLowerCase()}"><span class="nav-h">${g}</span>${items.map(([k, ico, label]) => { const [n, warn] = cnt[k] || [];
+    return `<button type="button" class="${view === k ? 'on' : ''}" ${view === k ? 'aria-current="page"' : ''} onclick="go('${k}')"><span class="ico" aria-hidden="true">${ico}</span><span class="lbl">${label}</span>${n ? `<span class="cnt ${warn ? 'warn' : ''}">${n}</span>` : ''}</button>`; }).join('')}</div>`).join('');
+  // On a phone the nav is one strip that scrolls sideways: keep the page you are on in the middle of it.
+  const on = $('#nav .on'), strip = $('#nav');
+  if (on && strip && strip.scrollWidth > strip.clientWidth) { const a = on.getBoundingClientRect(), b = strip.getBoundingClientRect(); strip.scrollLeft += (a.left + a.width / 2) - (b.left + b.width / 2); }
 }
 function panel(i, title, right, body, extra = '') { return `<section class="panel ${extra}" style="--i:${i}"><div class="ph"><h3>${title}</h3><div class="ph-right">${right || ''}</div></div>${body}</section>`; }
 
-// ---------------------------------------------------------------- command center
-function viewCC() {
-  const f = feed(), c = f.counts || {}, d = S.data;
-  const owes = (f.touches_due || []).filter(r => r.owes_reply).length;
-  const stats = [
-    ['◎', 'Touches due', c.touches_due, owes ? `${owes} owe a reply` : 'none owe a reply', owes ? 'hot' : '', 'touches'],
-    ['☑', 'Tasks open', c.tasks_open, c.tasks_overdue ? `${c.tasks_overdue} overdue` : 'none overdue', c.tasks_overdue ? 'bad' : '', 'tasks'],
-    ['⌂', 'Live deals', c.deals_live, (f.deals || []).filter(x => x.stage === 'under_contract').length + ' under contract', '', 'deals'],
-    ['✦', 'New leads', (f.new_leads || []).length, 'last 14 days', (f.new_leads || []).length ? 'hot' : '', 'leads'],
-    ['✉', 'Drafts ready', drafts().length, `${d.caps.sent_texts + d.caps.sent_emails} sent today`, '', 'queue'],
-  ];
-  const row1 = `<div class="cc-row1">
-    ${panel(2, 'CRM overview', '', `<div class="stat-list">${stats.map(([i, l, n, s, cls, v]) => `<div class="stat" onclick="go('${v}')"><span class="ico">${i}</span><div><b data-count="${n || 0}">0</b><small class="${cls}">${esc(s)}</small></div></div>`).join('')}</div>`)}
-    ${panel(3, 'Pipeline core', `<span class="tag live">● LIVE</span>`, hero(f), 'hero')}
-    ${panel(4, 'Live feed', `<button class="link" onclick="go('touches')">View all ›</button>`, `<div class="feed-list">${liveFeed()}</div>`)}
-  </div>`;
-  const deals = (f.deals || []).slice(0, 6);
-  const row2 = `<div class="cc-row2">
-    ${panel(5, 'Active deals', `<button class="link" onclick="go('deals')">View all ›</button>`, deals.length ? `<div class="cards">${deals.map((x, i) => dealCard(x, i)).join('')}</div>` : `<div class="empty"><b>No live deals</b>Deals come from Gmail ingest or the Quick command below.</div>`)}
-    ${panel(6, "Today's timeline", `<span>${todayISO()}</span>`, timeline())}
-    ${panel(7, 'Quick commands', '', `<div class="qc">
-      <button style="--i:0" onclick="composeNext()"><span class="ico">✉</span>Compose next draft</button>
-      <button style="--i:1" onclick="openTask()"><span class="ico">＋</span>New task</button>
-      <button style="--i:2" onclick="openDeal()"><span class="ico">⌂</span>Add or edit a deal</button>
-      <button style="--i:3" onclick="refresh()"><span class="ico">⟳</span>Refresh feed (ingest + feed)</button>
-      <button style="--i:4" onclick="window.open('${esc(d.links.command)}')"><span class="ico">⌘</span>Open Command</button>
-    </div>`)}
-  </div>`;
-  const row3 = `<div class="cc-row3">
-    ${panel(8, 'Send monitor', `<span>${d.demo ? 'demo' : d.sender === 'live' ? 'live' : 'dry run'}</span>`, gauges())}
-    ${panel(9, 'Pipeline insights', '', insights())}
-    ${panel(10, 'Sources', `<span>${sourcesOK()} connected</span>`, sources())}
-  </div>`;
-  return `<div class="cc">${row1}${row2}${row3}</div>`;
-}
-function hero(f) {
-  const v = Voice.state();
-  return `<div class="scan"></div><canvas id="core"></canvas>
-  <div class="hero-text"><div><div class="hero-title">PIPELINE</div><div class="hero-sub">AIRE CORE</div><div class="hero-ver">as of ${esc(f.as_of || '')} · feed ${esc((f.generated_at || '').slice(11, 16))}</div></div></div>
-  <div class="hero-corner tl">CRM · ${esc(String((f.counts || {}).contacts || 0))} PEOPLE</div><div class="hero-corner tr">SIGNALS · ${f.signals && f.signals.file ? 'IMESSAGE' : 'NONE'} · VOICE · ${v.on ? v.state.toUpperCase() : v.supported ? 'OFF' : 'TYPE ONLY'}</div>
-  <div class="tele" id="tele">${teleHTML()}</div><div class="heard" id="heard">${esc(S.lastHeard || '')}</div>`;
-}
+// A short log of what Pipeline did and heard this session (the voice answers read it). Not shown on screen.
 const TELE = [];
-function tele(text, strong) { TELE.push({ at: new Date(), text, strong }); if (TELE.length > 30) TELE.shift(); const el = $('#tele'); if (el) el.innerHTML = teleHTML(); }
-function teleHTML() { return TELE.slice(-4).map(t => `<div>${t.at.toTimeString().slice(0, 8)} ${t.strong ? '<b>' + esc(t.text) + '</b>' : esc(t.text)}</div>`).join(''); }
-function liveFeed() {
-  const f = feed(), items = [];
-  (f.touches_due || []).filter(r => r.owes_reply).slice(0, 4).forEach(r => items.push({ cls: 'reply', ico: '↩', b: `${r.display} texted you`, s: (r.last_messages || [])[0] ? r.last_messages[r.last_messages.length - 1].replace(/^\d{4}-\d{2}-\d{2}: /, '') : 'owes a reply', tag: 'REPLY', tcls: 'reply', on: `openCompose('${r.person_id}')` }));
-  (f.tasks || []).filter(t => t.overdue).slice(0, 2).forEach(t => items.push({ cls: 'task', ico: '!', b: `${t.task} is overdue`, s: `${t.display || 'no person'} · due ${t.due}`, tag: 'OVERDUE', tcls: 'stop', on: `go('tasks')` }));
-  (f.new_leads || []).slice(0, 2).forEach(l => items.push({ cls: 'lead', ico: '✦', b: `New lead: ${l.display}`, s: `${l.source} · ${l.next_action || ''}`, tag: 'LEAD', tcls: 'live', on: `textNow('${l.person_id}')` }));
-  (f.deals || []).slice().sort((a, b) => (b.last_event_at || '').localeCompare(a.last_event_at || '')).slice(0, 2).forEach(x => items.push({ cls: 'deal', ico: '⌂', b: x.address, s: x.last_event || x.next_step || x.stage, tag: x.stage.replace('_', ' ').toUpperCase(), tcls: 'violet', on: `openDeal(${esc(JSON.stringify(x.address))})` }));
-  (f.touches_due || []).filter(r => !r.owes_reply && r.band === 'hot').slice(0, 2).forEach(r => items.push({ cls: '', ico: '◎', b: `${r.display} is due`, s: r.next_action || quiet(r), tag: 'HOT', tcls: 'hot', on: `textNow('${r.person_id}')` }));
-  if (!items.length) return `<div class="empty"><b>All quiet</b>Nothing owes a reply, nothing overdue.</div>`;
-  return items.slice(0, 8).map((x, i) => `<div class="feed-item" style="--i:${i}" onclick="${x.on}"><span class="ico ${x.cls}">${x.ico}</span><div class="body"><b>${esc(x.b)}</b><small>${esc(x.s)}</small></div><span class="tag ${x.tcls}">${x.tag}</span></div>`).join('');
-}
-function dealCard(x, i) {
-  const stages = S.data.stages || [], pos = Math.max(0, stages.indexOf(x.stage)), pct = Math.round(((pos + 1) / 5) * 100);
-  return `<div class="card" style="--i:${i}" onclick="openDeal(${esc(JSON.stringify(x.address))})"><span class="ico">${x.side === 'buyer' ? '◇' : '⌂'}</span><b>${esc(x.address)}</b><small>${esc([x.display, money(x.price), x.expected_close ? 'closes ' + x.expected_close : ''].filter(Boolean).join(' · ') || x.source)}</small><div class="bar"><i data-w="${Math.min(100, pct)}"></i></div><div class="stage">${esc(x.stage.replace('_', ' '))}${x.next_step ? ' · ' + esc(x.next_step) : ''}</div></div>`;
-}
-function timeline() {
-  const t = (feed().tasks || []).slice(0, 7);
-  if (!t.length) return `<div class="empty"><b>No open tasks</b></div>`;
-  return `<div class="tl">${t.map((x, i) => `<div class="tl-item ${x.overdue ? 'over' : ''} ${x.task_id ? '' : 'na'}" style="--i:${i}" onclick="go('tasks')"><span class="when">${esc(dayName(x.due))}</span><span class="node"></span><div><b>${esc(x.task)}</b><small>${esc(x.display || x.source)}</small></div><span class="st">${x.overdue ? 'LATE' : x.due === todayISO() ? 'TODAY' : 'OPEN'}</span></div>`).join('')}</div>`;
-}
-function gauge(label, val, max, cls) {
-  const r = 36, C = 2 * Math.PI * r, pct = max ? Math.min(1, val / max) : 0;
-  return `<div class="gauge ${cls}"><svg viewBox="0 0 86 86"><circle class="track" cx="43" cy="43" r="${r}"/><circle class="arc" cx="43" cy="43" r="${r}" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${(C * (1 - pct)).toFixed(1)}"/></svg><div class="val">${val}<small>of ${max}</small></div><div class="lbl">${label}</div></div>`;
-}
-function gauges() {
-  const c = S.data.caps, age = S.data.feed_age_minutes == null ? 0 : S.data.feed_age_minutes;
-  return `<div class="gauges">${gauge('texts', c.sent_texts, c.texts, c.sent_texts >= c.texts ? 'red' : c.sent_texts > c.texts * .8 ? 'amber' : '')}${gauge('emails', c.sent_emails, c.emails, c.sent_emails >= c.emails ? 'red' : '')}${gauge('feed min', Math.min(age, 999), 60, age > 60 ? 'red' : age > 30 ? 'amber' : '')}</div>`;
-}
-function insights() {
-  const f = feed(), b = (f.counts || {}).by_band || {}, max = Math.max(1, ...Object.values(b));
-  const order = ['hot', 'warm', 'lukewarm', 'cold', 'ice-cold'];
-  const owes = (f.touches_due || []).filter(r => r.owes_reply).length;
-  return `<div class="insight"><div class="bands">${order.map(k => `<div class="band ${k}"><i data-h="${Math.round(100 * (b[k] || 0) / max)}" data-v="${(b[k] || 0).toLocaleString()}"></i><small>${k}</small></div>`).join('')}</div>
-  <div class="kv"><div>OWE A REPLY<b>${owes}</b></div><div>DUE TODAY<b>${(f.counts || {}).touches_due || 0}</b></div><div>CADENCE<b style="font-size:11px">hot ${(f.cadence_days || {}).hot || 7}d · warm ${(f.cadence_days || {}).warm || 14}d</b></div></div></div>`;
-}
-function sourceRows() {
-  const d = S.data, f = feed(), cmd = d.command || {}, age = d.feed_age_minutes;
-  const tq = d.text_queue || {}, eq = d.email_queue || {};
-  return [
-    ['◔', 'CRM feed', d.feed_ok ? (age == null || age <= 60 ? 'ok' : 'warn') : 'stop', d.feed_ok ? `feed.json · ${f.as_of || ''}` : 'missing'],
-    ['◉', 'iMessage signals', f.signals && f.signals.file ? 'ok' : 'warn', f.signals && f.signals.file ? `${f.signals.people} people` : 'not in this feed'],
-    ['⌘', 'Command reader', cmd.state === 'ok' ? 'ok' : cmd.state ? 'warn' : 'off', cmd.state || 'no status.json'],
-    ['✉', 'Email drafts', eq.drafts ? 'ok' : 'off', eq.drafts ? `${eq.drafts.length} ready` : 'no queue yet'],
-    ['▭', 'Text drafts', tq.drafts ? 'ok' : 'off', tq.drafts ? `${tq.drafts.length} + ${(tq.reply_first || []).length} replies` : 'no queue yet'],
-    ['↗', 'Sender', d.demo ? 'warn' : d.sender === 'live' ? 'ok' : 'warn', d.demo ? 'demo' : d.sender === 'live' ? 'Messages + Gmail' : 'dry run'],
-    ['◍', 'Claude Q&A', (d.voice || {}).ask ? 'ok' : 'off', (d.voice || {}).ask ? `${(d.voice || {}).ask_model} · ${((d.voice || {}).usage || {}).asked || 0} asked` : 'no key'],
-    ['♪', 'Voice', (d.voice || {}).tts === 'elevenlabs' ? 'ok' : 'warn', (d.voice || {}).tts === 'elevenlabs' ? `ElevenLabs · ${(((d.voice || {}).usage || {}).spoken_chars || 0).toLocaleString()} chars${(d.voice || {}).speech_engine ? ' · calls on' : ''}` : 'browser voice'],
-  ];
-}
-function sourcesOK() { return sourceRows().filter(r => r[2] === 'ok').length; }
-function sources() { return `<div class="src">${sourceRows().map(([i, n, st, s], k) => `<div class="${st}" style="--i:${k}"><span class="ico">${i}</span><div><b>${n}</b><small>${esc(s)}</small></div></div>`).join('')}</div>`; }
+function tele(text, strong) { TELE.push({ at: new Date(), text, strong }); if (TELE.length > 30) TELE.shift(); }
 function stopScreen(f) {
   return `<div class="stop-screen"><div><div class="big">HEADER CHANGED</div><p>The Contacts tab of the AIRE CRM sheet lost a column the engine needs: <code>${esc((f.missing_columns || []).join(', ') || 'unknown')}</code>. Nothing on this screen can be trusted until the header is restored, so Pipeline shows nothing else.</p><p>Put the column back in the sheet, then run the refresh.</p><div class="acts" style="justify-content:center"><button class="primary" onclick="refresh()">Refresh feed</button><button onclick="window.open('${esc(S.data.links.sheet)}')">Open the sheet</button></div></div></div>`;
 }
 
-// ---------------------------------------------------------------- list views
-function filterBar(opts) { return `<div class="filters">${opts.map(([k, l]) => `<button class="${S.filter === k ? 'on' : ''}" onclick="setFilter('${k}')">${l}</button>`).join('')}</div>`; }
-function viewTouches() {
-  let rows = (feed().touches_due || []).filter(r => matches(`${r.display} ${r.phone} ${r.email} ${r.next_action} ${r.stage}`));
-  if (S.filter === 'reply') rows = rows.filter(r => r.owes_reply); else if (S.filter === 'hot') rows = rows.filter(r => r.band === 'hot'); else if (S.filter === 'warm') rows = rows.filter(r => r.band === 'warm');
-  const body = rows.length ? `<div class="rows">${rows.slice(0, 200).map((r, i) => touchRow(r, i)).join('')}</div>` : `<div class="empty"><b>Nobody here</b>${S.q ? 'Nothing matches the search.' : 'Every touch is logged.'}</div>`;
-  return `<div class="view">${panel(0, `Touches due · ${rows.length}`, filterBar([['all', 'ALL'], ['reply', 'OWE A REPLY'], ['hot', 'HOT'], ['warm', 'WARM']]), body)}</div>`;
-}
-function touchRow(r, i) {
-  const last = (r.last_messages || []).slice(-1)[0];
-  return `<div class="row ${r.owes_reply ? 'reply' : ''}" style="--i:${i}">
-    <span class="ico ${r.band}">${initials(r.display)}</span>
-    <div class="who"><b>${esc(r.display || r.phone)}</b><small><span class="tag ${r.band}">${esc(r.band)}</span>${r.owes_reply ? '<span class="tag reply">REPLY</span>' : ''}<span>${esc(r.stage || '')}</span><span>${esc(fmtPhone(r.phone) || r.email || '')}</span>${textStatus(r.person_id)}</small></div>
-    <div class="why"><b>${esc(r.next_action || (r.owes_reply ? 'They texted last. Answer first.' : 'Time for a touch'))}</b>${last ? `<span class="msg">“${esc(last.replace(/^\d{4}-\d{2}-\d{2}: /, ''))}”</span>` : `<span>${quiet(r)}${r.signal_score ? ' · score ' + r.signal_score : ''}</span>`}</div>
-    <div class="acts">${textBtn(r.person_id, r)}<button onclick="touched('${r.person_id}')">✓ Touched</button><button onclick="openTask('${r.person_id}')">＋ Task</button><button onclick="openNote('${r.person_id}')">✎ Note</button><button class="danger" onclick="openDNC('${r.person_id}')">⊘</button></div>
-  </div>`;
-}
-function viewTasks() {
-  let rows = (feed().tasks || []).filter(t => matches(`${t.task} ${t.display} ${t.source}`));
-  if (S.filter === 'over') rows = rows.filter(t => t.overdue); else if (S.filter === 'today') rows = rows.filter(t => t.due === todayISO()); else if (S.filter === 'na') rows = rows.filter(t => !t.task_id);
-  rows = rows.slice().sort((a, b) => (b.overdue - a.overdue) || (a.due || '9').localeCompare(b.due || '9'));
-  const body = rows.length ? `<div class="rows">${rows.map((t, i) => `<div class="row" style="--i:${i}">
-    <span class="ico ${t.overdue ? 'hot' : ''}">${t.overdue ? '!' : '☑'}</span>
-    <div class="who"><b>${esc(t.task)}</b><small><span>${esc(t.display || 'no person')}</span><span class="tag ${t.task_id ? 'info' : 'warn'}">${t.task_id ? esc(t.source) : 'NEXT ACTION'}</span></small></div>
-    <div class="why"><b>${esc(dayName(t.due))}</b><span>${esc(t.due)}${t.overdue ? ' · overdue' : ''}</span></div>
-    <div class="acts"><button class="primary" onclick="doneTask('${t.task_id}','${t.person_id}',${JSON.stringify(t.task).replace(/"/g, '&quot;')})">✓ Done</button>${t.person_id ? `<button onclick="openCompose('${t.person_id}')">✉</button>` : ''}</div>
-  </div>`).join('')}</div>` : `<div class="empty"><b>No open tasks</b></div>`;
-  return `<div class="view">${panel(0, `Tasks · ${rows.length}`, `${filterBar([['all', 'ALL'], ['over', 'OVERDUE'], ['today', 'TODAY'], ['na', 'NEXT ACTION']])} <button class="link" onclick="openTask()">＋ New task</button>`, body)}</div>`;
-}
-function viewDeals() {
-  const rows = (feed().deals || []).filter(x => matches(`${x.address} ${x.display} ${x.stage} ${x.next_step}`));
-  const body = rows.length ? `<div class="rows">${rows.map((x, i) => `<div class="row" style="--i:${i}">
-    <span class="ico">${x.side === 'buyer' ? '◇' : '⌂'}</span>
-    <div class="who"><b>${esc(x.address)}</b><small><span class="tag violet">${esc(x.stage.replace('_', ' '))}</span><span>${esc(x.side)}</span><span>${esc(x.display)}</span>${x.price ? `<span>${money(x.price)}</span>` : ''}${x.expected_close ? `<span>closes ${x.expected_close}</span>` : ''}</small></div>
-    <div class="why"><b>${esc(x.next_step || 'no next step')}</b><span>${esc(x.last_event || '')}${x.last_event_at ? ' · ' + x.last_event_at.slice(0, 10) : ''} · ${esc(x.source)}</span></div>
-    <div class="acts"><button class="primary" onclick="openDeal(${esc(JSON.stringify(x.address))})">✎ Edit</button>${x.person_id ? `<button onclick="openCompose('${x.person_id}')">✉</button>` : ''}</div>
-  </div>`).join('')}</div>` : `<div class="empty"><b>No live deals</b></div>`;
-  const seg = `<div class="filters"><button class="${S.dealsMode === 'list' ? 'on' : ''}" onclick="S.dealsMode='list';render()">LIST</button><button class="${S.dealsMode === 'map' ? 'on' : ''}" onclick="S.dealsMode='map';render()">MAP</button></div>`;
-  return `<div class="view ${S.dealsMode === 'map' ? 'map-view' : ''}">${panel(0, `Deals · ${rows.length}`, `${seg} <button class="link" onclick="openDeal()">＋ Add a deal</button>`, S.dealsMode === 'map' ? mapPanel(true) : body)}</div>`;
-}
-function viewLeads() {
-  const rows = (feed().new_leads || []).filter(l => matches(`${l.display} ${l.source} ${l.email} ${l.phone}`));
-  const body = rows.length ? `<div class="rows">${rows.map((l, i) => `<div class="row" style="--i:${i}">
-    <span class="ico">${initials(l.display)}</span>
-    <div class="who"><b>${esc(l.display)}</b><small><span class="tag live">NEW</span><span>${esc(fmtPhone(l.phone) || l.email || '')}</span>${textStatus(l.person_id)}</small></div>
-    <div class="why"><b>${esc(l.next_action || 'Reach out')}</b><span>${esc(l.source)} · received ${esc(l.received)}</span></div>
-    <div class="acts">${textBtn(l.person_id, l)}<button onclick="touched('${l.person_id}')">✓ Touched</button><button onclick="openTask('${l.person_id}')">＋ Task</button></div>
-  </div>`).join('')}</div>` : `<div class="empty"><b>No new leads in the last 14 days</b></div>`;
-  return `<div class="view">${panel(0, `New leads · ${rows.length}`, 'last 14 days', body)}</div>`;
-}
-function viewQueue() {
-  const items = drafts().filter(d => matches(`${d.name} ${d.body} ${d.subject}`));
-  const body = items.length ? `<div class="rows">${items.map((d, i) => `<div class="row ${d.reply ? 'reply' : ''}" style="--i:${i}">
-    <span class="ico">${d.kind === 'text' ? '▭' : '✉'}</span>
-    <div class="who"><b>${esc(d.name)}</b><small>${d.reply ? '<span class="tag reply">REPLY FIRST</span>' : `<span class="tag info">${esc(d.pool || '')}</span>`}<span>${esc(d.kind === 'text' ? fmtPhone(d.to) : d.to)}</span></small></div>
-    <div class="why"><b>${esc(d.reply ? 'No template. Read what they said and answer.' : d.subject || d.body.split('\n')[0])}</b><span class="msg">${esc(d.reply ? (d.last_messages.slice(-1)[0] || '').replace(/^\d{4}-\d{2}-\d{2}: /, '') : d.body.slice(0, 110))}</span></div>
-    <div class="acts"><button class="primary" onclick="openCompose('${d.person_id}', ${i})">✉ Open</button></div>
-  </div>`).join('')}</div>` : `<div class="empty"><b>Queue is clear</b>Drafts come from follow-up/out/*.json after the refresh.</div>`;
-  return `<div class="view">${panel(0, `Compose queue · ${items.length}`, `${S.data.caps.sent_texts}/${S.data.caps.texts} texts · ${S.data.caps.sent_emails}/${S.data.caps.emails} emails today`, body)}</div>`;
-}
-function viewSent() {
-  const rows = (S.data.sent_today || []).slice().reverse();
-  const body = rows.length ? `<div class="rows">${rows.map((s, i) => `<div class="row" style="--i:${i}">
-    <span class="ico">${s.kind === 'text' ? '▭' : '✉'}</span>
-    <div class="who"><b>${esc(s.display || s.person_id)}</b><small><span class="tag ${s.status === 'sent' ? 'live' : 'warn'}">${esc(s.status.toUpperCase())}</span>${s.kind === 'text' && s.delivery ? `<span>${esc(s.delivery)}</span>` : ''}<span>${esc(s.kind === 'text' ? fmtPhone(s.to) : s.to)}</span></small></div>
-    <div class="why"><b>${esc(s.subject || `${s.chars} characters`)}</b><span>${esc(s.at.slice(11, 16))} · ${esc(s.detail || '')}</span></div><div></div>
-  </div>`).join('')}</div>` : `<div class="empty"><b>Nothing sent today</b></div>`;
-  return `<div class="view">${panel(0, `Sent today · ${rows.length}`, 'out/send-log.json', body)}</div>`;
-}
-
 // ---------------------------------------------------------------- navigation
-function go(v) { S.view = v; S.filter = 'all'; try { history.replaceState(null, '', '#' + v); } catch (e) { } render(); $('#main').scrollTop = 0; }
+function go(v) { if (S.view === 'search' && v !== 'search' && S.q) { S.q = ''; const sb = $('#search'); if (sb) sb.value = ''; } S.view = v; S.filter = 'all'; try { history.replaceState(null, '', '#' + v); } catch (e) { } render(); $('#main').scrollTop = 0; }
 // A link like 127.0.0.1:4747/#commission opens that page.
 (function () { const h = location.hash.slice(1); if (/^[a-z]+$/.test(h)) S.view = h; })();
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (/^[a-z]+$/.test(h) && h !== S.view) go(h); });
@@ -393,8 +299,8 @@ async function refresh() {
 
 // ---------------------------------------------------------------- actions
 async function touched(id) {
-  const r = personRow(id); const what = await ask('Touched', `What happened with ${r ? r.display : id}?`, 'Called, left a voicemail'); if (what == null) return;
-  await act('/api/touch', { person_id: id, what }, { tag: 'LOGGED', text: `Touch logged for ${r ? r.display : id}` });
+  const r = personRow(id), who = nm(r ? r.display : 'this person'); const what = await touchForm(who); if (what == null) return;
+  await act('/api/touch', { person_id: id, what }, { tag: 'LOGGED', text: `Touch logged for ${who}` });
 }
 async function doneTask(task_id, person_id, task) {
   const r = await act('/api/done', { task_id, person_id, task }, { tag: 'DONE', text: task });
@@ -418,54 +324,152 @@ function renderDrawer() {
   const cap = c.kind === 'text' ? d.caps.texts - d.caps.sent_texts : d.caps.emails - d.caps.sent_emails;
   const items = drafts(); const pos = S.queueIdx >= 0 ? `${S.queueIdx + 1} of ${items.length}` : 'not in queue';
   $('#drawer').hidden = false;
-  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${initials(c.name)}</span><div class="who"><b>${esc(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span><span>id ${esc(c.person_id)}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
+  const H = hid(), C2 = window.CC;
+  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${H ? '•' : initials(c.name)}</span><div class="who"><b>${H ? '<span class="cc-hid">Name hidden</span>' : esc(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
   <div class="dbody">
-    ${c.last_messages && c.last_messages.length ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
-    ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${esc(c.next_action || row.next_action)}</div>` : ''}
+    ${c.last_messages && c.last_messages.length && H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span><div class="bubble">${C2.msg('')} · press the H key to read them</div></div>` : ''}
+    ${c.last_messages && c.last_messages.length && !H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
+    ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${C2 ? C2.note(c.next_action || row.next_action, [c.name]) : esc(c.next_action || row.next_action)}</div>` : ''}
+    ${logLines(c.person_id)}
     <div class="seg"><button class="${c.kind === 'text' ? 'on' : ''}" ${canText ? '' : 'disabled'} onclick="setKind('text')">▭ TEXT</button><button class="${c.kind === 'email' ? 'on' : ''}" ${canEmail ? '' : 'disabled'} onclick="setKind('email')">✉ EMAIL</button></div>
-    <div class="field"><label>TO</label><input id="c-to" value="${esc(to)}" ${to ? 'readonly' : ''} placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}"></div>
+    <div class="field"><label>TO</label>${H && to ? `<input id="c-to" type="hidden" value="${esc(to)}"><p class="cc-hid">${c.kind === 'text' ? 'Number' : 'Email'} hidden · press the H key to see it before you open it</p>` : `<input id="c-to" value="${esc(to)}" inputmode="${c.kind === 'text' ? 'tel' : 'email'}" placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}" oninput="sheetCheck()">`}<p class="hint" id="c-exact"></p></div>
     ${c.kind === 'email' ? `<div class="field"><label>SUBJECT</label><input id="c-subject" value="${esc(c.subject || '')}" placeholder="Subject"></div>` : ''}
-    <div class="field"><label>${c.kind === 'text' ? 'TEXT' : 'EMAIL'} DRAFT${c.reply ? ' · write it yourself, they texted last' : c.pool ? ' · from the ' + esc(c.pool) + ' pool' : ''}</label><textarea id="c-body" placeholder="${c.reply ? 'Answer what they said.' : 'Write the message.'}">${esc(c.body || '')}</textarea><div class="hint"><span id="c-count">${(c.body || '').length} chars</span><span>${cap} ${c.kind}${cap === 1 ? '' : 's'} left today</span></div></div>
+    <div class="field"><label>${c.kind === 'text' ? 'TEXT' : 'EMAIL'} DRAFT${c.reply ? ' · write it yourself, they texted last' : c.pool ? ' · from the ' + esc(c.pool) + ' pool' : ''}</label><textarea id="c-body"${maskAttr()} placeholder="${c.reply ? 'Answer what they said.' : 'Write the message.'}">${esc(c.body || '')}</textarea><div class="hint"><span id="c-count">${(c.body || '').length} chars</span><span>${cap} ${c.kind}${cap === 1 ? '' : 's'} left today</span></div></div>
     ${grokBlock(c, row)}
   </div>
-  <div class="dfoot"><button class="send-btn ${dry ? 'dry' : ''}" id="send" onclick="sendNow()">${dry ? 'DRY RUN SEND' : 'SEND'}</button><button class="ghost-btn" onclick="touchFromCompose()">✓ Touched, no message</button><span class="spacer"></span><span class="mono" style="font-size:9px;color:var(--dim)">${pos}</span><button class="ghost-btn" onclick="nextInQueue()">Skip ›</button></div></section>`;
+  <div class="dfoot"><button class="send-btn" id="open-app" onclick="openInApp()">${c.kind === 'text' ? 'Open in Messages' : 'Open in Gmail'}</button>${sendNowBtn(dry)}<button class="ghost-btn" onclick="touchFromCompose()">✓ Touched, no message</button><span class="spacer"></span><span class="mono" style="font-size:9px;color:var(--dim)">${pos}</span><button class="ghost-btn" onclick="nextInQueue()">Skip ›</button></div></section>`;
   const ta = $('#c-body'); ta.addEventListener('input', () => { $('#c-count').textContent = ta.value.length + ' chars'; }); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  sheetCheck();
 }
-function setKind(k) { const c = S.compose; c.kind = k; c.body = $('#c-body').value; if (k === 'email' && !c.subject) c.subject = 'Checking in'; renderDrawer(); }
+// Send now: desktop only, live mode only, one message per press after a confirm step. Greyed buttons say why.
+function sendNowBtn(dry) {
+  const why = !S.data.local ? 'Send now works on the Mac only' : dry ? 'Sending is off (dry mode)' : !S.compose.person_id ? 'Not in the CRM yet, so it cannot be logged' : '';
+  return why ? `<button type="button" class="ghost-btn cc-off" id="send" disabled aria-disabled="true" title="${esc(why)}">Send now<small>${esc(why)}</small></button>`
+    : `<button type="button" class="ghost-btn" id="send" onclick="confirmSendNow()">Send now</button>`;
+}
+// The exact number or address that will open, and a flag when two contacts share it.
+function sheetCheck() {
+  const c = S.compose, el = $('#c-exact'); if (!c || !el) return;
+  const raw = ($('#c-to') || {}).value || '', ok = c.kind === 'text' ? normPhone(raw) : validEmail(raw) ? raw.trim() : null;
+  const share = ok ? sharers(c.kind, ok).filter(n => !c.person_id || n !== (c.row || {}).display) : [];
+  const shown = hid() ? (c.kind === 'text' ? 'the number on file' : 'the address on file') : esc(ok || '');
+  el.innerHTML = !ok ? `<span class="cc-warn">${c.kind === 'text' ? phoneWhy(raw) + '. Use 10 digits.' : raw.trim() ? 'Not a valid email' : 'No email on file'}</span>`
+    : `Opens to <b>${shown}</b>${share.length ? ` <span class="cc-warn">· ${share.length === 1 ? 'Another contact has' : share.length + ' other contacts have'} this ${c.kind === 'text' ? 'number' : 'email'}${hid() ? '' : ': ' + share.map(esc).join(', ')}. Check it is the right person.</span>` : ''}`;
+  const b = $('#open-app'); if (b) b.disabled = !ok;
+}
+function sheetValues() {
+  const c = S.compose, raw = $('#c-to').value;
+  return { kind: c.kind, to: c.kind === 'text' ? normPhone(raw) : (validEmail(raw) ? raw.trim() : null), body: $('#c-body').value, subject: c.kind === 'email' ? ($('#c-subject') || {}).value || '' : '' };
+}
+// Hands the message to Messages (sms: link) or to a Gmail compose window for aire@. Nothing is sent here.
+function openInApp() {
+  const v = sheetValues(); if (!v.to) { toast('warn', 'CHECK IT', v.kind === 'text' ? 'That is not a valid number.' : 'That is not a valid email.'); return; }
+  if (v.kind === 'text' && S.compose && (feed().no_text_consent || []).map(String).includes(String(S.compose.person_id))) { toast('err', 'NOT OPENED', 'No text consent: their website form did not check the box to be texted. Email or call instead.'); return; }
+  if (v.kind === 'text') { location.href = smsLink(v.to, v.body); toast('ok', 'MESSAGES', 'Opened in Messages. Press send there. Pipeline logs it once it goes.'); }
+  else { window.open(gmailLink(v.to, v.subject, v.body), '_blank', 'noopener'); toast('ok', 'GMAIL', 'Opened in Gmail. Press Send there. Pipeline logs it once it goes.'); }
+  logOpened(v);
+}
+// ---- hand-off log: the click is logged as opened, then the Mac looks for the real send in Messages history or
+// Gmail's Sent folder for 15 minutes. Still open after 2 minutes: a small "Did that send?" bar.
+async function logOpened(v) {
+  const c = S.compose || {};
+  try { const r = await api('/api/opened', { kind: v.kind, person_id: c.person_id || '', to: v.to, body: v.body, subject: v.subject, display: c.name || '', draft: c.body || '', pool: c.pool || '' });
+    if (r.ok) { await load(); watchOpened(); } } catch (e) { }
+}
+const openedNow = () => ((S.data && S.data.sent_today) || []).some(s => s.status === 'opened' && Date.now() - new Date(s.at) < 16 * 60e3);
+function watchOpened() {
+  if (S.openedTimer) return;
+  S.openedTimer = setInterval(async () => {
+    if (!openedNow()) { clearInterval(S.openedTimer); S.openedTimer = null; return; }
+    if (!$('#modal').hidden) return;
+    try { S.data = await api('/api/state'); if (S.compose || S.map) askSent(); else render(); } catch (e) { }
+  }, 20000);
+}
+function askSent() {
+  const p = ((S.data && S.data.handoff) || {}).pending || [], bar = document.getElementById('sent-ask');
+  if (!p.length) { if (bar && bar.remove) bar.remove(); return; }
+  const el = bar && bar.id === 'sent-ask' ? bar : document.body.appendChild(Object.assign(document.createElement('div'), { id: 'sent-ask' }));
+  el.setAttribute('role', 'status'); el.innerHTML = askSentHTML(p[0]);
+}
+function askSentHTML(e) {
+  return `<span>Did the ${e.kind === 'text' ? 'text' : 'email'} to <b>${window.CC ? CC.who(e.display || 'this person') : esc(e.display || 'this person')}</b> send?<small>Opened ${esc(textWhen(e.at))}</small></span><button type="button" onclick="answerSent('${esc(e.id)}', true)">Sent</button><button type="button" class="no" onclick="answerSent('${esc(e.id)}', false)">Not sent</button>`;
+}
+async function answerSent(id, sent) {
+  const r = await api('/api/opened/answer', { id, sent });
+  if (r.ok) toast('ok', sent ? 'LOGGED' : 'CLEARED', sent ? 'Marked sent by you. It counts as a touch.' : 'Taken off the log. Nothing was counted.');
+  else toast('err', 'NOT SAVED', r.error || 'no reason given');
+  await load();
+}
+const sentWord = r => r.status === 'opened' ? 'opened, waiting for your send' : r.confirmed_by === 'you' ? 'sent, you said so' : r.confirmed_by ? `sent, confirmed by ${r.confirmed_by}` : r.status === 'sent' ? 'sent by Pipeline' : r.status;
+// What Pipeline has on record for this person: the last five texts and emails, newest first.
+function logLines(id) {
+  const rows = ((S.data.sent_log || {})[id] || []).slice().reverse(); if (!id || !rows.length) return '';
+  return `<div class="msgs"><span class="lbl">SENT FROM PIPELINE</span>${rows.map(r => `<div class="bubble note"><small>${esc(textWhen(r.sent_at || r.at))} · ${r.kind === 'text' ? 'Text' : 'Email'} · ${esc(sentWord(r))}</small>${hid() ? '' : esc(r.subject || r.text || '')}</div>`).join('')}</div>`;
+}
+async function confirmSendNow() {
+  const v = sheetValues(), c = S.compose;
+  if (!v.to) { toast('warn', 'CHECK IT', 'That recipient is not valid.'); return; }
+  if (!v.body.trim()) { toast('warn', 'EMPTY', 'Write the message first.'); return; }
+  const ok = await modal(`Send this ${v.kind} now?`, `<p class="cc-note">To <b>${esc(nm(c.name))}</b> at <b>${esc(v.to)}</b>, ${v.kind === 'text' ? 'through Messages (iMessage, or SMS if not)' : 'through Gmail as ' + GMAIL_USER}. One message, sent right away.</p>${v.subject ? `<p><b>Subject:</b> ${esc(v.subject)}</p>` : ''}<pre class="send-preview">${esc(v.body)}</pre>`, () => true, 'Send it');
+  if (ok !== true) return;
+  return sendNow(v);
+}
+function setKind(k) {
+  const c = S.compose; c.kind = k; c.body = $('#c-body') ? $('#c-body').value : c.body;
+  // The draft for that channel from the queue, when there is one.
+  const d = c.person_id && drafts().find(x => x.person_id === c.person_id && x.kind === k && x.body);
+  if (d) { c.body = d.body; c.subject = d.subject || c.subject; c.to = d.to || c.to; }
+  if (k === 'email' && !c.subject) c.subject = 'Checking in';
+  c.to = k === 'text' ? ((c.row || {}).phone || (k === 'text' && d ? d.to : '')) : ((c.row || {}).email || (d ? d.to : ''));
+  renderDrawer();
+}
 function closeDrawer() { $('#drawer').hidden = true; S.compose = null; }
 function nextInQueue() { const items = drafts(); if (!items.length) { closeDrawer(); return; } const n = (S.queueIdx + 1) % items.length; openCompose(items[n].person_id, n); }
-async function sendNow() {
-  const c = S.compose, btn = $('#send'); btn.disabled = true; btn.classList.add('charging');
-  const body = { kind: c.kind, person_id: c.person_id, to: $('#c-to').value, body: $('#c-body').value, subject: c.kind === 'email' ? $('#c-subject').value : '', display: c.name };
+async function sendNow(v) {
+  const c = S.compose, btn = $('#send'); if (!v || !btn) return; btn.disabled = true; btn.classList.add('charging');
+  const body = { kind: v.kind, person_id: c.person_id, to: v.to, body: v.body, subject: v.subject, display: c.name, confirmed: true };
   const r = await api('/api/send', body);
   btn.disabled = false; btn.classList.remove('charging');
   if (!r.ok) { toast('err', 'NOT SENT', r.error); return; }
-  toast(r.result.status === 'sent' ? 'ok' : 'warn', r.result.status === 'sent' ? 'SENT' : 'DRY RUN', `${c.kind} to ${c.name} ${r.result.status === 'sent' ? 'is on its way and logged in the CRM' : 'logged, nothing left the Mac'}`);
+  toast(r.result.status === 'sent' ? 'ok' : 'warn', r.result.status === 'sent' ? 'SENT' : 'DRY RUN', `${c.kind} to ${nm(c.name)} ${r.result.status === 'sent' ? 'is on its way and logged in the CRM' : 'logged, nothing left the Mac'}`);
   if (c.kind === 'text') S.justTexted = c.person_id;
   await load();
   watchDelivery();
   if (c.fromCard) { closeDrawer(); setTimeout(() => { if (S.justTexted === c.person_id) { S.justTexted = null; } }, 4000); return; }
   const items = drafts(); if (items.length) openCompose(items[Math.min(S.queueIdx, items.length - 1)].person_id, Math.min(S.queueIdx, items.length - 1)); else closeDrawer();
 }
-async function touchFromCompose() { const c = S.compose; const what = await ask('Touched', `What happened with ${c.name}?`, 'Called'); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${c.name}` }); if (r) nextInQueue(); }
+async function touchFromCompose() { const c = S.compose; const what = await touchForm(nm(c.name)); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${nm(c.name)}` }); if (r) nextInQueue(); }
 
 // ---- modals
-function modal(title, bodyHTML, onOK, okLabel = 'Save') {
+// opts.info: a window that only shows something gets one OK button, no Cancel.
+function modal(title, bodyHTML, onOK, okLabel = 'Save', opts = {}) {
   return new Promise(resolve => {
     const m = $('#modal'); m.hidden = false;
-    m.innerHTML = `<section class="panel"><div class="dh"><div class="who"><b>${title}</b></div><button class="x" onclick="closeModal()">×</button></div><div class="dbody">${bodyHTML}</div><div class="dfoot"><button class="send-btn" id="m-ok">${okLabel}</button><button class="ghost-btn" onclick="closeModal()">Cancel</button></div></section>`;
+    m.innerHTML = `<section class="panel"><div class="dh"><div class="who"><b>${title}</b></div><button class="x" onclick="closeModal()" aria-label="Close">×</button></div><div class="dbody">${bodyHTML}</div><div class="dfoot"><button type="button" class="send-btn" id="m-ok">${okLabel}</button>${opts.info ? '' : '<button type="button" class="ghost-btn" onclick="closeModal()">Cancel</button>'}</div></section>`;
     m._resolve = resolve;
     // resolve with the value first: closeModal() resolves whatever is still pending with null (that is Cancel)
     $('#m-ok').onclick = async () => { const v = onOK(m); if (v === false) return; m._resolve = null; resolve(v); closeModal(); };
-    const first = m.querySelector('input, textarea, select'); if (first) first.focus();
+    m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-label', title.replace(/<[^>]+>/g, ''));
+    // Password managers (1Password, iCloud Passwords) opened an empty grey menu over these fields. They are not logins:
+    // tell every manager to leave them alone.
+    m.querySelectorAll('input, textarea').forEach(i => { i.setAttribute('autocomplete', 'off'); i.setAttribute('data-1p-ignore', ''); i.setAttribute('data-lpignore', 'true'); i.setAttribute('data-bwignore', ''); i.setAttribute('data-form-type', 'other'); });
+    const first = m.querySelector('input, textarea, select'); (first || $('#m-ok')).focus();
     m.querySelectorAll('input').forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') $('#m-ok').click(); }));
   });
 }
 function closeModal() { const m = $('#modal'); m.hidden = true; m.innerHTML = ''; if (m._resolve) { m._resolve(null); m._resolve = null; } }
+// Log a touch: pick what it was (one tap, Call is picked), add a note if you want, Log. Saved as "Call: note".
+const TOUCH_TYPES = ['Call', 'Text', 'Email', 'In person', 'Voicemail'];
+function touchForm(who) {
+  return modal('Log a touch', `<p class="cc-note">With ${esc(who)}.</p><div class="cc-filters" role="radiogroup" aria-label="Touch type">${TOUCH_TYPES.map((t, i) => `<button type="button" class="cc-filter" role="radio" aria-pressed="${i === 0}" aria-checked="${i === 0}" data-touch="${esc(t)}" onclick="this.parentNode.querySelectorAll('button').forEach(b => { const on = b === this; b.setAttribute('aria-pressed', on); b.setAttribute('aria-checked', on); })">${esc(t)}</button>`).join('')}</div>
+    <div class="field"><label for="m-tnote">Note (optional)</label><input id="m-tnote" placeholder="Left a voicemail about the inspection"></div>`,
+    m => { const t = (m.querySelector('[data-touch][aria-pressed="true"]') || {}).dataset; const type = (t && t.touch) || 'Call', note = $('#m-tnote', m).value.trim(); return note ? `${type}: ${note}` : type; }, 'Log it');
+}
 function ask(title, label, placeholder) { return modal(title, `<div class="field"><label>${esc(label.toUpperCase())}</label><input id="m-in" placeholder="${esc(placeholder)}"></div>`, m => { const v = $('#m-in', m).value.trim(); return v || false; }, 'Log it'); }
 function personSelect(selected) {
   const rows = (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || []);
-  return `<select id="m-person"><option value="">pick a person</option>${rows.map(r => `<option value="${esc(r.person_id)}" ${r.person_id === selected ? 'selected' : ''}>${esc(r.display)} · ${esc(r.band || r.source || '')}</option>`).join('')}</select>`;
+  const h = hid();
+  return `<select id="m-person"><option value="">${h && !selected ? 'names hidden, press Show to pick by name' : 'pick a person'}</option>${rows.map(r => `<option value="${esc(r.person_id)}" ${r.person_id === selected ? 'selected' : ''}>${h ? (r.person_id === selected ? 'This person' : 'Name hidden') : esc(r.display)} · ${esc(r.band || r.source || '')}</option>`).join('')}</select>`;
 }
 async function openTask(person_id = '') {
   const v = await modal('New task', `<div class="field"><label>PERSON</label>${personSelect(person_id)}</div><div class="field"><label>TASK</label><input id="m-task" placeholder="Call back about the inspection"></div><div class="field"><label>DUE</label><input id="m-due" type="date" value="${todayISO()}"></div>`,
@@ -474,16 +478,21 @@ async function openTask(person_id = '') {
 }
 async function openNote(person_id) {
   const r = personRow(person_id);
-  const v = await modal(`Note on ${esc(r ? r.display : person_id)}`, `<div class="field"><label>NOTE</label><textarea id="m-note" style="min-height:90px" placeholder="What you learned"></textarea></div>`, m => $('#m-note', m).value.trim() || false, 'Save note');
+  const v = await modal(`Note on ${esc(nm(r ? r.display : 'this person'))}`, `<div class="field"><label>NOTE</label><textarea id="m-note" style="min-height:90px" placeholder="What you learned"></textarea></div>`, m => $('#m-note', m).value.trim() || false, 'Save note');
   if (v) await act('/api/note', { person_id, text: v }, { tag: 'NOTE', text: 'Saved to the CRM' });
 }
 async function openDNC(person_id) {
   const r = personRow(person_id);
-  const v = await modal(`Do Not Contact: ${esc(r ? r.display : person_id)}`, `<p style="color:var(--amber);margin:0 0 6px">One way. The engine never sets it back to NO. They drop off every list.</p><div class="field"><label>REASON</label><input id="m-reason" placeholder="Asked us to stop"></div>`, m => $('#m-reason', m).value.trim() || false, 'Set Do Not Contact');
-  if (v) await act('/api/dnc', { person_id, reason: v }, { tag: 'DNC', text: `${r ? r.display : person_id} will not be contacted` });
+  const v = await modal(`Do Not Contact: ${esc(nm(r ? r.display : 'this person'))}`, `<p style="color:var(--amber);margin:0 0 6px">One way. The engine never sets it back to NO. They drop off every list.</p><div class="field"><label>REASON</label><input id="m-reason" placeholder="Asked us to stop"></div>`, m => $('#m-reason', m).value.trim() || false, 'Set Do Not Contact');
+  if (v) await act('/api/dnc', { person_id, reason: v }, { tag: 'DNC', text: `${nm(r ? r.display : 'This person')} will not be contacted` });
 }
 async function openDeal(address = '') {
-  const x = (feed().deals || []).find(d => d.address === address) || {};
+  // The CRM Deals tab row being edited, prefilled with the Deals sheet's numbers: the sheet is the one deal source, so
+  // saving brings the CRM tab in line with it. Nothing is written until Save.
+  const crmRow = (feed().deals || []).find(d => d.address === address) || {};
+  const sh = window.CC && address ? CC.sheetDeal(address) : null;
+  const SHEET_STAGE = { contract: 'under_contract', closed: 'closed', out: 'lost', appointment: 'active' };
+  const x = sh ? { ...crmRow, price: sh.price != null ? String(sh.price) : crmRow.price, expected_close: sh.act || crmRow.expected_close, stage: SHEET_STAGE[sh.stage] || crmRow.stage } : crmRow;
   const stages = S.data.stages || [];
   const v = await modal(x.address ? `Edit ${esc(x.address)}` : 'Add a deal', `
     <div class="field"><label>STREET ADDRESS</label><input id="m-addr" value="${esc(x.address || '')}" ${x.address ? 'readonly' : ''} placeholder="2179 S Turnberry Ave"></div>
@@ -492,41 +501,55 @@ async function openDeal(address = '') {
     <div class="field"><label>PRICE</label><input id="m-price" value="${esc(x.price || '')}" placeholder="329000"></div>
     <div class="field"><label>EXPECTED CLOSE</label><input id="m-close" type="date" value="${esc(x.expected_close || '')}"></div>
     <div class="field"><label>NEXT STEP</label><input id="m-next" value="${esc(x.next_step || '')}" placeholder="Inspection Friday"></div>
-    <div class="field"><label>EVENT (optional, logs what just happened)</label><input id="m-event" placeholder="Offer accepted"></div>`,
-    m => ({ address: $('#m-addr', m).value.trim(), stage: $('#m-stage', m).value, price: $('#m-price', m).value.trim(), close: $('#m-close', m).value, next_step: $('#m-next', m).value.trim(), event: $('#m-event', m).value.trim(), expect: x.stage || '', create: !x.address, side: x.address ? '' : $('#m-side', m).value }), x.address ? 'Save deal' : 'Add deal');
+    <div class="field"><label>EVENT (optional, logs what just happened)</label><input id="m-event" placeholder="Offer accepted"></div>
+    ${sh ? '<p class="cc-note">Prefilled from the AIRE Deals sheet, the one deal source. Save writes these to the CRM Deals tab so the two agree.</p>' : ''}`,
+    m => ({ address: $('#m-addr', m).value.trim(), stage: $('#m-stage', m).value, price: $('#m-price', m).value.trim(), close: $('#m-close', m).value, next_step: $('#m-next', m).value.trim(), event: $('#m-event', m).value.trim(), expect: crmRow.stage || '', create: !x.address, side: x.address ? '' : $('#m-side', m).value }), x.address ? 'Save deal' : 'Add deal');
   if (v) await act('/api/deal', v, { tag: 'DEAL', text: `${v.address} · ${v.stage.replace('_', ' ')}` });
 }
 function openBrief() {
-  const f = feed(), c = f.counts || {}, owes = (f.touches_due || []).filter(r => r.owes_reply), over = (f.tasks || []).filter(t => t.overdue), dr = drafts();
+  // The same lists the pages use: replies owed from Touches due, deals from the AIRE Deals sheet, leads from the one lead
+  // list. Names, messages and dollars hide with the privacy switch like every page.
+  const f = feed(), C = window.CC, cd = C && C.data, owes = owesReply(), over = (f.tasks || []).filter(t => t.overdue), dr = readyDrafts();
+  const who = v => (C ? C.who(v) : esc(v)), scrub = (t, n) => (C ? C.scrub(t, n) : esc(t));
+  const deals = cd ? cd.deals.filter(x => !['closed', 'out'].includes(x.stage)) : [], leads = cd ? cd.leads : [];
   modal('Morning brief', `<div class="brief">
-    <h4>FIRST</h4><ul>${owes.length ? owes.slice(0, 5).map(r => `<li>Answer <b>${esc(r.display)}</b>: ${esc((r.last_messages || []).slice(-1)[0] || '').replace(/^\d{4}-\d{2}-\d{2}: /, '')}</li>`).join('') : '<li>Nobody is waiting on a reply.</li>'}</ul>
-    <h4>OVERDUE</h4><ul>${over.length ? over.map(t => `<li>${esc(t.task)} · ${esc(t.display || '')}</li>`).join('') : '<li>Nothing overdue.</li>'}</ul>
-    <h4>NEW LEADS</h4><ul>${(f.new_leads || []).length ? f.new_leads.map(l => `<li><b>${esc(l.display)}</b> · ${esc(l.source)} · ${esc(l.next_action || '')}</li>`).join('') : '<li>None in the last 14 days.</li>'}</ul>
-    <h4>DEALS</h4><ul>${(f.deals || []).length ? f.deals.map(x => `<li><b>${esc(x.address)}</b> · ${esc(x.stage.replace('_', ' '))}${x.next_step ? ' · ' + esc(x.next_step) : ''}</li>`).join('') : '<li>No live deals.</li>'}</ul>
+    <h4>FIRST</h4><ul>${owes.length ? owes.slice(0, 5).map(r => `<li>Answer <b>${who(r.display)}</b>: ${C && C.priv ? C.msg('') : esc(C ? C.cleanMsg((r.last_messages || []).slice(-1)[0]) : '')}</li>`).join('') : '<li>Nobody is waiting on a reply.</li>'}</ul>
+    <h4>OVERDUE</h4><ul>${over.length ? over.map(t => `<li>${scrub(t.task, [t.display])} · ${who(t.display || '')}</li>`).join('') : '<li>Nothing overdue.</li>'}</ul>
+    <h4>NEW LEADS, 14 DAYS</h4><ul>${leads.length ? leads.map(l => `<li><b>${who(l.name || 'Website lead')}</b> · ${esc(l.source || '')} · ${esc((l.due || {}).label || '')}</li>`).join('') : '<li>None in the last 14 days.</li>'}</ul>
+    <h4>DEALS, FROM THE DEALS SHEET</h4><ul>${deals.length ? deals.map(x => `<li><b>${esc(x.deal)}</b> · ${esc(x.status)}${x.act ? ' · act of sale ' + esc(C.day(x.act)) : ''}${x.next ? ' · ' + scrub(x.next) : ''}</li>`).join('') : '<li>No open deals on the Deals sheet.</li>'}</ul>
     <h4>TODAY'S DRAFTS</h4><ul><li>${dr.length} ready (${dr.filter(d => d.kind === 'text').length} texts, ${dr.filter(d => d.kind === 'email').length} emails). Cap ${S.data.caps.texts} and ${S.data.caps.emails}.</li></ul>
   </div>`, () => true, 'Start with the first reply').then(v => { if (v) composeNext(); });
 }
 function openProblems() {
-  const p = problems();
-  modal('What needs attention', p.length ? `<div class="rows">${p.map((x, i) => `<div class="row" style="--i:${i};grid-template-columns:auto 1fr"><span class="tag ${x.level}">${x.level.toUpperCase()}</span><div class="why"><b>${esc(x.text)}</b></div></div>`).join('')}</div>` : `<div class="empty"><b>All clear</b></div>`,
-    () => (p.some(x => x.code.startsWith('command')) ? 'command' : true), p.some(x => x.code.startsWith('command')) ? 'Open Command' : 'OK').then(v => { if (v === 'command') window.open(S.data.links.command); });
+  // The same list as the header chip, worst first. Information only, so one OK button.
+  const p = window.CC && CC.data && CC.attention ? CC.attention() : problems().map(x => ({ level: x.level === 'stop' ? 'red' : 'amber', text: x.text }));
+  modal('What needs attention', p.length ? `<ul class="cc-list">${p.map(x => `<li class="cc-ev ${x.level === 'red' ? 'k-closing' : 'k-deadline'}"><span class="cc-chip">${x.level === 'red' ? 'Failed or out of date' : 'Late or not read yet'}</span><span class="cc-what">${esc(x.text)}</span></li>`).join('')}</ul><div class="cc-acts"><button type="button" onclick="closeModal();go('sources')">Open Sources</button></div>`
+    : C_empty('Every source is current.'), () => true, 'OK', { info: true });
 }
+const C_empty = t => `<p class="cc-empty">${esc(t)}</p>`;
+// Shortcuts in plain sentences: a key is a letter or word you press, never code.
 function openHelp() {
-  modal('Keys', `<div class="brief"><ul><li><kbd>1</kbd> to <kbd>9</kbd> switch views (<kbd>8</kbd> Map, <kbd>9</kbd> Market Monitor)</li><li>On the map: drag to move, scroll or double-click to zoom, click a cluster to open it. Drawing a farm: click corners, double-click or Enter to finish, Backspace undoes a corner, Esc cancels.</li><li><kbd>c</kbd> compose the next draft</li><li><kbd>v</kbd> voice on or off, <kbd>t</kbd> type a command</li><li><kbd>r</kbd> refresh the feed</li><li><kbd>/</kbd> search</li><li><kbd>Esc</kbd> close</li></ul><h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Those answers are read straight from the feed. Anything else goes to Claude with today's feed when the Q&amp;A step is on (ANTHROPIC_API_KEY). Say "ask ..." to force it.</li><li>With the Speech Engine set up (README), the bottom pill starts a call: ElevenLabs listens and talks over WebRTC, Claude answers from the feed, you can interrupt it. Tap again to hang up.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li><li>The Sources panel shows whether Claude Q&amp;A and the ElevenLabs voice are on and what they have used.</li></ul><h4>WHERE THINGS GO</h4><ul><li>Every action is one <code>crm.py --json --client pipeline</code> call and shows in the Connector Log with Client = pipeline.</li><li>Sends are checked for Do Not Contact and the daily cap, then logged to <code>out/send-log.json</code>.</li></ul></div>`, () => true, 'OK');
+  const label = k => NAV.flatMap(g => g[1]).find(x => x[0] === k)[2];
+  modal('Keyboard shortcuts', `<div class="brief"><h4>PAGES</h4><p>Press a number to open a page.</p><ul>${KEYS.map((k, i) => `<li><kbd>${i}</kbd> ${esc(label(k))}</li>`).join('')}</ul>
+    <h4>ANYWHERE</h4><ul><li>Press <kbd>A</kbd> to add a lead.</li><li>Press <kbd>C</kbd> to open the next draft.</li><li>Press <kbd>V</kbd> to turn the voice on or off, and <kbd>T</kbd> to type to it.</li><li>Press <kbd>R</kbd> to refresh the CRM.</li><li>Press the slash key <kbd>/</kbd> to search.</li><li>Press <kbd>H</kbd> to hide or show money and contacts.</li><li>Press <kbd>Escape</kbd> to close a window like this one.</li></ul>
+    <h4>ON THE MAP</h4><ul><li>Drag to move, scroll or double-click to zoom, click a cluster to open it.</li><li>Drawing a farm: click the corners, double-click or press Return to finish, Delete takes back a corner, Escape stops drawing.</li></ul>
+    <h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li></ul>
+    <h4>WHERE THINGS GO</h4><ul><li>Every button that changes something writes to the AIRE CRM sheet and is logged there.</li><li>Every text and email is checked for Do Not Contact and the daily limit before it goes, and lands in Sent today.</li></ul></div>`, () => true, 'OK', { info: true });
 }
 
 // ---------------------------------------------------------------- toasts, clock, keys, boot
 // Jarvis proposals: one card at a time, nothing is written until Caleb taps yes (same API and gates as every button)
 async function showProposals(list) {
   for (const p of list || []) {
-    const what = p.action === 'relabel' ? (p.type ? `Type to ${p.type}` : `band ${p.expect_band || 'blank'} to ${p.band}`) : p.action === 'task' ? `task "${p.task}" due ${p.due}` : `note "${p.text}"`;
-    const ok = await modal('JARVIS SUGGESTS', `<div class="brief"><p><b>${esc(p.name)}</b>: ${esc(what)}</p><p>${esc(p.why)}</p></div>`, () => true, 'Yes, do it');
-    if (!ok) { toast('warn', 'JARVIS', `Skipped: ${p.name}`); continue; }
+    const what = p.action === 'relabel' ? (p.type ? `Type to ${p.type}` : `band ${p.expect_band || 'none'} to ${p.band}`) : p.action === 'task' ? `task "${p.task}" due ${p.due}` : `note "${p.text}"`;
+    const sc = t => (window.CC ? CC.scrub(t, [p.name]) : esc(t));
+    const ok = await modal('JARVIS SUGGESTS', `<div class="brief"><p><b>${window.CC ? CC.who(p.name) : esc(p.name)}</b>: ${sc(what)}</p><p>${sc(p.why)}</p></div>`, () => true, 'Yes, do it');
+    if (!ok) { toast('warn', 'JARVIS', `Skipped: ${nm(p.name)}`); continue; }
     const path = p.action === 'relabel' ? '/api/relabel' : p.action === 'task' ? '/api/task' : '/api/note';
     const body = p.action === 'relabel' ? { person_id: p.person_id, band: p.band, type: p.type, expect_band: p.expect_band }
       : p.action === 'task' ? { person_id: p.person_id, task: p.task, due: p.due } : { person_id: p.person_id, text: p.text };
     const r = await api(path, body);
-    toast(r.ok ? 'ok' : 'err', 'JARVIS', r.ok ? `Saved: ${p.name}` : (r.error || 'not saved'));
+    toast(r.ok ? 'ok' : 'err', 'JARVIS', r.ok ? `Saved: ${nm(p.name)}` : (r.error || 'not saved'));
   }
   load();
 }
@@ -534,14 +557,23 @@ window.showProposals = showProposals;
 function toast(kind, tag, text) { const t = document.createElement('div'); t.className = 'toast ' + (kind === 'ok' ? '' : kind); t.innerHTML = `<b>${esc(tag)}</b><span>${esc(text)}</span>`; $('#toasts').appendChild(t); setTimeout(() => t.remove(), 3700); }
 function tick() { const d = new Date(); $('#date').textContent = d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); $('#time').textContent = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }).toLowerCase(); }
 document.addEventListener('keydown', e => {
-  if (e.target.matches('input, textarea, select')) { if (e.key === 'Escape') e.target.blur(); return; }
-  const views = ['cc', 'touches', 'tasks', 'deals', 'leads', 'queue', 'sent', 'map', 'market'];
-  if (/^[1-9]$/.test(e.key)) go(views[Number(e.key) - 1]); else if (e.key === '0') go('dash');
-  else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
+  // Escape closes an open window first, wherever the focus is (the search box included), then the compose drawer.
+  if (e.key === 'Escape' && !$('#modal').hidden) { e.preventDefault(); closeModal(); return; }
+  const t = e.target && e.target.matches ? e.target : document.body;
+  if (t.matches('input, textarea, select')) { if (e.key === 'Escape') t.blur(); return; }
+  if (/^[0-9]$/.test(e.key)) go(KEYS[Number(e.key)]); else if (e.key === 'h' && window.CC) CC.togglePriv();
+  else if (e.key === 'a' && window.CC && CC.addLead) { e.preventDefault(); CC.addLead(); } else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
   else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }
   else if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else closeDrawer(); }
 });
-$('#search').addEventListener('input', e => { S.q = e.target.value; if (S.view === 'cc' && S.q) S.view = 'touches'; render(); });
+// The header search works the same on every page: typing opens Search, across people, tasks, deals, leads and drafts.
+// Clearing the box goes back to the page you were on. Leaving Search clears the box, so no page stays filtered.
+$('#search').addEventListener('input', e => {
+  S.q = e.target.value;
+  if (S.q && S.view !== 'search') { S.before = S.view; S.view = 'search'; }
+  else if (!S.q && S.view === 'search') S.view = S.before || 'dash';
+  render(); const b = $('#search'); if (document.activeElement !== b) { b.focus(); b.setSelectionRange(b.value.length, b.value.length); }
+});
 $('#refresh').onclick = refresh; $('#bell').onclick = openProblems; $('#help').onclick = openHelp; $('#brief').onclick = openBrief; $('#compose-next').onclick = composeNext;
 
 // ---------------------------------------------------------------- voice
@@ -574,20 +606,28 @@ $('#talk').onclick = async () => {
 };
 $('#type-form').addEventListener('submit', e => { e.preventDefault(); const v = $('#type-cmd').value; $('#type-cmd').value = ''; Voice.type(v); });
 $('#open-sheet').onclick = () => window.open(S.data.links.sheet);
+// Back in the Pipeline window: read again, so a send made in Messages or Gmail shows, or the bar asks about it.
+// The map and an open compose sheet are left as they are: only the bar is checked there.
+async function backInWindow() {
+  if (!S.data || !$('#modal').hidden) return;
+  try { S.data = await api('/api/state'); if (S.compose || S.map) askSent(); else render(); } catch (e) { }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) backInWindow(); });
+window.addEventListener('focus', backInWindow);
 
 async function boot() {
-  const steps = ['reading feed.json', 'loading text and email drafts', 'checking Command reader', 'counting today\'s sends', 'ready'];
+  const steps = ['reading the CRM', 'loading drafts', 'checking Command', 'counting today\'s sends', 'ready'];
   const bar = $('#boot-bar'), sub = $('#boot-sub');
   const p = api('/api/state').catch(() => null);
   for (let i = 0; i < steps.length; i++) { sub.textContent = steps[i]; bar.style.width = `${((i + 1) / steps.length) * 100}%`; await new Promise(r => setTimeout(r, 220)); }
   S.data = await p;
   if (S.data && S.data.feed) tele(`feed ${S.data.demo ? 'demo' : S.data.as_of} · ${(S.data.feed.counts || {}).contacts || 0} people · ${(S.data.feed.touches_due || []).length} due`, true);
-  if (S.data) tele(`drafts: ${((S.data.text_queue || {}).drafts || []).length} texts, ${((S.data.email_queue || {}).drafts || []).length} emails, ${((S.data.text_queue || {}).reply_first || []).length} replies owed`);
+  if (S.data) tele(`drafts: ${((S.data.text_queue || {}).drafts || []).length} texts, ${((S.data.email_queue || {}).drafts || []).length} emails, ${owesReply().length} owe a reply`);
   tick(); setInterval(tick, 1000);
   $('#app').hidden = false;
   if (window.CC) { CC.load(); setInterval(CC.load, 60000); }
-  if (S.data) { render(); watchDelivery(); } else toast('err', 'SERVER', 'app.py is not answering.');
+  if (S.data) { render(); watchDelivery(); } else toast('err', 'NOT ANSWERING', 'Pipeline on the Mac is not answering.');
   $('#boot').classList.add('out'); setTimeout(() => $('#boot').remove(), 600);
-  S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.view === 'cc') { /* keep the globe steady: update numbers only */ renderNav(feed().counts || {}); } else if (S.map) { /* keep the map where Caleb left it */ renderNav(feed().counts || {}); mapUpdate(); } else render(); } catch (e) { } }, 30000);
+  S.pollTimer = setInterval(async () => { if (S.compose || !$('#modal').hidden) return; try { S.data = await api('/api/state'); if (S.map) { /* keep the map where Caleb left it */ renderNav(feed().counts || {}); mapUpdate(); } else render(); } catch (e) { } }, 30000);
 }
 boot();

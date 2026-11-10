@@ -3,8 +3,11 @@
    when its read is stale or failed. Money and contact details stay hidden until Show is pressed, and hide
    again after two minutes. Uses esc, $, api, toast and go from app.js. */
 (function () {
-  const C = window.CC = { data: null, priv: true, privTimer: null, cal: { mode: 'week', off: 0, hide: new Set() }, err: null };
+  const C = window.CC = { after: {}, data: null, priv: true, privTimer: null, cal: { mode: 'week', off: 0, hide: new Set() }, err: null };
   const money0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+  const money2 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Cents show when the sheet holds them ($1,234.50), whole dollars otherwise ($45,000).
+  const dollars = v => (Math.abs(Math.round(v * 100) % 100) ? money2 : money0).format(v);
   const TZ = 'America/Chicago';
   const fmtDay = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
   const fmtTime = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', minute: '2-digit' });
@@ -14,34 +17,51 @@
     commission_mail: 'Commission mail', goals: 'Goals', history: 'Scorecard history' };
 
   // ---- formatting, with the privacy lock
-  const m = v => (v == null ? '—' : C.priv ? '$•••' : money0.format(v));
-  const mk = v => (v == null ? '—' : C.priv ? '$•••' : v >= 1e6 ? '$' + (v / 1e6).toFixed(2) + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'K' : money0.format(v));
+  const m = v => (v == null ? '—' : C.priv ? '$•••' : dollars(v));
+  const mk = v => (v == null ? '—' : C.priv ? '$•••' : v >= 1e6 ? '$' + (v / 1e6).toFixed(2) + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'K' : dollars(v));
   const contact = v => (!v ? '' : C.priv ? '•••' : esc(v));
   const day = k => (k ? fmtDay.format(new Date(k + 'T12:00:00Z')) : '');
   const time = s => (s && s.length > 10 ? fmtTime.format(new Date(s)) : 'All day');
   const n = v => (v == null ? '—' : Number(v).toLocaleString());
-  const ago = min => (min == null ? '' : min < 1 ? 'just now' : min < 60 ? min + ' min ago' : min < 1440 ? Math.floor(min / 60) + 'h ago' : Math.floor(min / 1440) + 'd ago');
+  // Minutes, then hours, then days: "18 min ago", "5 hours ago", "13 days ago". Never "18720 min ago".
+  const ago = min => { if (min == null) return ''; const u = (k, w) => `${k} ${w}${k === 1 ? '' : 's'} ago`;
+    return min < 1 ? 'just now' : min < 60 ? Math.round(min) + ' min ago' : min < 1440 ? u(Math.floor(min / 60), 'hour') : u(Math.floor(min / 1440), 'day'); };
+  C.ago = ago;
+  // Deal photos from ~/Pictures/Pipeline/<street address>/ on the Mac, behind the login. No photo: the stage color.
+  C.photos = C.photos || {};
+  C.photoUrl = (deal, i) => { const k = C.dealKey(deal); return C.photos[k] ? `/photo/${encodeURIComponent(k.replace(/\s+/g, '-'))}/${i || 0}` : null; };
+  C.thumb = deal => { const u = C.photoUrl(deal); return u ? `<img class="cc-thumb" src="${u}" alt="" loading="lazy">` : '<span class="cc-av" aria-hidden="true">⌂</span>'; };
+  C.cover = (deal, stage) => { const u = C.photoUrl(deal); return u ? `<img class="cc-photo" src="${u}" alt="${esc(deal)}" loading="lazy">` : `<div class="cc-photo ph st-${esc(stage || 'other')}" aria-hidden="true">⌂</div>`; };
+  // Booked time: minutes under an hour ("15 min"), hours with one decimal after ("1.5 h").
+  C.bookedText = (h, mins) => C.booked(h, mins).replace(/<[^>]*>/g, '');
+  C.booked = (h, mins) => { const mi = mins ?? (h == null ? null : Math.round(h * 60));
+    return mi == null ? '—' : mi < 60 ? `${mi}<small> min</small>` : `${n(Math.round(mi / 6) / 10)}<small> h</small>`; };
 
   function src(names, short) {
     const f = (C.data && C.data.fresh) || {};
     return [].concat(names).map(k => {
-      const r = f[k] || { state: 'missing' };
+      const r = f[k] || (C.local && C.local(k)) || { state: 'missing' };
       const when = r.at ? 'as of ' + fmtTime.format(new Date(r.at)) + ', ' + ago(r.age_min) : 'never read';
-      const what = r.state === 'failed' ? (short ? 'read failed' : 'read failed: ' + (r.error || 'unknown') + ', showing the last good read')
-        : r.state === 'stale' ? 'out of date' : r.state === 'missing' ? 'not synced yet' : '';
+      const what = r.state === 'failed' ? (short ? 'read failed' : 'read failed: ' + (r.error_text || 'the read did not finish') + ', showing the last good read')
+        : r.state === 'stale' ? 'out of date' : r.state === 'late' ? 'late' + (r.pace_min ? `, reads every ${r.pace_min} min` : '') : r.state === 'missing' ? 'not synced yet' : '';
       return `<span class="cc-src is-${r.state}"><i aria-hidden="true"></i><span class="cc-src-n">${esc(r.source || NAMES[k] || k)} · </span>${esc(when)}${what ? ' · <b>' + esc(what) + '</b>' : ''}</span>`;
     }).join('');
   }
   const card = (title, body, sources, extra = '') => `<section class="cc-card ${extra}"><h2>${title}</h2>${body}<footer>${src(sources)}</footer></section>`;
+  // Deadline tiles: the count in the big spot, and how many have no date on the line beneath (round 4).
+  C.dated = (count, undated) => n(count);
+  C.overdueLine = k => (k ? `<b class="cc-overdue">${n(k)} overdue</b> · ` : '');
+  C.undatedLine = (undated, more) => (undated ? `<b class="cc-undated">${n(undated)} ${more ? 'more ' : ''}written without a date</b> · ` : '');
   const tile = (label, value, sub, sources, go) => `<${go ? `button type="button" onclick="go('${go}')"` : 'div'} class="cc-tile">
       <span class="cc-tile-l">${label}</span><b class="cc-num">${value}</b><span class="cc-sub">${sub || ''}</span>${src(sources, true)}</${go ? 'button' : 'div'}>`;
   const empty = t => `<p class="cc-empty">${t}</p>`;
-  const head = (h, p) => `<header class="cc-head"><div><h1>${h}</h1><p>${p}</p></div>${privBtn()}</header>${askBox()}`;
+  // The privacy pill always sits in the same place: under the page's one-line description, on every page.
+  const head = (h, p) => `<header class="cc-head"><div><h1>${h}</h1><p>${p}</p>${C.priv ? '<span class="cc-privnote">Money and contacts hidden · Show is at the top</span>' : ''}</div></header>${askBox()}`;
   // Ask Claude about the page you are on. Only this page's numbers go, no phones or emails; with money hidden, no amounts or names.
   C.asks = {};
   function askBox() {
     const a = (C.data && C.data.ask) || {}, page = S.view, st = C.asks[page] || {};
-    if (!a.on) return '';
+    if (!a.on || (a.pages && !a.pages.includes(page))) return '';
     return `<details class="cc-ask" ${st.open ? 'open' : ''} ontoggle="CC.asks['${page}']=Object.assign(CC.asks['${page}']||{},{open:this.open})">
       <summary>Ask Claude about this page</summary>
       <form onsubmit="CC.ask(event)"><label class="sr" for="cc-ask-q">Question</label><input id="cc-ask-q" name="q" maxlength="500" required placeholder="What needs my attention here?" value="${esc(st.q || '')}">
@@ -62,11 +82,16 @@
 
   C.togglePriv = function () {
     C.priv = !C.priv; clearTimeout(C.privTimer);
-    if (!C.priv) C.privTimer = setTimeout(() => { C.priv = true; C.rerender(); }, 120000);
+    C.syncPrivBtn();
+    if (!C.priv) C.privTimer = setTimeout(() => { C.priv = true; C.syncPrivBtn(); C.rerender(); }, 120000);
     C.rerender();
   };
-  C.rerender = function () { if (C.views[S.view]) render(); };
+  // The top bar's button and every page's button say the same thing; both flip the one switch.
+  C.syncPrivBtn = function () { const b = document.getElementById('privacy'); if (b) { b.textContent = C.priv ? 'Show' : 'Hide'; b.setAttribute('aria-pressed', String(!C.priv)); b.title = (C.priv ? 'Show' : 'Hide') + ' money and contacts (h)'; } };
+  document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('privacy'); if (b) b.onclick = () => C.togglePriv(); C.syncPrivBtn(); });
+  C.rerender = function () { render(); };
   C.load = async function () {
+    try { const ph = await api('/api/photos'); if (ph && ph.ok) C.photos = ph.deals || {}; } catch (e) { }
     try { const d = await api('/api/cc'); if (d && d.fresh) { C.data = d; C.err = null; } else if (!C.data) C.err = d && d.error === 'offline' ? "can't reach the Mac and there is no saved copy on this device yet" : (d && d.error) || 'no answer'; } catch (e) { if (!C.data) C.err = 'Pipeline did not answer /api/cc'; }
     C.rerender();
   };
@@ -80,42 +105,76 @@
   // ---------------- Dashboard ----------------
   function dash() {
     const g = guard(); if (g) return g;
-    const d = C.data, sc = d.scorecard, wk = d.week[0] || {}, np = d.commission_mail.filter(r => r.status === 'Not processed').length;
+    const d = C.data, sc = d.scorecard, wk = d.week[0] || {}, np = d.commission_mail.filter(r => r.status === 'Not processed' || r.status === 'No closed deal').length;
     const uc = d.stages.find(r => r.stage === 'contract') || {};
-    const leads7 = sc.leads7.value;
-    const today = d.calendar.filter(r => r.day === d.today && r.kind !== 'block');
-    const gp = sc.gci.goal;
+    const lc = d.lead_counts || { d14: d.leads.length, d7: sc.leads7.value }, leads = lc.d14, leads7 = lc.d7;
+    const today = d.calendar.filter(r => r.day === d.today && r.kind !== 'block' && !r.invite);
+    const ff = ((typeof S !== "undefined" && S.data) && S.data.feed) || {}, td = ff.touches_due || [], tk = ff.tasks || [];
+    const owes = typeof owesReply === 'function' ? owesReply().length : td.filter(r => r.owes_reply).length, over = tk.filter(t => t.overdue).length, dr = typeof readyDrafts === 'function' && S.data ? readyDrafts().length : 0;
+    const gp = sc.gci.goal, offers = d.deals.filter(r => r.stage === 'offer');
     return `<div class="cc-page">${head('Good ' + greet() + ', Caleb', 'Keller Williams First Choice · No paid leads, just service')}
+      <div class="cc-acts cc-quick"><button type="button" class="cc-primary" onclick="CC.addLead()">＋ Add a lead</button><button type="button" onclick="go('touches')">Touches due</button><button type="button" onclick="openTask('')">＋ Add a task</button></div>
       <div class="cc-tiles">
-        ${tile('Pending commission', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} blank on the sheet</em>` : ''}`, 'deals', 'commission')}
-        ${tile('GCI this year', m(sc.gci.value), gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set', ['deals', 'goals'], 'scorecard')}
-        ${tile('Deadlines, 7 days', n(d.deadlines.d7.length), `${d.deadlines.d3.length} in the next 3 days`, 'calendar', 'deadlines')}
-        ${tile('New leads, 7 days', n(leads7), sc.leads7.low ? `Goal ${sc.leads7.low} to ${sc.leads7.high} a week` : 'Website leads', 'leads', 'ccleads')}
-        ${tile('Under contract', mk(uc.volume), `${n(uc.n)} deals · volume`, 'deals', 'commission')}
-        ${tile('Appointments, 7 days', n(sc.appts7.value), sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Showings, listing appts, clients', 'calendar', 'calendar')}
-        ${tile('Booked today', n(wk.hours) + '<small>h</small>', `${n(wk.events)} timed events`, 'calendar', 'calendar')}
-        ${tile('Not processed', n(np), np ? 'Commission emails to chase' : 'Nothing waiting at KW', 'commission_mail', 'commission')}
+        ${tile('Pending commission', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals', 'commission')}
+        ${tile('GCI this year', m(sc.gci.value), (gp ? `${gp.pct}% of goal · pace ${gp.pace_pct}%` : 'No goal set') + (sc.gci.blank ? ` · <em>${sc.gci.blank} closed with no commission</em>` : ''), ['deals', 'goals'], 'scorecard')}
+        ${tile('Deadlines, 7 days', C.dated(d.deadlines.d7.length, (d.deadlines.undated || []).length), `${C.overdueLine((d.deadlines.overdue || []).length)}${C.undatedLine((d.deadlines.undated || []).length)}${d.deadlines.d3.length} in the next 3 days`, ['deals', 'calendar'], 'deadlines')}
+        ${tile('New leads, 14 days', n(leads), `${n(leads7)} in the last 7 days${sc.leads7.low ? ` · goal ${sc.leads7.low} to ${sc.leads7.high} a week` : ''}${C.local && !C.local('command').at ? ' · <em>KW Command leads not checked, its reader has never run</em>' : ''}`, ['leads', 'crm'], 'ccleads')}
       </div>
       ${C.todayCard ? C.todayCard() : ''}
+      <div class="cc-tiles">
+        ${tile('Under contract', n(uc.n), `${mk(uc.volume)} volume on the Deals sheet`, 'deals', 'deals')}
+        ${tile('Touches due', n(td.length), owes ? `${owes} owe a reply` : 'Nobody owes a reply', 'crm', 'touches')}
+        ${S.data && S.data.feed_ok ? tile('Tasks open', n(tk.length), over ? `<em>${over} overdue</em>` : 'None overdue', 'crm', 'tasks') : tile('Tasks open', '—', "<em>Tasks didn't load</em>", 'crm', 'sources')}
+        ${tile('Drafts ready', n(dr), `Written texts and emails to read and send${owes ? ` · ${owes} replies to write are not counted` : ''}`, 'drafts', 'queue')}
+        ${tile('Appointments, 7 days', n(sc.appts7.value), `${sc.appts7.invites ? `${sc.appts7.invites} invite${sc.appts7.invites === 1 ? '' : 's'} not accepted, not counted · ` : ''}${sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Accepted showings, listing appts, clients'}`, 'calendar', 'calendar')}
+        ${tile('Booked today', C.booked(wk.hours, wk.minutes), `${n(wk.events)} timed event${wk.events === 1 ? '' : 's'}. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}
+        ${tile('Offers out', n(offers.length), offers.length ? `${offers.filter(r => C.offerExpired(r.offer)).length} past their deadline` : 'No open offers on the Deals sheet', 'deals', 'deals')}
+        ${tile('Commission to check', n(np), np ? 'Not processed at KW, or paid with no closed deal on the sheet' : 'Nothing waiting at KW', ['commission_mail', 'deals'], 'commission')}
+      </div>
       <div class="cc-grid">
-        ${card('On the calendar today', today.length ? `<ul class="cc-list">${today.map(evRow).join('')}</ul>` : empty('Nothing on the calendar today.'), 'calendar')}
-        ${card('Deadlines, next 7 days', deadlineList(d.deadlines.d7), 'calendar')}
+        ${card('On the calendar today', (today.length ? `<ul class="cc-list">${today.map(evRow).join('')}</ul>` : empty('Nothing on the calendar today.')) + '<p class="cc-note">Work blocks and invites you have not accepted are left out.</p>', 'calendar')}
+        ${card('Deadlines, next 7 days', deadlineList(d.deadlines.d7), ['deals', 'calendar'])}
         ${card('Inbox, leads first', d.inbox.length ? `<ul class="cc-list">${d.inbox.slice(0, 6).map(inboxRow).join('')}</ul>` : empty('Inbox is clear for the last 3 days.'), ['inbox', 'leads'])}
       </div>${C.dashMore ? C.dashMore() : ''}</div>`;
   }
   function greet() { const h = Number(new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', hour12: false }).format(new Date())); return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'; }
-  const evRow = r => `<li class="cc-ev k-${r.kind}"><span class="cc-when">${time(r.start)}</span><span class="cc-what">${esc(r.title)}</span><span class="cc-chip">${KIND[r.kind]}</span></li>`;
-  const inboxRow = r => `<li class="cc-ev"><span class="cc-chip c-${r.category}">${r.category}</span><span class="cc-what">${esc(r.subject)}<small>${contact(senderName(r.sender))}</small></span></li>`;
+  // Event titles carry client names; with privacy on, only contract dates (addresses) and blocks keep their titles.
+  const evTitle = r => (C.priv && !['closing', 'deadline', 'inspection', 'block'].includes(r.kind) ? '<span class="cc-hid">Details hidden</span>' : esc(r.title));
+  const evRow = r => `<li class="cc-ev k-${r.kind === 'closing' ? 'sale' : r.kind}"><span class="cc-when">${time(r.start)}</span><span class="cc-what">${evTitle(r)}</span><span class="cc-chip">${r.invite ? 'Invite, not accepted' : KIND[r.kind]}</span></li>`;
+  const inboxRow = r => `<li class="cc-ev"><span class="cc-chip c-${r.category}">${r.category}</span><span class="cc-what">${C.priv ? '<span class="cc-hid">Subject hidden</span>' : esc(r.subject)}<small>${contact(senderName(r.sender))}</small></span></li>`;
   const senderName = s => String(s || '').replace(/<[^>]*>/g, '').trim();
   function deadlineList(rows) {
-    if (!rows.length) return empty('No contract deadlines in this window.');
-    return `<ul class="cc-list">${rows.map(r => { const k = dlKind(r); return `<li class="cc-ev k-${k} ${r.day <= addDays(C.data.today, 2) ? 'is-soon' : ''}"><span class="cc-when">${day(r.day)}</span><span class="cc-what">${esc(r.what)}<small>${esc(r.deal)}</small></span><span class="cc-chip">${DL[k]}</span></li>`; }).join('')}</ul>`;
+    // A deal's words can hold a date Pipeline could not read: that is never "no deadlines".
+    const chk = (C.data.deadlines || {}).check || [];
+    const chkList = chk.length ? `<ul class="cc-list">${chk.map(r => `<li class="cc-ev k-deadline"><span class="cc-what">${esc(r.deal)} · ${esc(r.step)}<small>${C.scrub(r.note)}</small></span><span class="cc-chip">Contains a date, check it</span></li>`).join('')}</ul>` : '';
+    if (!rows.length) return chk.length ? `<p class="cc-note">No date Pipeline could read with confidence in this window. ${chk.length === 1 ? 'One step contains' : chk.length + ' steps contain'} a date, check ${chk.length === 1 ? 'it' : 'them'}:</p>${chkList}` : empty('No contract deadlines in this window.');
+    return `<ul class="cc-list">${rows.map(r => { const k = dlKind(r); return `<li class="cc-ev k-${k} ${r.day <= addDays(C.data.today, 2) ? 'is-soon' : ''}"><span class="cc-when">${day(r.day)}${r.time ? ' ' + esc(r.time) : ''}</span><span class="cc-what">${esc(r.what)}<small>${esc(r.deal)} · ${r.from === 'both' ? 'Deals sheet and calendar' : r.from === 'sheet' ? 'Deals sheet' : 'calendar'}</small>${r.note ? `<small class="cc-warn">Shown from the Deals sheet. ${esc(r.note)}.</small>` : ''}${r.said ? `<small>Read from the words: ${C.scrub(r.said)}</small>` : ''}</span><span class="cc-chip">${DL[k]}</span></li>`; }).join('')}</ul>${chkList}`;
   }
   // A contract deadline's type, for its color: act of sale, inspection, appraisal or financing, anything else.
-  const DL = { closing: 'Act of sale', inspection: 'Inspection', finance: 'Appraisal / loan', deadline: 'Deadline' };
-  function dlKind(r) { const t = (r.what || '') + ' ' + (r.title || ''); return /act of sale|closing/i.test(t) ? 'closing' : /inspect/i.test(t) ? 'inspection' : /apprais|financ|loan|mortgage/i.test(t) ? 'finance' : 'deadline'; }
+  const DL = { sale: 'Act of sale', inspection: 'Inspection', finance: 'Appraisal / loan', deadline: 'Deadline' };
+  function dlKind(r) { const t = (r.what || '') + ' ' + (r.title || ''); return /act of sale|closing/i.test(t) ? 'sale' : /inspect/i.test(t) ? 'inspection' : /apprais|financ|loan|mortgage/i.test(t) ? 'finance' : 'deadline'; }
   function addDays(k, x) { const t = new Date(k + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + x); return t.toISOString().slice(0, 10); }
 
+  // ---------------- One deal source, one lead list ----------------
+  // A street key, the same rule as cc.deal_key: the first house number followed by a street word, directions dropped.
+  // '2179 South Turnberry Avenue', '2179 S Turnberry Ave' and 'Act of Sale · 2179 South Turnberry' are all '2179 turnberry'.
+  const DIRS = new Set(['n', 's', 'e', 'w', 'north', 'south', 'east', 'west']);
+  C.dealKey = t => {
+    const w = String(t || '').toLowerCase().match(/[a-z0-9]+/g) || [];
+    for (let i = 0; i < w.length; i++) {
+      if (!/^\d+$/.test(w[i])) continue;
+      const rest = w.slice(i + 1).filter(x => !DIRS.has(x));
+      if (rest.length && /[a-z]/.test(rest[0])) return w[i] + ' ' + rest[0];
+    }
+    return w.slice(0, 2).join(' ');
+  };
+  // The AIRE Deals sheet row for a street, or null. Every screen that names a deal's status, price or act of sale reads this.
+  C.sheetDeal = t => { const k = C.dealKey(t); return ((C.data && C.data.deals) || []).find(r => (r.key || C.dealKey(r.deal)) === k) || null; };
+  C.openDeals = () => ((C.data && C.data.deals) || []).filter(r => !['closed', 'out'].includes(r.stage));
+  // The one lead list (cc.merge_leads, test leads already out), within the last n days counting today.
+  // Same rule as cc.in_lead_window: a lead with no date is in the 14 days, never in the 7.
+  C.leadsIn = days => { const d = C.data; if (!d) return []; const since = addDays(d.today, 1 - days); return d.leads.filter(r => { const k = String(r.received || '').slice(0, 10); return /^\d{4}-\d{2}-\d{2}$/.test(k) ? k >= since : days >= 14; }); };
+
   C.views = { dash };
-  Object.assign(C, { m, mk, contact, day, time, n, src, card, tile, empty, head, guard, evRow, inboxRow, deadlineList, addDays, KIND, senderName, esc: s => esc(s) });
+  Object.assign(C, { greet, addDaysK: addDays, m, mk, contact, day, time, n, src, card, tile, empty, head, guard, evRow, inboxRow, deadlineList, addDays, KIND, senderName, esc: s => esc(s) });
 })();

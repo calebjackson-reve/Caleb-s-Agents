@@ -33,7 +33,8 @@ class FakeSheets:
     def spreadsheets(self): return self
     def values(self): return self
 
-    def get(self, spreadsheetId, range=None, fields=None):
+    def get(self, spreadsheetId, range=None, fields=None, **render):
+        self.render = getattr(self, "render", {}) | {range: render}  # valueRenderOption etc., per range read
         if fields:
             return Call({"sheets": [{"properties": {"title": t}} for t in self.tabs]})
         tab = range.split("!")[0].strip("'")
@@ -73,6 +74,13 @@ class Mappers(unittest.TestCase):
         r = S.calendar_rows([{"id": "a", "summary": "Showing", "start": {"dateTime": "2026-11-05T10:00:00-06:00"}, "end": {"dateTime": "2026-11-05T11:00:00-06:00"}},
                              {"id": "b", "start": {"date": "2026-11-06"}, "end": {"date": "2026-11-07"}, "transparency": "transparent", "creator": {"email": "x@example.com"}}])
         self.assertEqual((r[0]["allDay"], r[1]["allDay"], r[1]["title"], r[1]["free"], r[1]["creator"]), (False, True, "(no title)", True, "x@example.com"))
+
+    def test_outside_invite(self):
+        mine = {"organizer": {"email": "me@example.com", "self": True}}
+        theirs = {"organizer": {"email": "vendor@example.com"}, "attendees": [{"email": "me@example.com", "self": True, "responseStatus": "needsAction"}]}
+        yes = {"organizer": {"email": "client@example.com"}, "attendees": [{"email": "me@example.com", "self": True, "responseStatus": "accepted"}]}
+        self.assertEqual([S.is_invite(e) for e in (mine, theirs, yes)], [False, True, False])
+        self.assertTrue(S.calendar_rows([{**theirs, "start": {"dateTime": "2026-11-05T10:00:00-06:00"}, "end": {"dateTime": "2026-11-05T11:00:00-06:00"}}])[0]["invite"])
 
     def test_thread_and_body(self):
         t = thread("t", "Pat <pat@example.com>", "Hi", body="Line one\nLine two")
@@ -122,6 +130,11 @@ class Pass(unittest.TestCase):
         self.assertEqual(cc.build(self.dir, NOW)["scorecard"]["pending"]["value"], 5000)
         self.assertIn("Goals", self.sheets.tabs)
         self.assertEqual(self.sheets.tabs["Scorecard history"][1][0], "2026-11-05")
+
+    def test_a_read_with_tabs_counts_rows_not_tabs(self):
+        S.FETCH.update(workouts=lambda s, c, n: {"plan": [{}] * 7, "log": []})
+        r = S.run_read("workouts", self.ok, {}, NOW, self.dir)
+        self.assertEqual((r["rows"], r["parts"]), (7, {"plan": 7, "log": 0}))
 
     def test_not_due_is_skipped_and_force_reads(self):
         S.run_pass(NOW, svc=self.ok, folder=self.dir)
@@ -218,6 +231,14 @@ class Pass(unittest.TestCase):
             S.http_get = real
         self.assertEqual((m["rate"]["rate"], m["areas"][0]["active"]), (7.18, 1889))
         self.assertIn("Realtor.com zip", m["warnings"][0])
+
+
+class JudgeRound3Sync(unittest.TestCase):
+    def test_deals_are_read_unformatted_so_cents_survive(self):
+        sheets = FakeSheets({"Deals": [["Deal", "Status", "Commission"], ["1 Demo Ln", "Closed", 1234.5]]})
+        rows = S.fetch_deals({"sheets": sheets}, {"deals_sheet_id": "x"}, None)
+        self.assertEqual(rows[1][2], 1234.5)
+        self.assertEqual(sheets.render["Deals!A1:L300"], {"valueRenderOption": "UNFORMATTED_VALUE", "dateTimeRenderOption": "FORMATTED_STRING"})
 
 
 class Public(unittest.TestCase):

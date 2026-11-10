@@ -19,6 +19,11 @@ SPLIT_CO = 0.30  # KW 70/30: the company's share of each commission, counted tow
 # How old a read may be before the screen calls it stale, in hours.
 STALE_HOURS = {"deals": 6, "calendar": 2, "inbox": 1, "leads": 1, "commission_mail": 24, "bank_mail": 6, "history": 36,
                "news": 6, "market": 36, "life": 2, "workouts": 2}
+# Minutes between reads, the same as cc_sync.READS (cc_test checks they agree). A read is late (amber) once it is past
+# its next read plus GRACE_MIN (the sync wakes every 5 minutes, so up to two missed wakes are normal), and stale (red) at three missed reads or STALE_HOURS.
+PACE_MIN = {"calendar": 15, "inbox": 10, "leads": 10, "deals": 30, "commission_mail": 120, "bank_mail": 60, "news": 120,
+            "market": 720, "life": 15, "workouts": 15}
+GRACE_MIN = 15
 DATASETS = ["deals", "calendar", "inbox", "leads", "commission_mail", "bank_mail", "goals", "history", "news", "market",
             "life", "workouts", "config", "sync-status", "outbox"]
 
@@ -41,8 +46,29 @@ def num(v):
 
 # ---------------- Reading the cache ----------------
 
+def plain_error(e) -> str | None:
+    """A read error in plain words for the screen. Never an exception name, status code or file."""
+    t = str(e or "")
+    if not t:
+        return None
+    if re.search(r"invalid_grant|expired|revoked|unauthori[sz]ed|\b401\b|credentials|sign.?in|token", t, re.I):
+        return "Google sign-in expired or was turned off, so sign in again"
+    if re.search(r"quota|rate.?limit|\b429\b", t, re.I):
+        return "Google limited how often this can be read, it tries again on the next pass"
+    if re.search(r"\b403\b|forbidden|permission|not have access", t, re.I):
+        return "access to this source was refused"
+    if re.search(r"\b404\b|not found|no such", t, re.I):
+        return "the sheet, tab or file was not found"
+    if re.search(r"timed? ?out|timeout", t, re.I):
+        return "the source took too long to answer"
+    if re.search(r"reset|refused|unreachable|name or service|nodename|urlerror|connection", t, re.I):
+        return "the source could not be reached"
+    return "the read did not finish"
+
+
 def freshness(meta: dict, name: str, now: datetime) -> dict:
-    """ok, stale, failed or missing, with the as-of time. A failed read keeps its last good rows."""
+    """ok, late (amber: past its refresh time), stale (red: three reads missed or past STALE_HOURS), failed (red) or
+    missing, with the as-of time. A failed read keeps its last good rows and is never ok."""
     if not meta:
         return {"state": "missing", "at": None, "age_min": None, "source": None, "error": None}
     at = meta.get("at")
@@ -53,14 +79,20 @@ def freshness(meta: dict, name: str, now: datetime) -> dict:
         except ValueError:
             age = None
     limit = STALE_HOURS.get(name)
+    pace = PACE_MIN.get(name)
+    red = min(x for x in (limit * 60 if limit is not None else None, 3 * pace + GRACE_MIN if pace else None, 10 ** 9) if x is not None)
     state = "ok"
     if meta.get("error"):
         state = "failed"
     elif age is None:
         state = "missing"
-    elif limit is not None and age > limit * 60:
+    elif age > red:
         state = "stale"
-    return {"state": state, "at": at, "age_min": age, "source": meta.get("source"), "error": meta.get("error")}
+    elif pace and age > pace + GRACE_MIN:
+        state = "late"
+    return {"state": state, "at": at, "age_min": age, "source": meta.get("source"), "error": meta.get("error"),
+            "error_text": plain_error(meta.get("error")),
+            "pace_min": pace, "late_after": pace + GRACE_MIN if pace else None}
 
 
 def load(folder: Path) -> dict:
@@ -161,7 +193,55 @@ def pipeline_stages(deals: list[dict], leads_waiting: int) -> list[dict]:
     return rows
 
 
-def deal_cards(deals: list[dict], today: date) -> list[dict]:
+MONTHS = {m: i + 1 for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"])}
+OFFER_DEADLINE = re.compile(r"\b(binding|open|good|valid|expires?|expired|deadline)\s+(?:until\s+|by\s+|on\s+|at\s+)?(?:(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?,?\s+)?"
+                            r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b(?:\s+(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?))?", re.I)
+
+
+def _clock(t: str | None) -> tuple[int, int]:
+    """"12 PM" -> (12, 0), "11:59 PM" -> (23, 59), "7 AM" -> (7, 0). No time: the end of the day."""
+    m = re.match(r"(\d{1,2})(?::(\d{2}))?\s*([AP])", (t or "").upper().replace(".", ""))
+    if not m:
+        return 23, 59
+    h = int(m.group(1)) % 12 + (12 if m.group(3) == "P" else 0)
+    return h, int(m.group(2) or 0)
+
+
+def offer_deadline(note, today: date | datetime) -> dict | None:
+    """An offer's deadline as the Check note says it ("binding until Oct 29 7 AM", "open until Fri Nov 6 5 PM",
+    "expired Nov 4 9 AM"). Expired once that day has passed, or when the note says it expired. None when the note
+    names no deadline. The year is this year, or last year for a date more than six months ahead."""
+    now = today if isinstance(today, datetime) else None
+    today = today.date() if isinstance(today, datetime) else today
+    hits = list(OFFER_DEADLINE.finditer(str(note or "")))
+    if not hits:
+        return None
+    m = hits[-1]
+    try:
+        d = date(today.year, MONTHS[m.group(2).lower()[:3]], int(m.group(3)))
+    except ValueError:
+        return None
+    if (d - today).days > 183:
+        d = d.replace(year=today.year - 1)
+    said = m.group(0).strip()
+    # A counter written in a later sentence replaces that deadline: the old one was on the offer it answered.
+    rest = str(note)[m.end() - 1:]  # from the match's last character: "5 PM." may have taken the full stop
+    cut = re.search(r"\.\s+", rest)
+    later = [x.strip().rstrip(".") for x in re.split(r"\.\s+", rest[cut.end():]) if x.strip()] if cut else []
+    counter = next((x for x in later if re.search(r"\bcounter(ed|s)?\b", x, re.I)), None)
+    if counter:
+        return {"superseded": True, "expired": False, "date": None, "time": None, "at": None, "said": counter}
+    tm = (m.group(4) or "").upper().replace(".", "") or None
+    at = datetime(d.year, d.month, d.day, *_clock(tm), tzinfo=CENTRAL)
+    # Judged against the time now, to the minute when the note gives a time ("open until 12 PM" is past at 12:01).
+    past = at < now if now else d < today
+    wd = re.search(r"\b(mon|tue|wed|thu|fri|sat|sun)", said, re.I)  # "Sun Nov 9" when Nov 9 is a Monday
+    wrong = wd.group(1).title() if wd and WEEKDAYS.index(wd.group(1).lower()) != d.weekday() else None
+    return {"date": d.isoformat(), "said": said, "time": tm, "at": at.isoformat(), "wrong_weekday": wrong,
+            "expired": past or m.group(1).lower() == "expired"}
+
+
+def deal_cards(deals: list[dict], today: date, now: datetime | None = None) -> list[dict]:
     order = {"contract": 0, "offer": 1, "appointment": 2, "other": 3, "closed": 4, "out": 5}
     out = []
     for r in deals:
@@ -169,25 +249,74 @@ def deal_cards(deals: list[dict], today: date) -> list[dict]:
         days = None
         if is_day(r.get("since")) and r["since"] <= today.isoformat():
             days = (today - date.fromisoformat(r["since"])).days
-        out.append({**r, "stage": st, "next": next_step(r.get("check")), "days": days,
+        offer = offer_deadline(r.get("check"), now or today) if st == "offer" else None
+        out.append({**r, "stage": st, "days": days,
+                    "next": offer["said"] if offer and offer.get("superseded") else next_step(r.get("check")),
                     "checklist": checklist(r, today) if st == "contract" else [],
-                    "to_close": (date.fromisoformat(r["act"]) - today).days if is_day(r.get("act")) else None})
+                    # an offer has no closing to count down to: its act date is only an estimate if it is accepted
+                    "offer": offer,
+                    "to_close": (date.fromisoformat(r["act"]) - today).days if is_day(r.get("act")) and st != "offer" else None})
     return sorted(out, key=lambda r: (order[r["stage"]], r.get("act") or "9"))
+
+
+WEEKDAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+TEXT_DATE = re.compile(r"(?:\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\.?,?\s+)?\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})\b"
+                       r"(?:,?\s+(\d{4}))?(?:,?\s+(?:at\s+)?(\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?))?", re.I)
+DUE_WORD = re.compile(r"\b(ends?|ending|due(?!\s+diligence)|expected|expires?|deadline|until|by|on or before|no later than|scheduled|set for)\W*(?:\w+\W+){0,3}$", re.I)
+PAST_WORD = re.compile(r"\b(ended|signed|sent|received|removed|done|was|on|from|after|since)\W*(?:\w+\W+){0,2}$", re.I)
+
+
+def text_date(v: str, today: date) -> dict | None:
+    """A date written inside a deadline cell ("Due diligence ends Tue Nov 10, 2026, 11:59 PM CT", "Appraisal report
+    expected Nov 9", "reply due Nov 7"). Picks the date after a word like ends, due or expected, or the only date.
+    sure is False when the cell has dates but none can be picked with confidence, or a weekday does not match.
+    None when the cell holds no date."""
+    hits = list(TEXT_DATE.finditer(v or ""))
+    if not hits:
+        return None
+    anchor = lambda m: re.search(r"\b(from|after|since)\W*(?:\w+\W+){0,2}$", v[:m.start()][-25:], re.I)
+    due = [m for m in hits if DUE_WORD.search(v[:m.start()][-40:]) and not anchor(m)]
+    live = [m for m in hits if not PAST_WORD.search(v[:m.start()][-25:])]
+    pick = due[-1] if due else hits[0] if len(hits) == 1 and not anchor(hits[0]) else live[-1] if len(live) == 1 else None
+    if pick is None:
+        return {"date": None, "sure": False, "said": hits[0].group(0)}
+    wd, mon, dd, yy, tm = pick.groups()
+    try:
+        d = date(int(yy) if yy else today.year, MONTHS[mon.lower()[:3]], int(dd))
+    except ValueError:
+        return {"date": None, "sure": False, "said": pick.group(0)}
+    if not yy and (d - today).days > 183:
+        d = d.replace(year=today.year - 1)
+    elif not yy and (today - d).days > 183:
+        d = d.replace(year=today.year + 1)
+    sure = not wd or WEEKDAYS[d.weekday()] == wd.lower()[:3]
+    return {"date": d.isoformat() if sure else None, "sure": sure, "said": pick.group(0).strip(),
+            "time": (tm or "").upper().replace(".", "").replace(" ", "") or None}
 
 
 def checklist(r: dict, today: date) -> list[dict]:
     """A deal under contract, step by step from the sheet: done (date passed), upcoming (date ahead, with days),
-    or missing (no date on the sheet). A step whose cell is not a date but says done or cleared counts as done."""
+    undated (the cell has words but no date, like "7 day due diligence from Nov 3"), or missing (blank). A step whose
+    cell says done, cleared, removed or no contingency counts as done."""
     out = []
     for key, label in (("inspection", "Inspection"), ("appraisal", "Appraisal and loan"), ("act", "Act of sale")):
         v = str(r.get(key) or "").strip()
         if is_day(v):
             n = (date.fromisoformat(v) - today).days
             out.append({"step": label, "date": v, "days": n, "state": "done" if n < 0 else "today" if n == 0 else "upcoming"})
-        elif re.search(r"\b(done|clear(ed)?|complete[d]?|waived|approved|ok)\b", v, re.I):
+        elif re.search(r"\b(done|clear(ed)?|complete[d]?|waived|approved|ok|removed)\b|\bno (?:\w+ )?contingency\b", v, re.I):
             out.append({"step": label, "date": None, "days": None, "state": "done", "note": v[:60]})
+        elif (td := text_date(v, today)) and td["date"]:
+            # A date written in the words counts like a date cell. Past ones say past, never done.
+            n = (date.fromisoformat(td["date"]) - today).days
+            out.append({"step": label, "date": td["date"], "days": n, "time": td.get("time"), "from_text": True,
+                        "state": "past" if n < 0 else "today" if n == 0 else "upcoming", "note": v[:120]})
+        elif td:
+            out.append({"step": label, "date": None, "days": None, "state": "check", "note": v[:120]})
+        elif v:
+            out.append({"step": label, "date": None, "days": None, "state": "undated", "note": v[:90]})
         else:
-            out.append({"step": label, "date": None, "days": None, "state": "missing", "note": v[:60]})
+            out.append({"step": label, "date": None, "days": None, "state": "missing", "note": ""})
     return out
 
 
@@ -237,14 +366,20 @@ def _hours(e: dict) -> float:
         return 0.0
 
 
+def booked(r: dict) -> bool:
+    """Booked time: timed, not free, not a work block or personal time, and not someone else's invite Caleb has not
+    accepted."""
+    return not r.get("allDay") and not r.get("free") and r["kind"] not in ("block", "personal") and not r.get("invite")
+
+
 def week_load(evs: list[dict], today: date) -> list[dict]:
-    """Booked hours, today plus 6: timed, not free, not a work block or personal time."""
-    busy = [r for r in evs if not r.get("allDay") and not r.get("free") and r["kind"] not in ("block", "personal")]
+    """Booked hours, today plus 6 (see booked)."""
+    busy = [r for r in evs if booked(r)]
     out = []
     for n in range(7):
         k = (today + timedelta(days=n)).isoformat()
         ev = [r for r in busy if r["day"] == k]
-        out.append({"day": k, "hours": round(sum(_hours(r) for r in ev), 1), "events": len(ev)})
+        out.append({"day": k, "hours": round(sum(_hours(r) for r in ev), 1), "minutes": round(sum(_hours(r) for r in ev) * 60), "events": len(ev)})
     return out
 
 
@@ -265,21 +400,193 @@ def in_days(rows: list[dict], today: date, n: int) -> list[dict]:
     return [r for r in rows if a <= r["day"] <= b]
 
 
-def closings(deadlines: list[dict], deals: list[dict], today: date) -> list[dict]:
-    """Act of sale dates in 30 days from the calendar and the sheet, merged on street number."""
-    snum = lambda t: (re.match(r"\s*(\d+)", t or "") or [None, None])[1]
-    cl = [{"deal": r["deal"], "day": r["day"], "money": None, "from": "calendar"}
-          for r in in_days(deadlines, today, 30) if re.search(r"act of sale|closing", r["what"] + r["title"], re.I)]
-    last = (today + timedelta(days=30)).isoformat()
-    for d in deals:
-        if stage_of(d["status"]) != "contract" or not is_day(d.get("act")) or not today.isoformat() <= d["act"] <= last:
+# ---------------- One deal source ----------------
+# The AIRE Deals sheet is the one source for a deal's status, price, act of sale and commission. The CRM Deals tab
+# and the calendar are matched to it by street (number plus street name), never added into its numbers.
+
+DIRECTIONS = {"n", "s", "e", "w", "north", "south", "east", "west"}
+
+
+def deal_key(t) -> str:
+    """'2179 South Turnberry Avenue, Zachary', '2179 S Turnberry Ave' and 'Act of Sale · 2179 South Turnberry' are all
+    '2179 turnberry': the first house number followed by a street word, directions dropped. A date like 11/23 is not a
+    house number because a number follows it. The screen's CC.dealKey is the same rule."""
+    words = re.findall(r"[a-z0-9]+", str(t or "").lower())
+    for i, w in enumerate(words):
+        if not w.isdigit():
             continue
-        hit = next((r for r in cl if snum(r["deal"]) and snum(r["deal"]) == snum(d["deal"])), None)
-        if hit:
-            hit.update(money=d["commission"], **{"from": "both"})
-        else:
-            cl.append({"deal": d["deal"], "day": d["act"], "money": d["commission"], "from": "sheet"})
-    return sorted(cl, key=lambda r: r["day"])
+        rest = [x for x in words[i + 1:] if x not in DIRECTIONS]
+        if rest and re.search(r"[a-z]", rest[0]):
+            return f"{w} {rest[0]}"
+    return " ".join(words[:2])
+
+
+CRM_STAGE = {"under_contract": "contract", "closed": "closed", "lost": "out", "active": "appointment",
+             "showing": "appointment", "consult": "lead", "lead": "lead"}
+
+
+def merge_deals(cards: list[dict], crm_deals: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Sheet deals keep their own numbers. A CRM Deals tab row on the same street is attached, and every field where
+    the two disagree is listed so the screen can say so. CRM rows with no sheet deal come back on their own."""
+    by = {}
+    for d in crm_deals or []:
+        by.setdefault(deal_key(d.get("address")), d)
+    used, out = set(), []
+    for c in cards:
+        k = deal_key(c["deal"])
+        d = by.get(k)
+        diff = []
+        if d:
+            used.add(k)
+            st = CRM_STAGE.get(d.get("stage") or "")
+            if st and st != c["stage"]:
+                diff.append({"field": "status", "sheet": c["status"], "crm": (d.get("stage") or "").replace("_", " ")})
+            p = num(d.get("price"))
+            if p and c.get("price") and abs(p - c["price"]) >= 1:
+                diff.append({"field": "price", "sheet": c["price"], "crm": p})
+            ec = d.get("expected_close") or ""
+            if is_day(ec) and is_day(c.get("act")) and ec != c["act"]:
+                diff.append({"field": "act of sale", "sheet": c["act"], "crm": ec})
+        out.append({**c, "key": k, "crm": {x: d.get(x) for x in ("address", "stage", "person_id", "display")} if d else None,
+                    "differs": diff})
+    only = [{"deal": d.get("address"), "key": deal_key(d.get("address")), "stage": d.get("stage") or "",
+             "side": d.get("side") or "", "price": num(d.get("price")), "close": d.get("expected_close") or None,
+             "person_id": d.get("person_id") or "", "display": d.get("display") or "", "next": d.get("next_step") or ""}
+            for d in crm_deals or [] if deal_key(d.get("address")) not in used and (d.get("stage") or "") not in ("lost", "closed")]
+    return out, only
+
+
+def contract_deadlines(cal: list[dict], cards: list[dict]) -> list[dict]:
+    """Contract dates from the sheet (inspection, appraisal, act of sale) plus the coordinator's calendar dates.
+    One row per deal per day: two events for the same deal on the same day are one deadline. When the calendar's
+    act of sale differs from the sheet's, the sheet date stands and the row says what the calendar has."""
+    sheet = {c["key"]: c for c in cards if c["stage"] == "contract"}
+    rows = []
+    for c in sheet.values():
+        for step in c.get("checklist") or []:
+            if step.get("date"):
+                rows.append({"deal": c["deal"], "key": c["key"], "day": step["date"], "whats": [step["step"]],
+                             "from": {"sheet"}, "note": None, "time": step.get("time"),
+                             "said": step.get("note") if step.get("from_text") else None})
+    for r in cal:
+        k = deal_key(r["deal"])
+        c = sheet.get(k)
+        act = re.search(r"act of sale|closing", r["what"] + " " + r["title"], re.I)
+        if c and act and is_day(c.get("act")) and r["day"] != c["act"]:
+            for x in rows:
+                if x["key"] == k and x["day"] == c["act"]:
+                    x["note"] = f"the calendar has act of sale on {r['day']}"
+            continue
+        rows.append({"deal": c["deal"] if c else r["deal"], "key": k, "day": r["day"],
+                     "whats": ["Act of sale" if act else r["what"]], "from": {"calendar"}, "note": None, "link": r.get("link")})
+    merged = {}
+    for r in rows:
+        m = merged.get((r["key"], r["day"]))
+        if not m:
+            merged[(r["key"], r["day"])] = r
+            continue
+        for w in r["whats"]:
+            if w.lower() not in [x.lower() for x in m["whats"]]:
+                m["whats"].append(w)
+        m["from"] |= r["from"]
+        m["note"] = m["note"] or r["note"]
+        m["link"] = m.get("link") or r.get("link")
+    out = []
+    for r in merged.values():
+        frm = "both" if len(r["from"]) > 1 else next(iter(r["from"]))
+        out.append({"deal": r["deal"], "key": r["key"], "day": r["day"], "what": ", ".join(r["whats"]),
+                    "title": f"{r['deal']} - {', '.join(r['whats'])}", "from": frm, "note": r["note"], "link": r.get("link"),
+                    "time": r.get("time"), "said": r.get("said")})
+    return sorted(out, key=lambda r: (r["day"], r["deal"]))
+
+
+def closings(deadlines: list[dict], cards: list[dict], today: date) -> list[dict]:
+    """Act of sale dates in the next 30 days, from the one deadline list, with the sheet's commission."""
+    money = {c["key"]: c["commission"] for c in cards}
+    return [{"deal": r["deal"], "day": r["day"], "money": money.get(r["key"]), "from": r["from"], "note": r["note"]}
+            for r in in_days(deadlines, today, 30) if re.search(r"act of sale", r["what"], re.I)]
+
+
+# ---------------- One lead list ----------------
+
+def lead_due(received, replied, now: datetime) -> dict:
+    """What a lead needs, from its age and whether a reply went out. Never a promise: a label for Caleb."""
+    t = None
+    try:
+        t = datetime.fromisoformat(str(received)) if received and len(str(received)) > 10 else None
+    except ValueError:
+        t = None
+    if t and t.tzinfo is None:
+        t = t.replace(tzinfo=CENTRAL)
+    if replied:
+        return {"label": "Replied", "level": "done", "age_min": None}
+    if not t:
+        day = str(received or "")[:10]
+        if not is_day(day):
+            return {"label": "No time on this lead", "level": "unknown", "age_min": None}
+        days = (now.date() - date.fromisoformat(day)).days
+        return {"label": "Came in today, no reply yet" if days <= 0 else f"{days} day{'s' if days > 1 else ''} with no reply",
+                "level": "late" if days >= 1 else "soon", "age_min": None}
+    age = max(0, int((now - t).total_seconds() // 60))
+    if age < 60:
+        return {"label": f"Call within the hour ({60 - age} min left)", "level": "now", "age_min": age}
+    if age < 1440:
+        return {"label": f"{age // 60}h with no reply", "level": "late", "age_min": age}
+    return {"label": f"{age // 1440} day{'s' if age >= 2880 else ''} with no reply", "level": "late", "age_min": age}
+
+
+LEAD_DAYS = 14  # the one new-lead window: the last 14 days counting today. The weekly number is the last 7 (lead_counts).
+
+
+def is_test_lead(*texts) -> bool:
+    """A lead whose name, email or subject says test (a form check, not a person). Left out of every count."""
+    return bool(re.search(r"\btest\b", " ".join(str(t or "") for t in texts), re.I))
+
+
+def lead_day(r: dict) -> str:
+    d = str(r.get("received") or "")[:10]
+    return d if is_day(d) else ""
+
+
+def in_lead_window(r: dict, today: date, days: int = LEAD_DAYS) -> bool:
+    """Received on or after today minus days-1. A lead with no date is kept in the 14 days, because both sources only
+    return 14 days of leads, and is never in the 7."""
+    d = lead_day(r)
+    return (not d and days >= LEAD_DAYS) or (bool(d) and d >= (today - timedelta(days=days - 1)).isoformat())
+
+
+def lead_counts(leads: list[dict], today: date) -> dict:
+    """The numbers every screen shows for new leads: the Dashboard, Scorecard, Leads, the nav and the brief."""
+    return {"d14": sum(1 for r in leads if in_lead_window(r, today, 14)), "d7": sum(1 for r in leads if in_lead_window(r, today, 7)),
+            "undated": sum(1 for r in leads if not lead_day(r)), "days": LEAD_DAYS}
+
+
+def merge_leads(leads: list[dict], crm_new: list[dict], replied_ids: set, now: datetime) -> list[dict]:
+    """Website lead emails plus CRM contacts in Stage new lead, one row per person, within the last 14 days (LEAD_DAYS).
+    An email lead already matched to a CRM person (attach_crm) is that person's row. Test leads stay out, from either
+    source. Newest first."""
+    out, seen = [], set()
+    for r in leads:
+        if r.get("test") or is_test_lead(r.get("name"), r.get("email"), r.get("subject")):
+            continue
+        pid = (r.get("crm") or {}).get("person_id")
+        if pid:
+            seen.add(pid)
+        out.append({**r, "origin": "email"})
+    for p in crm_new or []:
+        if p.get("person_id") in seen or is_test_lead(p.get("display"), p.get("email")):
+            continue
+        keep = ("person_id", "display", "band", "stage", "type", "last_touch", "days_quiet", "next_action", "owes_reply")
+        out.append({"name": p.get("display") or "", "phone": p.get("phone") or "", "email": p.get("email") or "",
+                    "source": p.get("source") or "CRM", "received": p.get("received") or "", "origin": "crm",
+                    "crm": {k: p.get(k) for k in keep if p.get(k) not in (None, "")}})
+    for r in out:
+        c = r.get("crm") or {}
+        pid, lt, day = c.get("person_id"), str(c.get("last_touch") or "")[:10], str(r.get("received") or "")[:10]
+        touched = is_day(lt) and is_day(day) and lt >= day  # a touch logged in the CRM on or after the lead's day
+        r["due"] = lead_due(r.get("received"), (pid in replied_ids if pid else False) or touched, now)
+    out = [r for r in out if in_lead_window(r, now.date())]
+    return sorted(out, key=lambda r: str(r.get("received") or ""), reverse=True)
 
 
 # ---------------- Gmail ----------------
@@ -312,15 +619,48 @@ def _street(t: str) -> str:
     return re.sub(r"[^a-z ]", "", s).strip()
 
 
-def commission_mail(rows: list[dict]) -> list[dict]:
-    """Not processed is flagged unless a Commission for email names the same street."""
+# Street types, short and long, so "12 Oak Cir" and "12 Oak Circle" are the same street.
+SUFFIXES = {"drive", "lane", "road", "ave", "avenue", "street", "court", "blvd", "boulevard", "hwy", "highway", "cir", "circle",
+            "way", "place", "pkwy", "parkway", "trl", "trail", "ter", "terrace", "cove", "loop", "bend", "run", "row", "sq", "square"}
+
+
+def _street_words(t: str) -> set[str]:
+    """The street name's words: letters-only words of three or more ('pecan', 'tree') and numbered streets ('63rd').
+    The house number and suffixes like St or Dr are left out, so '8100 63rd St' and 'Commission for 63rd' share '63rd'."""
+    s = re.sub(r"^.*?(not processed|commission for)\s*-?\s*", "", str(t or "").lower())
+    s = re.sub(r"^\d+\s+", "", s)
+    words = re.findall(r"[a-z0-9]+", s)
+    return {w for w in words if re.fullmatch(r"\d+(st|nd|rd|th)", w) or (w.isalpha() and len(w) >= 3
+            and w not in SUFFIXES)}
+
+
+def _same_street(a: str, b: str) -> bool:
+    """Every street word of the shorter side is in the other: 'pecan tree' matches 'pecan tree', '63rd' matches
+    '8100 63rd St'. Takes the raw texts."""
+    wa, wb = _street_words(a), _street_words(b)
+    return bool(wa) and bool(wb) and (wa <= wb or wb <= wa)
+
+
+def commission_mail(rows: list[dict], deals: list[dict] | None = None) -> list[dict]:
+    """Not processed is flagged unless a Commission for email names the same street. With the Deals sheet's rows, a paid
+    Commission for email is Paid when a closed deal on the sheet has that street, and No closed deal when none does, so
+    money that came in for a deal the sheet does not show as closed gets looked at."""
     paid = {_street(r["subject"]) for r in rows if re.search(r"commission for", r.get("subject") or "", re.I)}
+    # a house number ("8100 63rd St" is 8100), never the "63" of "63rd"
+    num = lambda t: (re.search(r"\b(\d{1,6})\s+(?:[a-z]|\d+(?:st|nd|rd|th)\b)", str(t or ""), re.I) or [None, None])[1]
+    closed = [(d.get("deal"), num(d.get("deal"))) for d in deals or [] if stage_of(d.get("status")) == "closed"]
     out = []
     for r in rows:
         s = r.get("subject") or ""
-        st = ("Resolved" if _street(s) in paid else "Not processed") if re.search(r"not processed", s, re.I) else "Notice"
+        if re.search(r"not processed", s, re.I):
+            st = "Resolved" if _street(s) in paid else "Not processed"
+        elif deals is not None and re.search(r"commission for", s, re.I):
+            n = num(re.sub(r"^.*?commission for\s*", "", s, flags=re.I))  # "Commission for 12 Oak Ln" is house 12 only
+            st = "Paid" if any(_same_street(s, c) and (not n or not cn or n == cn) for c, cn in closed) else "No closed deal"
+        else:
+            st = "Notice"
         out.append({**r, "status": st})
-    return sorted(out, key=lambda r: r["status"] != "Not processed")
+    return sorted(out, key=lambda r: r["status"] not in ("Not processed", "No closed deal"))
 
 
 
@@ -340,12 +680,12 @@ def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
     yr = str(today.year)
     closed = [r for r in deals if stage_of(r["status"]) == "closed"]
     yr_closed = [r for r in closed if is_day(r.get("act")) and r["act"][:4] == yr]
-    sheet_gci = sum(r["commission"] or 0 for r in yr_closed)
+    sheet_gci = round(sum(r["commission"] or 0 for r in yr_closed), 2)
     real = [r for r in leads if not r.get("test")]
+    lc = lead_counts(real, today)
     end7 = (today + timedelta(days=6)).isoformat()
-    appts = [r for r in evs if r["kind"] in ("showing", "listing", "client") and today.isoformat() <= r["day"] <= end7]
-    since7 = (today - timedelta(days=6)).isoformat()
-    leads7 = [r for r in real if (r.get("received") or "")[:10] >= since7]
+    appts_all = [r for r in evs if r["kind"] in ("showing", "listing", "client") and today.isoformat() <= r["day"] <= end7]
+    appts = [r for r in appts_all if booked(r)]  # an invite not accepted is not an appointment yet
     paid = kw_paid.get("value") if kw_paid and kw_paid.get("value") is not None else None
     gci = {"value": paid if paid is not None else sheet_gci,
            "from": "kw_paid" if paid is not None else "sheet",
@@ -375,9 +715,8 @@ def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
             "pending": pend,
             "closings": {"value": len(yr_closed), "goal": prog(len(yr_closed), g.get("closings_high") or g.get("closings_low")),
                          "low": g.get("closings_low"), "high": g.get("closings_high")},
-            "leads7": {"value": len(leads7), "low": g.get("leads_low"), "high": g.get("leads_high"),
-                       "undated": sum(1 for r in real if not r.get("received"))},
-            "appts7": {"value": len(appts), "goal": g.get("appts")},
+            "leads7": {"value": lc["d7"], "low": g.get("leads_low"), "high": g.get("leads_high"), "undated": lc["undated"]},
+            "appts7": {"value": len(appts), "goal": g.get("appts"), "invites": len(appts_all) - len(appts)},
             "cap": cap,
             "response": {"value": None, "note": "Not tracked yet: needs the time of the first reply to each lead."}}
 
@@ -392,57 +731,132 @@ def add_history(rows: list[dict], row: dict) -> list[dict]:
     return sorted([r for r in rows if r.get("day") != row["day"]] + [row], key=lambda r: r["day"])[-400:]
 
 
+def saved_days(rows: list[dict], today: date) -> list[dict]:
+    """History rows already saved in the sheet, before today. Today's row is computed, not history."""
+    return [r for r in rows if is_day(r.get("day")) and r["day"] < today.isoformat()]
+
+
+def since_saved(rows: list[dict], row: dict, metric: str) -> dict | None:
+    """The change since the oldest saved day, for when no row is 7 days old yet. None with nothing saved."""
+    past = [r for r in saved_days(rows, date.fromisoformat(row["day"])) if r.get(metric) is not None and _ok(r, metric)]
+    if not past:
+        return None
+    return {"since": past[0]["day"], "days": len(past), "value": round(row[metric] - past[0][metric], 2)}
+
+
+def sheet_as_of(deals: list[dict], day: str) -> dict:
+    """GCI and closings as the Deals sheet says they stood on a day: Closed deals with an act of sale that year, on or
+    before that day."""
+    yr = [r for r in deals if stage_of(r["status"]) == "closed" and is_day(r.get("act")) and r["act"][:4] == day[:4] and r["act"] <= day]
+    return {"gci": round(sum(r["commission"] or 0 for r in yr), 2), "closings": len(yr)}
+
+
+def flag_history(rows: list[dict], deals: list[dict], today: date) -> list[dict]:
+    """Saved days whose GCI or closings no longer match the Deals sheet for that day get "mismatch": the metrics that
+    disagree. Those rows are left out of every change and line, so an edit to the sheet never shows as growth.
+    With no Deals sheet rows (never read), nothing is flagged."""
+    if not deals:
+        return rows
+    out = []
+    for r in rows:
+        if not is_day(r.get("day")) or r["day"] >= today.isoformat():
+            out.append(r)
+            continue
+        live = sheet_as_of(deals, r["day"])
+        bad = [k for k in ("gci", "closings") if isinstance(r.get(k), (int, float)) and abs(r[k] - live[k]) > 0.5]
+        out.append({**r, "mismatch": bad, "sheet_now": live} if bad else r)
+    return out
+
+
+def _ok(r: dict, metric: str) -> bool:
+    return isinstance(r.get(metric), (int, float)) and metric not in (r.get("mismatch") or [])
+
+
 def deltas(rows: list[dict], row: dict, metric: str) -> dict:
     out = {}
     for span in (7, 30):
         k = (date.fromisoformat(row["day"]) - timedelta(days=span)).isoformat()
-        past = [r for r in rows if r["day"] <= k]
-        out[str(span)] = None if not past else round(row[metric] - past[-1][metric], 2)
+        past = [r for r in rows if str(r.get("day") or "") <= k and _ok(r, metric)]
+        out[str(span)] = None if not past or row.get(metric) is None else round(row[metric] - past[-1][metric], 2)
     return out
 
 
 # ---------------- The whole payload ----------------
 
+# Headlines that are not real estate news: obituaries and school sports (Google News matches the town names).
+NEWS_SKIP = re.compile(r"\bobituar|\bobit\b|funeral|passed away|celebration of life|in memoriam|\bvarsity\b|\bjv\b|high school (?:\(\w+\) )?"
+                       r"(?:football|basketball|baseball|softball|volleyball|soccer|track|wrestling)|\b(?:football|basketball|baseball|"
+                       r"softball|volleyball|soccer)\b.*\b(?:vs\.?|@|game|score|playoffs?)\b|\b(?:vs\.?|@)\b.*\b(?:football|basketball|"
+                       r"baseball|softball|volleyball|soccer)\b|\blhsaa\b|\bprep\b|maxpreps|high school \(\w+\) (?:basketball|football)", re.I)
+
+
+def news_rows(rows: list[dict]) -> list[dict]:
+    return [r for r in rows if not NEWS_SKIP.search(str(r.get("title") or ""))]
+
+
 def _rows(d):
     return (d or {}).get("rows") or []
 
 
-def build(folder: Path, now: datetime | None = None) -> dict:
+def build(folder: Path, now: datetime | None = None, feed: dict | None = None, replied: set | None = None) -> dict:
+    """feed is the CRM feed (crm/feed.json): its people match leads, its new leads join the lead list and its Deals
+    tab rows are checked against the Deals sheet. replied holds person_ids a text or email went to since their lead."""
     now = (now or datetime.now(CENTRAL)).astimezone(CENTRAL)
     today = now.date()
     raw = load(folder)
+    f = feed or {}
     cfg = (raw.get("config") or {}).get("rows") or {}
     coord = cfg.get("coordinator_domains") or []
     fresh = {k: freshness(raw.get(k) or {}, k, now) for k in DATASETS if k not in ("config", "sync-status", "outbox")}
     deals = deal_rows(_rows(raw["deals"]))
     evs = cal_events(_rows(raw["calendar"]), coord)
-    leads = _rows(raw["leads"])
-    dl = deal_deadlines(evs)
+    people = (f.get("new_leads") or []) + (f.get("touches_due") or [])
+    leads = merge_leads(attach_crm(_rows(raw["leads"]), people), f.get("new_leads") or [], replied or set(), now)
+    cards, crm_only = merge_deals(deal_cards(deals, today, now), f.get("deals") or [])
+    dl = contract_deadlines(deal_deadlines(evs), cards)
     goals = (raw.get("goals") or {}).get("rows") or {}
     sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today)
-    hist = _rows(raw["history"])
+    hist = flag_history(_rows(raw["history"]), deals, today)
+    sheet_days = len({r["day"] for r in hist if is_day(r.get("day")) and r["day"] <= today.isoformat()})
     hrow = history_row(sc, today)
     full = add_history(hist, hrow)
     return {
         "at": now.isoformat(timespec="seconds"), "today": today.isoformat(), "fresh": fresh,
-        "deals": deal_cards(deals, today), "stages": pipeline_stages(deals, len([r for r in leads if not r.get("test")])),
+        "deals": cards, "crm_only_deals": crm_only, "stages": pipeline_stages(deals, len(leads)),
         "calendar": evs, "week": week_load(evs, today),
         "deadlines": {"all": in_days(dl, today, 30), "d3": in_days(dl, today, 2), "d7": in_days(dl, today, 6),
-                      "deals": len({r["deal"] for r in in_days(dl, today, 30)})},
-        "closings": closings(dl, deals, today),
-        "inbox": inbox_sorted(_rows(raw["inbox"]), leads, coord),
-        "leads": leads, "commission_mail": commission_mail(_rows(raw["commission_mail"])),
+                      "deals": len({r["key"] for r in in_days(dl, today, 30)}),
+                      # A date read from the sheet's words that has gone by and is not marked done: overdue, never dropped.
+                      "overdue": [r for r in dl if r.get("said") and (today - timedelta(days=30)).isoformat() <= r["day"] < today.isoformat()],
+                      # Contract steps written as words with no date: they are deadlines the dates above cannot count.
+                      "undated": [{"deal": c["deal"], "key": c["key"], "step": st["step"], "note": st.get("note") or ""}
+                                  for c in cards if c["stage"] == "contract" for st in c.get("checklist") or [] if st["state"] in ("undated", "check")],
+                      # Words that hold a date Pipeline could not read with confidence: never shown as no deadlines.
+                      "check": [{"deal": c["deal"], "key": c["key"], "step": st["step"], "note": st.get("note") or ""}
+                                for c in cards if c["stage"] == "contract" for st in c.get("checklist") or [] if st["state"] == "check"]},
+        "closings": closings(dl, cards, today),
+        "inbox": inbox_sorted(_rows(raw["inbox"]), [r for r in leads if r.get("origin") == "email"], coord),
+        "leads": leads, "lead_counts": lead_counts(leads, today), "commission_mail": commission_mail(_rows(raw["commission_mail"]), deals),
         "scorecard": sc, "goals": goals, "goals_set": bool(goals),
         "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
+        # Rows in the sheet's Scorecard history tab, today's included once the sync has saved it: the same number the
+        # Sources page shows for that tab.
+        "history_saved": sheet_days,
+        "history_mismatch": [{"day": r["day"], "metrics": r["mismatch"], "saved": {k: r[k] for k in r["mismatch"]}, "sheet_now": r["sheet_now"]}
+                             for r in hist if r.get("mismatch")],
+        "since": {m: (lambda x: {**x, "days": sheet_days} if x else None)(since_saved(hist, hrow, m)) for m in ("gci", "closings", "leads7", "appts7")},
         "kw_paid": cfg.get("kw_paid"),
         "bank": bank(_rows(raw["bank_mail"])),
-        "news": _rows(raw["news"]),
+        "news": news_rows(_rows(raw["news"])),
         "market": market((raw.get("market") or {}).get("rows") or {}),
         "life": life((raw.get("life") or {}).get("rows") or {}, _rows(raw["outbox"]), today),
-        "workouts": workouts((raw.get("workouts") or {}).get("rows") or {}, _rows(raw["outbox"]), today),
+        "workouts": workouts((raw.get("workouts") or {}).get("rows") or {}, _rows(raw["outbox"]), today, cfg.get("workout_plan")),
         "health": {"source": None, "note": "Health is skipped: no source chosen (Caleb, 2026-11-05)."},
-        "sync": raw.get("sync-status") or None,
-        "problems": [{"name": k, **v} for k, v in fresh.items() if v["state"] in ("failed", "stale")],
+        "sync": ({**raw["sync-status"], "error_text": plain_error(raw["sync-status"].get("error")),
+                  "results": {k: ({**v, "error_text": plain_error(v.get("error"))} if isinstance(v, dict) and v.get("error") else v)
+                              for k, v in (raw["sync-status"].get("results") or {}).items()}}
+                 if isinstance(raw.get("sync-status"), dict) else None),
+        "problems": [{"name": k, **v} for k, v in fresh.items() if v["state"] in ("failed", "stale", "late")],
     }
 
 
@@ -530,10 +944,46 @@ def _pct(x) -> str:
     return "" if x is None else f"{'+' if x > 0 else ''}{round(x * 100)}% vs a year ago"
 
 
+MARKET_PARTS = (("rate", "rate", "The mortgage rate (Freddie Mac, via FRED)"), ("areas", "Realtor.com", "Realtor.com inventory"),
+                ("gbrar", "GBRAR", "The GBRAR monthly file"))
+
+
+def plain_warning(w: str) -> str:
+    """A sync warning in plain words: what did not load and roughly why. Never an exception name or error code."""
+    t = str(w or "")
+    what = next((label for _, key, label in MARKET_PARTS if t.lower().startswith(key.lower())), "One market source")
+    if "zip" in t.lower()[:20]:
+        what += " by ZIP"
+    elif "county" in t.lower()[:24]:
+        what += " by parish"
+    why = ("the site took too long to answer" if re.search(r"timed? ?out|timeout", t, re.I)
+           else "the site refused the request" if re.search(r"\b40[13]\b|forbidden|refused", t, re.I)
+           else "the connection dropped" if re.search(r"reset|broken|closed", t, re.I)
+           else "the site could not be reached" if re.search(r"urlerror|name or service|nodename|unreachable", t, re.I)
+           else "the file could not be read")
+    return f"{what} did not load: {why}"
+
+
+def market_parts(m: dict) -> dict:
+    """Each market tile's own state: ok, or failed when its source did not load in the last read (it then shows the
+    last good number if there is one)."""
+    warns = m.get("warnings") or []
+    out = {}
+    for part, key, label in MARKET_PARTS:
+        bad = [plain_warning(w) for w in warns if str(w).lower().startswith(key.lower())]
+        out[part] = {"state": "failed" if bad else ("ok" if m.get(part) else "missing"), "note": "; ".join(bad), "label": label}
+    # Realtor.com reads parishes and ZIPs as two files: one failing leaves the other's cards current.
+    for level in ("county", "zip"):
+        bad = [plain_warning(w) for w in warns if str(w).lower().startswith(f"realtor.com {level}")]
+        have = any(a.get("level") == level for a in m.get("areas") or [])
+        out[f"areas_{level}"] = {"state": "failed" if bad else ("ok" if have else "missing"), "note": "; ".join(bad), "label": "Realtor.com inventory"}
+    return out
+
+
 def market(m: dict) -> dict:
     """Rates, areas and GBRAR, plus talking points written only from those numbers, each naming its source and date."""
     if not m:
-        return {"rate": None, "areas": [], "gbrar": None, "points": []}
+        return {"rate": None, "areas": [], "gbrar": None, "points": [], "warnings": [], "parts": market_parts({})}
     pts, r = [], m.get("rate")
     if r:
         d = "down" if r["change"] < 0 else "up" if r["change"] > 0 else "flat"
@@ -557,7 +1007,7 @@ def market(m: dict) -> dict:
             return (s.get(k) or {}).get("now")
         pts.append(f"Greater Baton Rouge, {g['month']}: median sale price ${gv('median_price'):,.0f}, {gv('closed_sales')} closed sales, "
                    f"{gv('months_supply')} months of supply, {gv('days_on_market')} days on market (GBRAR MLS monthly indicators).")
-    return {**m, "points": pts, "warnings": m.get("warnings") or []}
+    return {**m, "points": pts, "warnings": [plain_warning(w) for w in m.get("warnings") or []], "parts": market_parts(m)}
 
 
 def _merge_outbox(rows: dict, outbox: list, tabs: dict) -> dict:
@@ -623,9 +1073,13 @@ def life(rows: dict, outbox: list, today: date) -> dict:
 
 
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+# Caleb's plan (2026-11-09): weights Mon, Tue, Thu and Fri at 6 AM, and Wed at 4 PM. Five a week. out/cc/config.json
+# "workout_plan" ({"Mon": "6 AM", ...}) replaces it. The Workouts tab only adds the exercises for each day.
+WORKOUT_PLAN = {"Mon": "6 AM", "Tue": "6 AM", "Wed": "4 PM", "Thu": "6 AM", "Fri": "6 AM"}
 
 
-def workouts(rows: dict, outbox: list, today: date) -> dict:
+def workouts(rows: dict, outbox: list, today: date, sched: dict | None = None) -> dict:
+    sched = sched or WORKOUT_PLAN
     r = _merge_outbox(rows, outbox, {"Workouts": "plan", "Workout log": "log"})
     plan = {str(p.get("day", ""))[:3].title(): p for p in r["plan"]}
     log = [x for x in r["log"] if _day(x.get("date"))]
@@ -635,12 +1089,19 @@ def workouts(rows: dict, outbox: list, today: date) -> dict:
         d = monday + timedelta(days=i)
         hits = [x for x in log if _day(x["date"]) == d]
         p = plan.get(dn) or {}
-        week.append({"day": dn, "date": d.isoformat(), "focus": p.get("focus", ""), "exercises": p.get("exercises", ""),
+        on = dn in sched
+        week.append({"day": dn, "date": d.isoformat(), "planned": on, "time": sched.get(dn),
+                     "focus": (p.get("focus") if on and not re.search(r"\brest\b|walk", p.get("focus") or "", re.I) else "") or ("Weights" if on else "Rest"),
+                     "exercises": p.get("exercises", "") if on and not re.search(r"\brest\b|walk", p.get("focus") or "", re.I) else "",
                      "done": bool(hits), "minutes": sum(num(x.get("minutes")) or 0 for x in hits), "is_today": d == today,
                      "pending": any(x.get("pending") for x in hits)})
     last7 = [x for x in log if 0 <= (today - _day(x["date"])).days < 7]
     return {"week": week, "done_7": len({x["date"][:10] for x in last7}), "minutes_7": sum(num(x.get("minutes")) or 0 for x in last7),
-            "today": next((w for w in week if w["is_today"]), None), "has_plan": bool(plan),
+            "today": next((w for w in week if w["is_today"]), None), "has_plan": True, "goal": len(sched),
+            # The plan's days and times are Caleb's own (config or the default above). Where the tab says otherwise, say so.
+            "tab_differs": [f"{dn}: {plan[dn].get('focus')}" for dn in DAYS if dn in plan and plan[dn].get("focus")
+                            and (dn in sched) == bool(re.search(r"\brest\b|walk", plan[dn]["focus"], re.I))],
+            "planned": sum(1 for w in week if w["planned"]), "done_week": sum(1 for w in week if w["done"] and w["planned"]),
             "recent": sorted(log, key=lambda x: str(x.get("date")), reverse=True)[:10]}
 
 

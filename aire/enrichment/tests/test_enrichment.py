@@ -92,7 +92,9 @@ check("email_key lowercases", email_key(" Jordan@Example.com ") == "jordan@examp
 check("name_key handles couples", name_key(display="Pat & Sam Example") == "pat example")
 check("attributedBody decode", decode_body(None, b"\x00NSString\x01\x94\x84\x01+\x05hello") == "hello")
 
+_before = {x.name for x in Path(tempfile.gettempdir()).glob("aire-chatdb-*")}
 msgs = read_messages(db, 365)
+check("chat.db copy is removed after reading", {x.name for x in Path(tempfile.gettempdir()).glob("aire-chatdb-*")} == _before)
 check("group chats of 4 or more are left out", not any(h == "+12255550155" for h, _, _, _ in msgs))
 check("reads all messages", len(msgs) == 12)
 sig = build_signals(msgs, NOW)

@@ -35,23 +35,32 @@ PAGES = {  # which parts of the payload each page is about
     "bank": ["bank"], "sources": ["fresh", "sync"],
 }
 STRIP = re.compile(r"phone|email|sender|snippet|threadId|link|url|id$", re.I)
+# With money and contacts hidden, free text that can carry a name, an address tied to a person, or what someone wrote
+# stays on the Mac too: only counts, dates, stages, sources and amounts-as-hidden go.
+PRIVATE_KEYS = {"name", "display", "message", "address", "subject", "fields", "next_action", "next", "title", "last_event",
+                "note", "why", "last_messages", "check", "description"}
 
 
 def _clean(v, hide_names: bool):
     if isinstance(v, dict):
         out = {}
         for k, x in v.items():
-            if STRIP.search(k) or (hide_names and k in ("name", "display")):
+            if STRIP.search(k) or (hide_names and k in PRIVATE_KEYS):
                 continue
             out[k] = _clean(x, hide_names)
         return out
     if isinstance(v, list):
-        return [_clean(x, hide_names) for x in v[:60]]
+        # [label, value] pairs (a lead's form fields): a phone or email label drops the pair, whatever the key was.
+        if len(v) == 2 and all(isinstance(x, str) for x in v) and STRIP.search(v[0]):
+            return None
+        return [y for y in (_clean(x, hide_names) for x in v[:60]) if y is not None]
     return v
 
 
 def page_context(payload: dict, page: str, private: bool) -> str:
-    keys = PAGES.get(page, PAGES["dash"])
+    if page not in PAGES:
+        raise ValueError("Ask Claude is not on this page yet. It is on the Dashboard and the Command Center pages")
+    keys = PAGES[page]
     data = {k: _clean(payload.get(k), private) for k in keys if k in payload}
     data["as_of"] = {k: {"source": v.get("source"), "at": v.get("at"), "state": v.get("state")} for k, v in (payload.get("fresh") or {}).items()}
     data["today"] = payload.get("today")

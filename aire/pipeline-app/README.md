@@ -35,7 +35,7 @@ sh aire/pipeline-app/install.sh
 
 That loads the LaunchAgent `org.calebjackson.aire.pipeline` (server at login, kept alive, log in `~/.aire/logs/pipeline.log`) and creates `~/Applications/Pipeline.app`, which opens the screen in a Chrome app window. Drag it to the Dock. `sh aire/pipeline-app/install.sh --remove` takes both away.
 
-Checks: `python3 aire/pipeline-app/app.py --test` runs 113 offline checks (demo writes, the send gates, the HTTP layer, the `crm.py` contract). The suite sets its own clock, so it passes at any hour.
+Checks: `python3 aire/pipeline-app/ui_test.py` renders every page with privacy on and off (no contacts or dollars leak, no developer text, one lead count, one deal source, nav and keys agree). `python3 aire/pipeline-app/app.py --test` runs the offline checks (demo writes, the three send gates, the HTTP layer, the `crm.py` contract). `python3 aire/pipeline-app/bridge.py --test` checks the Grok bridge. The suite sets its own clock, so it passes at any hour.
 
 ### Environment
 

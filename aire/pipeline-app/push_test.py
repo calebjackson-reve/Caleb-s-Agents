@@ -44,6 +44,14 @@ class Alerts(unittest.TestCase):
         self.assertEqual([(x["kind"], x["body"]) for x in a], [("lead", "Listing inquiry")])
         self.assertNotIn("Riley", json.dumps(a))  # no client names on the lock screen
 
+    def test_round4_a_date_read_from_words_alerts_with_its_time_and_two_on_one_day_both_alert(self):
+        pay = {"leads": [], "problems": [], "deadlines": {"all": [
+            {"day": "2026-11-06", "key": "1 demo", "title": "1 Demo Ln - Inspection", "what": "Inspection", "time": "11:59PM"},
+            {"day": "2026-11-06", "key": "2 demo", "title": "2 Demo Ln - Appraisal and loan", "what": "Appraisal and loan"}]}}
+        a, _ = P.new_alerts(pay, {}, NOW)
+        self.assertEqual([x["title"] for x in a], ["Inspection tomorrow at 11:59PM", "Appraisal and loan tomorrow"])
+        self.assertNotIn("Demo", json.dumps(a))
+
     def test_failed_read_alerts_once(self):
         _, st = P.new_alerts(PAY, {}, NOW)
         bad = {**PAY, "problems": [{"name": "calendar", "state": "failed"}]}

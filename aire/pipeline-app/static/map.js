@@ -1,20 +1,49 @@
 // Pipeline map. A small slippy map with no library and no build step, same as the rest of the app.
-// Tiles: OpenStreetMap for streets, USGS The National Map imagery (public domain) for satellite. Both free, both credited
+// Tiles: USGS The National Map, topo for streets and imagery for satellite. Public domain and free to use from an app
+// (tile.openstreetmap.org refuses apps like this one with a 403, and CARTO's free tier is non-commercial). Credited
 // on the map. Pins, deals, market rows and farms are drawn on one canvas. Past 200 pins in view they cluster.
 // PMap.create(el, opts) -> { setData, setBase, fit, focus, bounds, startDraw, cancelDraw, view, destroy }
 window.PMap = (function () {
   const TILE = 256;
   const BASES = {
-    street: { url: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`, max: 19, attr: '© OpenStreetMap contributors' },
+    street: { url: (z, x, y) => `https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/${z}/${y}/${x}`, max: 16, attr: 'Map: USGS The National Map', dark: true },
     sat: { url: (z, x, y) => `https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/${z}/${y}/${x}`, max: 16, attr: 'Imagery: USGS The National Map' },
   };
-  const BAND = { hot: '#ff5c7a', warm: '#ffb547', lukewarm: '#c8b596', cold: '#4f9dff', 'ice-cold': '#bdb4a9', '': '#5d6b7c' };
-  const STAGE = { lead: '#bdb4a9', consult: '#4f9dff', active: '#c8b596', showing: '#e87757', under_contract: '#d9a98c' };
-  const MARKET = { permit: '#ffb547', new_listing: '#c8b596', price_change: '#e87757', back_on_market: '#e87757', pending: '#d9a98c', sold: '#ff5c7a', listing_change: '#bdb4a9' };
+  // Bands on a coral-to-grey ramp (KW First Choice coral, tan as the accent, warm greys), no blue or green.
+  // The app's color code: lead temperature and deal stage read the same on the map as on the cards.
+  const BAND = { hot: '#ff5a5f', warm: '#f5b041', lukewarm: '#c8b596', cold: '#4ea8ff', 'ice-cold': '#8fa3b8', '': '#4a4540' };
+  const STAGE = { lead: '#a78bfa', consult: '#a8997f', active: '#c8b596', showing: '#e87757', under_contract: '#4ea8ff' };
+  const MARKET = { permit: '#ffb547', new_listing: '#c8b596', price_change: '#e87757', back_on_market: '#e87757', pending: '#d9a98c', sold: '#e87757', listing_change: '#bdb4a9' };
   const CLUSTER_PAST = 200, CELL = 54;
 
   const project = (lat, lng, z) => { const s = TILE * 2 ** z, sin = Math.sin(lat * Math.PI / 180); return [(lng + 180) / 360 * s, (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * s]; };
   const unproject = (x, y, z) => { const s = TILE * 2 ** z, n = Math.PI - 2 * Math.PI * y / s; return [180 / Math.PI * Math.atan(Math.sinh(n)), x / s * 360 - 180]; };
+
+  // Street tiles that keep failing (a server that refuses, as OpenStreetMap's did with 403) switch the map to Satellite
+  // by itself, so the map is never a blank grid. Six failures with no tile drawn, or failures outnumbering draws three to one.
+  // Area labels: each takes the first free spot around its point (on it, above, below, then further out and to the sides),
+  // never over another label, a pin or a cluster. A label with no free spot is left off rather than overlap.
+  // bounds ({w, h}, the map's size): a label is slid inside the edges, never cut off at the left or right (round 4).
+  function placeLabels(labels, obstacles, width, bounds) {
+    const boxes = obstacles.map(o => ({ x0: o.x - o.r, x1: o.x + o.r, y0: o.y - o.r, y1: o.y + o.r }));
+    const hit = b => boxes.some(o => b.x1 > o.x0 && b.x0 < o.x1 && b.y1 > o.y0 && b.y0 < o.y1);
+    const out = [];
+    for (const l of labels.slice().sort((a, b) => (b.on - a.on) || (b.name.length - a.name.length))) {
+      const w = width(l.name) + 12, h = 20, step = h + 4;
+      const offs = [[0, 0], [0, -step], [0, step], [0, -2 * step], [0, 2 * step], [w / 2 + 14, 0], [-(w / 2 + 14), 0], [w / 2 + 14, -step], [-(w / 2 + 14), step]];
+      const pad = 4, inside = b => { if (!bounds) return b;
+        const sx = b.x0 < pad ? pad - b.x0 : b.x1 > bounds.w - pad ? bounds.w - pad - b.x1 : 0;
+        const sy = b.y0 < pad ? pad - b.y0 : b.y1 > bounds.h - pad ? bounds.h - pad - b.y1 : 0;
+        return { x0: b.x0 + sx, x1: b.x1 + sx, y0: b.y0 + sy, y1: b.y1 + sy, dx: b.dx + sx, dy: b.dy + sy }; };
+      const spot = offs.map(([dx, dy]) => inside({ x0: l.x + dx - w / 2, x1: l.x + dx + w / 2, y0: l.y + dy - h / 2, y1: l.y + dy + h / 2, dx, dy }))
+        .find(b => !hit(b) && (!bounds || (b.x0 >= 0 && b.x1 <= bounds.w)));
+      if (!spot) continue;
+      boxes.push(spot); out.push({ ...l, ...spot, w, h });
+    }
+    return out;
+  }
+
+  function streetFailing(errs, oks) { return errs >= 6 && (oks === 0 || errs >= oks * 3); }
 
   function create(el, opts = {}) {
     el.classList.add('pmap');
@@ -22,7 +51,12 @@ window.PMap = (function () {
     const tilesEl = el.querySelector('.pm-tiles'), cv = el.querySelector('.pm-canvas'), ctx = cv.getContext('2d'), attr = el.querySelector('.pm-attr'), hint = el.querySelector('.pm-hint');
     const st = { center: (opts.view && opts.view.center) || [30.45, -91.15], zoom: (opts.view && opts.view.zoom) || 10, base: opts.base || 'street',
       data: { pins: [], deals: [], market: [], farms: [], selected: '' }, hits: [], w: 0, h: 0, draw: null, raf: 0, pulse: 0, dead: false };
-    const tiles = new Map();
+    const tiles = new Map(), loads = { ok: 0, err: 0 };
+    function tileDone(ok) {
+      if (st.base !== 'street') return;
+      loads[ok ? 'ok' : 'err']++;
+      if (streetFailing(loads.err, loads.ok)) { api.setBase('sat'); st.fellBack = true; draw(); if (opts.onBase) opts.onBase('sat'); }
+    }
 
     function clampZoom(z) { return Math.max(3, Math.min(BASES[st.base].max, z)); }
     function centerPx() { return project(st.center[0], st.center[1], st.zoom); }
@@ -31,17 +65,18 @@ window.PMap = (function () {
 
     function layoutTiles() {
       const base = BASES[st.base], z = st.zoom, n = 2 ** z, [cx, cy] = centerPx();
+      tilesEl.classList.toggle('is-dark', !!base.dark);  // the light topo map, turned dark to sit in the black design
       const x0 = Math.floor((cx - st.w / 2) / TILE), x1 = Math.floor((cx + st.w / 2) / TILE), y0 = Math.max(0, Math.floor((cy - st.h / 2) / TILE)), y1 = Math.min(n - 1, Math.floor((cy + st.h / 2) / TILE));
       const want = new Set();
       for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) {
         const wx = ((x % n) + n) % n, key = `${st.base}/${z}/${wx}/${y}`;
         want.add(key + '@' + x);
         let img = tiles.get(key + '@' + x);
-        if (!img) { img = new Image(); img.draggable = false; img.alt = ''; img.onerror = () => img.classList.add('err'); img.src = base.url(z, wx, y); tilesEl.appendChild(img); tiles.set(key + '@' + x, img); }
+        if (!img) { img = new Image(); img.draggable = false; img.alt = ''; img.onerror = () => { img.classList.add('err'); tileDone(false); }; img.onload = () => tileDone(true); img.src = base.url(z, wx, y); tilesEl.appendChild(img); tiles.set(key + '@' + x, img); }
         img.style.transform = `translate(${Math.round(x * TILE - cx + st.w / 2)}px, ${Math.round(y * TILE - cy + st.h / 2)}px)`;
       }
       for (const [k, img] of tiles) if (!want.has(k)) { img.remove(); tiles.delete(k); }
-      attr.textContent = base.attr;
+      attr.textContent = st.fellBack && st.base === 'sat' ? "Street tiles didn't load, so this is Satellite · " + base.attr : base.attr;
     }
 
     function dot(x, y, r, fill, ring) {
@@ -58,7 +93,19 @@ window.PMap = (function () {
       ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = ring ? 2.5 : 1; ctx.strokeStyle = ring || 'rgba(4,9,22,.9)'; ctx.stroke();
     }
 
+    // Area names never sit on top of each other: the selected area goes first, then bigger names, and a label whose
+    // box would overlap one already drawn is nudged below, then above, then left out at this zoom.
+    // Drawn last, after every pin and cluster, which are the obstacles (st.hits).
+    function drawLabels(labels) {
+      ctx.font = '600 12px ' + getComputedStyle(document.body).getPropertyValue('--sans'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (const s of placeLabels(labels, st.hits, t => ctx.measureText(t).width, { w: cv.clientWidth, h: cv.clientHeight })) {
+        ctx.fillStyle = 'rgba(10,10,11,.88)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(s.x0, s.y0, s.w, s.h, 6) : ctx.rect(s.x0, s.y0, s.w, s.h); ctx.fill();
+        ctx.fillStyle = s.on ? '#e87757' : '#f3eee6'; ctx.fillText(s.name, s.x + s.dx, s.y + s.dy + .5);
+      }
+      ctx.textBaseline = 'alphabetic';
+    }
     function drawFarms() {
+      const labels = [];
       for (const f of st.data.farms) {
         if (!f.polygon || f.polygon.length < 3) continue;
         const pts = f.polygon.map(([a, b]) => toScreen(a, b));
@@ -66,9 +113,7 @@ window.PMap = (function () {
         const on = st.data.farm === f.id;
         ctx.fillStyle = on ? 'rgba(232, 119, 87,.14)' : 'rgba(232, 119, 87,.07)'; ctx.fill();
         ctx.setLineDash([6, 4]); ctx.lineWidth = on ? 2.4 : 1.6; ctx.strokeStyle = '#e87757'; ctx.stroke(); ctx.setLineDash([]);
-        const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
-        ctx.font = '600 11px ' + getComputedStyle(document.body).getPropertyValue('--mono'); ctx.textAlign = 'center';
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(4,9,22,.85)'; ctx.strokeText(f.name.toUpperCase(), cx, cy); ctx.fillStyle = '#f3eee6'; ctx.fillText(f.name.toUpperCase(), cx, cy);
+        labels.push({ name: f.name, x: pts.reduce((s, p) => s + p[0], 0) / pts.length, y: pts.reduce((s, p) => s + p[1], 0) / pts.length, on });
       }
       if (st.draw) {
         const pts = st.draw.pts.map(([a, b]) => toScreen(a, b));
@@ -77,6 +122,7 @@ window.PMap = (function () {
         ctx.lineWidth = 2; ctx.strokeStyle = '#c8b596'; ctx.stroke(); ctx.fillStyle = 'rgba(200, 181, 150,.08)'; ctx.fill();
         st.draw.pts.forEach(([a, b], i) => { const [x, y] = toScreen(a, b); dot(x, y, i === 0 ? 6 : 4, '#c8b596'); });
       }
+      return labels;
     }
 
     function draw() {
@@ -85,7 +131,7 @@ window.PMap = (function () {
       const dpr = window.devicePixelRatio || 1;
       if (cv.width !== st.w * dpr || cv.height !== st.h * dpr) { cv.width = st.w * dpr; cv.height = st.h * dpr; cv.style.width = st.w + 'px'; cv.style.height = st.h + 'px'; }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, st.w, st.h);
-      drawFarms();
+      const farmLabels = drawFarms();
       st.hits = [];
       const pad = 20, inView = ([x, y]) => x > -pad && y > -pad && x < st.w + pad && y < st.h + pad;
       const people = st.data.pins.map(p => ({ p, s: toScreen(p.lat, p.lng) })).filter(o => inView(o.s));
@@ -98,7 +144,7 @@ window.PMap = (function () {
           const x = list.reduce((s, o) => s + o.s[0], 0) / list.length, y = list.reduce((s, o) => s + o.s[1], 0) / list.length;
           const top = ['hot', 'warm', 'lukewarm', 'cold', 'ice-cold'].find(b => list.some(o => o.p.band === b)) || '';
           const r = Math.min(26, 10 + Math.sqrt(list.length) * 2.2);
-          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(8,22,46,.86)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = BAND[top]; ctx.stroke();
+          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = 'rgba(16,14,17,.9)'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = BAND[top]; ctx.stroke();
           ctx.font = '700 11px ' + getComputedStyle(document.body).getPropertyValue('--mono'); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#f3eee6'; ctx.fillText(String(list.length), x, y + .5); ctx.textBaseline = 'alphabetic';
           st.hits.push({ x, y, r: r + 2, cluster: list.map(o => o.p) });
         }
@@ -123,6 +169,7 @@ window.PMap = (function () {
         house(s[0], s[1], sel ? 11 : 8.5, STAGE[d.stage] || '#d9a98c', sel ? '#ffffff' : null);
         st.hits.push({ x: s[0], y: s[1], r: 11, pin: d });
       }
+      drawLabels(farmLabels);
       cancelAnimationFrame(st.raf);
       if (pulsing) st.raf = requestAnimationFrame(() => { st.pulse++; draw(); });
     }
@@ -184,9 +231,9 @@ window.PMap = (function () {
       st.zoom = z; st.center = unproject((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, z); draw(); emitMove();
     }
     draw();
-    return {
+    const api = {
       setData(d) { st.data = { ...st.data, ...d }; draw(); },
-      setBase(b) { if (!BASES[b] || b === st.base) return; st.base = b; st.zoom = clampZoom(st.zoom); for (const img of tiles.values()) img.remove(); tiles.clear(); draw(); },
+      setBase(b) { if (!BASES[b] || b === st.base) return; st.base = b; loads.ok = loads.err = 0; if (b === 'street') st.fellBack = false; st.zoom = clampZoom(st.zoom); for (const img of tiles.values()) img.remove(); tiles.clear(); draw(); },
       fit,
       focus(lat, lng, zoom = 16) { st.zoom = clampZoom(zoom); st.center = [lat, lng]; draw(); emitMove(); },
       bounds() { const a = toLatLng(0, 0), b = toLatLng(st.w, st.h); return { north: a[0], west: a[1], south: b[0], east: b[1] }; },
@@ -195,6 +242,7 @@ window.PMap = (function () {
       view: () => ({ center: st.center.slice(), zoom: st.zoom }),
       destroy() { st.dead = true; cancelAnimationFrame(st.raf); ro.disconnect(); document.removeEventListener('keydown', onKey, true); el.innerHTML = ''; },
     };
+    return api;
   }
 
   // Ray casting, [lat, lng] pairs. Same rule as aire/map-crm/geo.py so the screen and the feed agree.
@@ -207,5 +255,5 @@ window.PMap = (function () {
     }
     return inside;
   }
-  return { create, inPolygon, BAND, STAGE, MARKET };
+  return { create, inPolygon, streetFailing, placeLabels, BAND, STAGE, MARKET };
 })();

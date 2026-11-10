@@ -3,9 +3,10 @@
 (function () {
   const C = window.CC;
   const { n, day, card, tile, empty, head, guard } = C;
-  const money = v => (v == null ? '—' : '$' + Math.round(v).toLocaleString());
-  const yy = v => (v == null ? '' : `<span class="cc-yy ${v > 0 ? 'up' : v < 0 ? 'down' : ''}">${v > 0 ? '▲' : v < 0 ? '▼' : ''} ${Math.abs(Math.round(v * 100))}% vs last year</span>`);
-  const NEWS = { local: ['Local', 'k-closing'], market: ['Market', 'k-showing'], rates: ['Rates', 'k-client'] };
+  const money = v => (v == null ? '—' : C.priv ? '$•••' : '$' + Math.round(v).toLocaleString());
+  // The arrow follows the rounded number: 0% gets no arrow.
+const yy = v => { if (v == null) return ''; const p = Math.round(v * 100); return `<span class="cc-yy ${p > 0 ? 'up' : p < 0 ? 'down' : ''}">${p > 0 ? '▲ ' : p < 0 ? '▼ ' : ''}${Math.abs(p)}% vs last year</span>`; };
+  const NEWS = { local: ['Local', 'k-closing'], market: ['Market', 'k-tan'], rates: ['Rates', 'k-other'] };
   const when = s => (s ? new Date(s).toLocaleString('en-US', { timeZone: 'America/Chicago', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '');
   C.news = { kind: 'all' };
 
@@ -15,24 +16,41 @@
   }
 
   // ---------------- Market ----------------
+  // A market tile's own source: who published the number and for when, plus whether the last read worked.
+  // Each tile names its own publisher and period, and its own state: a source that did not load in the last read is red
+  // on its tile even when the others loaded. part is 'rate', 'areas' or 'gbrar' (cc.market_parts).
+  function msrc(label, period, part) {
+    const r = (C.data.fresh || {}).market || { state: 'missing' }, p = part && ((C.data.market || {}).parts || {})[part];
+    const state = p && p.state !== 'ok' ? p.state : r.state;
+    const bad = p && p.state === 'failed' ? ' · <b>did not load in the last read</b>' : r.state === 'failed' ? ' · <b>last read failed</b>' : r.state === 'stale' ? ' · <b>out of date</b>' : r.state === 'late' ? ' · <b>late</b>' : '';
+    return `<span class="cc-src is-${state}"><i aria-hidden="true"></i>${esc(label)}${period ? ' · ' + esc(period) : ''}${bad}</span>`;
+  }
+  const mtile = (label, value, sub, source) => `<div class="cc-tile"><span class="cc-tile-l">${label}</span><b class="cc-num">${value}</b><span class="cc-sub">${sub || ''}</span>${source}</div>`;
+  const mon = k => (k && /^\d{6}$/.test(k) ? new Date(Date.UTC(+k.slice(0, 4), +k.slice(4) - 1, 15)).toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : k || '');
   function ccmarket() {
     const g = guard(); if (g) return g;
     const m = C.data.market, r = m.rate, gb = m.gbrar && m.gbrar.snapshot;
     const gv = k => gb && gb[k] ? gb[k].now : null;
-    return `<div class="cc-page">${head('Market', 'Rates, listings by area and the GBRAR monthly numbers. Check the date before you quote one.')}
+    const ch = r ? Math.round(r.change * 100) / 100 : 0;
+    const gbSrc = gb ? msrc('GBRAR MLS monthly indicators', m.gbrar.month + (m.gbrar.pulled ? ', pulled ' + C.day(m.gbrar.pulled) : ''), 'gbrar') : msrc('GBRAR MLS monthly indicators', 'no file yet', 'gbrar');
+    // A ZIP whose numbers are the same as a parish's: say so, so nobody thinks one was copied into the other.
+    const same = a => (m.areas || []).find(b => b !== a && b.level !== a.level && ['active', 'median_price', 'dom'].every(k => b[k] === a[k]) && b.month === a.month);
+    return `<div class="cc-page">${head('Market', 'Rates, listings by area and the GBRAR monthly numbers. Each number names who published it and for when.')}
       <div class="cc-tiles">
-        ${tile('30-year fixed', r ? r.rate.toFixed(2) + '<small>%</small>' : '—', r ? `Week of ${day(r.date)} · ${r.change < 0 ? '▼' : r.change > 0 ? '▲' : ''} ${Math.abs(r.change).toFixed(2)} from the week before` : 'No read yet', 'market')}
-        ${tile('GBRAR median sale price', gb ? money(gv('median_price')) : '—', gb ? `${m.gbrar.month} · ${n(gv('closed_sales'))} closed` : 'No GBRAR file', 'market')}
-        ${tile('Months of supply', gb ? n(gv('months_supply')) : '—', gb ? `Greater Baton Rouge, ${m.gbrar.month}` : '', 'market')}
-        ${tile('Days on market', gb ? n(gv('days_on_market')) : '—', gb ? `GBRAR, ${m.gbrar.month}` : '', 'market')}
+        ${mtile('30-year fixed', r ? r.rate.toFixed(2) + '<small>%</small>' : '—', r ? `${ch ? (ch < 0 ? '▼ ' : '▲ ') + Math.abs(ch).toFixed(2) + ' from the week before' : 'Same as the week before'}` : 'No read yet', msrc('Freddie Mac PMMS, via FRED', r ? 'week of ' + day(r.date) : '', 'rate'))}
+        ${mtile('Median sale price', gb ? money(gv('median_price')) : '—', gb ? `Greater Baton Rouge · ${n(gv('closed_sales'))} closed` : 'No GBRAR file', gbSrc)}
+        ${mtile('Months of supply', gb ? n(gv('months_supply')) : '—', gb ? 'Greater Baton Rouge' : '', gbSrc)}
+        ${mtile('Days on market', gb ? n(gv('days_on_market')) : '—', gb ? 'Greater Baton Rouge' : '', gbSrc)}
       </div>
-      ${card('By area', (m.areas || []).length ? `<div class="cc-areas">${m.areas.map(a => `<div class="cc-area">
-          <h3>${esc(a.area)}<small>${a.level === 'zip' ? 'ZIP ' + esc(a.id) : 'Parish'} · ${esc((a.month || '').replace(/(\d{4})(\d{2})/, '$1-$2'))}</small></h3>
+      ${card('By area', (m.areas || []).length ? `<div class="cc-areas">${m.areas.map(a => { const twin = same(a); return `<div class="cc-area">
+          <h3>${esc(a.area)}<small>${a.level === 'zip' ? 'ZIP ' + esc(a.id) : 'Parish'}</small></h3>
           <p><b>${n(a.active)}</b> active ${yy(a.active_yy)}</p><p><b>${money(a.median_price)}</b> median list ${yy(a.median_price_yy)}</p>
-          <p><b>${n(a.dom)}</b> median days on market</p>${a.flag ? '<p class="cc-warn">Realtor.com marks this ZIP\'s data as less reliable.</p>' : ''}</div>`).join('')}</div>`
-        : empty('No area numbers yet.'), 'market')}
-      ${card('Talking points', (m.points || []).length ? `<ul class="cc-points">${m.points.map(p => `<li>${esc(p)}</li>`).join('')}</ul><div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyPoints()">Copy the talking points</button></div><p class="cc-note">Built only from the numbers above, each with its source and date. Check the date before you quote one to a client.</p>` : empty('No numbers yet, so no talking points.'), 'market')}
-      ${(m.warnings || []).length ? `<p class="cc-warn">Not current in the last read: ${m.warnings.map(esc).join('; ')}. The rest of the page is from that read.</p>` : ''}
+          <p><b>${n(a.dom)}</b> median days on market</p>${a.flag ? '<p class="cc-warn">Realtor.com marks this ZIP\'s data as less reliable.</p>' : ''}
+          ${twin ? `<p class="cc-note">Same numbers as ${esc(twin.area)} in Realtor.com's own file: every listing ${a.level === 'zip' ? 'in the parish is in this ZIP' : 'is in ZIP ' + esc(twin.id)}.</p>` : ''}
+          ${msrc('Realtor.com inventory', mon(a.month), 'areas_' + a.level)}</div>`; }).join('')}</div>`
+        : empty('No area numbers yet.'), [])}
+      ${card('Talking points', (m.points || []).length ? `<ul class="cc-points">${m.points.map(p => `<li>${C.scrubMoney(p)}</li>`).join('')}</ul><div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.copyPoints()">Copy the talking points</button></div><p class="cc-note">Built only from the numbers above, each with its source and date. Check the date before you quote one to a client.</p>` : empty('No numbers yet, so no talking points.'), 'market')}
+      ${(m.warnings || []).length ? `<p class="cc-warn">${m.warnings.map(esc).join('. ')}. Everything else on this page loaded in that read.</p>` : ''}
       <p class="cc-note">For-rent counts are not here: the free sources don't have them, and Zillow's rental data needs a paid feed.</p></div>`;
   }
   C.copyPoints = () => navigator.clipboard.writeText(C.data.market.points.join('\n')).then(() => toast('ok', 'COPIED', 'Talking points copied.'), () => toast('err', 'COPY', 'The browser blocked the clipboard.'));
@@ -45,9 +63,10 @@
     const g = guard(); if (g) return g;
     const all = C.data.news || [], kinds = [...new Set(all.map(r => r.kind))];
     const rows = all.filter(r => C.news.kind === 'all' || r.kind === C.news.kind);
-    return `<div class="cc-page">${head('News', 'Local real estate, the Louisiana market and mortgage rates, last 7 days')}
+    return `<div class="cc-page">${head('News', 'Local real estate, the Louisiana market and mortgage rates, last 7 days. Obituaries and school sports are left out.')}
+      <p class="cc-srcline">${C.src('news')}</p>
       <div class="cc-filters" role="group" aria-label="Show news by kind"><button type="button" class="cc-filter" aria-pressed="${C.news.kind === 'all'}" onclick="CC.newsKind('all')">All <b>${all.length}</b></button>${kinds.map(k => `<button type="button" class="cc-filter ${(NEWS[k] || [, 'k-other'])[1]}" aria-pressed="${C.news.kind === k}" onclick="CC.newsKind('${esc(k)}')">${(NEWS[k] || ['Other'])[0]} <b>${all.filter(r => r.kind === k).length}</b></button>`).join('')}</div>
-      ${card('Headlines', newsList(rows, 40), 'news')}<p class="cc-note">Headlines and links from Google News searches. Each opens the outlet's own page.</p></div>`;
+      ${card('Headlines', newsList(rows, 40), []).replace('<footer></footer>', '')}<p class="cc-note">Headlines and links from Google News searches. Each opens the outlet's own page.</p></div>`;
   }
   C.newsKind = k => { C.news.kind = k; render(); };
 
@@ -76,13 +95,16 @@
   function health() {
     const g = guard(); if (g) return g;
     const W = C.data.workouts, t = W.today || {};
-    return `<div class="cc-page">${head('Workouts and Health', 'Weights, 4 to 5 days a week. Your plan is the Workouts tab of your AIRE CRM sheet, edit it there.')}
+    const planned = W.planned ?? W.week.filter(w => w.planned).length, doneWk = W.done_week ?? W.week.filter(w => w.done).length;
+    const plan = W.week.filter(w => w.planned).map(w => `${w.day} ${w.time || ''}`.trim()).join(', ');
+    return `<div class="cc-page">${head('Workouts', `Your plan: ${plan}, ${n(planned)} a week. Days and times are the plan you gave Pipeline on Nov 9. Exercises come from the Workouts tab of your AIRE CRM sheet.${(W.tab_differs || []).length ? ` That tab still says ${esc(W.tab_differs.join(', '))}, so update the tab to match.` : ''} Health numbers are at the bottom.`)}
       <div class="cc-tiles">
-        ${tile('Today', esc(t.focus || 'Rest'), t.done ? 'Done ✓' : esc(t.exercises || ''), 'workouts')}
-        ${tile('Workouts, 7 days', n(W.done_7), 'Goal 4 to 5', 'workouts')}
+        ${tile('Today', esc(t.focus || 'Rest'), t.done ? 'Done ✓' : [t.time, t.exercises].filter(Boolean).map(esc).join(' · '), 'workouts')}
+        ${tile('Workouts, 7 days', n(W.done_7), `Goal ${n(W.goal || planned)} a week`, 'workouts')}
         ${tile('Minutes, 7 days', n(W.minutes_7), 'Logged', 'workouts')}
+        ${tile('This week', `${n(doneWk)}<small> of ${n(planned)}</small>`, 'Planned workouts done so far', 'workouts')}
       </div>
-      ${card('This week', `<div class="cc-week">${W.week.map(w => `<div class="cc-wday ${w.done ? 'is-done' : ''} ${w.is_today ? 'is-today' : ''}"><h3>${w.day}<small>${day(w.date)}</small></h3><b>${esc(w.focus || 'Rest')}</b><small>${esc(w.exercises || '')}</small>${w.done ? `<span class="cc-pill k-showing">Done${w.minutes ? ' · ' + w.minutes + ' min' : ''}</span>` : ''}</div>`).join('')}</div>`, 'workouts')}
+      ${card('This week', `<div class="cc-week">${W.week.map(w => `<div class="cc-wday ${w.done ? 'is-done' : ''} ${w.is_today ? 'is-today' : ''}"><h3>${w.day}<small>${day(w.date)}</small></h3><b>${esc(w.focus || 'Rest')}${w.time ? ` <small>${esc(w.time)}</small>` : ''}</b><small>${esc(w.exercises || '')}</small>${w.done ? `<span class="cc-pill k-showing">Done${w.minutes ? ' · ' + w.minutes + ' min' : ''}</span>` : ''}</div>`).join('')}</div>`, 'workouts')}
       ${card('Log a workout', `<form class="cc-goals" onsubmit="CC.logWorkout(event)">
         <label>Date<input name="date" type="date" required value="${C.data.today}"></label>
         <label>Focus<input name="focus" required maxlength="60" value="${esc(t.focus || '')}"></label>
@@ -94,7 +116,7 @@
   C.logWorkout = e => { e.preventDefault(); queue('Workout log', Object.fromEntries(new FormData(e.target)), 'Workout logged.'); };
 
   // Dashboard: news and today's workout under the main cards.
-  C.dashMore = () => `<div class="cc-grid">${card('News', newsList(C.data.news || [], 4), 'news')}${card("Today's workout", `<p class="cc-big">${esc((C.data.workouts.today || {}).focus || 'Rest')}</p><p class="cc-note">${(C.data.workouts.today || {}).done ? 'Done ✓' : esc((C.data.workouts.today || {}).exercises || '')} · ${C.data.workouts.done_7} workouts in 7 days</p><button type="button" class="cc-btn" onclick="go('health')">Open Workouts</button>`, 'workouts')}${C.data.market.rate ? card('30-year fixed', `<p class="cc-big">${C.data.market.rate.rate.toFixed(2)}%</p><p class="cc-note">Week of ${day(C.data.market.rate.date)}, ${C.data.market.rate.change <= 0 ? 'down' : 'up'} ${Math.abs(C.data.market.rate.change).toFixed(2)}</p><button type="button" class="cc-btn" onclick="go('ccmarket')">Open Market</button>`, 'market') : ''}</div>`;
+  C.dashMore = () => `<div class="cc-grid">${card('News', newsList(C.data.news || [], 4), 'news')}${card("Today's workout", `<p class="cc-big">${esc((C.data.workouts.today || {}).focus || 'Rest')}</p><p class="cc-note">${(C.data.workouts.today || {}).done ? 'Done ✓' : esc((C.data.workouts.today || {}).exercises || '')} · ${C.data.workouts.done_7} workouts in 7 days</p><button type="button" class="cc-btn" onclick="go('health')">Open Workouts</button>`, 'workouts')}${C.data.market.rate ? card('30-year fixed', `<p class="cc-big">${C.data.market.rate.rate.toFixed(2)}%</p><p class="cc-note">Week of ${day(C.data.market.rate.date)}, ${Math.round(C.data.market.rate.change * 100) === 0 ? 'same as the week before' : (C.data.market.rate.change < 0 ? 'down ' : 'up ') + Math.abs(C.data.market.rate.change).toFixed(2)}. Freddie Mac PMMS, via FRED.</p><button type="button" class="cc-btn" onclick="go('ccmarket')">Open Market</button>`, 'market') : ''}</div>`;
 
   Object.assign(C.views, { ccmarket, news, life, health });
 })();

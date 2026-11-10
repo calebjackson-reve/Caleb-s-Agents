@@ -10,7 +10,7 @@
 :root {
   --cc-ink: #0a0a0b; --cc-panel: #141215; --cc-raise: #1d1a1f; --cc-line: rgba(255, 255, 255, .09);
   --cc-coral: #e87757; --cc-coral-soft: rgba(232, 119, 87, .14); --cc-tan: #c8b596;
-  --cc-text: #f3eee6; --cc-muted: #aaa298; --cc-ok: #7fd0a0; --cc-warn: #ffb547; --cc-bad: #ff8a70;
+  --cc-text: #f3eee6; --cc-muted: #aaa298; --cc-ok: #c8b596; --cc-warn: #ffb547; --cc-bad: #ff8a70;
 }
 .cc-page { display: grid; gap: 18px; padding: 4px 2px 24px; color: var(--cc-text); font-size: 14px; }
 .cc-head { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: flex-end; justify-content: space-between; }
@@ -25,7 +25,8 @@
 .cc-page :focus-visible { outline: 2px solid var(--cc-coral); outline-offset: 2px; }
 .cc-page button:disabled { opacity: .4; cursor: default; }
 
-.cc-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr)); gap: 12px; }
+.cc-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }  /* every page has a multiple of 4 tiles */
+@media (max-width: 1100px) { .cc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .cc-tile { display: grid; gap: 6px; align-content: start; text-align: left; font: inherit; color: inherit;
   background: var(--cc-panel); border: 1px solid var(--cc-line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
 button.cc-tile { cursor: pointer; transition: border-color .15s, background .15s; }
@@ -38,10 +39,11 @@ button.cc-tile:hover { background: var(--cc-raise); }
 
 .cc-src { display: block; font-size: 12px; line-height: 1.35; color: var(--cc-muted); overflow-wrap: anywhere; }
 .cc-src i { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--cc-ok); transform: translateY(-1px); }
-.cc-src.is-stale i, .cc-src.is-missing i { background: var(--cc-warn); }
-.cc-src.is-stale, .cc-src.is-missing { color: var(--cc-warn); }
-.cc-src.is-failed i { background: var(--cc-bad); }
-.cc-src.is-failed { color: var(--cc-bad); }
+/* Read states: late and never synced are amber, out of date (three refreshes missed) and failed are red. Only ok is not flagged. */
+.cc-src.is-late i, .cc-src.is-missing i { background: var(--cc-warn); }
+.cc-src.is-late, .cc-src.is-missing { color: var(--cc-warn); }
+.cc-src.is-failed i, .cc-src.is-stale i { background: var(--cc-bad); }
+.cc-src.is-failed, .cc-src.is-stale { color: var(--cc-bad); }
 .cc-src b { font-weight: 600; }
 
 .cc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 14px; align-items: start; }
@@ -81,7 +83,7 @@ button.cc-tile:hover { background: var(--cc-raise); }
 .cc-seg { display: inline-flex; gap: 4px; align-items: center; }
 .cc-range { min-width: 11rem; text-align: center; font-variant-numeric: tabular-nums; }
 .cc-filters { display: flex; flex-wrap: wrap; gap: 6px; }
-.cc-filter[aria-pressed="false"] { opacity: .6; text-decoration: line-through; }
+.cc-filter[aria-pressed="false"] { opacity: .6; }
 .cc-filter b { font-weight: 500; color: var(--cc-muted); margin-left: 4px; }
 .cc-days { display: grid; gap: 8px; }
 .cc-days.week { grid-template-columns: repeat(7, minmax(0, 1fr)); }
@@ -107,7 +109,7 @@ button.cc-tile:hover { background: var(--cc-raise); }
 .cc-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: 14px; }
 .cc-kbar { position: relative; height: 10px; border-radius: 999px; background: var(--cc-raise); overflow: visible; }
 .cc-kbar i { display: block; height: 100%; border-radius: 999px; background: var(--cc-coral); }
-.cc-kbar s { position: absolute; top: -4px; width: 2px; height: 18px; background: var(--cc-tan); }
+.cc-kbar .cc-kbar-pace { position: absolute; top: -4px; width: 2px; height: 18px; background: var(--cc-tan); }
 .cc-pace { margin: 0; font-size: 13px; }
 .cc-pace.is-ahead { color: var(--cc-ok); }
 .cc-pace.is-behind { color: var(--cc-warn); }
@@ -137,14 +139,13 @@ button.cc-tile:hover { background: var(--cc-raise); }
 .cc-banner ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; }
 .cc-banner button { justify-self: start; font: inherit; font-size: 13px; color: var(--cc-text); background: var(--cc-raise); border: 1px solid var(--cc-line); border-radius: 999px; padding: 7px 14px; min-height: 36px; cursor: pointer; }
 .cc-state { font-size: 12px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--cc-line); white-space: nowrap; }
-.cc-state.s-ok { color: var(--cc-ok); border-color: rgba(127, 208, 160, .5); }
-.cc-state.s-stale, .cc-state.s-missing { color: var(--cc-warn); border-color: rgba(255, 181, 71, .5); }
-.cc-state.s-failed { color: var(--cc-bad); border-color: rgba(255, 138, 112, .5); }
+.cc-state.s-ok { color: var(--cc-ok); border-color: rgba(200, 181, 150, .5); }
+.cc-state.s-late, .cc-state.s-missing { color: var(--cc-warn); border-color: rgba(255, 181, 71, .5); }
+.cc-state.s-failed, .cc-state.s-stale { color: var(--cc-bad); border-color: rgba(255, 138, 112, .5); }
 
 /* Color by kind, on the calendar and on deadlines. Each color is legible on the dark panel; the label always says the kind too. */
-.k-closing { --k: #e87757; } .k-deadline { --k: #ffb547; } .k-finance { --k: #6fcfb8; } .k-inspection { --k: #b9a3e3; }
-.k-showing { --k: #7fd0a0; } .k-listing { --k: #c8b596; } .k-client { --k: #8ab4f8; } .k-block { --k: #8a837b; }
-.k-personal { --k: #e29ac0; } .k-other { --k: #a8a097; }
+.k-closing, .k-deadline { --k: #e87757; } .k-sale { --k: #3ecf8e; } .k-inspection { --k: #f5b041; } .k-finance { --k: #4ea8ff; } .k-showing, .k-listing, .k-client { --k: #c8b596; }
+.k-block, .k-personal, .k-other { --k: #aaa298; }
 .cc-ev[class*="k-"] { border-left: 4px solid var(--k); background: color-mix(in srgb, var(--k) 11%, transparent); margin-bottom: 3px; }
 .cc-ev[class*="k-"]:hover { background: color-mix(in srgb, var(--k) 20%, transparent); }
 .cc-ev[class*="k-"].is-soon { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--k) 60%, transparent); }
@@ -162,7 +163,7 @@ button.cc-tile:hover { background: var(--cc-raise); }
 @media (max-width: 560px) { .cc-dayview .cc-ev { grid-template-columns: 5rem minmax(0, 1fr); font-size: 16px; } }
 
 /* Lead cards: a color per lead, full contact details, everything the lead email carried */
-.cc-lead { border-left: 4px solid var(--av); background: linear-gradient(135deg, color-mix(in srgb, var(--av) 10%, var(--cc-raise)), var(--cc-raise) 55%); gap: 12px; padding: 16px 18px; }
+.cc-lead { border: 1px solid var(--cc-line); border-left: 3px solid var(--av); background: var(--cc-raise); border-radius: 12px; gap: 12px; padding: 16px 18px; }  /* flat, like every other card */
 .cc-lead-top { display: flex; gap: 14px; align-items: center; }
 .cc-av { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--av); color: #160c08; font-weight: 700; font-size: 17px; letter-spacing: .02em; }
 .cc-lead-id { display: grid; gap: 6px; min-width: 0; }
@@ -205,7 +206,7 @@ button.cc-tile:hover { background: var(--cc-raise); }
 .cc-wday h3 { margin: 0; font-size: 13px; color: var(--cc-muted); display: grid; } .cc-wday h3 small { font-weight: 400; }
 .cc-wday b { font-weight: 600; } .cc-wday > small { font-size: 12px; color: var(--cc-muted); overflow-wrap: anywhere; }
 .cc-wday.is-today { border-color: var(--cc-coral); } .cc-wday.is-today h3 { color: var(--cc-coral); }
-.cc-wday.is-done { background: color-mix(in srgb, #7fd0a0 10%, var(--cc-raise)); }
+.cc-wday.is-done { background: color-mix(in srgb, #c8b596 10%, var(--cc-raise)); }
 .cc-wday .cc-pill { justify-self: start; }
 .cc-big { margin: 0; font: 400 30px/1.1 "Iowan Old Style", Palatino, Georgia, serif; }
 .cc-goals select { font: inherit; color: var(--cc-text); background: var(--cc-ink); border: 1px solid var(--cc-line); border-radius: 10px; padding: 9px 11px; min-height: 40px; color-scheme: dark; }
@@ -229,3 +230,6 @@ button.cc-tile:hover { background: var(--cc-raise); }
 .cc-steps li > span { grid-row: span 2; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; color: var(--k); border: 1.5px solid var(--k); }
 .cc-steps small { color: var(--cc-muted); font-size: 12px; }
 .cc-next { margin: 0; font-size: 13px; } .cc-next b { color: var(--cc-coral); }
+
+/* The source line at the top of a list page, the same as its footer. */
+.cc-srcline { margin: 0 0 10px; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; }
