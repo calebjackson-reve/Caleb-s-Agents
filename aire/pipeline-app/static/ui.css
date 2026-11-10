@@ -357,3 +357,22 @@ body[data-sec="numbers"] { --sec: var(--c-green); } body[data-sec="you"] { --sec
 .cc-deals { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
 /* Phone: tiles two to a row, so the Today list is a short scroll away. */
 @media (max-width: 720px) { .cc-tiles { grid-template-columns: 1fr 1fr; gap: 8px; } .cc-tile { padding: 10px; } .cc-tile .cc-num { font-size: 24px; } }
+
+/* ---------- Grok: the panel in the compose box, in the same card, pill and button language as the rest */
+.grok { border: 1px solid var(--cc-line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; background: rgba(255, 255, 255, .02); }
+.grok header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.grok h4 { margin: 0; font: 600 15px var(--sans); color: var(--cc-text, inherit); }
+.grok .seg { align-self: start; justify-self: start; }
+.grok-how { margin: 0; font-size: 12px; line-height: 1.45; color: var(--cc-muted); }
+.grok-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.grok-foot small { font-size: 12px; color: var(--cc-muted); }
+.grok-foot button:disabled { opacity: .5; cursor: not-allowed; }
+.grok-status { border-radius: 10px; padding: 10px 12px; border: 1px solid var(--cc-line); display: grid; gap: 8px; font-size: 13px; line-height: 1.45; }
+.grok-status b { font-weight: 600; }
+.grok-status p { margin: 0; white-space: pre-wrap; }
+.grok-status.ok { border-color: var(--cc-tan); }
+.grok-status.wait { border-color: rgba(255, 181, 71, .45); }
+.grok-status.bad { border-color: var(--cc-coral); }
+.grok-status button { justify-self: start; }
+/* The compose box was a fixed 520px, so a phone showed only its right half. */
+@media (max-width: 560px) { .drawer { left: 8px; right: 8px; top: 8px; bottom: 8px; width: auto; } }

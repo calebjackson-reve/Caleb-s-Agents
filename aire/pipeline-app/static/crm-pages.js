@@ -305,5 +305,29 @@
     return page('Search', `${n} match${n === 1 ? '' : 'es'} for “${esc(q)}”.`, body, ['crm', 'deals', 'leads']);
   }
 
-  Object.assign(C.views, { touches, tasks, deals, queue, sent, search });
+  // ---------------- Grok: every call and hard draft handed to Grok, newest first, and what each one needs from Caleb
+  function grok() {
+    const b = S.data.bridge || {}, rows = b.recent || [], dry = S.data.demo || b.caller !== 'live';
+    const WORD = { 'dry-run': 'Dry run, nothing left the Mac', waiting: 'Waiting on you', dial_card_shown: 'Waiting on you', completed: 'Call done', draft_ready: 'Draft ready',
+      expired: 'Expired, no call made', canceled: 'Canceled, no call made', post_failed: 'Grok did not take it', failed: 'Failed' };
+    const tone = j => ({ completed: 'k-listing', draft_ready: 'k-listing', waiting: 'k-closing', dial_card_shown: 'k-closing' }[j.state] || 'k-other');
+    const need = j => j.state === 'waiting' || j.state === 'dial_card_shown'
+      ? (j.job_type === 'call' ? 'Open Grok and tap the Call card. It lasts 30 minutes.' : 'Grok is writing it. It shows here when it is ready.')
+      : j.state === 'draft_ready' ? 'Open it, read it, and send it yourself.' : '';
+    const row = j => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${j.job_type === 'call' ? '✆' : '✎'}</span>
+      <div class="cc-row-main"><h3>${C.who(j.display || 'No name')}</h3>
+        <div class="cc-pills"><span class="cc-pill ${tone(j)}">${esc(WORD[j.state] || j.state)}</span><span class="cc-pill k-other">${j.job_type === 'call' ? esc((b.purposes || {})[j.purpose] || 'Call') : 'Hard draft'}</span></div>
+        <p class="cc-note">${esc(textWhen(j.at))}${j.to ? ' · to ' + C.ph(j.to) : ''}${need(j) ? ' · ' + esc(need(j)) : ''}</p>
+        ${j.ask ? `<p class="cc-row-why">You asked: ${C.note(j.ask, [j.display], 'Request hidden')}</p>` : ''}
+        ${j.job_type === 'call' && (j.summary || j.outcome) ? `<p class="cc-row-why">${C.note([j.outcome, j.summary].filter(Boolean).join('. '), [j.display], 'Result hidden')}</p>` : ''}
+        ${j.draft_text ? `<p class="cc-row-why">${C.note(j.draft_text, [j.display], 'Draft hidden')}</p>` : ''}
+        ${j.touch_error ? `<p class="cc-note">Not logged in the CRM: ${esc(j.touch_error)}</p>` : ''}</div>
+      <div class="cc-acts"><button type="button" class="${j.state === 'draft_ready' ? 'cc-primary' : ''}" onclick="openGrok('${esc(j.person_id)}', '${j.job_type === 'call' ? 'call' : 'draft'}')">${j.state === 'draft_ready' ? 'Open the draft' : 'Open'}</button></div></li>`;
+    const open = rows.filter(j => ['waiting', 'dial_card_shown', 'draft_ready'].includes(j.state)), rest = rows.filter(j => !open.includes(j));
+    const body = !rows.length ? C.empty('Nothing has been handed to Grok yet. Use the Call button on a card, or the Grok panel in any message box.')
+      : `<h3 class="cc-sub-h">Needs you <span class="cc-count">${open.length}</span></h3>${open.length ? `<ul class="cc-rows">${open.map(row).join('')}</ul>` : C.empty('Nothing is waiting on you.')}
+         ${rest.length ? `<h3 class="cc-sub-h">Earlier <span class="cc-count">${rest.length}</span></h3><ul class="cc-rows">${rest.map(row).join('')}</ul>` : ''}`;
+    return page('Grok calls', `Calls and hard drafts handed to Grok. ${dry ? 'Dry run: jobs are logged here and nothing leaves the Mac.' : 'Live: jobs go to Grok.'} ${b.calls_24h || 0} of ${b.calls_cap || 10} calls in the last 24 hours, ${b.drafts_today || 0} of ${b.drafts_cap || 10} hard drafts today. Grok never sends a text or email, and nothing dials until you tap its Call card.`, body, ['sends']);
+  }
+  Object.assign(C.views, { touches, tasks, deals, queue, sent, grok, search });
 })();

@@ -1064,7 +1064,16 @@ class State:
         since = (at.timestamp() - 86400)
         calls = sum(1 for e in log if e["job_type"] == "call" and e["status"] == "posted" and datetime.fromisoformat(e["at"]).timestamp() > since)
         drafts = sum(1 for e in log if e["job_type"] == "hard_draft" and e["at"][:10] == at.date().isoformat())
-        return {"caller": self.caller, "purposes": bridge.PURPOSES, "jobs": jobs,
+        recent = [{"job_id": e["job_id"], "job_type": e["job_type"], "at": e["at"], "person_id": e["person_id"], "display": e.get("display", ""),
+                   "to": e.get("to", ""), **{k: jobs[e["person_id"]][k] for k in ("state", "outcome", "summary", "draft_text", "touch_error")
+                                             if jobs[e["person_id"]]["job_id"] == e["job_id"]},
+                   "purpose": e.get("purpose", ""), "ask": e.get("ask", "")} for e in reversed(log[-40:])]
+        for r, e in zip(recent, reversed(log[-40:])):  # an older job for the same person keeps its own state
+            if "state" not in r:
+                res = e.get("result") or {}
+                r.update(state=res.get("status") or ("expired" if bridge.card_expired(e, at) else "waiting" if e.get("status") == "posted" else e.get("status")),
+                         outcome=res.get("outcome", ""), summary=res.get("summary", ""), draft_text=res.get("draft_text"), touch_error=e.get("touch_error", ""))
+        return {"caller": self.caller, "purposes": bridge.PURPOSES, "jobs": jobs, "recent": recent,
                 "calls_24h": calls, "calls_cap": bridge.MAX_CALLS_24H, "drafts_today": drafts, "drafts_cap": self.max_hard_drafts}
     # ---- hand-off: Caleb sends it himself in Messages or Gmail, Pipeline finds out (handoff.py)
     def opened(self, kind: str, person_id: str, to: str, body: str, subject: str = "", display: str = "", draft: str = "", pool: str = "") -> dict:
@@ -1783,6 +1792,8 @@ def run_tests() -> int:
     r = br.bridge_job("call", "247", "Taylor Sample", "(225) 555-0100", purpose="showing_confirmation", objective="Confirm tomorrow's 2 pm showing.")
     check(r["ok"] and r["result"]["status"] == "dry-run" and r["result"]["to"] == "+12255550100", "a demo call job is a dry run and leaves nothing")
     v = br.snapshot()["bridge"]
+    check(v["recent"][0]["person_id"] == "247" and v["recent"][0]["state"] == "dry-run" and v["recent"][0]["display"] == "Taylor Sample",
+          "the Grok page gets the recent jobs, newest first")
     check(v["caller"] == "dry" and v["jobs"]["247"]["state"] == "dry-run" and v["calls_24h"] == 0 and "webhook" not in json.dumps(v).lower(),
           "the screen sees the dry job, no call is counted, no webhook detail is in the state")
     br.dnc("401", "asked us to stop")

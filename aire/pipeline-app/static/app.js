@@ -87,6 +87,7 @@ function contactBtns(id, row) {
   const ph = normPhone(row.phone), em = validEmail(row.email);
   const off = (label, why) => `<button type="button" class="cc-off" disabled aria-disabled="true" title="${esc(why)}">${label}<small>${esc(why)}</small></button>`;
   return (ph ? `<button type="button" class="text-btn" onclick="openContact('text', '${esc(key)}')" title="Opens the message to check first. Nothing goes until you press send.">Text</button>` : off('Text', phoneWhy(row.phone)))
+    + (ph && id ? `<button type="button" onclick="openGrok('${esc(key)}', 'call')" title="Grok places the call. Nothing dials until you tap the Call card in Grok.">Call</button>` : '')
     + (em ? `<button type="button" onclick="openContact('email', '${esc(key)}')" title="Opens the email to check first. Nothing goes until you press Send in Gmail.">Email</button>` : off('Email', row.email ? 'Not a valid email' : 'No email on file'));
 }
 const textBtn = contactBtns;  // the old name, used by every card
@@ -122,25 +123,45 @@ function grokText(j) {
 }
 function grokStatus(id) {
   const j = grokJob(id); if (!j) return '';
-  const cls = { completed: 'ok', draft_ready: 'ok', waiting: 'wait', dial_card_shown: 'wait', 'dry-run': 'wait' }[j.state] || 'bad';
-  return `<span class="txs ${cls}" title="${esc(j.ask || '')}"><i></i>${esc(grokText(j))}</span>`;
+  return `<span class="txs ${grokTone(j)}"><i></i>${esc(grokText(hid() ? { ...j, summary: '' } : j))}</span>`;
 }
+// Jobs that still want something from Caleb: a Call card to tap, or a draft to read.
+function grokOpen() { return (((S.data && S.data.bridge) || {}).recent || []).filter(j => ['waiting', 'dial_card_shown', 'draft_ready'].includes(j.state)); }
+// The Grok panel in the compose box. Two tabs, one job each. Names, drafts and summaries follow the privacy switch.
 function grokBlock(c, row) {
   const b = (S.data && S.data.bridge) || {}, j = grokJob(c.person_id), dry = S.data.demo || b.caller !== 'live';
-  const opts = Object.entries(b.purposes || {}).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
-  const phone = row.phone || (c.kind === 'text' ? c.to : '');
-  return `<div class="field"><label>GROK · CALL OR HARD DRAFT${dry ? ' · dry run' : ''}</label>
-    ${j ? `<div class="bubble note">${esc(grokText(j))}${j.draft_text ? `<br>${esc(j.draft_text)}<br><button class="ghost-btn" onclick="useGrokDraft()">Use this draft</button>` : ''}</div>` : ''}
-    <input id="g-ask" placeholder="One line: what the call or the draft has to do">
-    <select id="g-purpose" title="What the call is for">${opts}</select>
-    <div class="hint"><span>${b.calls_24h || 0} of ${b.calls_cap || 10} calls in 24h</span><span>${b.drafts_today || 0} of ${b.drafts_cap || 10} hard drafts today</span></div>
-    <div class="acts"><button onclick="grokCall()" ${phone ? '' : 'disabled'} title="Grok shows you a Call card. Nothing dials until you tap it.">☎ Call through Grok</button><button onclick="grokDraft()" title="Grok writes it. You still press SEND here.">✎ Hard draft from Grok</button></div></div>`;
+  const mode = S.grokMode === 'draft' ? 'draft' : 'call';
+  const opts = Object.entries(b.purposes || {}).map(([k, v]) => `<option value="${k}"${S.grokPurpose === k ? ' selected' : ''}>${esc(v)}</option>`).join('');
+  const phone = normPhone(row.phone || (c.kind === 'text' ? c.to : ''));
+  const left = mode === 'call' ? `${b.calls_24h || 0} of ${b.calls_cap || 10} calls in the last 24 hours` : `${b.drafts_today || 0} of ${b.drafts_cap || 10} hard drafts today`;
+  const status = !j ? '' : `<div class="grok-status ${grokTone(j)}"><b>${esc(hid() ? grokText({ ...j, summary: '', outcome: j.outcome }) : grokText(j))}</b>${j.draft_text ? (hid() ? '<p class="cc-hid">Draft hidden · press the H key to read it</p>' : `<p>${esc(j.draft_text)}</p>`) + '<button type="button" class="cc-primary" onclick="useGrokDraft()">Use this draft</button>' : ''}</div>`;
+  return `<section class="grok" id="grok-panel" aria-label="Grok">
+    <header><h4>Grok</h4><span class="cc-pill ${dry ? 'k-other' : 'k-listing'}">${dry ? 'Dry run, nothing leaves the Mac' : 'Live'}</span></header>
+    <div class="seg" role="tablist"><button type="button" role="tab" aria-selected="${mode === 'call'}" class="${mode === 'call' ? 'on' : ''}" onclick="grokTab('call')">Call</button><button type="button" role="tab" aria-selected="${mode === 'draft'}" class="${mode === 'draft' ? 'on' : ''}" onclick="grokTab('draft')">Hard draft</button></div>
+    ${status}
+    ${mode === 'call'
+      ? `<div class="field"><label for="g-purpose">What the call is for</label><select id="g-purpose">${opts}</select></div>
+         <div class="field"><label for="g-ask">What it should get done</label><input id="g-ask" placeholder="Confirm tomorrow's 2 pm showing" value="${esc(S.grokAsk || '')}"></div>
+         <p class="grok-how">Grok shows a Call card in its own chat. Nothing dials until you tap it. The card lasts 30 minutes, and Grok says it is a virtual assistant.</p>
+         <div class="grok-foot"><button type="button" class="cc-primary" onclick="grokCall()" ${phone ? '' : 'disabled'}>Ask Grok to call</button><small>${phone ? left : 'No valid number on file'}</small></div>`
+      : `<div class="field"><label for="g-ask">What the message has to do</label><input id="g-ask" placeholder="Upset about the inspection list. Calm, no promises." value="${esc(S.grokAsk || '')}"></div>
+         <p class="grok-how">Grok writes it and it shows here. Nothing is sent until you send it yourself.</p>
+         <div class="grok-foot"><button type="button" class="cc-primary" onclick="grokDraft()">Ask Grok for a draft</button><small>${left}</small></div>`}
+  </section>`;
+}
+const grokTone = j => ({ completed: 'ok', draft_ready: 'ok', waiting: 'wait', dial_card_shown: 'wait', 'dry-run': 'wait' }[j.state] || 'bad');
+function grokKeep() { const a = $('#g-ask'), p = $('#g-purpose'), t = $('#c-body'); if (a) S.grokAsk = a.value; if (p) S.grokPurpose = p.value; if (t && S.compose) S.compose.body = t.value; }
+function grokTab(m) { grokKeep(); S.grokMode = m; renderDrawer(); const a = $('#g-ask'); if (a) a.focus(); }
+// The Call button on a card: the compose box opens with the Grok panel on the Call tab and in view.
+function openGrok(id, mode) {
+  S.grokMode = mode || 'call'; S.grokAsk = ''; openCompose(id); if (!S.compose) return;
+  const p = $('#grok-panel'); if (p) { p.scrollIntoView({ block: 'center' }); const a = $('#g-ask'); if (a) a.focus({ preventScroll: true }); }
 }
 async function grokSend(path, body, okText) {
   const r = await api(path, body);
   if (!r.ok) { toast('err', 'NOT ASKED', r.error); return; }
   toast(r.result.status === 'posted' ? 'ok' : 'warn', r.result.status === 'posted' ? 'GROK' : 'DRY RUN', r.result.status === 'posted' ? okText : 'job logged, nothing left the Mac');
-  const keep = $('#c-body') ? $('#c-body').value : ''; await load(); if (S.compose) { S.compose.body = keep; renderDrawer(); }
+  grokKeep(); S.grokAsk = ''; await load(); if (S.compose) renderDrawer();
 }
 function grokCall() { const c = S.compose, row = c.row || {}; return grokSend('/api/call', { person_id: c.person_id, display: c.name, to: row.phone || c.to, purpose: $('#g-purpose').value, objective: $('#g-ask').value, context: c.next_action || row.next_action || '' }, 'Open Grok and tap the Call card within 30 minutes.'); }
 function grokDraft() { const c = S.compose, row = c.row || {}; return grokSend('/api/draft/escalate', { person_id: c.person_id, display: c.name, instructions: $('#g-ask').value, context: [c.next_action || row.next_action || '', ...(c.last_messages || [])].filter(Boolean).join(' | ').slice(0, 1200) }, 'Grok is writing it. It shows here when it is ready.'); }
@@ -249,7 +270,7 @@ function countUp(el) {
 }
 // The nav, in groups, one distinct icon each. KEYS: the number keys open the same pages, in this order.
 const NAV = [
-  ['Today', [['dash', '◧', 'Dashboard'], ['touches', '☎', 'Touches due'], ['tasks', '☑', 'Tasks'], ['queue', '✎', 'Drafts'], ['sent', '➚', 'Sent today']]],
+  ['Today', [['dash', '◧', 'Dashboard'], ['touches', '☎', 'Touches due'], ['tasks', '☑', 'Tasks'], ['queue', '✎', 'Drafts'], ['sent', '➚', 'Sent today'], ['grok', '✆', 'Grok calls']]],
   ['People', [['ccleads', '✚', 'Leads'], ['map', '⌖', 'Map']]],
   ['Deals', [['deals', '⌂', 'Deals'], ['commission', '$', 'Commission'], ['deadlines', '⚑', 'Deadlines'], ['calendar', '▦', 'Calendar']]],
   ['Numbers', [['scorecard', '▲', 'Scorecard'], ['ccmarket', '◆', 'Market'], ['monitor', '⚒', 'Listings and permits'], ['news', '▤', 'News'], ['bank', '◫', 'Bank']]],
@@ -264,7 +285,8 @@ function renderNav(c) {
   const cnt = { commission: [np, np > 0], deadlines: [cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0], ccleads: [cd ? (cd.lead_counts || {}).d14 ?? cd.leads.length : 0, false],
     sources: [window.CC && CC.data && CC.attention ? CC.attention().length : 0, true],
     touches: [td.length, td.some(r => r.owes_reply)], tasks: [(feed().tasks || []).length, c.tasks_overdue > 0], deals: [cd ? cd.deals.filter(r => !['closed', 'out'].includes(r.stage)).length : 0, false],
-    queue: [dr.length, false], sent: [(S.data.sent_today || []).filter(s => s.status === 'sent').length, false] };
+    queue: [dr.length, false], sent: [(S.data.sent_today || []).filter(s => s.status === 'sent').length, false],
+    grok: [grokOpen().length, grokOpen().some(j => j.state === 'waiting' || j.state === 'dial_card_shown')] };
   const view = { cc: 'dash', leads: 'ccleads', market: 'monitor', dealmap: 'deals' }[S.view] || S.view;
   // Each group has its color; the page takes the color of the group it is in (ui.css, the color code).
   const sec = (NAV.find(([, items]) => items.some(([k]) => k === view)) || ['Today'])[0].toLowerCase();

@@ -98,10 +98,12 @@ After a real send the engine logs it with `touch`, so the person drops off tomor
 
 Contract: `CONTRACT-grok-bridge.md`. Code: `bridge.py` (28 offline checks, `python3 aire/pipeline-app/bridge.py --test`) and `State.bridge_job()` in `app.py`.
 
-The compose box has a GROK block under the draft. Type one line saying what the call or the draft has to do, then:
+Where it shows on screen (2026-11-10): every card with a valid number and a CRM id has a **Call** button next to Text and Email. The message box has a Grok panel under the draft with two tabs, Call and Hard draft. **Grok calls** in the Today group of the menu lists every job, with the ones that need Caleb first and a count on the menu. Names, numbers, drafts and call summaries follow the privacy switch. On a phone the message box now fits the screen.
 
-- **Call through Grok** posts a `call` job to Grok bot's webhook routine. Grok shows its own Call card in its chat. Nothing dials until Caleb taps that card, and the card lasts 30 minutes. So a call is two taps on purpose.
-- **Hard draft from Grok** posts a `hard_draft` job. When Grok's draft comes back it shows in the block with **Use this draft**, which fills the compose box. It goes out only through SEND and every send gate. Grok never sends a text or email.
+In the panel, type one line saying what the call or the draft has to do, then:
+
+- **Ask Grok to call** posts a `call` job to Grok bot's webhook routine. Grok shows its own Call card in its chat. Nothing dials until Caleb taps that card, and the card lasts 30 minutes. So a call is two taps on purpose.
+- **Ask Grok for a draft** posts a `hard_draft` job. When Grok's draft comes back it shows in the block with **Use this draft**, which fills the compose box. It goes out only through SEND and every send gate. Grok never sends a text or email.
 
 Gates before a job leaves: Do Not Contact (the engine's own check), quiet hours for calls with no exception, a purpose from the short list (confirm a showing, appointment reminder, a callback they asked for, open the call then hand to Caleb), Grok's limits (10 calls in 24 hours, 4 to one number, United States numbers, no Washington or Illinois area codes, a script of 2,000 characters at most), and 10 hard drafts a day.
 
