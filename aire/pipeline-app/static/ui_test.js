@@ -23,7 +23,7 @@ ctx.window = ctx;
 ctx.document = { querySelector: () => el(), querySelectorAll: () => [], getElementById: () => el(), addEventListener() {}, createElement: () => el(), activeElement: null, body: el(), documentElement: el() };
 vm.createContext(ctx);
 const dir = __dirname;
-for (const f of ['voice.js', 'app.js', 'cc.js', 'cc-pages.js', 'crm-pages.js', 'map.js', 'mapviews.js', 'cc-score.js', 'cc-life.js', 'cc-today.js', 'cc-sources.js'])
+for (const f of ['voice.js', 'app.js', 'cc.js', 'cc-pages.js', 'crm-pages.js', 'map.js', 'mapviews.js', 'stage.js', 'cc-score.js', 'cc-life.js', 'cc-today.js', 'cc-sources.js'])
   vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8'), ctx, { filename: f });
 ctx.__state = state; ctx.__cc = ccdata;
 const run = js => vm.runInContext(js, ctx);
@@ -104,9 +104,11 @@ check(kcolors.length && kcolors.every(c => PALETTE.includes(c)), 'tag colors com
 check(!/text-decoration:\s*line-through/.test(ui) && /cc-filter\[aria-pressed="false"\][^}]*text-decoration:\s*none/.test(ui), 'filter chips are never struck through');
 // 9. No particle orb.
 check(!fs.existsSync(path.join(dir, 'core.js')) && !fs.readFileSync(path.join(dir, 'index.html'), 'utf8').includes('src="core.js"'), 'the particle core is gone');
-// 6. Map tiles come from a source that allows apps.
+// 6. The map's finished surface is Pipeline's own drawing, not street tiles (look approved 2026-11-10). Satellite, from a
+// source that allows apps, stays as an option for drawing a farm.
 const mapjs = fs.readFileSync(path.join(dir, 'map.js'), 'utf8');
-check(!mapjs.includes('tile.openstreetmap.org/${z}') && mapjs.includes('basemap.nationalmap.gov/arcgis/rest/services/USGSTopo'), 'street tiles are USGS, not tile.openstreetmap.org');
+check(!mapjs.includes('tile.openstreetmap.org') && !mapjs.includes('USGSTopo') && !/cartocdn|googleapis\.com\/maps|mapbox/i.test(mapjs) && /paper: \{ url: null/.test(mapjs) && /base: opts\.base \|\| 'paper'/.test(mapjs), 'the map opens on the drawn basemap, with no street tiles');
+check(mapjs.includes('basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly'), 'satellite imagery is USGS, a source that allows apps');
 check(/function drawLabels/.test(mapjs) && /hit\(b\)/.test(mapjs), 'area labels are placed so they never overlap');
 // 14 and 17: no arrow on 0%, and a photo-only text says so.
 check(!/▲ 0%|▼ 0%/.test(render('ccmarket', false)), 'no arrow on 0%');
@@ -201,9 +203,9 @@ check(/onclick="CC\.addLead\(\)"/.test(render('dash', true)) && /onclick="CC\.ad
   run('S.data = __state');
 }
 
-// Round 2, item 7: street tiles that keep failing switch the map to Satellite by itself.
-check(run('PMap.streetFailing(6, 0)') && run('PMap.streetFailing(9, 3)') && !run('PMap.streetFailing(5, 0)') && !run('PMap.streetFailing(6, 30)'), 'street tiles failing six times with none drawn switch the map to Satellite');
-check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')) && /Street tiles didn't load, so this is Satellite/.test(mapjs), 'the switch is remembered and the map says why');
+// Round 2, item 7 (street tiles that fail switch to Satellite) is retired with the street tiles: the drawn basemap needs
+// no network, so there is nothing to fall back from. The two surfaces are still one tap apart.
+check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')) && /mapBase\('paper'\)/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')) && /mapBase\('sat'\)/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')), 'the drawn map and Satellite are both one tap away, and no tile fallback is left over');
 
 // Round 2, item 8: the header search works from every page and says No match when nothing is found.
 {
@@ -218,7 +220,7 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
     check(/No match for “zzqx no such thing”/.test(run(`CC.priv = true; CC.views[${JSON.stringify(v)}]()`)), `${v}: an empty search says No match`);
   run(`S.q = ''`);
   const own = run('CC.SEARCHES_ITSELF'), nonList = views.filter(v => !own.includes(v) && v !== 'search');
-  check(nonList.length > 5 && /S\.view = 'search'/.test(appjs) && /S\.before \|\| 'dash'/.test(appjs), 'typing on a page with no list opens Search, clearing it goes back');
+  check(nonList.length > 5 && /S\.view = 'search'/.test(appjs) && /S\.before \|\| 'home'/.test(appjs), 'typing on a page with no list opens Search, clearing it goes back');
 }
 
 // Round 2, item 9: one owe-a-reply number. Touches due's count shows on the Dashboard, Touches due and Drafts, even when
@@ -284,7 +286,9 @@ check(/onBase: b =>/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')
     if (mx === mn) return null; const sat = l > .5 ? (mx - mn) / (2 - mx - mn) : (mx - mn) / (mx + mn); if (sat < .3 || l < .15 || l > .93) return null;
     let h = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4; h *= 60; return h < 0 ? h + 360 : h; };
   const coolIn = f => (fs.readFileSync(path.join(dir, f), 'utf8').match(/#[0-9a-f]{6}\b/gi) || []).filter(c => { const h = hueOf(c); return h !== null && h >= 75 && h <= 290; });
-  const cool = ['ui.css', 'cc.css', 'map.js'].flatMap(f => coolIn(f).filter(c => !PALETTE.includes(c.toLowerCase())).map(c => f + ' ' + c));
+  // The light look adds the seven stage colors (stage.js). Those and the older color code are the only cool colors anywhere.
+  const STAGE_HEX = run('Stage.TABS.map(t => t[1].toLowerCase())');
+  const cool = ['ui.css', 'cc.css', 'map.js', 'mapviews.js', 'stage.js', 'light.css'].flatMap(f => coolIn(f).filter(c => !PALETTE.includes(c.toLowerCase()) && !STAGE_HEX.includes(c.toLowerCase())).map(c => f + ' ' + c));
   check(!cool.length, 'no blue or green outside the color code, in the page styles or the map pins', cool.join(' '));
   const cssAll = ['ui.css', 'cc.css', 'app.css'].map(x => fs.readFileSync(path.join(dir, x), 'utf8')).join('\n');
   check(!/line-through/.test(cssAll), 'no strikethrough rule anywhere');
@@ -478,7 +482,7 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
   const obs = obstacles.map(o => ({ x0: o.x - o.r, x1: o.x + o.r, y0: o.y - o.r, y1: o.y + o.r }));
   const bad = placed.some((a, i) => placed.some((b, j) => i !== j && ov(a, b)) || obs.some(o => ov(a, o)));
   check(!bad && placed.length >= 2 && !placed.some(p => p.name === 'Boxed in'), 'map labels never overlap each other or a pin, and a boxed-in label is left off', placed.map(p => p.name).join(' | '));
-  check(/drawLabels\(farmLabels\);\s*cancelAnimationFrame/.test(mapjs) && !/rgba\(8,22,46/.test(mapjs), 'labels are drawn after the pins, and clusters are not navy');
+  check(/drawLabels\(farmLabels\);\s*cancelAnimationFrame/.test(mapjs) && !/rgba\(8,22,46/.test(mapjs) && !/CLUSTER_PAST|cluster:/.test(mapjs), 'labels are drawn after the pins, and no pins are merged into numbered discs');
 }
 
 // Round 3, items 13 and 14 and one source line: no scrollbar line under the phone nav, News names its source once at the
@@ -686,6 +690,55 @@ check(run(`(() => { const r = { what: 'Act of sale' }; return 1; })()`) === 1 &&
 
 check(/strip = \$\('#nav'\)/.test(appjs) && /strip\.scrollLeft \+=/.test(appjs), 'the phone nav strip scrolls to the page you are on');
 check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1fr;/.test(ui) && /\.cc-kpi > footer \{ margin-top: auto; \}/.test(ui), 'phone tiles sit two to a row and Scorecard cards line up');
+
+// The light look (approved 2026-11-10): Home, Map and People on an ivory canvas, one bold color per CRM stage.
+{
+  const stagejs = fs.readFileSync(path.join(dir, 'stage.js'), 'utf8'), light = fs.readFileSync(path.join(dir, 'light.css'), 'utf8'), mv = fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8');
+  const crm = fs.readFileSync(path.join(dir, '..', '..', 'crm', 'crm.py'), 'utf8'), SEVEN = JSON.parse((crm.match(/^STAGES = (\[[^\]]+\])/m) || [])[1] || '[]');
+  const WANT = { 'new lead': '#F5C518', contacted: '#3A8FDD', nurture: '#2DB87A', 'showing scheduled': '#8B5CF6', 'under contract': '#E87757', closed: '#14100E', 'past client': '#D4537E' };
+  const tabs = run('Stage.TABS');
+  check(SEVEN.length === 7 && JSON.stringify(tabs.map(t => t[0])) === JSON.stringify(SEVEN), 'the stage tabs are the CRM writer\'s seven stages, same names, same order', tabs.map(t => t[0]).join(', '));
+  check(tabs.every(t => WANT[t[0]] === t[1]), 'each stage has its approved color');
+  check(tabs.every(t => new RegExp(`\\.stg-${t[0].replace(/ /g, '-')} \\{ --stg: ${t[1]}; --stg-ink: ${t[2]}; \\}`).test(light)), 'the stylesheet carries the same stage hexes and type colors as the script');
+  check(/stage\(\)\.hex\(k\)/.test(mapjs) && !/\bBAND\b/.test(mapjs) && /k === 'closed'/.test(mapjs) && /k === 'new lead' \? INK/.test(mapjs), 'map pins take the stage color: closed is an ink square, a new lead gets an ink ring, temperature colors nothing');
+  check(/SLATE = '#8A9AA0'/.test(mapjs) && /ribbon\(RIVER/.test(mapjs) && /ribbon\(FALSE_RIVER/.test(mapjs) && ['Baton Rouge', 'Zachary', 'St. Francisville', 'New Roads', 'The Felicianas'].every(n => mapjs.includes(`name: '${n}'`)), 'the basemap draws the river and False River in neutral slate and sets the five place names');
+  check(/toScreen\(p\.lat, p\.lng\)/.test(mapjs), 'every pin is placed from its own coordinates');
+  check(/\.cad-hot \{ font-weight: 700; \}/.test(light) && !/\.cad-(hot|warm|lukewarm|cold|ice-cold)[^{]*\{[^}]*color/.test(light) && !/class="tag \$\{(p\.band|b)\}/.test(mv), 'cadence is a word, never a color');
+  // People: exactly seven columns, real people only, search filters, a row opens the person.
+  run('CC.priv = false; Stage.q = ""');
+  const ppl = render('people', false), cols = [...ppl.matchAll(/<section class="ppl-col" aria-label="([^"]+)">/g)].map(m => m[1]);
+  check(JSON.stringify(cols) === JSON.stringify(SEVEN), 'People has exactly the seven stage columns', cols.join(', '));
+  const known = new Set(run('Stage.people().map(r => r.display)')), shown = [...ppl.matchAll(/<li><button type="button" onclick="Stage\.open\([^)]*\)"><b>([^<]*)<\/b>/g)].map(m => m[1]);
+  check(shown.length > 0 && shown.every(n => known.has(n.replace(/&#39;/g, "'").replace(/&amp;/g, '&'))), 'every name on the board is a person in the feed', shown.filter(n => !known.has(n)).slice(0, 3).join(', '));
+  check(run(`Stage.groups(Stage.people())['new lead'].length`) === (f.new_leads || []).length || (f.new_leads || []).length === 0, 'new leads sit under new lead, and nobody is given a stage the CRM does not have');
+  check(!/Sam Newlead|Taylor Sample|Morgan Demo|Riley Quiet|Casey Night/.test(stagejs + mv + mapjs), 'no fixture name is written into the live screens');
+  const one = shown[0]; run(`Stage.q = ${JSON.stringify(one)}`);
+  const filtered = [...run('CC.views.people()').matchAll(/onclick="Stage\.open/g)].length; run('Stage.q = ""');
+  check(filtered >= 1 && filtered < shown.length && /oninput="Stage\.find\(this\.value\)"/.test(ppl) && /placeholder="Find someone"/.test(ppl), 'Find someone filters the board');
+  check(/ST\.open = id => openCompose\(id\)/.test(stagejs), 'a row opens that person in the sheet Pipeline already has');
+  // Home: the Claude and Grok lists lead into what already exists. No second way to call or send.
+  const hm = render('home', false);
+  check(/>Claude<\/span>/.test(hm) && /onclick="openBrief\(\)"/.test(hm) && /go\('scorecard'\)/.test(hm) && /go\('queue'\)/.test(hm), 'Home\'s Claude list opens the brief, the Scorecard and the drafts');
+  check(/go\('people'\)/.test(hm) && /go\('map'\)/.test(hm) && /id="mini-map"/.test(hm) && ['dash', 'touches', 'tasks', 'sent', 'deals', 'deadlines', 'calendar', 'commission', 'bank', 'ccleads', 'sources'].every(k => hm.includes(`go('${k}')`)), 'Home links to People, the Map and every older page');
+  run(`var __jobs = S.data.bridge.jobs; S.data.bridge.jobs = { [S.data.feed.touches_due[0].person_id]: { job_id: 'j1', job_type: 'call', at: new Date().toISOString(), state: 'waiting', ask: 'Check on the counter' } }`);
+  const hg = render('home', false); run('S.data.bridge.jobs = __jobs');
+  check(/<b>Call [^<]+<\/b>/.test(hg) && new RegExp(`openCompose\\(&quot;${f.touches_due[0].person_id}&quot;\\)`).test(hg) && /Grok is holding the calls\./.test(hg), 'a call waiting with Grok shows on Home and opens that person\'s sheet, where the Grok block lives');
+  check(!/\/api\/(send|call|draft)/.test(stagejs) && !/fetch\(|api\(/.test(stagejs), 'Home and People call no send, call or draft endpoint themselves');
+  check(/Nothing is waiting with Grok\./.test(hm) || /Grok is holding the calls\./.test(hm), 'the one-line duet says what is true right now');
+  // The person card on the map.
+  const pp = (f.map.pins || []).find(p => p.kind === 'person' && p.stage === 'past client');
+  if (pp) { const pc = run(`CC.priv = false; pinCard(${JSON.stringify(pp)})`);
+    check(/class="stg-chip stg-past-client">Past client</.test(pc) && /class="pc-cad"/.test(pc) && /<dt>Type<\/dt>/.test(pc) && /<dt>Last touch<\/dt>/.test(pc) && /<dt>Next<\/dt>/.test(pc) && /<dt>Address<\/dt>/.test(pc)
+      && /class="pc-compose" onclick="openCompose\(/.test(pc) && /onclick="openNote\(/.test(pc), 'the map card shows the stage chip, the cadence word, the facts, Compose and Note'); }
+  const lg = run('mapLegend()');
+  check(SEVEN.every(s2 => lg.includes(`</i>${s2}</li>`)) && /Pins by stage/.test(lg), 'the map legend lists the seven stages');
+  check(/onclick="drawFarm\(\)">Draw farm</.test(run('mapBar()')) && /onclick="mapFit\(\)">Fit</.test(run('mapBar()')), 'Draw farm and Fit stay on the map');
+  // The shell.
+  check(/<meta name="theme-color" content="#FBF8F3">/.test(indexHtml) && /Instrument\+Serif/.test(indexHtml) && /Nunito/.test(indexHtml) && indexHtml.indexOf('href="light.css"') > indexHtml.indexOf('href="ui.css"'), 'the page reads as the light canvas and loads the two typefaces');
+  check(/--ivory: #FBF8F3; --ink: #14100E; --hair: #F1EFEC;/.test(light), 'canvas, ink and hairline are the approved three');
+  const main3 = run('NAV')[0][1].map(i => i[2]);
+  check(JSON.stringify(main3) === JSON.stringify(['Home', 'Map', 'People']) && run('S.view = "home"; 1') && views.includes('dash'), 'the main nav is Home, Map, People, and the older Dashboard is still a page');
+}
 
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);
