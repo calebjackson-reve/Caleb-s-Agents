@@ -1003,7 +1003,8 @@ class State:
             r = drafter.run(client, read_json(self.paths["text_queue"], {}), read_json(self.paths["email_queue"], {}),
                             out_dir / "handoff", out_dir / "draft-usage.json", now(), self.signoff())
         except Exception as e:
-            r = {"written": 0, "note": f"{type(e).__name__}: {e}"[:160]}
+            out_of_credit = "credit balance" in str(e).lower()
+            r = {"written": 0, "note": "Claude is out of API credits, top them up in the Anthropic console" if out_of_credit else f"{type(e).__name__}: {e}"[:160]}
         self.draft_note = r["note"]
         return r
 
