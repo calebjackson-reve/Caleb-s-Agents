@@ -210,7 +210,7 @@ Six pages at the top of the nav, Dashboard first (key `0`, or a link such as `ht
 | Deadlines | `#deadlines` | Contract dates in the next 3 and 30 days, by deal, and act of sale dates. |
 | Calendar | `#calendar` | Day, week or month, filters by kind (closing, deadline, inspection, showing, listing, client, work block, personal), hours booked per day. |
 | Leads | `#ccleads` | Website leads, newest first, with a ready text to copy and Add to CRM (through `crm.py` and its Do Not Contact check). Nothing sends from this page. |
-| Scorecard | `#scorecard` | GCI, closings, leads and appointments a week against your goals, with even pace, 7 and 30 day changes and a daily history chart. Cap progress. The goals form. |
+| Scorecard | `#scorecard` | GCI, closings, leads and appointments a week against your goals, with even pace, 7 and 30 day changes and a daily history chart. Cap progress. Sales by year: closed sales, sides, volume and average price a year, change from the year before, this year against the same date last year, and a year end estimate. It reads `out/cc/sales.json` (one row a closing, from the MLS) plus Closed deals on the sheet that file does not hold yet. The goals form. |
 
 **Privacy.** Money and contact details show as dots until **Show money and contacts** is pressed, and hide again after two minutes. Every page opens hidden.
 

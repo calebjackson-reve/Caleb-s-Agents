@@ -5,3 +5,5 @@ briefs/
 cache/
 queue-*.md
 *.audit.jsonl
+# Local app folder on the Mac with real CRM snapshots. Never tracked (Caleb, client data rule).
+aire/app/

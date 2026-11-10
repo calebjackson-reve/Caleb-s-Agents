@@ -8,6 +8,7 @@
     ['leads_low', 'New leads a week, low end'], ['leads_high', 'New leads a week, high end'], ['appts', 'Appointments a week'],
     ['cap_amount', 'Cap amount, dollars', true], ['royalty', 'Royalty, dollars (separate from cap)', true],
     ['cap_start', 'Cap year starts', false, 'date'], ['cap_by', 'Hit cap by', false, 'date'],
+    ['tax_rate', 'Set aside for taxes, percent of your take'],
   ];
 
   function bar(p) {
@@ -39,19 +40,46 @@
   }
   function kpi(title, value, body, sources) { return `<section class="cc-card cc-kpi"><h2>${title}</h2><b class="cc-num">${value}</b>${body}<footer>${src(sources)}</footer></section>`; }
 
+  // Sales by year: every closing in the sales history plus Closed deals on the sheet. Year end figures are estimates.
+  function bars(years, key, money) {
+    if (money && C.priv) return '<p class="cc-note">Chart hidden with money.</p>';
+    const max = Math.max(1, ...years.map(y => y[key])), bw = 240 / years.length;
+    return `<svg class="cc-ybars" viewBox="0 0 240 86" role="img" aria-label="${key} by year: ${years.map(y => y.year + ' ' + Math.round(y[key])).join(', ')}">${years.map((y, i) => {
+      const h = y[key] / max * 60;
+      return `<rect x="${(i * bw + bw * .18).toFixed(1)}" y="${(70 - h).toFixed(1)}" width="${(bw * .64).toFixed(1)}" height="${h.toFixed(1)}" rx="2" fill="var(--cc-coral)" opacity="${y.partial ? .55 : 1}"/><text x="${(i * bw + bw / 2).toFixed(1)}" y="82" text-anchor="middle" font-size="9" fill="currentColor">${y.year}</text>`;
+    }).join('')}</svg>`;
+  }
+  function growth() {
+    const g = C.data.growth;
+    if (!g) return card('Sales by year', '<p class="cc-note">No sales history yet. It shows once the sales history file is saved or a Closed deal on the sheet has an act of sale date.</p>', ['sales', 'deals']);
+    const ch = v => (v == null ? '—' : v === 0 ? 'no change' : (v > 0 ? 'up ' : 'down ') + Math.abs(v) + '%'), p = g.projection, yr = g.years[g.years.length - 1];
+    const rows = g.years.map(y => `<tr><th>${y.year}${y.partial ? ' <small>' + (y === yr ? 'to date' : 'partial year') + '</small>' : ''}</th><td class="r">${n(y.deals)}</td><td class="r">${n(y.sides)}</td><td class="r">${m(y.volume)}</td><td class="r">${m(y.avg)}</td><td class="r">${ch(y.yoy_deals)}</td><td class="r">${ch(y.yoy_volume)}</td></tr>`).join('');
+    return `<section class="cc-card"><h2>Sales by year</h2>
+      <p class="cc-note"><b>${n(g.totals.deals + (g.undated || 0))}</b> closed sales${g.undated ? ` (${g.undated} with no close date yet, not in a year or in the volume)` : ''}, <b>${m(g.totals.volume)}</b> since ${new Date(g.since + 'T12:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. Counted by side: <b>${n(g.totals.sides)}</b> sides, <b>${m(g.totals.side_volume)}</b>.${g.leases ? ` ${g.leases} lease${g.leases === 1 ? '' : 's'} left out.` : ''}${g.from_sheet ? ` ${g.from_sheet} from the Deals sheet, not in the history yet.` : ''}</p>
+      <div class="cc-kpis"><div><p class="cc-note">Closed sales</p>${bars(g.years, 'deals')}</div><div><p class="cc-note">Sales volume</p>${bars(g.years, 'volume', true)}</div></div>
+      <div class="cc-tablewrap"><table class="cc-table"><thead><tr><th>Year</th><th class="r">Sales</th><th class="r">Sides</th><th class="r">Volume</th><th class="r">Average price</th><th class="r">Sales change</th><th class="r">Volume change</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p class="cc-note">${yr.year} to date: <b>${n(g.ytd.deals)}</b> sales and <b>${m(g.ytd.volume)}</b>, against ${n(g.ytd.last_deals)} and ${m(g.ytd.last_volume)} by this date last year. This year's change compares the same dates.</p>
+      <p class="cc-note">Year end estimate: <b>${n(p.deals.even)}</b> sales and <b>${m(p.volume.even)}</b> at even pace${p.deals.seasonal == null ? '' : `, <b>${n(p.deals.seasonal)}</b> and <b>${m(p.volume.seasonal)}</b> at your usual pace for this time of year`}.${g.cagr ? ` Growth a year from ${g.cagr.from} to ${g.cagr.to}: ${ch(g.cagr.deals)} in sales, ${ch(g.cagr.volume)} in volume.` : ''} Estimates from past pace, not a promise.</p>
+      <h2>Every sale</h2>
+      <div class="cc-tablewrap"><table class="cc-table"><thead><tr><th>Closed</th><th>Address</th><th>Side</th><th class="r">Price</th><th>Type</th><th>From</th></tr></thead><tbody>${(g.sales || []).map(r => `<tr><th>${r.day ? C.esc(r.day) : '<em>blank</em>'}</th><td>${C.esc(r.address || '')}</td><td>${r.side ? C.esc(r.side) : '<em>blank</em>'}</td><td class="r">${r.price == null ? '<em>blank</em>' : m(r.price)}</td><td>${C.esc(r.type || '')}</td><td>${C.esc(r.source || '')}</td></tr>`).join('')}</tbody></table></div>
+      <footer>${src(['sales', 'deals'])}</footer></section>`;
+  }
+
   function scorecard() {
     const g = guard(); if (g) return g;
     const d = C.data, sc = d.scorecard, cap = sc.cap;
     const cl = sc.closings, lw = sc.leads7;
     return `<div class="cc-page">${head('Scorecard', 'Your numbers against your own goals. The 70/30 split is the one you gave Pipeline for KW First Choice, not read from KW.')}
       <div class="cc-kpis">
-        ${kpi('GCI this year', m(sc.gci.value), `${bar(sc.gci.goal)}<p class="cc-note">Paid plus pending: <b>${m(sc.gci.with_pending)}</b>${sc.gci.goal_with_pending ? ` (${sc.gci.goal_with_pending.pct}% of goal)` : ''}. ${sc.gci.from === 'kw_paid' ? 'From KW commission forms.' : 'From Closed deals in your sheet with an act of sale this year.'}${sc.gci.blank ? ` <em>${sc.gci.blank} closed with no commission on the sheet, so this is low.</em>` : ''}</p>${delta('gci', true)}${spark('gci')}`, ['deals', 'history'])}
-        ${kpi('Closings this year', n(cl.value), `${bar(cl.goal)}${cl.low ? `<p class="cc-note">Goal ${cl.low} to ${cl.high}.</p>` : ''}${sc.gci.undated ? `<p class="cc-warn">${sc.gci.undated} closed deal${sc.gci.undated > 1 ? 's have' : ' has'} no act of sale date and ${sc.gci.undated > 1 ? 'are' : 'is'} not counted.</p>` : ''}${delta('closings')}${spark('closings')}`, ['deals', 'history'])}
+        ${kpi('GCI this year', m(sc.gci.value), `${bar(sc.gci.goal)}<p class="cc-note">Paid plus pending: <b>${m(sc.gci.with_pending)}</b>${sc.gci.goal_with_pending ? ` (${sc.gci.goal_with_pending.pct}% of goal)` : ''}. ${sc.gci.from === 'kw_paid' ? 'From KW commission forms.' : 'From Closed deals in your sheet with an act of sale this year.'}${sc.gci.blank ? ` <em>${sc.gci.blank} closed with no commission on the sheet, so this is low.</em>` : ''}${sc.gci.est ? ` <em>${m(sc.gci.sheet_value)} is from the sheet. ${m(sc.gci.est.value)} is an estimate: ${sc.gci.est.rate * 100}% of price, per side, for ${sc.gci.est.n} closings with no commission on record.</em>` : ''}</p>${delta('gci', true)}${spark('gci')}`, ['deals', 'history'])}
+        ${kpi('Closings this year', n(cl.value), `${bar(cl.goal)}${cl.on_sheet < cl.value ? `<p class="cc-note">From your sales record. ${cl.on_sheet} of the ${cl.value} are on the Deals sheet${sc.gci.est ? '' : `, so GCI counts only those ${cl.on_sheet}`}.</p>` : ''}${cl.low ? `<p class="cc-note">Goal ${cl.low} to ${cl.high}.</p>` : ''}${sc.gci.undated ? `<p class="cc-warn">${sc.gci.undated} closed deal${sc.gci.undated > 1 ? 's have' : ' has'} no act of sale date and ${sc.gci.undated > 1 ? 'are' : 'is'} not counted.</p>` : ''}${delta('closings')}${spark('closings')}`, ['sales', 'deals', 'history'])}
         ${kpi('Leads per week', n(lw.value), `<p class="cc-note">${lw.low ? `Goal ${lw.low} to ${lw.high}. ` : ''}Website leads received in the last 7 days. Test leads are not counted.</p>${delta('leads7')}${spark('leads7')}`, ['leads', 'history'])}
         ${kpi('Appointments per week', n(sc.appts7.value), `<p class="cc-note">${sc.appts7.goal ? `Goal ${sc.appts7.goal}. ` : ''}Accepted showings, listing appointments and client meetings, today through the next 6 days. ${sc.appts7.invites ? `${sc.appts7.invites} more invite${sc.appts7.invites === 1 ? '' : 's'} not accepted, not counted. ` : ''}</p>${delta('appts7')}${spark('appts7')}`, ['calendar', 'history'])}
         ${kpi('Cap progress', cap ? m(cap.paid) : 'Not set', cap ? `${bar({ pct: cap.pct, pace_pct: 0, ahead: true })}<p class="cc-note">Company dollar is 30% of your commission on deals closed since ${C.day(cap.start)}. ${m(cap.left)} left of ${m(cap.amount)}. The royalty is separate and is not counted toward cap.</p>` : '<p class="cc-note">Add the cap amount and the cap year start below. The number shows once both are saved.</p>', ['deals', 'goals'])}
+        ${(tx => kpi('Tax savings', tx ? m(tx.set_aside) : 'Not set', tx ? `<p class="cc-note">${tx.rate}% of your take this year. Take: <b>${m(tx.take)}</b>, which is ${m(tx.gci)} in commission less ${m(tx.company)} company dollar and ${m(tx.royalty)} royalty.${tx.n_est ? ` <em>${m(tx.est_gci)} of the commission is the estimate for ${tx.n_est} closings, so part of this is a guess.</em>` : ''} A number to save toward, not tax advice.</p>` : '<p class="cc-note">Add a tax percent below and this shows what to set aside from your take this year.</p>', ['deals', 'sales', 'goals']))(d.tax)}
         ${kpi('Lead response time', 'Not tracked yet', `<p class="cc-note">${sc.response.note}</p>`, [])}
       </div>
+      ${growth()}
       ${card('Set goals', goalForm(), 'goals')}</div>`;
   }
   function goalForm() {

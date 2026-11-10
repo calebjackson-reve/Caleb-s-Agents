@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 CENTRAL = ZoneInfo("America/Chicago")
 SPLIT_CO = 0.30  # KW 70/30: the company's share of each commission, counted toward cap.
+ROYALTY = 0.06   # KW royalty: 6% of each commission until the royalty amount in the goals is reached. Assumed, not read from KW.
 
 # How old a read may be before the screen calls it stale, in hours.
 STALE_HOURS = {"deals": 6, "calendar": 2, "inbox": 1, "leads": 1, "commission_mail": 24, "bank_mail": 6, "history": 36,
@@ -25,7 +26,7 @@ PACE_MIN = {"calendar": 15, "inbox": 10, "leads": 10, "deals": 30, "commission_m
             "market": 720, "life": 15, "workouts": 15}
 GRACE_MIN = 15
 DATASETS = ["deals", "calendar", "inbox", "leads", "commission_mail", "bank_mail", "goals", "history", "news", "market",
-            "life", "workouts", "config", "sync-status", "outbox"]
+            "life", "workouts", "config", "sync-status", "outbox", "sales"]
 
 
 def central_today(now: datetime | None = None) -> date:
@@ -676,8 +677,101 @@ def bank(rows: list[dict]) -> dict:
 
 # ---------------- Scorecard, goals, history ----------------
 
-def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
+def closing_days(sales, deals) -> list[str]:
+    """Every closing day on record: the sales history (dated, leases left out) plus Closed deals on the Deals sheet the
+    history does not hold, matched by street and year. With no sales history this is the Deals sheet alone."""
+    days, seen = [], set()
+    for r in sales or []:
+        if is_day(r.get("close")) and not re.search(r"lease", str(r.get("type") or ""), re.I):
+            days.append(r["close"])
+            seen.add((deal_key(r.get("address")), r["close"][:4]))
+    for d in deals or []:
+        if stage_of(d["status"]) == "closed" and is_day(d.get("act")) and (deal_key(d["deal"]), d["act"][:4]) not in seen:
+            days.append(d["act"])
+    return days
+
+
+def gci_estimate(sales, deals, day: str, rate) -> dict:
+    """An estimate for closings that year, on or before day, with no commission on record: rate times the price, per
+    side. That is Closed deals on the sheet with a blank commission (the price from the sheet, else the sales history)
+    and sales in the history the sheet does not hold. Leases are left out. With no rate set, nothing is estimated."""
+    if not rate:
+        return {"value": 0, "n": 0, "rate": None}
+    sides = lambda v: 2 if re.search(r"both|dual", str(v or ""), re.I) else 1
+    hist = {(deal_key(r.get("address")), r["close"][:4]): r for r in sales or []
+            if is_day(r.get("close")) and not re.search(r"lease", str(r.get("type") or ""), re.I)}
+    total, n, on_sheet = 0.0, 0, set()
+    for d in deals or []:
+        if stage_of(d["status"]) != "closed" or not is_day(d.get("act")):
+            continue
+        k = (deal_key(d["deal"]), d["act"][:4])
+        on_sheet.add(k)
+        if d["commission"] is None and d["act"][:4] == day[:4] and d["act"] <= day:
+            h = hist.get(k) or {}
+            total += rate * (d["price"] or num(h.get("price")) or 0) * sides(d.get("side") or h.get("side"))
+            n += 1
+    for k, r in hist.items():
+        if k not in on_sheet and r["close"][:4] == day[:4] and r["close"] <= day:
+            total += rate * (num(r.get("price")) or 0) * sides(r.get("side"))
+            n += 1
+    return {"value": round(total, 2), "n": n, "rate": rate}
+
+
+def commissions(sales, deals, est_rate) -> list[dict]:
+    """One row a closing, every year: the commission on the Deals sheet, or the estimate (rate times price, per side)
+    where none is on record. The same rules as gci_estimate, so a year's rows add up to that year's GCI."""
+    sides = lambda v: 2 if re.search(r"both|dual", str(v or ""), re.I) else 1
+    hist = {(deal_key(r.get("address")), r["close"][:4]): r for r in sales or []
+            if is_day(r.get("close")) and not re.search(r"lease", str(r.get("type") or ""), re.I)}
+    out, on_sheet = [], set()
+    for d in deals or []:
+        if stage_of(d["status"]) != "closed" or not is_day(d.get("act")):
+            continue
+        k = (deal_key(d["deal"]), d["act"][:4])
+        on_sheet.add(k)
+        if d["commission"] is not None:
+            out.append({"day": d["act"], "amount": d["commission"], "est": False})
+        elif est_rate:
+            h = hist.get(k) or {}
+            out.append({"day": d["act"], "amount": est_rate * (d["price"] or num(h.get("price")) or 0) * sides(d.get("side") or h.get("side")), "est": True})
+    if est_rate:
+        out += [{"day": r["close"], "amount": est_rate * (num(r.get("price")) or 0) * sides(r.get("side")), "est": True}
+                for k, r in hist.items() if k not in on_sheet]
+    return sorted(out, key=lambda r: r["day"])
+
+
+def tax_savings(sales, deals, goals, today: date, est_rate=None) -> dict | None:
+    """What to set aside for taxes this calendar year: the tax rate in the goals (a percent) times your take. Your take
+    is each commission less KW's 30% company dollar, which stops at the cap amount in each cap year, and less the 6%
+    royalty, which stops at the royalty amount in each cap year. Cap years run from the cap start date and its
+    anniversaries. With no cap set, the 30% comes off every commission and no royalty is taken. Not tax advice."""
+    g = goals or {}
+    if not g.get("tax_rate"):
+        return None
+    t, start = today.isoformat(), g.get("cap_start") if is_day(g.get("cap_start")) else None
+    cap, roy = (g.get("cap_amount") if start else None), (g.get("royalty") if start else 0)
+    used = {}  # cap year -> [company dollar so far, royalty so far]
+    tot = {"gci": 0.0, "company": 0.0, "royalty": 0.0, "est_gci": 0.0, "n": 0, "n_est": 0}
+    for r in commissions(sales, deals, est_rate):
+        if r["day"] > t:
+            continue
+        cy = (int(r["day"][:4]) - (r["day"][5:] < start[5:])) if start else 0
+        u = used.setdefault(cy, [0.0, 0.0])
+        co = SPLIT_CO * r["amount"] if cap is None else min(SPLIT_CO * r["amount"], max(0.0, cap - u[0]))
+        ro = min(ROYALTY * r["amount"], max(0.0, roy - u[1])) if roy else 0.0
+        u[0] += co; u[1] += ro
+        if r["day"][:4] == t[:4]:
+            tot["gci"] += r["amount"]; tot["company"] += co; tot["royalty"] += ro; tot["n"] += 1
+            if r["est"]:
+                tot["est_gci"] += r["amount"]; tot["n_est"] += 1
+    take = tot["gci"] - tot["company"] - tot["royalty"]
+    return {"rate": g["tax_rate"], "take": round(take, 2), "set_aside": round(take * g["tax_rate"] / 100, 2),
+            **{k: (round(v, 2) if isinstance(v, float) else v) for k, v in tot.items()}}
+
+
+def scorecard(deals, evs, leads, goals, kw_paid, today: date, sales=None, est_rate=None) -> dict:
     yr = str(today.year)
+    n_closed = sum(1 for d in closing_days(sales, deals) if d[:4] == yr and d <= today.isoformat())
     closed = [r for r in deals if stage_of(r["status"]) == "closed"]
     yr_closed = [r for r in closed if is_day(r.get("act")) and r["act"][:4] == yr]
     sheet_gci = round(sum(r["commission"] or 0 for r in yr_closed), 2)
@@ -687,10 +781,12 @@ def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
     appts_all = [r for r in evs if r["kind"] in ("showing", "listing", "client") and today.isoformat() <= r["day"] <= end7]
     appts = [r for r in appts_all if booked(r)]  # an invite not accepted is not an appointment yet
     paid = kw_paid.get("value") if kw_paid and kw_paid.get("value") is not None else None
-    gci = {"value": paid if paid is not None else sheet_gci,
+    est = gci_estimate(sales, deals, today.isoformat(), est_rate if paid is None else None)
+    gci = {"value": paid if paid is not None else round(sheet_gci + est["value"], 2),
            "from": "kw_paid" if paid is not None else "sheet",
-           "sheet_value": sheet_gci, "n": len(yr_closed),
-           "blank": sum(1 for r in yr_closed if r["commission"] is None),
+           "sheet_value": sheet_gci, "n": len(yr_closed), "est": est if est["n"] else None,
+           # A blank commission that is estimated is no longer missing from the number.
+           "blank": 0 if est["n"] else sum(1 for r in yr_closed if r["commission"] is None),
            "undated": sum(1 for r in closed if not is_day(r.get("act")))}
     pend = pending_commission(deals)
     gci["with_pending"] = gci["value"] + pend["value"]
@@ -713,7 +809,7 @@ def scorecard(deals, evs, leads, goals, kw_paid, today: date) -> dict:
     return {"gci": {**gci, "goal": prog(gci["value"], g.get("gci_goal")),
                     "goal_with_pending": prog(gci["with_pending"], g.get("gci_goal"))},
             "pending": pend,
-            "closings": {"value": len(yr_closed), "goal": prog(len(yr_closed), g.get("closings_high") or g.get("closings_low")),
+            "closings": {"value": n_closed, "on_sheet": len(yr_closed), "goal": prog(n_closed, g.get("closings_high") or g.get("closings_low")),
                          "low": g.get("closings_low"), "high": g.get("closings_high")},
             "leads7": {"value": lc["d7"], "low": g.get("leads_low"), "high": g.get("leads_high"), "undated": lc["undated"]},
             "appts7": {"value": len(appts), "goal": g.get("appts"), "invites": len(appts_all) - len(appts)},
@@ -744,14 +840,15 @@ def since_saved(rows: list[dict], row: dict, metric: str) -> dict | None:
     return {"since": past[0]["day"], "days": len(past), "value": round(row[metric] - past[0][metric], 2)}
 
 
-def sheet_as_of(deals: list[dict], day: str) -> dict:
+def sheet_as_of(deals: list[dict], day: str, sales=None, est_rate=None) -> dict:
     """GCI and closings as the Deals sheet says they stood on a day: Closed deals with an act of sale that year, on or
     before that day."""
     yr = [r for r in deals if stage_of(r["status"]) == "closed" and is_day(r.get("act")) and r["act"][:4] == day[:4] and r["act"] <= day]
-    return {"gci": round(sum(r["commission"] or 0 for r in yr), 2), "closings": len(yr)}
+    return {"gci": round(sum(r["commission"] or 0 for r in yr) + gci_estimate(sales, deals, day, est_rate)["value"], 2),
+            "closings": sum(1 for d in closing_days(sales, deals) if d[:4] == day[:4] and d <= day)}
 
 
-def flag_history(rows: list[dict], deals: list[dict], today: date) -> list[dict]:
+def flag_history(rows: list[dict], deals: list[dict], today: date, sales=None, est_rate=None) -> list[dict]:
     """Saved days whose GCI or closings no longer match the Deals sheet for that day get "mismatch": the metrics that
     disagree. Those rows are left out of every change and line, so an edit to the sheet never shows as growth.
     With no Deals sheet rows (never read), nothing is flagged."""
@@ -762,7 +859,7 @@ def flag_history(rows: list[dict], deals: list[dict], today: date) -> list[dict]
         if not is_day(r.get("day")) or r["day"] >= today.isoformat():
             out.append(r)
             continue
-        live = sheet_as_of(deals, r["day"])
+        live = sheet_as_of(deals, r["day"], sales, est_rate)
         bad = [k for k in ("gci", "closings") if isinstance(r.get(k), (int, float)) and abs(r[k] - live[k]) > 0.5]
         out.append({**r, "mismatch": bad, "sheet_now": live} if bad else r)
     return out
@@ -794,6 +891,73 @@ def news_rows(rows: list[dict]) -> list[dict]:
     return [r for r in rows if not NEWS_SKIP.search(str(r.get("title") or ""))]
 
 
+# ---------------- Sales by year and growth ----------------
+
+def growth(sales: list, deals: list, today: date) -> dict | None:
+    """Closed sales by year: the sales history (sales.json, one row a closing: close, address, side, price, type) plus
+    Closed deals on the Deals sheet the history does not hold yet, matched by street and year. Leases are counted apart.
+    A sale with no close date is listed and counted as undated, outside every year.
+    Both sides of one sale is one deal and two sides. Year to date runs through today's month and day in every year.
+    The year end figures are estimates from past pace, never a promise."""
+    t, rows, seen, leases, added, undated, every = today.isoformat(), [], set(), 0, 0, 0, []
+    for r in sales or []:
+        day = r.get("close") if is_day(r.get("close")) else None
+        if day and day > t:
+            continue
+        every.append({"day": day, "address": r.get("address"), "side": r.get("side") or None, "price": num(r.get("price")),
+                      "type": r.get("type") or None, "source": r.get("source") or "MLS"})
+        if re.search(r"lease", str(r.get("type") or ""), re.I):
+            leases += 1
+            continue
+        if not day:  # a sale with no close date yet is listed and counted, never placed in a year
+            undated += 1
+            continue
+        rows.append((r["close"], num(r.get("price")) or 0, 2 if re.search(r"both|dual", str(r.get("side") or ""), re.I) else 1))
+        seen.add((deal_key(r.get("address")), r["close"][:4]))
+    for d in deals or []:
+        if stage_of(d["status"]) != "closed" or not is_day(d.get("act")) or d["act"] > t or (deal_key(d["deal"]), d["act"][:4]) in seen:
+            continue
+        rows.append((d["act"], d["price"] or 0, 2 if re.search(r"both|dual", str(d.get("side") or ""), re.I) else 1))
+        added += 1
+        every.append({"day": d["act"], "address": d["deal"], "side": d.get("side"), "price": d["price"], "type": None, "source": "Deals sheet"})
+    if not rows:
+        return None
+    blank = lambda: {"deals": 0, "sides": 0, "volume": 0, "side_volume": 0, "ytd_deals": 0, "ytd_volume": 0}
+    by, first = {}, min(r[0] for r in rows)
+    for day, price, sides in rows:
+        y = by.setdefault(int(day[:4]), blank())
+        y["deals"] += 1; y["sides"] += sides; y["volume"] += price; y["side_volume"] += price * sides
+        if day[4:] <= t[4:]:
+            y["ytd_deals"] += 1; y["ytd_volume"] += price
+    pct = lambda a, b: round((a - b) / b * 100, 1) if b else None
+    years = []
+    for yr in range(int(first[:4]), today.year + 1):
+        y, prev, now = by.get(yr) or blank(), by.get(yr - 1), yr == today.year
+        k = ("ytd_deals", "ytd_volume") if now else ("deals", "volume")
+        years.append({"year": yr, **y, "avg": round(y["volume"] / y["deals"]) if y["deals"] else None,
+                      "yoy_deals": pct(y[k[0]], prev[k[0]]) if prev else None, "yoy_volume": pct(y[k[1]], prev[k[1]]) if prev else None,
+                      "partial": now or (yr == int(first[:4]) and first[5:] > "01-31")})
+    cur, last = by.get(today.year) or blank(), by.get(today.year - 1) or blank()
+    start = date(today.year, 1, 1)
+    frac = ((today - start).days + 1) / (date(today.year + 1, 1, 1) - start).days
+
+    def project(key):
+        shares = [y["ytd_" + key] / y[key] for yr, y in by.items() if yr < today.year and y[key] and y["ytd_" + key]]
+        return {"even": round(cur["ytd_" + key] / frac), "seasonal": round(cur["ytd_" + key] / (sum(shares) / len(shares))) if shares else None}
+
+    full = [y for y in years if not y["partial"] and y["deals"]]
+    cagr = None
+    if len(full) >= 2 and full[0]["volume"]:
+        a, b, n = full[0], full[-1], full[-1]["year"] - full[0]["year"]
+        cagr = {"from": a["year"], "to": b["year"], "deals": round(((b["deals"] / a["deals"]) ** (1 / n) - 1) * 100, 1),
+                "volume": round(((b["volume"] / a["volume"]) ** (1 / n) - 1) * 100, 1)}
+    return {"years": years, "since": first, "through": t, "leases": leases, "from_sheet": added, "undated": undated,
+            "sales": sorted(every, key=lambda x: (x["day"] is None, x["day"] or ""), reverse=True),
+            "ytd": {"deals": cur["ytd_deals"], "volume": cur["ytd_volume"], "last_deals": last["ytd_deals"], "last_volume": last["ytd_volume"]},
+            "projection": {"deals": project("deals"), "volume": project("volume")}, "cagr": cagr,
+            "totals": {k: sum(y[k] for y in years) for k in ("deals", "sides", "volume", "side_volume")}}
+
+
 def _rows(d):
     return (d or {}).get("rows") or []
 
@@ -815,8 +979,10 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
     cards, crm_only = merge_deals(deal_cards(deals, today, now), f.get("deals") or [])
     dl = contract_deadlines(deal_deadlines(evs), cards)
     goals = (raw.get("goals") or {}).get("rows") or {}
-    sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today)
-    hist = flag_history(_rows(raw["history"]), deals, today)
+    sales = _rows(raw.get("sales"))
+    rate = cfg.get("gci_est_rate")  # Caleb, 2026-11-09: 0.025, an average of 2.5% of price where no commission is on record
+    sc = scorecard(deals, evs, leads, goals, cfg.get("kw_paid"), today, sales, rate)
+    hist = flag_history(_rows(raw["history"]), deals, today, sales, rate)
     sheet_days = len({r["day"] for r in hist if is_day(r.get("day")) and r["day"] <= today.isoformat()})
     hrow = history_row(sc, today)
     full = add_history(hist, hrow)
@@ -838,6 +1004,8 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         "inbox": inbox_sorted(_rows(raw["inbox"]), [r for r in leads if r.get("origin") == "email"], coord),
         "leads": leads, "lead_counts": lead_counts(leads, today), "commission_mail": commission_mail(_rows(raw["commission_mail"]), deals),
         "scorecard": sc, "goals": goals, "goals_set": bool(goals),
+        "growth": growth(_rows(raw.get("sales")), deals, today),
+        "tax": tax_savings(sales, deals, goals, today, rate),
         "history": full, "deltas": {m: deltas(full, hrow, m) for m in ("gci", "closings", "leads7", "appts7")},
         # Rows in the sheet's Scorecard history tab, today's included once the sync has saved it: the same number the
         # Sources page shows for that tab.
@@ -861,7 +1029,7 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
 
 
 def demo_folder(src: Path, dest: Path, now: datetime | None = None) -> Path:
-    """Copy the made-up fixtures with dates moved to today: {{D+3}}, {{Y-03-14}}, {{NOW-20}} (minutes ago)."""
+    """Copy the made-up fixtures with dates moved to today: {{D+3}}, {{Y-03-14}}, {{Y2-06-10}} (two years back), {{NOW-20}} (minutes ago)."""
     now = (now or datetime.now(CENTRAL)).astimezone(CENTRAL)
     today = now.date()
 
@@ -871,6 +1039,8 @@ def demo_folder(src: Path, dest: Path, now: datetime | None = None) -> Path:
             return (now - timedelta(minutes=int(k[4:]))).isoformat(timespec="seconds")
         if k.startswith("Y-"):
             return f"{today.year}{k[1:]}"
+        if re.match(r"Y\d-", k):  # {{Y2-06-10}} is June 10 two years back
+            return f"{today.year - int(k[1])}{k[2:]}"
         return (today + timedelta(days=int(k[1:]))).isoformat()
 
     dest.mkdir(parents=True, exist_ok=True)
@@ -880,7 +1050,7 @@ def demo_folder(src: Path, dest: Path, now: datetime | None = None) -> Path:
 
 
 GOAL_NUMBERS = ["gci_goal", "gci_goal_next", "closings_low", "closings_high", "leads_low", "leads_high", "appts",
-                "cap_amount", "royalty"]
+                "cap_amount", "royalty", "tax_rate"]
 GOAL_DATES = ["cap_start", "cap_by"]
 
 

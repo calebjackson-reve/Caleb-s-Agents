@@ -12,11 +12,11 @@
     const live = d.deals.filter(r => r.stage !== 'out');
     return `<div class="cc-page">${head('Commission', 'Amounts are gross, before the KW 70/30 split · ' + (cap ? 'cap year from ' + day(cap.start) : 'cap and cap year not set yet, add them on Scorecard'))}
       <div class="cc-tiles">
-        ${tile('GCI paid', m(sc.gci.value), paidFrom + (sc.gci.blank ? ` · <em>${sc.gci.blank} closed with no commission</em>` : ''), 'deals')}
+        ${tile(sc.gci.est ? 'GCI, part estimated' : 'GCI paid', m(sc.gci.value), paidFrom + (sc.gci.blank ? ` · <em>${sc.gci.blank} closed with no commission</em>` : '') + `${sc.gci.est ? ` · <em>includes ${m(sc.gci.est.value)} estimated at ${sc.gci.est.rate * 100}% of price for ${sc.gci.est.n} closings</em>` : ''}`, ['deals', 'sales'])}
         ${tile('Paid plus pending', m(sc.gci.with_pending), 'Paid, plus every deal under contract', 'deals')}
         ${tile('Pending, gross', m(sc.pending.value), `${sc.pending.deals} under contract${sc.pending.blank ? ` · <em>${sc.pending.blank} with no commission on the sheet</em>` : ''}`, 'deals')}
         ${tile('Toward cap', cap ? m(cap.paid) : '—', cap ? `${cap.pct}% of ${m(cap.amount)} · ${m(cap.left)} to go` : 'Set the cap amount and start date on Scorecard', ['deals', 'goals'])}
-        ${tile('Closings this year', n(sc.closings.value), sc.closings.low ? `Goal ${sc.closings.low} to ${sc.closings.high}` : 'Closed deals with an act of sale this year', 'deals')}
+        ${tile('Closings this year', n(sc.closings.value), sc.closings.low ? `Goal ${sc.closings.low} to ${sc.closings.high}` : 'Closed sales this year, MLS record plus the Deals sheet', ['sales', 'deals'])}
         ${tile('Paydays, 30 days', m(d.closings.reduce((s, r) => s + (r.money || 0), 0) || (d.closings.length ? 0 : null)), `${d.closings.length} act${d.closings.length === 1 ? '' : 's'} of sale, gross${d.closings.some(r => r.money == null) ? ' · some have no commission on the sheet' : ''}`, ['deals', 'calendar'])}
         ${tile('Not processed', n(np.length), np.length ? 'KW has not processed these yet' : 'Nothing waiting', 'commission_mail')}
         ${tile('Paid, no closed deal', n(nc.length), nc.length ? 'Commission came in for a street the Deals sheet does not show as closed' : 'Every paid commission matches a closed deal', ['commission_mail', 'deals'])}
