@@ -50,7 +50,7 @@
   // ---------------- People: seven columns, a bold tab each, short text rows
   const MAXROWS = 40;
   function boardHTML() {
-    const q = key(ST.q), all = ST.people(), rows = all.filter(r => !q || key(`${C.priv ? '' : r.display} ${r.city || ''} ${r.band || ''}`).includes(q)), g = ST.groups(rows);
+    const q = key(ST.q), all = ST.people(), rows = all.filter(r => !q || key(`${r.display || ''} ${r.city || ''} ${r.band || ''}`).includes(q)), g = ST.groups(rows);
     const off = rows.filter(r => !ST.is(r.stage)).length;
     return `<div class="ppl-board">${ST.names.map(s => `<section class="ppl-col" aria-label="${esc(s)}">${ST.tab(s, g[s].length)}
         <ul>${g[s].slice(0, MAXROWS).map(r => `<li><button type="button" onclick="Stage.open(${jsa(r.person_id)})"><b>${who(r)}</b><small>${[ST.cadence(r.band), esc(r.city || '')].filter(Boolean).join('<i> · </i>')}</small></button></li>`).join('')}</ul>

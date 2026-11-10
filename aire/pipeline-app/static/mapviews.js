@@ -141,10 +141,10 @@ function pinCard(p) {
   if (p.kind === 'person') {
     // Name, stage as its color chip, cadence as a word, then the facts. Compose and Note open the same sheets as before.
     const id = jsa(p.person_id), row = `personListRow(pinByKey(${jsa(p.key)}))`;
-    return `<div class="pin-card pc-person">${x}<h3>${CC.who(p.display)}</h3>${Stage.chip(p.stage)}
+    return `<div class="pin-card pc-person">${x}<h3>${CC.who(p.display) || 'No name on the sheet'}</h3>${Stage.chip(p.stage)}
       <p class="pc-cad">${Stage.cadence(p.band) || 'no cadence set'}${p.owes_reply ? ' · you owe a reply' : ''}${p.new_lead ? ' · new lead' : ''}</p>
       <dl><dt>Type</dt><dd>${esc(p.type || 'unknown')}</dd><dt>Last touch</dt><dd>${esc(lastTouch(p))}</dd>
-      <dt>Next</dt><dd>${p.next_action ? CC.note(p.next_action, [p.display]) : 'none'}</dd><dt>Address</dt><dd>${CC.priv ? '<span class="cc-hid">hidden</span>' : esc([p.address, p.city, p.zip].filter(Boolean).join(', ') || 'none')}</dd></dl>
+      <dt>Next</dt><dd>${p.next_action ? CC.note(p.next_action, [p.display]) : 'none'}</dd><dt>Address</dt><dd>${esc([p.address, p.city, p.zip].filter(Boolean).join(', ') || 'none')}</dd></dl>
       <div class="pc-main"><button type="button" class="pc-compose" onclick="openCompose(${id})">Compose</button><button type="button" onclick="openNote(${id})">Note</button></div>
       <div class="pc-more">${normPhone(p.phone) ? `<button type="button" onclick="openGrok(${id}, 'call')" title="Grok places the call. Nothing dials until you tap the Call card in Grok.">Call</button>` : ''}<button type="button" onclick="touched(${id})">Touched</button><button type="button" onclick="openTask(${id})">Task</button><button type="button" onclick="addToList('call', [${row}])">Call list</button><button type="button" onclick="addToList('postcards', [${row}])">Postcards</button></div></div>`;
   }
@@ -222,7 +222,7 @@ async function addToList(kind, rows) {
 function marketDetail(r) {
   const amt = r.type === 'permit' ? (r.value ? `${CC.m(r.value)} project` : 'no value given') : r.price ? CC.m(r.price) + (r.price_was ? ` (was ${CC.m(r.price_was)})` : '') : 'no price given';
   const near = r.nearest && r.nearest.person_id ? `<a href="#" onclick="S.pick=${jsa('person:' + r.nearest.person_id)};S.mapView={center:[${r.lat},${r.lng}],zoom:15};go('map');return false">${CC.who(r.nearest.display)}</a> · ${esc(r.nearest.band || 'no band')} · ${r.nearest.miles} mi` : 'nobody you know within 2 miles';
-  return `<dl><dt>When</dt><dd>${esc(r.date)} · ${CC.scrubMoney(r.subtype || r.label)}</dd><dt>Amount</dt><dd>${amt}</dd>${r.description && r.description !== r.subtype ? `<dt>Detail</dt><dd>${CC.scrub(r.description)}</dd>` : ''}
+  return `<dl><dt>When</dt><dd>${esc(r.date)} · ${esc(r.subtype || r.label)}</dd><dt>Amount</dt><dd>${amt}</dd>${r.description && r.description !== r.subtype ? `<dt>Detail</dt><dd>${CC.scrub(r.description)}</dd>` : ''}
     <dt>Farm</dt><dd>${esc(farmName(r.farm) || 'outside your farms')}</dd><dt>Nearest</dt><dd>${near}</dd><dt>Source</dt><dd>${esc(r.source)} · ${esc(r.source_date)}${r.source_ref ? ' · #' + esc(r.source_ref) : ''}</dd></dl>`;
 }
 function marketActs(r) {
@@ -245,7 +245,7 @@ function viewMarket() {
   const body = rows.length ? `<ul class="cc-rows">${rows.slice(0, 300).map(r => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${r.type === 'permit' ? '⚒' : '◆'}</span>
     <div class="cc-row-main"><h3>${esc(r.address)}</h3>
       <div class="cc-pills"><span class="cc-pill ${r.type === 'permit' ? 'k-listing' : 'k-closing'}">${esc(r.label)}</span><span class="cc-pill k-other">${esc(r.city)}</span>${r.farm ? `<span class="cc-pill k-other">${esc(farmName(r.farm))}</span>` : ''}</div>
-      <p class="cc-row-why">${r.type === 'permit' ? (r.value ? CC.m(r.value) + ' · ' : '') + CC.scrubMoney(r.subtype) : (r.price ? CC.m(r.price) : 'No price given') + (r.price_was ? ` · was ${CC.m(r.price_was)}` : '')}</p>
+      <p class="cc-row-why">${r.type === 'permit' ? (r.value ? CC.m(r.value) + ' · ' : '') + esc(r.subtype) : (r.price ? CC.m(r.price) : 'No price given') + (r.price_was ? ` · was ${CC.m(r.price_was)}` : '')}</p>
       <p class="cc-note">${esc(C_day(r.date))}${r.nearest && r.nearest.person_id ? ` · ${r.nearest.miles} mi from ${CC.who(r.nearest.display)}` : ''} · ${esc(r.source)}, ${esc(C_day(r.source_date))}</p></div>
     <div class="cc-acts">${marketActs(r)}</div></li>`).join('')}</ul>${rows.length > 300 ? `<p class="cc-note">Showing the newest 300 of ${rows.length}.</p>` : ''}`
     : S.q ? CC.noMatch() : CC.empty(all.length ? 'Nothing matches these filters.' : 'No permits or listing changes in the last read.');
@@ -257,14 +257,14 @@ async function makeLead(key) {
   const r = mktByKey(key); if (!r) return;
   const what = r.type === 'permit' ? `${r.label} permit` : r.label;
   const v = await modal('Make lead', `
-    <div class="field"><label>NAME</label><input id="m-name" ${CC.priv && r.owner ? 'placeholder="Owner name hidden · press Show to see it"' : `value="${esc(r.owner || 'Owner at ' + r.address)}"`}></div>
+    <div class="field"><label>NAME</label><input id="m-name" value="${esc(r.owner || 'Owner at ' + r.address)}"></div>
     <div class="field"><label>PHONE (optional)</label><input id="m-phone" placeholder="if you have it"></div>
     <div class="field"><label>EMAIL (optional)</label><input id="m-email"></div>
     <div class="field"><label>NOTE</label><input id="m-note" value="${esc(`${what} ${r.date}, ${r.address}, ${r.city}. ${r.source} ${r.source_date}`)}"></div>
     <p class="dim" style="margin:4px 0 0">Goes in as band warm, Stage new lead, Source "Market Monitor ${esc(r.type)} ${esc(r.date)}". Refused if the name, phone or email is already in the CRM.</p>`,
-    m => ({ name: $('#m-name', m).value.trim() || (CC.priv && r.owner ? r.owner : ''), phone: $('#m-phone', m).value.trim(), email: $('#m-email', m).value.trim(), note: $('#m-note', m).value.trim() }) , 'Make lead');
+    m => ({ name: $('#m-name', m).value.trim(), phone: $('#m-phone', m).value.trim(), email: $('#m-email', m).value.trim(), note: $('#m-note', m).value.trim() }) , 'Make lead');
   if (!v || !v.name) return;
-  await act('/api/lead', { ...v, source: `Market Monitor ${r.type} ${r.date}` }, { tag: 'LEAD', text: `${CC.priv ? 'The lead' : v.name} is in the CRM as a new lead` });
+  await act('/api/lead', { ...v, source: `Market Monitor ${r.type} ${r.date}` }, { tag: 'LEAD', text: `${v.name} is in the CRM as a new lead` });
 }
 async function makeDeal(key) {
   const r = mktByKey(key); if (!r) return;

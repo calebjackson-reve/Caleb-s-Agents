@@ -1,9 +1,9 @@
 /* Command Center pages inside Pipeline: Dashboard, Commission, Deadlines, Calendar, Leads, Scorecard.
    Numbers come from /api/cc (cc.py). Every card names its source and as-of time, and turns amber or red
-   when its read is stale or failed. Money and contact details stay hidden until Show is pressed, and hide
-   again after two minutes. Uses esc, $, api, toast and go from app.js. */
+   when its read is stale or failed. Names, contacts and money show as they are. Only the Bank page hides
+   its own figures until Show is pressed there. Uses esc, $, api, toast and go from app.js. */
 (function () {
-  const C = window.CC = { after: {}, data: null, priv: true, privTimer: null, cal: { mode: 'week', off: 0, hide: new Set() }, err: null };
+  const C = window.CC = { after: {}, data: null, bankHide: true, cal: { mode: 'week', off: 0, hide: new Set() }, err: null };
   const money0 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
   const money2 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
   // Cents show when the sheet holds them ($1,234.50), whole dollars otherwise ($45,000).
@@ -16,10 +16,10 @@
   const NAMES = { deals: 'AIRE Deals sheet', calendar: 'Google Calendar', inbox: 'Gmail inbox', leads: 'Website lead emails',
     commission_mail: 'Commission mail', goals: 'Goals', history: 'Scorecard history' };
 
-  // ---- formatting, with the privacy lock
-  const m = v => (v == null ? '—' : C.priv ? '$•••' : dollars(v));
-  const mk = v => (v == null ? '—' : C.priv ? '$•••' : v >= 1e6 ? '$' + (v / 1e6).toFixed(2) + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'K' : dollars(v));
-  const contact = v => (!v ? '' : C.priv ? '•••' : esc(v));
+  // ---- formatting
+  const m = v => (v == null ? '—' : dollars(v));
+  const mk = v => (v == null ? '—' : v >= 1e6 ? '$' + (v / 1e6).toFixed(2) + 'M' : v >= 1e3 ? '$' + Math.round(v / 1e3) + 'K' : dollars(v));
+  const contact = v => (!v ? '' : esc(v));
   const day = k => (k ? fmtDay.format(new Date(k + 'T12:00:00Z')) : '');
   const time = s => (s && s.length > 10 ? fmtTime.format(new Date(s)) : 'All day');
   const n = v => (v == null ? '—' : Number(v).toLocaleString());
@@ -55,9 +55,8 @@
   const tile = (label, value, sub, sources, go) => `<${go ? `button type="button" onclick="go('${go}')"` : 'div'} class="cc-tile">
       <span class="cc-tile-l">${label}</span><b class="cc-num">${value}</b><span class="cc-sub">${sub || ''}</span>${src(sources, true)}</${go ? 'button' : 'div'}>`;
   const empty = t => `<p class="cc-empty">${t}</p>`;
-  // The privacy pill always sits in the same place: under the page's one-line description, on every page.
-  const head = (h, p) => `<header class="cc-head"><div><h1>${h}</h1><p>${p}</p>${C.priv ? '<span class="cc-privnote">Money and contacts hidden · Show is at the top</span>' : ''}</div></header>${askBox()}`;
-  // Ask Claude about the page you are on. Only this page's numbers go, no phones or emails; with money hidden, no amounts or names.
+  const head = (h, p) => `<header class="cc-head"><div><h1>${h}</h1><p>${p}</p></div></header>${askBox()}`;
+  // Ask Claude about the page you are on. Only this page's numbers go, no phones or emails. The Bank page sends no amounts while its figures are hidden.
   C.asks = {};
   function askBox() {
     const a = (C.data && C.data.ask) || {}, page = S.view, st = C.asks[page] || {};
@@ -67,28 +66,22 @@
       <form onsubmit="CC.ask(event)"><label class="sr" for="cc-ask-q">Question</label><input id="cc-ask-q" name="q" maxlength="500" required placeholder="What needs my attention here?" value="${esc(st.q || '')}">
       <button type="submit" class="cc-primary" ${st.busy ? 'disabled' : ''}>${st.busy ? 'Asking…' : 'Ask'}</button></form>
       ${st.answer ? `<div class="cc-answer" aria-live="polite">${esc(st.answer).split('\n').join('<br>')}</div>` : ''}${st.error ? `<p class="cc-warn" role="alert">${esc(st.error)}</p>` : ''}
-      <p class="cc-note">Sends this page's numbers to Claude ${esc(a.model || '')}, never phones or emails${C.priv ? ', and no amounts or names while money is hidden' : ''}. About 1 cent a question. $${Number(a.spent || 0).toFixed(2)} of $${Number(a.cap || 1).toFixed(2)} used today.</p></details>`;
+      <p class="cc-note">Sends this page's numbers to Claude ${esc(a.model || '')}, never phones or emails${page === 'bank' && C.bankHide ? ', and no amounts while bank figures are hidden' : ''}. About 1 cent a question. $${Number(a.spent || 0).toFixed(2)} of $${Number(a.cap || 1).toFixed(2)} used today.</p></details>`;
   }
   C.ask = async e => {
     e.preventDefault();
     const page = S.view, q = new FormData(e.target).get('q');
     C.asks[page] = { open: true, q, busy: true }; render();
-    const r = await api('/api/cc/ask', { page, question: q, private: C.priv }).catch(() => ({ ok: false, error: 'Pipeline did not answer' }));
+    const r = await api('/api/cc/ask', { page, question: q, private: page === 'bank' && C.bankHide }).catch(() => ({ ok: false, error: 'Pipeline did not answer' }));
     C.asks[page] = { open: true, q, answer: r.ok ? r.answer : '', error: r.ok ? '' : r.error };
     if (r.ok && C.data && C.data.ask) C.data.ask.spent = r.spent;
     render();
   };
-  const privBtn = () => `<button type="button" class="cc-priv" aria-pressed="${!C.priv}" onclick="CC.togglePriv()">${C.priv ? 'Show money and contacts' : 'Hide money and contacts'}</button>`;
-
-  C.togglePriv = function () {
-    C.priv = !C.priv; clearTimeout(C.privTimer);
-    C.syncPrivBtn();
-    if (!C.priv) C.privTimer = setTimeout(() => { C.priv = true; C.syncPrivBtn(); C.rerender(); }, 120000);
-    C.rerender();
-  };
-  // The top bar's button and every page's button say the same thing; both flip the one switch.
-  C.syncPrivBtn = function () { const b = document.getElementById('privacy'); if (b) { b.textContent = C.priv ? 'Show' : 'Hide'; b.setAttribute('aria-pressed', String(!C.priv)); b.title = (C.priv ? 'Show' : 'Hide') + ' money and contacts (h)'; } };
-  document.addEventListener('DOMContentLoaded', () => { const b = document.getElementById('privacy'); if (b) b.onclick = () => C.togglePriv(); C.syncPrivBtn(); });
+  // The one hide control left: the Bank page's own figures. It starts hidden and hides again when you leave the page.
+  C.toggleBank = function () { C.bankHide = !C.bankHide; if (C.bankHide) delete C.asks.bank; C.rerender(); };
+  // Any way off the Bank page (a nav click, the search box, a link) hides its figures again, and drops an Ask Claude
+  // answer that may quote them. render() in app.js calls this first.
+  C.leaveBank = function () { if (S.view !== 'bank' && !C.bankHide) { C.bankHide = true; delete C.asks.bank; } };
   C.rerender = function () { render(); };
   C.load = async function () {
     try { const ph = await api('/api/photos'); if (ph && ph.ok) C.photos = ph.deals || {}; } catch (e) { }
@@ -138,10 +131,9 @@
       </div>${C.dashMore ? C.dashMore() : ''}</div>`;
   }
   function greet() { const h = Number(new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric', hour12: false }).format(new Date())); return h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'; }
-  // Event titles carry client names; with privacy on, only contract dates (addresses) and blocks keep their titles.
-  const evTitle = r => (C.priv && !['closing', 'deadline', 'inspection', 'block'].includes(r.kind) ? '<span class="cc-hid">Details hidden</span>' : esc(r.title));
+  const evTitle = r => esc(r.title);
   const evRow = r => `<li class="cc-ev k-${r.kind === 'closing' ? 'sale' : r.kind}"><span class="cc-when">${time(r.start)}</span><span class="cc-what">${evTitle(r)}</span><span class="cc-chip">${r.invite ? 'Invite, not accepted' : KIND[r.kind]}</span></li>`;
-  const inboxRow = r => `<li class="cc-ev"><span class="cc-chip c-${r.category}">${r.category}</span><span class="cc-what">${C.priv ? '<span class="cc-hid">Subject hidden</span>' : esc(r.subject)}<small>${contact(senderName(r.sender))}</small></span></li>`;
+  const inboxRow = r => `<li class="cc-ev"><span class="cc-chip c-${r.category}">${r.category}</span><span class="cc-what">${esc(r.subject)}<small>${contact(senderName(r.sender))}</small></span></li>`;
   const senderName = s => String(s || '').replace(/<[^>]*>/g, '').trim();
   function deadlineList(rows) {
     // A deal's words can hold a date Pipeline could not read: that is never "no deadlines".

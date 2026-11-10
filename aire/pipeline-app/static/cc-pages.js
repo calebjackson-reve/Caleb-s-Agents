@@ -89,8 +89,7 @@
 
   // ---------------- Leads ----------------
   // One list: website lead emails and CRM contacts in Stage new lead, one row per person (cc.merge_leads).
-  // Names, phones, emails and what they wrote hide with the privacy button like everything else (Caleb, 2026-11-06,
-  // replacing the 2026-11-05 always-shown rule).
+  // Names, phones, emails and what they wrote always show (Caleb, 2026-11-10: only bank figures hide).
   const AV = ['#e87757', '#c8b596'];
   const avColor = t => AV[[...String(t || '')].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % AV.length];
   const DUE = { now: 'k-closing', late: 'k-closing', soon: 'k-listing', done: 'k-other', unknown: 'k-other' };
@@ -106,13 +105,13 @@
           <div class="cc-pills"><span class="cc-pill ${DUE[due.level] || 'k-other'}">${esc(due.label || '')}</span><span class="cc-pill k-listing">${esc(r.source || 'Website lead')}</span>${r.area ? `<span class="cc-pill k-other">${esc(r.area)}</span>` : ''}
           ${c ? `<span class="cc-pill k-other">In your CRM${c.band ? ' · ' + esc(c.band) : ''}</span>` : '<span class="cc-pill k-other">Not in your CRM yet</span>'}</div></div></div>
       <ul class="cc-contact">
-        <li><span aria-hidden="true">☎</span>${r.phone ? (C.priv ? C.ph(r.phone) : `<a href="tel:${esc(tel)}">${esc(fmtPhone(r.phone))}</a>`) : '<em>No phone</em>'}</li>
-        <li><span aria-hidden="true">✉</span>${r.email ? (C.priv ? C.em(r.email) : `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>`) : '<em>No email</em>'}</li>
-        ${r.address ? `<li><span aria-hidden="true">⌂</span>${C.priv ? '<span class="cc-hid">hidden</span>' : esc(r.address)}</li>` : ''}
+        <li><span aria-hidden="true">☎</span>${r.phone ? `<a href="tel:${esc(tel)}">${esc(fmtPhone(r.phone))}</a>` : '<em>No phone</em>'}</li>
+        <li><span aria-hidden="true">✉</span>${r.email ? `<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>` : '<em>No email</em>'}</li>
+        ${r.address ? `<li><span aria-hidden="true">⌂</span>${esc(r.address)}</li>` : ''}
         <li><span aria-hidden="true">◷</span>Came in ${esc(when)} · ${r.origin === 'crm' ? 'from the CRM' : 'from the lead email'}</li>
       </ul>
-      ${r.message ? `<blockquote class="cc-quote">${C.msg(r.message)}</blockquote>` : ''}
-      ${extra.length && !C.priv ? `<dl class="cc-fields">${extra.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${/^https?:\/\//i.test(v) ? `<a href="${esc(v)}" target="_blank" rel="noopener">Open link</a>` : esc(v)}</dd></div>`).join('')}</dl>` : ''}
+      ${r.message ? `<blockquote class="cc-quote">${esc(r.message)}</blockquote>` : ''}
+      ${extra.length ? `<dl class="cc-fields">${extra.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${/^https?:\/\//i.test(v) ? `<a href="${esc(v)}" target="_blank" rel="noopener">Open link</a>` : esc(v)}</dd></div>`).join('')}</dl>` : ''}
       ${c && (c.last_touch || c.next_action) ? `<p class="cc-note">${c.last_touch ? 'Last touch ' + esc(c.last_touch) : 'No touch logged'}${c.next_action && !/within the hour/i.test(c.next_action) ? ' · Next: ' + C.note(c.next_action, [name]) : ''}</p>` : ''}
       <div class="cc-acts">${typeof contactBtns === 'function' ? contactBtns(pid || '', { phone: r.phone, email: r.email, display: name }) : ''}${pid ? `<button type="button" class="cc-primary" onclick="touched('${esc(pid)}')">✓ Touched</button><button type="button" onclick="openTask('${esc(pid)}')">＋ Task</button>` : `<button type="button" class="cc-primary" onclick="CC.addLead(${i})">Add to the CRM</button>`}<button type="button" onclick="CC.copyLead(${i})">Copy a first text</button></div></li>`;
   }
@@ -139,10 +138,9 @@
   C.addLead = async i => {
     const r = i == null ? {} : leadRows()[i] || {};
     const SRC = ['Website', 'Referral', 'Sign call', 'Open house', 'Social', 'Past client', 'Other'];
-    // A lead copied from a card: with contacts hidden its details stay out of the boxes (a placeholder says so) and Save
-    // keeps them. No password-style dots, which made password managers open an empty menu over the form.
-    const fill = v => (!v ? '' : C.priv ? 'placeholder="Hidden · press Show at the top to see it"' : `value="${esc(v)}"`);
-    const keep = (id, v) => $(id).value.trim() || (C.priv ? v || '' : '');
+    // A lead copied from a card arrives with its details filled in.
+    const fill = v => (!v ? '' : `value="${esc(v)}"`);
+    const keep = id => $(id).value.trim();
     const v = await modal('Add a lead', `
       <div class="field"><label for="m-lname">Name</label><input id="m-lname" autocomplete="off" ${fill(r.name)} required></div>
       <div class="field"><label for="m-lphone">Phone</label><input id="m-lphone" type="tel" inputmode="tel" autocomplete="off" ${fill(r.phone)}></div>
@@ -151,7 +149,7 @@
       <p class="cc-note">Saved to the CRM as a new lead. Refused if the name, phone or email is already there or on Do Not Contact.</p>`,
       m => { const name = keep('#m-lname', r.name); if (!name) { $('#m-lname', m).focus(); return false; }
         return { name, phone: keep('#m-lphone', r.phone), email: keep('#m-lemail', r.email), source: $('#m-lsrc', m).value + ' ' + (C.data ? C.data.today : todayISO()), next_action: 'Reach out: new lead' }; }, 'Save lead');
-    if (v) await act('/api/lead', v, { tag: 'LEAD', text: `${C.priv ? 'The lead' : v.name} is in the CRM as a new lead` }).then(ok => { if (ok) C.load(); });
+    if (v) await act('/api/lead', v, { tag: 'LEAD', text: `${v.name} is in the CRM as a new lead` }).then(ok => { if (ok) C.load(); });
   };
   Object.assign(C.views, { commission, deadlines, calendar, ccleads });
 })();

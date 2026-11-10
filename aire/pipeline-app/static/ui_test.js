@@ -32,9 +32,10 @@ run('S.data = __state; CC.data = __cc;');
 let fails = 0;
 const check = (ok, name, detail) => { console.log((ok ? 'ok   ' : 'FAIL ') + name + (ok || !detail ? '' : '\n     ' + detail)); if (!ok) fails++; };
 const views = run('Object.keys(CC.views)');
-const render = (v, priv) => run(`CC.priv = ${priv}; S.view = ${JSON.stringify(v)}; S.filter = 'all'; CC.views[${JSON.stringify(v)}]()`);
+const render = v => run(`S.view = ${JSON.stringify(v)}; S.filter = 'all'; CC.views[${JSON.stringify(v)}]()`);
 
-// 1. Privacy: with it on, no contact or dollar amount on any page.
+// 1. Nothing hides behind a sitewide switch (Caleb, 2026-11-10): names, contacts and dollars show on every page.
+// Only the Bank page has a Show and Hide, and only for its own figures.
 const f = state.feed || {};
 const people = [].concat(f.touches_due || [], f.tasks || [], f.new_leads || [], f.partners || [], (f.deals || []).map(d => ({ display: d.display })),
   ccdata.leads.map(l => ({ display: l.name, phone: l.phone, email: l.email })), (state.sent_today || []));
@@ -44,27 +45,28 @@ const emails = [...new Set(people.map(p => p.email).filter(Boolean))];
 const msgs = [...new Set((f.touches_due || []).flatMap(r => (r.last_messages || []).map(m => String(m).replace(/^\d{4}-\d{2}-\d{2}: /, ''))).filter(m => m.length > 12))];
 for (const v of views) {
   let html = '';
-  try { html = render(v, true); } catch (e) { check(false, `${v} renders with privacy on`, e.stack.split('\n').slice(0, 3).join(' | ')); continue; }
+  try { html = render(v); check(true, `${v} renders`); } catch (e) { check(false, `${v} renders`, e.stack.split('\n').slice(0, 3).join(' | ')); continue; }
   const text = html.replace(/<[^>]+>/g, ' ');
-  const leak = [].concat(names.filter(n => text.includes(n)), phones.filter(p => text.replace(/\D/g, '').includes(p)), emails.filter(e => text.includes(e)),
-    msgs.filter(m => text.includes(m)), (text.match(/\$\s?\d[\d,]{2,}/g) || []));
-  check(!leak.length, `${v}: privacy on hides names, phones, emails, messages and dollars`, leak.slice(0, 5).join(' / '));
-  try { render(v, false); check(true, `${v} renders with privacy off`); } catch (e) { check(false, `${v} renders with privacy off`, e.message); }
+  check(!/Name hidden|Message hidden|Note hidden|Money and contacts hidden|cc-privnote|\$•••/.test(v === 'bank' ? html.replace(/\$•••/g, '') : html), `${v}: nothing is hidden behind a sitewide switch`);
+  check(v === 'bank' ? /id="bank-show"/.test(html) : !/class="cc-priv"/.test(html), `${v}: ${v === 'bank' ? 'has its own Show for bank figures' : 'has no Show or Hide control'}`);
   // 16. No developer text on any screen.
   const dev = text.match(/crm\.py|LaunchAgent|org\.calebjackson|\.json\b|PIPELINE_|API_KEY|~\/|aire\/[a-z-]+\/|monitor\.py|python3/g);
   check(!dev, `${v}: no developer text`, dev && dev.join(', '));
   // 8. Every page names a source with a time, except the pages that are settings.
   if (!['sources', 'health', 'life'].includes(v)) check(/cc-src/.test(html) || /cc-empty/.test(html), `${v}: shows a source line`);
 }
-// Map pin card: a person's card hides contact details too.
+// Map pin card: a person's card shows the first and last name. A contact with no name on the sheet says so.
 const pin = ((f.map || {}).pins || []).find(p => p.kind === 'person' && p.phone);
 if (pin) {
-  const card = run(`CC.priv = true; pinCard(${JSON.stringify(pin)})`);
-  check(!card.includes(pin.display) && !card.replace(/\D/g, '').includes(String(pin.phone).replace(/\D/g, '').slice(-7)), 'map pin card hides the name and phone');
+  const card = run(`pinCard(${JSON.stringify(pin)})`);
+  check(/\s/.test(pin.display) && card.includes(run(`esc(${JSON.stringify(pin.display)})`)) && !/Name hidden/.test(card), 'map pin card shows the first and last name');
+  check(/No name on the sheet/.test(run(`pinCard(${JSON.stringify(Object.assign({}, pin, { display: '' }))})`)), 'a pin with no name on the sheet says so, and no name is made up');
 }
+{ const t0 = (f.touches_due || []).find(r => r.display && /\s/.test(r.display));
+  if (t0) check(render('touches').includes(run(`esc(${JSON.stringify(t0.display)})`)), 'Touches due shows first and last names'); }
 
 // 3. One lead count: the Dashboard tile, the nav and the Leads page agree.
-const dash = render('dash', true), leadsPage = render('ccleads', true);
+const dash = render('dash'), leadsPage = render('ccleads');
 const tileN = (dash.match(/New leads, 14 days<\/span><b class="cc-num">(\d+)/) || [])[1];
 const pageN = (leadsPage.match(/Leads <span class="cc-count">(\d+)/) || [])[1];
 check(tileN && tileN === pageN && Number(tileN) === ccdata.leads.length, 'one lead count on the Dashboard and Leads', `tile ${tileN}, page ${pageN}, data ${ccdata.leads.length}`);
@@ -112,10 +114,10 @@ check(!mapjs.includes('tile.openstreetmap.org') && !mapjs.includes('USGSTopo') &
 check(mapjs.includes('basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly'), 'satellite imagery is USGS, a source that allows apps');
 check(/function drawLabels/.test(mapjs) && /hit\(b\)/.test(mapjs), 'area labels are placed so they never overlap');
 // 14 and 17: no arrow on 0%, and a photo-only text says so.
-check(!/▲ 0%|▼ 0%/.test(render('ccmarket', false)), 'no arrow on 0%');
+check(!/▲ 0%|▼ 0%/.test(render('ccmarket')), 'no arrow on 0%');
 check(run(`CC.cleanMsg('2026-11-05: \\uFFFC')`) === 'Sent a photo or attachment', 'a photo-only text reads "Sent a photo or attachment"');
 // 13. Commission says gross.
-check(/gross/.test(render('commission', false)), 'commission is labelled gross');
+check(/gross/.test(render('commission')), 'commission is labelled gross');
 // 12. Booked time says what it leaves out.
 check(/invites you have not accepted are left out/.test(dash), 'Booked and On the calendar say work blocks and invites are left out');
 
@@ -124,21 +126,31 @@ check(/invites you have not accepted are left out/.test(dash), 'Booked and On th
   const dl = JSON.parse(JSON.stringify(ccdata.deals)); if (dl[0]) { dl[0].next = 'KW Command still shows $7,198 off the old list price'; dl[0].stage = 'contract'; }
   const bankRows = [{ type: 'Deposit', subject: 'You received a $12,053.16 deposit', received: ccdata.at, amount: 12053.16 }];
   run(`CC.data = Object.assign({}, __cc, { deals: ${JSON.stringify(dl)}, bank: Object.assign({}, __cc.bank, { rows: ${JSON.stringify(bankRows)} }) })`);
-  for (const v of ['commission', 'deals', 'bank', 'dash']) {
-    const t = render(v, true).replace(/<[^>]+>/g, ' ');
-    check(!/7,198|12,053/.test(t), `${v}: a dollar amount inside a note or subject hides with privacy on`);
-  }
-  check(/7,198/.test(render('commission', false)), 'commission: the note shows in full with privacy off');
-  run('var __briefHtml = ""; modal = (t, h) => { __briefHtml = h; return new Promise(() => {}); }; CC.priv = true; openBrief();');
+  check(/7,198/.test(render('commission')), 'commission: a dollar amount inside a note shows in full');
+  run('CC.bankHide = true');
+  const bh = render('bank').replace(/<[^>]+>/g, ' ');
+  check(!/12,053/.test(bh) && /Details hidden/.test(bh) && /Show bank figures/.test(bh), 'bank: balances, deposits and alert text stay hidden until Show is pressed on that page');
+  run('CC.bankHide = false');
+  const bs = render('bank').replace(/<[^>]+>/g, ' ');
+  check(/12,053/.test(bs) && /Hide bank figures/.test(bs), 'bank: Show on the Bank page reveals its figures');
+  run('CC.bankHide = true');
+  run(`S.view = 'bank'; CC.bankHide = false; CC.asks.bank = { answer: 'Cash is $12,053.16' }; CC.leaveBank()`);
+  check(run('CC.bankHide') === false && !!run('CC.asks.bank'), 'bank: figures stay shown while you are on the Bank page');
+  run(`S.view = 'search'; CC.leaveBank()`);
+  check(run('CC.bankHide') === true && run('CC.asks.bank') === undefined && /function render\(\) \{\s*if \(window\.CC && CC\.leaveBank\) CC\.leaveBank\(\);/.test(appjs),
+    'bank: any way off the page (nav, search, a link) hides the figures again and drops an Ask answer that may quote them');
+  run(`S.view = 'bank'; CC.bankHide = false; CC.asks.bank = { answer: 'x' }; var __r = CC.rerender; CC.rerender = () => {}; CC.toggleBank(); CC.rerender = __r;`);
+  check(run('CC.bankHide') === true && run('CC.asks.bank') === undefined, 'bank: Hide on the Bank page hides the figures and drops the Ask answer');
+  run(`S.view = 'dash'`);
+  run('var __briefHtml = ""; modal = (t, h) => { __briefHtml = h; return new Promise(() => {}); }; openBrief();');
   const brief = run('__briefHtml').replace(/<[^>]+>/g, ' ');
-  const bleak = names.filter(x => brief.includes(x)).concat(brief.match(/\$\s?\d[\d,]{2,}/g) || []);
-  check(!bleak.length, 'morning brief hides names and dollars with privacy on', bleak.slice(0, 3).join(' / '));
+  check(!/Name hidden|Message hidden|\$•••/.test(run('__briefHtml')), 'morning brief shows names and dollars as they are');
   check(/DEALS SHEET/.test(run('__briefHtml')) && !(f.deals || []).some(x => x.address && run('__briefHtml').includes(x.address)), 'morning brief lists the Deals sheet, not the CRM Deals tab');
   run('CC.data = __cc');
 }
 
 // Round 2, item 2: Add a lead is one click from the Dashboard and from Leads, a four-field form with one Save.
-check(/onclick="CC\.addLead\(\)"/.test(render('dash', true)) && /onclick="CC\.addLead\(\)"/.test(render('ccleads', true)), 'Add a lead is one click from the Dashboard and Leads');
+check(/onclick="CC\.addLead\(\)"/.test(render('dash')) && /onclick="CC\.addLead\(\)"/.test(render('ccleads')), 'Add a lead is one click from the Dashboard and Leads');
 {
   run('var __leadForm = ""; modal = (t, h) => { __leadForm = t + "|" + h; return Promise.resolve(null); }; CC.addLead();');
   const form = run('__leadForm'), ids = [...form.matchAll(/<(?:input|select)[^>]*id="([^"]+)"/g)].map(m => m[1]);
@@ -159,13 +171,13 @@ check(/onclick="CC\.addLead\(\)"/.test(render('dash', true)) && /onclick="CC\.ad
     run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { deals: ${JSON.stringify(crmDeals)}, map: Object.assign({}, __state.feed.map, { pins: ${JSON.stringify(pins)} }) }) }); S.mapF.deals = true;`);
     const got = run('JSON.stringify(dealPins().map(p => [p.key, p.stage]))');
     check(got === JSON.stringify([['d1', 'under_contract']]), 'a deal pin takes the sheet status and a closed sheet deal leaves the map', got);
-    const pc = run(`CC.priv = false; pinCard(dealPins()[0])`);
+    const pc = run(`pinCard(dealPins()[0])`);
     check(pc.includes(run(`esc(${JSON.stringify(sheet.status)})`)) && !pc.includes('>active<'), 'the deal pin card shows the sheet status and price');
     run('var __dealForm = ""; modal = (t, h) => { __dealForm = h; return Promise.resolve(null); };');
     run(`openDeal(${JSON.stringify(pins[0].address)})`);
     const fm = run('__dealForm');
     check(fm.includes(`id="m-price" value="${sheet.price}"`) && fm.includes(`value="${sheet.act}"`) && /Prefilled from the AIRE Deals sheet/.test(fm), 'the deal form is prefilled with the sheet price and act of sale');
-    run('S.data = __state; CC.priv = true;');
+    run('S.data = __state; ');
   }
   const voicejs = fs.readFileSync(path.join(dir, 'voice.js'), 'utf8');
   check(!/f\.deals\b|feed\(\)\.deals|deals_live|f\.new_leads \|\| \[\]\)\.length|const l = f\.new_leads/.test(voicejs), 'voice answers about deals and leads read the Deals sheet and the one lead list');
@@ -173,7 +185,7 @@ check(/onclick="CC\.addLead\(\)"/.test(render('dash', true)) && /onclick="CC\.ad
 
 // Round 2, item 4: one new-lead rule. The Dashboard, Scorecard, Leads and the nav all show lead_counts.
 {
-  const lc = ccdata.lead_counts, d = render('dash', true), sc = render('scorecard', true), lp = render('ccleads', true);
+  const lc = ccdata.lead_counts, d = render('dash'), sc = render('scorecard'), lp = render('ccleads');
   check(lc && new RegExp(`New leads, 14 days</span><b class="cc-num">${lc.d14}<`).test(d) && d.includes(`${lc.d7} in the last 7 days`), 'Dashboard shows the 14 and 7 day lead counts', JSON.stringify(lc));
   check(new RegExp(`Leads per week</h2><b class="cc-num">${lc.d7}<`).test(sc), 'Scorecard leads per week is the 7 day count');
   check(new RegExp(`Leads <span class="cc-count">${lc.d14}<`).test(lp) && lp.includes(`${lc.d7} came in the last 7 days`), 'Leads page shows the same 14 and 7 day counts');
@@ -194,12 +206,12 @@ check(/onclick="CC\.addLead\(\)"/.test(render('dash', true)) && /onclick="CC\.ad
   // The CRM feed's failed rebuild shows on Sources and in the banner, and its dot is red.
   run(`S.data = Object.assign({}, __state, { feed_run: { state: 'failed', at: '2026-11-08T12:45:03-06:00', at_text: 'Nov 8, 12:45 PM', detail: 'crm.py feed failed' } })`);
   check(run(`CC.local('crm').state`) === 'failed' && /is-failed/.test(run(`CC.src('crm')`)), 'a failed CRM feed rebuild is red, not green');
-  const srcPage = render('sources', true);
+  const srcPage = render('sources');
   check(/s-failed[^]*Failed[^]*rebuild at Nov 8, 12:45 PM failed/.test(srcPage), 'Sources names the failed CRM feed rebuild');
-  check(/rebuild at Nov 8, 12:45 PM failed/.test(render('touches', true)), 'every page banner names the failed feed rebuild');
+  check(/rebuild at Nov 8, 12:45 PM failed/.test(render('touches')), 'every page banner names the failed feed rebuild');
   // With no feed at all, the Dashboard says tasks did not load, not that nothing is urgent.
   run(`S.data = Object.assign({}, __state, { feed_ok: false, feed: {} })`);
-  const d0 = render('dash', true);
+  const d0 = render('dash');
   check(/Tasks didn.t load/.test(d0) && !/Nothing urgent/.test(d0), 'with the feed failed, the Dashboard says Tasks didn\'t load');
   run('S.data = __state');
 }
@@ -213,12 +225,12 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
   const pick = (f.touches_due || []).find(r => r.display && r.display.split(' ')[1]);
   if (pick) {
     run(`S.q = ${JSON.stringify(pick.display.split(' ')[1])}`);
-    const hits = run(`CC.priv = false; CC.views.search()`);
+    const hits = run(`CC.views.search()`);
     check(hits.includes(run(`esc(${JSON.stringify(pick.display)})`)) && /match/.test(hits), 'search from any page finds a person by name');
   }
   run(`S.q = 'zzqx no such thing'`);
   for (const v of ['search', 'touches', 'tasks', 'deals', 'ccleads', 'queue', 'monitor'])
-    check(/No match for “zzqx no such thing”/.test(run(`CC.priv = true; CC.views[${JSON.stringify(v)}]()`)), `${v}: an empty search says No match`);
+    check(/No match for “zzqx no such thing”/.test(run(`CC.views[${JSON.stringify(v)}]()`)), `${v}: an empty search says No match`);
   run(`S.q = ''`);
   const own = run('CC.SEARCHES_ITSELF'), nonList = views.filter(v => !own.includes(v) && v !== 'search');
   check(nonList.length > 5 && /S\.view = 'search'/.test(appjs) && /S\.before \|\| 'home'/.test(appjs), 'typing on a page with no list opens Search, clearing it goes back');
@@ -230,7 +242,7 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
   const owe = (f.touches_due || []).filter(r => r.owes_reply).length;
   const tq = Object.assign({}, state.text_queue || {}, { reply_first: ((state.text_queue || {}).reply_first || []).slice(0, Math.max(0, owe - 1)) });
   run(`S.data = Object.assign({}, __state, { text_queue: ${JSON.stringify(tq)}, feed: Object.assign({}, __state.feed, { signals: Object.assign({}, __state.feed.signals, { owes_reply: 999 }) }) })`);
-  const dsh = render('dash', true), tch = render('touches', true), drf = render('queue', true);
+  const dsh = render('dash'), tch = render('touches'), drf = render('queue');
   check(owe > 0 && dsh.includes(`${owe} owe a reply`) && tch.includes(`Owe a reply <b>${owe}</b>`) && drf.includes(`${owe} owe a reply (the same number as Touches due)`),
     'Dashboard, Touches due and Drafts show the same owe-a-reply number', `touches ${owe}`);
   check(/have no first name on file/.test(drf) && !/999/.test(dsh + tch + drf) && !/signals\.owes_reply/.test(appjs), 'Drafts explains the people with no reply draft, and nothing reads the signals count');
@@ -242,11 +254,11 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
   const hist = [{ day: '2026-11-02', gci: 1, pending: 0, closings: 1, leads7: 4, appts7: 0 }, { day: ccdata.today, gci: 1, pending: 0, closings: 1, leads7: 3, appts7: 0 }];
   run(`CC.data = Object.assign({}, __cc, { history: ${JSON.stringify(hist)}, history_saved: 1, deltas: { gci: {7: null, 30: null}, closings: {7: null, 30: null}, leads7: {7: null, 30: null}, appts7: {7: null, 30: null} },
     since: { leads7: { since: '2026-11-02', days: 1, value: -1 } } })`);
-  const one = render('scorecard', false);
+  const one = render('scorecard');
   check(!/<svg class="cc-spark"/.test(one) && /No trend line yet: one day is saved/.test(one), 'one saved day draws no trend line, it says so');
   check(/Since [A-Z][a-z]{2}, Nov 2: <b>−1<\/b>/.test(one) && !/no history yet/.test(one), 'with no day 7 days old, the change since the first saved day shows with its date');
   run(`CC.data = Object.assign({}, CC.data, { history: ${JSON.stringify([{ day: '2026-11-01', gci: 1, pending: 0, closings: 1, leads7: 2, appts7: 0 }].concat(hist))}, history_saved: 2 })`);
-  check(/<svg class="cc-spark"/.test(render('scorecard', false)), 'two saved days draw the trend line');
+  check(/<svg class="cc-spark"/.test(render('scorecard')), 'two saved days draw the trend line');
   run('CC.data = __cc');
 }
 
@@ -255,17 +267,17 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
 {
   for (const v of ['touches', 'tasks', 'queue', 'sent', 'monitor', 'search']) {
     if (v === 'search') run(`S.q = 'a'`);
-    check(/<section class="cc-card"><p class="cc-srcline"><span class="cc-src/.test(render(v, true)), `${v}: the source and as-of time are at the top of the list`);
+    check(/<section class="cc-card"><p class="cc-srcline"><span class="cc-src/.test(render(v)), `${v}: the source and as-of time are at the top of the list`);
     run(`S.q = ''`);
   }
   const tk = f.tasks || [], tab = tk.filter(t => t.task_id).length;
-  check(render('tasks', true).includes(`${tk.length} open: ${tab} on the Tasks tab and ${tk.length - tab} from the Next_Action column on contacts`), 'Tasks says how many come from the Tasks tab and how many from Next_Action');
+  check(render('tasks').includes(`${tk.length} open: ${tab} on the Tasks tab and ${tk.length - tab} from the Next_Action column on contacts`), 'Tasks says how many come from the Tasks tab and how many from Next_Action');
   run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { tasks: [{ person_id: '1', display: 'A Fixture', task: 'Call', due: '', source: 'Next_Action' }] }) })`);
-  check(/That is why the Tasks tab itself shows none open/.test(render('tasks', true)), 'with every task from Next_Action, Tasks explains why the Tasks tab shows none');
+  check(/That is why the Tasks tab itself shows none open/.test(render('tasks')), 'with every task from Next_Action, Tasks explains why the Tasks tab shows none');
   run('S.data = __state');
   const pl = run('CC.peopleLine()'), c = f.counts || {};
   check(pl.includes(c.contacts.toLocaleString() + ' contacts in the AIRE CRM sheet') && (!(f.signals || {}).people || pl.includes('have texts with you')) && pl.includes('placed on the map'), 'the people counts are explained in one sentence', pl);
-  check(render('sources', true).includes(pl) && render('map', true).includes(pl), 'Sources and the Map carry that sentence');
+  check(render('sources').includes(pl) && render('map').includes(pl), 'Sources and the Map carry that sentence');
 }
 
 // Round 2, item 12: phone width. The page itself is checked at 390 px in Chrome (no sideways scroll on any page); these keep
@@ -275,9 +287,9 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
   check(/\.side \.brand \{ position: sticky; left: 0;/.test(uiPhone) && /\.side \.brand-name, \.side \.brand-sub \{ display: none; \}/.test(uiPhone), 'phone: the P mark is pinned at the left of the nav, never clipped');
   check(/\.nav-h \{ display: inline-flex;/.test(uiPhone) && /\.nav-g \+ \.nav-g \{ border-left/.test(uiPhone), 'phone: nav groups keep their names as dividers');
   check(/\.cc-row-main, \.cc-what, \.cc-note, \.cc-row-why[^{]*\{ min-width: 0; overflow-wrap: anywhere; \}/.test(ui), 'long words in notes wrap instead of spilling sideways');
-  const com = render('commission', false), tds = (com.match(/<table class="cc-table cc-stack">[^]*?<\/table>/) || [''])[0].match(/<td[^>]*>/g) || [];
+  const com = render('commission'), tds = (com.match(/<table class="cc-table cc-stack">[^]*?<\/table>/) || [''])[0].match(/<td[^>]*>/g) || [];
   check(tds.length > 0 && tds.every(t => /data-label="[^"]+"/.test(t)) && /td::before \{ content: attr\(data-label\)/.test(ui), 'phone: the Commission table stacks into rows with every cell labelled');
-  check(/class="cc-rows cc-tasks"/.test(render('tasks', true)), 'Tasks rows get their phone spacing');
+  check(/class="cc-rows cc-tasks"/.test(render('tasks')), 'Tasks rows get their phone spacing');
 }
 
 // Round 2, item 13: one visual style. Coral and tan, no blue or green anywhere (CSS or map pins), no strikethrough, no
@@ -297,7 +309,7 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
   for (const v of views) for (const p of [true, false]) { const h = render(v, p); if (/\bblank\b/i.test(h.replace(/<[^>]+>/g, ' ').replace(/_blank/g, ''))) words.push(v); if (/<s[\s>]/.test(h)) strikes.push(v); }
   check(!words.length, 'no page says "blank"', [...new Set(words)].join(' '));
   check(!strikes.length, 'no page draws a struck-through element', [...new Set(strikes)].join(' '));
-  for (const v of ['touches', 'tasks', 'queue', 'sent']) { const h = render(v, true); check(/<header class="cc-head">/.test(h) && /<section class="cc-card">/.test(h), `${v}: the same head and card as the card pages`); }
+  for (const v of ['touches', 'tasks', 'queue', 'sent']) { const h = render(v); check(/<header class="cc-head">/.test(h) && /<section class="cc-card">/.test(h), `${v}: the same head and card as the card pages`); }
 }
 
 // Round 2, items 14 and 15: no developer text, Escape closes the Keys window, and each Market tile has its own source.
@@ -310,7 +322,7 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
   const mk = Object.assign({}, ccdata.market, { rate: null, warnings: ['The mortgage rate (Freddie Mac, via FRED) did not load: the site took too long to answer'],
     parts: { rate: { state: 'failed', note: 'x' }, areas: { state: 'ok' }, gbrar: { state: 'ok' } } });
   run(`CC.data = Object.assign({}, __cc, { market: ${JSON.stringify(mk)} })`);
-  const mp = render('ccmarket', true), tiles = (mp.match(/<div class="cc-tile">[^]*?<\/span><\/div>/g) || []);
+  const mp = render('ccmarket'), tiles = (mp.match(/<div class="cc-tile">[^]*?<\/span><\/div>/g) || []);
   check(tiles.length >= 4 && tiles.every(t => /class="cc-src/.test(t)), 'every Market tile carries its own source line');
   check(/is-failed"><i aria-hidden="true"><\/i>Freddie Mac PMMS, via FRED[^<]*<b>did not load in the last read/.test(mp) && /is-ok"><i aria-hidden="true"><\/i>GBRAR/.test(mp), 'a failed source is red on its own tile, the others stay current');
   check(!/Error|Errno|urlopen|Traceback/.test(mp.replace(/<[^>]+>/g, ' ')), 'Market shows no Python error text');
@@ -321,7 +333,7 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
 {
   const cm = [{ subject: 'Commission for Fake Chapel', received: ccdata.today, status: 'No closed deal' }, { subject: 'Commission for 310 Sugar Mill', received: ccdata.today, status: 'Paid' }];
   run(`CC.data = Object.assign({}, __cc, { commission_mail: ${JSON.stringify(cm)} })`);
-  const com = render('commission', false);
+  const com = render('commission');
   check(/Paid, no closed deal<\/span><b class="cc-num">1</.test(com) && /class="cc-chip s-Nocloseddeal">No closed deal/.test(com) && /no deal on the Deals sheet with this street is Closed/.test(com), 'Commission flags a paid commission with no closed deal and says what to check');
   check(/\.cc-chip\.s-Nocloseddeal \{ color: var\(--cc-coral\)/.test(ui), 'the flag is coral like Not processed');
   run('CC.data = __cc');
@@ -331,46 +343,36 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
 {
   const tdp = (f.touches_due || []).find(r => r.display && /\s/.test(r.display) && r.phone);
   if (tdp) {
-    run('CC.priv = true');
-    check(!run(`personSelect('')`).includes(run(`esc(${JSON.stringify(tdp.display)})`)), 'the task picker hides names with privacy on');
+    check(run(`personSelect('')`).includes(run(`esc(${JSON.stringify(tdp.display)})`)), 'the task picker lists people by name');
     run('var __t = ""; modal = (t, h) => { __t = t + "|" + h; return Promise.resolve(null); };');
     run(`touched(${JSON.stringify(tdp.person_id)})`);
-    check(/this person/i.test(run('__t')) && !run('__t').toUpperCase().includes(tdp.display.toUpperCase()), 'the Touched dialog says this person, not the name');
+    check(run('__t').toUpperCase().includes(tdp.display.toUpperCase()), 'the Touched dialog names the person');
     run(`var __drawer = {}; var __q = document.querySelector; document.querySelector = s => s === '#drawer' ? __drawer : (s === '#c-body' ? { addEventListener() {}, focus() {}, setSelectionRange() {}, value: '' } : __q(s));`);
     run(`openCompose(${JSON.stringify(tdp.person_id)})`);
     const dh = run('__drawer.innerHTML || ""');
-    check(dh && !dh.includes(tdp.display) && /class="cc-masked"/.test(dh) && !(tdp.last_messages || []).some(m => m.length > 15 && dh.includes(m.slice(12))), 'the compose drawer hides the name, masks the number and hides their texts');
+    check(dh && dh.includes(run(`esc(${JSON.stringify(tdp.display)})`)) && !/cc-masked|press the H key|Name hidden/.test(dh), 'the compose drawer shows the name, the number and their texts');
     run('document.querySelector = __q; S.compose = null;');
   }
   const mr = { kind: 'market', key: 'mx', type: 'permit', label: 'Roof', address: '1 Fixture Way', city: 'Zachary', date: '2026-11-01', subtype: 'Reroof', description: 'Reroof $350,000 for John Fixture', value: 350000, source: 'EBR permits', source_date: '2026-11-02' };
-  const mc = run(`CC.priv = true; pinCard(${JSON.stringify(mr)})`);
-  check(!/350,000|John Fixture/.test(mc), 'Market Monitor detail text hides dollars and names');
+  const mc = run(`pinCard(${JSON.stringify(mr)})`);
+  check(/350,000/.test(mc) && /John Fixture/.test(mc), 'Market Monitor detail text reads as the public record has it');
   const fr2 = JSON.parse(JSON.stringify(ccdata.fresh)); fr2.deals = Object.assign({}, fr2.deals, { state: 'failed', error: 'x', error_text: 'access to this source was refused' });
   run(`CC.data = Object.assign({}, __cc, { fresh: ${JSON.stringify(fr2)}, problems: [Object.assign({ name: 'deals' }, ${JSON.stringify(fr2.deals)})] })`);
-  check(/cc-banner/.test(render('map', true)) && /access to this source was refused/.test(render('dash', true)), 'the map pages carry the banner, and read errors show in plain words');
+  check(/cc-banner/.test(render('map')) && /access to this source was refused/.test(render('dash')), 'the map pages carry the banner, and read errors show in plain words');
   run('CC.data = __cc');
   run(`S.data = Object.assign({}, __state, { feed_age_minutes: null, feed: Object.assign({}, __state.feed, { generated_at: null }) })`);
   check(run(`CC.local('crm').state`) === 'missing', 'a feed with no build time is never green');
   run('S.data = __state');
   const cm = [{ subject: 'Commission for Fake Chapel', received: ccdata.today, status: 'No closed deal' }, { subject: 'x', received: ccdata.today, status: 'Not processed' }];
   run(`CC.data = Object.assign({}, __cc, { commission_mail: ${JSON.stringify(cm)} })`);
-  check(/Commission to check<\/span><b class="cc-num">2</.test(render('dash', true)), 'the Dashboard commission tile counts the same two the nav does');
+  check(/Commission to check<\/span><b class="cc-num">2</.test(render('dash')), 'the Dashboard commission tile counts the same two the nav does');
   run('CC.data = __cc');
 }
 
-// Round 3, items 1 and 10: names inside free text hide, and masking never eats a word, a digit or a date.
+// Free text (a task, a next step, a deal note) reads as written: names, dollars and dates included.
 {
-  run('CC.priv = true');
   const sc = t => run(`CC.scrub(${JSON.stringify(t)})`).replace(/&#39;/g, "'");
-  check(sc('Ford offer expired Nov 4 9 AM, counter still waiting') === '••• offer expired Nov 4 9 AM, counter still waiting', 'a name that starts a sentence hides, the date stays', sc('Ford offer expired Nov 4 9 AM, counter still waiting'));
-  check(sc('KW Command still shows $7,198 off the old list price') === 'KW Command still shows $••• off the old list price', 'a masked dollar amount keeps the space after it');
-  check(sc('median list price $285,000, 78 median days') === 'median list price $•••, 78 median days', 'a masked dollar amount never swallows the next number');
-  check(sc('Seller countered at $2.8M as is, open until Fri Nov 6 5 PM') === 'Seller countered at $••• as is, open until Fri Nov 6 5 PM', 'a weekday and month are never masked');
-  check(sc("FORD check-in: 'how yall been?'") === "FORD check-in: 'how yall been?'", 'an acronym like FORD stays');
-  check(sc('Text Jessamyn Quill back about the open house') === 'Text ••• back about the open house', 'a full name the CRM does not know hides as one mask');
-  run('CC.priv = false');
-  check(sc('Ford offer expired') === 'Ford offer expired', 'with privacy off, free text shows as written');
-  run('CC.priv = true');
+  check(sc('Ford offer expired Nov 4 9 AM, KW Command still shows $7,198') === 'Ford offer expired Nov 4 9 AM, KW Command still shows $7,198', 'free text shows as written, names and dollars included');
 }
 
 // Round 3, items 2 and 15: the chip, the bell and its window show the worst source. A failed part of Market and a
@@ -382,7 +384,7 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
   const att = run('CC.attention()');
   check(att[0] && att[0].level === 'red' && /mortgage rate/.test(att[0].text), 'a failed part of Market is red at the top of the attention list', JSON.stringify(att[0]));
   check(att.some(x => x.level === 'amber' && /KW Command reader: never run/.test(x.text)), 'a never-run Command reader is on the list');
-  check(/s-failed[^]*part of it did not load/.test(render('sources', true)), 'Sources shows Market as failed when part of it failed, not Current');
+  check(/s-failed[^]*part of it did not load/.test(render('sources')), 'Sources shows Market as failed when part of it failed, not Current');
   check(/const att = window\.CC && CC\.data && CC\.attention \? CC\.attention\(\)/.test(appjs) && /bc\.textContent = att\.length/.test(appjs), 'the header chip and the bell count the one attention list');
   run('var __pm = null; modal = (t, h, ok, lbl, o) => { __pm = { t, h, lbl, o }; return Promise.resolve(null); }; openProblems();');
   check(run('__pm.o && __pm.o.info === true') && run('__pm.h').includes('mortgage rate'), 'What needs attention lists the same items and has one OK button');
@@ -394,7 +396,7 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
 {
   const und = [{ deal: '100 Fixture Ln', key: '100 fixture', step: 'Inspection', note: '7 day due diligence from Nov 3 acceptance' }];
   run(`CC.data = Object.assign({}, __cc, { deadlines: Object.assign({}, __cc.deadlines, { d3: [], undated: ${JSON.stringify(und)} }) })`);
-  const dp = render('deadlines', true), dd = render('dash', true);
+  const dp = render('deadlines'), dd = render('dash');
   check(/Without a date<\/span><b class="cc-num">1</.test(dp) && /1 more written without a date/.test(dp) && /Written without a date <span class="cc-count">1/.test(dp), 'Deadlines counts and lists the steps written without a date');
   check(/1 written without a date/.test(dd), 'the Dashboard deadline tile says how many have no date');
   run('CC.data = __cc');
@@ -403,7 +405,7 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
 // Round 3, item 4: reply-first rows (no template) are not drafts ready.
 {
   const ready = run('readyDrafts().length'), all = run('drafts().length'), rep = all - ready;
-  const dsh = render('dash', true), q = render('queue', true);
+  const dsh = render('dash'), q = render('queue');
   check(rep > 0 && new RegExp(`Drafts ready</span><b class="cc-num">${ready}<`).test(dsh), 'the Dashboard counts written drafts only, not reply-first rows', `ready ${ready}, all ${all}`);
   check(q.includes(`Ready to send <span class="cc-count">${ready}<`) && q.includes(`Replies to write <span class="cc-count">${rep}<`) && /They are not counted as drafts ready/.test(q), 'Drafts splits ready drafts from replies to write');
   check(/const dr = S\.data \? readyDrafts\(\) : \[\]/.test(appjs) && /\$\{ready\} ready/.test(appjs), 'the nav and the compose button count ready drafts only');
@@ -415,32 +417,29 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
   dl.push({ deal: '700 Fixture Rd', status: 'Offer', stage: 'offer', side: 'Buyer', price: 1, commission: null, act: ccdata.today, to_close: null,
     offer: { date: '2026-11-06', time: '5 PM', expired: true }, differs: [], checklist: [], key: '700 fixture', next: '' });
   run(`CC.data = Object.assign({}, __cc, { deals: ${JSON.stringify(dl)} })`);
-  const dp = render('deals', true), cp = render('commission', true);
+  const dp = render('deals'), cp = render('commission');
   const row = (dp.match(/<li class="cc-row[^"]*"><span class="cc-av" aria-hidden="true">⌂<\/span>\s*<div class="cc-row-main"><h3>700 Fixture Rd[^]*?<\/li>/) || [''])[0];
   check(/Offer expired [A-Z][a-z]{2}, Nov 6 5 PM/.test(row) && !/days to close|Closes today/.test(row) && /Act of sale if accepted/.test(row), 'an expired offer says so on Deals, with no days to close');
   check(/Offer expired/.test(cp) && /if accepted/.test(cp), 'Commission shows the expired offer and the act date as if accepted');
   run('CC.data = __cc');
 }
 
-// Round 3, item 6: no password-style dots in a form field (iCloud Passwords read them as a login and opened an empty grey
-// menu over Phone). A hidden prefilled lead keeps its details out of the boxes and Save still sends them.
+// Add a lead: no password-style field, and a lead copied from a card arrives with its details filled in.
 {
-  run('CC.priv = true; var __lf = null; modal = (t, h, ok) => { __lf = { h, ok }; return Promise.resolve(null); };');
+  run('var __lf = null; modal = (t, h, ok) => { __lf = { h, ok }; return Promise.resolve(null); };');
   run('CC.addLead()');
-  check(!/<input[^>]*cc-masked/.test(run('__lf.h')), 'Add a lead has no password-style field with privacy on');
+  check(!/<input[^>]*cc-masked/.test(run('__lf.h')), 'Add a lead has no password-style field');
   const lead = (ccdata.leads || []).find(l => l.name && l.phone);
   if (lead) {
     run(`CC.leadsTest = ${JSON.stringify(ccdata.leads.indexOf(lead))}; CC.addLead(CC.leadsTest)`);
     const h = run('__lf.h');
-    check(!h.includes(run(`esc(${JSON.stringify(lead.name)})`)) && /placeholder="Hidden · press Show at the top to see it"/.test(h), 'a hidden prefilled lead shows a placeholder, not the name or a masked value');
-    const v = run('__lf.ok(document)');
-    check(v && v.name === lead.name && v.phone === lead.phone.trim(), 'Save still sends the hidden lead details', JSON.stringify(v && { n: !!v.name, p: !!v.phone }));
+    check(h.includes('value="' + run(`esc(${JSON.stringify(lead.name)})`) + '"') && !/placeholder="Hidden/.test(h), 'a lead copied from a card arrives with its name filled in');
   }
   check(!/<input[^>]*\$\{maskAttr\(\)\}/.test(appjs) && /type="button" class="send-btn" id="m-ok"/.test(appjs), 'no masked input in the compose drawer, and dialog buttons are not submit buttons');
 }
 
 // Round 3, item 7: Tasks explains how the Next_Action tasks are chosen.
-check(/How the \d+ from Next_Action are chosen\.<\/b> A contact's Next_Action becomes a task when the contact is hot or warm, is not on Do Not Contact, is not a vendor, agent or lender, and has no open task with the same words\. Hot ones are due today, warm ones in 3 days/.test(render('tasks', true)) || !(f.tasks || []).some(t => !t.task_id), 'Tasks says how the Next_Action tasks are chosen, matching crm.next_action_tasks');
+check(/How the \d+ from Next_Action are chosen\.<\/b> A contact's Next_Action becomes a task when the contact is hot or warm, is not on Do Not Contact, is not a vendor, agent or lender, and has no open task with the same words\. Hot ones are due today, warm ones in 3 days/.test(render('tasks')) || !(f.tasks || []).some(t => !t.task_id), 'Tasks says how the Next_Action tasks are chosen, matching crm.next_action_tasks');
 
 // Round 3, item 8: Touched is a quick form (type and an optional note), and the Dashboard button says what it opens.
 {
@@ -449,7 +448,7 @@ check(/How the \d+ from Next_Action are chosen\.<\/b> A contact's Next_Action be
   check(run('__tf.t') === 'Log a touch' && types.join('|') === 'Call|Text|Email|In person|Voicemail' && /aria-pressed="true" aria-checked="true" data-touch="Call"/.test(run('__tf.h')) && /Note \(optional\)/.test(run('__tf.h')), 'Touched opens a quick form: five touch types, Call picked, an optional note');
   const fake = (type, note) => `({ querySelector: s => s.startsWith('[data-touch]') ? { dataset: { touch: ${JSON.stringify(type)} } } : { value: ${JSON.stringify(note)} } })`;
   check(run(`__tf.ok(${fake('Text', '')})`) === 'Text' && run(`__tf.ok(${fake('Voicemail', 'about the inspection')})`) === 'Voicemail: about the inspection', 'the form saves the type, with the note after it when there is one');
-  const dsh = render('dash', true);
+  const dsh = render('dash');
   check(/onclick="go\('touches'\)">Touches due<\/button>/.test(dsh) && !/>Log a touch</.test(dsh), 'the Dashboard button is named for the page it opens');
 }
 
@@ -458,7 +457,7 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
   && /function go\(v\) \{ if \(S\.view === 'search' && v !== 'search' && S\.q\) \{ S\.q = ''/.test(appjs), 'typing in the header opens Search from every page, and leaving Search clears the box');
 {
   const d0 = run('drafts()[0] || null');
-  if (d0 && d0.name) { run(`S.q = ${JSON.stringify(d0.name.split(' ')[0])}`); check(/<h3 class="cc-sub-h">Drafts <span class="cc-count">/.test(run('CC.priv = true; CC.views.search()')), 'Search finds drafts too'); run(`S.q = ''`); }
+  if (d0 && d0.name) { run(`S.q = ${JSON.stringify(d0.name.split(' ')[0])}`); check(/<h3 class="cc-sub-h">Drafts <span class="cc-count">/.test(run('CC.views.search()')), 'Search finds drafts too'); run(`S.q = ''`); }
 }
 
 // Round 3, item 11: the permits feed is labelled with its real source and the date of its newest pull, not CRM feed.
@@ -467,7 +466,7 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
   run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { market: { rows: ${JSON.stringify(rows)}, counts: {} } }) })`);
   const pm = run(`CC.local('permits')`);
   check(pm.source === 'EBR permits, data.brla.gov' && pm.at.startsWith('2026-10-27'), 'the permits source is EBR permits on data.brla.gov, as of its newest pull', JSON.stringify(pm));
-  const mon = render('monitor', true);
+  const mon = render('monitor');
   check(/class="cc-srcline"><span class="cc-src is-\w+"><i aria-hidden="true"><\/i><span class="cc-src-n">EBR permits, data\.brla\.gov · /.test(mon) && !/CRM feed, AIRE CRM sheet/.test(mon), 'Listings and permits names EBR permits, not the CRM feed');
   run('S.data = __state');
 }
@@ -483,7 +482,13 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
   const obs = obstacles.map(o => ({ x0: o.x - o.r, x1: o.x + o.r, y0: o.y - o.r, y1: o.y + o.r }));
   const bad = placed.some((a, i) => placed.some((b, j) => i !== j && ov(a, b)) || obs.some(o => ov(a, o)));
   check(!bad && placed.length >= 2 && !placed.some(p => p.name === 'Boxed in'), 'map labels never overlap each other or a pin, and a boxed-in label is left off', placed.map(p => p.name).join(' | '));
-  check(/drawLabels\(farmLabels\);\s*cancelAnimationFrame/.test(mapjs) && !/rgba\(8,22,46/.test(mapjs) && !/CLUSTER_PAST|cluster:/.test(mapjs), 'labels are drawn after the pins, and no pins are merged into numbered discs');
+  check(/drawLabels\(farmLabels\.concat\(named\), drawPlaces\(\)\);\s*cancelAnimationFrame/.test(mapjs) && !/rgba\(8,22,46/.test(mapjs) && !/CLUSTER_PAST|cluster:/.test(mapjs), 'labels are drawn after the pins, and no pins are merged into numbered discs');
+  check(/people\.filter\(o => nameOf\(o\.p\) && \(people\.length <= NAME_ROOM \|\| o\.p\.key === st\.data\.selected\)\)/.test(mapjs) && /name: nameOf\(o\.p\)/.test(mapjs)
+    && /const nameOf = p => String\(\(p && p\.display\) \|\| ''\)\.trim\(\);/.test(mapjs), 'pin labels are the whole display name, drawn once the pins have room, never shortened');
+  check(/tip\.textContent = nameOf\(p\) \|\| NO_NAME/.test(mapjs) && /class="pm-tip" hidden/.test(mapjs), 'hovering a pin shows the full name at any zoom');
+  { const two = run(`PMap.placeLabels([{ name: 'Avery Example', x: 100, y: 100, on: -1 }, { name: 'Jordan Sample', x: 102, y: 101, on: -1 }], [{ x: 100, y: 87, r: 8 }], t => t.length * 6, { w: 400, h: 300 })`);
+    const over = two.length === 2 && two[0].x1 > two[1].x0 && two[0].x0 < two[1].x1 && two[0].y1 > two[1].y0 && two[0].y0 < two[1].y1;
+    check(two.length >= 1 && !over && two.every(s => /^\S+ \S+$/.test(s.name)), 'two names that would collide never overlap, and each keeps its last name', two.map(s => s.name).join(' | ')); }
 }
 
 // Round 3, items 13 and 14 and one source line: no scrollbar line under the phone nav, News names its source once at the
@@ -491,29 +496,29 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
 {
   const uiPhone = (ui.match(/@media \(max-width: 720px\) \{[^]*?\n\}/) || [''])[0];
   check(/\.side \{ scrollbar-width: none; \} \.side::-webkit-scrollbar \{ display: none;/.test(uiPhone), 'phone: no scrollbar line under the nav strip');
-  const nw = render('news', true), srcCount = h => (h.match(/<span class="cc-src /g) || []).length;
+  const nw = render('news'), srcCount = h => (h.match(/<span class="cc-src /g) || []).length;
   check(/<\/header>[^]*?<p class="cc-srcline"><span class="cc-src/.test(nw) && srcCount(nw) === 1 && /Obituaries and school sports are left out/.test(nw), 'News shows its source and time once, at the top, and says what it leaves out');
-  for (const v of ['touches', 'tasks', 'queue', 'sent', 'monitor']) check(srcCount(render(v, true).replace(/<div class="cc-banner"[^]*?<\/div>/, '')) === (v === 'queue' ? 2 : 1), `${v}: one source line, not two`);
+  for (const v of ['touches', 'tasks', 'queue', 'sent', 'monitor']) check(srcCount(render(v).replace(/<div class="cc-banner"[^]*?<\/div>/, '')) === (v === 'queue' ? 2 : 1), `${v}: one source line, not two`);
 }
 
 // Round 3, item 15: no orphan tiles. Tiles sit in 4 columns on a desktop, 2 on a phone, so each page has a multiple of 4.
 {
-  const counts = views.map(v => [v, (render(v, true).match(/<(?:button|div) [^>]*class="cc-tile"/g) || []).length]).filter(([, n]) => n);
+  const counts = views.map(v => [v, (render(v).match(/<(?:button|div) [^>]*class="cc-tile"/g) || []).length]).filter(([, n]) => n);
   const odd = counts.filter(([, n]) => n % 4);
   check(!odd.length, 'every tile row is full: each page has a multiple of 4 tiles', odd.map(([v, n]) => `${v}:${n}`).join(' '));
   check(/\.cc-tiles \{ display: grid; grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/.test(fs.readFileSync(path.join(dir, 'cc.css'), 'utf8')), 'desktop tiles sit in exactly 4 columns');
 }
 
-// Round 3, items 15 and 16: one place for the privacy pill, "1 timed event", the Workouts nav label matches its page, and
-// lead cards are flat like every other card.
+// Round 3, items 15 and 16: "1 timed event", the Workouts nav label matches its page, and lead cards are flat like
+// every other card. The old Money and contacts hidden note is gone from every page (Caleb, 2026-11-10).
 {
-  const heads = views.map(v => render(v, true)).map(h => (h.match(/<header class="cc-head">[^]*?<\/header>/) || [''])[0]).filter(Boolean);
-  check(heads.length > 10 && heads.every(h => /<p>[^]*?<\/p><span class="cc-privnote">/.test(h)), 'the privacy pill sits under the description on every page');
+  const heads = views.map(v => render(v)).map(h => (h.match(/<header class="cc-head">[^]*?<\/header>/) || [''])[0]).filter(Boolean);
+  check(heads.length > 10 && heads.every(h => !/cc-privnote|Money and contacts hidden/.test(h)), 'no page carries the old Money and contacts hidden note');
   const wk = (ccdata.week || [])[0] || {};
   run(`CC.data = Object.assign({}, __cc, { week: [Object.assign({}, ${JSON.stringify(wk)}, { events: 1, hours: 1 })].concat(__cc.week.slice(1)) })`);
-  check(/1 timed event\./.test(render('dash', true)), 'Booked today says "1 timed event"');
+  check(/1 timed event\./.test(render('dash')), 'Booked today says "1 timed event"');
   run('CC.data = __cc');
-  const navLabel = run('NAV').flatMap(g => g[1]).find(i => i[0] === 'health')[2], h1 = (render('health', true).match(/<h1>([^<]+)<\/h1>/) || [])[1];
+  const navLabel = run('NAV').flatMap(g => g[1]).find(i => i[0] === 'health')[2], h1 = (render('health').match(/<h1>([^<]+)<\/h1>/) || [])[1];
   check(navLabel === h1, 'the Workouts nav label matches its page title', `${navLabel} / ${h1}`);
   const css2 = ['ui.css', 'cc.css'].map(x => fs.readFileSync(path.join(dir, x), 'utf8')).join('\n');
   check(!/gradient\(/.test(css2), 'no gradient in the page styles, lead cards included');
@@ -521,28 +526,11 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
 
 // Round 3: the cache name moves on again so browsers drop the round 2 shell.
 check(/pipeline-shell-v4-sendlog/.test(fs.readFileSync(path.join(dir, 'sw.js'), 'utf8')), 'service worker cache is v4-sendlog');
-// Reviewer findings on round 3 masking: a client's name hides even when it is also a common word, a lowercase mention
-// never makes a name safe, capitals and accents hide, dates read, and ordinary words read on a quiet day.
-{
-  const people = [{ person_id: 'r1', display: 'Mark Fixture' }, { person_id: 'r2', display: 'Mike Sample' }, { person_id: 'r3', display: 'May Example' }, { person_id: 'r4', display: 'Call Tester' }];
-  const tasks = [{ task: 'call mike back about the docs', person_id: 'r2', display: 'Mike Sample' }];
-  run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { generated_at: 'r3-test', people: ${JSON.stringify(people)}, tasks: ${JSON.stringify(tasks)}, touches_due: [], partners: [], new_leads: [] }) }); CC.priv = true;`);
-  const sc = t => run(`CC.scrub(${JSON.stringify(t)})`).replace(/&#39;/g, "'");
-  check(sc('Mark sent the offer') === '••• sent the offer', 'a client named Mark hides even though mark is a common word');
-  check(sc('Mike said yes') === '••• said yes', 'a lowercase mention of a name never makes the name safe to show');
-  check(sc('SMITH counter at 5 PM') === '••• counter at 5 PM' && sc('KW and FHA') === 'KW and FHA', 'an all-caps name hides, real acronyms stay');
-  check(sc('José asked about the house') === '••• asked about the house', 'an accented name hides whole');
-  check(sc('Closing May 5 with May') === 'Closing May 5 with May', 'a month always reads, even with a client named May');
-  check(sc('Call before Monday') === 'Call before Monday', 'a task verb that is also a surname stays readable');
-  run(`S.data = Object.assign({}, __state, { feed: Object.assign({}, __state.feed, { generated_at: 'r3-empty', people: [], tasks: [], touches_due: [], partners: [], new_leads: [] }) }); CC.data = Object.assign({}, __cc, { deals: [] });`);
-  check(sc('Schedule the walkthrough and email the lender') === 'Schedule the walkthrough and email the lender', 'ordinary words read on a quiet day with little text to learn from');
-  run('S.data = __state; CC.data = __cc;');
-}
-
 // Service worker: a new cache name, HTML and JS from the network every time, and the page reloads once when a new worker takes over.
 const swjs = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8'), indexHtml = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 check(!swjs.includes('pipeline-shell-v1-judge1') && /fetch\(e\.request, \{ cache: 'no-store' \}\)/.test(swjs), 'service worker drops the round-1 shell and skips the browser cache');
 check(/updateViaCache: 'none'/.test(indexHtml) && /controllerchange/.test(indexHtml), 'the page picks up a new worker and reloads once');
+check(!/id="privacy"/.test(indexHtml) && !/togglePriv|e\.key === 'h'/.test(appjs) && !/Press <kbd>H<\/kbd>/.test(appjs), 'the top bar has no Show or Hide button, and H is not a shortcut');
 const shell = (swjs.match(/const FILES = \[([^\]]+)\]/) || [])[1] || '';
 const scripts = [...indexHtml.matchAll(/<script src="([^"]+)"/g)].map(m => '/' + m[1]);
 check(scripts.every(s => shell.includes(`'${s}'`)), 'every script the page loads is in the offline shell', scripts.filter(s => !shell.includes(`'${s}'`)).join(' '));
@@ -556,16 +544,16 @@ check(run('CC.dated(0, 4)') === '0' && run('CC.undatedLine(4)').includes('4 writ
 { // Round 4 item 1: words holding a date Pipeline cannot read never say "No contract deadlines".
   const chk = [{ deal: '100 Fixture Ln', key: '100 fixture', step: 'Inspection', note: 'Signed Nov 3, sent Nov 4' }];
   run(`CC.data = Object.assign({}, __cc, { deadlines: Object.assign({}, __cc.deadlines, { d7: [], d3: [], all: [], check: ${JSON.stringify(chk)} }) })`);
-  const dd = render('dash', true);
+  const dd = render('dash');
   check(!/No contract deadlines in this window/.test(dd) && /Contains a date, check it/.test(dd), 'a step whose words hold an unread date is shown as check it, never no deadlines');
   run(`CC.data = Object.assign({}, __cc, { deadlines: Object.assign({}, __cc.deadlines, { d7: [{ deal: '100 Fixture Ln', key: '100 fixture', day: __cc.today, what: 'Inspection', from: 'sheet', time: '11:59PM', said: 'Due diligence ends Nov 10, 11:59 PM' }], check: [] }) })`);
-  check(/11:59PM/.test(render('dash', true)) && /Read from the words/.test(render('dash', true)), 'a date read from the words shows its time and where it came from');
+  check(/11:59PM/.test(render('dash')) && /Read from the words/.test(render('dash')), 'a date read from the words shows its time and where it came from');
   run('CC.data = __cc;');
 }
 
 { // Round 4 item 2: a saved day that no longer matches the Deals sheet is flagged, never shown as growth.
   run(`CC.data = Object.assign({}, __cc, { deltas: { gci: {}, closings: {}, leads7: {}, appts7: {} }, since: {}, history_mismatch: [{ day: '2026-11-05', metrics: ['gci', 'closings'], saved: { gci: 19710, closings: 2 }, sheet_now: { gci: 30377.5, closings: 4 } }] })`);
-  const sc = render('scorecard', false);
+  const sc = render('scorecard');
   check(/1 saved day no longer matches the Deals sheet/.test(sc) && !/\+2/.test(sc) && /\$30,377\.50/.test(sc), 'a saved day that no longer matches the sheet is flagged, not counted as growth');
   run('CC.data = __cc;');
 }
@@ -578,14 +566,10 @@ check(run('statusWords(2, 1)') === '3 sources: 2 failed or out of date, 1 late o
 check(!/CC\.failing\(\)\.length \+/.test(appjs), 'the Sources nav count is the attention list, not its own sum');
 check(run('CC.ago(18720)') === '13 days ago' && run('CC.ago(60)') === '1 hour ago' && run('CC.ago(300)') === '5 hours ago' && run('CC.ago(18)') === '18 min ago', 'ages read in minutes, then hours, then days');
 check(run('CC.booked(0.2, 15)').startsWith('15<small> min') && run('CC.booked(1.5, 90)').startsWith('1.5<small> h'), 'booked time under an hour shows minutes');
-{ const p0 = run('CC.priv'); run('CC.priv = true');
-  check(run(`CC.note('Ask about her divorce timeline', ['Pat'])`).includes('Note hidden') && !run(`CC.note('Ask about her divorce timeline')`).includes('divorce'), 'with contacts hidden, a next-step note hides whole');
-  const pages = ['touches', 'tasks', 'dash'].map(k => render(k, true).replace(/<[^>]*>/g, ' ')).join(' ');  // what shows on screen
-  const notes = ((state.feed || {}).touches_due || []).map(r => r.next_action).filter(t => t && t.length > 12 && !/within the hour/i.test(t));
-  check(notes.every(t => !pages.includes(t)), 'no next-step note text shows on Touches due, Tasks or the Dashboard with contacts hidden', notes.filter(t => pages.includes(t)).join(' | '));
-  run(`CC.priv = ${p0}`); }
+{ const pages = ['touches', 'tasks', 'dash'].map(k => render(k).replace(/<[^>]*>/g, ' ')).join(' ');  // what shows on screen
+  check(!/Note hidden|Task hidden/.test(pages) && run(`CC.note('Ask about the timeline')`) === 'Ask about the timeline', 'next-step notes read as written on Touches due, Tasks and the Dashboard'); }
 
-{ const wp = render('health', false);
+{ const wp = render('health');
   check(/of 5<\/small>/.test(wp) && /Goal 5 a week/.test(wp) && /Mon 6 AM, Tue 6 AM, Wed 4 PM, Thu 6 AM, Fri 6 AM, 5 a week/.test(wp) && !/4 to 5/.test(wp), 'Workouts counts his 5-day plan and the goal agrees'); }
 
 // Round 4 layout items. The live check at 390 and 1200 px is done in Chrome; these keep the rules from slipping.
@@ -593,7 +577,7 @@ check(/\.cc-ev:has\(> \.cc-chip:first-child\) \{ grid-template-columns: minmax\(
 check(/@media \(max-width: 1300px\) \{ \.top \.clock \.date, \.top \.operator \{ display: none; \} \}/.test(ui) && /\.top \.clock \.date, \.top \.clock \.time \{ white-space: nowrap; \}/.test(ui), 'the header clock is one line and the date steps aside below 1300 px');
 check(/\.cc-days\.week \{ grid-template-columns: repeat\(auto-fit, minmax\(9\.5rem, 1fr\)\); \}/.test(ui) && /\.cc-list\.tight \.cc-chip \{ white-space: normal/.test(ui), 'calendar week columns grow and wrap instead of cutting titles and badges');
 check(/\.side \.nav \{ overflow-x: auto/.test(ui) && /\.side \.brand \{ position: static/.test(ui) && /\.top \{ flex-wrap: nowrap/.test(ui), 'phone: the nav scrolls beside the logo and the header is one row');
-{ const dpg = render('deals', true);
+{ const dpg = render('deals');
   check((dpg.match(/class="cc-srcline"/g) || []).length >= 1 && /<p class="cc-srcline">[^]*<footer>/.test(dpg), 'Deals shows its source line at the top as well as the bottom');
   const rows = dpg.split('<li class="cc-row').slice(1).filter(r => /class="cc-pills" id="deal-/.test(r));
   check(rows.length > 0 && rows.every(r => /Edit in the CRM/.test(r) && /Message/.test(r)) && (!/disabled/.test(dpg) || /cc-off" disabled aria-disabled="true" title="[^"]+">[^<]+<small>[^<]+<\/small>/.test(dpg)), 'every Deals row shows the same buttons, and a greyed one says why');
@@ -611,7 +595,7 @@ check(run(`gmailLink('aire@calebjackson.org', 'Quick question', 'Line one\\nLine
   check(/class="text-btn" onclick="openContact\('text', 'c\d+'\)"/.test(b) && /openContact\('email', 'c\d+'\)/.test(b) && !/747/.test(b) && !/aire@/.test(b), 'Text and Email buttons, with no number or address in the page');
   const g = run(`contactBtns('', { display: 'X', phone: '747-03', email: '' })`);
   check(/cc-off" disabled[^>]*>Text<small>Not a valid US number<\/small>/.test(g) && /Email<small>No email on file<\/small>/.test(g), 'a contact with no valid number or email gets greyed buttons that say why'); }
-{ const pages = ['touches', 'tasks', 'queue', 'dash'].map(k => render(k, false)).join(' ');
+{ const pages = ['touches', 'tasks', 'queue', 'dash'].map(k => render(k)).join(' ');
   check((pages.match(/>Text</g) || []).length > 3 && (pages.match(/>Email</g) || []).length > 3, 'Text and Email show on touches, tasks, drafts and the Dashboard'); }
 { run(`S.data = Object.assign({}, S.data, { local: true, sender: 'dry', demo: false }); S.compose = { kind: 'text', person_id: '118', name: 'Caleb Jackson', row: {}, to: '+12257470303' }`);
   check(/disabled aria-disabled="true" title="Sending is off \(dry mode\)">Send now<small>Sending is off \(dry mode\)/.test(run('sendNowBtn(true)')), 'Send now is greyed in dry mode and says so');
@@ -633,7 +617,7 @@ check(/class="nav-g g-\$\{g\.toLowerCase\(\)\}"/.test(appjs) && /document\.body\
 { run(`CC.photos = { '100 fixture': 3 }`);
   check(run(`CC.thumb('100 Fixture Ln')`) === '<img class="cc-thumb" src="/photo/100-fixture/0" alt="" loading="lazy">' && run(`CC.thumb('9 Nowhere Rd')`) === '<span class="cc-av" aria-hidden="true">⌂</span>', 'a deal with a photo shows it, one without keeps the house mark');
   check(/class="cc-photo ph st-offer"/.test(run(`CC.cover('9 Nowhere Rd', 'offer')`)), 'a card with no photo gets its stage color');
-  const dp = render('deals', true);
+  const dp = render('deals');
   check(/<li class="cc-row st-(contract|offer|closed|appointment|out|other)/.test(dp) && /cc-pill st-/.test(dp), 'every Deals row and status pill carries its stage color');
   run('CC.photos = {}'); }
 check(run(`(() => { const r = { what: 'Act of sale' }; return 1; })()`) === 1 && /return \/act of sale\|closing\/i\.test\(t\) \? 'sale'/.test(fs.readFileSync(path.join(dir, 'cc.js'), 'utf8')), 'act of sale reads green, deadlines stay coral');
@@ -646,22 +630,18 @@ check(run(`(() => { const r = { what: 'Act of sale' }; return 1; })()`) === 1 &&
   d5.deadlines.overdue = [{ deal: '100 Fixture Ln', key: '100 fixture', day: '2026-11-07', what: 'Inspection', said: 'reply due Nov 7', from: 'sheet' }];
   d5.scorecard.appts7.invites = 1; d5.scorecard.gci.blank = 5;
   run(`CC.data = ${JSON.stringify(d5)}`);
-  const dl = render('deadlines', true), ds = render('dash', true), sc = render('scorecard', true);
+  const dl = render('deadlines'), ds = render('dash'), sc = render('scorecard');
   check(/Overdue <span class="cc-count">1</.test(dl) && /<span class="cc-chip">Overdue<\/span>/.test(dl) && /1 overdue/.test(ds), 'a contract date that has gone by is an Overdue row on Deadlines and on the Dashboard tile');
   check(/1 invite not accepted, not counted/.test(ds) && /1 more invite not accepted, not counted/.test(sc), 'an invite not accepted is named, never counted as an appointment');
   check(/5 closed with no commission/.test(ds) && /5 closed with no commission on the sheet/.test(sc), 'every GCI tile says when closed deals have no commission');
   run('CC.data = __cc');
-  check(/Your note: \$\{C2 \? C2\.note\(/.test(appjs), 'the compose drawer hides your note when contacts are hidden');
+  check(/Your note: \$\{C2 \? C2\.note\(/.test(appjs), 'the compose drawer shows your note');
   check(/filter\(s => s\.status === 'sent'\)\.length, false\]/.test(appjs) && /dry run\$\{/.test(fs.readFileSync(path.join(dir, 'crm-pages.js'), 'utf8')), 'a dry run is never counted as sent');
   check(/res\.parts \? Object\.keys\(res\.parts\)/.test(fs.readFileSync(path.join(dir, 'cc-sources.js'), 'utf8')), 'Sources counts the rows in each tab, not the tabs');
 }
 
-// Round 5: contract words and "Good until" are not names, and a permit's type is public record.
-{ run('CC.priv = true');
-  const t = run(`CC.scrub('Closing Date extended 1 day by Amendment No. 1. Addendum signed. Good until Mon Nov 9 12 PM. Command has it in Cultivate')`);
-  check(!/•••/.test(t), 'contract words, Good until and Command stages stay readable when hidden', t);
-  check(/CC\.scrubMoney\(r\.subtype\)/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')), 'a permit type is shown as the public record has it');
-  run('CC.priv = false'); }
+// A permit's type is public record and reads as written.
+check(/esc\(r\.subtype\)/.test(fs.readFileSync(path.join(dir, 'mapviews.js'), 'utf8')), 'a permit type is shown as the public record has it');
 
 // Hand-off log: a Text or Email click shows as opened, a confirmed send says who confirmed it, and the app asks.
 { const keep = run('JSON.stringify([S.data.sent_today, S.data.handoff || null, S.data.sent_log || null])');
@@ -669,20 +649,20 @@ check(run(`(() => { const r = { what: 'Act of sale' }; return 1; })()`) === 1 &&
   ctx.__rows = [{ id: 'a1', at, kind: 'text', person_id: '247', display: 'Taylor Sample', to: '+12255550142', text: 'Hey Taylor', status: 'opened', delivery: 'opened', via: 'handoff' },
     { id: 'a2', at, kind: 'email', person_id: '312', display: 'Morgan Demo', to: 'morgan.demo@example.com', subject: 'Checking in', text: 'Hi Morgan', status: 'sent', delivery: 'sent', via: 'handoff', confirmed_by: 'Gmail', sent_at: at, service: 'Gmail' }];
   run(`S.data.sent_today = __rows; S.data.handoff = { messages_ok: false, gmail_ok: null, pending: [{ id: 'a1', at: __rows[0].at, kind: 'text', display: 'Taylor Sample' }] }; S.data.sent_log = { '247': [__rows[0]], '312': [__rows[1]] }`);
-  const sp = render('sent', false);
+  const sp = render('sent');
   check(/Opened, waiting for your send/.test(sp) && /answerSent\('a1', true\)/.test(sp) && /answerSent\('a1', false\)/.test(sp), 'Sent today shows an opened text with Sent and Not sent');
   check(/confirmed by Gmail/.test(sp) && (sp.match(/answerSent/g) || []).length === 2, 'a confirmed email says Gmail confirmed it and asks nothing');
   const bar = run(`askSentHTML(S.data.handoff.pending[0])`);
   check(/Did the text to <b>Taylor Sample<\/b> send\?/.test(bar) && />Sent<\/button>/.test(bar) && />Not sent<\/button>/.test(bar), 'the Did that send bar names the person and offers Sent and Not sent');
-  run('CC.priv = true'); check(!/Taylor|Sample/.test(run(`askSentHTML(S.data.handoff.pending[0])`)) && !/Hey Taylor|Hi Morgan|2255550142|morgan\.demo/.test(render('sent', true)), 'with privacy on the bar and Sent today hide the name, number and message'); run('CC.priv = false');
-  check(/can't read Messages history/.test(render('sources', false)), 'Sources says in one line when Messages history cannot be read');
+  check(/Taylor/.test(run(`askSentHTML(S.data.handoff.pending[0])`)) && /Hey Taylor|Hi Morgan|morgan\.demo/.test(render('sent')), 'the bar and Sent today show the name and the message');
+  check(/can't read Messages history/.test(render('sources')), 'Sources says in one line when Messages history cannot be read');
   check(/SENT FROM PIPELINE/.test(run(`logLines('247')`)) && /opened, waiting for your send/.test(run(`logLines('247')`)) && /confirmed by Gmail/.test(run(`logLines('312')`)) && run(`logLines('999')`) === '', "the compose sheet lists that person's sends");
   check(run(`TEXT_STATES.opened[1]`) === 'Opened' && /api\('\/api\/opened', \{ kind: v\.kind/.test(appjs) && /logOpened\(v\);/.test(appjs) && /draft: c\.body \|\| '', pool: c\.pool \|\| ''/.test(appjs), 'Open in Messages and Open in Gmail log the click, with the draft Pipeline wrote');
   check(/#sent-ask \{[^}]*background: var\(--cc-ink\)[^}]*border: 1px solid var\(--cc-coral\)/.test(ui) && /#sent-ask small \{ color: var\(--cc-tan\)/.test(ui), 'the bar is black with coral, tan only on the small time');
   ctx.__keep = JSON.parse(keep); run('S.data.sent_today = __keep[0]; S.data.handoff = __keep[1]; S.data.sent_log = __keep[2]'); }
 
 // Round 5, look and flow: the Today list follows the four headline tiles, Touches due pages, A adds a lead, and a tall dialog scrolls.
-{ const ds = render('dash', true);
+{ const ds = render('dash');
   check(ds.indexOf('GCI this year') < ds.indexOf('cc-todaycard') || ds.indexOf('GCI this year') < ds.indexOf('Under contract</span>') && ds.split('class="cc-tiles"').length === 3, 'the Dashboard shows four headline tiles, then Today, then the rest');
   check(/e\.key === 'a' && window\.CC && CC\.addLead/.test(appjs) && /<kbd>A<\/kbd> to add a lead/.test(appjs), 'the A key adds a lead and the shortcuts list says so');
   check(/Show 200 more/.test(fs.readFileSync(path.join(dir, 'crm-pages.js'), 'utf8')), 'Touches due can load more than the first 200');
@@ -707,8 +687,8 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(/\.cad-hot \{ font-weight: 700; \}/.test(light) && !/\.cad-(hot|warm|lukewarm|cold|ice-cold)[^{]*\{[^}]*color/.test(light) && !/class="tag \$\{(p\.band|b)\}/.test(mv)
     && /\.tag\.hot, \.tag\.warm, \.tag\.lukewarm, \.tag\.cold, \.tag\.ice-cold[^{]*\{ color: var\(--graphite\) !important; background: none !important;/.test(light), 'cadence is a word, never a color, on the new screens and on the person sheet');
   // People: exactly seven columns, real people only, search filters, a row opens the person.
-  run('CC.priv = false; Stage.q = ""');
-  const ppl = render('people', false), cols = [...ppl.matchAll(/<section class="ppl-col" aria-label="([^"]+)">/g)].map(m => m[1]);
+  run('Stage.q = ""');
+  const ppl = render('people'), cols = [...ppl.matchAll(/<section class="ppl-col" aria-label="([^"]+)">/g)].map(m => m[1]);
   check(JSON.stringify(cols) === JSON.stringify(SEVEN), 'People has exactly the seven stage columns', cols.join(', '));
   const known = new Set(run('Stage.people().map(r => r.display)')), shown = [...ppl.matchAll(/<li><button type="button" onclick="Stage\.open\([^)]*\)"><b>([^<]*)<\/b>/g)].map(m => m[1]);
   check(shown.length > 0 && shown.every(n => known.has(n.replace(/&#39;/g, "'").replace(/&amp;/g, '&'))), 'every name on the board is a person in the feed', shown.filter(n => !known.has(n)).slice(0, 3).join(', '));
@@ -719,19 +699,19 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(filtered >= 1 && filtered < shown.length && /oninput="Stage\.find\(this\.value\)"/.test(ppl) && /placeholder="Find someone"/.test(ppl), 'Find someone filters the board');
   check(/ST\.open = id => openCompose\(id\)/.test(stagejs), 'a row opens that person in the sheet Pipeline already has');
   // Home: the Claude and Grok lists lead into what already exists. No second way to call or send.
-  const hm = render('home', false);
+  const hm = render('home');
   check(/>Claude<\/span>/.test(hm) && /onclick="openBrief\(\)"/.test(hm) && /go\('scorecard'\)/.test(hm) && /go\('queue'\)/.test(hm), 'Home\'s Claude list opens the brief, the Scorecard and the drafts');
   check(/go\('people'\)/.test(hm) && /go\('map'\)/.test(hm) && /id="mini-map"/.test(hm) && ['dash', 'touches', 'tasks', 'sent', 'grok', 'hot', 'warm', 'deals', 'deadlines', 'calendar', 'commission', 'bank', 'ccleads', 'sources'].every(k => hm.includes(`go('${k}')`)), 'Home links to People, the Map, Grok calls, Hot, Warm and every older page');
   check(/onclick="go\('grok'\)">Review calls</.test(hm), 'Review calls opens the Grok calls page');
   { const all = run('NAV').slice(1).flatMap(g => g[1]).flatMap(i => [i[0]].concat((i[3] || []).map(k => k[0]))); check(['grok', 'hot', 'warm'].every(k => all.includes(k) && views.includes(k)), 'Grok calls, Hot and Warm are pages under More'); }
   run(`var __jobs = S.data.bridge.jobs; S.data.bridge.jobs = { [S.data.feed.touches_due[0].person_id]: { job_id: 'j1', job_type: 'call', at: new Date().toISOString(), state: 'waiting', ask: 'Check on the counter' } }`);
-  const hg = render('home', false); run('S.data.bridge.jobs = __jobs');
+  const hg = render('home'); run('S.data.bridge.jobs = __jobs');
   check(/<b>Call [^<]+<\/b>/.test(hg) && new RegExp(`openGrok\\(&quot;${f.touches_due[0].person_id}&quot;, 'call'\\)`).test(hg) && /Grok is holding the calls\./.test(hg), 'a call waiting with Grok shows on Home and opens that person\'s Grok panel on the Call tab');
   { const now = Date.now(), iso = ms => new Date(ms).toISOString(), w = (j) => run(`Stage.isWaiting(${JSON.stringify(j)}, ${now})`);
     check(!w({ job_type: 'call', state: 'dry-run', at: iso(now) }) && !w({ job_type: 'hard_draft', state: 'dry-run', at: iso(now) }), 'a dry-run job never shows as waiting with Grok: nothing left the Mac');
     check(w({ job_type: 'call', state: 'waiting', at: iso(now - 5 * 60e3) }) && !w({ job_type: 'call', state: 'waiting', at: iso(now - 50 * 60e3) }) && !w({ job_type: 'hard_draft', state: 'draft_ready', at: '2020-01-01T10:00:00-06:00' }), 'a call waits 45 minutes and a hard draft only today, then leaves Home');
     run(`var __j2 = S.data.bridge.jobs; S.data.bridge.jobs = { [S.data.feed.touches_due[0].person_id]: { job_id: 'j2', job_type: 'hard_draft', at: todayISO() + 'T08:00:00', state: 'draft_ready' } }`);
-    const hd = render('home', false); run('S.data.bridge.jobs = __j2');
+    const hd = render('home'); run('S.data.bridge.jobs = __j2');
     check(/Grok has a hard draft for you\./.test(hd) && !/holding the calls/.test(hd), 'with only a hard draft waiting, Home does not say calls'); }
   check(!run('Stage.people().some(r => PARTNER.has(r.type))'), 'partners are left off the People board, as on the map');
   check(!/\/api\/(send|call|draft)/.test(stagejs) && !/fetch\(|api\(/.test(stagejs), 'Home and People call no send, call or draft endpoint themselves');
@@ -739,7 +719,7 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   // The person card on the map.
   const pp = (f.map.pins || []).find(p => p.kind === 'person' && p.stage === 'past client');
   check(!!pp, 'the demo has a past client on the map to check the card with');
-  if (pp) { const pc = run(`CC.priv = false; pinCard(${JSON.stringify(pp)})`);
+  if (pp) { const pc = run(`pinCard(${JSON.stringify(pp)})`);
     check(/class="stg-chip stg-past-client">Past client</.test(pc) && /class="pc-cad"/.test(pc) && /<dt>Type<\/dt>/.test(pc) && /<dt>Last touch<\/dt>/.test(pc) && /<dt>Next<\/dt>/.test(pc) && /<dt>Address<\/dt>/.test(pc)
       && /class="pc-compose" onclick="openCompose\(/.test(pc) && /onclick="openNote\(/.test(pc), 'the map card shows the stage chip, the cadence word, the facts, Compose and Note'); }
   const lg = run('mapLegend()');

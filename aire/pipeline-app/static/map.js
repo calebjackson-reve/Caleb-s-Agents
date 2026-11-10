@@ -33,8 +33,11 @@ window.PMap = (function () {
   // Area labels: each takes the first free spot around its point (on it, above, below, then further out and to the sides),
   // never over another label, a pin or a cluster. A label with no free spot is left off rather than overlap.
   // bounds ({w, h}, the map's size): a label is slid inside the edges, never cut off at the left or right (round 4).
+  // A person's name on the map is the CRM display name, whole. No name on the sheet is said, never guessed.
+  const NAME_ROOM = 150, NO_NAME = 'No name on the sheet';
+  const nameOf = p => String((p && p.display) || '').trim();
   function placeLabels(labels, obstacles, width, bounds) {
-    const boxes = obstacles.map(o => ({ x0: o.x - o.r, x1: o.x + o.r, y0: o.y - o.r, y1: o.y + o.r }));
+    const boxes = obstacles.map(o => (o.x0 != null ? o : { x0: o.x - o.r, x1: o.x + o.r, y0: o.y - o.r, y1: o.y + o.r }));  // a pin (x, y, r) or a box
     const hit = b => boxes.some(o => b.x1 > o.x0 && b.x0 < o.x1 && b.y1 > o.y0 && b.y0 < o.y1);
     const out = [];
     for (const l of labels.slice().sort((a, b) => (b.on - a.on) || (b.name.length - a.name.length))) {
@@ -54,8 +57,8 @@ window.PMap = (function () {
 
   function create(el, opts = {}) {
     el.classList.add('pmap');
-    el.innerHTML = '<div class="pm-tiles"></div><canvas class="pm-canvas"></canvas>' + (opts.still ? '' : '<div class="pm-zoom"><button data-z="1" title="Zoom in">+</button><button data-z="-1" title="Zoom out">−</button></div>') + '<div class="pm-attr"></div><div class="pm-hint" hidden></div>';
-    const tilesEl = el.querySelector('.pm-tiles'), cv = el.querySelector('.pm-canvas'), ctx = cv.getContext('2d'), attr = el.querySelector('.pm-attr'), hint = el.querySelector('.pm-hint');
+    el.innerHTML = '<div class="pm-tiles"></div><canvas class="pm-canvas"></canvas>' + (opts.still ? '' : '<div class="pm-zoom"><button data-z="1" title="Zoom in">+</button><button data-z="-1" title="Zoom out">−</button></div>') + '<div class="pm-attr"></div><div class="pm-hint" hidden></div><div class="pm-tip" hidden></div>';
+    const tilesEl = el.querySelector('.pm-tiles'), cv = el.querySelector('.pm-canvas'), ctx = cv.getContext('2d'), attr = el.querySelector('.pm-attr'), hint = el.querySelector('.pm-hint'), tip = el.querySelector('.pm-tip');
     const st = { center: (opts.view && opts.view.center) || [30.45, -91.15], zoom: (opts.view && opts.view.zoom) || 10, base: opts.base || 'paper',
       data: { pins: [], deals: [], market: [], farms: [], selected: '' }, hits: [], w: 0, h: 0, draw: null, raf: 0, pulse: 0, dead: false };
     const tiles = new Map();
@@ -125,24 +128,29 @@ window.PMap = (function () {
     }
     // Place names with a count of the people pinned there, set over the pins. An ivory halo keeps the type clear of
     // the water and of the pins beneath it.
+    // Returns the box each town name takes, so a person's name is never set over one.
     function drawPlaces() {
-      if (st.base !== 'paper') return;
+      const taken = [];
+      if (st.base !== 'paper') return taken;
       ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round';
       for (const pl of PLACES) {
         const [x, y] = toScreen(pl.at[0], pl.at[1]); if (x < -80 || y < -40 || x > st.w + 80 || y > st.h + 40) continue;
         const size = opts.still ? Math.max(9, pl.size * .52) : pl.size * (st.zoom >= 11 ? 1.15 : st.zoom <= 9 ? .8 : 1), top = y - (opts.still ? 8 : 20);
         ctx.font = `${size}px ${serif()}`; ctx.lineWidth = 5; ctx.strokeStyle = IVORY; ctx.strokeText(pl.name, x, top); ctx.fillStyle = INK; ctx.fillText(pl.name, x, top);
+        const half = ctx.measureText(pl.name).width / 2 + 4;
         const n = st.data.pins.filter(p => pl.cities.includes(String(p.city || '').trim().toLowerCase())).length;
         if (n >= 5 && !opts.still) { ctx.font = '11px ' + sans(); ctx.strokeText(`${n} people`, x, top + 15); ctx.fillStyle = STONE; ctx.fillText(`${n} people`, x, top + 15); }
+        taken.push({ x0: x - half, x1: x + half, y0: top - size, y1: top + (n >= 5 && !opts.still ? 20 : 5) });
       }
+      return taken;
     }
 
     // Farm names never sit on top of each other: the selected farm goes first, then bigger names, and a label whose
     // box would overlap one already drawn is nudged below, then above, then left out at this zoom.
     // Drawn last, after every pin, which are the obstacles (st.hits).
-    function drawLabels(labels) {
+    function drawLabels(labels, avoid = []) {
       ctx.font = '600 11px ' + sans(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      for (const s of placeLabels(labels, st.hits, t => ctx.measureText(t).width, { w: cv.clientWidth, h: cv.clientHeight })) {
+      for (const s of placeLabels(labels, st.hits.concat(avoid), t => ctx.measureText(t).width, { w: cv.clientWidth, h: cv.clientHeight })) {
         ctx.fillStyle = 'rgba(251,248,243,.9)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(s.x0, s.y0, s.w, s.h, 4) : ctx.rect(s.x0, s.y0, s.w, s.h); ctx.fill();
         ctx.fillStyle = s.on ? INK : GRAPHITE; ctx.fillText(s.name, s.x + s.dx, s.y + s.dy + .5);
       }
@@ -184,6 +192,10 @@ window.PMap = (function () {
       // The pins only get smaller as more of them share the view. The selected pin is drawn last, on top.
       const people = st.data.pins.map(p => ({ p, s: toScreen(p.lat, p.lng) })).filter(o => inView(o.s));
       const r = opts.still ? 2.6 : people.length > 900 ? 3 : people.length > 300 ? 4 : 5.2;
+      // First and last name under each pin as soon as the pins have room (NAME_ROOM or fewer in view). Past that the
+      // names would collide, so only the selected pin is named and the rest show on hover. A name is never shortened.
+      const named = opts.still ? [] : people.filter(o => nameOf(o.p) && (people.length <= NAME_ROOM || o.p.key === st.data.selected))
+        .map(o => ({ name: nameOf(o.p), x: o.s[0], y: o.s[1] + r + 13, on: o.p.key === st.data.selected ? .5 : -1 }));
       for (const o of people.sort((a, b) => (a.p.key === st.data.selected) - (b.p.key === st.data.selected))) {
         const sel = o.p.key === st.data.selected;
         person(o.s[0], o.s[1], sel ? r + 1.5 : r, o.p, sel);
@@ -201,8 +213,7 @@ window.PMap = (function () {
         house(s[0], s[1], sel ? 11 : 8.5, STAGE[d.stage] || '#B9B2A8', sel);
         st.hits.push({ x: s[0], y: s[1], r: 11, pin: d });
       }
-      drawPlaces();
-      drawLabels(farmLabels);
+      drawLabels(farmLabels.concat(named), drawPlaces());
       cancelAnimationFrame(st.raf);
     }
 
@@ -220,7 +231,8 @@ window.PMap = (function () {
     cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); drag = { x: e.offsetX, y: e.offsetY, c: centerPx(), moved: 0 }; });
     cv.addEventListener('pointermove', e => {
       if (st.draw) { st.draw.hover = [e.offsetX, e.offsetY]; if (!drag) draw(); }
-      if (!drag) { const h = hitAt(e.offsetX, e.offsetY); cv.style.cursor = st.draw ? 'crosshair' : h ? 'pointer' : 'grab'; return; }
+      if (!drag) { const h = hitAt(e.offsetX, e.offsetY); cv.style.cursor = st.draw ? 'crosshair' : h ? 'pointer' : 'grab'; showTip(st.draw ? null : h); return; }
+      showTip(null);
       const dx = e.offsetX - drag.x, dy = e.offsetY - drag.y; drag.moved = Math.max(drag.moved, Math.abs(dx) + Math.abs(dy));
       if (drag.moved > 3) { cv.style.cursor = 'grabbing'; st.center = unproject(drag.c[0] - dx, drag.c[1] - dy, st.zoom); draw(); }
     });
@@ -235,6 +247,13 @@ window.PMap = (function () {
     let wheelAt = 0;
     cv.addEventListener('wheel', e => { e.preventDefault(); const t = performance.now(); if (t - wheelAt < 180) return; wheelAt = t; zoomAt(e.deltaY < 0 ? 1 : -1, e.offsetX, e.offsetY); }, { passive: false });
     if (!opts.still) el.querySelector('.pm-zoom').addEventListener('click', e => { const b = e.target.closest('button'); if (b) zoomAt(Number(b.dataset.z), st.w / 2, st.h / 2); });
+    // Hover a person's pin: their full name, however far out the map is.
+    function showTip(h) {
+      const p = h && h.pin && h.pin.kind === 'person' ? h.pin : null;
+      tip.hidden = !p; if (!p) return;
+      tip.textContent = nameOf(p) || NO_NAME; tip.style.left = h.x + 'px'; tip.style.top = (h.y - h.r - 6) + 'px';
+    }
+    cv.addEventListener('pointerleave', () => showTip(null));
     function hitAt(x, y) { for (let i = st.hits.length - 1; i >= 0; i--) { const h = st.hits[i]; if ((h.x - x) ** 2 + (h.y - y) ** 2 <= h.r ** 2) return h; } return null; }
 
     // ---- farm drawing

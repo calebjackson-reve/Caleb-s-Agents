@@ -1,96 +1,19 @@
-/* The CRM pages in the Command Center design: Touches due, Tasks, Deals, Drafts, Sent today, plus the privacy
-   helpers and the CRM sources every page can name. People, tasks and drafts come from the CRM feed (feed.json via
+/* The CRM pages in the Command Center design: Touches due, Tasks, Deals, Drafts, Sent today, plus the name and note
+   formatters and the CRM sources every page can name. People, tasks and drafts come from the CRM feed (feed.json via
    /api/state). Deals come from the AIRE Deals sheet (/api/cc), the one deal source; CRM Deals tab rows are matched to
    it and never add to its numbers. Writes go through app.js (touched, doneTask, openTask, openCompose), so every one
    is a crm.py call with its gates. */
 (function () {
   const C = window.CC;
 
-  // ---------------- privacy: names, phones, emails, message text and dollars hide together
-  const HID = '<span class="cc-hid">hidden</span>';
-  C.who = v => (!v ? '' : C.priv ? '<span class="cc-hid">Name hidden</span>' : esc(v));
-  C.ph = v => (!v ? '' : C.priv ? HID : esc(fmtPhone(v)));
-  C.em = v => (!v ? '' : C.priv ? HID : esc(v));
-  C.msg = v => (C.priv ? '<span class="cc-hid">Message hidden</span>' : esc(v));
-  C.ini = v => (C.priv ? '•' : esc(initials(v)));
-  // Free text (a task, a next step, a deal note, a subject): with privacy on, dollar amounts and names are blanked.
-  // A name is any capitalized word that is not an acronym (FORD, KW), not a month, weekday, place or brand below, and
-  // never written in lowercase anywhere in the CRM's own text. So "Offer", "Call" and "Removed" stay, while "Ford" in
-  // "Ford offer expired" and a sentence-first name are hidden. CRM names are always hidden too.
-  const MONEY = /\$\s?\d{1,3}(?:,\d{3})+(?:\.\d+)?(?:\s?[kKmM]\b)?|\$\s?\d+(?:\.\d+)?(?:\s?[kKmM]\b)?/g;
-  const KEEP = new Set(('jan feb mar apr may jun jul aug sep sept oct nov dec january february march april june july august september october november december ' +
-    'mon tue tues wed thu thur thurs fri sat sun monday tuesday wednesday thursday friday saturday sunday am pm i ' +
-    'kw keller williams first choice command transact zillow realtor realtors mls crm pipeline claude gmail google messages imessage chase luxury presence ' +
-    'baton rouge louisiana la zachary saint st francisville feliciana west east north south prairieville walker livingston ascension denham springs central new roads ' +
-    'ebr freddie mac fred gbrar va fha usda ddi cda pmms hwy ' +
-    'the a an and or but if when after before then so to of in on at for from with by about as is are was were be been has have had do does did not no yes ' +
-    'call text send ask reply partner thank thanks congrats offer offers seller sellers buyer buyers listed listing your our my amount act due still check confirm ' +
-    'follow mark open binding counter countered sent short ninja handwritten later today tomorrow removed waiting paid cash conventional appraisal inspection ' +
-    'closing closed close contract deal deals price rate commission notes note new lead leads home value request website referral sign open house social past client other ' +
-    'expired expires until likely dead fell through probably maybe need needs needed set up get got look looking').split(/\s+/));
-  // More ordinary words that start sentences in tasks and notes, so a quiet day with little text to learn from still reads.
-  ('schedule review email update prepare meet meeting order walkthrough walk through showing showings tour appointment appt reminder remind ' +
-   'thank-you coffee lunch dinner visit drop drive bring pick pull run write draft print sign mail call-back callback voicemail left ' +
-   'great good nice happy congratulations welcome sorry hope hi hello hey dear please let lets just also only next last first second third ' +
-   'week weeks month months year years day days morning afternoon evening tonight noon midnight early late soon now asap hour hours minute minutes ' +
-   'yes okay sure maybe not none all any some every each both either neither few many more most less least much lot lots ' +
-   'buyer seller agent lender title inspector appraiser contractor tenant landlord owner family kids wife husband mom dad son daughter friend').split(/\s+/).forEach(w => KEEP.add(w));
-  // Contract and CRM words that read as names when capitalized (round 5): they are never people.
-  ('addendum amendment extension extended counteroffer acceptance contingency disclosure addenda cultivate capture connect ' +
-   'date dates deadline financing loan approval earnest money deposit survey termite repairs response report expected').split(/\s+/).forEach(w => KEEP.add(w));
-  // Template verbs that start CRM task text. They stay readable even when a client has the same name ("Call before Monday").
-  const VERBS = new Set('call text send ask reply check confirm follow thank partner offer paid cash command ninja reach handwritten congrats'.split(' '));
-  // Words in capitals that are real acronyms. Any other all-caps word is treated like a capitalized one (SMITH hides).
-  const ACRONYMS = new Set('KW VA FHA USDA DDI MLS CRM FORD TC CMA CDA LLC HOA AM PM EBR GBRAR FRED PMMS LA USA ASAP ID OK ROI ARV DOM IRS HUD FSBO REO BPO POF EMD DNC FYI TBD ETA CST CT ZIP PDF'.split(' '));
-  let vocab = null, vocabKey = '';
-  function lowerWords() {
-    const f = (typeof S !== "undefined" && S.data && S.data.feed) || {}, key = (f.generated_at || '') + '|' + ((C.data && C.data.at) || '') + '|' + (f.people || []).length;
-    if (vocab && vocabKey === key) return vocab;
-    vocab = new Set(); vocabKey = key;
-    const names = crmNameSet();
-    // A word only counts as ordinary when it is written in lowercase AND is not a word of anyone's name in the CRM, so
-    // "call mike back" never makes Mike safe to show.
-    const add = t => (String(t || '').match(/(?<![\p{L}])[\p{Ll}][\p{L}'’]+/gu) || []).forEach(w => { if (!names.has(w)) vocab.add(w); });
-    (f.tasks || []).forEach(t => add(t.task));
-    [].concat(f.touches_due || [], f.partners || []).forEach(r => add(r.next_action));
-    ((C.data && C.data.deals) || []).forEach(d => { add(d.check); add(d.next); });
-    return vocab;
-  }
-  // Every word of every name in the CRM, lowercased: these always hide when written with a capital, whatever else they mean.
-  let nameSet = null, nameSetKey = '';
-  function crmNameSet() {
-    const f = (typeof S !== "undefined" && S.data && S.data.feed) || {}, key = (f.generated_at || '') + '|' + (f.people || []).length;
-    if (nameSet && nameSetKey === key) return nameSet;
-    nameSet = new Set(); nameSetKey = key;
-    const STOP = new Set(['the', 'and', 'mr', 'mrs', 'ms', 'dr', 'jr', 'sr', 'iii', 'family', 'team', 'llc', 'inc']);
-    [].concat(f.people || [], f.touches_due || [], f.new_leads || [], f.partners || [], f.tasks || []).forEach(p =>
-      String(p.display || '').split(/[^\p{L}'’]+/u).forEach(w => { const l = w.toLowerCase(); if (l.length > 1 && !STOP.has(l)) nameSet.add(l); }));
-    return nameSet;
-  }
-  const DATEWORDS = new Set('jan feb mar apr may jun jul aug sep sept oct nov dec january february march april june july august september october november december mon tue tues wed thu thur thurs fri sat sun monday tuesday wednesday thursday friday saturday sunday'.split(' '));
-  C.isNameWord = function (w) {
-    if (ACRONYMS.has(w)) return false;
-    const l = w.toLowerCase().replace(/['’]s$/, '');
-    if (DATEWORDS.has(l)) return false;                      // dates always read, even with a client named May
-    if (crmNameSet().has(l)) return !VERBS.has(l);          // a client's name: hidden, unless it is a task verb like Call
-    return !KEEP.has(l) && !lowerWords().has(l);
-  };
-  // Next-step notes and task words can carry personal context: with contacts hidden, the whole note hides (round 4).
-  C.note = (t, names, label) => (C.priv ? `<span class="cc-hid">${label || 'Note hidden'}</span>` : C.scrub(t, names));
-  C.scrub = function (t, names) {
-    let s = String(t || '');
-    if (!C.priv) return esc(s);
-    s = s.replace(MONEY, '$•••');
-    [].concat(names || []).forEach(n => String(n || '').split(/\s+/).filter(w => w.length > 1).forEach(w => {
-      s = s.replace(new RegExp('(?<![\\p{L}])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\p{L}])', 'giu'), '•••');
-    }));
-    // Any word that starts with a capital (accents included): hidden if it is a name by the rule above.
-    s = s.replace(/(?<![\p{L}])\p{Lu}[\p{L}'’]*/gu, (w, at, all) => (w === 'Good' && /^ (until|through|thru)\b/.test(all.slice(at + 4)) ? w : C.isNameWord(w) ? '•••' : w));
-    s = s.replace(/•••(?:[ -]•••)+/g, '•••');
-    return esc(s);
-  };
-  // Public text with no people in it (market talking points): only dollar amounts hide.
-  C.scrubMoney = t => esc(C.priv ? String(t || '').replace(MONEY, '$•••') : String(t || ''));
+  // ---------------- people and free text. Nothing here hides: names, phones, emails, messages and dollars show as
+  // they are. Only the Bank page masks its own figures (cc-sources.js).
+  C.who = v => (!v ? '' : esc(v));
+  C.ph = v => (!v ? '' : esc(fmtPhone(v)));
+  C.em = v => (!v ? '' : esc(v));
+  C.ini = v => esc(initials(v));
+  C.note = t => esc(String(t || ''));
+  C.scrub = C.note;
   // A text message as it should read: no date prefix, no attachment placeholder, a photo said in words.
   C.cleanMsg = t => {
     const s = String(t || '').replace(/^\d{4}-\d{2}-\d{2}: /, '').replace(/[￼�]/g, '').trim();
@@ -183,7 +106,7 @@
       <div class="cc-row-main"><h3>${C.who(r.display || 'No name')}</h3>
         <div class="cc-pills">${r.band ? `<span class="cc-pill ${band(r.band)}">${esc(r.band)}</span>` : ''}${r.owes_reply ? '<span class="cc-pill k-closing">Owes a reply</span>' : ''}${r.stage ? `<span class="cc-pill k-other">${esc(r.stage)}</span>` : ''}${textStatus(r.person_id)}</div>
         <p class="cc-row-why">${r.next_action ? C.note(r.next_action, [r.display]) : r.owes_reply ? 'They texted last. Answer first.' : 'Time for a touch'}</p>
-        <p class="cc-note">${last ? `Last text: ${C.priv ? C.msg('') : '“' + esc(C.cleanMsg(last)) + '”'}` : quietTxt(r)}${r.phone ? ' · ' + C.ph(r.phone) : r.email ? ' · ' + C.em(r.email) : ''}</p></div>
+        <p class="cc-note">${last ? `Last text: “${esc(C.cleanMsg(last))}”` : quietTxt(r)}${r.phone ? ' · ' + C.ph(r.phone) : r.email ? ' · ' + C.em(r.email) : ''}</p></div>
       <div class="cc-acts">${textBtn(r.person_id, r)}<button type="button" class="cc-primary" onclick="touched('${esc(r.person_id)}')">✓ Touched</button><button type="button" onclick="openTask('${esc(r.person_id)}')">＋ Task</button><button type="button" onclick="openNote('${esc(r.person_id)}')">Note</button><button type="button" class="cc-danger" onclick="openDNC('${esc(r.person_id)}')" aria-label="Do Not Contact">Do Not Contact</button></div></li>`;
   }
   const band = b => ({ hot: 'k-hot', warm: 'k-warm', lukewarm: 'k-listing', cold: 'k-cold', 'ice-cold': 'k-cold' }[b] || 'k-other');
@@ -255,8 +178,8 @@
     const row = d => { const i = all.indexOf(d); return `<li class="cc-row ${d.reply ? 'is-hot' : ''}"><span class="cc-av" aria-hidden="true">${d.kind === 'text' ? '▭' : '✉'}</span>
       <div class="cc-row-main"><h3>${C.who(d.name)}</h3>
         <div class="cc-pills">${d.reply ? '<span class="cc-pill k-closing">Reply to write</span>' : `<span class="cc-pill k-other">${esc(d.kind === 'text' ? 'Text' : 'Email')}${d.pool ? ' · ' + esc(d.pool) : ''}</span>${d.by === 'claude' ? '<span class="cc-pill k-other">Written by Claude</span>' : ''}`}</div>
-        <p class="cc-row-why">${d.reply ? 'They texted last. Read what they said and answer in your own words.' : C.priv ? C.msg('') : esc(d.subject || d.body.split('\n')[0])}</p>
-        <p class="cc-note">${d.reply ? (C.priv ? C.msg('') : '“' + esc(C.cleanMsg(d.last_messages.slice(-1)[0])) + '”') : C.priv ? '' : esc(d.body.slice(0, 140))}${d.to ? ' · to ' + (d.kind === 'text' ? C.ph(d.to) : C.em(d.to)) : ''}</p></div>
+        <p class="cc-row-why">${d.reply ? 'They texted last. Read what they said and answer in your own words.' : esc(d.subject || d.body.split('\n')[0])}</p>
+        <p class="cc-note">${d.reply ? '“' + esc(C.cleanMsg(d.last_messages.slice(-1)[0])) + '”' : esc(d.body.slice(0, 140))}${d.to ? ' · to ' + (d.kind === 'text' ? C.ph(d.to) : C.em(d.to)) : ''}</p></div>
       <div class="cc-acts"><button type="button" class="cc-primary" onclick="openCompose('${esc(d.person_id)}', ${i})">${d.reply ? 'Write a reply' : 'Open'}</button>${contactBtns(d.person_id, Object.assign({}, d.row || {}, d.kind === 'text' ? { phone: d.to } : { email: d.to }, { display: d.name }))}</div></li>`; };
     const shown = all.filter(d => matches(`${d.name} ${d.body} ${d.subject}`)), ready = shown.filter(d => !d.reply), reply = shown.filter(d => d.reply);
     const body = !shown.length ? (S.q ? C.noMatch() : C.empty('No drafts waiting. New ones come with the next feed refresh.'))
@@ -272,7 +195,7 @@
     const body = rows.length ? `<ul class="cc-rows">${rows.map(s => `<li class="cc-row"><span class="cc-av" aria-hidden="true">${s.kind === 'text' ? '▭' : '✉'}</span>
       <div class="cc-row-main"><h3>${C.who(s.display || 'No name')}</h3>
         <div class="cc-pills"><span class="cc-pill ${s.status === 'sent' ? 'k-listing' : 'k-other'}">${s.status === 'sent' ? 'Sent' : s.status === 'dry-run' ? 'Dry run, nothing left the Mac' : s.status === 'opened' ? 'Opened, waiting for your send' : esc(s.status)}</span>${s.via === 'handoff' ? (s.confirmed_by ? `<span class="cc-pill k-other">${s.confirmed_by === 'you' ? 'you said so' : 'confirmed by ' + esc(s.confirmed_by)} · ${esc(textWhen(s.sent_at))}${s.service && s.service !== 'Gmail' ? ' · ' + esc(s.service) : ''}</span>` : '') : s.kind === 'text' && s.delivery ? `<span class="cc-pill k-other">${esc(s.delivery)}</span>` : ''}</div>
-        <p class="cc-note">${esc(textWhen(s.at))} · ${s.kind === 'text' ? 'Text' : 'Email'}${s.subject && !C.priv ? ': ' + esc(s.subject) : ''} · to ${s.kind === 'text' ? C.ph(s.to) : C.em(s.to)}</p>${s.text ? `<p class="cc-row-why">${C.note(s.sent_text || s.text, [s.display], 'Message hidden')}</p>` : ''}</div>${s.status === 'opened' ? `<div class="cc-acts"><button type="button" class="cc-primary" onclick="answerSent('${esc(s.id)}', true)">Sent</button><button type="button" onclick="answerSent('${esc(s.id)}', false)">Not sent</button></div>` : ''}</li>`).join('')}</ul>`
+        <p class="cc-note">${esc(textWhen(s.at))} · ${s.kind === 'text' ? 'Text' : 'Email'}${s.subject ? ': ' + esc(s.subject) : ''} · to ${s.kind === 'text' ? C.ph(s.to) : C.em(s.to)}</p>${s.text ? `<p class="cc-row-why">${C.note(s.sent_text || s.text, [s.display], 'Message hidden')}</p>` : ''}</div>${s.status === 'opened' ? `<div class="cc-acts"><button type="button" class="cc-primary" onclick="answerSent('${esc(s.id)}', true)">Sent</button><button type="button" onclick="answerSent('${esc(s.id)}', false)">Not sent</button></div>` : ''}</li>`).join('')}</ul>`
       : C.empty('Nothing sent today.');
     return page('Sent today', 'Every text and email from today: sent by Pipeline, sent by you from the Text and Email buttons, or dry-run.', body, ['sends']);
   }
@@ -336,8 +259,8 @@
     const row = r => {
       const last = (r.last_messages || []).slice(-1)[0];
       const differs = r.band && r.band !== r.temp;
-      return `<li class="cc-row cc-click" role="button" tabindex="0" data-person="${esc(r.person_id)}" onclick="openPerson('${esc(r.person_id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPerson('${esc(r.person_id)}')}" aria-label="Open ${C.priv ? 'this person' : esc(r.display)}">
-        <span class="cc-av" aria-hidden="true">${C.priv ? '•' : esc(initials(r.display))}</span>
+      return `<li class="cc-row cc-click" role="button" tabindex="0" data-person="${esc(r.person_id)}" onclick="openPerson('${esc(r.person_id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPerson('${esc(r.person_id)}')}" aria-label="Open ${esc(r.display)}">
+        <span class="cc-av" aria-hidden="true">${esc(initials(r.display))}</span>
         <div class="cc-row-main"><h3>${C.who(r.display || 'No name')}</h3>
           <div class="cc-pills"><span class="cc-pill ${band(r.temp)}">${esc(r.temp)}</span>${r.owes_reply ? '<span class="cc-pill k-closing">Owes a reply</span>' : ''}${r.stage ? `<span class="cc-pill k-other">${esc(r.stage)}</span>` : ''}${differs ? `<span class="cc-pill k-other">Sheet says ${esc(r.band)}</span>` : ''}${textStatus(r.person_id)}</div>
           <ul class="cc-why">${(r.reasons || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>

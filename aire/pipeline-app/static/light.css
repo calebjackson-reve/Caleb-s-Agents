@@ -184,3 +184,6 @@ body { color: var(--ink); font: 14px/1.5 var(--sans); background-image: none; }
 .side .nav button.sub { padding-left: 18px; min-height: 26px; font-size: 12px; }
 .grok { background: var(--ivory); border: 1px solid var(--rule); border-radius: 8px; } .grok h4 { color: var(--ink); } .grok-how, .grok-foot small { color: var(--stone); }
 .grok-status { background: #F6F2EC; border: 0; color: var(--ink); } .cc-heat b { color: var(--ink); } .cc-heat small, .cc-why { color: var(--stone); }
+
+/* The map: a person's full name on hover. */
+.pm-tip { position: absolute; transform: translate(-50%, -100%); background: var(--ink); color: var(--ivory); font: 500 12px var(--sans); padding: 4px 9px; border-radius: 6px; white-space: nowrap; pointer-events: none; z-index: 3; }

@@ -33,7 +33,6 @@
     const h = C.data.history.slice(-60).filter(r => !(r.mismatch || []).includes(metric));
     const saved = Math.min(C.data.history_saved ?? 0, h.filter(r => r.day < C.data.today).length + (h.some(r => r.day === C.data.today) ? 1 : 0));
     if (saved < 2) return `<p class="cc-note">No trend line yet: ${saved ? 'one day is' : 'no days are'} saved in the Scorecard history. A line shows once two days are saved.</p>`;
-    if (C.priv && metric === 'gci') return '<p class="cc-note">Chart hidden with money.</p>';
     const vals = h.map(r => r[metric] || 0), max = Math.max(1, ...vals), w = 240, ht = 48;
     const pts = vals.map((v, i) => `${(i / (vals.length - 1) * w).toFixed(1)},${(ht - v / max * (ht - 4) - 2).toFixed(1)}`).join(' ');
     return `<svg class="cc-spark" viewBox="0 0 ${w} ${ht}" role="img" aria-label="${metric} over the last ${h.length} saved days, from ${vals[0]} to ${vals[vals.length - 1]}"><polyline points="${pts}"/></svg>`;
@@ -42,7 +41,6 @@
 
   // Sales by year: every closing in the sales history plus Closed deals on the sheet. Year end figures are estimates.
   function bars(years, key, money) {
-    if (money && C.priv) return '<p class="cc-note">Chart hidden with money.</p>';
     const max = Math.max(1, ...years.map(y => y[key])), bw = 240 / years.length;
     return `<svg class="cc-ybars" viewBox="0 0 240 86" role="img" aria-label="${key} by year: ${years.map(y => y.year + ' ' + Math.round(y[key])).join(', ')}">${years.map((y, i) => {
       const h = y[key] / max * 60;
@@ -83,7 +81,6 @@
       ${card('Set goals', goalForm(), 'goals')}</div>`;
   }
   function goalForm() {
-    if (C.priv) return '<p class="cc-note">Goals hold dollar amounts, so they show only while money is shown. Tap Show money and contacts at the top.</p>';
     const g = C.data.goals || {};
     return `<form class="cc-goals" onsubmit="CC.saveGoals(event)">${GOALS.map(([k, label, , type]) => `<label>${label}<input name="${k}" type="${type || 'number'}" ${type ? '' : 'min="0" step="any" inputmode="decimal"'} value="${g[k] == null ? '' : esc(String(g[k]))}"></label>`).join('')}
       <p class="cc-note">Leave a box empty and the Scorecard shows no goal for it. For one number instead of a range, put it in both ends.</p>

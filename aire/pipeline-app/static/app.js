@@ -45,10 +45,6 @@ function drafts() {
   return items.filter(i => !sentIds.has(i.person_id));
 }
 // The one owe-a-reply list: people in Touches due whose last text was theirs. Every count on every page is this length.
-// With money and contacts hidden, dialogs and toasts say "this person" instead of a name, and contact fields are masked.
-const hid = () => !!(window.CC && CC.priv);
-const nm = v => (hid() ? 'this person' : v);
-const maskAttr = () => (hid() ? ' class="cc-masked" autocomplete="off"' : '');
 function owesReply() { return (feed().touches_due || []).filter(r => r.owes_reply); }
 // Drafts ready: written texts and emails only. Reply-first rows have no template, so they are never counted as ready.
 function readyDrafts() { return drafts().filter(d => !d.reply); }
@@ -124,18 +120,18 @@ function grokText(j) {
 }
 function grokStatus(id) {
   const j = grokJob(id); if (!j) return '';
-  return `<span class="txs ${grokTone(j)}"><i></i>${esc(grokText(hid() ? { ...j, summary: '' } : j))}</span>`;
+  return `<span class="txs ${grokTone(j)}"><i></i>${esc(grokText(j))}</span>`;
 }
 // Jobs that still want something from Caleb: a Call card to tap, or a draft to read.
 function grokOpen() { return (((S.data && S.data.bridge) || {}).recent || []).filter(j => ['waiting', 'dial_card_shown', 'draft_ready'].includes(j.state)); }
-// The Grok panel in the compose box. Two tabs, one job each. Names, drafts and summaries follow the privacy switch.
+// The Grok panel in the compose box. Two tabs, one job each.
 function grokBlock(c, row) {
   const b = (S.data && S.data.bridge) || {}, j = grokJob(c.person_id), dry = S.data.demo || b.caller !== 'live';
   const mode = S.grokMode === 'draft' ? 'draft' : 'call';
   const opts = Object.entries(b.purposes || {}).map(([k, v]) => `<option value="${k}"${S.grokPurpose === k ? ' selected' : ''}>${esc(v)}</option>`).join('');
   const phone = normPhone(row.phone || (c.kind === 'text' ? c.to : ''));
   const left = mode === 'call' ? `${b.calls_24h || 0} of ${b.calls_cap || 10} calls in the last 24 hours` : `${b.drafts_today || 0} of ${b.drafts_cap || 10} hard drafts today`;
-  const status = !j ? '' : `<div class="grok-status ${grokTone(j)}"><b>${esc(hid() ? grokText({ ...j, summary: '', outcome: j.outcome }) : grokText(j))}</b>${j.draft_text ? (hid() ? '<p class="cc-hid">Draft hidden · press the H key to read it</p>' : `<p>${esc(j.draft_text)}</p>`) + '<button type="button" class="cc-primary" onclick="useGrokDraft()">Use this draft</button>' : ''}</div>`;
+  const status = !j ? '' : `<div class="grok-status ${grokTone(j)}"><b>${esc(grokText(j))}</b>${j.draft_text ? `<p>${esc(j.draft_text)}</p>` + '<button type="button" class="cc-primary" onclick="useGrokDraft()">Use this draft</button>' : ''}</div>`;
   return `<section class="grok" id="grok-panel" aria-label="Grok">
     <header><h4>Grok</h4><span class="cc-pill ${dry ? 'k-other' : 'k-listing'}">${dry ? 'Dry run, nothing leaves the Mac' : 'Live'}</span></header>
     <div class="seg" role="tablist"><button type="button" role="tab" aria-selected="${mode === 'call'}" class="${mode === 'call' ? 'on' : ''}" onclick="grokTab('call')">Call</button><button type="button" role="tab" aria-selected="${mode === 'draft'}" class="${mode === 'draft' ? 'on' : ''}" onclick="grokTab('draft')">Hard draft</button></div>
@@ -208,6 +204,7 @@ function statusWords(red, amb) {
   return red ? `${all} ${s} failed or out of date` : `${all} ${s} late or never read`;
 }
 function render() {
+  if (window.CC && CC.leaveBank) CC.leaveBank();
   if (!S.data) return;
   const f = feed(), c = f.counts || {}, d = S.data;
   renderNav(c);
@@ -243,7 +240,7 @@ function render() {
   $('#refresh').classList.toggle('spin', !!(d.refresh && d.refresh.running));
   $('#refresh').innerHTML = '<span>⟳</span>';
   $('#open-sheet').hidden = !(d.links && d.links.sheet);
-  // main: every page is a Command Center page now (cc.js and friends), so one design and one privacy switch.
+  // main: every page is a Command Center page now (cc.js and friends), so one design.
   const main = $('#main');
   if (d.feed_ok && f.header_ok === false) { main.innerHTML = stopScreen(f); return; }
   if (S.view === 'cc') S.view = 'dash';
@@ -333,7 +330,7 @@ async function refresh() {
 
 // ---------------------------------------------------------------- actions
 async function touched(id) {
-  const r = personRow(id), who = nm(r ? r.display : 'this person'); const what = await touchForm(who); if (what == null) return;
+  const r = personRow(id), who = (r ? r.display : 'this person'); const what = await touchForm(who); if (what == null) return;
   await act('/api/touch', { person_id: id, what }, { tag: 'LOGGED', text: `Touch logged for ${who}` });
 }
 async function doneTask(task_id, person_id, task) {
@@ -358,17 +355,16 @@ function renderDrawer() {
   const cap = c.kind === 'text' ? d.caps.texts - d.caps.sent_texts : d.caps.emails - d.caps.sent_emails;
   const items = drafts(); const pos = S.queueIdx >= 0 ? `${S.queueIdx + 1} of ${items.length}` : 'not in queue';
   $('#drawer').hidden = false;
-  const H = hid(), C2 = window.CC;
-  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${H ? '•' : initials(c.name)}</span><div class="who"><b>${H ? '<span class="cc-hid">Name hidden</span>' : esc(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
+  const C2 = window.CC;
+  $('#drawer').innerHTML = `<section class="panel"><div class="dh"><span class="ico">${initials(c.name)}</span><div class="who"><b>${esc(c.name)}</b><small>${row.band ? `<span class="tag ${row.band}">${esc(row.band)}</span>` : ''}${c.reply ? '<span class="tag reply">REPLY FIRST</span>' : ''}<span>${esc(row.stage || c.pool || '')}</span><span>${esc(quiet(row))}</span></small></div><button class="x" onclick="closeDrawer()">×</button></div>
   <div class="dbody">
-    ${c.last_messages && c.last_messages.length && H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span><div class="bubble">${C2.msg('')} · press the H key to read them</div></div>` : ''}
-    ${c.last_messages && c.last_messages.length && !H ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
+    ${c.last_messages && c.last_messages.length ? `<div class="msgs"><span class="lbl">THEIR LAST TEXTS</span>${c.last_messages.map((m, i) => { const mm = /^(\d{4}-\d{2}-\d{2}): (.*)$/.exec(m); return `<div class="bubble" style="--i:${i}"><small>${esc(mm ? mm[1] : '')}</small>${esc(mm ? mm[2] : m)}</div>`; }).join('')}</div>` : ''}
     ${c.next_action || row.next_action ? `<div class="bubble note">Your note: ${C2 ? C2.note(c.next_action || row.next_action, [c.name]) : esc(c.next_action || row.next_action)}</div>` : ''}
     ${logLines(c.person_id)}
     <div class="seg"><button class="${c.kind === 'text' ? 'on' : ''}" ${canText ? '' : 'disabled'} onclick="setKind('text')">▭ TEXT</button><button class="${c.kind === 'email' ? 'on' : ''}" ${canEmail ? '' : 'disabled'} onclick="setKind('email')">✉ EMAIL</button></div>
-    <div class="field"><label>TO</label>${H && to ? `<input id="c-to" type="hidden" value="${esc(to)}"><p class="cc-hid">${c.kind === 'text' ? 'Number' : 'Email'} hidden · press the H key to see it before you open it</p>` : `<input id="c-to" value="${esc(to)}" inputmode="${c.kind === 'text' ? 'tel' : 'email'}" placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}" oninput="sheetCheck()">`}<p class="hint" id="c-exact"></p></div>
+    <div class="field"><label>TO</label><input id="c-to" value="${esc(to)}" inputmode="${c.kind === 'text' ? 'tel' : 'email'}" placeholder="${c.kind === 'text' ? 'no phone on file' : 'no email on file'}" oninput="sheetCheck()"><p class="hint" id="c-exact"></p></div>
     ${c.kind === 'email' ? `<div class="field"><label>SUBJECT</label><input id="c-subject" value="${esc(c.subject || '')}" placeholder="Subject"></div>` : ''}
-    <div class="field"><label>${c.kind === 'text' ? 'TEXT' : 'EMAIL'} DRAFT${c.reply ? ' · write it yourself, they texted last' : c.pool ? ' · from the ' + esc(c.pool) + ' pool' : ''}</label><textarea id="c-body"${maskAttr()} placeholder="${c.reply ? 'Answer what they said.' : 'Write the message.'}">${esc(c.body || '')}</textarea><div class="hint"><span id="c-count">${(c.body || '').length} chars</span><span>${cap} ${c.kind}${cap === 1 ? '' : 's'} left today</span></div></div>
+    <div class="field"><label>${c.kind === 'text' ? 'TEXT' : 'EMAIL'} DRAFT${c.reply ? ' · write it yourself, they texted last' : c.pool ? ' · from the ' + esc(c.pool) + ' pool' : ''}</label><textarea id="c-body" placeholder="${c.reply ? 'Answer what they said.' : 'Write the message.'}">${esc(c.body || '')}</textarea><div class="hint"><span id="c-count">${(c.body || '').length} chars</span><span>${cap} ${c.kind}${cap === 1 ? '' : 's'} left today</span></div></div>
     ${grokBlock(c, row)}
   </div>
   <div class="dfoot"><button class="send-btn" id="open-app" onclick="openInApp()">${c.kind === 'text' ? 'Open in Messages' : 'Open in Gmail'}</button>${sendNowBtn(dry)}<button class="ghost-btn" onclick="touchFromCompose()">✓ Touched, no message</button><span class="spacer"></span><span class="mono" style="font-size:9px;color:var(--dim)">${pos}</span><button class="ghost-btn" onclick="nextInQueue()">Skip ›</button></div></section>`;
@@ -386,9 +382,9 @@ function sheetCheck() {
   const c = S.compose, el = $('#c-exact'); if (!c || !el) return;
   const raw = ($('#c-to') || {}).value || '', ok = c.kind === 'text' ? normPhone(raw) : validEmail(raw) ? raw.trim() : null;
   const share = ok ? sharers(c.kind, ok).filter(n => !c.person_id || n !== (c.row || {}).display) : [];
-  const shown = hid() ? (c.kind === 'text' ? 'the number on file' : 'the address on file') : esc(ok || '');
+  const shown = esc(ok || '');
   el.innerHTML = !ok ? `<span class="cc-warn">${c.kind === 'text' ? phoneWhy(raw) + '. Use 10 digits.' : raw.trim() ? 'Not a valid email' : 'No email on file'}</span>`
-    : `Opens to <b>${shown}</b>${share.length ? ` <span class="cc-warn">· ${share.length === 1 ? 'Another contact has' : share.length + ' other contacts have'} this ${c.kind === 'text' ? 'number' : 'email'}${hid() ? '' : ': ' + share.map(esc).join(', ')}. Check it is the right person.</span>` : ''}`;
+    : `Opens to <b>${shown}</b>${share.length ? ` <span class="cc-warn">· ${share.length === 1 ? 'Another contact has' : share.length + ' other contacts have'} this ${c.kind === 'text' ? 'number' : 'email'}: ${share.map(esc).join(', ')}. Check it is the right person.</span>` : ''}`;
   const b = $('#open-app'); if (b) b.disabled = !ok;
 }
 function sheetValues() {
@@ -438,13 +434,13 @@ const sentWord = r => r.status === 'opened' ? 'opened, waiting for your send' : 
 // What Pipeline has on record for this person: the last five texts and emails, newest first.
 function logLines(id) {
   const rows = ((S.data.sent_log || {})[id] || []).slice().reverse(); if (!id || !rows.length) return '';
-  return `<div class="msgs"><span class="lbl">SENT FROM PIPELINE</span>${rows.map(r => `<div class="bubble note"><small>${esc(textWhen(r.sent_at || r.at))} · ${r.kind === 'text' ? 'Text' : 'Email'} · ${esc(sentWord(r))}</small>${hid() ? '' : esc(r.subject || r.text || '')}</div>`).join('')}</div>`;
+  return `<div class="msgs"><span class="lbl">SENT FROM PIPELINE</span>${rows.map(r => `<div class="bubble note"><small>${esc(textWhen(r.sent_at || r.at))} · ${r.kind === 'text' ? 'Text' : 'Email'} · ${esc(sentWord(r))}</small>${esc(r.subject || r.text || '')}</div>`).join('')}</div>`;
 }
 async function confirmSendNow() {
   const v = sheetValues(), c = S.compose;
   if (!v.to) { toast('warn', 'CHECK IT', 'That recipient is not valid.'); return; }
   if (!v.body.trim()) { toast('warn', 'EMPTY', 'Write the message first.'); return; }
-  const ok = await modal(`Send this ${v.kind} now?`, `<p class="cc-note">To <b>${esc(nm(c.name))}</b> at <b>${esc(v.to)}</b>, ${v.kind === 'text' ? 'through Messages (iMessage, or SMS if not)' : 'through Gmail as ' + GMAIL_USER}. One message, sent right away.</p>${v.subject ? `<p><b>Subject:</b> ${esc(v.subject)}</p>` : ''}<pre class="send-preview">${esc(v.body)}</pre>`, () => true, 'Send it');
+  const ok = await modal(`Send this ${v.kind} now?`, `<p class="cc-note">To <b>${esc(c.name)}</b> at <b>${esc(v.to)}</b>, ${v.kind === 'text' ? 'through Messages (iMessage, or SMS if not)' : 'through Gmail as ' + GMAIL_USER}. One message, sent right away.</p>${v.subject ? `<p><b>Subject:</b> ${esc(v.subject)}</p>` : ''}<pre class="send-preview">${esc(v.body)}</pre>`, () => true, 'Send it');
   if (ok !== true) return;
   return sendNow(v);
 }
@@ -465,14 +461,14 @@ async function sendNow(v) {
   const r = await api('/api/send', body);
   btn.disabled = false; btn.classList.remove('charging');
   if (!r.ok) { toast('err', 'NOT SENT', r.error); return; }
-  toast(r.result.status === 'sent' ? 'ok' : 'warn', r.result.status === 'sent' ? 'SENT' : 'DRY RUN', `${c.kind} to ${nm(c.name)} ${r.result.status === 'sent' ? 'is on its way and logged in the CRM' : 'logged, nothing left the Mac'}`);
+  toast(r.result.status === 'sent' ? 'ok' : 'warn', r.result.status === 'sent' ? 'SENT' : 'DRY RUN', `${c.kind} to ${c.name} ${r.result.status === 'sent' ? 'is on its way and logged in the CRM' : 'logged, nothing left the Mac'}`);
   if (c.kind === 'text') S.justTexted = c.person_id;
   await load();
   watchDelivery();
   if (c.fromCard) { closeDrawer(); setTimeout(() => { if (S.justTexted === c.person_id) { S.justTexted = null; } }, 4000); return; }
   const items = drafts(); if (items.length) openCompose(items[Math.min(S.queueIdx, items.length - 1)].person_id, Math.min(S.queueIdx, items.length - 1)); else closeDrawer();
 }
-async function touchFromCompose() { const c = S.compose; const what = await touchForm(nm(c.name)); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${nm(c.name)}` }); if (r) nextInQueue(); }
+async function touchFromCompose() { const c = S.compose; const what = await touchForm(c.name); if (what == null) return; const r = await act('/api/touch', { person_id: c.person_id, what }, { tag: 'LOGGED', text: `Touch logged for ${c.name}` }); if (r) nextInQueue(); }
 
 // ---- modals
 // opts.info: a window that only shows something gets one OK button, no Cancel.
@@ -502,8 +498,7 @@ function touchForm(who) {
 function ask(title, label, placeholder) { return modal(title, `<div class="field"><label>${esc(label.toUpperCase())}</label><input id="m-in" placeholder="${esc(placeholder)}"></div>`, m => { const v = $('#m-in', m).value.trim(); return v || false; }, 'Log it'); }
 function personSelect(selected) {
   const rows = (feed().touches_due || []).concat(feed().new_leads || [], feed().partners || []);
-  const h = hid();
-  return `<select id="m-person"><option value="">${h && !selected ? 'names hidden, press Show to pick by name' : 'pick a person'}</option>${rows.map(r => `<option value="${esc(r.person_id)}" ${r.person_id === selected ? 'selected' : ''}>${h ? (r.person_id === selected ? 'This person' : 'Name hidden') : esc(r.display)} · ${esc(r.band || r.source || '')}</option>`).join('')}</select>`;
+  return `<select id="m-person"><option value="">pick a person</option>${rows.map(r => `<option value="${esc(r.person_id)}" ${r.person_id === selected ? 'selected' : ''}>${esc(r.display)} · ${esc(r.band || r.source || '')}</option>`).join('')}</select>`;
 }
 async function openTask(person_id = '') {
   const v = await modal('New task', `<div class="field"><label>PERSON</label>${personSelect(person_id)}</div><div class="field"><label>TASK</label><input id="m-task" placeholder="Call back about the inspection"></div><div class="field"><label>DUE</label><input id="m-due" type="date" value="${todayISO()}"></div>`,
@@ -512,13 +507,13 @@ async function openTask(person_id = '') {
 }
 async function openNote(person_id) {
   const r = personRow(person_id);
-  const v = await modal(`Note on ${esc(nm(r ? r.display : 'this person'))}`, `<div class="field"><label>NOTE</label><textarea id="m-note" style="min-height:90px" placeholder="What you learned"></textarea></div>`, m => $('#m-note', m).value.trim() || false, 'Save note');
+  const v = await modal(`Note on ${esc((r ? r.display : 'this person'))}`, `<div class="field"><label>NOTE</label><textarea id="m-note" style="min-height:90px" placeholder="What you learned"></textarea></div>`, m => $('#m-note', m).value.trim() || false, 'Save note');
   if (v) await act('/api/note', { person_id, text: v }, { tag: 'NOTE', text: 'Saved to the CRM' });
 }
 async function openDNC(person_id) {
   const r = personRow(person_id);
-  const v = await modal(`Do Not Contact: ${esc(nm(r ? r.display : 'this person'))}`, `<p style="color:var(--amber);margin:0 0 6px">One way. The engine never sets it back to NO. They drop off every list.</p><div class="field"><label>REASON</label><input id="m-reason" placeholder="Asked us to stop"></div>`, m => $('#m-reason', m).value.trim() || false, 'Set Do Not Contact');
-  if (v) await act('/api/dnc', { person_id, reason: v }, { tag: 'DNC', text: `${nm(r ? r.display : 'This person')} will not be contacted` });
+  const v = await modal(`Do Not Contact: ${esc((r ? r.display : 'this person'))}`, `<p style="color:var(--amber);margin:0 0 6px">One way. The engine never sets it back to NO. They drop off every list.</p><div class="field"><label>REASON</label><input id="m-reason" placeholder="Asked us to stop"></div>`, m => $('#m-reason', m).value.trim() || false, 'Set Do Not Contact');
+  if (v) await act('/api/dnc', { person_id, reason: v }, { tag: 'DNC', text: `${(r ? r.display : 'This person')} will not be contacted` });
 }
 async function openDeal(address = '') {
   // The CRM Deals tab row being edited, prefilled with the Deals sheet's numbers: the sheet is the one deal source, so
@@ -542,12 +537,12 @@ async function openDeal(address = '') {
 }
 function openBrief() {
   // The same lists the pages use: replies owed from Touches due, deals from the AIRE Deals sheet, leads from the one lead
-  // list. Names, messages and dollars hide with the privacy switch like every page.
+  // list.
   const f = feed(), C = window.CC, cd = C && C.data, owes = owesReply(), over = (f.tasks || []).filter(t => t.overdue), dr = readyDrafts();
   const who = v => (C ? C.who(v) : esc(v)), scrub = (t, n) => (C ? C.scrub(t, n) : esc(t));
   const deals = cd ? cd.deals.filter(x => !['closed', 'out'].includes(x.stage)) : [], leads = cd ? cd.leads : [];
   modal('Morning brief', `<div class="brief">
-    <h4>FIRST</h4><ul>${owes.length ? owes.slice(0, 5).map(r => `<li>Answer <b>${who(r.display)}</b>: ${C && C.priv ? C.msg('') : esc(C ? C.cleanMsg((r.last_messages || []).slice(-1)[0]) : '')}</li>`).join('') : '<li>Nobody is waiting on a reply.</li>'}</ul>
+    <h4>FIRST</h4><ul>${owes.length ? owes.slice(0, 5).map(r => `<li>Answer <b>${who(r.display)}</b>: ${esc(C ? C.cleanMsg((r.last_messages || []).slice(-1)[0]) : '')}</li>`).join('') : '<li>Nobody is waiting on a reply.</li>'}</ul>
     <h4>OVERDUE</h4><ul>${over.length ? over.map(t => `<li>${scrub(t.task, [t.display])} · ${who(t.display || '')}</li>`).join('') : '<li>Nothing overdue.</li>'}</ul>
     <h4>NEW LEADS, 14 DAYS</h4><ul>${leads.length ? leads.map(l => `<li><b>${who(l.name || 'Website lead')}</b> · ${esc(l.source || '')} · ${esc((l.due || {}).label || '')}</li>`).join('') : '<li>None in the last 14 days.</li>'}</ul>
     <h4>DEALS, FROM THE DEALS SHEET</h4><ul>${deals.length ? deals.map(x => `<li><b>${esc(x.deal)}</b> · ${esc(x.status)}${x.act ? ' · act of sale ' + esc(C.day(x.act)) : ''}${x.next ? ' · ' + scrub(x.next) : ''}</li>`).join('') : '<li>No open deals on the Deals sheet.</li>'}</ul>
@@ -565,7 +560,7 @@ const C_empty = t => `<p class="cc-empty">${esc(t)}</p>`;
 function openHelp() {
   const label = k => NAV.flatMap(g => g[1]).find(x => x[0] === k)[2];
   modal('Keyboard shortcuts', `<div class="brief"><h4>PAGES</h4><p>Press a number to open a page.</p><ul>${KEYS.map((k, i) => `<li><kbd>${i}</kbd> ${esc(label(k))}</li>`).join('')}</ul>
-    <h4>ANYWHERE</h4><ul><li>Press <kbd>A</kbd> to add a lead.</li><li>Press <kbd>C</kbd> to open the next draft.</li><li>Press <kbd>V</kbd> to turn the voice on or off, and <kbd>T</kbd> to type to it.</li><li>Press <kbd>R</kbd> to refresh the CRM.</li><li>Press the slash key <kbd>/</kbd> to search.</li><li>Press <kbd>H</kbd> to hide or show money and contacts.</li><li>Press <kbd>Escape</kbd> to close a window like this one.</li></ul>
+    <h4>ANYWHERE</h4><ul><li>Press <kbd>A</kbd> to add a lead.</li><li>Press <kbd>C</kbd> to open the next draft.</li><li>Press <kbd>V</kbd> to turn the voice on or off, and <kbd>T</kbd> to type to it.</li><li>Press <kbd>R</kbd> to refresh the CRM.</li><li>Press the slash key <kbd>/</kbd> to search.</li><li>Press <kbd>Escape</kbd> to close a window like this one.</li></ul>
     <h4>ON THE MAP</h4><ul><li>Drag to move, scroll or double-click to zoom, click a pin for the person.</li><li>Drawing a farm: click the corners, double-click or press Return to finish, Delete takes back a corner, Escape stops drawing.</li></ul>
     <h4>VOICE</h4><ul><li>Say "hey Pipeline", then: brief, who texted me, touches, tasks, deals, leads, compose, refresh, status, stop.</li><li>Nothing is sent by voice. Pipeline only sends when you press send.</li></ul>
     <h4>WHERE THINGS GO</h4><ul><li>Every button that changes something writes to the AIRE CRM sheet and is logged there.</li><li>Every text and email is checked for Do Not Contact and the daily limit before it goes, and lands in Sent today.</li></ul></div>`, () => true, 'OK', { info: true });
@@ -578,12 +573,12 @@ async function showProposals(list) {
     const what = p.action === 'relabel' ? (p.type ? `Type to ${p.type}` : `band ${p.expect_band || 'none'} to ${p.band}`) : p.action === 'task' ? `task "${p.task}" due ${p.due}` : `note "${p.text}"`;
     const sc = t => (window.CC ? CC.scrub(t, [p.name]) : esc(t));
     const ok = await modal('JARVIS SUGGESTS', `<div class="brief"><p><b>${window.CC ? CC.who(p.name) : esc(p.name)}</b>: ${sc(what)}</p><p>${sc(p.why)}</p></div>`, () => true, 'Yes, do it');
-    if (!ok) { toast('warn', 'JARVIS', `Skipped: ${nm(p.name)}`); continue; }
+    if (!ok) { toast('warn', 'JARVIS', `Skipped: ${p.name}`); continue; }
     const path = p.action === 'relabel' ? '/api/relabel' : p.action === 'task' ? '/api/task' : '/api/note';
     const body = p.action === 'relabel' ? { person_id: p.person_id, band: p.band, type: p.type, expect_band: p.expect_band }
       : p.action === 'task' ? { person_id: p.person_id, task: p.task, due: p.due } : { person_id: p.person_id, text: p.text };
     const r = await api(path, body);
-    toast(r.ok ? 'ok' : 'err', 'JARVIS', r.ok ? `Saved: ${nm(p.name)}` : (r.error || 'not saved'));
+    toast(r.ok ? 'ok' : 'err', 'JARVIS', r.ok ? `Saved: ${p.name}` : (r.error || 'not saved'));
   }
   load();
 }
@@ -595,7 +590,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !$('#modal').hidden) { e.preventDefault(); closeModal(); return; }
   const t = e.target && e.target.matches ? e.target : document.body;
   if (t.matches('input, textarea, select')) { if (e.key === 'Escape') t.blur(); return; }
-  if (/^[0-9]$/.test(e.key)) go(KEYS[Number(e.key)]); else if (e.key === 'h' && window.CC) CC.togglePriv();
+  if (/^[0-9]$/.test(e.key)) go(KEYS[Number(e.key)]);
   else if (e.key === 'a' && window.CC && CC.addLead) { e.preventDefault(); CC.addLead(); } else if (e.key === 'c') composeNext(); else if (e.key === 'r') refresh(); else if (e.key === '/') { e.preventDefault(); $('#search').focus(); }
   else if (e.key === 'v') $('#mic').click(); else if (e.key === 't') { e.preventDefault(); $('#type-cmd').focus(); }
   else if (e.key === 'Escape') { if (!$('#modal').hidden) closeModal(); else closeDrawer(); }

@@ -35,7 +35,7 @@ sh aire/pipeline-app/install.sh
 
 That loads the LaunchAgent `org.calebjackson.aire.pipeline` (server at login, kept alive, log in `~/.aire/logs/pipeline.log`) and creates `~/Applications/Pipeline.app`, which opens the screen in a Chrome app window. Drag it to the Dock. `sh aire/pipeline-app/install.sh --remove` takes both away.
 
-Checks: `python3 aire/pipeline-app/ui_test.py` renders every page with privacy on and off (no contacts or dollars leak, no developer text, one lead count, one deal source, nav and keys agree). `python3 aire/pipeline-app/app.py --test` runs the offline checks (demo writes, the three send gates, the HTTP layer, the `crm.py` contract). `python3 aire/pipeline-app/bridge.py --test` checks the Grok bridge. The suite sets its own clock, so it passes at any hour.
+Checks: `python3 aire/pipeline-app/ui_test.py` renders every page (nothing hides behind a sitewide switch, only the Bank page hides its own figures, no developer text, one lead count, one deal source, nav and keys agree). `python3 aire/pipeline-app/app.py --test` runs the offline checks (demo writes, the three send gates, the HTTP layer, the `crm.py` contract). `python3 aire/pipeline-app/bridge.py --test` checks the Grok bridge. The suite sets its own clock, so it passes at any hour.
 
 ### Environment
 
@@ -218,7 +218,7 @@ Six pages at the top of the nav, Dashboard first (key `0`, or a link such as `ht
 | Leads | `#ccleads` | Website leads, newest first, with a ready text to copy and Add to CRM (through `crm.py` and its Do Not Contact check). Nothing sends from this page. |
 | Scorecard | `#scorecard` | GCI, closings, leads and appointments a week against your goals, with even pace, 7 and 30 day changes and a daily history chart. Cap progress. Sales by year: closed sales, sides, volume and average price a year, change from the year before, this year against the same date last year, and a year end estimate. It reads `out/cc/sales.json` (one row a closing, from the MLS) plus Closed deals on the sheet that file does not hold yet. The goals form. |
 
-**Privacy.** Money and contact details show as dots until **Show money and contacts** is pressed, and hide again after two minutes. Every page opens hidden.
+**What shows.** Names, phones, emails, addresses, messages, deal amounts and commission figures always show (Caleb, 2026-11-10). There is no sitewide Show or Hide button and no `H` shortcut. Only the Bank page hides anything: its balances, deposits and alert text show as dots until **Show bank figures** is pressed on that page, and hide again when you leave it.
 
 **Data trust.** Every tile and card ends with its source and as-of time. A read past its limit turns amber (out of date), a failed read turns red and says why while the last good numbers stay. Limits: calendar 2 hours, inbox and leads 1 hour, Deals sheet 6 hours, commission mail 24 hours.
 
@@ -290,7 +290,7 @@ Checks: `push_test.py` (4), `vapid_test.py` (2), and the login and push routes i
 
 Every Command Center page has an **Ask Claude about this page** box under its title. Caleb approved this on 2026-11-05: Claude Sonnet 5.5 with a $1-a-day cap.
 
-- **What goes**: only the numbers of the page you are on, with their sources and as-of times, plus your question. Phone numbers, email addresses, senders and links never go. While money and contacts are hidden, amounts go as "hidden" and lead names are left out.
+- **What goes**: only the numbers of the page you are on, with their sources and as-of times, plus your question. Phone numbers, email addresses, senders and links never go. Amounts and lead names go with the page, since they now always show on screen. The one exception is the Bank page: while its figures are hidden, its amounts go as "hidden".
 - **Model**: `claude-sonnet-5-5` at low effort, at most 1,200 output tokens, with the server-side refusal fallback on. The instructions are byte-stable and cached. `PIPELINE_CC_ASK_MODEL` changes the model.
 - **Cost**: about 4,000 tokens in and 300 out, so about 1.1 cents a question at $2 in and $10 out per million, or roughly $3 to $10 a month at 10 to 30 questions a day. Every question's exact cost goes to `out/ask-usage.json`.
 - **Cap**: `PIPELINE_ASK_CAP`, default `1.00` dollars a day, Central time. Once it is reached, questions are refused before they reach Claude, until midnight. The box shows today's spend against the cap.
@@ -310,7 +310,7 @@ Every Command Center page has an **Ask Claude about this page** box under its ti
 | New leads | `5` | Last 14 days with source and next action. |
 | Drafts | `6` | The compose queue in order: replies owed first, then texts, then emails. |
 | Sent today | `7` | The send log for today. |
-| Map | `8` | Every geocoded contact as a pin colored by band (grey is no band), live deals as houses, new leads pulse, an amber ring means they owe a reply. Market rows as diamonds when MARKET is on. Partners (agent, lender, vendor) hidden until PARTNERS is on. Filters: band, owe a reply, quiet 30/90/180/365 days, stage, farm. Street or satellite. Past 200 pins in view they cluster; click a cluster to zoom in. Click a pin: the card with Compose, Touched, Task, Note, tap to call, and add to the call list or postcards. DRAW FARM: name it, click the corners, double-click to finish. The side panel counts what is in view and who you know inside each farm, and turns the view or a farm into a call list or postcard list. |
+| Map | `8` | Every geocoded contact as a pin with their first and last name (on hover at any zoom, and as a label under the pin once 150 or fewer pins share the view), colored by band (grey is no band), live deals as houses, new leads pulse, an amber ring means they owe a reply. Market rows as diamonds when MARKET is on. Partners (agent, lender, vendor) hidden until PARTNERS is on. Filters: band, owe a reply, quiet 30/90/180/365 days, stage, farm. Street or satellite. Past 200 pins in view they cluster; click a cluster to zoom in. Click a pin: the card with Compose, Touched, Task, Note, tap to call, and add to the call list or postcards. DRAW FARM: name it, click the corners, double-click to finish. The side panel counts what is in view and who you know inside each farm, and turns the view or a farm into a call list or postcard list. |
 | Market Monitor | `9` | `feed.market.rows`, newest first: EBR permits and Flexmls alert listings, each with source and source date, farm, and the nearest person you know within two miles. Filters: permits, listings, near someone I know, kind, farm. Row actions: Make lead, Make deal, Postcard, show on Map, Dismiss. |
 
 Deals has a LIST / MAP switch at the top right: the same live deals as houses on the map.

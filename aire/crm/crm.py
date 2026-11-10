@@ -176,6 +176,11 @@ def email_key(email: str) -> str:
     return (email or "").strip().lower()
 
 
+def shown_name(c: dict) -> str:
+    """The name to show for a contact: the display name, or first and last when display is blank. Never invented."""
+    return str(c.get("display") or "").strip() or " ".join(p for p in (str(c.get("first") or "").strip(), str(c.get("last") or "").strip()) if p)
+
+
 def name_key(name: str) -> str:
     return re.sub(r"\s+", " ", (name or "").strip().lower().lstrip("?"))
 
@@ -1104,7 +1109,7 @@ class CRM:
             if last_msg and last_msg <= as_of.isoformat() and (not last or last_msg > last):
                 last = last_msg
             pins.append({"key": f"person:{c['person_id']}", "kind": "person", "person_id": c["person_id"],
-                         "display": c.get("display", ""), "band": band, "stage": c.get("Stage", ""),
+                         "display": shown_name(c), "band": band, "stage": c.get("Stage", ""),
                          "type": (c.get("Type") or "").lower(), "lat": float(g["lat"]), "lng": float(g["lng"]),
                          "days_quiet": (as_of - date.fromisoformat(last)).days if last else None,
                          "owes_reply": bool(sig.get("owes_reply")), "next_action": c.get("Next_Action", ""),
@@ -2001,6 +2006,9 @@ def run_tests() -> int:
     keys = {p["key"] for p in m["pins"]}
     check("map pins only matched rows, never DNC, deals included", keys == {"person:1", "person:2", "person:6", "deal:" + slug("9241 Fixture Tree Dr, Baton Rouge, LA 70810")})
     check("map counts the contacts still waiting on a geocode", m["counts"]["ungeocoded_contacts"] == 1)
+    check("a pin's name is the display name, or first and last when display is blank, and never made up",
+          shown_name({"display": " Pat Fixture ", "first": "P", "last": "F"}) == "Pat Fixture" and shown_name({"display": "", "first": "Pat", "last": "Fixture"}) == "Pat Fixture"
+          and shown_name({"display": "", "first": "Pat", "last": ""}) == "Pat" and shown_name({}) == "")
     check("partner pins carry their type so the app can hide them", next(p for p in m["pins"] if p["key"] == "person:6")["type"] == "vendor")
     check("person pins carry band, days_quiet and float coordinates", all(isinstance(p["lat"], float) for p in m["pins"])
           and next(p for p in m["pins"] if p["key"] == "person:1")["band"] == "hot")

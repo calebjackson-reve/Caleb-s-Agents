@@ -11,7 +11,7 @@
     const d = C.data, f = ((typeof S !== "undefined" && S.data) && S.data.feed) || {}, today = d.today, tomorrow = C.addDays(today, 1);
     const out = [];
     owesReply().slice(0, 5).forEach(r => out.push({
-      k: 'reply', kind: 'k-closing', label: 'Owes a reply', title: C.who(r.display), sub: (r.last_messages || []).length ? (C.priv ? C.msg('') : esc(C.cleanMsg(r.last_messages.slice(-1)[0]).slice(0, 90))) : C.scrub(r.next_action, [r.display]),
+      k: 'reply', kind: 'k-closing', label: 'Owes a reply', title: C.who(r.display), sub: (r.last_messages || []).length ? esc(C.cleanMsg(r.last_messages.slice(-1)[0]).slice(0, 90)) : C.scrub(r.next_action, [r.display]),
       acts: `${typeof textBtn === 'function' ? textBtn(r.person_id, r) : ''}<button type="button" class="cc-mini" onclick="touched(${q(r.person_id)})">✓ Touched</button>` }));
     d.deadlines.all.filter(x => x.day <= tomorrow).forEach(x => out.push({
       k: 'deadline', kind: 'k-deadline', label: x.day === today ? 'Deadline today' : 'Deadline tomorrow', title: esc(x.what), sub: esc(x.deal),
