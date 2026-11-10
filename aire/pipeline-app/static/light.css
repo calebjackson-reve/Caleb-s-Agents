@@ -177,3 +177,6 @@ body { color: var(--ink); font: 14px/1.5 var(--sans); background-image: none; }
 .map-stage .map-side .pin-card, .map-stage .map-side .in-view { position: static; }
 .drawer select, .modal select, .cc-page select { background: var(--ivory); color: var(--ink); border: 1px solid var(--rule); }
 .lt-count { margin-left: 14px; color: var(--stone); } .cc-head h1 { box-shadow: none; }
+/* Cadence on the older rows and the person sheet: ui.css colors these tags by temperature. Here they are words. */
+.tag.hot, .tag.warm, .tag.lukewarm, .tag.cold, .tag.ice-cold, .ico.hot, .ico.warm, .ico.lukewarm, .ico.cold, .ico.ice-cold { color: var(--graphite) !important; background: none !important; border-color: var(--rule) !important; box-shadow: none !important; }
+.tag.hot { font-weight: 700; }

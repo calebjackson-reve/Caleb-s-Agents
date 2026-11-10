@@ -172,7 +172,7 @@ function inViewSummary() {
     return `<div class="farm ${S.mapF.farm === f.id ? 'on' : ''}"><button class="fname" onclick="mapSet('farm', S.mapF.farm === ${jsa(f.id)} ? '' : ${jsa(f.id)})">${esc(f.name)}</button><span>${n.length} known · ${sig} signals</span>
       <span>${BAND_NAMES.filter(b => fb[b]).map(b => `${b || 'no cadence'} ${fb[b]}`).join(' · ')}</span><button class="x" title="Delete farm" onclick="deleteFarm(${jsa(f.id)})">×</button></div>`;
   }).join('')}</div>` : '<p class="dim">No farms yet. Draw one around a neighborhood you work.</p>'}`;
-  return `<div class="in-view"><button class="x" onclick="mapOpen('lists')" aria-label="Close">×</button><h4>${esc(scope.toUpperCase())}</h4>
+  return `<div class="in-view">${S.mapDealsOnly ? '' : `<button class="x" onclick="S.mapPanel = ''; mapUpdate()" aria-label="Close">×</button>`}<h4>${esc(scope.toUpperCase())}</h4>
     <div class="iv-n"><div><b>${people.length.toLocaleString()}</b><small>people</small></div><div><b>${deals.length}</b><small>deals</small></div><div><b>${mkt.length}</b><small>signals</small></div></div>
     <p class="dim">${BAND_NAMES.filter(b => by[b]).map(b => `${b || 'no cadence'} ${by[b]}`).join(' · ')}</p>
     ${`<div class="acts"><button onclick="listFromView('call')">☎ Call list · ${people.filter(p => p.phone).length}</button><button onclick="listFromView('postcards')">✉ Postcards · ${people.filter(p => p.address).length + mkt.length}</button></div>

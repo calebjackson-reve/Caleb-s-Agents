@@ -263,6 +263,8 @@ window.PMap = (function () {
       st.zoom = z; st.center = unproject((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, z); draw(); emitMove();
     }
     draw();
+    // The place names are set in a web font: draw once more when it arrives, so they never stay in the stand-in serif.
+    if (document.fonts && document.fonts.ready && document.fonts.ready.then) document.fonts.ready.then(() => draw());
     const api = {
       setData(d) { st.data = { ...st.data, ...d }; draw(); },
       setBase(b) { if (!BASES[b] || b === st.base) return; st.base = b; st.zoom = clampZoom(st.zoom); for (const img of tiles.values()) img.remove(); tiles.clear(); draw(); },

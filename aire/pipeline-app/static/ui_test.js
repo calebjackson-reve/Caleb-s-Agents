@@ -703,7 +703,8 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(/stage\(\)\.hex\(k\)/.test(mapjs) && !/\bBAND\b/.test(mapjs) && /k === 'closed'/.test(mapjs) && /k === 'new lead' \? INK/.test(mapjs), 'map pins take the stage color: closed is an ink square, a new lead gets an ink ring, temperature colors nothing');
   check(/SLATE = '#8A9AA0'/.test(mapjs) && /ribbon\(RIVER/.test(mapjs) && /ribbon\(FALSE_RIVER/.test(mapjs) && ['Baton Rouge', 'Zachary', 'St. Francisville', 'New Roads', 'The Felicianas'].every(n => mapjs.includes(`name: '${n}'`)), 'the basemap draws the river and False River in neutral slate and sets the five place names');
   check(/toScreen\(p\.lat, p\.lng\)/.test(mapjs), 'every pin is placed from its own coordinates');
-  check(/\.cad-hot \{ font-weight: 700; \}/.test(light) && !/\.cad-(hot|warm|lukewarm|cold|ice-cold)[^{]*\{[^}]*color/.test(light) && !/class="tag \$\{(p\.band|b)\}/.test(mv), 'cadence is a word, never a color');
+  check(/\.cad-hot \{ font-weight: 700; \}/.test(light) && !/\.cad-(hot|warm|lukewarm|cold|ice-cold)[^{]*\{[^}]*color/.test(light) && !/class="tag \$\{(p\.band|b)\}/.test(mv)
+    && /\.tag\.hot, \.tag\.warm, \.tag\.lukewarm, \.tag\.cold, \.tag\.ice-cold[^{]*\{ color: var\(--graphite\) !important; background: none !important;/.test(light), 'cadence is a word, never a color, on the new screens and on the person sheet');
   // People: exactly seven columns, real people only, search filters, a row opens the person.
   run('CC.priv = false; Stage.q = ""');
   const ppl = render('people', false), cols = [...ppl.matchAll(/<section class="ppl-col" aria-label="([^"]+)">/g)].map(m => m[1]);
@@ -723,10 +724,18 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   run(`var __jobs = S.data.bridge.jobs; S.data.bridge.jobs = { [S.data.feed.touches_due[0].person_id]: { job_id: 'j1', job_type: 'call', at: new Date().toISOString(), state: 'waiting', ask: 'Check on the counter' } }`);
   const hg = render('home', false); run('S.data.bridge.jobs = __jobs');
   check(/<b>Call [^<]+<\/b>/.test(hg) && new RegExp(`openCompose\\(&quot;${f.touches_due[0].person_id}&quot;\\)`).test(hg) && /Grok is holding the calls\./.test(hg), 'a call waiting with Grok shows on Home and opens that person\'s sheet, where the Grok block lives');
+  { const now = Date.now(), iso = ms => new Date(ms).toISOString(), w = (j) => run(`Stage.isWaiting(${JSON.stringify(j)}, ${now})`);
+    check(!w({ job_type: 'call', state: 'dry-run', at: iso(now) }) && !w({ job_type: 'hard_draft', state: 'dry-run', at: iso(now) }), 'a dry-run job never shows as waiting with Grok: nothing left the Mac');
+    check(w({ job_type: 'call', state: 'waiting', at: iso(now - 5 * 60e3) }) && !w({ job_type: 'call', state: 'waiting', at: iso(now - 50 * 60e3) }) && !w({ job_type: 'hard_draft', state: 'draft_ready', at: '2020-01-01T10:00:00-06:00' }), 'a call waits 45 minutes and a hard draft only today, then leaves Home');
+    run(`var __j2 = S.data.bridge.jobs; S.data.bridge.jobs = { [S.data.feed.touches_due[0].person_id]: { job_id: 'j2', job_type: 'hard_draft', at: todayISO() + 'T08:00:00', state: 'draft_ready' } }`);
+    const hd = render('home', false); run('S.data.bridge.jobs = __j2');
+    check(/Grok has a hard draft for you\./.test(hd) && !/holding the calls/.test(hd), 'with only a hard draft waiting, Home does not say calls'); }
+  check(!run('Stage.people().some(r => PARTNER.has(r.type))'), 'partners are left off the People board, as on the map');
   check(!/\/api\/(send|call|draft)/.test(stagejs) && !/fetch\(|api\(/.test(stagejs), 'Home and People call no send, call or draft endpoint themselves');
   check(/Nothing is waiting with Grok\./.test(hm) || /Grok is holding the calls\./.test(hm), 'the one-line duet says what is true right now');
   // The person card on the map.
   const pp = (f.map.pins || []).find(p => p.kind === 'person' && p.stage === 'past client');
+  check(!!pp, 'the demo has a past client on the map to check the card with');
   if (pp) { const pc = run(`CC.priv = false; pinCard(${JSON.stringify(pp)})`);
     check(/class="stg-chip stg-past-client">Past client</.test(pc) && /class="pc-cad"/.test(pc) && /<dt>Type<\/dt>/.test(pc) && /<dt>Last touch<\/dt>/.test(pc) && /<dt>Next<\/dt>/.test(pc) && /<dt>Address<\/dt>/.test(pc)
       && /class="pc-compose" onclick="openCompose\(/.test(pc) && /onclick="openNote\(/.test(pc), 'the map card shows the stage chip, the cadence word, the facts, Compose and Note'); }

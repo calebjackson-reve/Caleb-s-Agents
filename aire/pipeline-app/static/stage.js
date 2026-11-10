@@ -26,7 +26,8 @@
     const f = feed(), by = new Map();
     const put = (r, extra) => { if (!r || !r.person_id) return; const cur = by.get(r.person_id) || {};
       for (const [k, v] of Object.entries({ ...r, ...extra })) if (v !== '' && v != null) cur[k] = v; by.set(r.person_id, cur); };
-    ((f.map || {}).pins || []).filter(p => p.kind === 'person').forEach(p => put(p));
+    // Agents, lenders and vendors are partners, not people in the pipeline: left out here as they are on the map.
+    ((f.map || {}).pins || []).filter(p => p.kind === 'person' && !PARTNER.has(p.type)).forEach(p => put(p));
     (f.touches_due || []).forEach(r => put(r, { due: true }));
     (f.new_leads || []).forEach(r => put(r, { stage: 'new lead', due: true }));
     return [...by.values()];
@@ -49,7 +50,7 @@
   // ---------------- People: seven columns, a bold tab each, short text rows
   const MAXROWS = 40;
   function boardHTML() {
-    const q = key(ST.q), all = ST.people(), rows = all.filter(r => !q || key(`${r.display} ${r.city || ''} ${r.band || ''}`).includes(q)), g = ST.groups(rows);
+    const q = key(ST.q), all = ST.people(), rows = all.filter(r => !q || key(`${C.priv ? '' : r.display} ${r.city || ''} ${r.band || ''}`).includes(q)), g = ST.groups(rows);
     const off = rows.filter(r => !ST.is(r.stage)).length;
     return `<div class="ppl-board">${ST.names.map(s => `<section class="ppl-col" aria-label="${esc(s)}">${ST.tab(s, g[s].length)}
         <ul>${g[s].slice(0, MAXROWS).map(r => `<li><button type="button" onclick="Stage.open(${jsa(r.person_id)})"><b>${who(r)}</b><small>${[ST.cadence(r.band), esc(r.city || '')].filter(Boolean).join('<i> · </i>')}</small></button></li>`).join('')}</ul>
@@ -67,12 +68,19 @@
 
   // ---------------- Home: the Claude and Grok duet, people who need you, the market
   const item = (title, sub, js) => `<li><button type="button" onclick="${js}"><b>${title}</b><small>${sub}</small></button></li>`;
-  const WAITING = ['waiting', 'dial_card_shown', 'draft_ready', 'dry-run'];
-  ST.grokWaiting = () => Object.entries(((S.data && S.data.bridge) || {}).jobs || {}).filter(([, j]) => WAITING.includes(j.state)).map(([id, j]) => ({ id, j, row: personRow(id) || {} }));
+  // Waiting means it really is with Grok or back from Grok: a call whose card can still be tapped (45 minutes, the same
+  // window app.js watches), a hard draft asked for today, or a draft that came back today. A dry-run job never left the
+  // Mac, so it is never listed as waiting.
+  ST.isWaiting = function (j, now) {
+    const age = (now || Date.now()) - new Date(j.at), sameDay = String(j.at || '').slice(0, 10) === todayISO();
+    if (j.job_type === 'call') return (j.state === 'waiting' || j.state === 'dial_card_shown') && age < 45 * 60e3;
+    return (j.state === 'waiting' || j.state === 'draft_ready') && sameDay;
+  };
+  ST.grokWaiting = () => Object.entries(((S.data && S.data.bridge) || {}).jobs || {}).filter(([, j]) => ST.isWaiting(j)).map(([id, j]) => ({ id, j, row: personRow(id) || {} }));
   ST.PLACES = ['Baton Rouge', 'Zachary', 'St. Francisville', 'New Roads', 'The Felicianas'];
   function home() {
     const f = feed(), dr = readyDrafts(), owes = owesReply(), td = f.touches_due || [], gw = ST.grokWaiting();
-    const duet = `${dr.length ? 'Claude drafted the day.' : 'No drafts are written yet today.'} ${gw.length ? 'Grok is holding the calls.' : 'Nothing is waiting with Grok.'}`;
+    const duet = `${dr.length ? 'Claude drafted the day.' : 'No drafts are written yet today.'} ${gw.some(x => x.j.job_type === 'call') ? 'Grok is holding the calls.' : gw.length ? 'Grok has a hard draft for you.' : 'Nothing is waiting with Grok.'}`;
     const claude = [item('Morning brief', owes.length ? `${owes.length} ${owes.length === 1 ? 'reply' : 'replies'} to answer first` : 'Ready to read', 'openBrief()'),
       item('Scorecard', `${td.length.toLocaleString()} ${td.length === 1 ? 'person' : 'people'} due a touch`, "go('scorecard')")]
       .concat(dr.slice(0, 3).map(d => item(`${C.who(d.name)} follow-up`, `${d.kind === 'email' ? 'Email' : 'Text'} draft waiting`, `openCompose(${jsa(d.person_id)})`))).join('');
