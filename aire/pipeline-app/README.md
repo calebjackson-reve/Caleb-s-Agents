@@ -35,7 +35,7 @@ sh aire/pipeline-app/install.sh
 
 That loads the LaunchAgent `org.calebjackson.aire.pipeline` (server at login, kept alive, log in `~/.aire/logs/pipeline.log`) and creates `~/Applications/Pipeline.app`, which opens the screen in a Chrome app window. Drag it to the Dock. `sh aire/pipeline-app/install.sh --remove` takes both away.
 
-Checks: `python3 aire/pipeline-app/app.py --test` runs 27 offline checks (demo writes, the three send gates, the HTTP layer, the `crm.py` contract).
+Checks: `python3 aire/pipeline-app/app.py --test` runs 99 offline checks (demo writes, the send gates, the HTTP layer, the `crm.py` contract). The suite sets its own clock, so it passes at any hour.
 
 ### Environment
 
@@ -44,6 +44,7 @@ Checks: `python3 aire/pipeline-app/app.py --test` runs 27 offline checks (demo w
 | `PIPELINE_PORT` | `4747` | Port on 127.0.0.1. The server never listens on any other interface. |
 | `PIPELINE_PYTHON` | `~/.aire/venv/bin/python` if it exists | Python used to run `crm.py`. That venv has the Sheets credentials and Full Disk Access, so the app itself needs neither. Any Python 3.10 or newer works, built with uv or Homebrew. Full Disk Access goes on the real binary, not the venv symlink: `readlink -f ~/.aire/venv/bin/python` prints it (for uv, under `~/.local/share/uv/python/`). |
 | `PIPELINE_SENDER` | `dry` | `live` sends for real: texts through Messages, email through Gmail. Anything else logs the send and sends nothing. The screen says which mode it is in. |
+| `PIPELINE_LIVE_HOST` | none | The one Mac allowed to send (Caleb, 2026-11-10: the Mac mini). `live` only works when this matches the Mac's own name (`hostname -s`). Unset or a different Mac means dry, with a line on screen saying why. Goes in `~/.aire/pipeline.env`. |
 | `PIPELINE_MAX_TEXTS`, `PIPELINE_MAX_EMAILS` | `25` | Daily caps, counted from `out/send-log.json` in Central time. |
 
 `install.sh` writes these into the LaunchAgent with `PIPELINE_SENDER=dry`. Flip it to `live` in `~/Library/LaunchAgents/org.calebjackson.aire.pipeline.plist` and reload when you are ready to send from the app.
@@ -83,17 +84,19 @@ Every write is one shell call to `aire/crm/crm.py` with `--json --client pipelin
 
 ## Sending
 
-Pipeline is the one sender (Caleb, 2026-10-20). Every send from the compose box goes through three gates in `app.py`, in this order, and stops at the first one that fails:
+Pipeline is the one sender (Caleb, 2026-10-20). Every send from the compose box goes through five gates in `app.py` `State.send()`, in this order, and stops at the first one that fails:
 
-1. **Do Not Contact.** A dry-run `touch` through the engine's own gate. The engine refuses a DNC person, so the send is refused with the engine's reason. No write happens.
-2. **Daily cap.** Texts and emails are counted separately from `out/send-log.json` for today, Central time. The 26th is refused and the toast says so.
-3. **Sender mode.** `PIPELINE_SENDER=live` sends: a text through Messages (`osascript`, the body passed as an argument so quotes are safe), an email through the Gmail token in `aire/follow-up/` using that library's one send function. Any other value logs a `dry-run` entry and sends nothing.
+1. **Daily cap.** Texts and emails are counted separately from `out/send-log.json` for today, Central time. The 26th is refused and the toast says so.
+2. **Do Not Contact.** A dry-run `touch` through the engine's own gate. The engine refuses a DNC person, so the send is refused with the engine's reason. No write happens.
+3. **Text consent** (2026-11-10). A text is refused when the person's newest website form left the texting box unchecked. The feed lists those people as `no_text_consent`. Email still works for them. Someone with no form on file is not blocked.
+4. **Quiet hours** (2026-11-10). Nothing goes between 8 pm and 8 am Central. The one exception is a text back to someone who texted last and is still waiting.
+5. **Sender mode.** Only on the Mac named in `PIPELINE_LIVE_HOST`. `PIPELINE_SENDER=live` sends: a text through Messages (`osascript`, the body passed as an argument so quotes are safe), an email through the Gmail token in `aire/follow-up/` using that library's one send function. Any other value logs a `dry-run` entry and sends nothing.
 
 After a real send the engine logs it with `touch`, so the person drops off tomorrow's list. The Sent today view and the Send monitor gauges read the same log. A person already in today's log is hidden from the queue.
 
 ### The Text button on a card
 
-Every Touches due and New leads card with a phone on file has a **Text <first name>** button (Caleb, 2026-11-05: click a lead's Text button and the text goes from the app, with the card updating on its own). It opens the compose box set to text, with the queued draft if there is one. Nothing goes until Caleb presses SEND, and the send runs the same three gates. A card with no phone keeps ✉ Compose.
+Every Touches due and New leads card with a phone on file has a **Text <first name>** button (Caleb, 2026-11-05: click a lead's Text button and the text goes from the app, with the card updating on its own). It opens the compose box set to text, with the queued draft if there is one. Nothing goes until Caleb presses SEND, and the send runs the same gates. A card with no phone keeps ✉ Compose.
 
 After the send the drawer closes so the card is in view, and the card shows one line from the send log: `Texted 9:42 AM · delivered`, `· sent`, `· checking delivery`, `Text failed 9:42 AM · not delivered`, or `Dry run 9:42 AM · nothing sent`. The newest text in the last 30 days counts. While a live text is not confirmed yet, `last_texts()` in `app.py` reads `chat.db` again (read only) on every state read for 30 minutes after it went, writes a change back to `out/send-log.json` as `delivery`, and the screen asks for the state every 4 seconds until it settles, so the line flips on its own. An SMS that macOS never marks delivered stays at `sent`.
 

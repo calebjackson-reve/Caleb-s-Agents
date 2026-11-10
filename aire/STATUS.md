@@ -2,6 +2,31 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-10: Grok bridge plan, and three new send gates
+
+**Confirmed by Caleb**
+- Pipeline stays the one CRM screen and sender. Grok adds approved phone calls and the harder drafts through a webhook. The 2026-10-19 rule keeping Grok to reading and briefs is lifted. Every text and call still waits for his press. Obsidian is the notes layer, the Sheet stays the record.
+- "Live Pipeline is the Mac mini." The MacBook Air is a second checkout and never sends.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `pipeline-app/CONTRACT-grok-bridge.md`: the build contract, with Grok's job and result format and its calling limits.
+- `STACK.md`: Grok row rewritten, Obsidian row added, one live host noted, plain code and Grok added to the model table.
+- `crm/crm.py`: the feed carries `no_text_consent`, the people whose newest website form left the texting box unchecked. 2 new checks, 153 in all (`python3 aire/crm/crm.py --test`).
+- `pipeline-app/app.py` `State.send()`: a text to someone on that list is refused. Nothing goes between 8 pm and 8 am Central, except a text back to someone waiting on a reply. `PIPELINE_SENDER=live` only works on the Mac named in `PIPELINE_LIVE_HOST`. 13 new checks, 99 in all, 0 failures (`python3 aire/pipeline-app/app.py --test`).
+- README: gate order now matches the code (cap first), test count corrected.
+- The Command Center pages, iPhone access over Tailscale, phone alerts and Ask Claude (PR 95, merged 2026-11-06) never got an entry here. They are documented in `pipeline-app/README.md`.
+
+**Not verified**
+- Nothing here has run on the mini. Everything Grok said about its calling (limits, the Call card, no number needed) is Grok's word, not a test.
+- KW Command reading is still a login heartbeat only. Which Deals sheet the Scorecard reads is still unchecked.
+
+**Inference**
+- The quiet hours exception for replies is my call, not Caleb's words. It is one line to remove.
+
+**Needs Caleb**
+- After merge, on the mini: add `PIPELINE_LIVE_HOST=<name from hostname -s>` to `~/.aire/pipeline.env` and restart Pipeline. Until then sending is dry and the screen says so.
+- One live text to his own number. Register the mini with Grok. Then tell Grok to create the webhook routine.
+
 ## 2026-11-05: Text button on each card, delivery shows on its own
 
 **Confirmed by Caleb**

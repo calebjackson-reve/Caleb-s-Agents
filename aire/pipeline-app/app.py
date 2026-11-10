@@ -45,6 +45,7 @@ import json
 import os
 import platform
 import re
+import socket
 import subprocess
 import tempfile
 import sys
@@ -137,6 +138,33 @@ DEAL_STAGES = ["lead", "consult", "active", "showing", "under_contract", "closed
 
 def now() -> datetime:
     return datetime.now(CENTRAL)
+
+
+# Nothing leaves between 8 pm and 8 am Central (aire/follow-up/directive.md). One exception: a text back to someone
+# who texted last and is still waiting, because that is a conversation they started.
+QUIET_START, QUIET_END = 20, 8
+
+
+def in_quiet_hours(at: datetime) -> bool:
+    return at.hour >= QUIET_START or at.hour < QUIET_END
+
+
+def short_host(name: str) -> str:
+    return (name or "").strip().lower().split(".")[0]
+
+
+def live_gate(sender: str, live_host: str, this_host: str) -> tuple[str, str]:
+    """One live host (Caleb, 2026-11-10): only the Mac named in PIPELINE_LIVE_HOST may send. Anywhere else live
+    becomes dry, with the reason for the screen. Two live Macs would split the caps and could text someone twice."""
+    if sender != "live":
+        return sender, ""
+    want, have = short_host(live_host), short_host(this_host)
+    if not want:
+        return "dry", (f"Sending is dry: PIPELINE_SENDER is live but PIPELINE_LIVE_HOST is not set. On the Mac that sends, "
+                       f"add PIPELINE_LIVE_HOST={have} to ~/.aire/pipeline.env and restart Pipeline.")
+    if want != have:
+        return "dry", f"Sending is dry on this Mac ({have}). Only {want} sends, so nobody gets the same text twice."
+    return "live", ""
 
 
 def today() -> date:
@@ -309,6 +337,8 @@ class State:
         self.max_texts = int(os.getenv("PIPELINE_MAX_TEXTS", "25"))
         self.max_emails = int(os.getenv("PIPELINE_MAX_EMAILS", "25"))
         self.sender = "dry" if demo else (os.getenv("PIPELINE_SENDER", "dry").strip().lower() or "dry")
+        self.sender, self.sender_blocked = live_gate(self.sender, os.getenv("PIPELINE_LIVE_HOST", ""), socket.gethostname())
+        self.clock = now  # the send gates read the time through this, so the tests can set it
         self.crm = DemoCRM(self) if demo else EngineCRM(python_for_crm())
         self.refresh = {"running": False, "started": "", "finished": "", "ok": None, "detail": ""}
         self.usage_path = (send_log.parent / "voice-usage.json") if send_log else OUT / ("demo-voice-usage.json" if demo else "voice-usage.json")
@@ -625,6 +655,8 @@ class State:
             problems.append({"level": "warn", "code": "messages_permission",
                              "text": "Pipeline cannot control Messages yet, so texts will not send. System Settings, Privacy and Security, Automation: "
                                      "turn on Messages for Pipeline's Python, then restart Pipeline. (" + self.messages.get("detail", "")[:80] + ")"})
+        if self.sender_blocked:
+            problems.append({"level": "warn", "code": "not_live_host", "text": self.sender_blocked})
         if command.get("state") == "login needed":
             problems.append({"level": "warn", "code": "command_login",
                              "text": "Command needs a login. " + (command.get("detail") or "Open the AIRE Chrome profile and sign in once.")})
@@ -821,6 +853,15 @@ class State:
             raise CRMError(f"daily cap reached: {used} of {cap} {kind}s today. The rest wait for tomorrow.")
         # Do Not Contact, through the engine's own gate, without writing anything.
         self.crm.run(["touch", person_id, "pre-send check"], dry_run=True)
+        feed = self.feed() or {}
+        if kind == "text" and str(person_id) in {str(x) for x in feed.get("no_text_consent", [])}:
+            raise CRMError("no text consent: their website form did not check the box to be texted. Email or call instead.")
+        if in_quiet_hours(self.clock()):
+            waiting = kind == "text" and any(str(d.get("person_id")) == str(person_id) and d.get("owes_reply")
+                                             for d in feed.get("touches_due", []))
+            if not waiting:
+                raise CRMError("quiet hours: nothing goes out between 8 pm and 8 am Central, except a text back to "
+                               "someone waiting on your reply. This one waits for morning.")
         status, detail = "dry-run", "PIPELINE_SENDER is not live, nothing left the Mac"
         if self.sender == "live" and not self.demo:
             try:
@@ -1216,6 +1257,13 @@ def run_tests() -> int:
         failures += 0 if cond else 1
 
     tmp = Path(tempfile.mkdtemp())
+    noon = lambda: datetime(2026, 11, 10, 12, 0, tzinfo=CENTRAL)  # the suite must pass at any hour of the day
+    State_init = State.__init__
+
+    def init_at_noon(self, *a, **k):
+        State_init(self, *a, **k)
+        self.clock = noon
+    State.__init__ = init_at_noon
     s = State(demo=True, send_log=tmp / "send-log.json")
     snap = s.snapshot()
     check(snap["demo"] and snap["feed_ok"] and snap["feed"]["counts"]["contacts"] > 0, "demo snapshot reads the fixtures")
@@ -1270,6 +1318,45 @@ def run_tests() -> int:
     except CRMError as e:
         check("cap" in str(e), "daily cap refuses the text past the cap")
     s.max_texts = 25
+
+    # consent, quiet hours, one live host
+    nc = State(demo=True, send_log=tmp / "nc" / "send-log.json")
+    feed0 = nc.feed()
+    waiting_id = next(d["person_id"] for d in feed0["touches_due"] if d["owes_reply"])
+    other_id = next(d["person_id"] for d in feed0["touches_due"] if not d["owes_reply"])
+    nc._demo_cache = {**feed0, "no_text_consent": [other_id]}
+    nc.feed = lambda: nc._demo_cache
+    try:
+        nc.send("text", other_id, "+12255550118", "hi"); check(False, "a form that said do not text refuses the text")
+    except CRMError as e:
+        check("consent" in str(e), "a form that said do not text refuses the text")
+    check(nc.send("email", other_id, "x@example.com", "body", subject="Hi")["ok"], "the same person can still be emailed")
+    nc._demo_cache = {**feed0, "no_text_consent": []}
+    nc.clock = lambda: datetime(2026, 11, 10, 21, 30, tzinfo=CENTRAL)
+    try:
+        nc.send("text", other_id, "+12255550118", "hi"); check(False, "9:30 pm refuses a text nobody is waiting on")
+    except CRMError as e:
+        check("quiet hours" in str(e), "9:30 pm refuses a text nobody is waiting on")
+    try:
+        nc.send("email", waiting_id, "x@example.com", "body", subject="Hi"); check(False, "9:30 pm refuses every email")
+    except CRMError as e:
+        check("quiet hours" in str(e), "9:30 pm refuses every email")
+    check(nc.send("text", waiting_id, "+12255550111", "On it")["ok"], "9:30 pm still lets a text back to someone waiting")
+    nc.clock = lambda: datetime(2026, 11, 10, 7, 59, tzinfo=CENTRAL)
+    try:
+        nc.send("text", other_id, "+12255550118", "hi"); check(False, "7:59 am is still quiet")
+    except CRMError:
+        check(True, "7:59 am is still quiet")
+    nc.clock = lambda: datetime(2026, 11, 10, 8, 0, tzinfo=CENTRAL)
+    check(nc.send("text", other_id, "+12255550118", "hi")["ok"], "8:00 am sends again")
+    check(live_gate("dry", "", "air") == ("dry", ""), "a dry sender needs no live host")
+    check(live_gate("live", "Mini.local", "mini")[0] == "live" and live_gate("live", "mini", "MINI.lan")[1] == "", "the named Mac stays live")
+    g = live_gate("live", "mini", "air.local")
+    check(g[0] == "dry" and "air" in g[1] and "mini" in g[1], "any other Mac is forced dry and says why")
+    g = live_gate("live", "", "mini.local")
+    check(g[0] == "dry" and "PIPELINE_LIVE_HOST=mini" in g[1], "live with no host named is dry and prints the line to add")
+    nb = State(demo=True, send_log=tmp / "nb" / "send-log.json"); nb.sender_blocked = g[1]
+    check(any(p["code"] == "not_live_host" for p in nb.snapshot()["problems"]), "a blocked sender shows as a problem on screen")
 
     # Claude Q&A and ElevenLabs, with the network faked
     v = s.snapshot()["voice"]
