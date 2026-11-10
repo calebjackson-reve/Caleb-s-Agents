@@ -146,7 +146,7 @@ function pinCard(p) {
       <dl><dt>Type</dt><dd>${esc(p.type || 'unknown')}</dd><dt>Last touch</dt><dd>${esc(lastTouch(p))}</dd>
       <dt>Next</dt><dd>${p.next_action ? CC.note(p.next_action, [p.display]) : 'none'}</dd><dt>Address</dt><dd>${CC.priv ? '<span class="cc-hid">hidden</span>' : esc([p.address, p.city, p.zip].filter(Boolean).join(', ') || 'none')}</dd></dl>
       <div class="pc-main"><button type="button" class="pc-compose" onclick="openCompose(${id})">Compose</button><button type="button" onclick="openNote(${id})">Note</button></div>
-      <div class="pc-more"><button type="button" onclick="touched(${id})">Touched</button><button type="button" onclick="openTask(${id})">Task</button><button type="button" onclick="addToList('call', [${row}])">Call list</button><button type="button" onclick="addToList('postcards', [${row}])">Postcards</button></div></div>`;
+      <div class="pc-more">${normPhone(p.phone) ? `<button type="button" onclick="openGrok(${id}, 'call')" title="Grok places the call. Nothing dials until you tap the Call card in Grok.">Call</button>` : ''}<button type="button" onclick="touched(${id})">Touched</button><button type="button" onclick="openTask(${id})">Task</button><button type="button" onclick="addToList('call', [${row}])">Call list</button><button type="button" onclick="addToList('postcards', [${row}])">Postcards</button></div></div>`;
   }
   if (p.kind === 'deal') {
     const s = p.sheet || CC.sheetDeal(p.address);

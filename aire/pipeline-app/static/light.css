@@ -180,3 +180,7 @@ body { color: var(--ink); font: 14px/1.5 var(--sans); background-image: none; }
 /* Cadence on the older rows and the person sheet: ui.css colors these tags by temperature. Here they are words. */
 .tag.hot, .tag.warm, .tag.lukewarm, .tag.cold, .tag.ice-cold, .ico.hot, .ico.warm, .ico.lukewarm, .ico.cold, .ico.ice-cold { color: var(--graphite) !important; background: none !important; border-color: var(--rule) !important; box-shadow: none !important; }
 .tag.hot { font-weight: 700; }
+/* PR 104 on ivory: Hot and Warm sit indented under Leads, and the Grok panel is a hairline box. */
+.side .nav button.sub { padding-left: 18px; min-height: 26px; font-size: 12px; }
+.grok { background: var(--ivory); border: 1px solid var(--rule); border-radius: 8px; } .grok h4 { color: var(--ink); } .grok-how, .grok-foot small { color: var(--stone); }
+.grok-status { background: #F6F2EC; border: 0; color: var(--ink); } .cc-heat b { color: var(--ink); } .cc-heat small, .cc-why { color: var(--stone); }

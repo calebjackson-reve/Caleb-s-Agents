@@ -79,7 +79,8 @@ check(dl.length === new Set(dl).size, 'deadlines are one per deal per day');
 
 // 18. Nav: grouped, distinct icons, keys match.
 const nav = run('NAV'), items = nav.flatMap(g => g[1]);
-check(nav.length >= 5 && items.length <= 20, `nav is grouped (${nav.length} groups, ${items.length} items)`);
+// 21 since 2026-11-10: Home and People joined (the light look) on the same day as Grok calls (PR 104). Dashboard already gave up its slot.
+check(nav.length >= 5 && items.length <= 21, `nav is grouped (${nav.length} groups, ${items.length} items)`);
 check(new Set(items.map(i => i[1])).size === items.length, 'every nav item has its own icon');
 check(items.every(([k]) => views.includes(k)), 'every nav item opens a page');
 check(run('KEYS').every(k => items.some(i => i[0] === k)), 'keyboard keys open pages that are in the nav');
@@ -720,10 +721,12 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   // Home: the Claude and Grok lists lead into what already exists. No second way to call or send.
   const hm = render('home', false);
   check(/>Claude<\/span>/.test(hm) && /onclick="openBrief\(\)"/.test(hm) && /go\('scorecard'\)/.test(hm) && /go\('queue'\)/.test(hm), 'Home\'s Claude list opens the brief, the Scorecard and the drafts');
-  check(/go\('people'\)/.test(hm) && /go\('map'\)/.test(hm) && /id="mini-map"/.test(hm) && ['dash', 'touches', 'tasks', 'sent', 'deals', 'deadlines', 'calendar', 'commission', 'bank', 'ccleads', 'sources'].every(k => hm.includes(`go('${k}')`)), 'Home links to People, the Map and every older page');
+  check(/go\('people'\)/.test(hm) && /go\('map'\)/.test(hm) && /id="mini-map"/.test(hm) && ['dash', 'touches', 'tasks', 'sent', 'grok', 'hot', 'warm', 'deals', 'deadlines', 'calendar', 'commission', 'bank', 'ccleads', 'sources'].every(k => hm.includes(`go('${k}')`)), 'Home links to People, the Map, Grok calls, Hot, Warm and every older page');
+  check(/onclick="go\('grok'\)">Review calls</.test(hm), 'Review calls opens the Grok calls page');
+  { const all = run('NAV').slice(1).flatMap(g => g[1]).flatMap(i => [i[0]].concat((i[3] || []).map(k => k[0]))); check(['grok', 'hot', 'warm'].every(k => all.includes(k) && views.includes(k)), 'Grok calls, Hot and Warm are pages under More'); }
   run(`var __jobs = S.data.bridge.jobs; S.data.bridge.jobs = { [S.data.feed.touches_due[0].person_id]: { job_id: 'j1', job_type: 'call', at: new Date().toISOString(), state: 'waiting', ask: 'Check on the counter' } }`);
   const hg = render('home', false); run('S.data.bridge.jobs = __jobs');
-  check(/<b>Call [^<]+<\/b>/.test(hg) && new RegExp(`openCompose\\(&quot;${f.touches_due[0].person_id}&quot;\\)`).test(hg) && /Grok is holding the calls\./.test(hg), 'a call waiting with Grok shows on Home and opens that person\'s sheet, where the Grok block lives');
+  check(/<b>Call [^<]+<\/b>/.test(hg) && new RegExp(`openGrok\\(&quot;${f.touches_due[0].person_id}&quot;, 'call'\\)`).test(hg) && /Grok is holding the calls\./.test(hg), 'a call waiting with Grok shows on Home and opens that person\'s Grok panel on the Call tab');
   { const now = Date.now(), iso = ms => new Date(ms).toISOString(), w = (j) => run(`Stage.isWaiting(${JSON.stringify(j)}, ${now})`);
     check(!w({ job_type: 'call', state: 'dry-run', at: iso(now) }) && !w({ job_type: 'hard_draft', state: 'dry-run', at: iso(now) }), 'a dry-run job never shows as waiting with Grok: nothing left the Mac');
     check(w({ job_type: 'call', state: 'waiting', at: iso(now - 5 * 60e3) }) && !w({ job_type: 'call', state: 'waiting', at: iso(now - 50 * 60e3) }) && !w({ job_type: 'hard_draft', state: 'draft_ready', at: '2020-01-01T10:00:00-06:00' }), 'a call waits 45 minutes and a hard draft only today, then leaves Home');

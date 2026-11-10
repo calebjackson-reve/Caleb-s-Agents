@@ -2,6 +2,53 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-10, late afternoon: heat score, Hot and Warm lists, and the audit
+
+**Confirmed by Caleb**
+- "Build an algorithm and a hot and warm list under my leads, where I can go and click on them specifically, and it doesn't have a button that I have to press." And: audit how hot, warm and cold are established and build a better automated way to find these leads.
+
+**Found (the audit, `enrichment/AUDIT-2026-11-10-temperature.md`)**
+- The scorer was never wired into the live app. Hot, warm and cold on screen were the sheet's band column, and the ranking inside a band was a count of texts. Intent words had no dates and fired on everyday talk. A hot band kept itself hot. "inactive" read as "active". Nothing cooled.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `crm/heat.py`: one deterministic score, 0 to 100, with reasons. No model, no writes. 19 checks.
+- `enrichment/execution/imessage_signals.py`: intent words are dated and the patterns are tighter.
+- `crm/crm.py`: the feed carries `heat`. `crm.py heat` prints counts only. 158 checks.
+- Pipeline: Hot and Warm pages under Leads. The whole row is the click target, no buttons. Demo screenshots 27 to 30.
+
+**Not verified**
+- Not run on real data. No count of real people at each temperature. No backtest against closed deals. The thresholds are a starting point.
+
+**Inference**
+- Reading "doesn't have a button that I have to press" as: the lists fill themselves, and a row opens on one click with no button inside it.
+
+**Needs Caleb**
+- Merge, pull on the mini, let one feed refresh run, then open Hot and Warm. Run `crm.py heat --signals ...` on the mini and send back the counts line.
+- Say which names on the Hot list are wrong and why, so the weights get tuned on his book.
+
+## 2026-11-10, afternoon: Grok on the screen, and the mini on main
+
+**Confirmed by Caleb**
+- Merged PR 102 and PR 103. The mini now runs `main` (the Mac session reported it on `main` with the Scorecard, the draft writer and the Grok code, sender and caller both dry).
+- "I dont think it has all the new buttons and grok installations on the visuals and front end design can we look into that and fix it."
+
+**Found**
+- The Grok controls were one plain block at the bottom of the message box, built against the old look. No button on the cards, no page in the menu. On a phone the message box was a fixed 520px, so only its right half showed.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- A **Call** button on every card with a valid number and a CRM id. It opens the message box on the Grok panel.
+- The Grok panel redone in the current design: Call and Hard draft tabs, a status box, a line saying what will and will not happen, the caps.
+- A **Grok calls** page in the Today group, with a count of what is waiting on Caleb.
+- Privacy switch now hides Grok drafts, call summaries, names and numbers.
+- The message box fits a phone screen.
+- 148 checks in `app.py --test`, `ui_test.py` and `bridge.py --test` all pass. Demo screenshots 22 to 26 in `pipeline-app/screenshots/`, made up people.
+
+**Not verified**
+- Not seen on the mini's screen or on Caleb's iPhone. No real job has gone to Grok.
+
+**Needs Caleb**
+- Merge, pull on the mini, restart, and look at a card, the message box and the Grok calls page.
+
 ## 2026-11-10, later: the Grok bridge, dry
 
 **Confirmed by Caleb**
