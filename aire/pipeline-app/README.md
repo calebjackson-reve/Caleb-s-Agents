@@ -35,7 +35,7 @@ sh aire/pipeline-app/install.sh
 
 That loads the LaunchAgent `org.calebjackson.aire.pipeline` (server at login, kept alive, log in `~/.aire/logs/pipeline.log`) and creates `~/Applications/Pipeline.app`, which opens the screen in a Chrome app window. Drag it to the Dock. `sh aire/pipeline-app/install.sh --remove` takes both away.
 
-Checks: `python3 aire/pipeline-app/app.py --test` runs 99 offline checks (demo writes, the send gates, the HTTP layer, the `crm.py` contract). The suite sets its own clock, so it passes at any hour.
+Checks: `python3 aire/pipeline-app/app.py --test` runs 113 offline checks (demo writes, the send gates, the HTTP layer, the `crm.py` contract). The suite sets its own clock, so it passes at any hour.
 
 ### Environment
 
@@ -93,6 +93,32 @@ Pipeline is the one sender (Caleb, 2026-10-20). Every send from the compose box 
 5. **Sender mode.** Only on the Mac named in `PIPELINE_LIVE_HOST`. `PIPELINE_SENDER=live` sends: a text through Messages (`osascript`, the body passed as an argument so quotes are safe), an email through the Gmail token in `aire/follow-up/` using that library's one send function. Any other value logs a `dry-run` entry and sends nothing.
 
 After a real send the engine logs it with `touch`, so the person drops off tomorrow's list. The Sent today view and the Send monitor gauges read the same log. A person already in today's log is hidden from the queue.
+
+### Grok bridge: calls and hard drafts
+
+Contract: `CONTRACT-grok-bridge.md`. Code: `bridge.py` (28 offline checks, `python3 aire/pipeline-app/bridge.py --test`) and `State.bridge_job()` in `app.py`.
+
+The compose box has a GROK block under the draft. Type one line saying what the call or the draft has to do, then:
+
+- **Call through Grok** posts a `call` job to Grok bot's webhook routine. Grok shows its own Call card in its chat. Nothing dials until Caleb taps that card, and the card lasts 30 minutes. So a call is two taps on purpose.
+- **Hard draft from Grok** posts a `hard_draft` job. When Grok's draft comes back it shows in the block with **Use this draft**, which fills the compose box. It goes out only through SEND and every send gate. Grok never sends a text or email.
+
+Gates before a job leaves: Do Not Contact (the engine's own check), quiet hours for calls with no exception, a purpose from the short list (confirm a showing, appointment reminder, a callback they asked for, open the call then hand to Caleb), Grok's limits (10 calls in 24 hours, 4 to one number, United States numbers, no Washington or Illinois area codes, a script of 2,000 characters at most), and 10 hard drafts a day.
+
+Results come back as one JSON file per job, named by `job_id`, in the folder `PIPELINE_BRIDGE_RESULTS`. Pipeline never listens on the internet. A finished call is logged once with `crm.py touch`. A card nobody tapped reads expired after 40 minutes and logs nothing. Jobs are kept in `out/bridge-log.json`, which stays on the Mac.
+
+| Variable (in `~/.aire/pipeline.env`) | Default | What it does |
+|---|---|---|
+| `PIPELINE_CALLER` | `dry` | `live` posts jobs to Grok. Anything else logs the job and posts nothing. Only works on `PIPELINE_LIVE_HOST`. |
+| `PIPELINE_GROK_WEBHOOK_URL` | none | The webhook URL from Grok's routine panel. Must be https. |
+| `PIPELINE_GROK_AUTH_HEADER` | none | The Authorization header value from the routine panel, sent as is. |
+| `PIPELINE_GROK_WEBHOOK_KEY` | none | Used only when no header value is set, sent as `Bearer <key>`. |
+| `PIPELINE_TRANSFER_TO` | none | Caleb's own number, for the hand over on an assisted call. |
+| `PIPELINE_BRIDGE_RESULTS` | `out/bridge` | The folder result files land in. Until the mini is registered with Grok this can point at the Google Drive for desktop copy of the Pipeline Bridge Results folder. |
+| `PIPELINE_BRIDGE_WRITEBACK` | `drive` | `local` tells Grok to write results to `aire/pipeline-app/out/bridge` on the mini. |
+| `PIPELINE_MAX_HARD_DRAFTS` | `10` | Hard drafts a day. |
+
+Not verified: a real post to Grok's webhook. How Grok wants the key and header sent is taken from the routine panel's three values and has not been tried. The first live job tells.
 
 ### The Text button on a card
 

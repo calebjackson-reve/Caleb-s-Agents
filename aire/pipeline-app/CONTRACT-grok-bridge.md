@@ -2,7 +2,7 @@
 
 Per `aa-prompt-contract`. Caleb asked on 2026-11-10 for Pipeline to act as his CRM with Grok bot's phone ability linked in, memory in Obsidian, agents on different models so tokens are not wasted, messages that sound like him, and a next move suggestion built from every channel. Grok bot read this plan the same day and answered the open questions. Nothing here is live until Caleb says so.
 
-**Status 2026-11-10:** step 1 (consent, quiet hours, one live host) is built and tested. Steps 2 to 7 are not started.
+**Status 2026-11-10:** step 1 (consent, quiet hours, one live host) and step 4 (the bridge, dry by default) are built and tested offline. Grok reports its webhook routine is ready. No job has been posted to it yet. Steps 2, 3 and 5 to 7 are not started.
 
 ## Decisions (Caleb, 2026-11-10)
 
@@ -138,7 +138,8 @@ A daily dollar cap per lane like `PIPELINE_ASK_CAP`. Every job's cost is logged 
 
 ## Unknowns
 
-- Whether Grok can write result files where Pipeline can read them. Tested with a dry job in step 4.
+- Whether Grok can write result files where Pipeline can read them. Pipeline's sync has no Google Drive access, so until the mini is registered with Grok the result folder has to be the Google Drive for desktop copy on the mini.
+- How the webhook wants its key and Authorization header sent. Pipeline sends the header value as is, or the key as a Bearer header. Not tried against the real routine.
 - The price of a Grok call. Grok reports no published rate.
 - Which Deals sheet the Scorecard reads. `cc_sync.py` reads an "AIRE Deals sheet" whose headers differ from the Deals tab in the AIRE CRM sheet.
 - KW Command reading. Today it is a login heartbeat only (`command-reader/command_reader.py` has empty selectors).

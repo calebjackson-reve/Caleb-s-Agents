@@ -2,6 +2,25 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-10, later: the Grok bridge, dry
+
+**Confirmed by Caleb**
+- Passed on Grok's word that its Pipeline bridge webhook routine is ready, takes only `call` and `hard_draft` jobs, and writes one result file per `job_id`.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `pipeline-app/bridge.py`: builds the job in the contract's shape, checks Grok's limits before it leaves, posts it, reads result files. 28 offline checks.
+- `pipeline-app/app.py`: `/api/call` and `/api/draft/escalate`, through Do Not Contact, quiet hours and the live host. A finished call is logged once as a touch. A card nobody tapped reads expired. 14 new checks, 113 in all, 0 failures.
+- The compose box has a GROK block: Call through Grok, Hard draft from Grok, Use this draft. Each card shows the job's state.
+- Demo screenshots on made up people: `screenshots/20-grok-call-dry-run.png`, `21-grok-hard-draft.png`.
+
+**Not verified**
+- No job has been posted to Grok's real webhook. The cloud session has no URL or key and should not. How the key and header are sent is a best reading of the three values Grok named.
+- Nothing has run on the mini.
+
+**Needs Caleb**
+- On the mini, in `~/.aire/pipeline.env`: `PIPELINE_GROK_WEBHOOK_URL`, `PIPELINE_GROK_AUTH_HEADER` (and `PIPELINE_GROK_WEBHOOK_KEY` if the panel shows the key apart from the header), `PIPELINE_TRANSFER_TO`. Leave `PIPELINE_CALLER` off until he wants the first real job.
+- Either register the mini with Grok, or install Google Drive for desktop on the mini and point `PIPELINE_BRIDGE_RESULTS` at the Pipeline Bridge Results folder. Without one of those, results cannot reach Pipeline.
+
 ## 2026-11-10: Grok bridge plan, and three new send gates
 
 **Confirmed by Caleb**

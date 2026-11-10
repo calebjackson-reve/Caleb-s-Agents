@@ -67,6 +67,7 @@ import cc  # noqa: E402  (Command Center numbers)
 import auth  # noqa: E402  (the login for anything but this Mac)
 import push  # noqa: E402  (phone alerts)
 import cc_ask  # noqa: E402  (Ask Claude on every Command Center page)
+import bridge  # noqa: E402  (jobs out to Grok bot, result files back)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -339,6 +340,18 @@ class State:
         self.sender = "dry" if demo else (os.getenv("PIPELINE_SENDER", "dry").strip().lower() or "dry")
         self.sender, self.sender_blocked = live_gate(self.sender, os.getenv("PIPELINE_LIVE_HOST", ""), socket.gethostname())
         self.clock = now  # the send gates read the time through this, so the tests can set it
+        # Grok bridge (CONTRACT-grok-bridge.md): calls and hard drafts. Dry unless PIPELINE_CALLER=live on the live host.
+        self.caller = "dry" if demo else (os.getenv("PIPELINE_CALLER", "dry").strip().lower() or "dry")
+        self.caller, self.caller_blocked = live_gate(self.caller, os.getenv("PIPELINE_LIVE_HOST", ""), socket.gethostname())
+        self.bridge_log_path = (send_log.parent / "bridge-log.json") if send_log else OUT / ("demo-bridge-log.json" if demo else "bridge-log.json")
+        self.bridge_results = (send_log.parent / "bridge") if send_log else (
+            OUT / "demo-bridge" if demo else Path(os.getenv("PIPELINE_BRIDGE_RESULTS") or OUT / "bridge").expanduser())
+        self.bridge_writeback = ({"method": "local_file", "hint": "aire/pipeline-app/out/bridge"}
+                                 if os.getenv("PIPELINE_BRIDGE_WRITEBACK", "").strip().lower() == "local"
+                                 else {"method": "google_drive", "hint": "Pipeline Bridge Results"})
+        self.max_hard_drafts = int(os.getenv("PIPELINE_MAX_HARD_DRAFTS", "10"))
+        self.transfer_to = "" if demo else os.getenv("PIPELINE_TRANSFER_TO", "")
+        self.bridge_post = bridge.post_job
         self.crm = DemoCRM(self) if demo else EngineCRM(python_for_crm())
         self.refresh = {"running": False, "started": "", "finished": "", "ok": None, "detail": ""}
         self.usage_path = (send_log.parent / "voice-usage.json") if send_log else OUT / ("demo-voice-usage.json" if demo else "voice-usage.json")
@@ -657,6 +670,9 @@ class State:
                                      "turn on Messages for Pipeline's Python, then restart Pipeline. (" + self.messages.get("detail", "")[:80] + ")"})
         if self.sender_blocked:
             problems.append({"level": "warn", "code": "not_live_host", "text": self.sender_blocked})
+        elif self.caller_blocked:
+            problems.append({"level": "warn", "code": "not_live_host",
+                             "text": self.caller_blocked.replace("PIPELINE_SENDER", "PIPELINE_CALLER").replace("Sending is dry", "Grok jobs are dry")})
         if command.get("state") == "login needed":
             problems.append({"level": "warn", "code": "command_login",
                              "text": "Command needs a login. " + (command.get("detail") or "Open the AIRE Chrome profile and sign in once.")})
@@ -677,6 +693,7 @@ class State:
             "caps": {"texts": self.max_texts, "emails": self.max_emails, "sent_texts": sent["texts"], "sent_emails": sent["emails"]},
             "sent_today": [r for r in self.send_log() if r.get("at", "").startswith(today().isoformat())][-50:],
             "last_texts": self.last_texts(),
+            "bridge": self.bridge_view(),
             "refresh": self.refresh,
             "problems": problems,
             "links": {"sheet": SHEET_URL.format(sheet_id=feed.get("sheet_id", "")) if feed.get("sheet_id") else "", "command": COMMAND_URL},
@@ -889,6 +906,110 @@ class State:
         elif self.demo:
             touched = self.crm.run(["touch", person_id, f"{kind} (demo)"])
         return {"ok": True, "result": entry, "touched": touched, "caps": {**self.sent_today(), "texts_cap": self.max_texts, "emails_cap": self.max_emails}}
+
+    # ---- Grok bridge: calls and hard drafts. Nothing here sends a text or an email, and nothing dials:
+    # a call job only asks Grok to show Caleb its Call card.
+    def bridge_log(self) -> list[dict]:
+        log = read_json(self.bridge_log_path, [])
+        return log if isinstance(log, list) else []
+
+    def bridge_job(self, job_type: str, person_id: str, display: str = "", phone: str = "", purpose: str = "",
+                   objective: str = "", context: str = "", instructions: str = "") -> dict:
+        if not person_id:
+            raise CRMError("every Grok job is tied to a person_id so the result can be logged")
+        # Do Not Contact, through the engine's own gate, without writing anything.
+        self.crm.run(["touch", person_id, "pre-call check"], dry_run=True)
+        at = self.clock()
+        feed = self.feed() or {}
+        row = next((r for r in feed.get("touches_due", []) + feed.get("new_leads", []) if str(r.get("person_id")) == str(person_id)), {})
+        who = {"person_id": person_id, "display": display or row.get("display", ""), "phone": phone or row.get("phone", ""),
+               "band": row.get("band", ""), "stage": row.get("stage", "")}
+        log = self.bridge_log()
+        try:
+            if job_type == "call":
+                if in_quiet_hours(at):
+                    raise CRMError("quiet hours: no calls between 8 pm and 8 am Central. This one waits for morning.")
+                job = bridge.build_job("call", who, at, purpose=purpose, objective=objective, context=context,
+                                       transfer_to=self.transfer_to, writeback=self.bridge_writeback)
+                bridge.check_call_limits(log, job["person"]["phone_e164"], at)
+            else:
+                used = sum(1 for r in log if r.get("job_type") == "hard_draft" and r.get("at", "")[:10] == at.date().isoformat())
+                if used >= self.max_hard_drafts:
+                    raise CRMError(f"daily cap reached: {used} of {self.max_hard_drafts} hard drafts today. Write this one yourself or wait for tomorrow.")
+                job = bridge.build_job("hard_draft", who, at, draft_instructions=instructions, context=context, writeback=self.bridge_writeback)
+        except bridge.BridgeError as e:
+            raise CRMError(str(e)) from None
+        entry = {"at": at.isoformat(timespec="seconds"), "job_id": job["job_id"], "job_type": job_type, "person_id": str(person_id),
+                 "display": who["display"], "to": job["person"].get("phone_e164", ""), "purpose": job["purpose"],
+                 "ask": (objective or instructions).strip()[:200], "status": "dry-run",
+                 "detail": "PIPELINE_CALLER is not live, nothing left the Mac", "result": None, "touched": False}
+        failed = None
+        if self.caller == "live" and not self.demo:
+            try:
+                self.bridge_post(job, os.getenv("PIPELINE_GROK_WEBHOOK_URL", ""), os.getenv("PIPELINE_GROK_WEBHOOK_KEY", ""),
+                                 os.getenv("PIPELINE_GROK_AUTH_HEADER", ""))
+                entry.update(status="posted", detail="Grok has the job. Open Grok and tap the Call card within 30 minutes."
+                             if job_type == "call" else "Grok has the job. The draft shows here when it is ready.")
+            except bridge.BridgeError as e:
+                failed = str(e)
+                entry.update(status="post_failed", detail=failed[:200])
+        with self.lock:
+            log = self.bridge_log()
+            log.append(entry)
+            write_json(self.bridge_log_path, log)
+        if failed:
+            raise CRMError(failed)
+        return {"ok": True, "result": entry}
+
+    def bridge_sync(self) -> list[dict]:
+        """Match result files to the jobs that asked for them. A finished call is logged once in the CRM, the
+        same way a sent text is. Returns the log."""
+        results = bridge.read_results(self.bridge_results)
+        to_touch = []
+        with self.lock:
+            log = self.bridge_log()
+            changed = False
+            for e in log:
+                res = results.get(e.get("job_id"))
+                if res and (e.get("result") or {}).get("status") != res["status"]:
+                    e["result"] = res
+                    changed = True
+                if (e.get("job_type") == "call" and e.get("status") == "posted" and (e.get("result") or {}).get("status") == "completed"
+                        and not e.get("touched")):
+                    e["touched"] = True  # marked before the write so two screens asking at once log it once
+                    changed = True
+                    to_touch.append(e)
+            if changed:
+                write_json(self.bridge_log_path, log)
+        for e in to_touch:
+            r = e["result"]
+            try:
+                self.crm.run(["touch", e["person_id"], ("call through Grok: " + " ".join(x for x in (r["outcome"], r["summary"]) if x))[:200]])
+            except CRMError as err:  # the call still happened: keep the result, show why the CRM line is missing
+                with self.lock:
+                    log = self.bridge_log()
+                    for x in log:
+                        if x.get("job_id") == e["job_id"]:
+                            x["touch_error"] = str(err)[:200]
+                    write_json(self.bridge_log_path, log)
+        return self.bridge_log() if to_touch else log
+
+    def bridge_view(self) -> dict:
+        """What the screen needs: the newest Grok job per person and today's counts. No webhook URL, no key."""
+        at = self.clock()
+        log = self.bridge_sync()
+        jobs: dict[str, dict] = {}
+        for e in log:
+            res = e.get("result") or {}
+            state = res.get("status") or ("expired" if bridge.card_expired(e, at) else "waiting" if e.get("status") == "posted" else e.get("status"))
+            jobs[e["person_id"]] = {"job_id": e["job_id"], "job_type": e["job_type"], "at": e["at"], "state": state, "purpose": e.get("purpose", ""),
+                                    "ask": e.get("ask", ""), "outcome": res.get("outcome", ""), "summary": res.get("summary", ""),
+                                    "draft_text": res.get("draft_text"), "touch_error": e.get("touch_error", "")}
+        since = (at.timestamp() - 86400)
+        calls = sum(1 for e in log if e["job_type"] == "call" and e["status"] == "posted" and datetime.fromisoformat(e["at"]).timestamp() > since)
+        drafts = sum(1 for e in log if e["job_type"] == "hard_draft" and e["at"][:10] == at.date().isoformat())
+        return {"caller": self.caller, "purposes": bridge.PURPOSES, "jobs": jobs,
+                "calls_24h": calls, "calls_cap": bridge.MAX_CALLS_24H, "drafts_today": drafts, "drafts_cap": self.max_hard_drafts}
 
     # ---- refresh
     def start_refresh(self) -> dict:
@@ -1195,6 +1316,12 @@ class Handler(BaseHTTPRequestHandler):
             elif u.path == "/api/send":
                 out = s.send(body.get("kind", ""), body.get("person_id", ""), body.get("to", ""), body.get("body", ""),
                              body.get("subject", ""), body.get("display", ""))
+            elif u.path == "/api/call":
+                out = s.bridge_job("call", body.get("person_id", ""), body.get("display", ""), body.get("to", ""),
+                                   purpose=body.get("purpose", ""), objective=body.get("objective", ""), context=body.get("context", ""))
+            elif u.path == "/api/draft/escalate":
+                out = s.bridge_job("hard_draft", body.get("person_id", ""), body.get("display", ""),
+                                   instructions=body.get("instructions", ""), context=body.get("context", ""))
             elif u.path == "/api/refresh":
                 out = {"ok": True, "result": s.start_refresh()}
             elif u.path == "/api/farms":
@@ -1357,6 +1484,83 @@ def run_tests() -> int:
     check(g[0] == "dry" and "PIPELINE_LIVE_HOST=mini" in g[1], "live with no host named is dry and prints the line to add")
     nb = State(demo=True, send_log=tmp / "nb" / "send-log.json"); nb.sender_blocked = g[1]
     check(any(p["code"] == "not_live_host" for p in nb.snapshot()["problems"]), "a blocked sender shows as a problem on screen")
+
+    # Grok bridge: calls and hard drafts
+    br = State(demo=True, send_log=tmp / "br" / "send-log.json")
+    r = br.bridge_job("call", "247", "Taylor Sample", "(225) 555-0100", purpose="showing_confirmation", objective="Confirm tomorrow's 2 pm showing.")
+    check(r["ok"] and r["result"]["status"] == "dry-run" and r["result"]["to"] == "+12255550100", "a demo call job is a dry run and leaves nothing")
+    v = br.snapshot()["bridge"]
+    check(v["caller"] == "dry" and v["jobs"]["247"]["state"] == "dry-run" and v["calls_24h"] == 0 and "webhook" not in json.dumps(v).lower(),
+          "the screen sees the dry job, no call is counted, no webhook detail is in the state")
+    br.dnc("401", "asked us to stop")
+    try:
+        br.bridge_job("call", "401", "Casey Night", "+12255550140", purpose="appointment_reminder", objective="x"); check(False, "Do Not Contact refuses a call")
+    except CRMError as e:
+        check("Do_Not_Contact" in str(e), "Do Not Contact refuses a call")
+    try:
+        br.bridge_job("call", "247", "Taylor Sample", "+12255550100", purpose="price_talk", objective="x"); check(False, "a call off the purpose list is refused")
+    except CRMError as e:
+        check("purposes" in str(e), "a call off the purpose list is refused")
+    br.clock = lambda: datetime(2026, 11, 10, 20, 5, tzinfo=CENTRAL)
+    try:
+        br.bridge_job("call", "247", "Taylor Sample", "+12255550100", purpose="requested_callback", objective="Call back."); check(False, "8:05 pm refuses every call")
+    except CRMError as e:
+        check("quiet hours" in str(e), "8:05 pm refuses every call, even to someone waiting")
+    check(br.bridge_job("hard_draft", "247", "Taylor Sample", instructions="Upset about the inspection. Calm, no promises.")["ok"],
+          "a hard draft can be asked for at night: drafting is not sending")
+    br.clock = noon
+    br.max_hard_drafts = 1
+    try:
+        br.bridge_job("hard_draft", "312", "Morgan Demo", instructions="x"); check(False, "the hard draft cap refuses the next one")
+    except CRMError as e:
+        check("cap" in str(e), "the hard draft cap refuses the next one")
+    # live, with Grok's webhook faked
+    bl = State(demo=True, send_log=tmp / "bl" / "send-log.json"); bl.demo = False; bl.caller = "live"
+    crm_calls = []
+
+    class RecordingCRM:
+        def run(self, args, dry_run=False):
+            crm_calls.append((tuple(args), dry_run))
+            return {"ok": True}
+    bl.crm = RecordingCRM()
+    touches = lambda: [a for a, dry in crm_calls if a[0] == "touch" and not dry]
+    posted_jobs = []
+    bl.bridge_post = lambda job, url, key, header: posted_jobs.append(job) or 202
+    r = bl.bridge_job("call", "247", "Taylor Sample", "(225) 555-0100", purpose="showing_confirmation", objective="Confirm tomorrow's 2 pm showing.")
+    jid = r["result"]["job_id"]
+    check(r["result"]["status"] == "posted" and posted_jobs[0]["job_id"] == jid and posted_jobs[0]["result_writeback"]["method"] == "google_drive",
+          "a live call job is posted to Grok once")
+    v = bl.snapshot()
+    check(v["bridge"]["jobs"]["247"]["state"] == "waiting" and v["bridge"]["calls_24h"] == 1 and not touches(),
+          "until Grok answers the card says waiting, and nothing is logged in the CRM")
+    bl.bridge_results.mkdir(parents=True, exist_ok=True)
+    (bl.bridge_results / (jid + ".json")).write_text(json.dumps({"v": 1, "job_id": jid, "status": "completed", "outcome": "answered",
+                                                                 "summary": "Confirmed 2 pm.", "draft_text": None, "finished_at": "2026-11-10T12:06:00-06:00"}))
+    v = bl.snapshot()
+    check(v["bridge"]["jobs"]["247"]["state"] == "completed" and v["bridge"]["jobs"]["247"]["summary"] == "Confirmed 2 pm."
+          and touches() == [("touch", "247", "call through Grok: answered Confirmed 2 pm.")], "a finished call shows its summary and is logged as a touch")
+    bl.snapshot()
+    check(sum(1 for e in bl.bridge_log() if e.get("touched")) == 1 and len(touches()) == 1,
+          "the touch is written once, however often the screen asks")
+    r2 = bl.bridge_job("call", "312", "Morgan Demo", "+12255550111", purpose="appointment_reminder", objective="Remind about Friday.")
+    bl.clock = lambda: noon() + (datetime(2026, 1, 1, 1) - datetime(2026, 1, 1, 0, 15))
+    check(bl.snapshot()["bridge"]["jobs"]["312"]["state"] == "expired" and not [e for e in bl.bridge_log() if e["job_id"] == r2["result"]["job_id"]][0]["touched"],
+          "a card nobody tapped reads expired after 40 minutes and logs no touch")
+    bl.clock = noon
+    r3 = bl.bridge_job("hard_draft", "118", "Riley Quiet", instructions="Has gone quiet after the price drop. Warm, short.")
+    (bl.bridge_results / "d.json").write_text(json.dumps({"v": 1, "job_id": r3["result"]["job_id"], "status": "draft_ready", "outcome": "draft_ready",
+                                                          "summary": "", "draft_text": "Hey Riley, no pressure at all."}))
+    j118 = bl.snapshot()["bridge"]["jobs"]["118"]
+    check(j118["state"] == "draft_ready" and j118["draft_text"].startswith("Hey Riley") and bl.sent_today()["texts"] == 0,
+          "Grok's draft comes back for the compose box and nothing is sent")
+    def refuse(job, url, key, header):
+        raise bridge.BridgeError("Grok's webhook refused the job (HTTP 401)")
+    bl.bridge_post = refuse
+    try:
+        bl.bridge_job("call", "85", "Jordan Sample", "+12255550185", purpose="appointment_reminder", objective="x"); check(False, "a refused post is an error on screen")
+    except CRMError as e:
+        check("401" in str(e) and bl.bridge_log()[-1]["status"] == "post_failed" and bl.snapshot()["bridge"]["calls_24h"] == 2,
+              "a refused post is an error on screen, logged, and not counted as a call")
 
     # Claude Q&A and ElevenLabs, with the network faked
     v = s.snapshot()["voice"]
