@@ -124,3 +124,84 @@ empty = proof.build(TODAY, [], [], [], [], [])
 check(empty["first_reply"]["value"] is None and empty["first_reply"]["why"] and empty["leads"]["value"] == 0, "with no record the first reply time is unknown, with the reason")
 check(len(proof.keep(proof.keep([], pf), pf)) == 1, "one proof row a week")
 
+# ---- C. the learning loop
+tmp = Path(tempfile.mkdtemp())
+check(learn.current(tmp)["seller"] == {k: float(v) for k, v in insight.SELLER_MAX.items()} and learn.current(tmp)["call10"]["money"] == 40.0, "with no version yet the hand-set weights are in use")
+check(not any(learn.BANNED.search(f) for fs in learn.FEATURES.values() for f in fs) and all(learn.BANNED.search(w) for w in ("family status", "religion", "age", "disability", "race", "kids")),
+      "no model input is a protected trait, and the check would catch one")
+rows_c = [{"person_id": "1", "score": 60, "fractions": {"money": 1, "intent": 0.5, "waiting": 0, "cadence": 1}}]
+rows_s = [{"person_id": "8", "score": 45, "fractions": {"years": 1, "past": 1}}, {"person_id": "9", "score": 10, "fractions": {}}]
+check(learn.log_ranked(tmp, TODAY, rows_c, rows_s) == 2 and learn.log_ranked(tmp, TODAY + timedelta(days=1), rows_c, rows_s) == 0 and learn.log_ranked(tmp, TODAY + timedelta(days=7), rows_c, rows_s) == 2,
+      "each ranked person is logged once a week per list")
+check(learn.add_feedback(tmp, "call10", "1", "good", datetime(2026, 11, 11, 9))["verdict"] == "good" and len(learn._lines(tmp / "feedback.jsonl")) == 1, "a Good call tap is logged")
+try:
+    learn.add_feedback(tmp, "call10", "1", "great", datetime(2026, 11, 11, 9)); check(False, "an unknown verdict is refused")
+except ValueError:
+    check(True, "an unknown verdict is refused")
+ev = learn.events({"people": [{"person_id": "1", "street": "12 Oak St", "last_inbound": "2026-11-15"}], "facts": {"1": {"notes": [{"at": "2026-12-01", "note": "Listing appointment set for Friday"}]}}},
+                  [{"status": "sent", "kind": "text", "person_id": "1", "at": "2026-11-12T10:00:00-06:00"}, {"status": "dry-run", "person_id": "1", "at": "2026-11-12T11:00:00-06:00"}],
+                  [{"job_type": "call", "status": "posted", "person_id": "1", "at": "2026-11-13T10:00:00-06:00"}], [{"kind": "showing", "title": "Showing - 12 Oak St", "day": "2026-11-20"}], ties)
+check(ev["1"] == {"texted": ["2026-11-12"], "called": ["2026-11-13"], "replied": ["2026-11-15"], "appointment": ["2026-11-20", "2026-12-01"]} and ev["3"]["listing"] == ["2026-10-01"] and ev["4"]["closed"] == ["2026-10-12"],
+      "outcomes come from the send log, the call log, texts back, the calendar, Notes and Deals, with dates")
+row = {"day": "2026-11-11", "list": "call10", "person_id": "1", "rank": 1, "top": True}
+o = learn.outcome(row, ev, date(2026, 12, 20))
+check(o["texted"] == "2026-11-12" and o["appointment"] == "2026-11-20" and o["yes"] and not o["resolved"] and o["none_30"] is False and o["none_60"] is None
+      and learn.outcome(row, ev, date(2027, 2, 20))["resolved"], "an appointment within 90 days is a yes, and it only counts as an answer once the 90 days are up, the same as a no")
+check(learn.outcome(row, ev, date(2026, 11, 18))["appointment"] is None, "an appointment still ahead on the calendar is not counted yet")
+o2 = learn.outcome({**row, "person_id": "zz"}, ev, date(2026, 12, 20))
+o3 = learn.outcome({**row, "person_id": "zz"}, ev, date(2027, 2, 20))
+check(not o2["resolved"] and o2["none_30"] is True and o2["none_90"] is None and o3["resolved"] and not o3["yes"] and o3["none_90"] is True, "nothing in 30, 60 and 90 days is recorded as each date passes, and a no only counts after 90 days")
+
+random.seed(7)
+def made(n, start, signal="activity"):
+    out = []
+    for i in range(n):
+        x = {k: random.choice([0, 0, 1]) * random.choice([0.33, 0.67, 1]) for k in learn.FEATURES["seller"]}
+        out.append(({"day": (start + timedelta(days=i % 20)).isoformat(), "week": learn.week_of(start + timedelta(days=i % 20)), "list": "seller", "person_id": f"p{start}{i}", "rank": i + 1, "top": i < 25, "score": 0, "x": x},
+                    random.random() < 0.08 + 0.75 * x[signal]))
+    return out
+def seed(folder, pairs):
+    folder.mkdir(parents=True, exist_ok=True)
+    with (folder / "ranked.jsonl").open("a") as fh:
+        fh.write("".join(json.dumps(r) + "\n" for r, _ in pairs))
+    return {r["person_id"]: {"appointment": [(date.fromisoformat(r["day"]) + timedelta(days=10)).isoformat()]} for r, y in pairs if y}
+t1 = tmp / "few"
+ev1 = seed(t1, made(12, date(2026, 6, 1)))
+v = learn.retrain(t1, ev1, date(2026, 11, 9))
+check(v["lists"]["seller"]["used"] is False and "Not enough outcomes yet: 12 of 40" in v["lists"]["seller"]["note"] and v["weights"]["seller"] == learn.HAND["seller"] and v["version"] == 1,
+      "with too few outcomes the weights do not move, and the version says why")
+t2 = tmp / "enough"
+ev2 = seed(t2, made(160, date(2026, 6, 1)))
+v1 = learn.retrain(t2, ev2, date(2026, 11, 9))
+w1, h = v1["weights"]["seller"], learn.HAND["seller"]
+check(v1["lists"]["seller"]["used"] and w1["activity"] > h["activity"] and abs(sum(w1.values()) - 100) < 0.6, f"with enough outcomes the weights move toward what predicted: activity {h['activity']} to {w1['activity']}")
+check(all(abs(w1[k] - h[k]) <= learn.MAX_STEP + 0.05 for k in h), "no weight moves more than the weekly cap")
+check(v1["lists"]["seller"]["new_auc"] >= v1["lists"]["seller"]["old_auc"] and v1["lists"]["seller"]["changes"], "the version records its test against the old weights and what changed")
+check(not learn.due(t2, datetime(2026, 11, 9, 7)) and not learn.due(t2, datetime(2026, 11, 13, 9)) and learn.due(t2, datetime(2026, 11, 16, 6, 5)) and not learn.due(t2, datetime(2026, 11, 16, 5, 59))
+      and learn.due(t2, datetime(2026, 11, 17, 9)), "the retrain is due once a week from Monday 6 AM, and a Mac that slept through Monday catches up")
+check(v1["lists"]["seller"]["holdout"] is False and "same answers it learned from" in v1["lists"]["seller"]["note"], "with no older answers to hold back, the version says its test was on the answers it learned from")
+v2 = learn.retrain(t2, ev2, date(2026, 11, 16))
+check(v2["version"] == 2 and len(json.loads((t2 / "versions.json").read_text())) == 2 and learn.current(t2)["seller"] == v2["weights"]["seller"], "every version is kept with its date, weights and test results")
+t3 = tmp / "worse"
+old = made(150, date(2026, 1, 5), "activity")
+new = made(60, date(2026, 7, 6), "years")
+ev3 = {**seed(t3, old), **seed(t3, new)}
+learn._write(t3 / "versions.json", [{"version": 1, "date": "2026-11-02", "week": "2026-11-02", "lists": {"seller": {}, "call10": {}},
+                                    "weights": {"seller": {"years": 60.0, "equity": 0.0, "life": 10.0, "activity": 10.0, "past": 10.0, "anniversary": 10.0}, "call10": learn.HAND["call10"]}}])
+v3 = learn.retrain(t3, ev3, date(2026, 11, 9))
+i3 = v3["lists"]["seller"]
+check(i3["holdout"] is True and i3["used"] is False and i3["new_auc"] < i3["old_auc"] and "tested worse" in i3["note"] and v3["weights"]["seller"]["years"] == 60.0, "a version that tests worse on the last 90 days is not used, and it says so")
+sc = learn.scorecard(t2, ev2, date(2026, 11, 16))
+check(sc["current"]["seller"]["words"][0].endswith("%") and "counts" in sc["current"]["seller"]["words"][0] and not sc["current"]["seller"]["hand_set"] and sc["current"]["call10"]["hand_set"],
+      "the scorecard says the weights in plain words: " + sc["current"]["seller"]["words"][0])
+check(len(sc["versions"]) == 2 and sc["versions"][0]["version"] == 2 and isinstance(sc["changed"]["seller"], dict), "it lists each version, newest first, and what changed since last week")
+lm = learn.top_last_month(tmp, ev, TODAY)
+check(lm["n"] == 0 and lm["replied"] is None and "2026-11-11" in lm["why"], "with no rank log from a month ago the top 25 result is unknown, with the date the log started")
+t4 = tmp / "month"
+pairs = made(30, date(2026, 10, 1))
+ev4 = seed(t4, pairs)
+lm4 = learn.top_last_month(t4, ev4, date(2026, 11, 11))
+check(0 < lm4["n"] <= 25 and lm4["appointment"] == sum(1 for r, y in pairs if y and r["top"] and r["day"] <= "2026-10-12") and lm4["listing"] == 0, "of last month's top 25, it counts who set an appointment")
+
+print("\nALL PASS" if not fails else f"\n{fails} FAILED")
+sys.exit(1 if fails else 0)
