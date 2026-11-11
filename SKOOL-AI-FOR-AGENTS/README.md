@@ -11,6 +11,7 @@ Status as of 2026-10-12: Skool group created by Caleb at https://www.skool.com/a
 | If you want to | Open |
 |---|---|
 | See the whole project at a glance | this file |
+| See the full teaching game plan (new front door and paid path) | [`../programs/ai-for-agents/GAME-PLAN.md`](../programs/ai-for-agents/GAME-PLAN.md) |
 | See what's done and what's next | [`STATUS.md`](STATUS.md) |
 | See every video, how to shoot it and the set | [`shot-board.html`](shot-board.html) (also live at https://claude.ai/artifact/NrmHbo7VeQ5MZWizskVuC9) |
 | Film Day 1 today | [`day-1-film-kit.html`](day-1-film-kit.html) and the free download [`day-1-bio-builder.pdf`](../programs/ai-for-agents/downloads/day-1-bio-builder.pdf) |
