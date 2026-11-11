@@ -2,6 +2,38 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-10-19, evening: Ep 1 and Ep 2 scripted
+
+**Done**
+- Full scripts for weekly series Ep 1 (You Tried It and It Was Bad) and Ep 2 (One App, Not Ten), 17 beats each, about 2:50 to 2:55 at Caleb's pace before he loosens it up. Each beat has words, face mode, kit scene, on-screen text, motion notes and why it holds attention. Three hook options per episode, one recommended.
+- Every beat rendered from the Course 1 motion kit (Ivory). Script page: https://claude.ai/artifact/WiAWiHZ661WajLewUUgrqX
+- Scene files in `programs/ai-for-agents/series/`.
+
+**Needs Caleb**
+- Pick a hook per episode, mark lines that don't sound like him, approve. Then teleprompters.
+- Confirm the series name. "AI for the Stuff You Already Do" is still a working name.
+
+## 2026-10-19, later: weekly series outline from the research
+
+**Done**
+- `programs/ai-for-agents/series-from-research.md`: a 10-episode free weekly series ordered by the ranked beginner needs, with two hooks, an outline, a psychology idea, a 10-minute action and a download per episode. Fills the weekly-lesson slot from the 2026-10-14 game plan. Challenge and Course 1 builds unchanged.
+- Proposes replacing the old draft `lessons/01` to `10`. Lessons 2, 3, 4, 8 and 9 carry over into episodes. 5, 6 and 7 parked.
+
+**Needs Caleb**
+- Approve or reorder the series, pick a name, pick the first episode to script (recommended: Ep 1).
+
+## 2026-10-19: what beginner agents want from AI
+
+**Done**
+- `programs/ai-for-agents/beginner-demand-research.md`: research on local Louisiana AI classes, Skool groups, YouTube and course teachers, agent surveys and Reddit, with a ranked list of what beginner agents need help with. Every claim labeled with a source link.
+- Top findings: agents use AI mostly for listing descriptions, social posts and follow-up (NAR 2026). The biggest barrier is not knowing where to start. Nobody in Louisiana teaches hands-on AI to agents, and LREC put out AI guidance in August 2026 that matches our values.
+- Inference: the "7 Days to Find the Leads in Your Phone" front door matches the demand. Listing descriptions fit better as Day 2 or 3.
+
+**Needs Caleb**
+- Read the ranked list and say if it matches what agents ask you in person.
+- Look through one or two local Baton Rouge agent Facebook groups. Claude didn't search Facebook.
+- Check GBRAR MLS rules on AI photos before any photo lesson.
+
 ## 2026-10-19: first pinned post drafted
 
 **Done**

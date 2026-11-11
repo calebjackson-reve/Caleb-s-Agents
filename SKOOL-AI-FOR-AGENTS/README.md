@@ -20,6 +20,8 @@ Status as of 2026-10-12: Skool group created by Caleb at https://www.skool.com/a
 | The 7-day challenge scripts | [`../programs/ai-for-agents/challenge/`](../programs/ai-for-agents/challenge/README.md) |
 | The 10 weekly lessons | [`../programs/ai-for-agents/lessons/`](../programs/ai-for-agents/lessons/) |
 | Skool setup, name and about text | [`../programs/ai-for-agents/skool-setup.md`](../programs/ai-for-agents/skool-setup.md) |
+| The free weekly series, built from the research |  [`../programs/ai-for-agents/series-from-research.md`](../programs/ai-for-agents/series-from-research.md) |
+| What beginner agents want from AI, ranked | [`../programs/ai-for-agents/beginner-demand-research.md`](../programs/ai-for-agents/beginner-demand-research.md) |
 | Market research and name conflicts | [`../programs/ai-for-agents/skool-research.md`](../programs/ai-for-agents/skool-research.md) |
 | How Nate Herk and Chase grew | [`../programs/ai-for-agents/skool-teardown-ais-chase.md`](../programs/ai-for-agents/skool-teardown-ais-chase.md) |
 | Launch post and invite drafts | [`../programs/ai-for-agents/invites.md`](../programs/ai-for-agents/invites.md) |
