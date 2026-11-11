@@ -275,3 +275,87 @@ def call10(feed: dict, today: date, done: set | None = None, n: int = 10) -> dic
     return {"rows": rows[:n], "considered": len(by), "left_out": left}
 
 
+# ---------------- 3 and 4. The fuller card and the likely-seller score ----------------
+
+LIFE = re.compile(r"\bbaby\b|pregnan|expecting (a |their |our |another )?(baby|child|kid|twins)|newborn|\bmarri(ed|age)\b|wedding|(got|just|newly|is|are) engaged|"
+                  r"divorc|separat(ed|ion) from|retir(e|ed|ing|ement)\b|new job|job (offer|change|transfer)|relocat|(being|getting|got) transferred|"
+                  r"transferr?(ed|ing) to\b|downsiz|empty nest|passed away|estate sale|settling the estate|probate|inherit|"
+                  r"graduat|need(s|ed|ing)? more (space|room)|out of room|outgr[eo]w|bigger (house|home|place)|moving (to|out|closer)|kids? (left|moved out)", re.I)
+SELLER_MAX = {"years": 30, "equity": 20, "life": 20, "activity": 15, "past": 15}
+YEARS_PTS = [(7, 30), (5, 20), (3, 10)]
+EQUITY_PTS = [(0.5, 20), (0.3, 12)]
+ACTIVITY_PTS = {"home_value": 15, "repeat": 10, "one": 8}
+FIELDS = [("phone", "Phone"), ("email", "Email"), ("value", "Home value"), ("equity", "Equity"), ("years", "Years owned"),
+          ("source", "Lead source"), ("deal", "Last deal with you"), ("household", "Household")]
+
+
+def _house(t) -> str:
+    m = re.match(r"\s*(\d+)", str(t or ""))
+    return m.group(1) if m else ""
+
+
+def same_home(a, b) -> bool:
+    """The same house: equal house numbers and the same street name."""
+    return bool(_house(a)) and _house(a) == _house(b) and cc._same_street(str(a), str(b))
+
+
+def _index(rows: list[dict], key: str) -> dict:
+    out: dict = {}
+    for r in rows or []:
+        out.setdefault(_house(r.get(key)), []).append(r)
+    return out
+
+
+class Book:
+    """The reads the card and the score need, indexed once: the feed, the AIRE Deals sheet rows and the sales record."""
+
+    def __init__(self, feed: dict, deals_sheet: list[dict] | None = None, sales: list[dict] | None = None,
+                 leads: list[dict] | None = None, today: date | None = None):
+        f = feed or {}
+        self.today = today or cc.central_today()
+        self.facts = f.get("facts") or {}
+        self.has_facts = "facts" in f
+        self.people = {str(p.get("person_id")): p for p in f.get("people") or []}
+        for r in (f.get("touches_due") or []) + (f.get("new_leads") or []):  # a feed with no people list still knows these
+            self.people.setdefault(str(r.get("person_id")), {**r, "has_phone": bool(r.get("phone")), "has_email": bool(r.get("email"))})
+        heat = f.get("heat") or {}
+        self.reasons = {str(r.get("person_id")): r.get("reasons") or [] for r in (heat.get("hot") or []) + (heat.get("warm") or [])}
+        self.sheet, self.sales = _index(deals_sheet or [], "deal"), _index(sales or [], "address")
+        self.forms: dict = {}
+        for r in leads or []:
+            pid = (r.get("crm") or {}).get("person_id")
+            if pid and r.get("origin") == "email":
+                self.forms.setdefault(str(pid), []).append(r)
+
+    def person(self, pid: str) -> dict | None:
+        p, fx = self.people.get(str(pid)), self.facts.get(str(pid))
+        return {**(p or {}), **(fx or {})} if p or fx else None
+
+    def deals_for(self, pid: str, street: str) -> list[dict]:
+        """Every deal on record for this person or this house, newest first: the CRM Deals tab (by person), the AIRE
+        Deals sheet and the sales record (by house number and street)."""
+        out = []
+        for d in (self.facts.get(str(pid)) or {}).get("deals") or []:
+            out.append({"address": d.get("address") or "", "side": str(d.get("side") or "").lower(), "status": str(d.get("stage") or "").replace("_", " "),
+                        "day": str(d.get("expected_close") or d.get("updated_at") or "")[:10], "price": cc.num(d.get("price")), "from": "CRM Deals tab",
+                        "here": same_home(d.get("address"), street)})
+        h = _house(street)
+        for d in self.sheet.get(h, []) if h else []:
+            if same_home(d.get("deal"), street):
+                out.append({"address": d["deal"], "side": str(d.get("side") or "").lower(), "status": str(d.get("status") or "").lower(),
+                            "day": str(d.get("act") or "")[:10], "price": d.get("price"), "from": "AIRE Deals sheet", "here": True})
+        for d in self.sales.get(h, []) if h else []:
+            if same_home(d.get("address"), street):
+                out.append({"address": d["address"], "side": str(d.get("side") or "").lower(), "status": "lease closed" if "lease" in str(d.get("type") or "").lower() else "closed",
+                            "day": str(d.get("close") or "")[:10], "price": cc.num(d.get("price")), "from": "sales record", "here": True})
+        return sorted(out, key=lambda d: d["day"] if _day(d["day"]) else "", reverse=True)
+
+    def years_owned(self, deals: list[dict]) -> dict | None:
+        """Years since they bought this house with Caleb: a closed buyer side at their own address. Nothing else in
+        the sheet says when a home was bought, so everyone else is unknown."""
+        for d in deals:
+            day = _day(d["day"])
+            if day and day <= self.today and d["here"] and d["status"] == "closed" and d["side"] in ("buyer", "both"):
+                return {"years": int((self.today - day).days // 365.25), "since": d["day"], "from": d["from"]}
+        return None
+
