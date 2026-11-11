@@ -155,7 +155,7 @@
   function deals() {
     const g = C.guard(); if (g) return g;
     const all = C.data.deals.filter(r => matches(`${r.deal} ${r.status} ${r.side} ${r.next}`));
-    const live = all.filter(r => !['closed', 'out'].includes(r.stage)), past = all.filter(r => ['closed', 'out'].includes(r.stage));
+    const exp = all.filter(r => C.isExpired(r)), live = all.filter(r => !['closed', 'out'].includes(r.stage) && !C.isExpired(r)), past = all.filter(r => ['closed', 'out'].includes(r.stage));
     const only = (C.data.crm_only_deals || []).filter(r => matches(`${r.deal} ${r.stage}`));
     const row = r => `<li class="cc-row st-${esc(r.stage)} ${r.differs.length ? 'is-warn' : ''}">${C.thumb(r.deal)}
       <div class="cc-row-main"><h3>${esc(r.deal)}</h3>
@@ -165,6 +165,7 @@
         ${r.differs.length ? `<p class="cc-warn">The CRM Deals tab says ${r.differs.map(x => `${esc(x.field)} ${x.field === 'price' ? C.m(x.crm) : esc(x.field === 'act of sale' ? C.day(x.crm) : x.crm)}`).join(', ')}. This page shows the Deals sheet.</p>` : ''}</div>
       <div class="cc-acts">${r.crm ? `<button type="button" onclick="openDeal(${esc(JSON.stringify(r.crm.address))})">Edit in the CRM</button>` : C.offBtn('Edit in the CRM', 'Not in the CRM Deals tab')}${r.crm && r.crm.person_id ? `<button type="button" onclick="openCompose('${esc(r.crm.person_id)}')">Message</button>` : C.offBtn('Message', r.crm ? 'No contact linked in the CRM' : 'No CRM contact for this deal')}</div></li>`;
     const body = `<p class="cc-srcline">${C.src('deals')}</p>${live.length ? `<ul class="cc-rows">${live.map(row).join('')}</ul>` : S.q && !past.length ? C.noMatch() : C.empty('No open deals on the Deals sheet.')}
+      ${exp.length ? `<h3 class="cc-h3">Expired, confirm <span class="cc-count">${exp.length}</span></h3><p class="cc-note">Past their deadline, so not in the open count. Confirm each on the <button type="button" class="lt-link" onclick="go('fixes')">Fix list</button>.</p><ul class="cc-rows">${exp.map(row).join('')}</ul>` : ''}
       ${past.length ? `<details class="cc-more"><summary>Closed and fell through <span class="cc-count">${past.length}</span></summary><ul class="cc-rows">${past.map(row).join('')}</ul></details>` : ''}`;
     return `<div class="cc-page">${C.head('Deals', 'One list from the AIRE Deals sheet. Commission, Deadlines and the Dashboard read the same rows.')}
       ${C.card(`Deals sheet <span class="cc-count">${live.length} open</span>`, body, 'deals')}

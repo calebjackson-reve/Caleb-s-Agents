@@ -56,9 +56,13 @@
   const MAXROWS = 40;
   function boardHTML() {
     const q = key(ST.q), all = ST.people(), rows = all.filter(r => !q || key(`${r.display || ''} ${r.city || ''} ${r.band || ''}`).includes(q)), g = ST.groups(rows);
+    // Under contract comes from the Deals sheet: one row per deal under contract, tied to its person where one matched.
+    const bc = S.data && S.data.board_contract, byId = new Map(all.map(r => [String(r.person_id), r]));
+    if (bc) g['under contract'] = bc.map(b => b.person_id ? { ...(byId.get(String(b.person_id)) || {}), person_id: b.person_id, display: b.display, city: b.deal + (b.others ? ` · and ${b.others} more` : ''), stage: 'under contract' }
+      : { nodeal: true, display: b.deal, city: 'no person matched yet' }).filter(r => !q || key(`${r.display} ${r.city}`).includes(q));
     const off = rows.filter(r => !ST.is(r.stage)).length;
     return `<div class="ppl-board">${ST.names.map(s => `<section class="ppl-col" aria-label="${esc(s)}">${ST.tab(s, g[s].length)}
-        <ul>${g[s].slice(0, MAXROWS).map(r => `<li><button type="button" onclick="Stage.open(${jsa(r.person_id)})"><b>${who(r)}</b><small>${[ST.cadence(r.band), esc(r.city || '')].filter(Boolean).join('<i> · </i>')}</small></button>${acts(r)}</li>`).join('')}</ul>
+        <ul>${g[s].slice(0, MAXROWS).map(r => r.nodeal ? `<li><button type="button" onclick="go('fixes')"><b>${esc(r.display)}</b><small>${esc(r.city)}</small></button></li>` : `<li><button type="button" onclick="Stage.open(${jsa(r.person_id)})"><b>${who(r)}</b><small>${[ST.cadence(r.band), esc(r.city || '')].filter(Boolean).join('<i> · </i>')}</small></button>${acts(r)}</li>`).join('')}</ul>
         ${g[s].length > MAXROWS ? `<p class="lt-quiet">${g[s].length - MAXROWS} more. Search to find them.</p>` : ''}</section>`).join('')}</div>
       ${off ? `<p class="lt-quiet">${off.toLocaleString()} ${off === 1 ? 'person has' : 'people have'} a stage in the CRM that is not one of these seven, or none at all, so ${off === 1 ? 'that person is' : 'they are'} not on the board. <button type="button" class="lt-link" onclick="go('touches')">Touches due</button> still lists everyone who is due.</p>` : ''}`;
   }
@@ -111,7 +115,7 @@
     const grok = gw.slice(0, 4).map(({ id, j, row }) => item(j.job_type === 'call' ? `Call ${C.pname(row.display)}` : 'Hard draft',
       j.job_type === 'call' ? C.note(j.ask || grokText(j), [row.display], 'Details hidden') : `${j.state === 'draft_ready' ? 'Ready to read' : 'Being written'} for ${C.pname(row.display)}`, `openGrok(${jsa(id)}, '${j.job_type === 'call' ? 'call' : 'draft'}')`)).join('');
     const need = ST.people().filter(r => r.due), g = ST.groups(need), shown = ST.names.filter(s => g[s].length), off = need.filter(r => !ST.is(r.stage)).length;
-    return `<div class="cc-page cc-wide lt-page lt-home">${Reach.leadsHTML()}${feedDown() ? '' : Reach.callHTML()}<header class="lt-head"><div><h1>Good ${C.greet()}.</h1><p>${duet}</p></div><div class="lt-meta"><span>${esc(today())}</span></div></header>
+    return `<div class="cc-page cc-wide lt-page lt-home">${Fix.moneyHTML()}${Reach.leadsHTML()}${feedDown() ? '' : Reach.callHTML()}${Fix.proofHTML()}<header class="lt-head"><div><h1>Good ${C.greet()}.</h1><p>${duet}</p></div><div class="lt-meta"><span>${esc(today())}</span></div></header>
       ${feedDown() ? '' : startHTML()}
       <div class="lt-duet"><section><span class="lt-eyebrow">Claude</span><h2>Everyday drafts</h2><ul class="lt-list">${claude}</ul>
           <p class="lt-links"><button type="button" class="lt-link" onclick="openBrief()">Open morning brief</button><button type="button" class="lt-link" onclick="go('queue')">All drafts${dr.length ? ' · ' + dr.length : ''}</button></p></section>
@@ -120,9 +124,10 @@
       <section class="lt-need"><div class="lt-row"><h2>People who need you</h2><button type="button" class="lt-link" onclick="go('people')">View all people</button></div>
         ${feedDown() ? noFeed() : shown.length ? `<div class="need-grid">${shown.map(s => `<div>${ST.tab(s, g[s].length)}<ul>${g[s].slice(0, 3).map(r => `<li><button type="button" onclick="Stage.open(${jsa(r.person_id)})"><b>${who(r)}</b>${ST.cadence(r.band)}</button>${acts(r)}</li>`).join('')}</ul></div>`).join('')}</div>` : '<p class="lt-quiet">Nobody with one of the seven stages is due right now.</p>'}
         ${off ? `<p class="lt-quiet">${off.toLocaleString()} more ${off === 1 ? 'is' : 'are'} due with a stage outside these seven, or none. <button type="button" class="lt-link" onclick="go('touches')">Touches due</button> lists them.</p>` : ''}</section>
+      ${Fix.checkinsHTML()}
       <section class="lt-market"><div><h2>The market</h2><ul class="lt-places">${ST.PLACES.map(p => `<li>${esc(p)}</li>`).join('')}</ul><p class="lt-links"><button type="button" class="lt-link" onclick="go('map')">Open map</button></p></div>
         <button type="button" class="lt-mini" onclick="go('map')" aria-label="Open map"><div id="mini-map"></div></button></section>
-      <nav class="lt-more" aria-label="More pages">${[['dash', 'Dashboard'], ['touches', 'Touches due'], ['tasks', 'Tasks'], ['queue', 'Drafts'], ['sent', 'Sent today'], ['grok', 'Grok calls'], ['ccleads', 'Leads'], ['sellers', 'Likely sellers'], ['hot', 'Hot'], ['warm', 'Warm'], ['deals', 'Deals'], ['deadlines', 'Deadlines'], ['calendar', 'Calendar'], ['commission', 'Commission'], ['bank', 'Bank'], ['sources', 'Sources']]
+      <nav class="lt-more" aria-label="More pages">${[['dash', 'Dashboard'], ['touches', 'Touches due'], ['tasks', 'Tasks'], ['queue', 'Drafts'], ['sent', 'Sent today'], ['grok', 'Grok calls'], ['ccleads', 'Leads'], ['fixes', 'Fix list'], ['sellers', 'Likely sellers'], ['hot', 'Hot'], ['warm', 'Warm'], ['deals', 'Deals'], ['deadlines', 'Deadlines'], ['calendar', 'Calendar'], ['commission', 'Commission'], ['bank', 'Bank'], ['sources', 'Sources']]
         .map(([k, l]) => `<button type="button" class="lt-link" onclick="${k === 'sellers' ? "Stage.sellers = true; go('people')" : `go('${k}')`}">${l}</button>`).join('')}</nav>${srcLine()}</div>`;
   }
   // The small market preview: the same basemap and the same pins as the Map page, not interactive.

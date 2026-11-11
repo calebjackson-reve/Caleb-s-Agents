@@ -90,7 +90,9 @@
       ${card('Phone alerts', `<p class="cc-note">A new website lead, a contract deadline within 24 hours, or a read that fails. Each comes once. The lock screen never shows a client's name.</p>
         <p class="cc-note" id="cc-push-state">${'PushManager' in window ? (Notification.permission === 'granted' ? 'Alerts are allowed on this device.' : 'Alerts are off on this device.') : 'This browser can\'t take alerts. On the iPhone, add Pipeline to the Home Screen first, then open it from there.'}</p>
         <div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.pushOn()">Turn on alerts on this device</button><button type="button" class="cc-btn" onclick="CC.pushTest()">Send a test alert</button></div>`, [])}
+      ${Fix.proofHTML(true)}
       ${C.formulaHTML()}
+      ${Fix.learnHTML()}
       ${card('Last sync', `<p class="${sy.error ? 'cc-warn' : 'cc-note'}">${sy.at ? 'Last pass ' + esc(when(sy.at)) + (sy.error ? ': ' + esc(sy.error_text || 'Google sign-in did not work') : ', no sign-in problems') : 'The sync has not run on this Mac yet.'}</p>
         <div class="cc-tablewrap"><table class="cc-table"><caption class="sr">Each source and its state</caption><thead><tr><th scope="col">Source</th><th scope="col">State</th><th scope="col">Last good read</th><th scope="col">Detail</th></tr></thead><tbody>${rows}</tbody></table></div>
         <p class="cc-note">The Mac checks every 5 minutes. Each read has its own pace: website leads on every check, inbox 10 minutes, calendar, Life and Workouts 15, Deals sheet 30, Chase alerts 60, news and commission mail 120, market 12 hours. Today's Scorecard row is added after 6 AM Central.</p>`, [])}
