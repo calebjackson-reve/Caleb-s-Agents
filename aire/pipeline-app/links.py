@@ -171,3 +171,120 @@ def apply_overlay(feed: dict, over: dict) -> dict:
     return out
 
 
+# ---------------- The Fix list ----------------
+
+MLS_SAYS = {"pending": "contract", "sold": "closed", "withdrawn": "out", "expired": "out", "back_on_market": "appointment", "new_listing": "appointment"}
+STAGE_WORDS = {"contract": "under contract", "closed": "closed", "out": "off the market", "appointment": "an active listing", "offer": "an offer", "other": "no status"}
+
+
+def _usd(v) -> str:
+    return f"${v:,.0f}" if v else "no price"
+
+
+def _fid(*parts) -> str:
+    return hashlib.sha256("|".join(str(p) for p in parts).encode()).hexdigest()[:12]
+
+
+def cap_note(goals: dict) -> dict | None:
+    """The cap as Goals has it, and whether that is KW's $20,000 plus the $3,000 royalty."""
+    amount = cc.num((goals or {}).get("cap_amount"))
+    if not amount:
+        return {"amount": None, "expected": KW_CAP + KW_ROYALTY, "differs": False, "note": "No cap is set in Goals, so the cap is unknown."}
+    want = KW_CAP + KW_ROYALTY
+    return {"amount": amount, "expected": want, "differs": amount != want,
+            "note": "" if amount == want else f"Goals says ${amount:,.0f}. KW's cap is ${KW_CAP:,} plus the ${KW_ROYALTY:,} royalty, ${want:,}. Change it in Goals if that is the one you mean."}
+
+
+def fixes(feed: dict, cards: list[dict], ties: list[dict], sales: list[dict], goals: dict | None = None) -> list[dict]:
+    """Every row that looks wrong, the problem in plain words and the suggested fix. Read only."""
+    f, out = feed or {}, []
+    people = _people(f)
+
+    def add(kind, ref, what, problem, fix, src):
+        out.append({"id": _fid(kind, ref, problem), "kind": kind, "ref": str(ref), "what": what, "problem": problem, "fix": fix, "from": src})
+
+    # 1. no name
+    for pid, p in sorted(people.items(), key=lambda kv: str(kv[1].get("last_inbound") or kv[1].get("last_touch") or ""), reverse=True):
+        if not str(p.get("display") or "").strip():
+            where = ", ".join(x for x in (p.get("street"), p.get("city")) if x)
+            add("no_name", pid, f"Contact {pid}" + (f" at {where}" if where else ""), "No name on the CRM sheet.",
+                "Type their name in the display, first and last columns of the Contacts tab.", "CRM sheet")
+    # 2. duplicate people: the same phone, the same email, or the same full name
+    groups: dict = {}
+    rows = (f.get("touches_due") or []) + (f.get("new_leads") or []) + [p for p in (f.get("map") or {}).get("pins") or [] if p.get("kind") == "person"]
+    for r in rows:
+        for label, v in (("phone", insight._phone(r.get("phone"))), ("email", str(r.get("email") or "").strip().lower())):
+            if v and r.get("person_id"):
+                groups.setdefault((label, v), set()).add(str(r["person_id"]))
+    for pid, p in people.items():
+        n = _name_key(p.get("display"))
+        if len(n.split()) >= 2:
+            groups.setdefault(("name", n), set()).add(pid)
+    done = set()
+    for (label, v), ids in sorted(groups.items(), key=lambda kv: ("phone", "email", "name").index(kv[0][0])):
+        ids = tuple(sorted(ids))
+        if len(ids) < 2 or ids in done:
+            continue
+        done.add(ids)
+        shown = ", ".join(f"{people.get(i, {}).get('display') or 'no name'} ({i})" for i in ids[:4])
+        add("duplicate", "+".join(ids), shown, f"{len(ids)} contacts share one {label}.",
+            f"Keep {ids[0]}, copy anything missing onto it, and delete the other{'s' if len(ids) > 2 else ''} in the Contacts tab.", "CRM sheet")
+    # 3. wrong stage: a deal says one thing and the sheet's Stage says another
+    over = overlay(ties, f)
+    for pid, o in over.items():
+        if o["sheet_stage"].strip().lower() != o["stage"]:
+            add("stage", pid, people.get(pid, {}).get("display") or f"Contact {pid}",
+                f"Stage on the CRM sheet is {o['sheet_stage'] or 'blank'}, but {o['deal']} is {'under contract' if o['stage'] == 'under contract' else 'closed'} (matched by {o['how']}).",
+                f"Set Stage to {o['stage']} in the Contacts tab. Pipeline already shows them as {o['stage']}.", "Deals sheet and CRM sheet")
+    tied_uc = {p["person_id"] for t in ties if t["stage"] == "contract" for p in t["people"]}
+    for pid, p in people.items():
+        if str(p.get("stage") or "").strip().lower() == "under contract" and pid not in tied_uc:
+            add("stage", pid, p.get("display") or f"Contact {pid}", "Stage is under contract, but no deal under contract on the Deals sheet matches them.",
+                "Add their deal to the Deals sheet, or set Stage to where they really are.", "Deals sheet and CRM sheet")
+    # 4. a deal row with the wrong price
+    sold = {}
+    for s in sales or []:
+        sold.setdefault(insight._house(s.get("address")), []).append(s)
+    for c in cards or []:
+        for d in c.get("differs") or []:
+            if d.get("field") == "price":
+                add("price", c.get("key"), c.get("deal"), f"Deals sheet says {_usd(c.get('price'))}, the CRM Deals tab says {_usd(cc.num(d.get('crm')))}.",
+                    "Check the contract and correct whichever one is wrong.", "Deals sheet and CRM Deals tab")
+        if c.get("stage") == "closed" and c.get("price"):
+            hit = next((s for s in sold.get(insight._house(c.get("deal")), []) if insight.same_home(s.get("address"), c.get("deal")) and cc.num(s.get("price"))), None)
+            if hit and abs(cc.num(hit["price"]) - c["price"]) >= 1:
+                add("price", c.get("key"), c.get("deal"), f"Deals sheet says ${c['price']:,.0f}, the sales record says ${cc.num(hit['price']):,.0f} (closed {str(hit.get('close'))[:10]}).",
+                    f"Set Price to ${cc.num(hit['price']):,.0f} on the Deals sheet if the sales record is right.", "Deals sheet and sales record")
+    # 5. Deals rows that do not match Flexmls
+    newest: dict = {}
+    for m in (f.get("market") or {}).get("rows") or []:
+        if m.get("type") in MLS_SAYS and insight._house(m.get("address")):
+            k = insight._house(m["address"])
+            newest.setdefault(k, []).append(m)
+    for c in cards or []:
+        hits = sorted((m for m in newest.get(insight._house(c.get("deal")), []) if insight.same_home(m.get("address"), c.get("deal"))), key=lambda m: str(m.get("date") or ""))
+        if not hits:
+            continue
+        m = hits[-1]
+        says = MLS_SAYS[m["type"]]
+        if says != c.get("stage") and not (c.get("stage") == "offer" and says == "appointment"):
+            add("mls", c.get("key"), c.get("deal"), f"Deals sheet says {c.get('status')}. Flexmls says {str(m.get('label') or m['type']).replace('_', ' ')} on {m.get('date')}.",
+                f"If Flexmls is right, set Status to match ({STAGE_WORDS.get(says, says)}).", f"Deals sheet and {m.get('source') or 'Flexmls'}")
+    # 6. offers past their deadline
+    for t in ties:
+        if t["expired_offer"]:
+            add("offer", t["key"], t["deal"], "The offer is past its deadline, so it is out of the open count.",
+                "Confirm it: mark it expired or fell through on the Deals sheet, or write the new deadline in its note.", "Deals sheet")
+    return out
+
+
+def with_decisions(rows: list[dict], log: list[dict]) -> dict:
+    """The list split by Caleb's logged taps: still open, approved (his to change in the sheet), and set aside."""
+    last = {}
+    for e in log or []:
+        last[e.get("id")] = e
+    live = {r["id"] for r in rows}
+    return {"open": [r for r in rows if r["id"] not in last],
+            "approved": [{**r, "at": last[r["id"]].get("at")} for r in rows if last.get(r["id"], {}).get("action") == "approve"],
+            "dismissed": sum(1 for r in rows if last.get(r["id"], {}).get("action") == "dismiss"),
+            "resolved": sum(1 for i, e in last.items() if e.get("action") == "approve" and i not in live)}
