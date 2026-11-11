@@ -70,6 +70,9 @@ import push  # noqa: E402  (phone alerts)
 import cc_ask  # noqa: E402  (Ask Claude on every Command Center page)
 import bridge  # noqa: E402  (jobs out to Grok bot, result files back)
 import drafter  # noqa: E402  (Claude writes each draft from the template, in Caleb's voice)
+import links  # noqa: E402  (deals tied to people, the Fix list)
+import proof  # noqa: E402  (the weekly proof line)
+import learn  # noqa: E402  (the learning loop for the seller score and the call list)
 import insight  # noqa: E402  (the call list, the fuller contact card, the likely-seller score)
 import handoff  # noqa: E402  (texts and emails Caleb sends himself from the Text and Email buttons)
 STATIC = HERE / "static"
@@ -389,6 +392,11 @@ class State:
         self.self_alert = (not demo and platform.system() == "Darwin" and os.getenv("PIPELINE_SELF_ALERT", "on").strip().lower() != "off"
                            and bool(short_host(os.getenv("PIPELINE_LIVE_HOST", ""))) and short_host(os.getenv("PIPELINE_LIVE_HOST", "")) == short_host(socket.gethostname()))
         self._insight: tuple = (None, None)
+        # Local records only, on this Mac: Caleb's Fix list taps, the weekly proof rows, and the learning loop's folder.
+        local = send_log.parent if send_log else OUT
+        self.fix_log_path = local / ("demo-fix-log.json" if demo else "fix-log.json")
+        self.proof_path = local / ("demo-proof.json" if demo else "proof.json")
+        self.learn_dir = local / ("demo-learn" if demo else "learn")
         self.cc_dir = cc.demo_folder(FIXTURES / "cc", Path(tempfile.mkdtemp(prefix="pipeline-cc-"))) if demo else OUT / "cc"
 
     # ---- reads
@@ -419,6 +427,17 @@ class State:
         sent = {r.get("person_id") for r in self.send_log() if r.get("status") == "sent" and r.get("person_id")}
         p = cc.build(self.cc_dir, feed=self.feed() or {}, replied=sent)
         p["formula"] = insight.formula()  # the scoring rules in words, for the Sources page
+        try:  # deals tied to people, the Fix list, the proof line and the learning scorecard: never worth losing the page over
+            ins = self.insight()
+            fx_log = read_json(self.fix_log_path, [])
+            p["ties"], p["deal_counts"], p["checkins"] = ins["ties"], ins["deal_counts"], ins["checkins"]
+            p["fixes"] = links.with_decisions(ins["fixes"], fx_log if isinstance(fx_log, list) else [])
+            p["cap_note"] = links.cap_note(p.get("goals") or {})
+            gone = lambda k: (p["fresh"].get(k) or {}).get("state") == "missing"  # a read that never ran: its numbers are unknown, not 0
+            p["proof"] = {**proof.build(today(), None if gone("leads") else p["leads"], self.send_log(), self.bridge_log(), p["calendar"], None if gone("deals") else ins["ties"], read_json(self.proof_path.with_name(self.proof_path.name.replace("proof", "appointments")), [])), "monday": today().weekday() == 0}
+            p["learn"] = learn.scorecard(self.learn_dir, self.learn_events(p["calendar"], ins["ties"]), today())
+        except Exception as e:
+            p["round58_error"] = f"{type(e).__name__}: {e}"[:200]
         p["speed"] = insight.lead_cards(p["leads"])  # the New leads card on Home: no reply yet, newest first, a first text each
         return p
 
@@ -427,13 +446,86 @@ class State:
         feed = self.feed() or {}
         done = {r.get("person_id") for r in self.send_log() if r.get("status") == "sent" and str(r.get("at", "")).startswith(today().isoformat()) and r.get("person_id")}
         stamp = lambda n: (lambda p: p.stat().st_mtime_ns if p.exists() else 0)(self.cc_dir / f"{n}.json")
-        key = (feed.get("generated_at"), today().isoformat(), tuple(sorted(done)), stamp("deals"), stamp("sales"), stamp("leads"))
+        vstamp = (lambda p: p.stat().st_mtime_ns if p.exists() else 0)(self.learn_dir / "versions.json")
+        key = (feed.get("generated_at"), today().isoformat(), now().strftime("%H:%M")[:4], tuple(sorted(done)), stamp("deals"), stamp("sales"), stamp("leads"), vstamp)
         if self._insight[0] != key:
             raw = cc.load(self.cc_dir)
+            sales = cc._rows(raw.get("sales"))
+            cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(cc._rows(raw.get("deals"))), today(), now()), feed.get("deals") or [])
+            ties = links.tie(cards, feed)
+            over = links.overlay(ties, feed)
+            shown = links.apply_overlay(feed, over)  # a signed contract or a closing sets the stage Pipeline shows, never the sheet
+            weights = learn.current(self.learn_dir)
             leads = cc.attach_crm(cc._rows(raw.get("leads")), (feed.get("new_leads") or []) + (feed.get("touches_due") or []))
-            book = insight.Book(feed, cc.deal_rows(cc._rows(raw.get("deals"))), cc._rows(raw.get("sales")), [{**r, "origin": "email"} for r in leads], today())
-            self._insight = (key, {"book": book, "call10": insight.call10(feed, today(), done), "sellers": book.sellers(25)})
-        return self._insight[1]
+            book = insight.Book(shown, cc.deal_rows(cc._rows(raw.get("deals"))), sales, [{**r, "origin": "email"} for r in leads], today(), weights=weights["seller"])
+            self._insight = (key, {"book": book, "call10": insight.call10(shown, today(), done, weights=weights["call10"]), "sellers": book.sellers(25),
+                                   "call_pool": insight.call10(shown, today(), done, n=60, weights=weights["call10"])["rows"], "seller_pool": book.sellers(200),
+                                   "ties": ties, "overlay": over, "deal_counts": links.counts(ties), "board_contract": links.board_contract(ties),
+                                   "checkins": links.checkins(ties, sales, feed, today()), "fixes": links.fixes(feed, cards, ties, sales)})
+        return self._insight[1] or self.insight()  # a retrain cleared it between the two lines: build it again
+
+    # ---- the Fix list, Good call and Not useful, and the weekly learning. All of it stays in files on this Mac.
+    def fix_decide(self, fix_id: str, action: str) -> dict:
+        """Caleb's tap on one Fix list row: approve (his to change in the sheet) or dismiss. Logged, nothing else.
+        Pipeline never edits the sheets from here."""
+        if action not in ("approve", "dismiss", "reopen"):
+            raise CRMError("a fix is approved, set aside or reopened")
+        row = next((r for r in self.insight()["fixes"] if r["id"] == fix_id), None)
+        with self.lock:
+            log = read_json(self.fix_log_path, [])
+            log = log if isinstance(log, list) else []
+            if action == "reopen":
+                log = [e for e in log if e.get("id") != fix_id]
+            elif not row:
+                raise CRMError("that row is no longer on the Fix list")
+            else:
+                log.append({"at": now().isoformat(timespec="seconds"), "id": fix_id, "action": action, **{k: row[k] for k in ("kind", "ref", "what", "problem", "fix")}})
+            write_json(self.fix_log_path, log[-2000:])
+        return {"ok": True, "result": {"id": fix_id, "action": action}}
+
+    def feedback(self, which: str, person_id: str, verdict: str) -> dict:
+        try:
+            return {"ok": True, "result": learn.add_feedback(self.learn_dir, which, person_id, verdict, now())}
+        except ValueError as e:
+            raise CRMError(str(e))
+
+    def learn_events(self, calendar: list | None = None, ties: list | None = None) -> dict:
+        if calendar is None:
+            raw = cc.load(self.cc_dir)
+            calendar = cc.cal_events(cc._rows(raw.get("calendar")), ((raw.get("config") or {}).get("rows") or {}).get("coordinator_domains") or [])
+        kept = read_json(self.proof_path.with_name(self.proof_path.name.replace("proof", "appointments")), [])  # the calendar read only looks forward
+        return learn.events(self.feed() or {}, self.send_log(), self.bridge_log(), (kept if isinstance(kept, list) else []) + list(calendar),
+                            ties if ties is not None else self.insight()["ties"])
+
+    def learn_pass(self, at: datetime | None = None) -> dict:
+        """Log who was ranked this week, refresh what happened to everyone logged, keep last week's proof row, and on
+        Monday after 6 AM fit the weekly version. Local math on local files."""
+        at = at or now()
+        ins = self.insight()
+        added = learn.log_ranked(self.learn_dir, at.date(), ins["call_pool"], ins["seller_pool"])
+        ev = self.learn_events()
+        learn.outcome_log(self.learn_dir, ev, at.date())
+        version = learn.retrain(self.learn_dir, ev, at.date()) if learn.due(self.learn_dir, at) else None
+        if version:
+            self._insight = (None, None)
+        ap = self.proof_path.with_name(self.proof_path.name.replace("proof", "appointments"))
+        with self.lock:  # the calendar read only looks forward, so appointments that have happened are kept here
+            seen = read_json(ap, [])
+            write_json(ap, proof.past_appointments(seen if isinstance(seen, list) else [], self.cc_payload()["calendar"], at.date()))
+        p = self.cc_payload()
+        if "proof" in p:
+            with self.lock:
+                hist = read_json(self.proof_path, [])
+                write_json(self.proof_path, proof.keep(hist if isinstance(hist, list) else [], {k: v for k, v in p["proof"].items() if k != "monday"}))
+        return {"logged": added, "version": version}
+
+    def learn_loop(self, sleep=time.sleep) -> None:
+        while True:
+            try:
+                self.learn_pass()
+            except Exception:
+                pass
+            sleep(600)
 
     def lead_alert_pass(self, notify=None, text=None) -> dict:
         """Tell Caleb about each new lead once: a notification on this Mac and one iMessage to his own number
@@ -762,6 +854,8 @@ class State:
         problems = []
         try:  # a bad row in a read must never take the whole screen down
             ins = self.insight() if feed_ok else {}
+            if feed_ok:
+                feed = links.apply_overlay(feed, ins["overlay"])
         except Exception as e:
             ins = {"call10": {"rows": [], "considered": 0, "left_out": {}}, "sellers": []}
             problems.append({"level": "warn", "code": "insight_failed", "text": f"The call list and seller scores could not be worked out ({type(e).__name__}). The rest of the screen is fine."})
@@ -805,6 +899,7 @@ class State:
             "call10": ins["call10"] if feed_ok else {"rows": [], "considered": 0, "left_out": {}},
             "sellers": ins["sellers"] if feed_ok else [],
             "has_facts": "facts" in feed,
+            "deal_counts": ins.get("deal_counts"), "board_contract": ins.get("board_contract"), "checkins": ins.get("checkins") or [],
             "lead_alert": {"on": self.self_alert, "last": ((read_json(self.lead_alert_path, {}) or {}).get("log") or [None])[-1]},
             "text_queue": text_q if "_error" not in text_q else {},
             "email_queue": email_q if "_error" not in email_q else {},
@@ -1635,6 +1730,10 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.save_farms(body.get("farms", []))
             elif u.path == "/api/dismiss":
                 out = s.dismiss(body.get("id", ""))
+            elif u.path == "/api/fix":
+                out = s.fix_decide(str(body.get("id", "")), str(body.get("action", "")))
+            elif u.path == "/api/feedback":
+                out = s.feedback(str(body.get("list", "")), str(body.get("person_id", "")), str(body.get("verdict", "")))
             elif u.path == "/api/lead":
                 out = s.make_lead(body.get("name", ""), body.get("source", ""), body.get("phone", ""), body.get("email", ""), body.get("note", ""),
                                  body.get("next_action", ""))
@@ -1706,6 +1805,7 @@ def serve(state: State, port: int, open_browser: bool) -> None:
     threading.Thread(target=state.handoff_loop, daemon=True).start()
     threading.Thread(target=state.draft_loop, daemon=True).start()
     threading.Thread(target=state.lead_loop, daemon=True).start()
+    threading.Thread(target=state.learn_loop, daemon=True).start()
     url = f"http://127.0.0.1:{port}/"
     v = state.voice_info()
     print(f"Pipeline {'(demo) ' if state.demo else ''}on {url}  sender={state.sender}  crm python={getattr(state.crm, 'python', 'demo')}  "
@@ -2212,6 +2312,39 @@ def run_tests() -> int:
     import cc_sync
     check(cc_sync.due("leads", {"tried_at": (now() - timedelta(minutes=4, seconds=58)).isoformat()}, now(), False) and cc_sync.READS["leads"][0] == cc.PACE_MIN["leads"],
           "website leads are read on every 5 minute pass, even one that wakes a second early")
+    # fixes 5 to 8 and the learning loop
+    s6 = State(demo=True, send_log=tmp / "r6" / "send-log.json")
+    p6, st6 = s6.cc_payload(), s6.snapshot()
+    check("round58_error" not in p6 and all(k in p6 for k in ("ties", "deal_counts", "fixes", "cap_note", "proof", "learn")), "/api/cc carries the deal ties, the Fix list, the cap note, the proof line and the learning scorecard")
+    uc = sum(1 for d in p6["deals"] if d["stage"] == "contract")
+    check(uc > 0 and st6["deal_counts"]["contract"] == uc == len(st6["board_contract"]) and p6["deal_counts"] == st6["deal_counts"], "the Board's Under contract rows, the Deals page and the Dashboard count the same deals")
+    tied = next(b for b in st6["board_contract"] if b["person_id"])
+    row6 = next(r for r in st6["feed"]["people"] if r["person_id"] == tied["person_id"])
+    check(row6["stage"] == "under contract" and row6.get("sheet_stage") not in (None, "under contract"), "a person tied to a deal under contract shows as Under contract, with the sheet's own stage kept")
+    before = len(s6.crm.log)
+    f0 = p6["fixes"]["open"][0]
+    check(s6.fix_decide(f0["id"], "approve")["ok"] and [r["id"] for r in s6.cc_payload()["fixes"]["approved"]] == [f0["id"]] and read_json(s6.fix_log_path, [])[0]["problem"] == f0["problem"],
+          "approving a Fix list row logs it with the problem, and moves it to approved")
+    check(s6.fix_decide(f0["id"], "reopen")["ok"] and not s6.cc_payload()["fixes"]["approved"] and len(s6.crm.log) == before, "undo reopens it, and no tap on the Fix list ever reaches the CRM engine or a sheet")
+    try:
+        s6.fix_decide("nope", "approve"); check(False, "a row that is not on the list cannot be approved")
+    except CRMError:
+        check(True, "a row that is not on the list cannot be approved")
+    check(s6.feedback("call10", "247", "good")["ok"] and s6.cc_payload()["learn"]["log"]["good"] == 1, "Good call is logged for the learning loop")
+    try:
+        s6.feedback("call10", "247", "amazing"); check(False, "feedback takes good or not_useful only")
+    except CRMError:
+        check(True, "feedback takes good or not_useful only")
+    lp = s6.learn_pass(datetime(2026, 11, 9, 5, 0, tzinfo=CENTRAL))  # a Monday, before 6 AM
+    check(lp["logged"] > 10 and lp["version"] is None and (s6.learn_dir / "outcomes.json").exists() and len(read_json(s6.proof_path, [])) == 1, "a pass logs who was ranked, what happened to them and last week's proof row")
+    lp = s6.learn_pass(datetime(2026, 11, 9, 6, 5, tzinfo=CENTRAL))  # the same Monday, after 6 AM
+    check(lp["version"]["version"] == 1 and "Not enough outcomes yet" in lp["version"]["lists"]["seller"]["note"] and s6.learn_pass(datetime(2026, 11, 10, 9, 0, tzinfo=CENTRAL))["version"] is None,
+          "Monday after 6 AM writes one version for the week, which says the weights did not move for lack of outcomes")
+    check(str(s6.learn_dir).startswith(str(tmp)) and len(s6.crm.log) == before and not s6.send_log(), "the learning loop writes only its own folder on this Mac: nothing sent, nothing to the CRM")
+    r6 = urllib.request.Request(base + "/api/feedback", data=json.dumps({"list": "seller", "person_id": "503", "verdict": "not_useful"}).encode(), headers={"Content-Type": "application/json"})
+    check(json.loads(urllib.request.urlopen(r6).read())["ok"], "POST /api/feedback takes a Not useful tap")
+    r6 = urllib.request.Request(base + "/api/fix", data=json.dumps({"id": "nope", "action": "approve"}).encode(), headers={"Content-Type": "application/json"})
+    check(json.loads(urllib.request.urlopen(r6).read())["ok"] is False, "POST /api/fix refuses a row that is not on the list")
     check(ccp["demo"] and ccp["fresh"]["deals"]["state"] == "ok" and ccp["scorecard"]["pending"]["value"] > 0, "GET /api/cc in demo")
     req = urllib.request.Request(base + "/api/touch", data=json.dumps({"person_id": "118", "what": "test"}).encode(),
                                  headers={"Content-Type": "application/json"})

@@ -87,7 +87,7 @@ feed2 = {"people": [
     {"person_id": "22", "display": "Agent Amy", "stage": "", "type": "agent", "street": "9 Broker Row", "has_phone": True, "has_email": True},
     {"person_id": "23", "display": "New Neighbor", "stage": "nurture", "type": "", "street": "40 Tupelo Lane", "has_phone": True, "has_email": True}],
     "facts": {"20": {"fair_market_value": "310000", "source": "Referral 2019-05-01", "street": "12 Willow Bend", "zip": "70791", "household": ["Otis Owner"],
-                     "notes": [{"at": "2026-08-02", "note": "Expecting a baby in March, may need more room"}]},
+                     "notes": [{"at": "2026-08-02", "note": "Took a new job in Houston, relocating in March"}]},
               "22": {"street": "9 Broker Row"}, "23": {"street": "40 Tupelo Lane"}},
     "heat": {"hot": [], "warm": []}}
 sales = [{"close": "2018-06-10", "address": "12 Willow Bend Dr", "side": "Buyer", "price": 180000},
@@ -138,8 +138,29 @@ check(len(out) == I.MAX_ALERTS and I.new_lead_alerts(burst, stb)[0] == [], "a bu
 check(I.new_lead_alerts([], {"primed": True, "seen": [f"k{i}" for i in range(2500)]})[1]["seen"][-1] == "k2499", "remembered leads are trimmed oldest first")
 for t in ("works in real estate", "expecting a call back", "engaged with the inspector", "transferred the utilities", "more space on the lot"):
     check(not I.LIFE.search(t), f"not a life event: {t}")
-for t in ("expecting a baby in March", "got engaged last week", "retiring in the spring", "settling the estate", "they need more room"):
-    check(bool(I.LIFE.search(t)), f"a life event: {t}")
+# Changed 2026-11-11 with Caleb's fair housing rule: family and age words no longer score. Job, house and estate words do.
+for t in ("settling the estate", "took a new job in Houston", "relocating to Dallas in March", "inherited the house on Oak St"):
+    check(bool(I.life_note([{"at": "2026-10-01", "note": t}])), f"a job move or an estate scores: {t}")
+for t in ("expecting a baby in March", "got engaged last week", "retiring in the spring", "going through a divorce", "the kids moved away", "they need more room", "talking about downsizing",
+          "Needs more room for the new baby", "Moving closer to the grandkids", "Relocating to be near her mother", "Inherited from my late husband", "New job, and the twins start school", "moving closer to church", "Selling since I am 70"):
+    check(I.life_note([{"at": "2026-10-01", "note": t}]) is None, f"family, age, faith and household size never score, even beside a job move: {t}")
+fam = I.Book({"people": [{"person_id": "70", "display": "Fam Note", "street": "3 Elm St", "stage": "nurture"}],
+              "facts": {"70": {"street": "3 Elm St", "notes": [{"at": "2026-10-01", "note": "New baby in March and a divorce in the family"}]}}}, today=TODAY).card("70")["seller"]
+check(fam["score"] == 0 and fam["reasons"] == [], "a note about a baby or a divorce adds nothing and is never shown as a reason")
+exp = I.Book({"people": [{"person_id": "71", "display": "Tried Selling", "street": "8 Pine Rd", "stage": "nurture"}],
+              "market": {"rows": [{"type": "expired", "address": "8 Pine Rd", "date": "2026-10-20", "source": "Flexmls alert mail"}, {"type": "expired", "address": "9 Pine Rd", "date": "2026-10-21"}]}}, today=TODAY).card("71")["seller"]
+check(exp["score"] == 15 and exp["reasons"] == ["Their listing expired 2026-10-20"] and exp["sources"] == ["Flexmls alert mail"], "a Flexmls listing of theirs that expired scores, with its source")
+ann = I.Book({"people": [{"person_id": "72", "display": "Anni Versary", "street": "5 Oak St"}]}, [], [{"close": "2022-11-20", "address": "5 Oak St", "side": "Buyer", "price": 200000}], [], TODAY)
+sa = ann.card("72")["seller"]
+check(sa["fractions"]["anniversary"] == 1 and sa["score"] == 10 + 15 and next(p for p in sa["parts"] if p["key"] == "anniversary")["why"] == "Home anniversary 2026-11-20",
+      "a home anniversary within 30 days is marked, and adds nothing under the hand-set weights")
+w2 = {"years": 20, "equity": 0, "life": 20, "activity": 20, "past": 20, "anniversary": 20}
+check(I.Book({"people": [{"person_id": "72", "display": "Anni Versary", "street": "5 Oak St"}]}, [], [{"close": "2022-11-20", "address": "5 Oak St", "side": "Buyer", "price": 200000}], [], TODAY, weights=w2).card("72")["seller"]["score"] == round(20 / 3) + 20 + 20,
+      "learned weights rescale each part, the facts under them do not change")
+chw = {"person_id": "60", "display": "Wait Long", "phone": "+12255550160", "band": "warm", "owes_reply": True, "last_inbound": "2026-11-10",
+       "last_touch": "2026-09-28", "last_messages": ["2026-09-28: can we sell for up to $700k", "2026-11-10: any update"]}
+check(I.score_call(chw, [], TODAY, weights={"money": 20, "intent": 30, "waiting": 40, "cadence": 10})["points"] == {"money": 20, "intent": 20, "waiting": 38, "cadence": 7},
+      "the call list takes learned weights the same way")
 for t in ("does the home warranty plan transfer", "free consultation with an inspector", "our rates are fine, we use Acme lender", "I loved your platform", "act now before it sells"):
     check(I.skip_reason({"phone": "+12255550111", "last_messages": [t]}) == "", f"a real client is kept on the list: {t}")
 check(I.amounts("the seller wants $65,000 in repairs on the roof") == [] and I.amounts("we put $60k as the down payment, budget is $450k") == [(450000, True)], "a repair cost or a down payment is never read as a budget")

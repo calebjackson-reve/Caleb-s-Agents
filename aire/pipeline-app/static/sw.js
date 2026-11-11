@@ -4,7 +4,7 @@
 // changes this file, so every browser installs the new worker and the cache name moves on by itself.
 const BUILD = '__BUILD__';
 const SHELL = 'pipeline-shell-v4-sendlog.' + BUILD, DATA = 'pipeline-data-v1';
-const FILES = ['/', '/app.css', '/cc.css', '/ui.css', '/light.css', '/app.js', '/voice.js', '/map.js', '/mapviews.js', '/reach.js', '/stage.js', '/person.js', '/cc.js', '/cc-pages.js',
+const FILES = ['/', '/app.css', '/cc.css', '/ui.css', '/light.css', '/app.js', '/voice.js', '/map.js', '/mapviews.js', '/reach.js', '/fix.js', '/stage.js', '/person.js', '/cc.js', '/cc-pages.js',
   '/crm-pages.js', '/cc-score.js', '/cc-life.js', '/cc-today.js', '/cc-sources.js', '/favicon.svg', '/icon-192.png', '/manifest.webmanifest'];
 const READS = ['/api/cc', '/api/state', '/api/alerts'];
 

@@ -63,7 +63,7 @@
   R.callHTML = function () {
     const rows = R.rows(), c = (S.data && S.data.call10) || {}, out = Object.values(c.left_out || {}).reduce((a, b) => a + b, 0);
     const li = (r, i) => `<li><span class="c10-n">${i + 1}</span><button type="button" class="c10-who" onclick="Stage.open(${jsa(r.person_id)})"><b>${C.pname(r.display)}</b><small>${esc(r.reason)}</small></button>
-      <span class="row-acts"><button type="button" class="ra" onclick="openCompose(${jsa(r.person_id)})">Text</button><button type="button" class="ra" onclick="openGrok(${jsa(r.person_id)}, 'call')">Call</button></span></li>`;
+      <span class="row-acts"><button type="button" class="ra" onclick="openCompose(${jsa(r.person_id)})">Text</button><button type="button" class="ra" onclick="openGrok(${jsa(r.person_id)}, 'call')">Call</button>${Fix.fbHTML('call10', r.person_id)}</span></li>`;
     return `<section class="c10" aria-label="Call these 10 today"><div class="lt-row"><h2>Call these ${rows.length === 10 ? '10' : rows.length || '10'} today</h2>
         <button type="button" class="lt-link" onclick="go('sources')">How this is ranked</button></div>
       ${rows.length ? `<ol class="c10-list">${rows.map(li).join('')}</ol>` : '<p class="lt-quiet">Nobody with a valid phone is due right now.</p>'}

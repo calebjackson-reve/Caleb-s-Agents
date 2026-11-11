@@ -23,7 +23,7 @@ ctx.window = ctx;
 ctx.document = { querySelector: () => el(), querySelectorAll: () => [], getElementById: () => el(), addEventListener() {}, createElement: () => el(), activeElement: null, body: el(), documentElement: el() };
 vm.createContext(ctx);
 const dir = __dirname;
-for (const f of ['voice.js', 'app.js', 'cc.js', 'cc-pages.js', 'crm-pages.js', 'map.js', 'mapviews.js', 'reach.js', 'stage.js', 'person.js', 'cc-score.js', 'cc-life.js', 'cc-today.js', 'cc-sources.js'])
+for (const f of ['voice.js', 'app.js', 'cc.js', 'cc-pages.js', 'crm-pages.js', 'map.js', 'mapviews.js', 'reach.js', 'fix.js', 'stage.js', 'person.js', 'cc-score.js', 'cc-life.js', 'cc-today.js', 'cc-sources.js'])
   vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8'), ctx, { filename: f });
 ctx.__state = state; ctx.__cc = ccdata;
 const run = js => vm.runInContext(js, ctx);
@@ -301,7 +301,7 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
   const coolIn = f => (fs.readFileSync(path.join(dir, f), 'utf8').match(/#[0-9a-f]{6}\b/gi) || []).filter(c => { const h = hueOf(c); return h !== null && h >= 75 && h <= 290; });
   // The light look adds the seven stage colors (stage.js). Those and the older color code are the only cool colors anywhere.
   const STAGE_HEX = run('Stage.TABS.map(t => t[1].toLowerCase())');
-  const cool = ['ui.css', 'cc.css', 'map.js', 'mapviews.js', 'reach.js', 'stage.js', 'light.css'].flatMap(f => coolIn(f).filter(c => !PALETTE.includes(c.toLowerCase()) && !STAGE_HEX.includes(c.toLowerCase())).map(c => f + ' ' + c));
+  const cool = ['ui.css', 'cc.css', 'map.js', 'mapviews.js', 'reach.js', 'fix.js', 'stage.js', 'light.css'].flatMap(f => coolIn(f).filter(c => !PALETTE.includes(c.toLowerCase()) && !STAGE_HEX.includes(c.toLowerCase())).map(c => f + ' ' + c));
   check(!cool.length, 'no blue or green outside the color code, in the page styles or the map pins', cool.join(' '));
   const cssAll = ['ui.css', 'cc.css', 'app.css'].map(x => fs.readFileSync(path.join(dir, x), 'utf8')).join('\n');
   check(!/line-through/.test(cssAll), 'no strikethrough rule anywhere');
@@ -889,6 +889,81 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(/How the scores work/.test(st2) && ccdata.formula.seller.parts.every(p => so.includes(run(`esc(${JSON.stringify(p.rule)})`))) && /7\+ years scores 30/.test(st2) && /Call these 10 today/.test(st2),
     'the Sources page shows the likely-seller formula and the call list ranking, as the code has them');
   check(/New lead alert/.test(st2) && /to nobody else|Only the one Mac that sends/.test(st2), 'the Sources page says where the new lead alert goes');
+}
+
+// ---------------- Fixes 5 to 8 and the learning loop (2026-11-11)
+{
+  const fixjs = fs.readFileSync(path.join(dir, 'fix.js'), 'utf8'), txt = h => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  run('S.data = __state; CC.data = __cc; Stage.sellers = false; Stage.q = ""; S.q = ""');
+  const home = render('home'), at = k => home.indexOf(`aria-label="${k}"`);
+  check(at('Money first') > 0 && at('Money first') < at('New leads') && at('New leads') < at('Call these 10 today') && at('Call these 10 today') < home.indexOf('<h1>'),
+    'Home is money first: paydays and this week\'s deadlines, then new leads, then Call these 10, then everything else');
+  const mf = home.slice(at('Money first'), at('New leads')), pay = ccdata.closings || [], d7 = (ccdata.deadlines || {}).d7 || [];
+  check(/Paydays, next 30 days/.test(mf) && pay.slice(0, 4).every(r => mf.includes(run(`esc(${JSON.stringify(r.deal)})`))) && /Deadlines this week/.test(mf) && new RegExp(`class="mf-big">${d7.length}<`).test(mf),
+    'the money block lists each payday in 30 days and counts the deadlines in 7');
+  check(d7.length === 0 || /Inspection|Appraisal|Financing|Act of sale|Deadline/.test(mf), 'each deadline says what kind it is');
+  run('CC.data = Object.assign({}, __cc, { closings: [{ deal: "1 Blank Way", day: __cc.today, money: null }] })');
+  check(/unknown/.test(render('home').split('aria-label="New leads"')[0]) && /commission unknown/.test(render('home')), 'a payday with no commission on the sheet reads unknown, never $0');
+  run('CC.data = __cc');
+
+  const c10 = (state.call10 || {}).rows || [], call = home.slice(at('Call these 10 today'), home.indexOf('<h1>'));
+  check(c10.length > 0 && (call.match(/onclick="Fix\.feedback\('call10', [^)]*'good'\)"/g) || []).length === c10.length && (call.match(/'not_useful'\)"/g) || []).length === c10.length,
+    'every Call these 10 row has Good call and Not useful');
+  const sc = run(`(Reach.cards['503'] = { ok: true, facts: [], known: 0, total: 8, homeowner: true, seller: { score: 65, reasons: ['Owned 8 years'], sources: ['sales record'] } }, Person.moreHTML('503'))`);
+  check(/onclick="Fix\.feedback\('seller', [^)]*'good'\)"/.test(sc) && /Not useful/.test(sc) && /from the sales record/.test(txt(sc)), 'the seller card has the two buttons and marks each reason\'s source');
+  check(!/\/api\/(send|call|draft|touch|lead|note|stage|deal|relabel|dnc)\b/.test(fixjs) && (fixjs.match(/api\('\/api\/[a-z]+', \{/g) || []).join() === "api('/api/feedback', {,api('/api/fix', {",
+    'fix.js writes two things only, both local logs: a feedback tap and a Fix list tap');
+
+  // 5. deals tied to people, one set of counts
+  const dc = state.deal_counts, bc = state.board_contract || [];
+  run('Stage.sellers = false'); const board = render('people'), ucCol = board.slice(board.indexOf('aria-label="under contract"'), board.indexOf('aria-label="closed"'));
+  check(dc && bc.length === dc.contract && new RegExp(`<b>${dc.contract}</b>`).test(ucCol) && (ucCol.match(/<li>/g) || []).length === dc.contract, `the Board's Under contract column has ${dc.contract} rows, one per deal under contract`);
+  const dealsPg = render('deals');
+  check(new RegExp(`>${dc.open} open<`).test(dealsPg) && run('CC.openDeals().length') === dc.open, `the Deals page says ${dc.open} open, the same count`);
+  run(`CC.data = Object.assign({}, __cc, { deals: __cc.deals.concat([{ deal: '700 Fixture Rd', key: '700 fixture', status: 'Offer', stage: 'offer', side: 'Buyer', price: 1, commission: 1, differs: [], checklist: [], next: '', offer: { date: '2026-11-06', time: '5 PM', expired: true } }]),
+    ties: __cc.ties.concat([{ key: '700 fixture', deal: '700 Fixture Rd', stage: 'offer', expired_offer: true, people: [] }]) })`);
+  const dp2 = render('deals');
+  check(new RegExp(`>${dc.open} open<`).test(dp2), 'an offer past its deadline drops out of the open count and shows under Expired, confirm');
+  check(/Expired, confirm <span class="cc-count">1</.test(dp2) && dp2.indexOf('Expired, confirm') < dp2.indexOf('700 Fixture Rd') && run('CC.openDeals().length') === dc.open, 'the expired offer is still listed, under Expired, confirm');
+  check(/1 expired, confirm on the Fix list/.test(render('dash')), 'the Dashboard says how many offers expired');
+  run('CC.data = __cc');
+
+  // 6. the Fix list
+  const fx = ccdata.fixes, fp = render('fixes'), ft = txt(fp);
+  check(/Fix list/.test(ft) && fx.open.length > 0 && fx.open.slice(0, 5).every(r => fp.includes(run(`esc(${JSON.stringify(r.problem)})`)) && fp.includes(run(`esc(${JSON.stringify(r.fix)})`))),
+    'the Fix list shows each row\'s problem and suggested fix');
+  check((fp.match(/onclick="Fix\.decide\('[0-9a-f]{12}', 'approve'\)"/g) || []).length === Math.min(fx.open.length, (fp.match(/class="cc-row fx-row"/g) || []).length) && /Not a problem/.test(fp) && /never edits the sheets/.test(ft),
+    'each row has its own Approve, one tap at a time, and the page says the sheets are never edited');
+  const cn = ccdata.cap_note;
+  check(cn && ft.includes(`Cap from Goals: $${Number(cn.amount).toLocaleString()}`) && (!cn.differs || /\$20,000 plus the \$3,000 royalty/.test(ft)), 'the cap shows the Goals value, with a note when it is not $20,000 plus the $3,000 royalty');
+  check(!cn.differs || /\$20,000 plus the \$3,000 royalty/.test(txt(render('scorecard'))), 'the Scorecard carries the same cap note');
+  run(`CC.data = Object.assign({}, __cc, { fixes: { open: [], approved: [Object.assign({ at: '2026-11-11T09:00:00' }, __cc.fixes.open[0])], dismissed: 2, resolved: 1 } })`);
+  const fp2 = txt(render('fixes'));
+  check(/No row looks wrong right now/.test(fp2) && /Approved, yours to change in the sheet 1/.test(fp2) && /2 set aside as not a problem. 1 approved and since fixed/.test(fp2), 'approved rows wait in their own list, and the page counts what was set aside and fixed');
+  run('CC.data = __cc');
+
+  // 8. the weekly proof line
+  const pr = ccdata.proof;
+  run('CC.data = Object.assign({}, __cc, { proof: Object.assign({}, __cc.proof, { monday: true }) })'); const hm = render('home');
+  run('CC.data = Object.assign({}, __cc, { proof: Object.assign({}, __cc.proof, { monday: false }) })'); const ht = render('home'), so = render('sources');
+  run('CC.data = __cc');
+  check(/aria-label="Weekly proof"/.test(hm) && !/aria-label="Weekly proof"/.test(ht) && /aria-label="Weekly proof"/.test(so), 'the proof line is on Home on Mondays and on Sources every day');
+  const pt = txt(so.slice(so.indexOf('aria-label="Weekly proof"'), so.indexOf('How the scores work')));
+  check(['leads in', 'median first reply', 'texts sent', 'calls through Grok', 'appointments', 'deals from Pipeline', 'GCI tied to them'].every(k => pt.includes(k)), 'it has leads in, first reply, texts and calls, appointments, deals from Pipeline and GCI');
+  check(pr.first_reply.value != null || (/unknown/.test(pt) && pt.includes(pr.first_reply.why)), 'a first reply time with no record reads unknown with the reason');
+
+  // C. the learning scorecard
+  const L = ccdata.learn, lt = txt(so.slice(so.indexOf('What the scores learned')));
+  check(/What the scores learned/.test(lt) && L.current.seller.words.every(w => lt.includes(w)) && /Years owned counts \d+%/.test(lt), 'Sources shows the current weights in plain words');
+  check(/Of the top 25 last month: unknown\./.test(lt) || /Of the top \d+ a month ago: \d+ replied, \d+ set an appointment, \d+ listed\./.test(lt), 'it says how last month\'s top 25 did, or unknown with why');
+  check(/never inputs/.test(lt) && /kept on this Mac/.test(lt) && /tests worse than last week's is not used/.test(lt) && /Every Monday at 6 AM/.test(lt), 'it states the rules: no protected traits, local only, a worse version is not used, Monday 6 AM');
+  ctx.__learn2 = { changed: { seller: { activity: 2.5, past: -2.5 }, call10: {} }, versions: [{ version: 3, date: '2026-11-09', weights: {}, lists: {
+    seller: { rows: 60, yes: 9, old_auc: 0.61, new_auc: 0.58, used: false, note: "The new weights tested worse on the last 90 days (0.58 against 0.61), so last week's weights stay." },
+    call10: { rows: 4, yes: 0, used: false, note: 'Not enough outcomes yet.' } } }] };
+  run('CC.data = Object.assign({}, __cc, { learn: Object.assign({}, __cc.learn, __learn2) })');
+  const l2 = txt(render('sources'));
+  run('CC.data = __cc');
+  check(/activity up 2\.5, past down 2\.5/.test(l2) && /Kept the old weights/.test(l2) && /tested worse on the last 90 days/.test(l2) && /0\.61 before, 0\.58 after/.test(l2), 'a version that tested worse is shown as not used, with both test numbers and what changed');
 }
 
 console.log(`\n${fails} failure(s)`);

@@ -121,7 +121,7 @@
         ${tile('Drafts ready', n(dr), `Written texts and emails to read and send${owes ? ` · ${owes} replies to write are not counted` : ''}`, 'drafts', 'queue')}
         ${tile('Appointments, 7 days', n(sc.appts7.value), `${sc.appts7.invites ? `${sc.appts7.invites} invite${sc.appts7.invites === 1 ? '' : 's'} not accepted, not counted · ` : ''}${sc.appts7.goal ? `Goal ${sc.appts7.goal}` : 'Accepted showings, listing appts, clients'}`, 'calendar', 'calendar')}
         ${tile('Booked today', C.booked(wk.hours, wk.minutes), `${n(wk.events)} timed event${wk.events === 1 ? '' : 's'}. Work blocks and invites you have not accepted are left out.`, 'calendar', 'calendar')}
-        ${tile('Offers out', n(offers.length), offers.length ? `${offers.filter(r => C.offerExpired(r.offer)).length} past their deadline` : 'No open offers on the Deals sheet', 'deals', 'deals')}
+        ${tile('Offers out', n(offers.filter(r => !C.isExpired(r)).length), offers.some(C.isExpired) ? `${offers.filter(C.isExpired).length} expired, confirm on the Fix list` : offers.length ? 'None past their deadline' : 'No open offers on the Deals sheet', 'deals', 'deals')}
         ${tile('Commission to check', n(np), np ? 'Not processed at KW, or paid with no closed deal on the sheet' : 'Nothing waiting at KW', ['commission_mail', 'deals'], 'commission')}
       </div>
       <div class="cc-grid">
@@ -162,7 +162,10 @@
   };
   // The AIRE Deals sheet row for a street, or null. Every screen that names a deal's status, price or act of sale reads this.
   C.sheetDeal = t => { const k = C.dealKey(t); return ((C.data && C.data.deals) || []).find(r => (r.key || C.dealKey(r.deal)) === k) || null; };
-  C.openDeals = () => ((C.data && C.data.deals) || []).filter(r => !['closed', 'out'].includes(r.stage));
+  // An offer past its deadline is not open (links.py decides, so every screen agrees). A row the Mac has not tied yet
+  // falls back to its own deadline.
+  C.isExpired = r => { const t = ((C.data && C.data.ties) || []).find(x => x.key === r.key); return t ? !!t.expired_offer : r.stage === 'offer' && !!r.offer && !r.offer.superseded && C.offerExpired(r.offer); };
+  C.openDeals = () => ((C.data && C.data.deals) || []).filter(r => !['closed', 'out'].includes(r.stage) && !C.isExpired(r));
   // The one lead list (cc.merge_leads, test leads already out), within the last n days counting today.
   // Same rule as cc.in_lead_window: a lead with no date is in the 14 days, never in the 7.
   C.leadsIn = days => { const d = C.data; if (!d) return []; const since = addDays(d.today, 1 - days); return d.leads.filter(r => { const k = String(r.received || '').slice(0, 10); return /^\d{4}-\d{2}-\d{2}$/.test(k) ? k >= since : days >= 14; }); };
