@@ -44,7 +44,8 @@ HISTORY_HOUR = 6  # the day's Scorecard history row is written after 6 AM Centra
 READS = {
     "calendar": (15, "Google Calendar, primary, next 30 days"),
     "inbox": (10, "Gmail inbox, last 3 days"),
-    "leads": (10, "Gmail, Luxury Presence lead emails, last 14 days"),
+    # 4, not 5: the sync wakes every 5 minutes and a wake can land a second early, so 5 would skip every other one.
+    "leads": (4, "Gmail, Luxury Presence lead emails, last 14 days"),
     "deals": (30, "AIRE Deals sheet"),
     "commission_mail": (120, "Gmail, commission and CDA mail, last 120 days"),
     "bank_mail": (60, "Gmail, Chase alerts, last 30 days, read only"),

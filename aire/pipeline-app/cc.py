@@ -22,7 +22,7 @@ STALE_HOURS = {"deals": 6, "calendar": 2, "inbox": 1, "leads": 1, "commission_ma
                "news": 6, "market": 36, "life": 2, "workouts": 2}
 # Minutes between reads, the same as cc_sync.READS (cc_test checks they agree). A read is late (amber) once it is past
 # its next read plus GRACE_MIN (the sync wakes every 5 minutes, so up to two missed wakes are normal), and stale (red) at three missed reads or STALE_HOURS.
-PACE_MIN = {"calendar": 15, "inbox": 10, "leads": 10, "deals": 30, "commission_mail": 120, "bank_mail": 60, "news": 120,
+PACE_MIN = {"calendar": 15, "inbox": 10, "leads": 4, "deals": 30, "commission_mail": 120, "bank_mail": 60, "news": 120,
             "market": 720, "life": 15, "workouts": 15}
 GRACE_MIN = 15
 DATASETS = ["deals", "calendar", "inbox", "leads", "commission_mail", "bank_mail", "goals", "history", "news", "market",
