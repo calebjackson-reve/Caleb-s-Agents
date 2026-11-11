@@ -173,3 +173,98 @@ def outcome_log(folder: Path, ev: dict, today: date) -> list[dict]:
     return rows
 
 
+# ---------------- the model ----------------
+
+def fit(X: list[list[float]], y: list[int], l2: float = 1.0, steps: int = 600, lr: float = 0.5) -> list[float]:
+    """Logistic regression with an L2 penalty, by plain gradient descent. Returns the bias, then one number per input."""
+    n, k = len(X), len(X[0])
+    w = [0.0] * (k + 1)
+    for _ in range(steps):
+        g = [0.0] * (k + 1)
+        for xi, yi in zip(X, y):
+            z = w[0] + sum(a * b for a, b in zip(w[1:], xi))
+            e = 1 / (1 + math.exp(-max(-30, min(30, z)))) - yi
+            g[0] += e
+            for j in range(k):
+                g[j + 1] += e * xi[j]
+        w = [w[0] - lr * g[0] / n] + [w[j + 1] - lr * (g[j + 1] / n + l2 * w[j + 1] / n) for j in range(k)]
+    return w
+
+
+def as_weights(coef: list[float], names: list[str]) -> dict | None:
+    """Learned numbers as points that add to 100. A part that predicts no better than chance, or worse, gets 0."""
+    pos = [max(0.0, c) for c in coef]
+    return {k: round(100 * v / sum(pos), 1) for k, v in zip(names, pos)} if sum(pos) > 0 else None
+
+
+def blend(hand: dict, learned: dict, prev: dict, n: int) -> dict:
+    """Hand-set weights pulled toward the learned ones by how much data there is, never more than MAX_STEP points a
+    part from last week's. Every part moves by the same share of the way, so the total stays 100."""
+    a = min(1.0, n / FULL_TRUST)
+    want = {k: (1 - a) * hand[k] + a * learned.get(k, 0.0) for k in hand}
+    total = sum(want.values()) or 1.0
+    delta = {k: 100 * want[k] / total - prev[k] for k in hand}  # both add to 100, so the moves add to zero
+    f = min(1.0, MAX_STEP / max((abs(d) for d in delta.values()), default=0) if any(delta.values()) else 1.0)
+    return {k: round(max(0.0, prev[k] + f * delta[k]), 1) for k in hand}
+
+
+def auc(weights: dict, rows: list[dict]) -> float | None:
+    """How well a set of weights puts the yes rows above the no rows, 0.5 is chance. None without both kinds."""
+    scored = [(sum(weights.get(k, 0) * v for k, v in r["x"].items()), r["yes"]) for r in rows]
+    yes, no = [s for s, y in scored if y], [s for s, y in scored if not y]
+    if not yes or not no:
+        return None
+    return round(sum((a > b) + 0.5 * (a == b) for a in yes for b in no) / (len(yes) * len(no)), 3)
+
+
+def current(folder: Path) -> dict:
+    """The weights in use for each list: the newest version that was kept, else the hand-set ones."""
+    vs = _read(folder / "versions.json", [])
+    return dict(vs[-1]["weights"]) if vs else {k: dict(v) for k, v in HAND.items()}
+
+
+def due(folder: Path, now: datetime) -> bool:
+    """Once a week, from Monday 6 AM. A Mac that was asleep on Monday catches up the next time it is awake."""
+    vs = _read(folder / "versions.json", [])
+    return (now.weekday() > 0 or now.hour >= 6) and not any(v.get("week") == week_of(now.date()) for v in vs)
+
+
+def retrain(folder: Path, ev: dict, today: date) -> dict:
+    """One weekly version for both lists, saved whether or not anything changed, with why."""
+    vs = _read(folder / "versions.json", [])
+    prev = current(folder)
+    ranked = {(r["list"], r["person_id"], r["day"]): r for r in _lines(folder / "ranked.jsonl")}
+    labeled = [{**ranked[(o["list"], o["person_id"], o["day"])], "yes": o["yes"]} for o in outcome_log(folder, ev, today) if o["resolved"]]
+    version = {"version": len(vs) + 1, "date": today.isoformat(), "week": week_of(today), "weights": {}, "lists": {}}
+    for name, feats in FEATURES.items():
+        rows = [r for r in labeled if r["list"] == name]
+        yes = sum(1 for r in rows if r["yes"])
+        # The test set is the newest answers: people ranked 90 to 180 days ago, whose 90 days ended in the last 90. When
+        # there are enough older answers to learn from, the fit never sees the test set (a holdout). When there are
+        # not, it learns from everything and the test is marked as in-sample.
+        recent = [r for r in rows if _day(r["day"]) >= today - timedelta(days=HORIZON * 2)]
+        older = [r for r in rows if _day(r["day"]) < today - timedelta(days=HORIZON * 2)]
+        holdout = len(older) >= MIN_ROWS and sum(1 for r in older if r["yes"]) >= MIN_YES and len(recent) >= 10
+        train = older if holdout else rows
+        info = {"rows": len(rows), "yes": yes, "tested_on": len(recent), "holdout": holdout, "old_auc": auc(prev[name], recent), "new_auc": None, "used": False}
+        keep = dict(prev[name])
+        if len(rows) < MIN_ROWS or yes < MIN_YES:
+            info["note"] = f"Not enough outcomes yet: {len(rows)} of {MIN_ROWS} people with an answer, {yes} of {MIN_YES} with an appointment or listing. The weights did not change."
+        else:
+            learned = as_weights(fit([[r["x"].get(k, 0.0) for k in feats] for r in train], [int(r["yes"]) for r in train])[1:], feats)
+            if not learned:
+                info["note"] = "No part of the score predicted an appointment or a listing in these outcomes. The weights did not change."
+            else:
+                new = blend(HAND[name], learned, prev[name], len(train))
+                info["new_auc"] = auc(new, recent)
+                if info["old_auc"] is not None and info["new_auc"] is not None and info["new_auc"] < info["old_auc"]:
+                    info["note"] = f"The new weights tested worse on the last 90 days ({info['new_auc']} against {info['old_auc']}), so last week's weights stay."
+                else:
+                    keep, info["used"] = new, new != prev[name]
+                    info["note"] = ("New weights in use." if info["used"] else "The learned weights match last week's.") + ("" if holdout else " Tested on the same answers it learned from, since there are not enough older ones to hold any back yet.")
+        info["changes"] = {k: round(keep[k] - prev[name][k], 1) for k in feats if round(keep[k] - prev[name][k], 1)}
+        version["weights"][name], version["lists"][name] = keep, info
+    _write(folder / "versions.json", (vs + [version])[-104:])
+    return version
+
+
