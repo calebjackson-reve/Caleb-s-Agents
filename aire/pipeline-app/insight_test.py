@@ -73,7 +73,7 @@ feed = {"touches_due": [
 c10 = I.call10(feed, TODAY, done={"9"})
 ids = [r["person_id"] for r in c10["rows"]]
 check(ids == ["1", "8", "7", "2"], "ranked by money and intent first, then cadence: " + ",".join(ids))
-check(c10["rows"][0]["reason"] == "multifamily up to $700K, waiting 44 days", "the reason reads in a few words: " + c10["rows"][0]["reason"])
+check(c10["rows"][0]["reason"] == "multifamily up to $700K, waiting 44 days, since Sep 28", "the reason reads in a few words: " + c10["rows"][0]["reason"])
 check(c10["rows"][1]["reason"] == "live deal at 5 Live Oak Ct, $255K" and c10["rows"][3]["reason"] == "hot cadence, quiet 12 days", "a live deal and a plain cadence row say so")
 check(c10["left_out"] == {"spam or a pitch": 1, "vendor, agent or lender": 1, "no valid phone": 1, "Do Not Contact": 1, "already reached today": 1},
       "vendors, pitches, Do Not Contact, no phone and already reached are left out")
@@ -144,6 +144,16 @@ for t in ("does the home warranty plan transfer", "free consultation with an ins
     check(I.skip_reason({"phone": "+12255550111", "last_messages": [t]}) == "", f"a real client is kept on the list: {t}")
 check(I.amounts("the seller wants $65,000 in repairs on the roof") == [] and I.amounts("we put $60k as the down payment, budget is $450k") == [(450000, True)], "a repair cost or a down payment is never read as a budget")
 check(not I.lead_cards([{"threadId": "x", "received": "not-a-real-time-at-all", "due": {}}])[0]["timed"], "a lead whose time cannot be read gets no timer")
+
+# ---- the wait counts from their first unanswered message, not their newest one (Caleb, 2026-11-11)
+ch = {"person_id": "60", "display": "Wait Long", "phone": "+12255550160", "band": "warm", "owes_reply": True, "last_inbound": "2026-11-10", "last_outbound": "",
+      "last_touch": "2026-09-28", "last_messages": ["2026-09-24: hey", "2026-09-28: can we sell for up to $700k", "2026-11-10: any update"]}
+check(I.waiting_since(ch) == date(2026, 9, 28) and I.score_call(ch, [], TODAY)["reason"] == "selling up to $700K, waiting 44 days, since Sep 28",
+      "three texts with the middle one answered the same day: the wait starts Sep 28, not at the newest text")
+check(I.waiting_since({**ch, "last_outbound": "2026-11-01"}) == date(2026, 11, 10), "a text from Caleb after the old messages restarts the wait at their next one")
+check(I.waiting_since({**ch, "last_touch": ""}) == date(2026, 9, 24), "with no answer on record the wait goes back to their oldest text in the feed")
+check(I.waiting_since({**ch, "last_messages": []}) == date(2026, 11, 10) and I.waiting_since({**ch, "last_touch": "2026-11-11"}) == date(2026, 9, 24) and I.waiting_since({"owes_reply": True}) is None,
+      "no message dates falls back to their last text, a touch after their last text is not an answer to it, and no dates at all is unknown")
 
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")
 sys.exit(1 if fails else 0)

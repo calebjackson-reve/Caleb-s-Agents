@@ -212,6 +212,16 @@ def skip_reason(r: dict) -> str:
     return ""
 
 
+def waiting_since(r: dict) -> date | None:
+    """The day their wait began: the first message of theirs that Caleb has not answered. His last answer is the newer
+    of his last text and his last logged touch. A message on that same day counts as unanswered, since the feed has
+    days, not clock times. The feed carries their last three texts, so the wait can only be traced back that far."""
+    last = _day(r.get("last_inbound"))
+    answered = max((d for d in (_day(r.get("last_outbound")), _day(r.get("last_touch"))) if d and (not last or d <= last)), default=None)
+    days = sorted(d for d in (_day(str(m)[:10]) for m in r.get("last_messages") or []) if d and (not answered or d >= answered))
+    return days[0] if days else last
+
+
 def score_call(r: dict, deals: list[dict], today: date) -> dict:
     text = _text_of(r)
     found = amounts(text)
@@ -226,7 +236,7 @@ def score_call(r: dict, deals: list[dict], today: date) -> dict:
     intent = (TOPIC_PTS if topic or new_lead else 0) + (DEAL_PTS if talk else 0)
     waited = None
     if r.get("owes_reply"):
-        d = _day(r.get("last_inbound"))
+        d = waiting_since(r)
         waited = max(0, (today - d).days) if d else None
     waiting = min(WAIT_MAX, WAIT_BASE + (waited or 0) // 3) if r.get("owes_reply") else 0
     cadence = CADENCE_PTS.get(str(r.get("band") or "").lower(), 0)
@@ -242,7 +252,7 @@ def score_call(r: dict, deals: list[dict], today: date) -> dict:
     if new_lead and not topic and not top:
         parts.insert(0, "new lead" + (f", came in {str(r['received'])[:10]}" if r.get("received") else ""))
     if r.get("owes_reply"):
-        parts.append("waiting since today" if waited == 0 else f"waiting {waited} day{'' if waited == 1 else 's'}" if waited else "waiting on your reply")
+        parts.append("waiting since today" if waited == 0 else f"waiting {waited} day{'' if waited == 1 else 's'}, since {d.strftime('%b')} {d.day}" if waited else "waiting on your reply")
     if not parts:
         q = r.get("days_quiet")
         parts.append(f"{r.get('band') or 'no'} cadence" + (f", quiet {q} day{'' if q == 1 else 's'}" if q is not None else ", never logged"))
