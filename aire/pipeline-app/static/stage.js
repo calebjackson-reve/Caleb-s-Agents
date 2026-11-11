@@ -62,13 +62,24 @@
         ${g[s].length > MAXROWS ? `<p class="lt-quiet">${g[s].length - MAXROWS} more. Search to find them.</p>` : ''}</section>`).join('')}</div>
       ${off ? `<p class="lt-quiet">${off.toLocaleString()} ${off === 1 ? 'person has' : 'people have'} a stage in the CRM that is not one of these seven, or none at all, so ${off === 1 ? 'that person is' : 'they are'} not on the board. <button type="button" class="lt-link" onclick="go('touches')">Touches due</button> still lists everyone who is due.</p>` : ''}`;
   }
-  ST.find = v => { ST.q = v; const b = document.getElementById('ppl-body'); if (b) b.innerHTML = boardHTML(); };
+  // Likely sellers: the top 25 homeowners by score (insight.py on the Mac), highest first, each with its top two reasons.
+  function sellersHTML() {
+    const rows = (S.data && S.data.sellers) || [], q = key(ST.q), shown = rows.filter(r => !q || key(`${r.display} ${r.city}`).includes(q));
+    if (!rows.length) return '<p class="lt-quiet">Nobody scores above zero right now. A score needs a street address on the CRM sheet plus at least one reason.</p>';
+    return `<ol class="sel-list">${shown.map(r => `<li><b class="sel-score" title="Likely-seller score, of 100">${Number(r.score)}</b>
+        <button type="button" class="sel-who" onclick="Stage.open(${jsa(r.person_id)})"><b>${who(r)}</b><small>${[esc(r.city || ''), ...r.reasons.map(esc)].filter(Boolean).join('<i> · </i>')}</small></button>${acts({ ...(personRow(r.person_id) || {}), person_id: r.person_id })}</li>`).join('')}</ol>
+      <p class="lt-quiet">Top ${rows.length} by score, of 100. ${S.data.has_facts ? '' : 'Home value, notes and household are not in the feed on this Mac yet, so those parts score 0 for now. '}<button type="button" class="lt-link" onclick="go('sources')">How the score works</button></p>`;
+  }
+  const bodyHTML = () => (ST.sellers ? sellersHTML() : boardHTML());
+  ST.find = v => { ST.q = v; const b = document.getElementById('ppl-body'); if (b) b.innerHTML = bodyHTML(); };
+  ST.showSellers = on => { ST.sellers = !!on; render(); };
   function people() {
     const n = ST.people().length, c = (feed().counts || {}).contacts;
     return `<div class="cc-page cc-wide lt-page lt-people"><header class="lt-head"><div><h1>People</h1><p>Grouped by stage. Cadence (hot, warm, lukewarm, cold, ice-cold) lives on the row.</p></div>
         <div class="lt-meta"><span>${esc(today())}</span><span>${n.toLocaleString()} people here${c ? ` · ${Number(c).toLocaleString()} contacts in the CRM` : ''}</span></div></header>
       ${feedDown() ? noFeed() : `<label class="lt-find"><span class="sr">Find someone</span><input type="search" placeholder="Find someone" autocomplete="off" value="${esc(ST.q)}" oninput="Stage.find(this.value)"></label>
-      <div id="ppl-body">${boardHTML()}</div>`}${srcLine()}</div>`;
+      <div class="ppl-filters" role="group" aria-label="Filter"><button type="button" class="cc-filter" aria-pressed="${!ST.sellers}" onclick="Stage.showSellers(false)">Everyone by stage</button><button type="button" class="cc-filter" aria-pressed="${!!ST.sellers}" onclick="Stage.showSellers(true)">Likely sellers</button></div>
+      <div id="ppl-body">${bodyHTML()}</div>`}${srcLine()}</div>`;
   }
 
   // ---------------- Home: the Claude and Grok duet, people who need you, the market
@@ -100,7 +111,7 @@
     const grok = gw.slice(0, 4).map(({ id, j, row }) => item(j.job_type === 'call' ? `Call ${C.pname(row.display)}` : 'Hard draft',
       j.job_type === 'call' ? C.note(j.ask || grokText(j), [row.display], 'Details hidden') : `${j.state === 'draft_ready' ? 'Ready to read' : 'Being written'} for ${C.pname(row.display)}`, `openGrok(${jsa(id)}, '${j.job_type === 'call' ? 'call' : 'draft'}')`)).join('');
     const need = ST.people().filter(r => r.due), g = ST.groups(need), shown = ST.names.filter(s => g[s].length), off = need.filter(r => !ST.is(r.stage)).length;
-    return `<div class="cc-page cc-wide lt-page lt-home"><header class="lt-head"><div><h1>Good ${C.greet()}.</h1><p>${duet}</p></div><div class="lt-meta"><span>${esc(today())}</span></div></header>
+    return `<div class="cc-page cc-wide lt-page lt-home">${Reach.leadsHTML()}${feedDown() ? '' : Reach.callHTML()}<header class="lt-head"><div><h1>Good ${C.greet()}.</h1><p>${duet}</p></div><div class="lt-meta"><span>${esc(today())}</span></div></header>
       ${feedDown() ? '' : startHTML()}
       <div class="lt-duet"><section><span class="lt-eyebrow">Claude</span><h2>Everyday drafts</h2><ul class="lt-list">${claude}</ul>
           <p class="lt-links"><button type="button" class="lt-link" onclick="openBrief()">Open morning brief</button><button type="button" class="lt-link" onclick="go('queue')">All drafts${dr.length ? ' · ' + dr.length : ''}</button></p></section>
@@ -111,8 +122,8 @@
         ${off ? `<p class="lt-quiet">${off.toLocaleString()} more ${off === 1 ? 'is' : 'are'} due with a stage outside these seven, or none. <button type="button" class="lt-link" onclick="go('touches')">Touches due</button> lists them.</p>` : ''}</section>
       <section class="lt-market"><div><h2>The market</h2><ul class="lt-places">${ST.PLACES.map(p => `<li>${esc(p)}</li>`).join('')}</ul><p class="lt-links"><button type="button" class="lt-link" onclick="go('map')">Open map</button></p></div>
         <button type="button" class="lt-mini" onclick="go('map')" aria-label="Open map"><div id="mini-map"></div></button></section>
-      <nav class="lt-more" aria-label="More pages">${[['dash', 'Dashboard'], ['touches', 'Touches due'], ['tasks', 'Tasks'], ['queue', 'Drafts'], ['sent', 'Sent today'], ['grok', 'Grok calls'], ['ccleads', 'Leads'], ['hot', 'Hot'], ['warm', 'Warm'], ['deals', 'Deals'], ['deadlines', 'Deadlines'], ['calendar', 'Calendar'], ['commission', 'Commission'], ['bank', 'Bank'], ['sources', 'Sources']]
-        .map(([k, l]) => `<button type="button" class="lt-link" onclick="go('${k}')">${l}</button>`).join('')}</nav>${srcLine()}</div>`;
+      <nav class="lt-more" aria-label="More pages">${[['dash', 'Dashboard'], ['touches', 'Touches due'], ['tasks', 'Tasks'], ['queue', 'Drafts'], ['sent', 'Sent today'], ['grok', 'Grok calls'], ['ccleads', 'Leads'], ['sellers', 'Likely sellers'], ['hot', 'Hot'], ['warm', 'Warm'], ['deals', 'Deals'], ['deadlines', 'Deadlines'], ['calendar', 'Calendar'], ['commission', 'Commission'], ['bank', 'Bank'], ['sources', 'Sources']]
+        .map(([k, l]) => `<button type="button" class="lt-link" onclick="${k === 'sellers' ? "Stage.sellers = true; go('people')" : `go('${k}')`}">${l}</button>`).join('')}</nav>${srcLine()}</div>`;
   }
   // The small market preview: the same basemap and the same pins as the Map page, not interactive.
   function mountMini() {
