@@ -23,6 +23,7 @@ of `motion.css`.
 | Sticky scroll sequence with caption cards | `MotionKit.sequence.init()` | `.mk-sequence[data-sequence] > .mk-sequence-stick > .mk-sequence-frame[data-frame]` plus `.mk-sequence-caption[data-frame-caption="0"]` |
 | Pixel-dissolve button fill | `MotionKit.btnFill.init()` | `.mk-btn` with `.mk-btn-label` (two copies of the text) |
 | Marquee | `MotionKit.marquee.init()` | `.mk-marquee[data-marquee][data-speed="40"] > .mk-marquee-track` |
+| Fling: cards thrown by pointer speed plus scroll velocity | `MotionKit.fling.init({ el: '.band' })` | `[data-fling]` wrapper containing one or more hidden `.mk-fling-src` elements |
 | Loader with progress line and coordinates | `MotionKit.loader.play()` | `.mk-loader` block (see demo) |
 | Ink reveal on images | `MotionKit.ink.init()` | `.mk-ink > img + img[data-ink-over]` |
 | Pulsing accent square | automatic | `data-anim="fade-loop"` |

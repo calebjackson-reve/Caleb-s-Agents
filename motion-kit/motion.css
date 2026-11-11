@@ -167,6 +167,13 @@ html.mk-has-cursor [data-cursor="hidden"], html.mk-has-cursor [data-cursor="hidd
 /* --------------------------------------------------------------------------
    6. Marquee
    -------------------------------------------------------------------------- */
+/* Fling. The band clips its own clones so they never spill into the
+   sections above or below. Sources are hidden by the script, not by CSS,
+   so the markup still degrades to nothing when the script does not run. */
+[data-fling] { position: relative; overflow: hidden; }
+.mk-fling-clone { position: absolute; top: 0; left: 0; pointer-events: none; will-change: transform, opacity; }
+@media (prefers-reduced-motion: reduce) { .mk-fling-clone { display: none; } }
+
 .mk-marquee { overflow: hidden; width: 100%; }
 .mk-marquee-track { display: flex; width: max-content; will-change: transform; animation: mk-marquee var(--mk-marquee-duration, 30s) linear infinite; }
 .mk-marquee[data-direction="right"] .mk-marquee-track { animation-direction: reverse; }
