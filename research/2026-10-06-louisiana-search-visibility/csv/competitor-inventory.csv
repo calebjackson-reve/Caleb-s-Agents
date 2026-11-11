@@ -1,0 +1,33 @@
+id,name,entity_type,domain_or_profile,primary_market,discovered_via,evidence_label,deep_study,why_selected_or_deferred
+C01,Michelle LaFleur (Burns & Co. Real Estate),individual agent,burnsandco.com (source-reported),Baton Rouge / EBR,Q13 statewide benchmark search,source-reported (askdoss.com and leadingre.com snippets),yes,Reported top-producing individual agent in EBR 3 years running; benchmark for individual-agent authority
+C02,Trey Willard (The W Group Real Estate),team lead,zillow.com/profile/TreyWillard; thewgroup (domain not confirmed),Baton Rouge metro,Q10 seller search,source-reported (Zillow and Clever snippets),yes,Highest reported volume; strong Zillow profile; seller-intent query presence
+C03,Capital Homes Specialists (KW Red Stick Partners),team,redfin.com/real-estate-agents/capital-homes-specialists; realtrends profile,"BR, Central, Prairieville, Denham Springs",Q09/Q20 and ShowingTime notices,source-reported,yes,KW team covering adjacent markets incl. Central and Prairieville; shows KW internal competition
+C04,Robert Snowden (Ken Doss Realty),individual agent,activerain.com/blogs/snowdenhomes,Zachary,Q22,source-reported (ActiveRain),yes,Only Zachary agent with a sales-statistics blog surfaced; direct content competitor in core market
+C05,Julie Carlisle (Compass),individual agent,compass.com agent page (not confirmed),Zachary,Q06/Q22,source-reported (Ramsey),yes,41 years reported experience; Ramsey-listed; Zachary recommendation competitor
+C06,Parish & County Properties,brokerage,business.google.com/v/parish-county-properties/0565583920741806758,St. Francisville / West Feliciana,Q07,source-reported (GBP listing snippet),yes,Only St. Francisville brokerage whose GBP ranked in a recommendation query; local Maps benchmark
+C07,Hollier Real Estate (Gary Hollier; Ryan Wagley),brokerage,homes.theadvocate.com/agents/24459/gary-hollier.html,New Roads / False River,Q08/Q26,source-reported,yes,Dominant False River listing presence
+C08,Cynthia Smith Real Estate Group,brokerage/individual,homes.theadvocate.com (listings),Clinton / East Feliciana,Q11 AI-style prompt P09,source-reported,yes,Surfaced as the land/acreage answer for the Felicianas
+C09,homes.theadvocate.com (Baton Rouge Real Estate Guide),portal publisher,homes.theadvocate.com,Greater Baton Rouge,Q01-Q05 and most local queries,observed (URL appearances),yes,Currently owns Caleb's own branded result with stale brokerage; biggest third-party identity source
+C10,askdoss.com,informational substitute (identity unverified),askdoss.com,Louisiana statewide + BR,Q13/Q18/Q19/Q41,source-reported (titles only),yes,Publishes 2026 'best agents' and flood/closing-cost guides that take informational queries Caleb could own locally
+C11,Ginger Murray,individual agent,ramseysolutions.com/real-estate/us/la/zachary,Zachary,Q06,source-reported,no,Deferred: no owned site surfaced; study on Mac with Google local pack
+C12,Josh McKay,individual agent,ramseysolutions.com,Zachary/St. Francisville/BR,Q06/Q07/Q09,source-reported,no,Appears across three markets via Ramsey; study Ramsey profile later
+C13,David Landry,individual agent,ramseysolutions.com,Zachary/St. Francisville,Q06/Q07,source-reported,no,
+C14,Tyler LaBauve (NexaEdge Realty),individual agent,ramseysolutions.com,Zachary/St. Francisville,Q06/Q22,source-reported,no,
+C15,Sara Gummow (KW Red Stick Partners),individual agent,homes.theadvocate.com/agents/24587/sara-gummow.html,New Roads / False River,Q08/Q26,source-reported,no,
+C16,Stacie Greene (Greene Properties of Louisiana),individual/brokerage,homes.theadvocate.com,New Roads,Q08/Q26,source-reported,no,
+C17,Kensey Shaffer (Shaffer Realty),individual/brokerage,homes.theadvocate.com,St. Francisville + MS,Q25,source-reported,no,
+C18,Julie Ferris (RE/MAX Partners),individual agent,homes.theadvocate.com/agents/25463/julie-ferris.html,St. Francisville,Q25,source-reported,no,
+C19,Derek Washington (KW Red Stick),team lead,not found,BR / Ascension / Livingston,Q13,source-reported (askdoss.com),no,Reported 140+ transactions/yr; no owned site surfaced in this index
+C20,Laura Buck Smith (The Market Real Estate Co),individual agent,homes.theadvocate.com listings,BR metro,Q09,source-reported (Clever),no,Reported 353 recent sales; portal-only presence in this index
+C21,Danni Downing (1 Percent Lists Premier),individual agent (discount model),homes.theadvocate.com/agents/25921/danni-downing.html,BR,Q10/Q28,source-reported,no,Discount-fee competitor for seller intent
+C22,Pennant Real Estate,brokerage,not found (prospeo snippet),BR,Q28,source-reported,no,30-agent brokerage; top 3% claim unverified
+C23,Catherine Broussard (KW Acadiana),individual agent,not found,Lafayette (statewide benchmark),Q13,source-reported (askdoss.com),no,Statewide benchmark only; not a local competitor
+C24,Ramsey Solutions RamseyTrusted directory,portal publisher,ramseysolutions.com,all markets,Q06/Q07/Q09,observed (URL),no,Directory owning 'best agent' recommendation intent
+C25,HomeLight,portal publisher,homelight.com,all markets,Q09/Q10/Q24,observed (URL),no,Owns seller and 'top agents' intents
+C26,Redfin,portal publisher,redfin.com,all markets,most queries,observed (URL),no,Owns inventory queries
+C27,Zillow,portal publisher,zillow.com,all markets,Q02/Q37,observed (URL),no,Agent profiles and home values
+C28,Tomeka Williams (KW Premier Partners),individual agent,not found,West Feliciana,P09 AI-style prompt,source-reported,no,
+C29,Daryl May (RE/MAX Professional),individual agent,not found,East Feliciana land,P09,source-reported,no,
+C30,The Action Jackson Group (Birdeye page; unrelated business),entity-confusion risk,reviews.birdeye.com/the-action-jackson-group-169768084168139,unknown,branded control P14,source-reported,no,Not a competitor; name collision with the 'Action Jackson' positioning
+C31,Don Stern (ActiveRain blog),informational substitute (dated),activerain.com/blogs/donstern,Greater BR,Q12,source-reported,no,Historic GBRAR market reports; shows demand for local data content
+C32,Keller Williams Realty First Choice teams (S Williams and Associates; The Sandusky Group),teams at own brokerage,realtrends.com profiles,Prairieville / Ascension,Q20,source-reported,no,Internal brokerage competition at the GBP office address

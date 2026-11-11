@@ -1,0 +1,24 @@
+src_id,source,url_or_location,type,date_observed_ct,evidence_label,used_for,limitation
+S01,Gmail: Google Business Profile support 'Your Request to Google' case 6-2250000041763,mail thread 1a10f9a1e7210b4d,account notification,2026-10-06 00:05,observed,GBP verification date,
+S02,Gmail: 'Your Business Profile on Google is live',mail thread 1a10fa687b01ca45,account notification,2026-10-06 00:18,observed,GBP name; address; rating; review count; missing hours/phone; IDs,Public profile not fetched
+S03,Gmail: Caleb to seo@luxurypresence.com (2026-08-04 and 2026-10-06),mail thread 19fccf29c5391ba7,sent mail,2026-10-06,observed,Prior profile name and CID; GBP connection request to LP,
+S04,Gmail: LP weekly digest 'Helping calebjackson.org get discovered',mail thread 1a0eea2927a5c668,vendor notification,2026-09-29,observed,AI SEO and AI Blog activity; targeted pages,Links not followed (tracking host blocked)
+S05,Gmail: LP onboarding emails and calendar invites,threads 19f9058f0d8c3488; 19f95b3e6ca09354; calendar events,vendor,2026-07-21..08-03,observed,Timeline of site build,
+S06,Gmail: Google Workspace and Cloud billing failure notices,threads 1a0f8414e8392905; 1a0fd9bb68aa03ba; 1a0f7cd528c999af,account notification,2026-09-15..10-02,observed,Account-health risk flag,
+S07,Google Drive: bio.md and website-copy.md,file ids 175uESr7Z9nWxbZo69LY5ilZdU3ak8ha5; 15FuR2rGsiyXoNzAf8gtbx1NoEZu3x-Mr,owned brand docs,2026-07-24,observed,Canonical voice; phone; handle (@calebjackson_24),Dated July 2026
+S08,Google Drive: Caleb-Jackson-Brand-Package.pdf,file id 1EgwpoxFYLsGUlUDrjyiqLg3wr9X0sUOJ,owned brand doc,2026-07-24,observed,Brand palette and type; KW First Choice,
+S09,Metricool brand settings and analytics,brand 7076779,connector export,2026-10-06 11:05,observed,GBP IDs; IG handle calebjacksonla; GBP and IG metrics,GBP metrics missing Aug-Oct
+S10,WebSearch tool results (42 benchmark queries; 18 AI-style runs),csv/serp-benchmark.csv; csv/ai-run-log.csv,search tool index,2026-10-06,observed (tool) / source-reported (snippets),Competitor discovery; visibility sampling,Not Google; no location; snippets not page reviews
+S11,Google Search Central 'AI features and your website',https://developers.google.com/search/docs/appearance/ai-features,official doc,2026-10-06,source-reported (snippet: indexed + snippet-eligible; no additional requirements),AI feature guidance,Page not fetched
+S12,Google local ranking guidance,https://support.google.com/business/answer/7091,official doc,2026-10-06,not read (blocked),relevance/distance/prominence framing,Starting point only
+S13,Google business guidelines (practitioners),https://support.google.com/business/answer/3038177,official doc,2026-10-06,source-reported via third-party summaries,GBP naming decision,Must verify on Mac before changing name
+S14,Google Ads promotional offer pages,https://support.google.com/google-ads/answer/16915411; /6388096,official doc,2026-10-06,source-reported (snippets),Offer classification,Not fetched
+S15,Google personalized advertising policy for housing,https://support.google.com/adspolicy/answer/16701755 and blog.google announcement,official doc,2026-10-06,source-reported,Paused campaign targeting rules,Not fetched
+S16,Meta Special Ad Category docs,https://developers.facebook.com/documentation/ads-commerce/marketing-api/audiences/special-ad-category,official doc,2026-10-06,source-reported,Housing ad limits,Not fetched
+S17,OpenAI crawler documentation,https://developers.openai.com/api/docs/bots; help.openai.com/en/articles/12627856,official doc,2026-10-06,source-reported via third parties,Crawler roles,Not fetched
+S18,Google review snippet guidelines,https://developers.google.com/search/docs/appearance/structured-data/review-snippet,official doc,2026-10-06,source-reported,Self-serving reviews ineligible,Not fetched
+S19,LREC advertising rules (LAC 46:LXVII Chapter 25),https://lrec.gov/enforcement/advertising-guidelines; state-rules.com mirror,official rule,2026-10-06,source-reported (snippet of rule text),Broker name and phone requirements,Not fetched from lrec.gov
+S20,LP training articles (AI SEO Specialist; AI Blog Specialist; Updating Metadata; Tracking IDs),training.luxurypresence.com/blog/...,vendor doc,2026-10-06,source-reported,Capabilities,Not fetched
+S21,John Mueller / Google on llms.txt (2026),multiple trade press,press,2026-10-06,source-reported,Speculative tactic label,Secondary sources
+S22,Google-Extended documentation summaries,ppc.land; bump.it.com,secondary,2026-10-06,source-reported,Training vs Search control distinction,Secondary
+S23,Host reachability test,raw/host-reachability-2026-10-06.txt,observed,2026-10-06 10:52,observed,Coverage table,

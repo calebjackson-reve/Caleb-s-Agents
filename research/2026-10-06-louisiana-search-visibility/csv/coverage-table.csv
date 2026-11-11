@@ -1,0 +1,31 @@
+item,requested,completed,status,reason_or_limit
+Local authority files on Mac,yes,no,unavailable,Not present in cloud container
+Access matrix,yes,yes,complete,
+Baseline table with unknowns,yes,yes,complete (mostly UNKNOWN),No GSC/GA4/LP access
+GBP go-live date,yes,yes,complete,Gmail evidence 2026-10-06 00:05 CT
+LP backend entitlement inventory,yes,partial,partial,Only email-evidenced features (AI SEO; AI Blog; CRM smart actions); plan tier unknown
+Public site crawl and URL inventory,yes,no,unavailable,calebjackson.org blocked by network policy
+Key page and template inspection,yes,no,unavailable,same
+IDX sample,yes,no,unavailable,same
+Core Web Vitals,yes,no,unavailable,PageSpeed and CrUX hosts blocked; field data unknown
+Structured data inspection,yes,no,unavailable,same
+URL-level remediation table,yes,yes (hypothesis-level),partial,Rows built from evidence available; each needs on-site verification
+GBP identity audit,yes,partial,partial,Fields from Google email and Metricool; public page and Maps grid not observed
+Citation/identity map,yes,partial,partial,theadvocate.com observed via snippet; Zillow/Realtor.com/Homes.com/Facebook pages not fetched
+Maps visibility test at real locations,yes,no,unavailable,Google blocked; no location control
+Competitor inventory (20+),yes,yes (32),complete,All source-reported from snippets
+Deep battlecards (10),yes,yes (10),complete (snippet-level),No competitor page was fetched; 2-3 URLs per competitor listed as leads
+Ads Transparency / Meta Ad Library checks,yes,no,unavailable,Hosts blocked
+Keyword library (60+),yes,yes (65),complete,Demand not sourced (no licensed tool)
+Benchmark queries (30+),yes,yes (42),complete (tool index),Not Google SERP
+90-day backlog and 10 briefs,yes,yes,complete,
+AI prompt library (24+),yes,yes (28),complete,
+AI first pass (12 prompts per accessible surface),yes,yes on 1 surface (14 prompts + 4 repeats),partial,Only WebSearch-backed Claude run; 5 platforms inaccessible
+Crawler access check (robots; CDN),yes,no,unavailable,Site blocked
+Offers table,yes,yes,complete,Terms from snippets; not fetched
+Paused campaign package,yes,yes (conditional),complete,Not recommended for activation
+Strategy and roadmap,yes,yes,complete,
+Exact change drafts,yes,yes,complete,Facts awaiting confirmation marked
+Source register and approvals,yes,yes,complete,
+Project record update,yes,partial,partial,Original record on Mac inaccessible; addendum file provided for appending
+Machine-checkable completeness proof,yes,yes,complete,verify.sh

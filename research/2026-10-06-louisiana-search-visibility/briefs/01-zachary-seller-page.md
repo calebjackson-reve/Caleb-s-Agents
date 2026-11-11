@@ -1,0 +1,13 @@
+# Brief 01: Selling a Home in Zachary (seller landing page)
+- Target intent: transactional seller; queries K05 "sell my house Zachary LA", K06 "listing agent Zachary Louisiana", K07 "how much is my house worth Zachary LA".
+- Proposed URL / title / H1: `/sell-zachary` · "Sell Your House in Zachary, LA | Caleb Jackson, REALTOR" · "Selling a home in Zachary".
+- Reader's question: who should I trust to sell my Zachary house, what will it sell for, and what will I net?
+- Evidence-led answer: how Zachary homes are priced (GBRAR data for Zachary, last 90 days, with sample size and date), what moves a sale (pricing, photography, access, negotiation), what sellers net (link to net sheet), and how Caleb works (same-day callback, direct accountability).
+- Caleb's distinct contribution: first-hand Zachary knowledge by subdivision (Copper Mill, Americana, Beaver Creek, Fennwood and others, to be written by Caleb), listing history in Zachary (portal-observed; cite only permissioned examples), the net sheet tool.
+- Sources and cadence: GBRAR monthly stats (update monthly); EBR assessor for tax notes; no national rate claims.
+- Sections: Why Zachary sells differently · What your home is worth (CMA offer) · What you will net (tool) · How the sale runs week by week · Who you deal with (Caleb, not a team) · Questions sellers ask (FAQ) · Next step.
+- FAQs: How long do Zachary homes take to sell right now? What repairs matter? Do I need to be out before listing? How is your fee structured? (answer per brokerage policy; no fixed-rate claims).
+- Visuals: one map of Zachary subdivisions, one net sheet screenshot with sample numbers.
+- Internal links: Home Valuation, Seller Net Sheet, Zachary market note, About.
+- Next action: "Get your Zachary pricing read" (consult request form, GA4 event).
+- Approval: Caleb confirms all local facts and omits anything unproven.

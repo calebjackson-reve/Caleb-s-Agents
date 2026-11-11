@@ -1,0 +1,29 @@
+prompt_id,prompt_text,intent,branded,geo,priority,status_2026_10_06
+P01,"Who should I consider to help sell a home in Zachary, Louisiana, and what evidence should I compare?",recommendation/seller,no,Zachary,high,run x2 (WebSearch-backed Claude)
+P02,"Which real estate agents serve St. Francisville and West Feliciana Parish?",recommendation,no,St. Francisville,high,run x2
+P03,"Who can help me compare buying a home in Baton Rouge versus New Roads, Louisiana?",relocation/compare,no,BR/New Roads,high,run x1
+P04,"How can I estimate a home's full monthly ownership cost in East Baton Rouge Parish?",ownership cost,no,EBR,high,run x1
+P05,"What does FEMA Zone X tell me, and what does it not tell me, before buying near Baton Rouge?",flood,no,BR,high,run x1
+P06,"What costs can affect a Louisiana seller's estimated net proceeds?",seller,no,statewide,high,run x1
+P07,"How should I compare Louisiana real estate agents for my specific buying or selling needs?",recommendation/informational,no,statewide,high,run x1
+P08,"Which realtors in Baton Rouge are recommended for first-time sellers?",recommendation/seller,no,Baton Rouge,high,run x2
+P09,"Who are good real estate agents for buying land or acreage in the Felicianas, Louisiana?",recommendation/land,no,Felicianas,high,run x2
+P10,"I'm relocating to Baton Rouge for work. Which suburbs should I compare and who can help me?",relocation,no,BR metro,medium,run x1
+P11,"What should a seller in St. Francisville, Louisiana know about pricing a home in a small market?",seller/market,no,St. Francisville,medium,run x1
+P12,"Is a home on False River in New Roads a good buy and what should I check first?",buyer/property-specific,no,New Roads,medium,run x1
+P13,"What can you verify about Caleb Jackson's current brokerage and service area in Louisiana?",branded control,yes,Louisiana,high,run x1
+P14,"Caleb Jackson Action Jackson realtor Louisiana",branded control,yes,Louisiana,high,run x1
+P15,"Which real estate agents in Zachary, Louisiana have the best reviews?",recommendation,no,Zachary,medium,not run
+P16,"How do I find a listing agent in New Roads, Louisiana?",recommendation/seller,no,New Roads,medium,not run
+P17,"What should I check before buying a home with acreage in East Feliciana Parish?",buyer/land,no,East Feliciana,medium,not run
+P18,"What is the difference between shaded and unshaded Zone X on a FEMA map in Louisiana?",flood,no,statewide,medium,not run
+P19,"How much does the Louisiana homestead exemption reduce a monthly mortgage payment?",ownership cost,no,statewide,medium,not run
+P20,"What are the steps to sell a house in Louisiana and what does the notary do?",seller,no,statewide,medium,not run
+P21,"Is Zachary or Central, Louisiana better for a family commuting to Baton Rouge?",relocation,no,Zachary/Central,medium,not run (steering-sensitive; answer with facts only)
+P22,"What questions should I ask a Louisiana real estate agent before signing a buyer broker agreement?",informational,no,statewide,medium,not run
+P23,"Which Baton Rouge neighborhoods have historic district renovation rules?",neighborhood,no,BR,low,not run
+P24,"What is a seller net sheet and who can prepare one for a home in Baton Rouge?",seller/tool,no,BR,medium,not run
+P25,"Who is a good real estate agent for relocating to the St. Francisville area?",recommendation/relocation,no,St. Francisville,medium,not run
+P26,"How are Louisiana homeowners insurance costs affecting home buying in Baton Rouge in 2026?",ownership cost,no,BR,low,not run
+P27,"What does a Louisiana real estate agent's Google Business Profile tell me about them?",informational,no,statewide,low,not run
+P28,"Is Caleb Jackson with Keller Williams First Choice a real estate agent in Baton Rouge?",branded control,yes,BR,high,not run

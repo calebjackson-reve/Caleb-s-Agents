@@ -1,0 +1,12 @@
+# Brief 07: New Roads and False River buyer guide
+- Target intent: buyer consideration; K21, K28, K29; prompt P12.
+- Proposed URL / title / H1: `/false-river-homes-guide` · "Buying on False River: What to Check First" · "Buying on False River".
+- Reader's question: is a False River home a good buy and what do I check?
+- Evidence-led answer: water-level management and historic highs/lows (cite the Louisiana DNR False River project reports), 2016 and 2019 high-water events (press, dated), bulkheads and piers (inspection items), flood designations and insurance, access and deep-water lots, HOA or condo rules on Island Road, New Roads vs Ventress vs Jarreau.
+- Caleb's contribution: showing checklist; what to ask the seller; clean-up of the AI-published "waterfront median" post (fact-check or redirect here).
+- Sources and cadence: DNR, FEMA, Pointe Coupee assessor; update yearly or after an event.
+- Sections: The lake and its levels · Events to know · The checklist · Insurance and lending · Areas · FAQ.
+- FAQs: Do I need flood insurance on False River? What is a deep-water lot? Who maintains the bulkhead?
+- Visuals: one water-level history table from DNR.
+- Internal links: Home Search New Roads, Flood-Zone Check, True Payment Calculator.
+- Next action: buyer consult.

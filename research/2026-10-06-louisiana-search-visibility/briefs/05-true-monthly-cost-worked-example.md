@@ -1,0 +1,12 @@
+# Brief 05: True monthly cost of a $300k home in Zachary vs Baton Rouge vs Prairieville
+- Target intent: buyer consideration; K53, K54, K56, K57; prompt P04.
+- Proposed URL / title / H1: `/true-monthly-cost-zachary-baton-rouge` · "What a $300k Home Really Costs Each Month: Zachary vs Baton Rouge vs Prairieville" · "What a home really costs each month".
+- Reader's question: beyond principal and interest, what will I pay monthly, and does it differ by parish?
+- Evidence-led answer: three worked examples using the True Payment Calculator with every input shown: price, down payment, rate (state the date and source; do not present as a forecast), millage by parish (assessor), homestead exemption, insurance range with source date, flood premium if applicable, HOA.
+- Caleb's contribution: the calculator; the inputs most buyers get wrong.
+- Sources and cadence: parish assessors, Louisiana Department of Insurance, NFIP; update quarterly.
+- Sections: The inputs · Zachary example · Baton Rouge example · Prairieville example · What changes the number most · Run yours · FAQ.
+- FAQs: How much does homestead save? Why is insurance so different between quotes? Is flood insurance required?
+- Visuals: one comparison table.
+- Internal links: True Payment Calculator, Flood explainer, relocation guide.
+- Next action: run the calculator; buyer consult.

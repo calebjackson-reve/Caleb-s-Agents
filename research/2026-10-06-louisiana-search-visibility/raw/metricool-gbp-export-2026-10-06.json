@@ -1,0 +1,27 @@
+{
+  "source": "Metricool connector (brand 7076779, 'Caleb Jackson- Realtor'), GBP location accounts/114406085409279647383/locations/7744506514819131081",
+  "pulled_at_utc": "2026-10-06T16:30Z",
+  "timezone": "America/Chicago",
+  "note": "Metricool joined 2026-09-24. Values before that date are backfilled from Google's GBP performance API through the connector. Google delays GBP performance data by several days. All-zero rows for Aug 11-Oct 5 most likely reflect the profile being in an unverified/inaccessible state (see Gmail 2026-08-04 'no locations found'), not a true zero. Treat as UNKNOWN for that window.",
+  "window_latest_28d": {"from": "2026-09-08", "to": "2026-10-05", "reachSearch": 0, "reachMaps": 0, "websiteClicks": 0, "callClicks": 0, "directionsClicks": 0, "messages": 0, "reviewsCount": 0, "photoViews": 0, "postsCount": 0, "interpretation": "no data returned; treat as UNKNOWN"},
+  "window_previous_28d": {"from": "2026-08-11", "to": "2026-09-07", "all_metrics": 0, "interpretation": "no data returned; treat as UNKNOWN"},
+  "window_90d_daily_nonzero": {
+    "from": "2026-07-08", "to": "2026-10-05",
+    "days_with_data": "2026-07-08 through 2026-07-30 only",
+    "reachSearch_sum_jul8_jul30": 49,
+    "reachMaps_sum_jul8_jul30": 15,
+    "websiteClicks_sum_jul8_jul30": 2,
+    "callClicks": 0, "directionsClicks": 0,
+    "daily": [
+      ["2026-07-08",3,2,0],["2026-07-09",5,2,1],["2026-07-11",2,0,0],["2026-07-12",1,1,0],["2026-07-13",1,3,0],["2026-07-14",0,1,0],["2026-07-15",1,0,0],["2026-07-16",1,1,0],["2026-07-19",3,0,0],["2026-07-20",4,1,0],["2026-07-22",5,2,0],["2026-07-23",4,0,0],["2026-07-24",4,1,0],["2026-07-25",3,1,0],["2026-07-26",4,0,0],["2026-07-27",2,0,1],["2026-07-29",3,0,0],["2026-07-30",3,0,0]
+    ],
+    "daily_columns": ["date","reachSearch","reachMaps","websiteClicks"],
+    "reach_distribution_window": {"BUSINESS_IMPRESSIONS_SEARCH": 0.7656, "BUSINESS_IMPRESSIONS_MAPS": 0.2344},
+    "keywords_returned": "none"
+  },
+  "media_and_reviews_12mo": {
+    "photos": [{"date":"2026-03-10","count":5},{"date":"2026-08-04","count":3}],
+    "posts": "none returned",
+    "reviews_rows": "none returned by connector; Google 'profile is live' email 2026-10-06 shows 1 review, 5.0 rating"
+  }
+}

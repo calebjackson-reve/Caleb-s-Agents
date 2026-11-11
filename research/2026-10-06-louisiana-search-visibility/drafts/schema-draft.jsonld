@@ -1,0 +1,36 @@
+{
+  "@context": "https://schema.org",
+  "@type": ["Person", "RealEstateAgent"],
+  "@id": "https://calebjackson.org/#caleb-jackson",
+  "name": "Caleb Jackson",
+  "jobTitle": "REALTOR",
+  "url": "https://calebjackson.org/",
+  "telephone": "+1-225-747-0303",
+  "image": "https://calebjackson.org/[CONFIRM headshot path]",
+  "worksFor": {
+    "@type": "Organization",
+    "name": "Keller Williams First Choice",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "17111 Commerce Centre Drive",
+      "addressLocality": "Prairieville",
+      "addressRegion": "LA",
+      "postalCode": "70769",
+      "addressCountry": "US"
+    }
+  },
+  "areaServed": [
+    {"@type": "City", "name": "Zachary, LA"},
+    {"@type": "City", "name": "Baton Rouge, LA"},
+    {"@type": "City", "name": "St. Francisville, LA"},
+    {"@type": "City", "name": "New Roads, LA"},
+    {"@type": "AdministrativeArea", "name": "East Feliciana Parish, LA"},
+    {"@type": "AdministrativeArea", "name": "West Feliciana Parish, LA"}
+  ],
+  "sameAs": [
+    "https://www.google.com/maps/place/?cid=17113183507740077585",
+    "https://www.instagram.com/[CONFIRM handle]",
+    "https://www.facebook.com/[CONFIRM page]",
+    "https://www.youtube.com/channel/UCdy7yq7pWHz93dba4wlqs3w"
+  ]
+}

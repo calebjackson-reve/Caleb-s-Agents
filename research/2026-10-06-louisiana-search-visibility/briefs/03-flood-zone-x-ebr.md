@@ -1,0 +1,12 @@
+# Brief 03: FEMA Zone X in East Baton Rouge: what it means and misses
+- Target intent: buyer consideration; K48, K49, K50, K51; AI prompt P05.
+- Proposed URL / title / H1: `/flood-zone-x-east-baton-rouge` · "FEMA Zone X in East Baton Rouge: What It Means and Misses" · "What FEMA Zone X tells you, and what it does not".
+- Reader's question: the listing says Zone X; am I safe, and do I need flood insurance?
+- Evidence-led answer: definitions (SFHA, AE, shaded vs unshaded X) from FEMA; what the 2016 event showed in East Baton Rouge (cite official after-action or parish sources with figures and dates, not blog numbers); lender requirements vs optional coverage; how to check the FEMA Map Service Center, the parish's flood history disclosures and elevation certificates; what a map cannot show (drainage, ponding, map vintage).
+- Caleb's contribution: the flood-zone check tool; a checklist he uses on showings; no safety guarantees.
+- Sources and cadence: FEMA MSC, NFIP, East Baton Rouge Parish, LSU AgCenter; update when maps change.
+- Sections: What the zones mean · What Zone X does not tell you · 2016 in East Baton Rouge · How to check a specific address · Insurance realities · Checklist · FAQ.
+- FAQs: Is shaded X different? Can I get flood insurance in Zone X? Does Zone X affect resale? How do I find an elevation certificate?
+- Visuals: FEMA zone legend graphic (own rendering), screenshot of the tool.
+- Internal links: Flood-Zone Check, True Payment Calculator, Zachary relocation guide.
+- Next action: run a flood check; ask Caleb about a specific address.
