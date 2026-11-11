@@ -359,3 +359,93 @@ class Book:
                 return {"years": int((self.today - day).days // 365.25), "since": d["day"], "from": d["from"]}
         return None
 
+    def seller(self, pid: str, p: dict | None = None, deals: list[dict] | None = None) -> dict | None:
+        """0 to 100 for a homeowner (someone with a street address on the sheet). None for anyone else."""
+        p = p or self.person(pid)
+        if not p or not _house(p.get("street")) or str(p.get("type") or "").lower() in PARTNER_TYPES:
+            return None
+        deals = self.deals_for(pid, p.get("street")) if deals is None else deals
+        parts = []
+        yo = self.years_owned(deals)
+        pts = next((v for floor, v in YEARS_PTS if yo and yo["years"] >= floor), 0)
+        parts.append(("years", pts, f"Owned {yo['years']} year{'' if yo['years'] == 1 else 's'}, bought with you {yo['since']}" if yo else "Years owned unknown"))
+        parts.append(("equity", 0, "Equity unknown: no mortgage balance in any source"))
+        note = next((n for n in p.get("notes") or [] if LIFE.search(str(n.get("note") or ""))), None)
+        parts.append(("life", SELLER_MAX["life"] if note else 0, f"Note {note['at']}: {str(note['note'])[:70]}" if note else "No life event in the notes of the last 12 months"))
+        forms = self.forms.get(str(pid), [])
+        hv = next((r for r in forms if is_home_value(r)), None)
+        selling = next((r for r in self.reasons.get(str(pid), []) if re.search(r"\bsell", str(r), re.I)), None)
+        if hv:
+            act = (ACTIVITY_PTS["home_value"], f"Asked for a home value on the site {str(hv.get('received') or '')[:10]}".strip())
+        elif len(forms) >= 2:
+            act = (ACTIVITY_PTS["repeat"], f"{len(forms)} website forms in the last 14 days")
+        elif forms:
+            act = (ACTIVITY_PTS["one"], f"Sent a website form {str(forms[0].get('received') or '')[:10]}".strip())
+        elif selling:
+            act = (ACTIVITY_PTS["one"], str(selling))
+        else:
+            act = (0, "No website form or selling talk on record")
+        parts.append(("activity", *act))
+        past = str(p.get("stage") or "").strip().lower() == "past client" or any("closed" in d["status"] for d in deals)
+        parts.append(("past", SELLER_MAX["past"] if past else 0, "Past client" if past else "Not a past client on record"))
+        rows = [{"key": k, "points": v, "max": SELLER_MAX[k], "why": w} for k, v, w in parts]
+        top = sorted((r for r in rows if r["points"]), key=lambda r: -r["points"])[:2]
+        return {"score": sum(r["points"] for r in rows), "reasons": [r["why"] for r in top], "parts": rows}
+
+    def card(self, pid: str) -> dict:
+        """The eight facts with their sources, how many are known, and the seller score. A fact with no source is None,
+        which the screen prints as unknown."""
+        p = self.person(pid)
+        if not p:
+            return {"ok": False, "person_id": str(pid), "error": "This person is not in the CRM feed right now."}
+        fx = self.facts.get(str(pid)) or {}
+        deals = self.deals_for(pid, p.get("street"))
+        fmv, yo, last = cc.num(fx.get("fair_market_value")), self.years_owned(deals), deals[0] if deals else None
+        no_facts = "" if self.has_facts else "The feed on this Mac does not carry this yet"
+        val = {
+            "phone": ("On the sheet", "CRM sheet") if p.get("has_phone") else None,
+            "email": ("On the sheet", "CRM sheet") if p.get("has_email") else None,
+            "value": (f"${int(fmv):,}", "parish assessment") if fmv else None,
+            "equity": None,
+            "years": (f"{yo['years']} year{'' if yo['years'] == 1 else 's'}, since {yo['since']}", f"bought with you, {yo['from']}") if yo else None,
+            "source": (str(fx["source"]), "CRM sheet") if fx.get("source") else None,
+            "deal": (", ".join(x for x in (last["address"], last["side"], last["status"], last["day"]) if x), last["from"]) if last else None,
+            "household": (", ".join(fx["household"]), "same address on the CRM sheet") if fx.get("household") else None,
+        }
+        why = {"equity": "no mortgage balance in any source", "years": "no purchase date on the sheet, and no closed purchase with you at this address",
+               "deal": "no deal on the Deals tab, the Deals sheet or the sales record", "household": "nobody else at this address on the sheet"}
+        facts = [{"key": k, "label": label, "value": val[k][0] if val[k] else None, "from": val[k][1] if val[k] else "",
+                  "why": "" if val[k] else (no_facts if k in ("value", "source", "household") and no_facts else why.get(k, "not on the sheet"))} for k, label in FIELDS]
+        return {"ok": True, "person_id": str(pid), "facts": facts, "known": sum(1 for x in facts if x["value"]), "total": len(facts),
+                "seller": self.seller(pid, p, deals), "homeowner": bool(_house(p.get("street")))}
+
+    def sellers(self, n: int = 25) -> list[dict]:
+        """The top n homeowners by score, highest first. A score of 0 is never listed."""
+        out = []
+        for pid in set(self.people) | set(self.facts):
+            p = self.person(pid)
+            s = self.seller(pid, p)
+            if s and s["score"] > 0:
+                out.append({"person_id": pid, "display": p.get("display") or "", "city": p.get("city") or "", "stage": p.get("stage") or "",
+                            "band": p.get("band") or "", "score": s["score"], "reasons": s["reasons"]})
+        return sorted(out, key=lambda r: (-r["score"], r["display"]))[:n]
+
+
+def formula() -> dict:
+    """The rules in words, written from the numbers above so the Sources page can never drift from the code."""
+    steps = lambda rows, unit: ", ".join(f"{unit(f)} scores {p}" for f, p in rows)
+    return {
+        "seller": {"max": sum(SELLER_MAX.values()), "who": "Homeowners only: a contact with a street address on the CRM sheet who is not an agent, lender or vendor.",
+                   "parts": [
+                       {"label": "Years owned", "max": SELLER_MAX["years"], "rule": steps(YEARS_PTS, lambda y: f"{y}+ years") + ". Counted from a closed purchase with you at their address. Unknown scores 0."},
+                       {"label": "Equity", "max": SELLER_MAX["equity"], "rule": steps(EQUITY_PTS, lambda e: f"{int(e * 100)}%+ of the parish assessment") + ". No source carries a mortgage balance today, so this is unknown and scores 0 for everyone."},
+                       {"label": "Life event in Notes", "max": SELLER_MAX["life"], "rule": f"A note in the last 12 months that mentions a baby, a wedding, a divorce, retirement, a job move, downsizing, an estate or needing more room scores {SELLER_MAX['life']}."},
+                       {"label": "Site visits and lead activity", "max": SELLER_MAX["activity"], "rule": f"A home value request in the last 14 days scores {ACTIVITY_PTS['home_value']}, two or more website forms {ACTIVITY_PTS['repeat']}, one form or selling words in their texts {ACTIVITY_PTS['one']}. Page views are not in any source."},
+                       {"label": "Past client", "max": SELLER_MAX["past"], "rule": f"Stage past client, or a closed deal with you, scores {SELLER_MAX['past']}."}]},
+        "call10": {"parts": [
+            {"label": "Money", "max": MONEY_PTS[0][1], "rule": "A budget or price they wrote, or the price on their live deal: " + ", ".join(f"{money_words(f) if f else 'any amount from $50K'}{'+' if f else ''} scores {p}" for f, p in MONEY_PTS) + "."},
+            {"label": "Intent", "max": TOPIC_PTS + DEAL_PTS, "rule": f"Buying, selling, multifamily, investment or land words, or a new lead, score {TOPIC_PTS}. A live deal or contract talk adds {DEAL_PTS}."},
+            {"label": "Waiting on your reply", "max": WAIT_MAX, "rule": f"{WAIT_BASE} when they texted last, plus 1 for every 3 days waiting, up to {WAIT_MAX}."},
+            {"label": "Cadence", "max": max(CADENCE_PTS.values()), "rule": "Breaks ties only: " + ", ".join(f"{b} {p}" for b, p in CADENCE_PTS.items()) + "."}],
+            "left_out": "Agents, lenders and vendors, anyone on Do Not Contact, messages that read like a pitch (credit repair, marketing, lenders selling), test leads, anyone with no valid phone, and anyone already reached today."},
+    }
