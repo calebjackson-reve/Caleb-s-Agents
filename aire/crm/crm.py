@@ -989,6 +989,42 @@ class CRM:
                         "has_phone": bool(c.get("primary_phone")), "has_email": bool(c.get("email"))})
         return out
 
+    def facts(self, as_of: date | None = None) -> dict:
+        """What the contact card needs beyond the lists above, by person_id, only the fields the sheet holds: the
+        parish assessment (fair_market_value), homestead, lead source, address, the other contacts at the same address
+        (household), their Deals tab rows with closed ones, and their notes from the last 12 months (at most 3, newest
+        first). Do_Not_Contact people are left out. Nothing is worked out or guessed here. Read only."""
+        as_of = as_of or today()
+        cutoff = (as_of - timedelta(days=365)).isoformat()
+        ok = [c for c in self.contacts() if (c.get("Do_Not_Contact") or "").upper() != "YES"]
+        home = lambda c: (re.sub(r"[^a-z0-9]+", " ", (c.get("street") or "").lower()).strip(), (c.get("zip") or "").strip()[:5])
+        at_home: dict[tuple, list[dict]] = {}
+        for c in ok:
+            k = home(c)
+            if k[0] and re.match(r"\d", k[0]):  # a street with a house number, the same test the map uses
+                at_home.setdefault(k, []).append(c)
+        notes: dict[str, list[dict]] = {}
+        for n in self.notes():
+            at, text = str(n.get("At") or "")[:10], str(n.get("Note") or "").strip()
+            if n.get("person_id") and text and cutoff <= at <= "9999" and not text.startswith(("Do_Not_Contact set", "texting consent")):
+                notes.setdefault(str(n["person_id"]), []).append({"at": at, "note": text[:200]})
+        deals: dict[str, list[dict]] = {}
+        for d in self.deals():
+            if d.get("person_id"):
+                deals.setdefault(str(d["person_id"]), []).append(
+                    {k: d.get(k, "") for k in ("address", "side", "stage", "price", "expected_close", "updated_at")})
+        out = {}
+        for c in ok:
+            row = {"fair_market_value": c.get("fair_market_value", ""), "homestead": c.get("homestead", ""), "source": c.get("Source", ""),
+                   "street": c.get("street", ""), "city": c.get("city", ""), "zip": c.get("zip", ""),
+                   "household": sorted(shown_name(x) for x in at_home.get(home(c), []) if x["person_id"] != c["person_id"] and shown_name(x)),
+                   "deals": deals.get(c["person_id"], []),
+                   "notes": sorted(notes.get(c["person_id"], []), key=lambda n: n["at"], reverse=True)[:3]}
+            row = {k: v for k, v in row.items() if v not in ("", None, [])}
+            if row:
+                out[c["person_id"]] = row
+        return out
+
     def no_text_consent(self) -> list[str]:
         """person_ids whose newest website form said not to text them (lead_note writes the line). Pipeline refuses
         a text to anyone here. Someone with no form on file is not listed: no answer is not a no. Read only."""
@@ -1194,6 +1230,7 @@ class CRM:
             "partners": self.partners(as_of),
             "label_review": self.label_review(as_of, signals),
             "people": self.people(signals),
+            "facts": self.facts(as_of),
             "cadence_days": CADENCE_DAYS,
             "map": {**pins, "farms": self.farm_counts(farms, pins["pins"])},
             "market": self.market(market_rows or [], farms, pins["pins"], dismissed),
@@ -2112,6 +2149,17 @@ def run_tests() -> int:
     check("relabel writes Type and the audit log has it", c4.by_id(pro["person_id"])["Type"] == "vendor"
           and any(x["Tool"] == "update_contact" and "Type='vendor'" in x["Detail"] for x in c4.b.read("Connector Log")))
     check("feed carries label_review and people", {"label_review", "people"} <= set(c4.feed(as_of, sig4)))
+    # facts for the contact card: only what the sheet holds, nobody on Do_Not_Contact
+    fa, fb = c4.create_contact("Facts Alpha", "+12255550301", "", band="cold", source="Website 2026-10-01"), c4.create_contact("Facts Beta", "+12255550302", "", band="cold", source="test")
+    for x in (fa, fb):
+        x.update(street="12 Fact Ln", zip="70775")
+    fa["fair_market_value"] = "250000"
+    c4.add_note(fa["person_id"], "Expecting a baby in March")
+    fx = c4.feed(as_of, sig4)["facts"]
+    check("facts carry the assessment, source, household and notes from the sheet", fx[fa["person_id"]]["fair_market_value"] == "250000"
+          and fx[fa["person_id"]]["source"] == "Website 2026-10-01" and fx[fa["person_id"]]["household"] == ["Facts Beta"]
+          and fx[fa["person_id"]]["notes"][0]["note"] == "Expecting a baby in March")
+    check("facts leave out Do_Not_Contact people and blank fields", "5" not in fx and "fair_market_value" not in fx[fb["person_id"]])
     hf = c4.feed(as_of, sig4)["heat"]
     ids = {x["person_id"] for x in c4.contacts() if (x.get("Do_Not_Contact") or "").upper() != "YES" and (x.get("Type") or "").lower() not in ("vendor", "agent", "lender", "recruit")}
     check("the band by heat table adds up to everyone scored", sum(sum(r.values()) for r in hf["band_by_heat"].values()) == hf["scored"]
