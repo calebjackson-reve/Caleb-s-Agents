@@ -222,7 +222,7 @@ def waiting_since(r: dict) -> date | None:
     return days[0] if days else last
 
 
-def score_call(r: dict, deals: list[dict], today: date) -> dict:
+def score_call(r: dict, deals: list[dict], today: date, weights: dict | None = None) -> dict:
     text = _text_of(r)
     found = amounts(text)
     deal = next((d for d in deals if str(d.get("person_id") or "") == str(r.get("person_id"))), None)
@@ -240,6 +240,8 @@ def score_call(r: dict, deals: list[dict], today: date) -> dict:
         waited = max(0, (today - d).days) if d else None
     waiting = min(WAIT_MAX, WAIT_BASE + (waited or 0) // 3) if r.get("owes_reply") else 0
     cadence = CADENCE_PTS.get(str(r.get("band") or "").lower(), 0)
+    frac = {"money": money / CALL_MAX["money"], "intent": intent / CALL_MAX["intent"], "waiting": waiting / CALL_MAX["waiting"], "cadence": cadence / CALL_MAX["cadence"]}
+    money, intent, waiting, cadence = (scaled(v, k, CALL_MAX, weights) for k, v in (("money", money), ("intent", intent), ("waiting", waiting), ("cadence", cadence)))
     parts = []
     if top:
         parts.append(f"{topic + ' ' if topic else ''}{'up to ' if top[1] else ''}{money_words(top[0])}")
@@ -259,10 +261,10 @@ def score_call(r: dict, deals: list[dict], today: date) -> dict:
     return {"person_id": str(r.get("person_id")), "display": r.get("display") or "", "phone": r.get("phone") or "", "email": r.get("email") or "",
             "band": r.get("band") or "", "stage": r.get("stage") or "", "reason": ", ".join(parts),
             "first": money + intent + waiting, "cadence": cadence, "score": money + intent + waiting + cadence,
-            "points": {"money": money, "intent": intent, "waiting": waiting, "cadence": cadence}}
+            "points": {"money": money, "intent": intent, "waiting": waiting, "cadence": cadence}, "fractions": frac}
 
 
-def call10(feed: dict, today: date, done: set | None = None, n: int = 10) -> dict:
+def call10(feed: dict, today: date, done: set | None = None, n: int = 10, weights: dict | None = None) -> dict:
     """Ten people, ranked by money and intent first (a stated budget or price, buying or selling words, deal talk, how
     long they have waited on a reply), then by cadence. Vendors, spam, pitches and Do Not Contact never make it."""
     f, by = feed or {}, {}
@@ -280,23 +282,44 @@ def call10(feed: dict, today: date, done: set | None = None, n: int = 10) -> dic
         if why:
             left[why] = left.get(why, 0) + 1
             continue
-        rows.append(score_call(r, f.get("deals") or [], today))
+        rows.append(score_call(r, f.get("deals") or [], today, weights))
     rows.sort(key=lambda x: (-x["first"], -x["cadence"], x["display"]))
     return {"rows": rows[:n], "considered": len(by), "left_out": left}
 
 
 # ---------------- 3 and 4. The fuller card and the likely-seller score ----------------
 
-LIFE = re.compile(r"\bbaby\b|pregnan|expecting (a |their |our |another )?(baby|child|kid|twins)|newborn|\bmarri(ed|age)\b|wedding|(got|just|newly|is|are) engaged|"
-                  r"divorc|separat(ed|ion) from|retir(e|ed|ing|ement)\b|new job|job (offer|change|transfer)|relocat|(being|getting|got) transferred|"
-                  r"transferr?(ed|ing) to\b|downsiz|empty nest|passed away|estate sale|settling the estate|probate|inherit|"
-                  r"graduat|need(s|ed|ing)? more (space|room)|out of room|outgr[eo]w|bigger (house|home|place)|moving (to|out|closer)|kids? (left|moved out)", re.I)
-SELLER_MAX = {"years": 30, "equity": 20, "life": 20, "activity": 15, "past": 15}
+# Life events that score: a job move or an estate, and nothing else. Fair housing (Caleb, 2026-11-11): family status,
+# age, race, religion and disability are never used, and neither are words that stand in for them. So household size
+# (more room, outgrew, bigger house) and downsizing are left out too, and a note that mentions family or age at all is
+# skipped whole, even when it also names a job move.
+LIFE = re.compile(r"new job|job (offer|change|transfer|move)|relocat|(being|getting|got) transferred|transferr?(ed|ing) to\b|"
+                  r"estate sale|settling the estate|probate|inherit", re.I)
+PROTECTED_WORDS = re.compile(r"bab(y|ies)|pregnan|expecting|newborn|twins|marri(ed|age)|wedding|engaged|fianc|divorc|separat|retir|empty nest|"
+                             r"kids?\b|child|grand|widow|husband|wife|spouse|mother|father|\bmom\b|\bdad\b|\bson\b|daughter|in-?law|famil|"
+                             r"passed away|\blate (husband|wife|mother|father)|\bage\b|\baged\b|years old|\bam \d\d\b|\bis \d\d\b|elderly|senior|"
+                             r"disab|wheelchair|illness|church|relig|pastor", re.I)
+
+
+def life_note(notes) -> dict | None:
+    """The newest note that names a job move or an estate and says nothing about family, age, faith or health."""
+    return next((n for n in notes or [] if LIFE.search(str(n.get("note") or "")) and not PROTECTED_WORDS.search(str(n.get("note") or ""))), None)
+
+
+SELLER_MAX = {"years": 30, "equity": 20, "life": 20, "activity": 15, "past": 15, "anniversary": 0}
+SELLER_FROM = {"years": "sales record and Deals", "equity": "no source", "life": "Notes", "activity": "lead emails, Flexmls and texts", "past": "CRM sheet and Deals",
+               "anniversary": "sales record and Deals"}
+CALL_MAX = {"money": 40, "intent": 30, "waiting": 20, "cadence": 10}
 YEARS_PTS = [(7, 30), (5, 20), (3, 10)]
 EQUITY_PTS = [(0.5, 20), (0.3, 12)]
 ACTIVITY_PTS = {"home_value": 15, "repeat": 10, "one": 8}
 FIELDS = [("phone", "Phone"), ("email", "Email"), ("value", "Home value"), ("equity", "Equity"), ("years", "Years owned"),
           ("source", "Lead source"), ("deal", "Last deal with you"), ("household", "Household")]
+
+
+def scaled(points: float, key: str, base: dict, weights: dict | None) -> int:
+    """A part's points under the current weights. With no learned weights this is the hand-set number."""
+    return int(round(points if not weights else points / base[key] * weights.get(key, base[key])))
 
 
 def _house(t) -> str:
@@ -320,8 +343,11 @@ class Book:
     """The reads the card and the score need, indexed once: the feed, the AIRE Deals sheet rows and the sales record."""
 
     def __init__(self, feed: dict, deals_sheet: list[dict] | None = None, sales: list[dict] | None = None,
-                 leads: list[dict] | None = None, today: date | None = None):
+                 leads: list[dict] | None = None, today: date | None = None, weights: dict | None = None):
         f = feed or {}
+        self.weights = weights
+        # Flexmls listings that expired or were withdrawn, by house number: someone who tried to sell and did not.
+        self.off_market = _index([m for m in (f.get("market") or {}).get("rows") or [] if m.get("type") in ("expired", "withdrawn")], "address")
         self.today = today or cc.central_today()
         self.facts = f.get("facts") or {}
         self.has_facts = "facts" in f
@@ -378,29 +404,43 @@ class Book:
         parts = []
         yo = self.years_owned(deals)
         pts = next((v for floor, v in YEARS_PTS if yo and yo["years"] >= floor), 0)
-        parts.append(("years", pts, f"Owned {yo['years']} year{'' if yo['years'] == 1 else 's'}, bought with you {yo['since']}" if yo else "Years owned unknown"))
-        parts.append(("equity", 0, "Equity unknown: no mortgage balance in any source"))
-        note = next((n for n in p.get("notes") or [] if LIFE.search(str(n.get("note") or ""))), None)
-        parts.append(("life", SELLER_MAX["life"] if note else 0, f"Note {note['at']}: {str(note['note'])[:70]}" if note else "No life event in the notes of the last 12 months"))
+        parts.append(("years", pts, f"Owned {yo['years']} year{'' if yo['years'] == 1 else 's'}, bought with you {yo['since']}" if yo else "Years owned unknown", yo["from"] if yo else ""))
+        parts.append(("equity", 0, "Equity unknown: no mortgage balance in any source", ""))
+        note = life_note(p.get("notes"))
+        parts.append(("life", SELLER_MAX["life"] if note else 0, f"Note {note['at']}: {str(note['note'])[:70]}" if note else "No job move or estate in the notes of the last 12 months", "Notes" if note else ""))
         forms = self.forms.get(str(pid), [])
         hv = next((r for r in forms if is_home_value(r)), None)
         selling = next((r for r in self.reasons.get(str(pid), []) if re.search(r"\bsell", str(r), re.I)), None)
-        if hv:
-            act = (ACTIVITY_PTS["home_value"], f"Asked for a home value on the site {str(hv.get('received') or '')[:10]}".strip())
+        off = next((m for m in sorted(self.off_market.get(_house(p.get("street")), []), key=lambda m: str(m.get("date") or ""), reverse=True)
+                    if same_home(m.get("address"), p.get("street"))), None)
+        if off:
+            act = (SELLER_MAX["activity"], f"Their listing {'expired' if off.get('type') == 'expired' else 'was withdrawn'} {off.get('date') or ''}".strip(), off.get("source") or "Flexmls")
+        elif hv:
+            act = (ACTIVITY_PTS["home_value"], f"Asked for a home value on the site {str(hv.get('received') or '')[:10]}".strip(), "lead emails")
         elif len(forms) >= 2:
-            act = (ACTIVITY_PTS["repeat"], f"{len(forms)} website forms in the last 14 days")
+            act = (ACTIVITY_PTS["repeat"], f"{len(forms)} website forms in the last 14 days", "lead emails")
         elif forms:
-            act = (ACTIVITY_PTS["one"], f"Sent a website form {str(forms[0].get('received') or '')[:10]}".strip())
+            act = (ACTIVITY_PTS["one"], f"Sent a website form {str(forms[0].get('received') or '')[:10]}".strip(), "lead emails")
         elif selling:
-            act = (ACTIVITY_PTS["one"], str(selling))
+            act = (ACTIVITY_PTS["one"], str(selling), "texts")
         else:
-            act = (0, "No website form or selling talk on record")
+            act = (0, "No website form, expired listing or selling talk on record", "")
         parts.append(("activity", *act))
         past = str(p.get("stage") or "").strip().lower() == "past client" or any("closed" in d["status"] for d in deals)
-        parts.append(("past", SELLER_MAX["past"] if past else 0, "Past client" if past else "Not a past client on record"))
-        rows = [{"key": k, "points": v, "max": SELLER_MAX[k], "why": w} for k, v, w in parts]
+        parts.append(("past", SELLER_MAX["past"] if past else 0, "Past client" if past else "Not a past client on record", "CRM sheet and Deals" if past else ""))
+        ann = None
+        if yo and yo["years"] >= 1:
+            d0 = _day(yo["since"])
+            near = [d0.replace(year=y) for y in (self.today.year - 1, self.today.year, self.today.year + 1) if not (d0.month == 2 and d0.day == 29)]
+            ann = next((d for d in near if abs((d - self.today).days) <= 30), None)
+        parts.append(("anniversary", 1 if ann else 0, f"Home anniversary {ann.isoformat()}" if ann else "No home anniversary within 30 days", yo["from"] if ann else ""))
+        # fractions are what the learning loop reads: each part from 0 to 1, whatever the weights are
+        frac = {k: (v / SELLER_MAX[k] if SELLER_MAX[k] else float(v)) for k, v, _, _ in parts}
+        w = self.weights or SELLER_MAX
+        rows = [{"key": k, "points": int(round(frac[k] * w.get(k, 0))), "max": int(round(w.get(k, 0))), "why": why, "from": src} for k, _, why, src in parts]
         top = sorted((r for r in rows if r["points"]), key=lambda r: -r["points"])[:2]
-        return {"score": sum(r["points"] for r in rows), "reasons": [r["why"] for r in top], "parts": rows}
+        return {"score": min(100, sum(r["points"] for r in rows)), "reasons": [r["why"] for r in top], "sources": [r["from"] for r in top],
+                "parts": rows, "fractions": frac}
 
     def card(self, pid: str) -> dict:
         """The eight facts with their sources, how many are known, and the seller score. A fact with no source is None,
@@ -437,7 +477,7 @@ class Book:
             s = self.seller(pid, p)
             if s and s["score"] > 0:
                 out.append({"person_id": pid, "display": p.get("display") or "", "city": p.get("city") or "", "stage": p.get("stage") or "",
-                            "band": p.get("band") or "", "score": s["score"], "reasons": s["reasons"]})
+                            "band": p.get("band") or "", "score": s["score"], "reasons": s["reasons"], "sources": s["sources"], "fractions": s["fractions"]})
         return sorted(out, key=lambda r: (-r["score"], r["display"]))[:n]
 
 
@@ -449,9 +489,10 @@ def formula() -> dict:
                    "parts": [
                        {"label": "Years owned", "max": SELLER_MAX["years"], "rule": steps(YEARS_PTS, lambda y: f"{y}+ years") + ". Counted from a closed purchase with you at their address. Unknown scores 0."},
                        {"label": "Equity", "max": SELLER_MAX["equity"], "rule": steps(EQUITY_PTS, lambda e: f"{int(e * 100)}%+ of the parish assessment") + ". No source carries a mortgage balance today, so this is unknown and scores 0 for everyone."},
-                       {"label": "Life event in Notes", "max": SELLER_MAX["life"], "rule": f"A note in the last 12 months that mentions a baby, a wedding, a divorce, retirement, a job move, downsizing, an estate or needing more room scores {SELLER_MAX['life']}."},
-                       {"label": "Site visits and lead activity", "max": SELLER_MAX["activity"], "rule": f"A home value request in the last 14 days scores {ACTIVITY_PTS['home_value']}, two or more website forms {ACTIVITY_PTS['repeat']}, one form or selling words in their texts {ACTIVITY_PTS['one']}. Page views are not in any source."},
-                       {"label": "Past client", "max": SELLER_MAX["past"], "rule": f"Stage past client, or a closed deal with you, scores {SELLER_MAX['past']}."}]},
+                       {"label": "Job move or estate in Notes", "max": SELLER_MAX["life"], "rule": f"A note in the last 12 months about a new job, relocating or an estate scores {SELLER_MAX['life']}. A note that mentions family, age, faith or health is skipped whole and never read for the score."},
+                       {"label": "Site visits and lead activity", "max": SELLER_MAX["activity"], "rule": f"A Flexmls listing of theirs that expired or was withdrawn scores {SELLER_MAX['activity']}. A home value request in the last 14 days scores {ACTIVITY_PTS['home_value']}, two or more website forms {ACTIVITY_PTS['repeat']}, one form or selling words in their texts {ACTIVITY_PTS['one']}. Page views are not in any source."},
+                       {"label": "Past client", "max": SELLER_MAX["past"], "rule": f"Stage past client, or a closed deal with you, scores {SELLER_MAX['past']}."},
+                       {"label": "Home anniversary", "max": SELLER_MAX["anniversary"], "rule": "Within 30 days of the date they bought with you. It adds nothing yet. The weekly learning may give it weight once outcomes show it matters."}]},
         "call10": {"parts": [
             {"label": "Money", "max": MONEY_PTS[0][1], "rule": "A budget or price they wrote, or the price on their live deal: " + ", ".join(f"{money_words(f) if f else 'any amount from $50K'}{'+' if f else ''} scores {p}" for f, p in MONEY_PTS) + "."},
             {"label": "Intent", "max": TOPIC_PTS + DEAL_PTS, "rule": f"Buying, selling, multifamily, investment or land words, or a new lead, score {TOPIC_PTS}. A live deal or contract talk adds {DEAL_PTS}."},
