@@ -268,3 +268,38 @@ def retrain(folder: Path, ev: dict, today: date) -> dict:
     return version
 
 
+# ---------------- the scorecard on Sources ----------------
+
+def in_words(weights: dict) -> list[str]:
+    total = sum(weights.values()) or 1
+    return [f"{WORDS.get(k, k)} counts {round(100 * v / total)}%" for k, v in sorted(weights.items(), key=lambda kv: -kv[1])]
+
+
+def top_last_month(folder: Path, ev: dict, today: date, name: str = "seller") -> dict:
+    """Of the people in the top of the list 30 to 60 days ago, how many replied, set an appointment, listed. None of
+    each when the log does not go back that far."""
+    rows = [r for r in _lines(folder / "ranked.jsonl") if r["list"] == name and r.get("top") and today - timedelta(days=60) <= _day(r["day"]) <= today - timedelta(days=30)]
+    first = min((r["day"] for r in _lines(folder / "ranked.jsonl")), default=None)
+    seen, picked = set(), []
+    for r in sorted(rows, key=lambda r: (r["day"], r["rank"]), reverse=True):
+        if r["person_id"] not in seen and len(picked) < TOP[name]:
+            seen.add(r["person_id"])
+            picked.append(outcome(r, ev, today))
+    if not picked:
+        return {"n": 0, "replied": None, "appointment": None, "listing": None,
+                "why": f"The log started {first}, so nobody was ranked 30 to 60 days ago yet." if first else "Nobody has been ranked yet. The log starts the first day this runs."}
+    return {"n": len(picked), "replied": sum(1 for o in picked if o["replied"]), "appointment": sum(1 for o in picked if o["appointment"]),
+            "listing": sum(1 for o in picked if o["listing"]), "why": ""}
+
+
+def scorecard(folder: Path, ev: dict, today: date) -> dict:
+    vs, fb, ranked = _read(folder / "versions.json", []), _lines(folder / "feedback.jsonl"), _lines(folder / "ranked.jsonl")
+    cur = current(folder)
+    return {"versions": [{"version": v["version"], "date": v["date"], "lists": v["lists"], "weights": v["weights"]} for v in vs[-8:]][::-1],
+            "current": {k: {"weights": cur[k], "words": in_words(cur[k]), "hand_set": cur[k] == HAND[k]} for k in FEATURES},
+            "changed": {k: (vs[-1]["lists"][k].get("changes") or {}) for k in FEATURES} if vs else None,
+            "last_month": {k: top_last_month(folder, ev, today, k) for k in FEATURES},
+            "log": {"ranked": len(ranked), "people": len({r["person_id"] for r in ranked}), "since": min((r["day"] for r in ranked), default=None),
+                    "good": sum(1 for r in fb if r["verdict"] == "good"), "not_useful": sum(1 for r in fb if r["verdict"] == "not_useful")},
+            "next": "Every Monday at 6 AM on this Mac.", "needs": {"rows": MIN_ROWS, "yes": MIN_YES, "max_step": MAX_STEP, "horizon": HORIZON},
+            "never": "Race, religion, family status, age and disability are never inputs, and neither is anything that stands in for them. The only inputs are the parts of the score shown here."}
