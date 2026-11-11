@@ -23,7 +23,7 @@ ctx.window = ctx;
 ctx.document = { querySelector: () => el(), querySelectorAll: () => [], getElementById: () => el(), addEventListener() {}, createElement: () => el(), activeElement: null, body: el(), documentElement: el() };
 vm.createContext(ctx);
 const dir = __dirname;
-for (const f of ['voice.js', 'app.js', 'cc.js', 'cc-pages.js', 'crm-pages.js', 'map.js', 'mapviews.js', 'stage.js', 'person.js', 'cc-score.js', 'cc-life.js', 'cc-today.js', 'cc-sources.js'])
+for (const f of ['voice.js', 'app.js', 'cc.js', 'cc-pages.js', 'crm-pages.js', 'map.js', 'mapviews.js', 'reach.js', 'stage.js', 'person.js', 'cc-score.js', 'cc-life.js', 'cc-today.js', 'cc-sources.js'])
   vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8'), ctx, { filename: f });
 ctx.__state = state; ctx.__cc = ccdata;
 const run = js => vm.runInContext(js, ctx);
@@ -301,7 +301,7 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
   const coolIn = f => (fs.readFileSync(path.join(dir, f), 'utf8').match(/#[0-9a-f]{6}\b/gi) || []).filter(c => { const h = hueOf(c); return h !== null && h >= 75 && h <= 290; });
   // The light look adds the seven stage colors (stage.js). Those and the older color code are the only cool colors anywhere.
   const STAGE_HEX = run('Stage.TABS.map(t => t[1].toLowerCase())');
-  const cool = ['ui.css', 'cc.css', 'map.js', 'mapviews.js', 'stage.js', 'light.css'].flatMap(f => coolIn(f).filter(c => !PALETTE.includes(c.toLowerCase()) && !STAGE_HEX.includes(c.toLowerCase())).map(c => f + ' ' + c));
+  const cool = ['ui.css', 'cc.css', 'map.js', 'mapviews.js', 'reach.js', 'stage.js', 'light.css'].flatMap(f => coolIn(f).filter(c => !PALETTE.includes(c.toLowerCase()) && !STAGE_HEX.includes(c.toLowerCase())).map(c => f + ' ' + c));
   check(!cool.length, 'no blue or green outside the color code, in the page styles or the map pins', cool.join(' '));
   const cssAll = ['ui.css', 'cc.css', 'app.css'].map(x => fs.readFileSync(path.join(dir, x), 'utf8')).join('\n');
   check(!/line-through/.test(cssAll), 'no strikethrough rule anywhere');
@@ -830,6 +830,65 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(rows.length > 5 && rows.some(r => /class="ra" onclick="openCompose\(/.test(r)) && rows.some(r => /class="ra" onclick="openGrok\([^)]*, 'call'\)"/.test(r))
     && rows.every(r => !/<button[^>]*>(?:(?!<\/button>)[^])*<button/.test(r)), 'Home due rows and People rows carry Text and Call beside the name, and no button sits inside another');
   check(!/\/api\/(send|call|draft)/.test(stagejs), 'stage.js still calls no send, call or draft endpoint');
+}
+
+// ---------------- Round 5, fixes 1 to 4: New leads, Call these 10, the fuller card, Likely sellers
+{
+  const reachjs = fs.readFileSync(path.join(dir, 'reach.js'), 'utf8'), txt = h => h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  run('S.data = __state; CC.data = __cc; Stage.sellers = false; Stage.q = ""');
+  const home = render('home'), speed = ccdata.speed || [], lead = home.slice(home.indexOf('aria-label="New leads"'), home.indexOf('aria-label="Call these 10 today"'));
+  check(home.indexOf('aria-label="New leads"') > 0 && home.indexOf('aria-label="New leads"') < home.indexOf('aria-label="Call these 10 today"')
+    && home.indexOf('aria-label="Call these 10 today"') < home.indexOf('<h1>') && home.indexOf('<h1>') < home.indexOf('aria-label="Start here"'),
+    'Home opens with New leads, then Call these 10, above everything else');
+  check(speed.length > 0 && speed.slice(0, 5).every(l => lead.includes(run(`CC.pname(${JSON.stringify(l.name)})`)) && lead.includes(run(`esc(${JSON.stringify(l.source)})`))
+    && (!l.asked || lead.includes(run(`esc(${JSON.stringify(l.asked)})`)))), 'each new lead shows the name, the source and what they asked');
+  check(speed.some(l => !l.asked) ? /What they asked: unknown/.test(lead) : true, 'a lead whose form carried no message says unknown');
+  check((lead.match(/class="sl-timer/g) || []).length === Math.min(5, speed.length), 'every lead row has a timer, or says the time is unknown');
+  const t0 = Date.parse('2026-11-11T12:00:00-06:00'), tm = sec => run(`Reach.timer({ timed: true, received: '2026-11-11T12:00:00-06:00' }, ${t0 + sec * 1000})`);
+  check(/>4:59</.test(tm(299)) && !/late/.test(tm(299)) && />5:00</.test(tm(300)) && /sl-timer late/.test(tm(300)) && />2h 05m</.test(tm(7500)), 'the timer counts up from when the lead came in and turns red at five minutes');
+  check(/sl-timer late/.test(run(`Reach.timer({ timed: false, received: '2020-01-01' })`)) && /time unknown/.test(run(`Reach.timer({ timed: false, received: todayISO() })`)) && !/\d:\d\d/.test(run(`Reach.timer({ timed: false, received: todayISO() })`)),
+    'a lead with a day and no clock time never shows a made-up timer');
+  const mine = speed.findIndex(l => l.in_crm), loose = speed.findIndex(l => !l.in_crm && l.draft.kind);
+  check((lead.match(/onclick="Reach\.add\(/g) || []).length === speed.slice(0, 5).filter(l => !l.in_crm && (l.phone || l.email)).length && /Add to CRM/.test(lead), 'only a lead that is not in the CRM, with a phone or an email to add, shows Add to CRM');
+  if (loose >= 0) { run(`Reach.reply(${loose})`); const c = JSON.parse(run('JSON.stringify(S.compose)'));
+    check(c.kind === speed[loose].draft.kind && c.body === speed[loose].draft.body && c.to === speed[loose].draft.to && c.person_id === '', 'one tap opens the message box with the first reply written, for a lead not in the CRM too'); run('S.compose = null'); }
+  if (mine >= 0) { run(`Reach.reply(${mine})`); const c = JSON.parse(run('JSON.stringify({ kind: S.compose.kind, body: S.compose.body, id: S.compose.person_id })'));
+    check(c.id === speed[mine].person_id && c.body === speed[mine].draft.body, 'a lead already in the CRM opens the same message box, tied to that person'); run('S.compose = null'); }
+  check(!/api\('[^']+',\s*\{/.test(reachjs) && !/\/api\/(send|call|draft|lead|opened|touch)/.test(reachjs), 'reach.js sends nothing and writes nothing: its one server call is a read');
+  run('CC.data = Object.assign({}, __cc, { speed: [] })');
+  check(/No new lead is waiting on a first reply/.test(render('home')) && /aria-label="New leads"/.test(render('home')), 'with no lead waiting the New leads card stays and says so');
+  run('CC.data = __cc');
+
+  const c10 = (state.call10 || {}).rows || [], call = home.slice(home.indexOf('aria-label="Call these 10 today"'), home.indexOf('<h1>')), lis = call.match(/<li>[^]*?<\/li>/g) || [];
+  check(c10.length > 0 && c10.length <= 10 && lis.length === c10.length, `Call these 10 lists ${c10.length} people, never more than ten`);
+  check(lis.every((li, i) => li.includes(run(`esc(${JSON.stringify(c10[i].reason)})`)) && /class="ra" onclick="openCompose\(/.test(li) && /class="ra" onclick="openGrok\([^)]*, 'call'\)"/.test(li)
+    && !/<button[^>]*>(?:(?!<\/button>)[^])*<button/.test(li)), 'each row shows its reason with Text and Call, on the message box and Grok panel that already exist');
+  const partner = new Set((f.partners || []).map(p => String(p.person_id)));
+  check(c10.every(r => !partner.has(r.person_id) && run(`normPhone(${JSON.stringify(r.phone)})`)), 'no vendor, agent or lender is on the call list, and everyone on it has a valid phone');
+
+  const sel = state.sellers || [];
+  run('Stage.sellers = true'); const sp = render('people'); run('Stage.sellers = false');
+  check(sel.length > 0 && sel.length <= 25 && (sp.match(/class="sel-score"/g) || []).length === sel.length && sel.every(r => sp.includes(`>${r.score}</b>`) && r.reasons.every(x => sp.includes(run(`esc(${JSON.stringify(x)})`))))
+    && /aria-pressed="true" onclick="Stage\.showSellers\(true\)"/.test(sp), `the Likely sellers filter lists the top ${sel.length} with score and reasons`);
+  check(!/class="sel-score"/.test(render('people')) && /Likely sellers/.test(render('people')), 'People opens on the stage board, with the Likely sellers filter one tap away');
+
+  const who = (f.touches_due || [])[0], cardHTML = x => { run(`Reach.cards[${JSON.stringify(String(who.person_id))}] = ${JSON.stringify(x)}`); return run(`Person.html(${JSON.stringify(who.person_id)})`); };
+  const facts = [['phone', 'Phone', 'On the sheet', 'CRM sheet'], ['email', 'Email', null, ''], ['value', 'Home value', '$412,000', 'parish assessment'], ['equity', 'Equity', null, ''],
+    ['years', 'Years owned', '8 years, since 2018-05-20', 'bought with you, CRM Deals tab'], ['source', 'Lead source', 'Referral 2017-03-02', 'CRM sheet'], ['deal', 'Last deal with you', null, ''], ['household', 'Household', 'Jamie Example', 'same address on the CRM sheet']]
+    .map(([key, label, value, from]) => ({ key, label, value, from, why: value ? '' : 'no source has it' }));
+  const full = cardHTML({ ok: true, facts, known: 5, total: 8, homeowner: true, seller: { score: 65, reasons: ['Owned 8 years, bought with you 2018-05-20', 'Past client'] } }), ft = txt(full);
+  check(/5 of 8 known/.test(ft) && (full.match(/<i class="on"/g) || []).length === 5 && (full.match(/<i class="/g) || []).length === 8, 'the card shows a completeness meter: 5 of 8 known, one mark per fact');
+  check(['Home value', 'Equity', 'Years owned', 'Lead source', 'Last deal with you', 'Household'].every(k => full.includes(`<dt>${k}</dt>`)) && /\$412,000\s*parish assessment/.test(ft), 'the card adds home value (labeled parish assessment), equity, years owned, lead source, last deal and household');
+  check(/<dt>Equity<\/dt><dd class="pc-missing">unknown<small>no source has it<\/small>/.test(full) && /<dt>Last deal with you<\/dt><dd class="pc-missing">unknown/.test(full), 'a fact with no source reads unknown with the reason, never a number');
+  check(/class="pc-score">65<\/b>/.test(full) && /Likely-seller score, of 100/.test(ft) && /Owned 8 years, bought with you 2018-05-20/.test(ft) && /Past client/.test(ft), 'the card shows the likely-seller score and its top 2 reasons');
+  check(/class="pc-score">unknown<\/b>/.test(cardHTML({ ok: true, facts, known: 5, total: 8, homeowner: false, seller: null })), 'someone with no address gets no seller score, and the card says why');
+  run(`delete Reach.cards[${JSON.stringify(String(who.person_id))}]`);
+  check(/Reading the rest of the record/.test(run(`Person.html(${JSON.stringify(who.person_id)})`)), 'until the record arrives the card says it is reading, and shows no placeholder numbers');
+
+  const so = render('sources'), st2 = txt(so);
+  check(/How the scores work/.test(st2) && ccdata.formula.seller.parts.every(p => so.includes(run(`esc(${JSON.stringify(p.rule)})`))) && /7\+ years scores 30/.test(st2) && /Call these 10 today/.test(st2),
+    'the Sources page shows the likely-seller formula and the call list ranking, as the code has them');
+  check(/New lead alert/.test(st2) && /to nobody else|Only the one Mac that sends/.test(st2), 'the Sources page says where the new lead alert goes');
 }
 
 console.log(`\n${fails} failure(s)`);

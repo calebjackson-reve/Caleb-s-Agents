@@ -45,6 +45,7 @@ Checks: `python3 aire/pipeline-app/ui_test.py` renders every page (nothing hides
 | `PIPELINE_PYTHON` | `~/.aire/venv/bin/python` if it exists | Python used to run `crm.py`. That venv has the Sheets credentials and Full Disk Access, so the app itself needs neither. Any Python 3.10 or newer works, built with uv or Homebrew. Full Disk Access goes on the real binary, not the venv symlink: `readlink -f ~/.aire/venv/bin/python` prints it (for uv, under `~/.local/share/uv/python/`). |
 | `PIPELINE_SENDER` | `dry` | `live` sends for real: texts through Messages, email through Gmail. Anything else logs the send and sends nothing. The screen says which mode it is in. |
 | `PIPELINE_LIVE_HOST` | none | The one Mac allowed to send (Caleb, 2026-11-10: the Mac mini). `live` only works when this matches the Mac's own name (`hostname -s`). Unset or a different Mac means dry, with a line on screen saying why. Goes in `~/.aire/pipeline.env`. |
+| `PIPELINE_SELF_ALERT` | `on` | `off` stops the new lead alert to Caleb's own number. It only ever runs on the `PIPELINE_LIVE_HOST` Mac. |
 | `PIPELINE_MAX_TEXTS`, `PIPELINE_MAX_EMAILS` | `25` | Daily caps, counted from `out/send-log.json` in Central time. |
 
 `install.sh` writes these into the LaunchAgent with `PIPELINE_SENDER=dry`. Flip it to `live` in `~/Library/LaunchAgents/org.calebjackson.aire.pipeline.plist` and reload when you are ready to send from the app.
@@ -220,6 +221,16 @@ Six pages at the top of the nav, Dashboard first (key `0`, or a link such as `ht
 
 **The contact card (2026-11-10).** Clicking a person on Home, People, Hot, Warm or the map opens their card (`static/person.js`), never the message box. It shows a **Plan for [name]** built only from that person's record: what to do now (a reply owed, then a new lead, then a live deal, then a hot buying or selling reason, then the logged next step or a check-in), why (the real reason, quoted), and when the next touch is due on their cadence. Then Text, Call (only with a valid number), Note, Log touch and Hard draft, all on the sheets that already exist. Then the facts. A fact the sheet does not have is said to be missing. A person's name is the display name, else first and last, else "No name on the sheet", on every page. Nothing is guessed and nothing is written back.
 
+**Who to reach first (2026-11-11, `insight.py`, `static/reach.js`).** Four things, all read only, all worked out on the Mac from the lead emails, the CRM feed, the Deals sheet, the sales record and the send log. A number with no source prints as unknown.
+
+- **New leads**, the first thing on Home: every lead with no reply yet, newest first, with the name, the source, what they asked and a timer that counts from when the lead came in and turns red at five minutes. A lead with a day and no clock time gets no timer. Each has a first reply written, a text when there is a valid phone and an email otherwise, and one tap opens the message box with it filled in. The send is still your press. A lead that is not in the CRM shows **Add to CRM**, which opens the same form as the Leads page and adds nothing on its own. Website leads are read on every 5 minute sync pass.
+- **The new lead alert.** Each new lead shows a notification on the Mac and sends one iMessage to Caleb's own number, `SELF_ALERT_TO` in `app.py`, which reads "New lead: name, what they asked". This is the only send Pipeline makes without a tap. The number is a constant, not a parameter, so it can reach nobody else. It runs only on the Mac named in `PIPELINE_LIVE_HOST`, never in demo, and `PIPELINE_SELF_ALERT=off` stops it. The first pass after a start only learns the leads already there. Every alert is logged in `out/lead-alerts.json`.
+- **Call these 10 today**, under New leads: money and intent first (a budget or price they wrote, buying or selling words, a live deal or contract talk, how long they have waited on a reply), then cadence. Each row gives the reason in a few words and has Text and Call, on the message box and the Grok panel. Agents, lenders and vendors, anyone on Do Not Contact, messages that read like a pitch, test leads, people with no valid phone and people already reached today are left out.
+- **The fuller card.** Every contact card adds home value (the sheet's `fair_market_value`, labeled parish assessment), equity, years owned, lead source, last deal with you and household, each with where it came from, plus a meter such as 5 of 8 known. Equity is unknown for everyone today because no source carries a mortgage balance. Years owned is counted only from a closed purchase with you at their address. Value, source, household and notes come from `feed.facts`, which `crm.py feed` writes from this version on.
+- **Likely-seller score**, 0 to 100, for anyone with a street address on the sheet: years owned, equity, a life event in Notes, lead activity, past client. The card shows the score and its top 2 reasons. People has a **Likely sellers** filter that lists the top 25. The formula is on the Sources page, written from the same numbers the code uses.
+
+Checks: `python3 aire/pipeline-app/insight_test.py`, plus the round 5 blocks in `app.py --test` and `ui_test.py`.
+
 **Home and People.** Home opens with **Start here**: the one most pressing due person (a reply owed first, then cadence order) with Text them and Call. It is left out when nobody is due. Home due rows and People rows carry Text and Call beside the name. More shows a small tab of stage color on each nav group and a dot on Hot and Warm.
 
 **Coral and motion.** Coral is `#E04E28`: the wordmark period, the under contract stage, the one primary button, and the line a button or link takes on hover, keyboard focus and press. A hover never fills a send button. Motion runs 150 to 220ms with a plain ease, and with reduced motion only color changes.
@@ -245,7 +256,7 @@ The reads behind those pages, on the Mac. Read only, except two tabs it keeps in
 | Read | Pace | Query |
 |---|---|---|
 | Gmail inbox | 10 min | `in:inbox newer_than:3d -from:me` |
-| Website leads | 10 min | Luxury Presence lead and home value emails, 14 days. Name, phone, email and area are read from the email body. |
+| Website leads | every pass (5 min) | Luxury Presence lead and home value emails, 14 days. Name, phone, email and area are read from the email body. |
 | Google Calendar | 15 min | primary calendar, today through 30 days |
 | AIRE Deals sheet | 30 min | `Deals!A1:L300`, matched by header name |
 | Chase alerts | 60 min | `from:(chase.com) newer_than:30d`, type and amount from the subject and preview |
