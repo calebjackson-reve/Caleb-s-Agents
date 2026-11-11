@@ -95,7 +95,7 @@
     const heat = p.heat != null ? `${esc(String(p.heat))} of 100, ${esc(p.temp || '')}${(p.reasons || []).length ? `<ul>${p.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}` : '';
     return `<section class="panel pcard" aria-label="Contact card"><div class="dh"><span class="ico">${esc(initials(String(p.display || '').trim()))}</span>
         <div class="who"><b>${C.pname(p.display)}</b><small>${Stage.chip(p.stage)}${Stage.cadence(key(p.band)) || '<span class="cad">no cadence set</span>'}</small></div>${x}</div>
-      <div class="dbody">${P.planHTML(p)}${P.actsHTML(p)}
+      <div class="dbody">${P.planHTML(p)}${P.actsHTML(p)}${P.moreHTML(id)}
         <dl class="pc-facts">
           ${fact('Heat', heat, 'Not hot or warm right now, so the feed carries no score for them')}
           ${fact('Phone', ph ? esc(fmtPhone(ph)) : p.phone ? esc(p.phone) + ' (not a valid US number)' : '', 'No phone on the sheet')}
@@ -109,8 +109,21 @@
         </dl></div></section>`;
   };
 
+  // The rest of the record, read for this one person by Reach.card (reach.js, a read and nothing else): home value, equity, years owned, lead source, last
+  // deal and household, each with where it came from, how many of the eight are known, and the likely-seller score with
+  // its two biggest reasons. A fact with no source prints as unknown with the reason. Never a guessed number.
+  P.moreHTML = function (id) {
+    const x = Reach.cards[String(id)], wrap = h => `<section class="pc-rec" aria-label="Record">${h}</section>`;
+    if (!x) return wrap('<p class="lt-quiet">Reading the rest of the record.</p>');
+    if (!x.ok) return wrap(`<p class="lt-quiet">${esc(x.error && x.error !== 'offline' ? x.error : 'The rest of the record did not load. Close the card and open it again.')}</p>`);
+    const s = x.seller;
+    const sell = s ? `<div class="pc-seller"><b class="pc-score">${Number(s.score)}</b><div><span>Likely-seller score, of 100</span>${s.reasons.length ? `<ul>${s.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : '<small>Nothing on record points to a sale yet.</small>'}</div></div>`
+      : `<div class="pc-seller none"><b class="pc-score">unknown</b><div><span>Likely-seller score</span><small>${x.homeowner ? 'Agents, lenders and vendors are not scored.' : 'No street address on the sheet, so there is no homeowner to score.'}</small></div></div>`;
+    return wrap(`<div class="pc-meter" role="img" aria-label="${x.known} of ${x.total} known"><b>${x.known} of ${x.total} known</b><span class="pc-bar">${x.facts.map(f => `<i class="${f.value ? 'on' : ''}" title="${esc(f.label)}: ${f.value ? 'known' : 'unknown'}"></i>`).join('')}</span></div>
+      ${sell}<dl class="pc-facts">${x.facts.filter(f => f.key !== 'phone' && f.key !== 'email').map(f => `<dt>${esc(f.label)}</dt><dd${f.value ? '' : ' class="pc-missing"'}>${f.value ? esc(f.value) : 'unknown'}<small>${esc(f.value ? f.from : f.why)}</small></dd>`).join('')}</dl>`);
+  };
   P.open = function (id) {
-    S.compose = null; S.card = String(id);
+    S.compose = null; S.card = String(id); Reach.card(id);
     const d = $('#drawer'); d.hidden = false; P.shown = P.html(id); d.innerHTML = P.shown;
     const b = d.querySelector && d.querySelector('.pc-primary'); if (b && b.focus) b.focus();
   };

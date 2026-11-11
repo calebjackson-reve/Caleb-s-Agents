@@ -135,8 +135,8 @@
   };
   // Add a lead: one form, saved by crm.py (it refuses a name, phone or email already in the CRM, and says so when
   // that person is on Do Not Contact). Click Add a lead, fill it in, click Save: two clicks.
-  C.addLead = async i => {
-    const r = i == null ? {} : leadRows()[i] || {};
+  C.addLead = async (i, row) => {
+    const r = row || (i == null ? {} : leadRows()[i] || {});
     const SRC = ['Website', 'Referral', 'Sign call', 'Open house', 'Social', 'Past client', 'Other'];
     // A lead copied from a card arrives with its details filled in.
     const fill = v => (!v ? '' : `value="${esc(v)}"`);
@@ -147,7 +147,7 @@
       <div class="field"><label for="m-lsrc">Source</label><select id="m-lsrc">${SRC.map(x => `<option ${(r.source ? /luxury|website/i.test(r.source) && x === 'Website' : x === 'Website') ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
       <p class="cc-note">Saved to the CRM as a new lead. Refused if the name, phone or email is already there or on Do Not Contact.</p>`,
       m => { const typed = id => $(id, m).value.trim(), name = typed('#m-lname'); if (!name) { $('#m-lname', m).focus(); return false; }
-        return { name, phone: typed('#m-lphone'), email: typed('#m-lemail'), source: $('#m-lsrc', m).value + ' ' + (C.data ? C.data.today : todayISO()), next_action: 'Reach out: new lead' }; }, 'Save lead');
+        return { name, phone: typed('#m-lphone'), email: typed('#m-lemail'), source: $('#m-lsrc', m).value + ' ' + (C.data ? C.data.today : todayISO()), next_action: 'Reach out: new lead', note: r.note || r.message || '' }; }, 'Save lead');
     if (v) await act('/api/lead', v, { tag: 'LEAD', text: `${v.name} is in the CRM as a new lead` }).then(ok => { if (ok) C.load(); });
   };
   Object.assign(C.views, { commission, deadlines, calendar, ccleads });

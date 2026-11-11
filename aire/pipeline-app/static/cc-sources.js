@@ -90,11 +90,25 @@
       ${card('Phone alerts', `<p class="cc-note">A new website lead, a contract deadline within 24 hours, or a read that fails. Each comes once. The lock screen never shows a client's name.</p>
         <p class="cc-note" id="cc-push-state">${'PushManager' in window ? (Notification.permission === 'granted' ? 'Alerts are allowed on this device.' : 'Alerts are off on this device.') : 'This browser can\'t take alerts. On the iPhone, add Pipeline to the Home Screen first, then open it from there.'}</p>
         <div class="cc-acts"><button type="button" class="cc-primary" onclick="CC.pushOn()">Turn on alerts on this device</button><button type="button" class="cc-btn" onclick="CC.pushTest()">Send a test alert</button></div>`, [])}
+      ${C.formulaHTML()}
       ${card('Last sync', `<p class="${sy.error ? 'cc-warn' : 'cc-note'}">${sy.at ? 'Last pass ' + esc(when(sy.at)) + (sy.error ? ': ' + esc(sy.error_text || 'Google sign-in did not work') : ', no sign-in problems') : 'The sync has not run on this Mac yet.'}</p>
         <div class="cc-tablewrap"><table class="cc-table"><caption class="sr">Each source and its state</caption><thead><tr><th scope="col">Source</th><th scope="col">State</th><th scope="col">Last good read</th><th scope="col">Detail</th></tr></thead><tbody>${rows}</tbody></table></div>
-        <p class="cc-note">The Mac checks every 5 minutes. Each read has its own pace: inbox and leads 10 minutes, calendar, Life and Workouts 15, Deals sheet 30, Chase alerts 60, news and commission mail 120, market 12 hours. Today's Scorecard row is added after 6 AM Central.</p>`, [])}
+        <p class="cc-note">The Mac checks every 5 minutes. Each read has its own pace: website leads on every check, inbox 10 minutes, calendar, Life and Workouts 15, Deals sheet 30, Chase alerts 60, news and commission mail 120, market 12 hours. Today's Scorecard row is added after 6 AM Central.</p>`, [])}
       </div>`;
   }
+
+  // The scoring rules in words. The Mac writes them from the same numbers the code uses, so this page cannot drift.
+  C.formulaHTML = function () {
+    const fm = C.data.formula; if (!fm) return '';
+    const tbl = (cap, parts) => `<div class="cc-tablewrap"><table class="cc-table"><caption class="sr">${cap}</caption><thead><tr><th scope="col">Part</th><th scope="col">Most it adds</th><th scope="col">Rule</th></tr></thead>
+      <tbody>${parts.map(p => `<tr><th scope="row">${esc(p.label)}</th><td>${Number(p.max)}</td><td>${esc(p.rule)}</td></tr>`).join('')}</tbody></table></div>`;
+    const la = (S.data || {}).lead_alert || {};
+    return card('How the scores work', `<h3 class="cc-h3">Likely-seller score, 0 to ${Number(fm.seller.max)}</h3>
+      <p class="cc-note">${esc(fm.seller.who)} The parts are added up. A person's card shows the score and its two biggest reasons, and People, Likely sellers lists the top 25.</p>${tbl('Likely-seller score', fm.seller.parts)}
+      <h3 class="cc-h3">Call these 10 today</h3><p class="cc-note">Money, intent and waiting are added up and ranked first. Cadence only breaks a tie.</p>${tbl('Call these 10 today', fm.call10.parts)}
+      <p class="cc-note">Left out: ${esc(fm.call10.left_out)}</p>
+      <h3 class="cc-h3">New lead alert</h3><p class="cc-note">${la.on ? 'On. Each new lead shows a notification on this Mac and sends one iMessage to your own number, (225) 747-0303, and to nobody else.' : 'Off on this Mac. Only the one Mac that sends gives the alert, so you never get it twice.'} ${la.last ? 'Last alert ' + esc(when(la.last.at)) + '.' : 'No alert has gone from this Mac yet.'} Website leads are read every 5 minutes.</p>`, []);
+  };
 
   C.pushOn = async () => {
     try {

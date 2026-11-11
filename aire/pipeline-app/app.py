@@ -55,7 +55,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -70,6 +70,7 @@ import push  # noqa: E402  (phone alerts)
 import cc_ask  # noqa: E402  (Ask Claude on every Command Center page)
 import bridge  # noqa: E402  (jobs out to Grok bot, result files back)
 import drafter  # noqa: E402  (Claude writes each draft from the template, in Caleb's voice)
+import insight  # noqa: E402  (the call list, the fuller contact card, the likely-seller score)
 import handoff  # noqa: E402  (texts and emails Caleb sends himself from the Text and Email buttons)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
@@ -383,6 +384,11 @@ class State:
         self.push_key = (send_log.parent / "push-keys.json") if send_log else (OUT / "demo-push-keys.json" if demo else push.KEY_FILE)
         self.auth = auth.Auth((send_log.parent if send_log else OUT) / ("demo-sessions.json" if demo else "sessions.json"),
                               login_file=Path(os.getenv("PIPELINE_LOGIN_FILE") or auth.LOGIN_FILE))
+        # The new-lead alert to Caleb himself: only on the one Mac that may send, never in demo. PIPELINE_SELF_ALERT=off stops it.
+        self.lead_alert_path = (send_log.parent if send_log else OUT) / ("demo-lead-alerts.json" if demo else "lead-alerts.json")
+        self.self_alert = (not demo and platform.system() == "Darwin" and os.getenv("PIPELINE_SELF_ALERT", "on").strip().lower() != "off"
+                           and bool(short_host(os.getenv("PIPELINE_LIVE_HOST", ""))) and short_host(os.getenv("PIPELINE_LIVE_HOST", "")) == short_host(socket.gethostname()))
+        self._insight: tuple = (None, None)
         self.cc_dir = cc.demo_folder(FIXTURES / "cc", Path(tempfile.mkdtemp(prefix="pipeline-cc-"))) if demo else OUT / "cc"
 
     # ---- reads
@@ -411,7 +417,64 @@ class State:
         """The Command Center payload: one lead list, one deal source, built with the CRM feed. A lead counts as
         replied once a real (not dry run) text or email went to that person."""
         sent = {r.get("person_id") for r in self.send_log() if r.get("status") == "sent" and r.get("person_id")}
-        return cc.build(self.cc_dir, feed=self.feed() or {}, replied=sent)
+        p = cc.build(self.cc_dir, feed=self.feed() or {}, replied=sent)
+        p["formula"] = insight.formula()  # the scoring rules in words, for the Sources page
+        p["speed"] = insight.lead_cards(p["leads"])  # the New leads card on Home: no reply yet, newest first, a first text each
+        return p
+
+    def insight(self) -> dict:
+        """The call list, the likely sellers and the book the contact card reads, worked out once per feed and read."""
+        feed = self.feed() or {}
+        done = {r.get("person_id") for r in self.send_log() if r.get("status") == "sent" and str(r.get("at", "")).startswith(today().isoformat()) and r.get("person_id")}
+        stamp = lambda n: (lambda p: p.stat().st_mtime_ns if p.exists() else 0)(self.cc_dir / f"{n}.json")
+        key = (feed.get("generated_at"), today().isoformat(), tuple(sorted(done)), stamp("deals"), stamp("sales"), stamp("leads"))
+        if self._insight[0] != key:
+            raw = cc.load(self.cc_dir)
+            leads = cc.attach_crm(cc._rows(raw.get("leads")), (feed.get("new_leads") or []) + (feed.get("touches_due") or []))
+            book = insight.Book(feed, cc.deal_rows(cc._rows(raw.get("deals"))), cc._rows(raw.get("sales")), [{**r, "origin": "email"} for r in leads], today())
+            self._insight = (key, {"book": book, "call10": insight.call10(feed, today(), done), "sellers": book.sellers(25)})
+        return self._insight[1]
+
+    def lead_alert_pass(self, notify=None, text=None) -> dict:
+        """Tell Caleb about each new lead once: a notification on this Mac and one iMessage to his own number
+        (SELF_ALERT_TO). The only send Pipeline makes without a tap, and it can reach nobody else: the number is not a
+        parameter. The first pass only learns the leads already there."""
+        cards = insight.lead_cards(self.cc_payload()["leads"])
+        ready = bool((read_json(self.cc_dir / "leads.json", {}) or {}).get("at"))  # the lead read has landed at least once
+        with self.lock:  # remember them first, so a lead can never alert twice even if a send hangs or fails
+            doc = read_json(self.lead_alert_path, {})
+            doc = doc if isinstance(doc, dict) and "_error" not in doc else {}
+            fresh, state = insight.new_lead_alerts(cards, doc.get("state") or {}, ready)
+            if state != doc.get("state"):
+                write_json(self.lead_alert_path, {"state": state, "log": doc.get("log") or []})
+        on, done = self.self_alert or notify is not None or text is not None, []
+        for c in fresh:  # outside the lock: Messages can take seconds to answer
+            line = insight.alert_text(c)
+            e = {"at": now().isoformat(timespec="seconds"), "key": c["key"], "text": line, "mac": "off", "imessage": "off"}
+            if on:
+                try:
+                    (notify or notify_mac)("Pipeline", line)
+                    e["mac"] = "shown"
+                except Exception as ex:
+                    e["mac"] = f"failed: {ex}"[:120]
+                try:
+                    e["imessage"] = (text or send_imessage)(SELF_ALERT_TO, line)
+                except Exception as ex:
+                    e["imessage"] = f"failed: {ex}"[:160]
+            done.append(e)
+        if done:
+            with self.lock:
+                doc = read_json(self.lead_alert_path, {})
+                write_json(self.lead_alert_path, {"state": (doc or {}).get("state") or state, "log": (((doc or {}).get("log") or []) + done)[-100:]})
+        return {"new": len(fresh), "alerts": done}
+
+    def lead_loop(self, sleep=time.sleep) -> None:
+        while True:
+            try:
+                self.lead_alert_pass()
+            except Exception:
+                pass
+            sleep(60)
 
     def sent_today(self) -> dict:
         d = today().isoformat()
@@ -697,6 +760,11 @@ class State:
             if gone:
                 feed = {**feed, "market": {**feed["market"], "rows": [r for r in feed["market"].get("rows", []) if r.get("id") not in gone]}}
         problems = []
+        try:  # a bad row in a read must never take the whole screen down
+            ins = self.insight() if feed_ok else {}
+        except Exception as e:
+            ins = {"call10": {"rows": [], "considered": 0, "left_out": {}}, "sellers": []}
+            problems.append({"level": "warn", "code": "insight_failed", "text": f"The call list and seller scores could not be worked out ({type(e).__name__}). The rest of the screen is fine."})
         if not feed:
             problems.append({"level": "warn", "code": "no_feed", "text": "The CRM feed has not been built yet. Press refresh to build it."})
         elif "_error" in feed:
@@ -732,7 +800,12 @@ class State:
             "feed_ok": feed_ok,
             "feed_age_minutes": feed_age,
             "feed_run": run,
-            "feed": feed if feed_ok else {},
+            # facts (assessment, notes, household for every contact) stay on the server: a card asks for one person.
+            "feed": {k: v for k, v in feed.items() if k != "facts"} if feed_ok else {},
+            "call10": ins["call10"] if feed_ok else {"rows": [], "considered": 0, "left_out": {}},
+            "sellers": ins["sellers"] if feed_ok else [],
+            "has_facts": "facts" in feed,
+            "lead_alert": {"on": self.self_alert, "last": ((read_json(self.lead_alert_path, {}) or {}).get("log") or [None])[-1]},
             "text_queue": text_q if "_error" not in text_q else {},
             "email_queue": email_q if "_error" not in email_q else {},
             "command": command if "_error" not in command else {},
@@ -1243,6 +1316,15 @@ def csv_safe(v: str, column: str = "") -> str:
     return "'" + v if v[:1] in ("=", "+", "-", "@", "\t", "\r") else v
 
 
+SELF_ALERT_TO = "+12257470303"  # Caleb's own number (2026-11-11). The new-lead alert goes here and to nobody else.
+
+
+def notify_mac(title: str, text: str) -> None:
+    """A macOS notification on this Mac. The words go in as arguments, never inside the script."""
+    subprocess.run(["osascript", "-e", "on run argv\ndisplay notification (item 2 of argv) with title (item 1 of argv)\nend run", title, text],
+                   capture_output=True, text=True, timeout=20)
+
+
 CHAT_DB = Path.home() / "Library" / "Messages" / "chat.db"
 APPLE_EPOCH = 978307200  # chat.db dates are nanoseconds since 2001-01-01
 
@@ -1425,6 +1507,9 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(raw)
             return
+        if u.path == "/api/card":
+            pid = (urllib.parse.parse_qs(u.query).get("id") or [""])[0]
+            return self._json(200, self.state.insight()["book"].card(pid))
         if u.path == "/api/cc":
             p = self.state.cc_payload()
             p["ask"] = {"on": bool(self.state.ask_key) or self.state.demo, "cap": cc_ask.CAP, "model": cc_ask.MODEL, "pages": list(cc_ask.PAGES),
@@ -1620,6 +1705,7 @@ def serve(state: State, port: int, open_browser: bool) -> None:
     httpd = Server(("127.0.0.1", port), Handler)
     threading.Thread(target=state.handoff_loop, daemon=True).start()
     threading.Thread(target=state.draft_loop, daemon=True).start()
+    threading.Thread(target=state.lead_loop, daemon=True).start()
     url = f"http://127.0.0.1:{port}/"
     v = state.voice_info()
     print(f"Pipeline {'(demo) ' if state.demo else ''}on {url}  sender={state.sender}  crm python={getattr(state.crm, 'python', 'demo')}  "
@@ -2091,6 +2177,41 @@ def run_tests() -> int:
     st = json.loads(urllib.request.urlopen(base + "/api/state").read())
     check(st["feed"]["counts"]["contacts"] > 0, "GET /api/state")
     ccp = json.loads(urllib.request.urlopen(base + "/api/cc").read())
+    # round 5: speed to lead, the call list, the fuller card, the seller score
+    check(len(ccp["speed"]) == 3 and ccp["speed"][0]["draft"]["kind"] == "text" and all(c["draft"]["body"] for c in ccp["speed"]),
+          "/api/cc carries the New leads card: no reply yet, a first text drafted for each")
+    st5 = json.loads(urllib.request.urlopen(base + "/api/state").read())
+    check(0 < len(st5["call10"]["rows"]) <= 10 and all(r["reason"] and r["phone"] for r in st5["call10"]["rows"]), "/api/state carries at most ten people to call, each with a reason and a phone")
+    check("facts" not in st5["feed"] and st5["has_facts"] and 0 < len(st5["sellers"]) <= 25 and st5["sellers"][0]["score"] >= st5["sellers"][-1]["score"],
+          "the likely sellers are the top 25 at most, highest first, and the facts table stays on the server")
+    card = json.loads(urllib.request.urlopen(base + "/api/card?id=503").read())
+    check(card["ok"] and card["known"] == 7 and card["total"] == 8 and card["seller"]["score"] == 65 and len(card["seller"]["reasons"]) == 2,
+          "/api/card gives one person's facts, the count known and the seller score with two reasons")
+    eq = next(x for x in card["facts"] if x["key"] == "equity")
+    check(eq["value"] is None and eq["why"], "a fact with no source comes back with no value and a reason, never a number")
+    check(json.loads(urllib.request.urlopen(base + "/api/card?id=nobody").read())["ok"] is False, "/api/card says so for someone not in the feed")
+    check(ccp["formula"]["seller"]["max"] == 100, "/api/cc carries the scoring rules for the Sources page")
+    s5 = State(demo=True, send_log=tmp / "r5" / "send-log.json")
+    sent5, shown5 = [], []
+    check(s5.lead_alert_pass(notify=lambda t, x: shown5.append(x), text=lambda to, body: sent5.append((to, body)) or "ok")["new"] == 0 and not sent5,
+          "the first lead pass only learns the leads already there")
+    lf = s5.cc_dir / "leads.json"
+    ld = json.loads(lf.read_text())
+    ld["rows"].append({"threadId": "new-1", "name": "Nora Madeup", "phone": "(225) 555-0166", "received": now().isoformat(timespec="seconds"),
+                       "source": "Website lead", "message": "Looking for 3 beds in Zachary"})
+    lf.write_text(json.dumps(ld))
+    r5 = s5.lead_alert_pass(notify=lambda t, x: shown5.append(x), text=lambda to, body: sent5.append((to, body)) or "ok")
+    check(r5["new"] == 1 and sent5 == [(SELF_ALERT_TO, "New lead: Nora Madeup, Looking for 3 beds in Zachary")] and shown5 == [sent5[0][1]],
+          "a new lead alerts once: a notification on the Mac and one iMessage, to Caleb's own number only")
+    check(SELF_ALERT_TO == "+12257470303" and s5.lead_alert_pass(notify=lambda t, x: shown5.append(x), text=lambda to, body: sent5.append((to, body)))["new"] == 0 and len(sent5) == 1,
+          "the same lead never alerts twice")
+    ld["rows"].append({"threadId": "new-2", "name": "Omar Madeup", "email": "omar@example.com", "received": now().isoformat(timespec="seconds")})
+    lf.write_text(json.dumps(ld))
+    r5 = s5.lead_alert_pass()
+    check(not s5.self_alert and r5["new"] == 1 and r5["alerts"][0]["imessage"] == "off" and len(sent5) == 1, "in demo, and on any Mac but the one that sends, the alert is logged and nothing leaves")
+    import cc_sync
+    check(cc_sync.due("leads", {"tried_at": (now() - timedelta(minutes=4, seconds=58)).isoformat()}, now(), False) and cc_sync.READS["leads"][0] == cc.PACE_MIN["leads"],
+          "website leads are read on every 5 minute pass, even one that wakes a second early")
     check(ccp["demo"] and ccp["fresh"]["deals"]["state"] == "ok" and ccp["scorecard"]["pending"]["value"] > 0, "GET /api/cc in demo")
     req = urllib.request.Request(base + "/api/touch", data=json.dumps({"person_id": "118", "what": "test"}).encode(),
                                  headers={"Content-Type": "application/json"})
