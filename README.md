@@ -32,6 +32,7 @@ cd skills/nick-saraev/<course> && zip -r <skill-name>.zip <skill-name>
 | [`ai-weekly-brief`](skills/ai-weekly-brief/SKILL.md) | Monday sweep of what changed in AI and the major apps, saved to `aire/ai-briefs/` with sources, ranked for what moves the business. |
 | [`aire-stack`](skills/aire-stack/SKILL.md) | Reads `aire/STACK.md` so every task uses the right model, app and subscription without re-explaining the setup. |
 | [`ai-compliance-check`](skills/ai-compliance-check/SKILL.md) | Checks every client-facing draft against Louisiana advertising rules, fair housing, texting rules and AI disclosure before Caleb sees it. |
+| [`motion-brief`](skills/motion-brief/SKILL.md) | Writes a ready-to-paste Claude Motion prompt (8-part brief plus scene) for listing, open house, stat and reel B-roll animations. Drafts only. |
 | [`agent-offer-builder`](skills/agent-offer-builder/SKILL.md) | Packages a working AIRE workflow into free Skool content, a workshop, and a done-for-you install. Drafts only. |
 
 ## Projects
