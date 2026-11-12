@@ -103,6 +103,19 @@ try:
     check(sum(1 for p in snap["feed"]["map"]["pins"] if p.get("kind") == "deal") == sum(1 for p in app.read_json(s.paths["feed"], {})["map"]["pins"] if p.get("kind") == "deal"), "live deal pins are untouched and stay kind=deal")
     live = app.State(demo=False)
     check(live.sale_geocoder is None and live.sale_cache_path == sale_pins.default_cache_path(), "a bare live State has no geocoder: only serve() turns Census on")
+    # A confirmed sale link (injected, synthetic) puts the person on the pin; every other sale stays unlinked.
+    with tempfile.TemporaryDirectory() as tmp2:
+        c2 = Path(tmp2) / "geo.json"
+        lrows = ROWS[:2]
+        link = lambda r: "9001" if r["address"].startswith("12 ") else ("9999" if r["address"].startswith("40 ") else None)
+        lp, _ = sale_pins.build(lrows, c2, fake, linked=link, people={"9001": "Pretend Person"})
+        by = {p["address"]: p for p in lp}
+        check(by["12 Fixture Row"]["person_id"] == "9001" and by["12 Fixture Row"]["display"] == "Pretend Person" and by["12 Fixture Row"]["sale"] is True and by["12 Fixture Row"]["kind"] == "sale"
+              and by["12 Fixture Row"]["label"] != "Closed sale, not linked to a person" and "Pretend" not in by["12 Fixture Row"]["label"], "a linked sale pin carries person_id and display, a clear label, and is still a sale")
+        check(by["40 Example Lane"]["person_id"] is None and by["40 Example Lane"]["display"] == "" and by["40 Example Lane"]["label"] == "Closed sale, not linked to a person",
+              "a link to someone no longer in the feed leaves the pin unlinked")
+        up, _ = sale_pins.build(lrows, c2, None)
+        check(all(p["person_id"] is None and p["label"] == "Closed sale, not linked to a person" for p in up), "no links given: pins are unlinked as before")
 finally:
     socket.socket = sock
 after = sorted(os.listdir(home)) if os.path.isdir(home) else None

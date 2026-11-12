@@ -390,8 +390,10 @@ class Book:
 
     def __init__(self, feed: dict, deals_sheet: list[dict] | None = None, sales: list[dict] | None = None,
                  leads: list[dict] | None = None, today: date | None = None, weights: dict | None = None,
-                 mail_signals: dict | None = None):
+                 mail_signals: dict | None = None, sale_links: dict | None = None):
         f = feed or {}
+        # Caleb's confirmed sale links on this Mac: {person_id: [{address, close}]}. A confirmed link counts as a closed sale for that person.
+        self.sale_links = sale_links or {}
         self.mail_signals = mail_signals  # None: read the optional gmail-signals.json on first use
         self.weights = weights
         # Flexmls listings that expired or were withdrawn, by house number: someone who tried to sell and did not.
@@ -453,7 +455,9 @@ class Book:
         return self.mail_signals
 
     def last_touch(self, p: dict, deals: list[dict]) -> dict | None:
-        return last_touch(p, deals, self.today, self.mail())
+        # A sale Caleb confirmed to this person counts as a close for last touch only (not for the seller score or years owned).
+        linked = [{"status": "closed", "day": d["close"]} for d in self.sale_links.get(str(p.get("person_id") or ""), [])]
+        return last_touch(p, list(deals) + linked, self.today, self.mail())
 
     def years_owned(self, deals: list[dict]) -> dict | None:
         """Years since they bought this house with Caleb: a closed buyer side at their own address. Nothing else in

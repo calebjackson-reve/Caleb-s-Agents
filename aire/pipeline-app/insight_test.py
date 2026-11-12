@@ -215,6 +215,13 @@ em_feed = {"people": [{"person_id": "81", "display": "Fixture Fay", "last_touch"
 em_book = I.Book(em_feed, [], [], [], TODAY, mail_signals={"fay@example.com": {"last_inbound": "2026-10-20"}})
 check(em_book.card("81")["last_touch"] == {"day": "2026-10-20", "from": "email", "days_ago": 22}, "Book fills a missing people.email from the pin so an email date can win")
 
+# A sale Caleb confirmed to a person counts as a close for last touch, and only for last touch.
+sl_feed = {"people": [{"person_id": "82", "display": "Fixture Finn", "street": "9 Elsewhere Ave", "last_touch": "2026-01-01"},
+                      {"person_id": "83", "display": "Fixture Gia", "street": "9 Elsewhere Ave", "last_touch": "2026-01-01"}]}
+sl_book = I.Book(sl_feed, [], [], [], TODAY, sale_links={"82": [{"close": "2026-09-30"}, {"close": "2027-01-01"}]}, mail_signals={})
+check(sl_book.card("82")["last_touch"] == {"day": "2026-09-30", "from": "closed sale", "days_ago": 42}, "a confirmed sale link gives that person the close as their last touch (a future close is ignored)")
+check(sl_book.card("83")["last_touch"]["from"] == "CRM sheet" and I.Book(sl_feed, [], [], [], TODAY, mail_signals={}).card("82")["last_touch"]["from"] == "CRM sheet", "someone with no link, or a book with no links, is unchanged")
+check(sl_book.deals_for("82", "9 Elsewhere Ave") == [], "a sale link adds no deal, so the seller score and years owned do not move")
 
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")
 sys.exit(1 if fails else 0)

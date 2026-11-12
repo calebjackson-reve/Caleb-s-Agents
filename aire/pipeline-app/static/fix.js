@@ -68,6 +68,20 @@
     if (r && r.ok) { toast('ok', action === 'confirm' ? 'CONFIRMED' : 'NOT THEM', action === 'confirm' ? 'Saved on this Mac. Nothing was sent and the CRM was not changed.' : 'Saved on this Mac. That pair will not be suggested again.'); C.load(); }
     else toast('err', 'NOT SAVED', (r && r.error) || 'The tap was not saved.');
   };
+  // Who was this sale? Confirm the suggestion, pick another existing feed person, or skip. One local file on this Mac (sale-links.json).
+  F.saleLink = async function (sale_key, action, person_id) {
+    const r = await api('/api/sale-link', { sale_key, action, person_id: person_id || '' });
+    if (r && r.ok) { toast('ok', action === 'skip' ? 'SKIPPED' : 'LINKED', action === 'skip' ? 'Saved on this Mac. It will not be asked again.' : 'Saved on this Mac. Nothing was sent and the CRM was not changed.'); C.load(); }
+    else toast('err', 'NOT SAVED', (r && r.error) || 'The tap was not saved.');
+  };
+  F.salePick = function (i) { const el = document.getElementById('sp-box-' + i); if (!el) return; el.hidden = !el.hidden; if (!el.hidden) { const q = el.querySelector('input'); if (q) q.focus(); } };
+  F.saleSearch = function (i, key, q) {
+    const out = document.getElementById('sp-res-' + i); if (!out) return;
+    const s = String(q || '').trim().toLowerCase(), ppl = ((d0().sale_cards || {}).people || []);
+    const hit = s ? ppl.filter(p => String(p.display).toLowerCase().includes(s)).slice(0, 8) : [];
+    out.innerHTML = hit.length ? hit.map(p => `<li><button type="button" onclick="Fix.saleLink(${jsa(key)}, 'pick', ${jsa(p.person_id)})">${esc(p.display)}</button></li>`).join('')
+      : (s ? '<li class="cc-note">No one in your contacts matches that.</li>' : '');
+  };
   F.MAX = 40;
   function fixes() {
     const g = C.guard(); if (g) return g;
@@ -90,11 +104,24 @@
       `<p class="cc-note">People who liked, commented on or shared your posts, and who they might be in your CRM. Nothing is linked until you tap Confirm. Confirm and Not them are saved on this Mac only: nothing is sent and the CRM is not changed.</p>
       <ul class="cc-rows">${sm.slice(0, F.MAX).map(r => `<li class="cc-row fx-row sm-row"><div class="cc-row-main"><h3>Is @${esc(r.handle)} ${C.pname(r.contact)}${r.contact_city ? ' in ' + esc(r.contact_city) : ''}?</h3><p class="cc-note">${esc(r.why)}</p><p class="cc-note fx-from">${esc(r.platform === 'fb' ? 'Facebook' : 'Instagram')}${r.display_name ? ', shown as ' + esc(r.display_name) : ''}. <b>${CONF[r.confidence] || esc(r.confidence)}</b> confidence.</p></div>
         <div class="cc-acts"><button type="button" class="cc-primary" onclick="Fix.matchSocial(${jsa(r.platform)}, ${jsa(r.handle)}, ${jsa(r.contact_id)}, 'confirm')">Confirm</button><button type="button" onclick="Fix.matchSocial(${jsa(r.platform)}, ${jsa(r.handle)}, ${jsa(r.contact_id)}, 'reject')">Not them</button></div></li>`).join('')}</ul>${sm.length > F.MAX ? `<p class="cc-note">${sm.length - F.MAX} more. Search to narrow the list.</p>` : ''}`, ['crm']) : '';
+    // "Who was this sale?": closed sales with no confirmed client yet. Confirm, Pick another contact (existing feed people only), or skip.
+    // Saved in sale-links.json on this Mac. Nothing is sent and no person is created or edited.
+    const sc = ((d0().sale_cards || {}).pending || []).filter(r => matches(`${r.address} ${r.city} ${(r.owner_names || []).join(' ')} ${(r.suggestion || {}).display || ''}`));
+    const saleSide = v => /list|seller/i.test(v || '') ? 'List side' : /buy/i.test(v || '') ? 'Buy side' : /both|dual/i.test(v || '') ? 'Both sides' : esc(v || 'Side unknown');
+    const saleCard = sc.length ? C.card(`Who was this sale? <span class="cc-count">${sc.length}</span>`,
+      `<p class="cc-note">Closed sales with no client linked yet. Confirm the suggested contact, pick someone else already in your contacts, or skip it. Saved on this Mac only: nothing is sent and the CRM is not changed.</p>
+      <ul class="cc-rows">${sc.slice(0, F.MAX).map((r, i) => `<li class="cc-row fx-row ss-row"><div class="cc-row-main"><h3>${esc(r.address)}${r.city ? ', ' + esc(r.city) : ''}</h3>
+        <p class="cc-note">Closed ${r.close ? esc(C.day(r.close)) : 'on an unknown date'}. ${saleSide(r.side)}.</p>
+        <p class="cc-note">${(r.owner_names || []).length ? 'Assessor owner: ' + r.owner_names.map(esc).join(', ') : 'No assessor owner on file.'}</p>
+        <p class="cc-note fx-from">${r.suggestion ? `Suggested: <b>${C.pname(r.suggestion.display)}</b>${r.suggestion.tier ? ', ' + esc(r.suggestion.tier) + ' match' : ''}.` : 'No suggested contact.'}</p>
+        <div id="sp-box-${i}" class="ss-pick" hidden><input type="search" aria-label="Search your contacts" placeholder="Search your contacts" oninput="Fix.saleSearch(${i}, ${jsa(r.sale_key)}, this.value)"><ul id="sp-res-${i}" class="cc-rows"></ul></div></div>
+        <div class="cc-acts">${r.suggestion ? `<button type="button" class="cc-primary" onclick="Fix.saleLink(${jsa(r.sale_key)}, 'confirm', ${jsa(r.suggestion.person_id)})">Confirm</button>` : ''}<button type="button" onclick="Fix.salePick(${i})">Pick another contact</button><button type="button" onclick="Fix.saleLink(${jsa(r.sale_key)}, 'skip')">Not a client / skip</button></div></li>`).join('')}</ul>${sc.length > F.MAX ? `<p class="cc-note">${sc.length - F.MAX} more. Search to narrow the list.</p>` : ''}`, ['crm']) : '';
     const capLine = cap.amount == null ? `<p class="cc-warn">${esc(cap.note || 'The cap is unknown.')}</p>` : `<p class="${cap.differs ? 'cc-warn' : 'cc-note'}">Cap from Goals: <b>${C.m(cap.amount)}</b>. ${esc(cap.note || 'That is $20,000 plus the $3,000 royalty.')}</p>`;
     return `<div class="cc-page">${C.head('Fix list', 'Rows that look wrong, with the problem and a suggested fix. You approve one at a time. Pipeline logs your tap and never edits the sheets.')}
       ${C.card('The cap', capLine, ['goals'])}
       ${linkCard}
       ${socialCard}
+      ${saleCard}
       ${groups || C.card('Nothing to fix', C.empty(S.q ? 'No row matches that search.' : 'No row looks wrong right now.'), ['crm', 'deals'])}
       ${C.card(`Approved, yours to change in the sheet <span class="cc-count">${fx.approved.length}</span>`, fx.approved.length ? `<ul class="cc-rows">${fx.approved.map(r => `<li class="cc-row fx-row"><div class="cc-row-main"><h3>${esc(r.what)}</h3><p class="cc-note">${esc(r.fix)}</p><p class="cc-note fx-from">Approved ${esc(C.day(String(r.at || '').slice(0, 10)))}. It leaves this list once the sheet shows the change.</p></div>
         <div class="cc-acts"><button type="button" onclick="Fix.decide('${esc(r.id)}', 'reopen')">Undo</button></div></li>`).join('')}</ul>` : C.empty('Nothing approved is waiting.'), [])}
