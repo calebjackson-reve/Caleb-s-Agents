@@ -270,7 +270,46 @@ def reason_for(pid: str, ctx: dict) -> dict | None:
         if str(c.get("person_id")) == str(pid) and str(c.get("kind") or "").startswith("home anniversary") and abs(int(c.get("days") or 0)) <= 30:
             found.append((1, abs(int(c.get("days") or 0)), {"type": "home_anniversary", "line": f"Their {c['kind']}, is on {c.get('due')}.",
                                                            "date": str(c.get("due") or ""), "mention": True}))
+    soc = social_reason(str(pid), ctx)
+    if soc:
+        found.append((0, (today - date.fromisoformat(soc["date"])).days, soc))
     return min(found, key=lambda x: x[:2])[2] if found else None
+
+
+SOCIAL_DAYS = 14        # the same 14 day look-back two_today.py uses for engagement
+SOCIAL_REAL_ESTATE = ("listing", "just_sold", "open_house", "market_update")
+SOCIAL_POST_WORDS = {"listing": "listing", "just_sold": "just sold", "open_house": "open house", "market_update": "market"}
+SOCIAL_PLATFORM_WORDS = {"ig": "Instagram", "fb": "Facebook"}
+
+
+def social_reason(pid: str, ctx: dict) -> dict | None:
+    """The "saw on IG/FB" reason: a person whose handle is on file or confirmed (never an unconfirmed candidate) did
+    something toward Caleb in the last 14 days. `ctx["social"]` is {person_id: [{day, action, post_type, platform,
+    question}]}, filled by social_match.for_ctx; without it, or without that person, there is no reason and nothing
+    changes. The line is a fixed set of words: no name, handle, phone, email or comment text. Only a comment or share
+    on a real estate post, a story reply or a direct message may be mentioned in a text (mention True); 3 or more
+    likes on real estate posts is a reason to reach out and is never quoted (mention False). A question is a reply
+    Caleb owes, not a check-in reason. This feeds the drafter's reason field only: it does not send, hold or rank."""
+    today = ctx["today"]
+    acts = [a for a in (ctx.get("social") or {}).get(str(pid), []) if 0 <= (today - a["day"]).days <= SOCIAL_DAYS]
+    if not acts or any(a.get("question") for a in acts):
+        return None
+    word = lambda a: SOCIAL_POST_WORDS.get(a.get("post_type"), "")
+    real = lambda a: a.get("post_type") in SOCIAL_REAL_ESTATE
+    strong = [a for a in acts if (a["action"] in ("comment", "share") and real(a)) or a["action"] in ("story_reply", "dm")]
+    likes = [a for a in acts if a["action"] == "like" and real(a)]
+    if strong:
+        a = max(strong, key=lambda x: x["day"])
+        plat = SOCIAL_PLATFORM_WORDS.get(a.get("platform"), "Instagram")
+        line = {"comment": f"They commented on your {word(a)} post.", "share": f"They shared your {word(a)} post.",
+                "story_reply": "They replied to your story.", "dm": f"They messaged you on {plat}."}[a["action"]]
+        mention = True
+    elif len(likes) >= 3:
+        a = max(likes, key=lambda x: x["day"])
+        line, mention = "They have been active on your real estate posts.", False
+    else:
+        return None
+    return {"type": "saw_on_" + (a.get("platform") or "ig"), "line": line, "date": a["day"].isoformat(), "mention": mention}
 
 
 def register_for(pid: str, ctx: dict, first: str) -> tuple[str, str]:

@@ -72,6 +72,7 @@ import bridge  # noqa: E402  (jobs out to Grok bot, result files back)
 import drafter  # noqa: E402  (Claude writes each draft from the template, in Caleb's voice)
 import links  # noqa: E402  (deals tied to people, the Fix list)
 import outreach  # noqa: E402  (the hold rules: who gets no canned draft, and the reason a draft may lead with)
+import social_match  # noqa: E402  (engagers file to CRM candidates; Confirm / Not them write only matches.json)
 import proof  # noqa: E402  (the weekly proof line)
 import learn  # noqa: E402  (the learning loop for the seller score and the call list)
 import insight  # noqa: E402  (the call list, the fuller contact card, the likely-seller score)
@@ -399,6 +400,10 @@ class State:
         self.proof_path = local / ("demo-proof.json" if demo else "proof.json")
         self.learn_dir = local / ("demo-learn" if demo else "learn")
         self.cc_dir = cc.demo_folder(FIXTURES / "cc", Path(tempfile.mkdtemp(prefix="pipeline-cc-"))) if demo else OUT / "cc"
+        # Social matching: the engagers files and matches.json live in $PIPELINE_SOCIAL_DIR (default ~/.aire/social), outside git.
+        # Demo reads the real folder only when PIPELINE_SOCIAL_DIR is set on purpose, so a demo never shows anyone's real handles.
+        self.social_dir = social_match.social_dir() if (not demo or os.getenv("PIPELINE_SOCIAL_DIR")) else None
+        self._social: tuple = (None, None)
 
     # ---- reads
     def feed(self) -> dict:
@@ -450,6 +455,7 @@ class State:
             p["learn"] = learn.scorecard(self.learn_dir, self.learn_events(p["calendar"], ins["ties"]), today())
         except Exception as e:
             p["round58_error"] = f"{type(e).__name__}: {e}"[:200]
+        p["social_matches"] = self.social_matches()  # Match social profiles on the Fix list: candidates only, no phone, email or message text
         p["speed"] = insight.lead_cards(p["leads"])  # the New leads card on Home: no reply yet, newest first, a first text each
         return p
 
@@ -496,6 +502,7 @@ class State:
                 ins = {}
             day = (insight._day(feed.get("as_of")) if self.demo else None) or today()  # the made-up feed is read as of its own day
             ctx = outreach.context(feed, day, self.send_log(), self.bridge_log(), ins.get("ties"), ins.get("checkins"))
+            ctx["social"] = self.social_state().get("_reason") or {}  # "saw on IG/FB" reasons for linked people; empty when there are no files
             text_q, email_q, _ = outreach.screen(text_q, email_q, ctx)
         except Exception as e:
             note = f"The hold rules could not be worked out ({type(e).__name__}), so no draft is shown."
@@ -521,6 +528,70 @@ class State:
                 log.append({"at": now().isoformat(timespec="seconds"), "id": fix_id, "action": action, **{k: row[k] for k in ("kind", "ref", "what", "problem", "fix")}})
             write_json(self.fix_log_path, log[-2000:])
         return {"ok": True, "result": {"id": fix_id, "action": action}}
+
+    # ---- Match social profiles. Reads the engagers files; Confirm and Not them write only $PIPELINE_SOCIAL_DIR/matches.json.
+    # Nothing here touches the CRM, a sheet or the Deals tab, and nothing here sends.
+    def _social_day(self, feed: dict) -> date:
+        return (insight._day(feed.get("as_of")) if self.demo else None) or today()
+
+    def _social_handles(self) -> list[dict]:
+        """handles.csv (person_id,platform,handle) from the enrichment folder: read only. Demo never reads it."""
+        p = HERE.parent / "enrichment" / "out" / "handles.csv"
+        if self.demo or not p.exists():
+            return []
+        try:
+            with p.open(newline="", encoding="utf-8-sig") as f:
+                return [{(k or "").strip().lower(): (v or "").strip() for k, v in r.items()} for r in csv.DictReader(f)]
+        except OSError:
+            return []
+
+    def social_state(self) -> dict:
+        """{pending, pending_total, confirmed, linked, rows, files} for the Fix list, and the recent engagement of linked
+        people for the drafter's reason. No phone, email or message text goes into `pending`. Cached on the files."""
+        empty = {"pending": [], "pending_total": 0, "confirmed": 0, "linked": 0, "rows": 0, "files": 0}
+        d, feed = self.social_dir, self.feed() or {}
+        if d is None or not feed or "_error" in feed:
+            return empty
+        day = self._social_day(feed)
+        try:
+            files = tuple(sorted((p.name, p.stat().st_mtime_ns) for p in d.iterdir() if p.name == "matches.json" or p.name.startswith("engagers-"))) if d.is_dir() else ()
+            key = (str(d), feed.get("generated_at"), day.isoformat(), files)
+            if self._social[0] != key:
+                handles = self._social_handles()
+                rows, _ = social_match.load_engagers(d, until=day)
+                hs = handles + social_match.confirmed_handle_rows(social_match.load_matches(d))
+                self._social = (key, {**social_match.view(d, outreach.context(feed, day), handles, day),
+                                      "_reason": social_match.for_ctx(social_match.to_signal_rows(rows), hs, day)})
+            return self._social[1]
+        except Exception:
+            return empty
+
+    def social_decide(self, platform: str, handle: str, contact_id: str, action: str) -> dict:
+        """Caleb's tap on one Match social profiles row: Confirm, or Not them. Only a pair that is on the pending list can be
+        answered. Writes matches.json and nothing else."""
+        if self.social_dir is None:
+            raise CRMError("Social matching has no folder to write to here")
+        if action not in ("confirm", "reject"):
+            raise CRMError("a match is confirmed or marked Not them")
+        feed = self.feed() or {}
+        if not feed or "_error" in feed:
+            raise CRMError("the CRM feed is not loaded, so nothing was saved")
+        plat, h, cid = social_match.norm_platform(platform), social_match.social.norm_handle(str(handle or "")), str(contact_id or "").strip()
+        day = self._social_day(feed)
+        with self.lock:
+            full = social_match.view(self.social_dir, outreach.context(feed, day), self._social_handles(), day, cap=10 ** 6)
+            if not any(c["platform"] == plat and c["handle"] == h and str(c["contact_id"]) == cid for c in full["pending"]):
+                raise CRMError("that match is no longer on the list")
+            try:
+                social_match.decide(self.social_dir, plat, h, cid, action)
+            except ValueError as e:
+                raise CRMError(str(e))
+            self._social = (None, None)
+        return {"ok": True, "result": {"platform": plat, "handle": h, "contact_id": cid, "action": action}, "social_matches": self.social_matches()}
+
+    def social_matches(self) -> dict:
+        """social_state without the drafter's private half: what /api/state and /api/cc carry."""
+        return {k: v for k, v in self.social_state().items() if not k.startswith("_")}
 
     def feedback(self, which: str, person_id: str, verdict: str) -> dict:
         try:
@@ -940,6 +1011,7 @@ class State:
             "deal_counts": ins.get("deal_counts"), "board_contract": ins.get("board_contract"), "checkins": ins.get("checkins") or [],
             "deal_records": ins.get("records") or [],
             "link_deals": ins.get("link_deals") or [],  # live Deals rows with no person tied: a read-only list
+            "social_matches": self.social_matches() if feed_ok else {"pending": [], "pending_total": 0, "confirmed": 0, "linked": 0, "rows": 0, "files": 0},
             "lead_alert": {"on": self.self_alert, "last": ((read_json(self.lead_alert_path, {}) or {}).get("log") or [None])[-1]},
             "text_queue": text_q if "_error" not in text_q else {},
             "email_queue": email_q if "_error" not in email_q else {},
@@ -1772,6 +1844,8 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.dismiss(body.get("id", ""))
             elif u.path == "/api/fix":
                 out = s.fix_decide(str(body.get("id", "")), str(body.get("action", "")))
+            elif u.path == "/api/social-match":
+                out = s.social_decide(str(body.get("platform", "")), str(body.get("handle", "")), str(body.get("contact_id", "")), str(body.get("action", "")))
             elif u.path == "/api/feedback":
                 out = s.feedback(str(body.get("list", "")), str(body.get("person_id", "")), str(body.get("verdict", "")))
             elif u.path == "/api/lead":
@@ -2370,6 +2444,32 @@ def run_tests() -> int:
         s6.fix_decide("nope", "approve"); check(False, "a row that is not on the list cannot be approved")
     except CRMError:
         check(True, "a row that is not on the list cannot be approved")
+    # Match social profiles: demo reads no social folder by itself; with a temp one, Confirm / Not them write only matches.json
+    check(s6.social_dir is None and s6.social_matches()["pending"] == [] and "social_matches" in p6 and "social_matches" in st6, "demo reads no real social folder, and both payloads carry social_matches")
+    keys6 = [social_match.identity.name_key(display=r.get("display")) for r in st6["feed"]["people"]]
+    one6 = next(r["display"] for r in st6["feed"]["people"] if len(social_match.identity.name_key(display=r.get("display")).split()) == 2 and keys6.count(social_match.identity.name_key(display=r.get("display"))) == 1)
+    soc6, day6 = tmp / "social6", s6._social_day(s6.feed())
+    soc6.mkdir()
+    (soc6 / f"engagers-{day6.isoformat()}.json").write_text(json.dumps([
+        {"platform": "ig", "handle": "example.pick.one", "display_name": one6, "action": "comment", "seen_at": day6.isoformat(), "post_type": "just_sold", "said": "Example comment: private words"}]))
+    s6.social_dir = soc6
+    pend6 = s6.social_matches()["pending"]
+    check(len(pend6) == 1 and pend6[0]["handle"] == "example.pick.one" and pend6[0]["confidence"] == "medium" and "private words" not in json.dumps(s6.cc_payload()["social_matches"] ) and "phone" not in pend6[0],
+          "a name match shows as a pending candidate, with no phone, email or message text in the payload")
+    s6crm = len(s6.crm.log)
+    try:
+        s6.social_decide("ig", "example.nobody", pend6[0]["contact_id"], "confirm"); check(False, "a pair that is not pending cannot be confirmed")
+    except CRMError:
+        check(not (soc6 / "matches.json").exists(), "a pair that is not pending cannot be confirmed, and nothing is written")
+    for bad in (("tiktok", "example.pick.one", pend6[0]["contact_id"], "confirm"), ("ig", "example.pick.one", pend6[0]["contact_id"], "send")):
+        try:
+            s6.social_decide(*bad); check(False, "bad input is refused")
+        except CRMError:
+            check(True, "bad input is refused")
+    out6 = s6.social_decide("ig", "example.pick.one", pend6[0]["contact_id"], "confirm")
+    check(out6["ok"] and out6["social_matches"]["pending"] == [] and out6["social_matches"]["confirmed"] == 1 and len(s6.crm.log) == s6crm
+          and sorted(p.name for p in soc6.iterdir()) == [f"engagers-{day6.isoformat()}.json", "matches.json"],
+          "Confirm writes only matches.json: the CRM engine is untouched and the pair leaves the list")
     check(s6.feedback("call10", "247", "good")["ok"] and s6.cc_payload()["learn"]["log"]["good"] == 1, "Good call is logged for the learning loop")
     try:
         s6.feedback("call10", "247", "amazing"); check(False, "feedback takes good or not_useful only")
@@ -2385,6 +2485,13 @@ def run_tests() -> int:
     check(json.loads(urllib.request.urlopen(r6).read())["ok"], "POST /api/feedback takes a Not useful tap")
     r6 = urllib.request.Request(base + "/api/fix", data=json.dumps({"id": "nope", "action": "approve"}).encode(), headers={"Content-Type": "application/json"})
     check(json.loads(urllib.request.urlopen(r6).read())["ok"] is False, "POST /api/fix refuses a row that is not on the list")
+    r6 = urllib.request.Request(base + "/api/social-match", data=json.dumps({"platform": "ig", "handle": "example.nobody", "contact_id": "1", "action": "confirm"}).encode(), headers={"Content-Type": "application/json"})
+    check(json.loads(urllib.request.urlopen(r6).read())["ok"] is False, "POST /api/social-match refuses a pair that is not on the list")
+    r6 = urllib.request.Request(base + "/api/social-match", data=json.dumps({"platform": "ig", "handle": "example.nobody", "contact_id": "1", "action": "confirm"}).encode(), headers={"Content-Type": "application/json", "Origin": "https://evil.example"})
+    try:
+        urllib.request.urlopen(r6); check(False, "POST /api/social-match refuses a foreign origin")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST /api/social-match refuses a foreign origin")
     check(ccp["demo"] and ccp["fresh"]["deals"]["state"] == "ok" and ccp["scorecard"]["pending"]["value"] > 0, "GET /api/cc in demo")
     req = urllib.request.Request(base + "/api/touch", data=json.dumps({"person_id": "118", "what": "test"}).encode(),
                                  headers={"Content-Type": "application/json"})

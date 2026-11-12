@@ -1092,6 +1092,24 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
     check(/\.cc-row \{ display: grid; grid-template-columns: 44px minmax\(0, 1fr\) auto/.test(ui) && (lp.match(/class="cc-row fx-row"/g) || []).length === (fp.match(/class="cc-row fx-row"/g) || []).length,
       'the plain row grid and the other Fix list cards are unchanged'); }
   run('CC.data = __cc');
+  // 6c. PL08: "Match social profiles". Candidates only; Confirm and Not them write one local file; nothing sends.
+  check(ccdata.social_matches && Array.isArray(ccdata.social_matches.pending) && state.social_matches && Array.isArray(state.social_matches.pending), 'the state and the Command Center payload both carry social_matches');
+  check(!/Match social profiles/.test(render('fixes')), 'the Match social profiles card is hidden when there is nothing pending');
+  run(`CC.data = Object.assign({}, __cc, { social_matches: { pending: [
+    { platform: 'ig', handle: 'example.dana', display_name: 'Dana Sample', profile_url: '', contact_id: '8001', contact: 'Dana Sample', contact_city: 'Central', confidence: 'medium', why: 'Display name matches. Town matches.', action: 'comment', seen: '2026-11-11' },
+    { platform: 'fb', handle: 'example.liz', display_name: '', profile_url: '', contact_id: '8008', contact: 'Elizabeth Demo', contact_city: 'Prairieville', confidence: 'low', why: 'First name is a common nickname, last name matches.', action: 'like', seen: '2026-11-10' }], confirmed: 0 } })`);
+  const sp = render('fixes'), si = sp.indexOf('Match social profiles'), ssec = sp.slice(si, sp.indexOf('</ul>', si)), stx = txt(ssec);
+  check(/Match social profiles <span class="cc-count">2</.test(sp) && /Is @example\.dana Dana Sample in Central\?/.test(stx) && /Display name matches\. Town matches\./.test(stx) && /Medium confidence/.test(stx) && /Low confidence/.test(stx),
+    'Match social profiles lists the handle, the person, the why and the confidence in plain words');
+  check((ssec.match(/>Confirm<\/button>/g) || []).length === 2 && (ssec.match(/>Not them<\/button>/g) || []).length === 2 && /Fix\.matchSocial\("ig", "example\.dana", "8001", 'confirm'\)/.test(ssec.replace(/&quot;/g, '"')) && /Fix\.matchSocial\("fb", "example\.liz", "8008", 'reject'\)/.test(ssec.replace(/&quot;/g, '"')),
+    'each suggested match has its own Confirm and Not them');
+  check(!/Send|Text them|Call|Email|Open in|Approve/.test(txt(ssec.replace(/<p class="cc-note">People who liked[\s\S]*?<\/p>/, ''))) && !/<input|<form|\/api\/(send|call|touch|stage)/.test(ssec), 'Match social profiles has no send, call or CRM-write button');
+  { const lt = fs.readFileSync(path.join(dir, 'light.css'), 'utf8'), sel = c => `.cc-page .cc-rows .cc-row.${c}`;
+    check((ssec.match(/class="cc-row fx-row sm-row"><div class="cc-row-main">/g) || []).length === 2 && !/cc-av/.test(ssec) && lt.split('\n').some(l => !l.startsWith('@media') && l.includes(sel('fx-row') + ',') && /grid-template-columns: minmax\(0, 1fr\) auto/.test(l)),
+      'Match social profiles rows use the Fix list row grid (.fx-row), not the 44px avatar column, on desktop');
+    check(lt.split('\n').some(l => /^@media \(max-width: 720px\)/.test(l) && l.includes(sel('fx-row')) && /grid-template-columns: 1fr;/.test(l)), 'the same Fix list row goes to one column at phone width'); }
+  check(!/phone|@[a-z0-9.-]+\.(com|org)|\+1\d{10}|Example comment/.test(ssec), 'the card shows no phone, email or message text');
+  run('CC.data = __cc');
 
   // 8. the weekly proof line
   const pr = ccdata.proof;
