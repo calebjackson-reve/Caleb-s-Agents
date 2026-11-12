@@ -313,8 +313,10 @@ button, a, .nav button, .lt-link, .lt-page li button b, .cc-row, .lt-page li, in
 .fx-row .fx-from { color: var(--stone); font-size: 12px; } .fx-row h3 { overflow-wrap: anywhere; }
 .ck .mf-list li { grid-template-columns: 96px minmax(0, 1fr) auto; align-items: center; }
 @media (max-width: 820px) { .mf { grid-template-columns: 1fr; } }
-.cc-page .cc-rows .cc-row.fx-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 20px; align-items: start; }
-.cc-page .cc-rows .cc-row.fx-row .cc-row-main { min-width: 0; } .cc-page .cc-rows .cc-row.fx-row .cc-acts { margin: 0; flex-wrap: nowrap; }
-@media (max-width: 720px) { .cc-page .cc-rows .cc-row.fx-row { grid-template-columns: 1fr; } }
+.lk-row .fx-from { color: var(--stone); font-size: 12px; } .lk-row h3 { overflow-wrap: anywhere; }
+/* Link this deal rows (.lk-row) have no avatar and no buttons, so they take the Fix list grid, not the 44px avatar column. */
+.cc-page .cc-rows .cc-row.fx-row, .cc-page .cc-rows .cc-row.lk-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 20px; align-items: start; }
+.cc-page .cc-rows .cc-row.fx-row .cc-row-main, .cc-page .cc-rows .cc-row.lk-row .cc-row-main { min-width: 0; } .cc-page .cc-rows .cc-row.fx-row .cc-acts { margin: 0; flex-wrap: nowrap; }
+@media (max-width: 720px) { .cc-page .cc-rows .cc-row.fx-row, .cc-page .cc-rows .cc-row.lk-row { grid-template-columns: 1fr; } }
 /* A closing whose Deals sheet and calendar dates disagree: name and flag on one line, both days under it. */
 .mf-list li.mf-two { grid-template-columns: minmax(0, 1fr) auto; } .mf-list li.mf-two > span { grid-column: 1 / -1; order: 2; }

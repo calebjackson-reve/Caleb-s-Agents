@@ -47,10 +47,36 @@ import outreach  # noqa: E402  (the hold rules: who gets no canned draft. Standa
 
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates.md"
-SENT_LOG = HERE / "sent-log.json"
-LOG = HERE / "log.csv"
-FLAGS = HERE / "flags.md"
-ERRORS = HERE / "errors.log"
+
+
+# Where this script writes. Unset, these are the live paths they have always been: this folder and its out/.
+# FOLLOWUP_DIR moves every written file (sent-log.json, log.csv, flags.md, errors.log, texts-*.md, queue-*.md, out/).
+# FOLLOWUP_OUT moves only the out/ folder. They are read on every call, never frozen at import, so --test can point
+# them at a throwaway folder and no test can reach the live files.
+def write_root() -> Path:
+    return Path(os.environ.get("FOLLOWUP_DIR") or HERE)
+
+
+def out_dir() -> Path:
+    return Path(os.environ.get("FOLLOWUP_OUT") or write_root() / "out")
+
+
+def sent_log_path() -> Path:
+    return write_root() / "sent-log.json"
+
+
+def log_path() -> Path:
+    return write_root() / "log.csv"
+
+
+def flags_path() -> Path:
+    return write_root() / "flags.md"
+
+
+def errors_path() -> Path:
+    return write_root() / "errors.log"
+
+
 TOKEN_CANDIDATES = [HERE / "token.json", HERE.parent / "speed-to-lead" / "token.json"]
 
 CENTRAL = ZoneInfo("America/Chicago")
@@ -144,7 +170,7 @@ def gmail_service_or_none():
         creds = Credentials.from_authorized_user_file(str(token), scopes)
         return build("gmail", "v1", credentials=creds, cache_discovery=False)
     except Exception as e:
-        ERRORS.open("a").write(f"{datetime.now(timezone.utc).isoformat()} gmail unavailable: {e}\n")
+        errors_path().open("a").write(f"{datetime.now(timezone.utc).isoformat()} gmail unavailable: {e}\n")
         return None
 
 
@@ -161,7 +187,7 @@ def history_check(svc, email: str, last_touch: str) -> dict:
             out["replied"] = True
             out["quotes"].append(full.get("snippet", ""))
     except Exception as e:
-        ERRORS.open("a").write(f"{datetime.now(timezone.utc).isoformat()} history check failed for {email}: {e}\n")
+        errors_path().open("a").write(f"{datetime.now(timezone.utc).isoformat()} history check failed for {email}: {e}\n")
     return out
 
 
@@ -199,7 +225,7 @@ def fill(template: str, c: dict) -> str:
 
 
 def build_queue(contacts: list[dict], t: dict, as_of: date, svc=None) -> dict:
-    sent_log = load_json(SENT_LOG, {})
+    sent_log = load_json(sent_log_path(), {})
     queue, skipped, flagged = [], [], []
     for c in contacts:
         email = c["email"]
@@ -243,7 +269,6 @@ def build_queue(contacts: list[dict], t: dict, as_of: date, svc=None) -> dict:
 # ------------------------------------------------------------ feed (the CRM)
 
 FEED = HERE.parent / "crm" / "feed.json"
-OUT = HERE / "out"
 CRM_PY = HERE.parent / "crm" / "crm.py"
 def person_key(row: dict) -> str:
     return (row.get("email") or "").lower() or re.sub(r"\D", "", row.get("phone") or "") or f"id:{row.get('person_id', '')}"
@@ -261,7 +286,7 @@ def build_feed_queue(feed: dict, t: dict, as_of: date, max_emails: int = MAX_EMA
     Anyone a hold rule says no to (outreach.hold_for: mid-deal, a soft no, no answer to the last two, reached out
     inside 7 days and the rest) gets no template and no cap slot. They are listed under `held` with the reason.
     `send_log` and `bridge_log` are Pipeline's own logs, when the caller has them."""
-    sent_log = load_json(SENT_LOG, {})
+    sent_log = load_json(sent_log_path(), {})
     queue, texts, reply_first, skipped, held = [], [], [], [], []
     deferred = 0
     ctx = outreach.context(feed, as_of, send_log=send_log, bridge_log=bridge_log)
@@ -320,8 +345,9 @@ def build_feed_queue(feed: dict, t: dict, as_of: date, max_emails: int = MAX_EMA
 
 def write_text_queue(result: dict, as_of: date) -> Path:
     """texts-<date>.md for Caleb's eyes, out/text-queue.json for the Pipeline app's compose box. Both git-ignored."""
-    OUT.mkdir(exist_ok=True)
-    path = HERE / f"texts-{as_of.isoformat()}.md"
+    out = out_dir()
+    out.mkdir(parents=True, exist_ok=True)
+    path = write_root() / f"texts-{as_of.isoformat()}.md"
     lines = [f"# Text queue for {as_of.isoformat()}", "",
              "Nothing here sends itself. The Pipeline app shows each one in its compose box; you tap send or skip.", ""]
     if result["reply_first"]:
@@ -342,14 +368,14 @@ def write_text_queue(result: dict, as_of: date) -> Path:
     if held:
         lines += ["## Held, no draft", ""] + [f"- {h['name']} (id:{h['person_id']}): {h['why']}" + (f" Until {h['until']}." if h.get("until") else "") for h in held] + [""]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    (OUT / "email-queue.json").write_text(json.dumps({
+    (out / "email-queue.json").write_text(json.dumps({
         "generated_at": datetime.now(CENTRAL).isoformat(timespec="seconds"), "as_of": as_of.isoformat(),
         "held": [h for h in held if h.get("kind") == "email"],
         "drafts": [{"person_id": q["person_id"], "name": q["name"], "email": q["email"], "pool": q["stage"],
                     "template": q["template"] + 1, "subject": q["subject"], "body": q["body"], "days_quiet": q["day"]}
                    for q in result["queue"]],
     }, indent=1, ensure_ascii=False))
-    (OUT / "text-queue.json").write_text(json.dumps({
+    (out / "text-queue.json").write_text(json.dumps({
         "generated_at": datetime.now(CENTRAL).isoformat(timespec="seconds"), "as_of": as_of.isoformat(),
         "reply_first": result["reply_first"], "held": [h for h in held if h.get("kind") != "email"],
         "drafts": [{"person_id": q["person_id"], "name": q["name"], "phone": q["phone"], "pool": q["stage"],
@@ -369,7 +395,7 @@ def log_touch_to_crm(person_id: str, what: str) -> str:
 
 
 def write_queue_file(result: dict, as_of: date) -> Path:
-    path = HERE / f"queue-{as_of.isoformat()}.md"
+    path = write_root() / f"queue-{as_of.isoformat()}.md"
     lines = [f"# Follow-up queue for {as_of.isoformat()}", "",
              f"Gmail history check: {'on' if result['gmail'] else 'OFF, sent-log.json only'}. "
              "Delete any block you do not want sent, then run --approve on this file.", ""]
@@ -388,7 +414,7 @@ def write_queue_file(result: dict, as_of: date) -> Path:
     lines += ["## Skipped", ""] + [f"- {c if isinstance(c, str) else c['name']}: {why}" for c, why in result["skipped"]]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     if result["flagged"]:
-        with FLAGS.open("a") as f:
+        with flags_path().open("a") as f:
             for c, why, quote in result["flagged"]:
                 f.write(f"{as_of.isoformat()} {c['name']} <{c['email']}> {why}: {quote}\n")
     return path
@@ -425,8 +451,9 @@ def approve(path: Path, t: dict) -> None:
     svc = None if DRY_RUN else gmail_service_or_none()
     if not DRY_RUN and not svc:
         sys.exit("DRY_RUN is off but Gmail is not connected. Run the speed-to-lead responder once to sign in.")
-    sent_log = load_json(SENT_LOG, {})
-    new = not LOG.exists()
+    sent_log = load_json(sent_log_path(), {})
+    log = log_path()
+    new = not log.exists()
     sent = 0
     for q in items:
         if q["email"] in t["tests"]:
@@ -438,14 +465,14 @@ def approve(path: Path, t: dict) -> None:
             try:
                 send_email(svc, q["email"], q["subject"], q["body"])
             except Exception as e:
-                ERRORS.open("a").write(f"{ts} send failed {q['email']}: {e}\n")
+                errors_path().open("a").write(f"{ts} send failed {q['email']}: {e}\n")
                 print(f"error sending to {q['email']}: {e}")
                 continue
             sent_log.setdefault(q["email"], []).append({"template": q["template"], "stage": q["stage"], "pool": q["stage"], "at": ts})
             if q.get("person_id"):
                 what = "follow-up email (%s template %d)" % (q["stage"], q["template"] + 1)
                 print("  crm: " + log_touch_to_crm(q["person_id"], what))
-            with LOG.open("a", newline="") as f:
+            with log.open("a", newline="") as f:
                 w = csv.writer(f)
                 if new:
                     w.writerow(["email", "name", "stage", "day", "template", "sent_at"])
@@ -453,14 +480,58 @@ def approve(path: Path, t: dict) -> None:
                 w.writerow([q["email"], q["name"], q["stage"], q["day"], q["template"] + 1, ts])
             sent += 1
     if not DRY_RUN:
-        SENT_LOG.write_text(json.dumps(sent_log, indent=2))
+        sent_log_path().write_text(json.dumps(sent_log, indent=2))
     print(f"{'dry run complete' if DRY_RUN else f'sent {sent}'}, {len(items)} in file")
 
 
 # -------------------------------------------------------------------- tests
 
 
+LIVE_WRITTEN = ("sent-log.json", "flags.md", "log.csv", "errors.log", "texts-*.md", "queue-*.md")
+
+
+def _live_snapshot() -> dict:
+    """What is in the real out/ folder and the other files this script writes beside it: name, size, modified time and
+    a hash of each. Read only. It always looks at this package's own folder, whatever the environment says."""
+    import hashlib
+    live_out = HERE / "out"
+    files = list(live_out.rglob("*")) if live_out.exists() else []
+    for pat in LIVE_WRITTEN:
+        files += list(HERE.glob(pat))
+    snap = {"out exists": live_out.exists()}
+    for p in sorted(files):
+        st = p.stat()
+        snap[str(p.relative_to(HERE))] = (st.st_size, st.st_mtime_ns, hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else "dir")
+    return snap
+
+
 def run_tests() -> int:
+    """Every file the tests write goes to a throwaway folder. The live folder is photographed first and compared last."""
+    import tempfile
+    before = _live_snapshot()
+    saved = {k: os.environ.get(k) for k in ("FOLLOWUP_DIR", "FOLLOWUP_OUT")}
+    try:
+        with tempfile.TemporaryDirectory(prefix="followups-test-") as tmp:
+            os.environ["FOLLOWUP_DIR"] = tmp
+            os.environ.pop("FOLLOWUP_OUT", None)
+            fails = _run_checks(Path(tmp))
+    finally:
+        for k, v in saved.items():
+            if v is None:
+                os.environ.pop(k, None)
+            else:
+                os.environ[k] = v
+    after = _live_snapshot()
+    ok = after == before
+    print(f"{'PASS' if ok else 'FAIL'} the live out/ folder and the live follow-up files are untouched by --test")
+    if not ok:
+        fails += 1
+        print("     changed: " + ", ".join(sorted(k for k in set(before) | set(after) if before.get(k) != after.get(k))))
+    print(f"\n{'ALL PASS' if fails == 0 else str(fails) + ' FAILURES'}  (DRY_RUN={DRY_RUN})")
+    return fails
+
+
+def _run_checks(tmp: Path) -> int:
     t = load_templates()
     fails = 0
 
@@ -473,6 +544,18 @@ def run_tests() -> int:
     check(all(len(v) >= 4 for v in t["pools"].values()), "every pool has templates")
     check(all("—" not in x and ";" not in x for v in t["pools"].values() for x in v), "no em dashes or semicolons")
     check(len(t["subjects"]) == 6 and "stop emailing" in t["optout"] and "price" in t["handoff"], "subjects and phrase lists")
+
+    live, tmp = HERE.resolve(), tmp.resolve()
+    paths = [p.resolve() for p in (write_root(), out_dir(), sent_log_path(), log_path(), flags_path(), errors_path())]
+    check(all(p == tmp or tmp in p.parents for p in paths) and not any(p == live or live in p.parents for p in paths),
+          "under --test every write path is in the throwaway folder, none in the live one")
+    os.environ.pop("FOLLOWUP_DIR", None)
+    check(write_root() == HERE and out_dir() == HERE / "out" and sent_log_path() == HERE / "sent-log.json" and flags_path() == HERE / "flags.md",
+          "with nothing set, a real run still writes to the same live paths")
+    os.environ["FOLLOWUP_OUT"] = str(tmp / "elsewhere")
+    check(out_dir() == tmp / "elsewhere" and write_root() == HERE, "FOLLOWUP_OUT moves only the out/ folder")
+    os.environ.pop("FOLLOWUP_OUT", None)
+    os.environ["FOLLOWUP_DIR"] = str(tmp)
 
     contacts = load_contacts(HERE / "tests" / "fixtures" / "fake-contacts.csv")
     as_of = date(2026, 10, 16)
@@ -490,15 +573,16 @@ def run_tests() -> int:
           "slots filled and brokerage on every message")
 
     # no-repeat rule: simulate two prior sends to Jordan
-    SENT_LOG.write_text(json.dumps({"jordan.example@gmail.com": [{"template": 0}, {"template": 1}]}))
+    sent_log_path().write_text(json.dumps({"jordan.example@gmail.com": [{"template": 0}, {"template": 1}]}))
     r2 = build_queue(contacts, t, as_of)
     j = next(q for q in r2["queue"] if q["name"] == "Jordan Example")
     check(j["template"] == 2, "picks first unused template (third) after two sends")
-    SENT_LOG.unlink()
+    sent_log_path().unlink()
 
     path = write_queue_file(r, as_of)
     parsed = parse_queue_file(path)
     check(len(parsed) == len(r["queue"]) and parsed[0]["body"] == r["queue"][0]["body"], "queue file round-trips")
+    check(path.parent.resolve() == tmp, "the queue file is written in the throwaway folder")
     path.unlink()
 
     # feed mode: audiences, reply first, email vs text, CRM ids
@@ -523,24 +607,21 @@ def run_tests() -> int:
     qp = write_queue_file(fr, as_of); tp = write_text_queue(fr, as_of)
     back = parse_queue_file(qp)
     check(back and all(b["person_id"] for b in back), "queue file keeps the person_id through the round trip")
-    tq = json.loads((OUT / "text-queue.json").read_text())
+    tq = json.loads((out_dir() / "text-queue.json").read_text())
     check(len(tq["drafts"]) == len(fr["texts"]) and tq["reply_first"][0]["name"] == "Texted Last", "text-queue.json for the Pipeline app")
-    eq = json.loads((OUT / "email-queue.json").read_text())
+    eq = json.loads((out_dir() / "email-queue.json").read_text())
     check(len(eq["drafts"]) == len(fr["queue"]) and all(d["person_id"] and d["body"] for d in eq["drafts"]), "email-queue.json for the Pipeline app")
     from pools import next_line, load_templates as _lt
     _t = _lt()
     nl = next_line(_t["texts"]["sphere"], [0], {"display": "Taylor Sample"})
     check(nl is not None and nl[0] == 1 and "Taylor" in nl[1], "pools.next_line skips used lines and fills the name")
     check(next_line(_t["texts"]["sphere"], [], {"display": "?Smith household"}) is None, "pools.next_line refuses a row with no real first name")
-    (OUT / "email-queue.json").unlink()
     check(log_touch_to_crm("", "x").startswith("no person_id"), "touch logging refuses without a person_id")
     capped = build_feed_queue(feed, t, as_of, max_emails=1, max_texts=2)
     check(len(capped["queue"]) == 1 and len(capped["texts"]) == 2 and capped["deferred"] == 3 and len(capped["reply_first"]) == 1,
           "daily caps keep the first in feed order, defer the rest, never cap reply first")
-    qp.unlink(); tp.unlink(); (OUT / "text-queue.json").unlink()
-    if FLAGS.exists():
-        FLAGS.unlink()
-    print(f"\n{'ALL PASS' if fails == 0 else str(fails) + ' FAILURES'}  (DRY_RUN={DRY_RUN})")
+    check(qp.parent.resolve() == tmp and tp.parent.resolve() == tmp and (tmp / "out" / "text-queue.json").exists() and (tmp / "out" / "email-queue.json").exists(),
+          "the test queues and markdown files land in the throwaway folder")
     return fails
 
 

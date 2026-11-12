@@ -411,6 +411,67 @@ check(!/streetFailing/.test(mapjs + fs.readFileSync(path.join(dir, 'mapviews.js'
   check(/const dr = S\.data \? readyDrafts\(\) : \[\]/.test(appjs) && /\$\{ready\} ready/.test(appjs), 'the nav and the compose button count ready drafts only');
 }
 
+// PL07: "Held, no draft" on the Drafts page. Made-up people, the hold rules' own reasons, nothing to tap.
+{
+  const H = (person_id, name, kind, rule, why, until) => ({ person_id, name, kind, rule, why, until: until || '' });
+  const textHeld = [
+    H('h1', 'Jordan Example', 'text', 'possible_deal', 'Deal words in their texts on 2026-11-03 and no deal linked. Link the deal first.', '2026-12-03'),
+    H('h2', 'Taylor Sample', 'text', 'mid_deal', 'Live deal: 700 Fixture Rd. No canned check-in.'),
+    H('h3', 'Morgan Demo', 'text', 'pro_as_client', 'Reads like a vendor, agent or lender filed as a client. Relabel them first.'),
+    H('h4', 'Casey Placeholder', 'text', 'reply_owed', 'They wrote last. They get an answer, not a check-in.'),
+    H('h5', 'Riley Madeup', 'text', 'soft_no', 'Said not now on 2026-10-20: "fixture words, maybe next year".', '2027-01-18'),
+    H('h6', 'Avery Fixture', 'text', 'no_answer', 'No answer to your last 2. Held until they write or 90 days pass.', '2027-01-05'),
+    H('h7', 'Quinn Testcase', 'text', 'too_soon', 'You reached out 3 days ago. Nothing new for 21 days unless they write back.', '2026-11-30'),
+    H('h10', 'Sky Notreal', 'text', 'opt_out', 'Possible opt-out on 2026-11-01: "fixture words". Your call whether to mark Do Not Contact.'),
+  ];
+  const emailHeld = [
+    H('h8', 'Devon Pretend', 'email', 'just_closed', 'Closed 9 days ago on 701 Fixture Rd. No nurture text yet. The 30 day check-in is on the check-ins list.', '2026-12-03'),
+    H('h9', 'Harper Mock', 'email', 'reached_today', 'Already reached today.', '2026-11-13'),
+    H('h1', 'Jordan Example', 'email', 'one_card', 'One card per person per day. Their other card is already on the list.'),
+    H('h11', 'Blake Sampleton', 'email', 'one_card', 'One card per person per day. Their other card is already on the list.'),
+  ];
+  const all = textHeld.concat(emailHeld), uniq = 11;
+  const withHeld = (tqExtra, eqExtra) => run(`S.data = Object.assign({}, __state, { text_queue: Object.assign({}, __state.text_queue || {}, ${JSON.stringify(tqExtra)}), email_queue: Object.assign({}, __state.email_queue || {}, ${JSON.stringify(eqExtra)}) })`);
+  const sec = html => { const i = html.indexOf('Held, no draft'); return i < 0 ? '' : html.slice(i); };
+  const rowOf = (s, name) => { const i = s.indexOf(`<h3>${name}</h3>`), a = s.lastIndexOf('<li', i), b = s.indexOf('</li>', i); return i < 0 ? '' : s.slice(a, b); };
+
+  check(!/Held, no draft/.test((() => { withHeld({ held: [] }, { held: [] }); return render('queue'); })()), 'Drafts shows no Held section when nobody is held');
+  withHeld({ held: textHeld }, { held: emailHeld });
+  const q = render('queue'), hs = sec(q);
+  check(q.includes(`Held, no draft <span class="cc-count">${uniq}</span>`) && q.indexOf('Held, no draft') > q.indexOf('Ready to send') && (q.indexOf('Replies to write') < 0 || q.indexOf('Held, no draft') > q.indexOf('Replies to write')),
+    'Drafts has a Held, no draft section with a count, below Ready to send and Replies to write');
+  check(all.every(h => rowOf(hs, h.name).includes(run(`esc(${JSON.stringify(h.why)})`)) || h.rule === 'one_card' && h.person_id === 'h1') && (hs.match(/class="cc-row held-row"/g) || []).length === uniq,
+    'each held person shows their name and the plain-words reason, for every hold kind, from both queues');
+  check((hs.match(/<h3>Jordan Example<\/h3>/g) || []).length === 1 && /Deal words in their texts/.test(rowOf(hs, 'Jordan Example')) && !/One card per person/.test(rowOf(hs, 'Jordan Example')),
+    'a person held on both queues shows once');
+  check(all.filter(h => h.until && !(h.rule === 'one_card')).every(h => rowOf(hs, h.name).includes('Until ' + run(`CC.day(${JSON.stringify(h.until)})`))) && /Until [^<]*Dec 3</.test(rowOf(hs, 'Jordan Example')) && !/2026-12-03/.test(rowOf(hs, 'Jordan Example')),
+    'a hold with an end date shows it as Until and the day');
+  check(all.filter(h => !h.until && h.person_id !== 'h1').every(h => rowOf(hs, h.name) && !/Until|held-until/.test(rowOf(hs, h.name))), 'a hold with no end date shows no Until line');
+  check(!/<button|onclick|<a |href=|<input|<form|openCompose|tel:|sms:|mailto:|Write a reply|>Open</.test(hs), 'held rows are read only: no Open, Write a reply, Send, Call or contact control, nothing to tap');
+  check(!all.some(h => new RegExp('\\b' + h.rule + '\\b').test(hs)) && !/\+?1?225555|@example/.test(hs), 'held rows show the reason in words, never the rule code, a phone or an email');
+  check(run('readyDrafts().length') === run(`(() => { const d = S.data; S.data = __state; const n = readyDrafts().length; S.data = d; return n; })()`), 'held people are not counted as drafts ready');
+
+  // No ready drafts and no replies: the Held section still shows, after the empty message.
+  withHeld({ drafts: [], reply_first: [], held: textHeld }, { drafts: [], held: emailHeld });
+  const q0 = render('queue');
+  check(run('drafts().length') === 0 && /No drafts waiting/.test(q0) && q0.indexOf('Held, no draft') > q0.indexOf('No drafts waiting') && q0.includes(`Held, no draft <span class="cc-count">${uniq}</span>`) && !/<button class="cc-primary"|openCompose/.test(sec(q0)),
+    'with no drafts at all, the empty message does not hide the Held section');
+  withHeld({ drafts: [], reply_first: [], held: [] }, { drafts: [], held: [] });
+  check(/No drafts waiting/.test(render('queue')) && !/Held, no draft/.test(render('queue')), 'with no drafts and nobody held, Drafts shows only the empty message');
+
+  // Search filters held rows by name or by reason, the same as drafts.
+  withHeld({ held: textHeld }, { held: emailHeld });
+  run(`S.q = 'avery fix'`);
+  const qn = sec(render('queue'));
+  check(qn.includes('Held, no draft <span class="cc-count">1</span>') && /Avery Fixture/.test(qn) && !/Taylor Sample|Harper Mock/.test(qn), 'search filters held rows by name');
+  run(`S.q = 'relabel them'`);
+  const qr = sec(render('queue'));
+  check(qr.includes('Held, no draft <span class="cc-count">1</span>') && /Morgan Demo/.test(qr) && !/Avery Fixture/.test(qr), 'search filters held rows by reason');
+  run(`S.q = 'zzqx no such thing'`);
+  check(!/Held, no draft/.test(render('queue')) && /No match for/.test(render('queue')), 'a search that matches nothing shows no held rows');
+  run(`S.q = ''; S.data = __state`);
+}
+
 // Round 3, item 5: offers past their deadline show as expired, and an offer never counts down to close.
 {
   const dl = JSON.parse(JSON.stringify(ccdata.deals));
@@ -1021,6 +1082,15 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   const lp = render('fixes'), lsec = lp.slice(lp.indexOf('Link this deal'), lp.indexOf('</ul>', lp.indexOf('Link this deal')));
   check(/Link this deal <span class="cc-count">1</.test(lp) && /700 Fixture Rd/.test(lsec) && /Under Contract, Buyer, closing/.test(txt(lsec)) && /never edits the sheets/.test(txt(lsec)), 'Link this deal lists the deal with its status, side and closing date');
   check(!/<button|onclick|<input|<form/.test(lsec) && (lp.match(/class="cc-row lk-row"/g) || []).length === 1, 'Link this deal is read only: no button, nothing to tap');
+  // PL07: the row has no avatar and no buttons, so it must take the Fix list grid, not .cc-row's 44px avatar column.
+  { const lt = fs.readFileSync(path.join(dir, 'light.css'), 'utf8'), sel = c => `.cc-page .cc-rows .cc-row.${c}`;
+    const desk = lt.split('\n').find(l => !l.startsWith('@media') && l.includes(sel('fx-row') + ',') && /grid-template-columns: minmax\(0, 1fr\) auto/.test(l)) || '';
+    const phone = lt.split('\n').find(l => /^@media \(max-width: 720px\)/.test(l) && l.includes(sel('fx-row')) && /grid-template-columns: 1fr;/.test(l)) || '';
+    check(desk.split('{')[0].split(',').map(s => s.trim()).includes(sel('lk-row')) && /class="cc-row lk-row"><div class="cc-row-main">/.test(lp) && !/cc-av/.test(lsec),
+      'Link this deal rows use the same desktop grid as the other Fix list cards, not the 44px avatar column');
+    check(phone.slice(phone.indexOf('{') + 1).split('{')[0].split(',').map(s => s.trim()).includes(sel('lk-row')), 'Link this deal rows go to one column at phone width, the same as the other Fix list cards');
+    check(/\.cc-row \{ display: grid; grid-template-columns: 44px minmax\(0, 1fr\) auto/.test(ui) && (lp.match(/class="cc-row fx-row"/g) || []).length === (fp.match(/class="cc-row fx-row"/g) || []).length,
+      'the plain row grid and the other Fix list cards are unchanged'); }
   run('CC.data = __cc');
 
   // 8. the weekly proof line
