@@ -729,6 +729,24 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   const lg = run('mapLegend()');
   check(SEVEN.every(s2 => lg.includes(`</i>${s2}</li>`)) && /Pins by stage/.test(lg), 'the map legend lists the seven stages');
   check(/onclick="drawFarm\(\)">Draw farm</.test(run('mapBar()')) && /onclick="mapFit\(\)">Fit</.test(run('mapBar()')), 'Draw farm and Fit stay on the map');
+  check(/onclick="map3d\(true\)">3D</.test(run('mapBar()')), 'the Map bar has a 3D button that opens the Home Ground Map');
+  const m3 = fs.readFileSync(path.join(dir, 'map3d.html'), 'utf8');
+  check(/src=['"]three-0.160.0.min.js['"]/.test(m3) && /fetch\('\/api\/state'/.test(m3) && !/\/api\/(send|call|draft)/.test(m3), 'the 3D map reads /api/state and starts no send, call or draft path');
+  // Home Ground Map: local three.js, people only from /api/state on any host, no baked book of business, contact card through openPerson.
+  check(fs.existsSync(path.join(dir, 'three-0.160.0.min.js')) && !/<script[^>]+src=["']https?:/.test(m3), 'the Home Ground Map loads three.js from the local file, no script CDN');
+  check(!/location\.hostname/.test(m3) && !/GEO\.(pts|meta|farms|cityNames|pipeRiver)/.test(m3) && !/"(pts|meta|farms|cityNames|pipeRiver)":/.test(m3), 'the Home Ground Map reads people from /api/state on every host and bakes in no CRM snapshot');
+  check(/HOST\.openPerson\(p\.id\)/.test(m3) && /typeof window\.parent\.openPerson === 'function'/.test(m3) && /const fail =/.test(m3) && /new THREE\.WebGLRenderer/.test(m3), 'the Home Ground Map opens the contact card with openPerson and says so when WebGL cannot start');
+  check(/Home <i>ground<\/i>/.test(m3) && /<title>Home Ground Map<\/title>/.test(m3), 'the 3D view carries the Home ground name');
+  {
+    const pure = (/<script id="m3pure">([\s\S]*?)<\/script>/.exec(m3) || [])[1] || '';
+    const sb = { window: {} }; vm.createContext(sb); vm.runInContext(pure, sb);
+    const M3 = sb.window.M3, capf = s => s.replace(/\b[a-z]/g, c => c.toUpperCase());
+    const fixture = (((state.feed.map || {}).pins || []).find(p => p.display && /\s/.test(p.display)) || { display: 'Fixture Person' }).display;
+    const person = { name: fixture, rel: 'client', city: 'baton rouge', next: 'Call about the listing' }, w = M3.where(person, capf);
+    const pubText = [M3.title(person, 'public', w), M3.tip(person, 'public', 'Client', w), M3.note(person, 'public')].join('|');
+    check(!pubText.includes(fixture) && !pubText.includes('Call about'), 'in Public mode no title, tooltip or note carries a person\'s name');
+    check(M3.title(person, 'crm', w) === fixture && M3.tip(person, 'crm', 'Client', w).includes(fixture), 'in CRM mode the name shows on the card and tooltip');
+  }
   // The shell.
   check(/<meta name="theme-color" content="#FBF8F3">/.test(indexHtml) && /Instrument\+Serif/.test(indexHtml) && /Nunito/.test(indexHtml) && indexHtml.indexOf('href="light.css"') > indexHtml.indexOf('href="ui.css"'), 'the page reads as the light canvas and loads the two typefaces');
   check(/--ivory: #FBF8F3; --ink: #14100E; --hair: #F1EFEC;/.test(light), 'canvas, ink and hairline are the approved three');
