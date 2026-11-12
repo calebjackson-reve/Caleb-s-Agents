@@ -48,7 +48,15 @@ Explore mode: drag to turn, scroll or pinch to zoom, four looks (Drawing, Day, D
 - The 3D house and grounds are a computer-made study, built in code from the listing photos, the aerial footage and the elevation drawing in `architectural-preview/`. It shows the outside only. It is not a floor plan and not to scale. The page says so in the hero and in the footer.
 - Every photograph and the drone clip come from `../media/` and are listed in `../media/MEDIA-LIBRARY.md`.
 - No AI image, video or 3D generation was used for this page. Nothing was paid for.
-- Look: a studio model on an ivory base, not a full color render. Caleb asked for luxury and not cartoonish (November 12, 2026). Green grass and blue sky made it read like a game, so the real photos carry the realism instead.
+- Look: a paper model on an ivory base, not a full color render. Caleb asked for luxury and not cartoonish (November 12, 2026). Green grass and blue sky made it read like a game, so the real photos carry the realism instead.
+- One palette: after the first review Caleb said going from one color to another felt off (November 12, 2026). The model now stays in the tones of the drawing with the ink lines left on, and the only moves are ivory to ink. The earlier look with a charcoal roof and cedar is still in `materials.js` as the `material` palette.
+
+## Caleb's notes from the first review (November 12, 2026)
+
+- Likes the architectural feel and the flow.
+- The color changes felt off. Fixed, see "One palette" above.
+- "There needs to be a page for it, and there needs to be a reason for it." Open. My recommendation is in the chat of that date: make it the builders and new construction page, with a short teaser on the home page.
+- Wants to try a real floor plan turned into a 3D layout. Needs a plan with dimensions. Not started.
 
 ## Needs Caleb's yes
 

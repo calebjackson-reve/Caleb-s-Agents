@@ -13,7 +13,7 @@ function speckle(ctx, w, h, r, base, spread, n, size = 1.6) {
   }
 }
 
-export function makeMaterials() {
+export function makeMaterials(palette = 'paper') {
   const r = rng(7);
   const T = {};
 
@@ -132,6 +132,28 @@ export function makeMaterials() {
     ember: std({ color: 0xe87757, roughness: 0.75 }),
     lamp: std({ color: 0x2a2a2a, emissive: 0xffb36b, emissiveIntensity: 0, roughness: 0.4 }),
   };
+  // 'paper' keeps the whole model in the tones of the drawing: ivory, warm grey, ink for the glass, ember for the wreaths.
+  // The real colours of the house then only appear in the real photograph. 'material' is the earlier look with a
+  // charcoal roof, cedar and sage, kept here in case it is wanted back.
+  if (palette === 'paper') {
+    const set = (m, o) => { Object.assign(m, o); if (o.color !== undefined) m.color = new THREE.Color(o.color); m.needsUpdate = true; };
+    set(M.brick, { color: 0xfffbf4 });
+    set(M.shingle, { map: null, bumpMap: T.shingle, bumpScale: 1.6, color: 0xcbc3b6 });
+    set(M.cedar, { map: null, bumpMap: T.cedar, bumpScale: 0.8, color: 0xd6c8b4 });
+    set(M.paver, { map: null, bumpMap: T.paver, bumpScale: 0.8, color: 0xddd2c4 });
+    set(M.seam, { map: null, color: 0xd0cac0, metalness: 0.1 });
+    set(M.shutter, { color: 0xe2e3df });
+    set(M.door, { color: 0x6a6157 });
+    set(M.black, { color: 0x4d4843, metalness: 0.1 });
+    set(M.mulch, { color: 0xe6dfd3 });
+    set(M.gravel, { color: 0xeee8dd });
+    set(M.shrub, { color: 0xd6d8cb });
+    set(M.leaf, { color: 0xe6e5da });
+    set(M.bark, { color: 0xd3c9ba });
+    set(M.copper, { color: 0xc9a488, metalness: 0.35 });
+    set(M.water, { color: 0xd2e1e0 });
+    set(M.pond, { color: 0xdae2e0 });
+  }
   return { M, T };
 }
 

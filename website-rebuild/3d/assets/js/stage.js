@@ -42,7 +42,7 @@ uniform sampler2D tColor; uniform sampler2D tNormal; uniform sampler2D tDepth; u
 uniform vec2 uTexel; uniform vec2 uTexelAO; uniform mat4 uInvViewProj;
 uniform float uNear; uniform float uFar; uniform float uExposure;
 uniform float uInk; uniform float uBuild; uniform float uBlue; uniform float uLineW; uniform float uEdges; uniform float uAO;
-uniform float uFocus; uniform float uDof; uniform float uVig;
+uniform float uFocus; uniform float uDof; uniform float uVig; uniform float uLineOn;
 uniform vec3 uPaper; uniform vec3 uLine; uniform vec3 uWashDark; uniform vec3 uWashLight; uniform vec3 uEmber;
 uniform vec2 uFade; uniform vec3 uCenter;
 ${TONE}
@@ -126,6 +126,7 @@ void main(){
   float built = sky ? smoothstep(0.55, 0.95, uBuild) : smoothstep(h, h - 1.7, level);
   float a = max(uInk * (1.0 - built), uBlue);
   vec3 col = mix(lit, drawing, a);
+  col = mix(col, uLine, e * uLineOn * (1.0 - a) * mix(0.25, 1.0, fine) * (0.9 + pg * 0.25));
   float front = sky ? 0.0 : exp(-abs(level - h) * 16.0) * uInk * (1.0 - uBlue) * smoothstep(0.0, 0.05, uBuild) * (1.0 - smoothstep(0.86, 1.0, uBuild));
   col = mix(col, uEmber, clamp(front, 0.0, 1.0) * 0.7);
   gl_FragColor = vec4(col, 1.0);
@@ -179,8 +180,8 @@ function untone(target, expo, out) {
 // Three looks the studio moves between: clear day, late warm light, and after dark.
 const LOOKS = [
   { bg: '#FBF8F3', keyI: 3.3, keyC: '#fff1df', hemiSky: '#fdfcff', hemiGround: '#efe2cf', hemiI: 0.6, env: 0.5, expo: 0.84, envTop: '#ffffff', envHor: '#f4eee4', envFloor: '#dccfbb', vig: 0, lateEl: 38 },
-  { bg: '#F4E6D3', keyI: 3.4, keyC: '#ffc793', hemiSky: '#f2ecf2', hemiGround: '#e6cfae', hemiI: 0.5, env: 0.45, expo: 0.84, envTop: '#d9d6e2', envHor: '#f6d3aa', envFloor: '#c9b08e', vig: 0.12, lateEl: 19 },
-  { bg: '#14100E', keyI: 1.5, keyC: '#8196cc', hemiSky: '#2c3852', hemiGround: '#0e0c0b', hemiI: 0.3, env: 0.25, expo: 0.98, envTop: '#10152a', envHor: '#232a44', envFloor: '#060505', vig: 0.45, lateEl: 34 },
+  { bg: '#8D8578', keyI: 2.0, keyC: '#ffeeda', hemiSky: '#d9d5cf', hemiGround: '#8a8177', hemiI: 0.42, env: 0.36, expo: 0.86, envTop: '#b9b3aa', envHor: '#8d8578', envFloor: '#5d564d', vig: 0.25, lateEl: 19 },
+  { bg: '#14100E', keyI: 0.55, keyC: '#aab4cf', hemiSky: '#2b2f3a', hemiGround: '#0e0c0b', hemiI: 0.22, env: 0.25, expo: 0.98, envTop: '#10152a', envHor: '#232a44', envFloor: '#060505', vig: 0.45, lateEl: 34 },
 ];
 const cA = new THREE.Color(), cB = new THREE.Color();
 function lookColor(key, t, out) {
@@ -211,7 +212,8 @@ export class Stage {
     const camera = this.camera = new THREE.PerspectiveCamera(30, 1, 0.5, 2400);
     camera.layers.enable(1);
 
-    const { M } = makeMaterials();
+    this.palette = opts.palette || 'paper';
+    const { M } = makeMaterials(this.palette);
     this.M = M;
     this.houseKit = buildHouse(M);
     this.grounds = buildGrounds(M);
@@ -248,7 +250,7 @@ export class Stage {
       uTexel: { value: new THREE.Vector2() }, uTexelAO: { value: new THREE.Vector2() }, uInvViewProj: { value: new THREE.Matrix4() },
       uNear: { value: camera.near }, uFar: { value: camera.far }, uExposure: { value: 0.8 },
       uInk: { value: 1 }, uBuild: { value: 0 }, uBlue: { value: 0 }, uLineW: { value: 1 }, uEdges: { value: 1 }, uAO: { value: fast ? 0 : 1 },
-      uFocus: { value: 40 }, uDof: { value: 0 }, uVig: { value: 0 },
+      uFocus: { value: 40 }, uDof: { value: 0 }, uVig: { value: 0 }, uLineOn: { value: 0 },
       uPaper: { value: IVORY.clone() }, uLine: { value: INK.clone() }, uWashDark: { value: new THREE.Color() }, uWashLight: { value: new THREE.Color() }, uEmber: { value: EMBER.clone() },
       uFade: { value: new THREE.Vector2(20, 43) }, uCenter: { value: new THREE.Vector3(0, 0, -6) },
     };
@@ -355,8 +357,9 @@ export class Stage {
     P.uWashLight.value.copy(IVORY).lerp(this._c.copy(INK).lerp(IVORY, 0.09), b);
     P.uWashDark.value.set('#8f867a').lerp(this._c.copy(INK).multiplyScalar(0.75), b);
     P.uInk.value = s.ink; P.uBuild.value = s.build; P.uBlue.value = s.blue;
-    P.uEdges.value = (s.ink > 0.002 && s.build < 0.999) || s.blue > 0.002 ? 1 : 0;
-    const dark = Math.max(s.blue, (1 - inkShare) * clamp01((t - 0.62) * 4));
+    P.uLineOn.value = this.palette === 'paper' ? 0.62 * (1 - clamp01(t * 2.2)) : 0;
+    P.uEdges.value = (s.ink > 0.002 && s.build < 0.999) || s.blue > 0.002 || P.uLineOn.value > 0.01 ? 1 : 0;
+    const dark = Math.max(s.blue, (1 - inkShare) * clamp01((t - 0.3) * 4));
     this.tone = dark > 0.5 ? 'dark' : 'light';
   }
 
