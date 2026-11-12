@@ -218,8 +218,13 @@ body.stage-off .pin { visibility: hidden; }
   .cue { display: none; }
   /* on a phone the model sits above and the words sit below, on a soft fade of the stage colour */
   .side, .explore-copy { top: auto; bottom: 0; left: 0 !important; right: 0 !important; width: auto; transform: none; padding: 9rem var(--gutter) 4.2rem; gap: 1.6rem; }
+  /* the panel leans away from mid grey, toward white under dark words and toward black under light ones,
+     so the words stay readable while day turns to dusk behind them */
   .side::before, .explore-copy::before { display: block; left: 0; right: 0; top: 0; bottom: 0; width: auto;
-    background: linear-gradient(180deg, transparent 0, var(--stage-bg, var(--bg)) 8rem, var(--stage-bg, var(--bg)) 100%); }
+    --sb: color-mix(in srgb, var(--stage-bg, var(--bg)) 55%, var(--pole, #fff));
+    background: linear-gradient(180deg, transparent 0, var(--sb) 8rem, var(--sb) 100%); }
+  body[data-tone="dark"] { --pole: #000; }
+  .side .label b { color: color-mix(in srgb, var(--ember) 62%, var(--fg)); }
   .side.is-on::before, .explore-copy.is-on::before { opacity: 0.96; }
   .photo-copy { bottom: 5vh; right: var(--gutter); gap: 1.4rem; }
 }

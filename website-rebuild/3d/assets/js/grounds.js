@@ -194,7 +194,10 @@ export function buildGrounds(M) {
   pool(-D.wingC, 3.0, 9, 6, new THREE.Color(1.0, 0.62, 0.3), 0.2); pool(D.wingC, 3.0, 9, 6, new THREE.Color(1.0, 0.62, 0.3), 0.2);
   pool(0.3, -20.5, 22, 26, new THREE.Color(0.3, 0.75, 0.95), 0.3);    // round the water
   pool(-0.3, -13.5, 14, 8, new THREE.Color(1.0, 0.62, 0.3), 0.26);    // off the patio
+  // After dark the ground is the page colour, so anything lying on it has to come down with it or it glows.
+  const lying = [M.concrete, M.gravel, M.mulch].map((m) => ({ m, day: m.color.clone(), night: m.color.clone().multiplyScalar(0.42) }));
   function setNight(d) {
+    lying.forEach((x) => x.m.color.lerpColors(x.day, x.night, d));
     M.water.emissiveIntensity = d * 0.3;
     poolLight.intensity = d * 8; poolLight.visible = d > 0.01;
     patioLight.intensity = d * 60; patioLight.visible = d > 0.01;
