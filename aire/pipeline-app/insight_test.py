@@ -209,6 +209,12 @@ check(lt({"last_touch": "2026-11-11"})["days_ago"] == 0, "today counts")
 cb = I.Book({"people": [{"person_id": "80", "display": "Fixture Fran", "street": "4 Demo St", "email": "fran@example.com", "last_touch": "2026-01-01", "last_inbound": "2026-10-01"}]},
             [], [{"close": "2026-10-15", "address": "4 Demo St", "side": "Buyer", "price": 1}], [], TODAY, mail_signals={"fran@example.com": {"last_outbound": "2026-10-10"}})
 check(cb.card("80")["last_touch"] == {"day": "2026-10-15", "from": "closed sale", "days_ago": 27}, "Book.card carries the computed last touch, close included")
+# feed.people usually has no email field; the pin does. last_touch must still see a gmail-signals date.
+em_feed = {"people": [{"person_id": "81", "display": "Fixture Fay", "last_touch": "2026-01-01"}],
+           "map": {"pins": [{"kind": "person", "person_id": "81", "email": "fay@example.com"}]}}
+em_book = I.Book(em_feed, [], [], [], TODAY, mail_signals={"fay@example.com": {"last_inbound": "2026-10-20"}})
+check(em_book.card("81")["last_touch"] == {"day": "2026-10-20", "from": "email", "days_ago": 22}, "Book fills a missing people.email from the pin so an email date can win")
+
 
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")
 sys.exit(1 if fails else 0)

@@ -402,6 +402,12 @@ class Book:
         self.people = {str(p.get("person_id")): p for p in f.get("people") or []}
         for r in (f.get("touches_due") or []) + (f.get("new_leads") or []):  # a feed with no people list still knows these
             self.people.setdefault(str(r.get("person_id")), {**r, "has_phone": bool(r.get("phone")), "has_email": bool(r.get("email"))})
+        # feed.people often has has_email but not the address; pins and due rows carry it. Fill so last_touch can use gmail-signals.
+        for r in ((f.get("map") or {}).get("pins") or []) + (f.get("touches_due") or []) + (f.get("new_leads") or []):
+            pid, em = str(r.get("person_id") or ""), str(r.get("email") or "").strip()
+            cur = self.people.get(pid)
+            if pid and em and cur is not None and not str(cur.get("email") or "").strip():
+                cur["email"] = em
         heat = f.get("heat") or {}
         self.reasons = {str(r.get("person_id")): r.get("reasons") or [] for r in (heat.get("hot") or []) + (heat.get("warm") or [])}
         self.sheet, self.sales = _index(deals_sheet or [], "deal"), _index(sales or [], "address")
