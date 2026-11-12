@@ -189,7 +189,7 @@ button:focus-visible{outline:2px solid var(--coral);outline-offset:2px}
           <button data-l="replies" aria-pressed="true" id="lReplies">Replies owed</button>
         </div></div>
       <div class="grp"><span class="lbl">Camera</span>
-        <div class="tog"><button id="bOrbit" aria-pressed="false">Orbit</button><button id="bTop" aria-pressed="false">Top down</button><button id="bReset">Reset</button><button id="b2d" hidden>2D map</button></div></div>
+        <div class="tog"><button id="bOrbit" aria-pressed="false">Orbit</button><button id="bTop" aria-pressed="false">Top down</button><button id="bReset">Reset</button></div></div>
       <div class="grp"><span class="lbl">Audience</span>
         <div class="seg" data-ctl="view" role="group" aria-label="Audience"><button data-v="crm" aria-pressed="true">CRM</button><button data-v="public" aria-pressed="false">Public</button></div></div>
       <p id="hint">Drag to move. Right-drag or Shift-drag to turn. Scroll to zoom.</p>
@@ -656,7 +656,6 @@ function frame(now) {
   renderer.render(scene, camera);
 }
 labels.forEach(l => { l.el.style.opacity = 0; });
-if (HOST && typeof HOST.map3d === 'function') { $('#b2d').hidden = false; $('#b2d').onclick = () => { try { HOST.map3d(false); } catch (e) { } }; }
 window.__map = { state, cam, goal, people, flyTo, select, setLight, syncUI, LIVE: () => LIVE };
 requestAnimationFrame(frame);
 })();

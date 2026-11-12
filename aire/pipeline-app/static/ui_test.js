@@ -728,12 +728,13 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
       && /class="pc-compose" onclick="openPerson\(/.test(pc) && /onclick="openNote\(/.test(pc), 'the map card shows the stage chip, the cadence word, the facts, a button to their card and plan, and Note'); }
   const lg = run('mapLegend()');
   check(SEVEN.every(s2 => lg.includes(`</i>${s2}</li>`)) && /Pins by stage/.test(lg), 'the map legend lists the seven stages');
-  check(/onclick="drawFarm\(\)">Draw farm</.test(run('mapBar()')) && /onclick="mapFit\(\)">Fit</.test(run('mapBar()')), 'Draw farm and Fit stay on the map');
-  check(run('S.map3d') === true && /onclick="map3d\(false\)">2D map</.test(run('mapBar()')), 'Home Ground is the Map tab by default, with a 2D map fallback');
-  check(/onclick="map3d\(true\)">3D</.test(run('S.map3d = false; mapBar()')), 'the 2D map has a 3D button back to Home Ground');
-  run('S.map3d = true');
+  const mapPage = run('viewMap()');
+  check(!/drawFarm\(/.test(mapPage) && !/map3d\(/.test(mapPage) && !/2D map/.test(mapPage) && !/id="pmap"/.test(mapPage) && /id="map-home-ground"/.test(mapPage), 'the Map tab has no 2D map UI: Home Ground is the only view');
+  check(!/function map3d\(/.test(mv) && !/S\.map3d/.test(mv) && /map3dSync\(\)/.test(mv), 'the Map tab has no 2D toggle; Home Ground always fills #main');
   const m3 = fs.readFileSync(path.join(dir, 'map3d.html'), 'utf8');
   check(/location\.replace\('\/#map'\)/.test(m3), 'opening /map3d.html on its own takes you to the Map tab in the Pipeline shell');
+  check(!/id="b2d"/.test(m3) && !/HOST\.map3d\(false\)/.test(m3) && !/>2D map</.test(m3), 'Home Ground has no button back to the 2D map');
+  check(/const fail =/.test(m3) && /could not start 3D graphics, so the map cannot draw here/.test(m3), 'if WebGL cannot start, Home Ground shows a short message instead of a 2D map');
   check(/src=['"]three-0.160.0.min.js['"]/.test(m3) && /fetch\('\/api\/state'/.test(m3) && !/\/api\/(send|call|draft)/.test(m3), 'the 3D map reads /api/state and starts no send, call or draft path');
   // Home Ground Map: local three.js, people only from /api/state on any host, no baked book of business, contact card through openPerson.
   check(fs.existsSync(path.join(dir, 'three-0.160.0.min.js')) && !/<script[^>]+src=["']https?:/.test(m3), 'the Home Ground Map loads three.js from the local file, no script CDN');
