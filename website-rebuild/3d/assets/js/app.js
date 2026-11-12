@@ -235,18 +235,21 @@ function hidden(at) {
   ray.set(c, rayDir); ray.far = far - 0.9;
   return ray.intersectObjects(solids, false).length > 0;
 }
-function drawPins() {
+let pinTimer = 0;
+function drawPins(settled) {
   if (!stage) return;
   const show = free.blue < 0.5 && free.explode < 0.1 && cur.explode < 0.1, top = Math.max(110, stage.h * 0.14);
   pinTick++;
   pins.forEach((x) => {
     stage.project(x.p.at, pt);
     const inFrame = pt.visible && pt.x > 24 && pt.x < stage.w - 24 && pt.y > top && pt.y < stage.h - (stage.w < 768 ? 230 : 110);
-    if (inFrame && pinTick % 4 === 0) x.hid = hidden(x.p.at);
+    if (inFrame && (settled === true || pinTick % 4 === 0)) x.hid = hidden(x.p.at);
     const ok = show && inFrame && !x.hid;
     x.el.style.opacity = ok ? 1 : 0; x.el.style.pointerEvents = ok ? 'auto' : 'none'; x.el.tabIndex = ok ? 0 : -1;
     x.el.style.transform = `translate(${pt.x}px, ${pt.y}px)`;
   });
+  // one more look once the view has come to rest, so a pin never keeps the answer from a moment ago
+  if (settled !== true) { clearTimeout(pinTimer); pinTimer = setTimeout(() => { if (exploring) drawPins(true); }, 140); }
 }
 
 function viewTo(name, instant) {

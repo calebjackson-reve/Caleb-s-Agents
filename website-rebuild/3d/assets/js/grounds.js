@@ -97,7 +97,7 @@ export function buildGrounds(M) {
   });
   [[-6.0, 1.25], [6.0, 1.25]].forEach((p) => cones.push({ x: p[0], y: 0.05 + 0.7, z: p[1], sx: 0.36, sy: 1.4, sz: 0.36, tint: 0.92 }));
   for (let x = -4; x <= 12.5; x += 1.25) cones.push({ x, y: 0.75, z: -28.4, sx: 0.4, sy: 1.5, sz: 0.4, tint: 0.88 + r() * 0.16 });
-  g.add(instanced(new THREE.SphereGeometry(1, 20, 14), M.shrub, balls));
+  g.add(instanced(new THREE.SphereGeometry(1, 14, 9), M.shrub, balls));
   g.add(instanced(new THREE.ConeGeometry(1, 1, 20), M.shrub, cones));
 
   // the round bed between the house and the barn
