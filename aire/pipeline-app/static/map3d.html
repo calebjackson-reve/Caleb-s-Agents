@@ -317,7 +317,7 @@ let HOST = null; try { if (window.parent !== window && typeof window.parent.open
   const norm = c => String(c || '').trim().toLowerCase().replace(/^st\.? /, 'saint ');
   people = pins.filter(p => p && isFinite(p.lat) && isFinite(p.lng) && !['agent', 'vendor', 'lender'].includes(p.type)).map(p => ({ id: p.person_id == null ? '' : String(p.person_id), x: X(p.lng), z: Z(p.lat),
     stage: String(p.stage || '').toLowerCase().replace(/_/g, ' '), band: p.band || '', owes: !!p.owes_reply, type: p.kind === 'deal' ? 'deal' : (p.type || 'unknown'),
-    quiet: Math.round(p.days_quiet || 0), city: norm(p.city), name: M3.shown(p.display || ''), next: p.next_action || '' }))
+    quiet: Math.round(p.days_quiet || 0), city: norm(p.city), name: p.display || '', next: p.next_action || '' }))
     .filter(p => Math.abs(p.x) < HX - .6 && Math.abs(p.z) < HZ - .6);
   farms = (st.farms || []).filter(f => f && Array.isArray(f.polygon) && f.polygon.length >= 3 && !/city limits/i.test(f.name || ''))
     .map(f => { const poly = f.polygon.map(([la, lo]) => [X(lo), Z(la)]); return { name: f.name || '', poly, x: poly.reduce((s, q) => s + q[0], 0) / poly.length, z: poly.reduce((s, q) => s + q[1], 0) / poly.length }; })
