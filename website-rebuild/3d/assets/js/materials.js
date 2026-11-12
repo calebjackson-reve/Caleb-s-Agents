@@ -217,7 +217,7 @@ export function makeMaterials(palette = 'real') {
   };
   [M.concrete, M.gravel, M.mulch, M.leaf, M.bark, M.pond].forEach((m) => fadeOut(m));
   // the lawn is an island round the house that melts into the page, the way a rendering is vignetted on its sheet
-  if (palette === 'real') fadeOut(M.base, 30, 84, -10);
+  if (palette === 'real') fadeOut(M.base, 23, 60, -9);
   M.palette = palette;
   // Window glass is never one flat tone: by day it takes more sky toward the top, after dark the light sits lower in the room.
   M.glass.onBeforeCompile = (sh) => {

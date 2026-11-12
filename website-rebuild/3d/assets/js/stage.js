@@ -142,7 +142,7 @@ void main(){
   float built = sky ? skyB : mix(smoothstep(h, h - 1.7, level), skyB, smoothstep(70.0, 130.0, r));
   built = max(built, smoothstep(0.985, 1.0, uBuild));   // nothing tall or far is left behind as drawing
   // the blueprint gives way to the model behind a level line that climbs the screen, the same move the photo makes
-  float wy = mix(uWipe0, 1.05, uBw);
+  float wy = mix(-0.05, mix(uWipe0, 1.05, uBw), step(0.0005, uBw));   // nothing is revealed until the wipe has started
   float builtB = 1.0 - smoothstep(wy - 0.012, wy, vUv.y);
   float aBlue = uBlue * (1.0 - builtB);
   float a = max(uInk * (1.0 - built), aBlue);
@@ -243,7 +243,7 @@ function untone(target, expo, out) {
 const LOOKS_REAL = [
   { bg: '#b4cde6', low: '#f6f4ee', keyI: 3.5, keyC: '#fff2df', hemiSky: '#d5e3f4', hemiGround: '#a9a58f', hemiI: 0.55, env: 0.42, expo: 0.86, envTop: '#bdd4ee', envHor: '#f6f4ee', envFloor: '#8a916c', vig: 0.06 },
   { bg: '#4c6aa2', low: '#93a6ca', keyI: 1.2, keyC: '#ffd9b8', hemiSky: '#8fa6d0', hemiGround: '#5c6650', hemiI: 0.6, env: 0.4, expo: 0.92, envTop: '#5f7fb8', envHor: '#93a6ca', envFloor: '#4a5244', vig: 0.2 },
-  { bg: '#132549', low: '#2d4776', keyI: 0.6, keyC: '#9fb4e0', hemiSky: '#5f7cb5', hemiGround: '#1e2a22', hemiI: 1.0, env: 0.34, expo: 1.0, envTop: '#1b2f5a', envHor: '#2d4776', envFloor: '#0e140f', vig: 0.38 },
+  { bg: '#16294f', low: '#1b2a49', keyI: 0.6, keyC: '#9fb4e0', hemiSky: '#5f7cb5', hemiGround: '#1e2a22', hemiI: 1.0, env: 0.34, expo: 1.0, envTop: '#1b2f5a', envHor: '#23365c', envFloor: '#0e140f', vig: 0.38 },
 ];
 let LOOKS = LOOKS_REAL;
 const LOOKS_PAPER = [

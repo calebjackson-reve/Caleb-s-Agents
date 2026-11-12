@@ -189,7 +189,7 @@ export function buildGrounds(M) {
   g.add(instanced(new THREE.CylinderGeometry(0.8, 1.1, 1, 10), M.bark, trunks));
   // Trees do not throw a hard shadow that can slide away from them. Each one sits on a soft pool of shade, the way
   // a model maker would airbrush it, and the house gets the same soft band round its foot.
-  g.add(instanced(lumpy(real ? 3 : 4), M.leaf, crowns, real));
+  g.add(instanced(lumpy(real ? 2 : 4), M.leaf, crowns, real));
   const shadeMat = new THREE.MeshBasicMaterial({ map: glowTexture(), color: 0x3a3028, transparent: true, opacity: 0.2, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   shades.forEach((t) => {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(t.s * 2, t.s * 2), shadeMat);
