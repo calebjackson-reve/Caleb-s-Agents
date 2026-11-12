@@ -33,7 +33,7 @@ const settle = (page, ms = 250) => page.evaluate((t) => new Promise((res) => {
 const info = (page) => page.evaluate(() => (window.__stage ? window.__stage.info() : null));
 
 async function open(browser, w, h, phone, extra = '', opts = {}) {
-  const ctx = await browser.newContext(Object.assign({ viewport: { width: w, height: h }, deviceScaleFactor: 1, hasTouch: phone, isMobile: phone }, opts));
+  const ctx = await browser.newContext(Object.assign({ viewport: { width: w, height: h }, deviceScaleFactor: phone ? 2 : 1, hasTouch: phone, isMobile: phone }, opts));   // a real phone is never pixel ratio 1
   const page = await ctx.newPage();
   page.on('console', (m) => { if (m.type() === 'error') report.errors.push(m.text()); });
   page.on('pageerror', (e) => report.errors.push('pageerror: ' + e.message));
@@ -111,7 +111,7 @@ async function explore(browser, w, h, phone, dir, full) {
     await page.click('[data-look="day"]'); await page.waitForTimeout(1500);
     const pins = await page.$$('.pinbtn');
     const names = ['front', 'porch', 'pool', 'patio', 'garage', 'barn', 'gazebo'];
-    const from = { front: [0, 1, 5], pool: [2, 3], above: [4] };   // the barn is in frame from the front, the garage from above; the gazebo is too far off for any set view
+    const from = { front: [0, 1, 5], pool: [2, 3], apart: [4] };   // the barn is in frame from the front, the garage from the three quarter view; the gazebo is too far off for any set view
     for (const view of Object.keys(from)) {
       await page.evaluate((v) => window.__app.viewTo(v, true), view); await settle(page, 1500);
       report.states[`pins shown from ${view}`] = await page.evaluate((nm) => Array.from(document.querySelectorAll('.pinbtn')).map((b, i) => (getComputedStyle(b).opacity === '1' ? nm[i] : null)).filter(Boolean), names);

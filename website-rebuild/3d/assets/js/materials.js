@@ -117,7 +117,7 @@ export function makeMaterials(palette = 'paper') {
     paver: std({ map: T.paver, roughness: 0.92 }),
     concrete: std({ color: 0xfaf7f1, roughness: 0.95 }),
     // the ground is the page itself: it shows the backdrop colour exactly and only ever darkens where a shadow falls
-    base: new THREE.ShadowMaterial({ color: 0x4a3f34, opacity: 0.24 }),
+    base: new THREE.ShadowMaterial({ color: 0x4a3f34, opacity: 0.31 }),
     baseEdge: std({ color: 0xefe8dc, roughness: 0.9 }),
     mulch: std({ color: 0xcdc3b3, roughness: 1 }),
     gravel: std({ color: 0xe4ddd0, roughness: 1 }),
@@ -140,11 +140,11 @@ export function makeMaterials(palette = 'paper') {
   if (palette === 'paper') {
     const set = (m, o) => { Object.assign(m, o); if (o.color !== undefined) m.color = new THREE.Color(o.color); m.needsUpdate = true; };
     set(M.brick, { color: 0xfffbf4 });
-    set(M.shingle, { map: null, bumpMap: T.shingle, bumpScale: 1.8, color: 0x8b857c });
-    set(M.cedar, { map: null, bumpMap: T.cedar, bumpScale: 0.8, color: 0xb99c7a });
+    set(M.shingle, { map: null, bumpMap: T.shingle, bumpScale: 1.8, color: 0x625e5b });   // a warm charcoal, as the real roof is
+    set(M.cedar, { map: null, bumpMap: T.cedar, bumpScale: 0.8, color: 0x94714f });
     set(M.paver, { map: null, bumpMap: T.paver, bumpScale: 0.8, color: 0xddd2c4 });
     set(M.seam, { map: null, color: 0xd0cac0, metalness: 0.1 });
-    set(M.shutter, { color: 0xe2e3df });
+    set(M.shutter, { color: 0xcdd5d9 });
     set(M.door, { color: 0x5b4a3c });
     set(M.black, { color: 0x4d4843, metalness: 0.1 });
     set(M.mulch, { color: 0xe6dfd3 });
@@ -154,7 +154,8 @@ export function makeMaterials(palette = 'paper') {
     set(M.bark, { color: 0xd3c9ba });
     set(M.copper, { color: 0xb98a6c, metalness: 0.4 });
     set(M.water, { color: 0xd2e1e0 });
-    set(M.pond, { color: 0xdae2e0 });
+    set(M.pond, { color: 0xc3d5d8 });
+    set(M.glass, { color: 0x39424d });
   }
   // Anything on the ground dissolves into the backdrop with distance from the house, so no edge of the land is ever in frame.
   const fadeOut = (m) => {
@@ -169,6 +170,15 @@ export function makeMaterials(palette = 'paper') {
     m.customProgramCacheKey = () => 'fadeOut';
   };
   [M.concrete, M.gravel, M.mulch, M.leaf, M.bark, M.pond].forEach(fadeOut);
+  // Window glass is never one flat tone: by day it takes more sky toward the top, after dark the light sits lower in the room.
+  M.glass.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vGlassY;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlassY = (modelMatrix * vec4(position, 1.0)).y;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vGlassY;')
+      .replace('#include <color_fragment>', '#include <color_fragment>\nfloat gT = vGlassY < 4.2 ? clamp((vGlassY - 1.0) / 2.2, 0.0, 1.0) : clamp((vGlassY - 4.9) / 1.05, 0.0, 1.0);\ndiffuseColor.rgb *= mix(0.7, 1.9, gT * gT);')
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance *= mix(1.28, 0.74, gT);');
+  };
+  M.glass.customProgramCacheKey = () => 'glassGrade';
   return { M, T };
 }
 

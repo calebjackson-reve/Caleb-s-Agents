@@ -35,17 +35,17 @@ try {
 const base = Object.assign({}, DEFAULT_STATE);
 const K = {
   hero:    { az: 0, el: 1.6, dist: 150, tx: 0, ty: 3.5, tz: 0, fov: 10, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.14, sy: 0.15, sunAz: -52, sunEl: 34, dof: 0 },
-  form:    { az: -34, el: 12, dist: 72, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.21, sy: 0.03, sunAz: -76, sunEl: 28, dof: 0 },
-  buy:     { az: -22, el: 8, dist: 68, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.21, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0.4 },
-  sell:    { az: 13, el: 3.2, dist: 46, tx: 0.6, ty: 3.4, tz: 2, fov: 34, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.21, sy: 0.03, sunAz: -14, sunEl: 34, dof: 0.45 },
+  form:    { az: -34, el: 12, dist: 80, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.21, sy: 0.03, sunAz: -76, sunEl: 28, dof: 0 },
+  buy:     { az: -22, el: 8, dist: 80, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.205, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0.4 },
+  sell:    { az: 13, el: 4.5, dist: 52, tx: 0.6, ty: 3.4, tz: 2, fov: 34, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.215, sy: 0.06, sunAz: -14, sunEl: 34, dof: 0.45 },
   photo:   null,   // worked out from the photo, see matchPhoto()
   build:   null,   // the same camera as the photo, as a blueprint
   explore: { az: -38, el: 25, dist: 108, tx: 0, ty: 6.6, tz: -6, fov: 24, ink: 1, build: 1, dusk: 0, blue: 1, bw: 0, explode: 1, sx: 0.06, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0 },
-  end:     { az: 30, el: 14, dist: 74, tx: 0, ty: 2.8, tz: -5, fov: 26, ink: 1, build: 1, dusk: 0, blue: 1, bw: 1, explode: 0, sx: 0.2, sy: -0.02, sunAz: -30, sunEl: 40, dof: 0.4 },
+  end:     { az: 30, el: 14, dist: 78, tx: 0, ty: 2.8, tz: -5, fov: 26, ink: 1, build: 1, dusk: 0, blue: 1, bw: 1, explode: 0, sx: 0.23, sy: -0.02, sunAz: -30, sunEl: 40, dof: 0.4 },
 };
 // Phone framing: the model sits in the upper part of the screen, the words below it.
 const KM = {
-  hero: { sx: 0, sy: 0.1, dist: 208 }, form: { sx: 0, sy: -0.17, dist: 86, az: -30 }, buy: { sx: 0, sy: -0.18, dist: 90 }, sell: { sx: 0, sy: -0.18, az: 10, dist: 21, tx: 0.2 },
+  hero: { sx: 0, sy: 0.1, dist: 208 }, form: { sx: 0, sy: -0.17, dist: 86, az: -30 }, buy: { sx: 0, sy: -0.18, dist: 100 }, sell: { sx: 0, sy: -0.18, az: 10, dist: 21, tx: 0.2 },
   explore: { sx: 0, sy: -0.25, dist: 104 }, end: { sx: 0, sy: -0.2, dist: 86 },
 };
 const ORDER = ['hero', 'form', 'buy', 'sell', 'photo', 'build', 'explore'];
@@ -55,9 +55,9 @@ const TRACKS = {
   hero: { _: [0.22, 0.96] },
   form: { _: [0.08, 0.9], build: [0.16, 0.84], dof: [0.6, 0.95] },
   buy: { _: [0.1, 0.9] },
-  sell: { _: [0.5, 0.95], dusk: [0.16, 0.6], dof: [0.5, 0.8] },
+  sell: { _: [0.62, 0.96], dusk: [0.2, 0.42], dof: [0.62, 0.85] },
   photo: { _: [0, 1], dusk: [0.42, 0.66], blue: [0.42, 0.66] },
-  build: { _: [0.08, 0.8], explode: [0.32, 0.86] },
+  build: { _: [0.06, 0.5], explode: [0.36, 0.86] },
   explore: { _: [0.03, 0.4], explode: [0.02, 0.22], bw: [0.12, 0.42], dof: [0.36, 0.46] },
 };
 const PHOTO = { on: [0.03, 0.34], off: [0.72, 0.98] };
@@ -99,7 +99,7 @@ function prepareKeys() {
 }
 
 // ---------------------------------------------------------------- scenes and scroll
-const scenes = $$('.scene').map((el) => ({ el, name: el.dataset.scene, top: 0, height: 1, copy: $$('.copy', el).map((c) => ({ el: c, on: c.dataset.on.split(' ').map(Number) })) }));
+const scenes = $$('.scene').map((el) => ({ el, name: el.dataset.scene, top: 0, height: 1, copy: $$('.copy', el).map((c) => ({ el: c, on: c.dataset.on.split(' ').map(Number), onPhone: c.dataset.onPhone ? c.dataset.onPhone.split(' ').map(Number) : null })) }));
 const journey = $('#journey');
 let journeyEnd = 0;
 function measure() {
@@ -122,16 +122,18 @@ function where(y) {
 }
 
 const out = Object.assign({}, base);
+// With reduced motion on, nothing glides: every value sits at one end of its move or the other.
+const ease01 = (x) => (reduce ? (x < 0.5 ? 0 : 1) : smoother(x));
 function stateAt(y) {
   const { s, t } = where(y);
   const a = keys[s.name], b = keys[NEXT[s.name]], tr = TRACKS[s.name];
   for (const k in base) {
     const w = tr[k] || tr._;
-    out[k] = lerp(a[k], b[k], smoother((t - w[0]) / (w[1] - w[0])));
+    out[k] = lerp(a[k], b[k], ease01((t - w[0]) / (w[1] - w[0])));
   }
   // The lens and the distance change together, so the house never shrinks and swells on the way between two views:
   // what is interpolated is how much of the scene the lens takes in.
-  const w = tr.dist || tr._, u = smoother((t - w[0]) / (w[1] - w[0]));
+  const w = tr.dist || tr._, u = ease01((t - w[0]) / (w[1] - w[0]));
   const spanA = a.dist * Math.tan((a.fov * DEG) / 2), spanB = b.dist * Math.tan((b.fov * DEG) / 2);
   out.dist = (spanA * Math.pow(spanB / spanA, u)) / Math.tan((out.fov * DEG) / 2);
   return out;
@@ -195,7 +197,7 @@ const PINS = [
   { at: [-2.9, 1.5, 3.1], title: 'Front porch', note: 'Cedar posts, brick underfoot and flowers by the door.', img: 'basil-porch.webp' },
   { at: [0.3, 0.5, -20.5], title: 'Pool', note: 'The pool terrace behind the house, at dusk.', img: 'basil-pool-night.webp' },
   { at: [-0.3, 1.2, -13.6], title: 'Back patio', note: 'Covered, with an outdoor kitchen.', img: 'basil-patio.webp' },
-  { at: [-13.6, 1.2, -15], title: 'Garage and drive', note: 'Three bays along the side of the house.', img: 'basil-driveway.webp' },
+  { at: [-12.0, 1.5, -15], title: 'Garage and drive', note: 'Three bays along the side of the house.', img: 'basil-driveway.webp' },
   { at: [-38, 8.6, -46], title: 'The barn', note: 'White, with a cupola, across the lawn.', img: 'basil-barn.webp' },
   { at: [-2, 5.2, -68.5], title: 'Gazebo on the pond', note: 'A cedar frame at the edge of the water.', img: 'basil-gazebo.webp' },
 ];
@@ -240,15 +242,19 @@ function hidden(at) {
 let pinTimer = 0;
 function drawPins(settled) {
   if (!stage) return;
-  const show = free.blue < 0.5 && free.explode < 0.1 && cur.explode < 0.1, top = Math.max(110, stage.h * 0.14);
+  const show = free.explode < 0.1 && cur.explode < 0.1, top = Math.max(110, stage.h * 0.14);
   pinTick++;
   pins.forEach((x) => {
     stage.project(x.p.at, pt);
     const inFrame = pt.visible && pt.x > 24 && pt.x < stage.w - 24 && pt.y > top && pt.y < stage.h - (stage.w < 768 ? 230 : 110);
     if (inFrame && (settled === true || pinTick % 4 === 0)) x.hid = hidden(x.p.at);
-    const ok = show && inFrame && !x.hid;
-    x.el.style.opacity = ok ? 1 : 0; x.el.style.pointerEvents = ok ? 'auto' : 'none'; x.el.tabIndex = ok ? 0 : -1;
-    x.el.style.transform = `translate(${pt.x}px, ${pt.y}px)`;
+    x.ok = show && inFrame && !x.hid; x.sx = pt.x; x.sy = pt.y; x.depth = stage.camera.position.distanceToSquared(rayAt.fromArray(x.p.at));
+  });
+  // two pins that would sit on top of each other: the nearer one stays
+  pins.forEach((a) => { if (a.ok) pins.forEach((b) => { if (b !== a && b.ok && b.depth > a.depth && Math.hypot(a.sx - b.sx, a.sy - b.sy) < 46) b.ok = false; }); });
+  pins.forEach((x) => {
+    x.el.style.opacity = x.ok ? 1 : 0; x.el.style.pointerEvents = x.ok ? 'auto' : 'none'; x.el.tabIndex = x.ok ? 0 : -1;
+    x.el.style.transform = `translate(${x.sx}px, ${x.sy}px)`;
   });
   // one more look once the view has come to rest, so a pin never keeps the answer from a moment ago
   if (settled !== true) { clearTimeout(pinTimer); pinTimer = setTimeout(() => { if (exploring) drawPins(true); }, 140); }
@@ -291,8 +297,8 @@ function openViewer(look) {
     Object.assign(cur, free, LOOKS[look] || LOOKS.day, { explode: 0 });
     setLook(look || 'day'); free.explode = 0; $('#apart').value = 0;
     // opens on a three quarter view, pulled back far enough that the whole house fits the screen it is on
-    const k = stage.fit() * (innerWidth < 768 ? 1.18 : 1);
-    controls.target.set(0, 2.6, -4); stage.camera.position.set(-34 * k, 2.6 + 15 * k, -4 + 52 * k); controls.update();
+    const k = stage.fit() * (innerWidth < 768 ? 1.32 : 1);
+    controls.target.set(0, 2.6, -4); stage.camera.position.set(-20 * k, 2.6 + 15 * k, -4 + 58 * k); controls.update();
     controls.autoRotate = !reduce && !still;
     $('#viewer-hint').classList.remove('is-gone');
     canvas.style.opacity = 1;
@@ -319,7 +325,13 @@ $('#open-viewer').addEventListener('click', () => openViewer('day'));
 $('#close-viewer').addEventListener('click', closeViewer);
 $$('[data-look]').forEach((b) => b.addEventListener('click', () => setLook(b.dataset.look)));
 $$('[data-view]').forEach((b) => b.addEventListener('click', () => viewTo(b.dataset.view)));
-$('#apart').addEventListener('input', (e) => { free.explode = parseFloat(e.target.value); if (free.explode > 0.1) closeCard(); });
+// Taking it apart reads best from a three quarter view, so the first pull on the slider swings the camera there.
+VIEWS.apart = { az: -34, el: 24, dist: 84, t: [0, 6, -6] };
+$('#apart').addEventListener('input', (e) => {
+  const v = parseFloat(e.target.value);
+  if (free.explode === 0 && v > 0) viewTo('apart');
+  free.explode = v; if (v > 0.1) closeCard();
+});
 addEventListener('keydown', (e) => {
   if (!exploring) return;
   if (e.key === 'Escape') { if (!card.hidden) closeCard(); else closeViewer(); }
@@ -347,12 +359,15 @@ function furniture(y, w) {
   header.classList.toggle('on-dark', surf === 'dark'); header.classList.toggle('on-light', surf === 'light');
   const name = w.s.name === 'photo' ? 'sell' : w.s.name;
   rail.forEach((a) => a.classList.toggle('is-active', a.dataset.for === name));
+  // where the picture fills the screen edge to edge, the chapter marks step aside
+  body.classList.toggle('is-bleed', w.s.name === 'photo' || (w.s.name === 'sell' && w.t > 0.66) || (w.s.name === 'build' && w.t < 0.2));
   // copy blocks switch on and off inside their scene
   scenes.forEach((s, i) => {
     const t = i === w.i ? w.t : (i < w.i ? 2 : -1);
     s.copy.forEach((c) => {
-      const on = body.classList.contains('is-ready') && t >= c.on[0] && t < c.on[1];
-      c.el.classList.toggle('is-on', on); c.el.classList.toggle('is-past', !on && t >= c.on[1]);
+      const r = c.onPhone && innerWidth < 768 ? c.onPhone : c.on;
+      const on = body.classList.contains('is-ready') && t >= r[0] && t < r[1];
+      c.el.classList.toggle('is-on', on); c.el.classList.toggle('is-past', !on && t >= r[1]);
     });
   });
 }
@@ -440,12 +455,12 @@ function frame(now) {
   let po = 0, drift = 0;
   if (!exploring && w.s.name === 'photo') {
     po = Math.min(smoother((w.t - PHOTO.on[0]) / (PHOTO.on[1] - PHOTO.on[0])), 1 - smoother((w.t - PHOTO.off[0]) / (PHOTO.off[1] - PHOTO.off[0])));
-    drift = smoother((w.t - PHOTO.on[1]) / (PHOTO.off[0] - PHOTO.on[1]));   // the photo only drifts between the two wipes
+    if (reduce) po = po < 0.5 ? 0 : 1;   // the photo holds still: any drift would pull it off the model at the second wipe
   }
   drawPhoto(po, drift);
 
   if (!stage) {
-    setTone(w.s.name === 'photo' || w.s.name === 'build' ? 'dark' : 'light');
+    setTone(po > 0.5 ? 'dark' : 'light');   // without 3D the only dark moment is the photograph
     if (!ready) { ready = true; window.__ready = true; body.classList.remove('is-loading'); body.classList.add('is-ready'); }
     return;
   }
@@ -464,7 +479,7 @@ function frame(now) {
     turned = false;
   } else {
     // the pointer leans the camera a little, except near the photo, where the model has to sit exactly on it
-    const n = w.s.name, hold = n === 'photo' ? 1 : n === 'sell' ? smoother((w.t - 0.45) / 0.4) : n === 'build' ? 1 - smoother((w.t - 0.08) / 0.3) : 0;
+    const n = w.s.name, hold = n === 'photo' ? 1 : n === 'sell' ? smoother((w.t - 0.56) / 0.3) : n === 'build' ? 1 - smoother((w.t - 0.06) / 0.25) : 0;
     const wx = sway.x * (1 - hold), wy = sway.y * (1 - hold);
     stage.sway.x += (wx - stage.sway.x) * Math.min(1, dt * 2.5); stage.sway.y += (wy - stage.sway.y) * Math.min(1, dt * 2.5);
     if (Math.abs(wx - stage.sway.x) > 0.002) moved += 1;

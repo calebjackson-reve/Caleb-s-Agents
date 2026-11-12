@@ -2,7 +2,7 @@
 // the pool terrace behind, the barn, the pond with its gazebo and a few oaks. Everything is quiet in tone so the house leads.
 // The ground has no edge: it runs far past any camera and dissolves into the backdrop (see fadeOut in materials.js).
 import * as THREE from 'three';
-import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Bin, box, roof, prismX, rng } from './kit.js';
 import { glowTexture } from './materials.js';
 import { D } from './house.js';
@@ -55,6 +55,10 @@ export function buildGrounds(M) {
   }
   [[5.9, -15], [5.9, -26]].forEach((p) => b.add(M.trim, box(p[0] - 0.35, p[0] + 0.35, 0.14, 0.75, p[1] - 0.35, p[1] + 0.35)));
   b.build(g);
+  [[5.9, -15], [5.9, -26]].forEach((p) => {
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.24, 0.24, 24), M.black);
+    bowl.position.set(p[0], 0.87, p[1]); bowl.castShadow = true; bowl.receiveShadow = true; g.add(bowl);
+  });
 
   // pool water, a little lower than the coping
   const water = new THREE.Mesh(new THREE.PlaneGeometry(5.3, 10.3), M.water);
@@ -80,12 +84,16 @@ export function buildGrounds(M) {
 
   // planting, as in the photos: one low clipped hedge along each bed, a few taller accents, a row of cones by the pool
   const balls = [], cones = [];
+  // a low clipped hedge: a rounded section pulled along the run, as boxwood is kept in front of the real house
+  const hedgeGeos = [];
   const hedge = (x0, z0, x1, z1) => {
-    const len = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(len / 0.36);
-    for (let k = 0; k <= n; k++) {
-      const u = k / n, w = 0.4 + r() * 0.07, hh = 0.3 + 0.05 * Math.sin(u * 19 + x0) + r() * 0.04;
-      balls.push({ x: x0 + (x1 - x0) * u + (r() - 0.5) * 0.05, y: 0.05 + hh * 0.72, z: z0 + (z1 - z0) * u + (r() - 0.5) * 0.05, sx: w, sy: hh, sz: w * 0.9, tint: 0.93 + r() * 0.1 });
-    }
+    const len = Math.hypot(x1 - x0, z1 - z0), w = 0.34, h = 0.52, rad = 0.17;
+    const sh = new THREE.Shape();
+    sh.moveTo(-w, 0); sh.lineTo(w, 0); sh.lineTo(w, h - rad); sh.quadraticCurveTo(w, h, w - rad, h); sh.lineTo(-w + rad, h); sh.quadraticCurveTo(-w, h, -w, h - rad); sh.lineTo(-w, 0);
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: len, bevelEnabled: true, bevelSize: 0.1, bevelThickness: 0.1, bevelSegments: 3, curveSegments: 6 });
+    geo.deleteAttribute('uv');
+    const m = new THREE.Matrix4().makeRotationY(Math.atan2(x1 - x0, z1 - z0)).setPosition(x0, 0.05, z0);
+    geo.applyMatrix4(m); hedgeGeos.push(geo);
   };
   [-1, 1].forEach((s) => {
     hedge(s * 2.5, 4.3, s * (PF + 0.55), 4.3); hedge(s * (PF + 0.55), 4.3, s * (PF + 0.55), 2.7); hedge(s * (PF + 0.55), 2.7, s * (H + 0.75), 2.7);
@@ -97,6 +105,7 @@ export function buildGrounds(M) {
   });
   [[-6.0, 1.25], [6.0, 1.25]].forEach((p) => cones.push({ x: p[0], y: 0.05 + 0.7, z: p[1], sx: 0.36, sy: 1.4, sz: 0.36, tint: 0.92 }));
   for (let x = -4; x <= 12.5; x += 1.25) cones.push({ x, y: 0.75, z: -28.4, sx: 0.4, sy: 1.5, sz: 0.4, tint: 0.88 + r() * 0.16 });
+  const hedges = new THREE.Mesh(mergeGeometries(hedgeGeos, false), M.shrub); hedges.castShadow = true; hedges.receiveShadow = true; g.add(hedges);
   g.add(instanced(new THREE.SphereGeometry(1, 14, 9), M.shrub, balls));
   g.add(instanced(new THREE.ConeGeometry(1, 1, 20), M.shrub, cones));
 
@@ -130,6 +139,8 @@ export function buildGrounds(M) {
   {
     const pond = new THREE.Mesh(new THREE.CircleGeometry(1, 64), M.pond);
     pond.rotation.x = -Math.PI / 2; pond.scale.set(30, 17, 1); pond.position.set(6, 0.03, -88); pond.receiveShadow = true; g.add(pond);
+    const bank = new THREE.Mesh(new THREE.RingGeometry(1, 1.045, 96), M.mulch);
+    bank.rotation.x = -Math.PI / 2; bank.scale.set(30, 17, 1); bank.position.set(6, 0.034, -88); bank.receiveShadow = true; g.add(bank);
     const gz = new THREE.Group(); gz.position.set(-2, 0, -68.5); g.add(gz);
     const gb = new Bin();
     gb.add(M.cedar, box(-2.6, 2.6, 0, 0.35, -2.6, 2.6));
@@ -184,8 +195,8 @@ export function buildGrounds(M) {
   pool(0.3, -20.5, 22, 26, new THREE.Color(0.3, 0.75, 0.95), 0.3);    // round the water
   pool(-0.3, -13.5, 14, 8, new THREE.Color(1.0, 0.62, 0.3), 0.26);    // off the patio
   function setNight(d) {
-    M.water.emissiveIntensity = d * 0.55;
-    poolLight.intensity = d * 14; poolLight.visible = d > 0.01;
+    M.water.emissiveIntensity = d * 0.3;
+    poolLight.intensity = d * 8; poolLight.visible = d > 0.01;
     patioLight.intensity = d * 60; patioLight.visible = d > 0.01;
     pools.forEach((pl) => { pl.material.opacity = d * pl.userData.strength; pl.visible = d > 0.01; });
   }

@@ -176,6 +176,12 @@ export function buildHouse(M) {
     });
     const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.36, 0.2), M.lamp);
     lantern.position.set(0, D.floor + 2.95, 0.9); walls.add(lantern);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.16, 4), M.black); cap.rotation.y = Math.PI / 4;
+    cap.position.set(0, D.floor + 3.21, 0.9); walls.add(cap);
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.04, 0.26), M.black); foot.position.set(0, D.floor + 2.76, 0.9); walls.add(foot);
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach((c) => {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.38, 0.022), M.black); bar.position.set(c[0] * 0.105, D.floor + 2.95, 0.9 + c[1] * 0.105); walls.add(bar);
+    });
     const chain = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.45, 0.015), M.black);
     chain.position.set(0, D.floor + 3.3, 0.9); walls.add(chain);
   }
@@ -318,6 +324,7 @@ export function buildHouse(M) {
   leader('dormersFront', [[-1.5, 6.0, 2.66], [1.5, 6.0, 2.66]]);
   leader('posts', [[-4.83, 0.8, 2.8], [4.83, 0.8, 2.8]]);
   leader('gables', [[-WC, 0.1, D.bayZ], [WC, 0.1, D.bayZ]]);
+  leader('dormersGarage', [[-WC - 1.95, 4.6, -13.4], [-WC - 1.95, 4.6, -17.2], [-WC + 1.95, 4.6, -15.3]]);
 
   // Takes the house apart in the order a drawing would: dormers first, then the porch roof, the main roof, and last
   // the posts and the gabled bays. Each part moves in its own slice of the slider.

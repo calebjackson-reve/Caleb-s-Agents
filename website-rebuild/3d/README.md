@@ -67,6 +67,7 @@ Explore mode: drag to turn, scroll or pinch to zoom, four looks (Drawing, Day, D
 3. **Basil Lane as the example.** A sold home, shown in 3D, on a page aimed at builders. Confirm you're fine using it this way.
 4. **The address.** I'd put it at `/builders`. Nothing is wired until you say so.
 5. **The home page teaser.** A short version of the drawing turning into the model, linking here. That means editing `../site/`, which publishes on merge, so it waits for a separate yes.
+6. **One fallback line (added November 12, 2026).** On a browser that can't draw 3D, the last chapter says: "This browser can't draw the 3D model. The photos just below are the real house." It replaces a line that promised controls the visitor could not see.
 
 ## Next: a real floor plan in 3D
 

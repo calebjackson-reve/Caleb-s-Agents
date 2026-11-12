@@ -1,3 +1,4 @@
+@property --stage-bg { syntax: '<color>'; inherits: true; initial-value: #FBF8F3; }
 /* The 3D page for calebjackson.org. Tokens follow website-rebuild/DESIGN-SYSTEM.md: ink, ivory, ember, Instrument Serif,
    one fluid scale (1rem is 10px at 1920 wide, 7.5px at 1440, 10.4px on a 390 phone). */
 
@@ -106,6 +107,9 @@ body.stage-off .photo { visibility: hidden; }
 .tag b, .tagdot { display: grid; place-items: center; width: 2rem; height: 2rem; min-width: 16px; min-height: 16px; border-radius: 50%; background: var(--ember); color: var(--ink); font-size: max(1.1rem, 9px); font-weight: 600; font-style: normal; letter-spacing: 0; line-height: 1; }
 .tagdot { position: absolute; left: 0; top: 0; margin: -1rem 0 0 -1rem; box-shadow: 0 0 0 0.4rem rgba(232, 119, 87, 0.22); will-change: transform; }
 .legend { display: none; }
+.only-no3d { display: none; }
+.no-webgl .only-no3d { display: block; }
+.no-webgl .needs-3d { display: none; }
 @media (max-width: 767px) { .wide-only { display: none; } }
 @media (max-width: 767px) {
   .tag { display: none; } .wires { display: none; }
@@ -122,7 +126,7 @@ body.stage-off .photo { visibility: hidden; }
 .rail i { width: 2.2rem; height: 1px; background: currentColor; opacity: 0.35; transform-origin: right; transition: transform 0.5s var(--ease), opacity 0.5s var(--ease), background 0.5s; }
 .rail a:hover span, .rail a:focus-visible span { opacity: 1; transform: none; }
 .rail a.is-active i { transform: scaleX(1.9); opacity: 1; background: var(--ember); }
-body.stage-off .rail, body.is-exploring .rail { opacity: 0; pointer-events: none; }
+body.stage-off .rail, body.is-exploring .rail, body.is-bleed .rail { opacity: 0; pointer-events: none; }
 @media (max-width: 1023px) { .rail { display: none; } }
 
 /* ---------- the journey ---------- */
@@ -186,8 +190,10 @@ body.stage-off .pin { visibility: hidden; }
 @keyframes cue { 0% { transform: translateY(-110%); } 100% { transform: translateY(240%); } }
 
 /* side copy, on a soft fade of the stage colour so the words stay readable when the model comes close */
-.side::before, .explore-copy::before { content: ""; position: absolute; z-index: -1; left: calc(var(--gutter) * -1); top: -120vh; bottom: -120vh; width: 132rem;
-  background: linear-gradient(90deg, var(--stage-bg, var(--bg)) 0%, var(--stage-bg, var(--bg)) 56%, transparent 100%); opacity: 0; transition: opacity 0.9s var(--ease); }
+.side::before, .explore-copy::before { content: ""; position: absolute; z-index: -1; left: calc(var(--gutter) * -1); top: -120vh; bottom: -120vh; width: 100rem;
+  --sb: var(--stage-bg, var(--bg));
+  background: linear-gradient(90deg, var(--sb) 0%, var(--sb) 56%, color-mix(in srgb, var(--sb) 86%, transparent) 66%, color-mix(in srgb, var(--sb) 55%, transparent) 78%, color-mix(in srgb, var(--sb) 20%, transparent) 90%, transparent 100%);
+  opacity: 0; transition: opacity 0.9s var(--ease); }
 .side.is-on::before, .explore-copy.is-on::before { opacity: 1; }
 .side { position: absolute; top: 50%; transform: translateY(-50%); width: 62rem; display: flex; flex-direction: column; gap: 3rem; }
 .side.left { left: var(--gutter); }

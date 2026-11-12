@@ -101,11 +101,15 @@
     </div>
   </section>
 
-  <section class="scene scene-sell" id="sell" data-scene="sell" style="--len:2.1" aria-label="Selling">
+  <section class="scene scene-sell" id="sell" data-scene="sell" style="--len:2.7" aria-label="Selling">
     <div class="pin">
-      <div class="copy side left" data-on="0.05 0.56">
+      <!-- the headline reads by day, the light falls with nothing over it, then the rest reads after dark -->
+      <div class="copy side left" data-on="0.03 0.19">
         <p class="label rise"><b>02</b> Show it</p>
         <h2 class="h-statement"><span class="line"><span>Launched like it's</span></span><span class="line"><span><em>already standing.</em></span></span></h2>
+      </div>
+      <div class="copy side left" data-on="0.43 0.63">
+        <p class="label rise"><b>02</b> Show it</p>
         <p class="body rise">Twilight views and a launch week, made from the model while the framing is still going up. Then real photos, drone and film the day it's done.</p>
         <p class="rise"><a class="btn" href="../site/sell.html"><span>How I launch a home</span><i>&rarr;</i></a></p>
       </div>
@@ -124,7 +128,7 @@
 
   <section class="scene scene-build" id="build" data-scene="build" style="--len:2.4" aria-label="For builders">
     <div class="pin">
-      <div class="copy side left" data-on="0.2 0.92">
+      <div class="copy side left" data-on="0.4 0.92">
         <p class="label rise"><b>03</b> Know it</p>
         <h2 class="h-statement"><span class="line"><span>Every part,</span></span><span class="line"><span><em>named.</em></span></span></h2>
         <p class="body rise"><span class="wide-only">Buyers ask what the roof is, what the posts are, what's brick and what isn't. The model answers before they ask. </span>I'm not an architect. I'm the agent who makes your architect's work easy to buy.</p>
@@ -137,10 +141,11 @@
 
   <section class="scene scene-explore" id="explore" data-scene="explore" style="--len:3" aria-label="Explore the house">
     <div class="pin">
-      <div class="copy explore-copy" data-on="0.44 1.01">
+      <div class="copy explore-copy" data-on="0.44 1.01" data-on-phone="0.06 1.01">
         <p class="label rise">Your buyer's turn</p>
         <h2 class="h-statement"><span class="line"><span>Now hand them</span></span><span class="line"><span><em>the house.</em></span></span></h2>
-        <p class="body rise">Turn it. Switch between the drawing, daylight, dusk and the blueprint. Take it apart and put it back. This is what a buyer gets on their phone.</p>
+        <p class="body rise needs-3d">Turn it. Switch between the drawing, daylight, dusk and the blueprint. Take it apart and put it back. This is what a buyer gets on their phone.</p>
+        <p class="body rise only-no3d">This browser can't draw the 3D model. The photos just below are the real house.</p>
         <p class="rise"><button class="btn solid" type="button" id="open-viewer"><span>Explore Basil Lane</span><i>&rarr;</i></button></p>
       </div>
     </div>

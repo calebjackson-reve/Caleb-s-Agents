@@ -6,6 +6,16 @@ The judge is a specialist in real-time 3D for the web. The judge scores from wha
 
 Start every category at 6. The evidence has to earn each point above that. A 9 means a working 3D artist would not change anything that matters. A 10 means it would hold up next to the best architectural 3D on the web.
 
+## Client direction the judge works inside
+
+These come from Caleb, who owns the page. They are not up for scoring. Judge how well the page does what he asked, not whether he should have asked for something else.
+
+- "I dont want it to look cartoonish either."
+- "I want it look and feel luxury and smooth and breathe taking."
+- "It kind of feels off going from one color to a different color."
+
+What that means on screen: the model keeps one quiet paper palette. The ground is the page itself, with no green lawn and no blue daytime sky. Real colour arrives once, in the real photograph. Do not list "add a lawn" or "tint the sky" as a fix. A roof, a post or a window that is the wrong tone inside that palette is fair game.
+
 ## Categories
 
 | # | Category | Weight | What earns the points |

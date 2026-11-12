@@ -124,7 +124,9 @@ void main(){
   float n = (noise(wp.xz * 0.3) - 0.5) * 0.9 + (noise(wp.xy * 0.9) - 0.5) * 0.3;
   float level = wp.y + n + min(r, 110.0) * 0.045;
   float h = mix(-3.4, 17.0, uBuild);
-  float built = sky ? smoothstep(0.55, 0.95, uBuild) : smoothstep(h, h - 1.7, level);
+  float skyB = smoothstep(0.55, 0.95, uBuild);
+  float built = sky ? skyB : mix(smoothstep(h, h - 1.7, level), skyB, smoothstep(70.0, 130.0, r));
+  built = max(built, smoothstep(0.985, 1.0, uBuild));   // nothing tall or far is left behind as drawing
   // the blueprint gives way to the model behind a level line that climbs the screen, the same move the photo makes
   float wy = uBw * 1.1 - 0.05;
   float builtB = 1.0 - smoothstep(wy - 0.012, wy, vUv.y);
@@ -163,7 +165,14 @@ void main(){
   vec3 nc = nrm(vUv);
   float nd = 4.0 - dot(nc, nrm(vUv + vec2(o.x, 0.0))) - dot(nc, nrm(vUv - vec2(o.x, 0.0))) - dot(nc, nrm(vUv + vec2(0.0, o.y))) - dot(nc, nrm(vUv - vec2(0.0, o.y)));
   float eN = smoothstep(mix(0.9, 0.14, fine), mix(1.6, 0.55, fine), nd);
-  gl_FragColor = vec4(vec3(max(eD, eN)), 1.0);
+  // on the ground, lines come only from a change of surface, never from the few centimetres of height between them
+  float ia = texture2D(tNormal, vUv).a;
+  float di = max(max(abs(texture2D(tNormal, vUv + vec2(o.x, 0.0)).a - ia), abs(texture2D(tNormal, vUv - vec2(o.x, 0.0)).a - ia)),
+                 max(abs(texture2D(tNormal, vUv + vec2(0.0, o.y)).a - ia), abs(texture2D(tNormal, vUv - vec2(0.0, o.y)).a - ia)));
+  bool open = max(dc, max(max(d1, d2), max(d3, d4))) > 0.999999;
+  float eI = open ? 0.0 : 0.62 * step(0.04, di);
+  if (ia < 0.95) { eD = 0.0; eN = 0.0; }
+  gl_FragColor = vec4(vec3(max(max(eD, eN), eI)), 1.0);
 }`;
 
 const AO_FRAG = `
@@ -216,9 +225,9 @@ function untone(target, expo, out) {
 // Three looks the studio moves between: clear day, the light going, and after dark.
 // bg is the backdrop overhead and the page colour behind the words. low is the backdrop at the horizon, which the ground fades into.
 const LOOKS = [
-  { bg: '#FBF8F3', low: '#FBF8F3', keyI: 3.3, keyC: '#fff1df', hemiSky: '#fdfcff', hemiGround: '#f1e6d6', hemiI: 0.68, env: 0.5, expo: 0.84, envTop: '#ffffff', envHor: '#f4eee4', envFloor: '#dccfbb', vig: 0 },
+  { bg: '#FBF8F3', low: '#FBF8F3', keyI: 3.6, keyC: '#fff1df', hemiSky: '#fdfcff', hemiGround: '#f1e6d6', hemiI: 0.5, env: 0.36, expo: 0.84, envTop: '#ffffff', envHor: '#f4eee4', envFloor: '#dccfbb', vig: 0 },
   { bg: '#7d8598', low: '#aab1c1', keyI: 1.5, keyC: '#f1e6e0', hemiSky: '#b4bccd', hemiGround: '#7e8494', hemiI: 0.62, env: 0.4, expo: 0.9, envTop: '#9299ad', envHor: '#aab1c1', envFloor: '#5a5f6c', vig: 0.2 },
-  { bg: '#12141c', low: '#2b3853', keyI: 0.75, keyC: '#9fb0d6', hemiSky: '#56688f', hemiGround: '#1c1f2a', hemiI: 0.95, env: 0.3, expo: 1.0, envTop: '#1a2238', envHor: '#2b3853', envFloor: '#0b0c10', vig: 0.4 },
+  { bg: '#12141c', low: '#2b3853', keyI: 0.75, keyC: '#9fb0d6', hemiSky: '#7186b3', hemiGround: '#1c1f2a', hemiI: 1.25, env: 0.36, expo: 1.0, envTop: '#1a2238', envHor: '#2b3853', envFloor: '#0b0c10', vig: 0.4 },
 ];
 const cA = new THREE.Color(), cB = new THREE.Color();
 function lookColor(key, t, out) {
@@ -281,6 +290,8 @@ export class Stage {
     scene.add(this.sun, this.sun.target);
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
     scene.add(this.hemi);
+    // after dark a faint cool light from straight overhead keeps the roof planes apart instead of letting them go black
+    this.moon = new THREE.DirectionalLight(0x8ea2cf, 0); this.moon.position.set(0, 120, 24); scene.add(this.moon);
 
     // targets and the passes
     const fast = this.quality === 'fast';
@@ -289,7 +300,32 @@ export class Stage {
     this.rtNorm.depthTexture = new THREE.DepthTexture(4, 4, THREE.UnsignedIntType);
     this.rtAO = new THREE.WebGLRenderTarget(4, 4, { type: THREE.UnsignedByteType, depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
     this.rtEdge = new THREE.WebGLRenderTarget(4, 4, { type: THREE.UnsignedByteType, depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
-    this.normalMat = new THREE.MeshNormalMaterial();
+    // The normal pass also writes which kind of surface each pixel is, in alpha. The line pass draws a clean line
+    // wherever that changes on the ground (walk against lawn, water against terrace), where depth alone only speckles.
+    this.normalMat = new THREE.ShaderMaterial({
+      uniforms: { uId: { value: 1 } },
+      vertexShader: `
+        #include <common>
+        varying vec3 vN;
+        void main(){
+          #include <beginnormal_vertex>
+          #include <defaultnormal_vertex>
+          vN = normalize(transformedNormal);
+          #include <begin_vertex>
+          #include <project_vertex>
+        }`,
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vN; uniform float uId;
+        void main(){ vec3 n = normalize(vN); if (!gl_FrontFacing) n = -n; gl_FragColor = vec4(n * 0.5 + 0.5, uId); }`,
+    });
+    const groundId = new Map([[M.base, 0.2], [M.concrete, 0.35], [M.gravel, 0.5], [M.mulch, 0.6], [M.pond, 0.75], [M.water, 0.88]]);
+    const nm = this.normalMat;
+    scene.traverse((o) => {
+      if (!o.isMesh) return;
+      const id = groundId.get(o.material) || 1;
+      o.onBeforeRender = (r, sc, cam, geo, mat) => { if (mat === nm) { nm.uniforms.uId.value = id; nm.uniformsNeedUpdate = true; } };
+    });
     this.U = {
       tColor: { value: this.rtColor.texture }, tNormal: { value: this.rtNorm.texture }, tDepth: { value: this.rtNorm.depthTexture }, tAO: { value: this.rtAO.texture }, tEdge: { value: this.rtEdge.texture },
       uTexel: { value: new THREE.Vector2() }, uTexelAO: { value: new THREE.Vector2() }, uInvViewProj: { value: new THREE.Matrix4() },
@@ -394,6 +430,7 @@ export class Stage {
     lookColor('keyC', t, this.sun.color); this.sun.intensity = lookNum('keyI', t);
     lookColor('hemiSky', t, this.hemi.color); lookColor('hemiGround', t, this.hemi.groundColor); this.hemi.intensity = lookNum('hemiI', t);
     this.scene.environmentIntensity = lookNum('env', t);
+    this.moon.intensity = night * 1.5;
     this.houseKit.setNight(night); this.grounds.setNight(night);
     const key = (Math.round(t * 24) / 24).toFixed(3);
     if (key !== this.envKey) {
