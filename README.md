@@ -41,6 +41,7 @@ cd skills/nick-saraev/<course> && zip -r <skill-name>.zip <skill-name>
 |---|---|
 | [**SKOOL AI FOR AGENTS**](SKOOL-AI-FOR-AGENTS/README.md) | Project hub for the free Skool community: status log, shot board for every video, and links to the plan, scripts and research. Start here for anything Skool. |
 | [**AIRE**](aire/README.md) | Project hub: status log, stack memory, the October 2026 rollout plan, weekly AI briefs, and the speed to lead responder. Start here for anything AIRE. |
+| [**3D page**](website-rebuild/3d/README.md) | Scroll story in three.js for calebjackson.org: a drawing of Basil Lane becomes a model, turns to dusk, gives way to the real photo, then comes apart as a blueprint for builders. Prototype, not published. |
 | `global-claude-md/` | The global CLAUDE.md for Caleb's machine, with the install line. |
 
 ## Programs
