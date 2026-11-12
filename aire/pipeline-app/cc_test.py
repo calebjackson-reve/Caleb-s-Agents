@@ -341,10 +341,21 @@ class JudgeRound1(unittest.TestCase):
         self.assertEqual([r["day"] for r in cc.due_in(dl, late, 30)], ["2026-12-05"])
         self.assertEqual(cc.due_in(dl, late, 6), [])
         # a closing disclosure, closing docs or a pre-closing walk is not an act of sale
-        for t in ("100 Oak Ln - Closing disclosure due", "100 Oak Ln - Pre-closing walkthrough", "100 Oak Ln - Closing docs to title deadline"):
+        for t in ("100 Oak Ln - Closing disclosure due", "100 Oak Ln - Pre-closing walkthrough", "100 Oak Ln - Closing docs to title deadline",
+                  "100 Oak Ln - Final walkthrough before closing", "100 Oak Ln - CD due 3 days before closing",
+                  "100 Oak Ln - Closing date extension deadline", "100 Oak Ln - Closing time confirmed"):
             dl = dls(ev(t, "2026-11-09"))
             self.assertTrue(all(not r["disagree"] for r in dl), t)
             self.assertEqual([r["what"] for r in dl if r["day"] == "2026-11-09"], [t.split(" - ")[1]], t)
+        for t in ("100 Oak Ln - Closing", "100 Oak Ln - Act of Sale", "Oak closing, 100 Oak Lane (Demo Title)"):
+            self.assertTrue(cc.ACT_RE.search(t), t)
+        # another sheet step on the act's day stays on the sheet day: only the act of sale moves to the calendar's day
+        sheet = [HEAD, ["100 Oak Ln", "Buyer", "Under Contract", "1", "1", "", "2026-11-20", "2026-11-20", "", ""]]
+        c3, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(sheet), T), [])
+        dl = cc.contract_deadlines(cc.deal_deadlines(cc.cal_events([ev("100 Oak Ln - Closing", "2026-11-09T10:30:00-06:00")], self.COORD)), c3)
+        self.assertEqual([(r["day"], r["what"], bool(r["disagree"])) for r in cc.due_in(dl, T, 30)],
+                         [("2026-11-09", "Act of sale", True), ("2026-11-20", "Appraisal and loan", False)])
+        self.assertEqual([(r["day"], r["what"]) for r in cc.due_in(dl, T, 6)], [("2026-11-09", "Act of sale")])
         # sorted by the day each row is due
         sheet = SHEET + [["700 Gum St", "Buyer", "Under Contract", "1", "1", "2026-11-07", "2026-11-10", "2026-12-20", "", ""]]
         cards2, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(sheet), T), [])

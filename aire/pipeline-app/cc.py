@@ -409,8 +409,13 @@ def due_in(rows: list[dict], today: date, n: int) -> list[dict]:
     for r in rows:
         days = [(r["day"], r.get("time"))] + [(d["day"], d["time"]) for d in (r.get("disagree") or {}).get("days", []) if d["day"] != r["day"]]
         hit = min([d for d in days if a <= d[0] <= b], key=lambda d: d[0], default=None)
-        if hit:
-            out.append(r if hit[0] == r["day"] else {**r, "day": hit[0], "time": hit[1]})
+        if hit and hit[0] == r["day"]:
+            out.append(r)
+        elif hit:  # only the act of sale moves to the calendar's day: another step on the sheet day stays there
+            out.append({**r, "day": hit[0], "time": hit[1], "what": "Act of sale", "title": f"{r['deal']} - Act of sale", "said": None})
+        rest = ", ".join(w for w in r["what"].split(", ") if w.lower() != "act of sale")
+        if hit and hit[0] != r["day"] and rest and a <= r["day"] <= b:
+            out.append({**r, "what": rest, "title": f"{r['deal']} - {rest}", "note": None, "disagree": None})
     return sorted(out, key=lambda r: (r["day"], r["deal"]))
 
 
@@ -479,8 +484,10 @@ def merge_deals(cards: list[dict], crm_deals: list[dict]) -> tuple[list[dict], l
     return out, only
 
 
-# An act of sale on the calendar: "act of sale" or "closing", but not a closing disclosure, closing docs or a pre-closing walk.
-ACT_RE = re.compile(r"\bact of sale\b|(?<!pre-)(?<!pre )\bclosing\b(?!\s+(?:disclosure|docs?|documents?|costs?|statement|package|figures|gift))", re.I)
+# An act of sale on the calendar: "act of sale" or "closing". Not a step named for the closing (closing disclosure,
+# closing docs, closing date extension, closing time confirmed) and not one timed off it (before closing, pre-closing).
+ACT_RE = re.compile(r"\bact of sale\b|(?<!before )(?<!prior to )(?<!until )(?<!pre-)(?<!pre )\bclosing\b"
+                    r"(?!\s+(?:disclosure|docs?|documents?|costs?|statement|package|figures|gift|date extension|extension|time confirmed|confirmed))", re.I)
 
 
 def act_day(c: dict) -> str | None:
