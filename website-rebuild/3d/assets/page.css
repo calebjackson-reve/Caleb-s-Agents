@@ -126,7 +126,7 @@ body.stage-off .photo { visibility: hidden; }
 .rail i { width: 2.2rem; height: 1px; background: currentColor; opacity: 0.35; transform-origin: right; transition: transform 0.5s var(--ease), opacity 0.5s var(--ease), background 0.5s; }
 .rail a:hover span, .rail a:focus-visible span { opacity: 1; transform: none; }
 .rail a.is-active i { transform: scaleX(1.9); opacity: 1; background: var(--ember); }
-body.stage-off .rail, body.is-exploring .rail, body.is-bleed .rail { opacity: 0; pointer-events: none; }
+body.stage-off .rail, body.is-exploring .rail, body.is-bleed .rail, body.is-below .rail { opacity: 0; pointer-events: none; }
 @media (max-width: 1023px) { .rail { display: none; } }
 
 /* ---------- the journey ---------- */
@@ -199,7 +199,7 @@ body.stage-off .pin { visibility: hidden; }
 .side.left { left: var(--gutter); }
 .side.right { right: calc(var(--gutter) + 4rem); }
 .side .label { color: var(--fg-2); }
-.photo-copy { position: absolute; left: var(--gutter); bottom: 7vh; display: flex; flex-direction: column; gap: 2.4rem; color: var(--ivory); }
+.photo-copy { position: absolute; left: var(--gutter); bottom: 5.2vh; display: flex; flex-direction: column; gap: 2.4rem; color: var(--ivory); }
 .photo-copy .label, .photo-copy .body, .photo-copy .dim { color: rgba(251, 248, 243, 0.78); }
 .photo-copy .body { color: var(--ivory); }
 .explore-copy { position: absolute; left: var(--gutter); bottom: 10vh; width: 62rem; display: flex; flex-direction: column; gap: 2.8rem; }

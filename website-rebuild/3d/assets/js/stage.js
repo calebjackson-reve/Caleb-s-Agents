@@ -48,7 +48,7 @@ uniform float uNear; uniform float uFar; uniform float uExposure;
 uniform float uInk; uniform float uBuild; uniform float uBlue; uniform float uLineW; uniform float uEdges; uniform float uAO;
 uniform float uFocus; uniform float uDof; uniform float uVig; uniform float uLineOn; uniform float uBw; uniform vec3 uInkLine;
 uniform vec3 uPaper; uniform vec3 uLine; uniform vec3 uWashDark; uniform vec3 uWashLight; uniform vec3 uEmber;
-uniform vec2 uFade; uniform vec3 uCenter;
+uniform vec2 uFade; uniform vec3 uCenter; uniform float uWipe0;
 ${TONE}
 float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -128,7 +128,7 @@ void main(){
   float built = sky ? skyB : mix(smoothstep(h, h - 1.7, level), skyB, smoothstep(70.0, 130.0, r));
   built = max(built, smoothstep(0.985, 1.0, uBuild));   // nothing tall or far is left behind as drawing
   // the blueprint gives way to the model behind a level line that climbs the screen, the same move the photo makes
-  float wy = uBw * 1.1 - 0.05;
+  float wy = mix(uWipe0, 1.05, uBw);
   float builtB = 1.0 - smoothstep(wy - 0.012, wy, vUv.y);
   float aBlue = uBlue * (1.0 - builtB);
   float a = max(uInk * (1.0 - built), aBlue);
@@ -226,7 +226,7 @@ function untone(target, expo, out) {
 // bg is the backdrop overhead and the page colour behind the words. low is the backdrop at the horizon, which the ground fades into.
 const LOOKS = [
   { bg: '#FBF8F3', low: '#FBF8F3', keyI: 3.6, keyC: '#fff1df', hemiSky: '#fdfcff', hemiGround: '#f1e6d6', hemiI: 0.5, env: 0.36, expo: 0.84, envTop: '#ffffff', envHor: '#f4eee4', envFloor: '#dccfbb', vig: 0 },
-  { bg: '#7d8598', low: '#aab1c1', keyI: 1.5, keyC: '#f1e6e0', hemiSky: '#b4bccd', hemiGround: '#7e8494', hemiI: 0.62, env: 0.4, expo: 0.9, envTop: '#9299ad', envHor: '#aab1c1', envFloor: '#5a5f6c', vig: 0.2 },
+  { bg: '#6c7ca6', low: '#9aabd2', keyI: 1.5, keyC: '#ece4ec', hemiSky: '#a9b8d8', hemiGround: '#737c96', hemiI: 0.62, env: 0.4, expo: 0.9, envTop: '#8795ba', envHor: '#9aabd2', envFloor: '#555e78', vig: 0.2 },
   { bg: '#12141c', low: '#2b3853', keyI: 0.75, keyC: '#9fb0d6', hemiSky: '#7186b3', hemiGround: '#1c1f2a', hemiI: 1.25, env: 0.36, expo: 1.0, envTop: '#1a2238', envHor: '#2b3853', envFloor: '#0b0c10', vig: 0.4 },
 ];
 const cA = new THREE.Color(), cB = new THREE.Color();
@@ -331,7 +331,7 @@ export class Stage {
       uTexel: { value: new THREE.Vector2() }, uTexelAO: { value: new THREE.Vector2() }, uInvViewProj: { value: new THREE.Matrix4() },
       uNear: { value: camera.near }, uFar: { value: camera.far }, uExposure: { value: 0.8 },
       uInk: { value: 1 }, uBuild: { value: 0 }, uBlue: { value: 0 }, uLineW: { value: 1 }, uEdges: { value: 1 }, uAO: { value: fast ? 0 : 1 },
-      uFocus: { value: 40 }, uDof: { value: 0 }, uVig: { value: 0 }, uLineOn: { value: 0 }, uBw: { value: 0 }, uInkLine: { value: INK.clone() },
+      uFocus: { value: 40 }, uDof: { value: 0 }, uVig: { value: 0 }, uLineOn: { value: 0 }, uBw: { value: 0 }, uWipe0: { value: -0.05 }, uInkLine: { value: INK.clone() },
       uPaper: { value: IVORY.clone() }, uLine: { value: INK.clone() }, uWashDark: { value: new THREE.Color() }, uWashLight: { value: new THREE.Color() }, uEmber: { value: EMBER.clone() },
       uFade: { value: new THREE.Vector2(20, 43) }, uCenter: { value: new THREE.Vector3(0, 0, -6) },
     };
@@ -392,6 +392,8 @@ export class Stage {
       cam.near = Math.min(60, Math.max(0.4, d * 0.22)); cam.far = 2400;
       if (s.sx || s.sy) cam.setViewOffset(this.w, this.h, -s.sx * this.w, -s.sy * this.h, this.w, this.h); else cam.clearViewOffset();
       this.U.uFocus.value = s.focus > 0 ? s.focus : d;
+      // haze is measured from the house, not from the camera: a long lens far back (the phone hero) must not wash the model out
+      this.scene.fog.density = Math.min(0.0016, 0.25 / d);
       this.focusPoint.set(s.tx, 0, s.tz); this.focusDist = d * Math.tan(s.fov * DEG / 2) / Math.tan(15 * DEG);
     } else {
       // in the explore mode the picture sits a little high, clear of the controls along the bottom
@@ -400,11 +402,12 @@ export class Stage {
       const dd = cam.position.distanceTo(this.focusPoint);
       cam.near = Math.min(30, Math.max(0.4, dd * 0.08)); cam.far = 2400;
       this.U.uFocus.value = dd; this.focusDist = dd;
+      this.scene.fog.density = Math.min(0.0016, 0.25 / dd);
     }
     cam.updateProjectionMatrix();
     // how many screen pixels one metre of the house covers: the line pass looks for less fine detail when that is small
     const pxPerM = this.h / (2 * Math.tan(cam.fov * DEG / 2) * Math.max(1, cam.position.distanceTo(this.focusPoint)));
-    this.UE.uDetail.value = clamp01((pxPerM - 9) / 14);
+    this.UE.uDetail.value = clamp01((pxPerM * this.renderer.getPixelRatio() - 9) / 14);   // counted in device pixels, so a phone keeps its windows
     // the shadow map covers only as much ground as the view needs, so shadows stay crisp up close
     const half = Math.min(70, Math.max(26, this.focusDist * 0.95));
     if (Math.abs(half - this.shadowHalf) > 0.5) {
@@ -455,7 +458,9 @@ export class Stage {
     P.uWashLight.value.copy(IVORY).lerp(this._c.copy(INK).lerp(IVORY, 0.09), b);
     P.uWashDark.value.set('#8f867a').lerp(this._c.copy(INK).multiplyScalar(0.75), b);
     P.uInk.value = s.ink; P.uBuild.value = s.build; P.uBlue.value = s.blue; P.uBw.value = s.bw;
-    P.uLineOn.value = this.palette === 'paper' ? 0.62 * (1 - clamp01(t * 2.6)) : 0;
+    // the ink lines hold until the windows are lit, then let go
+    const lo = clamp01((t - 0.45) / 0.27);
+    P.uLineOn.value = this.palette === 'paper' ? 0.62 * (1 - lo * lo * (3 - 2 * lo)) : 0;
     P.uEdges.value = (s.ink > 0.002 && s.build < 0.999) || (s.blue > 0.002 && s.bw < 0.999) || P.uLineOn.value > 0.01 ? 1 : 0;
     // the words go light when what is behind them is dark: the blueprint, or the backdrop once the light has gone
     const blueShare = s.blue * (1 - clamp01((s.bw - 0.45) * 8));

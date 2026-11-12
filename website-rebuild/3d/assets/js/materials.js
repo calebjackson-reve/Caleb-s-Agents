@@ -42,6 +42,23 @@ export function makeMaterials(palette = 'paper') {
     }
   }, { repeat: [1 / 1.6, 1 / 1.2], data: true });
 
+  // The same courses, drawn very quietly on white, for the paper look: enough to say "shingles" and no more.
+  T.shingleSoft = canvasTex(512, 360, (ctx, w, h) => {
+    ctx.fillStyle = '#f2f2f2'; ctx.fillRect(0, 0, w, h);
+    const rows = 10, rh = h / rows;
+    for (let j = 0; j < rows; j++) {
+      let x = -r() * 40;
+      while (x < w) {
+        const tw = 26 + r() * 30, v = 226 + Math.floor(r() * 22);
+        ctx.fillStyle = `rgb(${v},${v},${v})`; ctx.fillRect(x, j * rh, tw - 0.6, rh);
+        x += tw;
+      }
+      const g = ctx.createLinearGradient(0, j * rh, 0, (j + 1) * rh);
+      g.addColorStop(0, 'rgba(0,0,0,0.2)'); g.addColorStop(0.16, 'rgba(0,0,0,0.03)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, j * rh, w, rh);
+    }
+  }, { repeat: [1 / 2, 1 / 1.4] });
+
   // Charcoal shingles. One tile is 2 m wide and 1.4 m up the slope, ten courses.
   T.shingle = canvasTex(512, 360, (ctx, w, h) => {
     ctx.fillStyle = '#434346'; ctx.fillRect(0, 0, w, h);
@@ -140,8 +157,8 @@ export function makeMaterials(palette = 'paper') {
   if (palette === 'paper') {
     const set = (m, o) => { Object.assign(m, o); if (o.color !== undefined) m.color = new THREE.Color(o.color); m.needsUpdate = true; };
     set(M.brick, { color: 0xfffbf4 });
-    set(M.shingle, { map: null, bumpMap: T.shingle, bumpScale: 1.8, color: 0x625e5b });   // a warm charcoal, as the real roof is
-    set(M.cedar, { map: null, bumpMap: T.cedar, bumpScale: 0.8, color: 0x94714f });
+    set(M.shingle, { map: T.shingleSoft, bumpMap: T.shingle, bumpScale: 1.8, color: 0x57534f });   // a warm charcoal, with quiet courses on every plane
+    set(M.cedar, { map: null, bumpMap: T.cedar, bumpScale: 0.8, color: 0x70492f });   // dark stained cedar
     set(M.paver, { map: null, bumpMap: T.paver, bumpScale: 0.8, color: 0xddd2c4 });
     set(M.seam, { map: null, color: 0xd0cac0, metalness: 0.1 });
     set(M.shutter, { color: 0xcdd5d9 });

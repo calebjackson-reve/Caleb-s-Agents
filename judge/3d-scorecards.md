@@ -90,3 +90,21 @@ The loop ended here on Caleb's instruction, at 7.4 against a target of 9.5. The 
 | 1 | 6.3 |
 | 2 | 7.1 |
 | 3 | 7.4 |
+
+## After round 3: fixes made, not judged
+
+Caleb asked for the round 3 fixes on November 12, 2026. These are in the page. No judge has scored them, so the last confirmed score is still 7.4.
+
+- **Phone drawing:** haze is now measured from the house, not the camera. The phone camera sits far back, and the haze was washing out the roof tone and window fills. Line detail is counted in device pixels.
+- **Hip caps:** lifted clear of the roof, so they draw as one solid line from above.
+- **Shadows:** trees and the house sit on soft pools of shade that cannot slide away from them.
+- **Dormers:** front dormers narrowed and raised to sit on the photo. Garage dormers stop at the ridge (the white gap).
+- **Dusk:** ink lines hold until the windows are lit, the in-between is blue instead of grey, cedar posts glow amber under the soffit lights, the pond and copper stop catching the sky.
+- **Roof and posts:** warm dark grey roof with quiet shingle courses on every plane, dark stained cedar.
+- **Porch windows:** moved out to where the photo has them.
+- **Phone:** camera pulled back in buy and sell, the build copy arrives sooner, the blueprint wipe starts at the top of the words so there is no grey band, and the words switch colour with their backing.
+- **Labels:** numbered 1 to 7 from the top. The copper label sits on a hip.
+- **Viewer:** "Front of the house" pin on the facade, pins cut by the screen edge hide, porch view pulled back, take-apart guides turn light after dark.
+- **Page:** the photo fills the screen (no 4 pixel strips), chapter marks hide below the 3D part, the photo label moved off the busy edge, garage door panel lines and wreaths dropped from the line drawing.
+
+Still open from the round 3 list: the faint background sketch behind the hero subhead, a far tree showing over the ridge in the pool view, the fence showing past the right wing in one frame, draw calls (267 at peak, the judge wants under 120), part labels with reduced motion on, and the frame timing run that only a real laptop and phone can do.

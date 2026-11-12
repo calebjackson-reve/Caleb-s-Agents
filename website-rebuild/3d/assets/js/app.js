@@ -34,7 +34,7 @@ try {
 // sx and sy slide the picture across the screen so the words have room.
 const base = Object.assign({}, DEFAULT_STATE);
 const K = {
-  hero:    { az: 0, el: 1.6, dist: 150, tx: 0, ty: 3.5, tz: 0, fov: 10, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.14, sy: 0.15, sunAz: -52, sunEl: 34, dof: 0 },
+  hero:    { az: 0, el: 1.6, dist: 158, tx: 0, ty: 3.5, tz: 0, fov: 10, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.125, sy: 0.15, sunAz: -52, sunEl: 34, dof: 0 },
   form:    { az: -34, el: 12, dist: 80, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.21, sy: 0.03, sunAz: -76, sunEl: 28, dof: 0 },
   buy:     { az: -22, el: 8, dist: 80, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.205, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0.4 },
   sell:    { az: 13, el: 4.5, dist: 52, tx: 0.6, ty: 3.4, tz: 2, fov: 34, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.215, sy: 0.06, sunAz: -14, sunEl: 34, dof: 0.45 },
@@ -45,7 +45,7 @@ const K = {
 };
 // Phone framing: the model sits in the upper part of the screen, the words below it.
 const KM = {
-  hero: { sx: 0, sy: 0.1, dist: 208 }, form: { sx: 0, sy: -0.17, dist: 86, az: -30 }, buy: { sx: 0, sy: -0.18, dist: 100 }, sell: { sx: 0, sy: -0.18, az: 10, dist: 21, tx: 0.2 },
+  hero: { sx: 0, sy: 0.1, dist: 208 }, form: { sx: 0, sy: -0.17, dist: 92, az: -30 }, buy: { sx: 0, sy: -0.18, dist: 114 }, sell: { sx: 0, sy: -0.18, az: 10, dist: 47, tx: 0 },
   explore: { sx: 0, sy: -0.25, dist: 104 }, end: { sx: 0, sy: -0.2, dist: 86 },
 };
 const ORDER = ['hero', 'form', 'buy', 'sell', 'photo', 'build', 'explore'];
@@ -57,7 +57,7 @@ const TRACKS = {
   buy: { _: [0.1, 0.9] },
   sell: { _: [0.62, 0.96], dusk: [0.2, 0.42], dof: [0.62, 0.85] },
   photo: { _: [0, 1], dusk: [0.42, 0.66], blue: [0.42, 0.66] },
-  build: { _: [0.06, 0.5], explode: [0.36, 0.86] },
+  build: { _: [0.04, 0.36], explode: [0.3, 0.8] },
   explore: { _: [0.03, 0.4], explode: [0.02, 0.22], bw: [0.12, 0.42], dof: [0.36, 0.46] },
 };
 const PHOTO = { on: [0.03, 0.34], off: [0.72, 0.98] };
@@ -74,7 +74,7 @@ function matchPhoto() {
   const vw = innerWidth, vh = innerHeight;
   // fill the screen, but on a wide screen never crop the house itself off the sides
   let s = Math.max(vw / SHOT.w, vh / SHOT.h);
-  if (vw / vh > 1.2) s = Math.max(vw / SHOT.w, Math.min(s, (0.97 * vw) / (SHOT.right - SHOT.left)));
+  if (vw / vh > 1.2) s = Math.max(vw / SHOT.w, Math.min(s, (0.995 * vw) / (SHOT.right - SHOT.left)));
   photoBox = { x: (vw - SHOT.w * s) / 2, y: (vh - SHOT.h * s) / 2, s };
   const st = Object.assign({}, base, {
     az: CAM.az, el: CAM.el, dist: CAM.dist, tx: CAM.target[0], ty: CAM.target[1], tz: CAM.target[2],
@@ -141,8 +141,9 @@ function stateAt(y) {
 
 // ---------------------------------------------------------------- overlays: photo, part names, pins
 const TAGS = [
-  ['dormers', 'Twin dormers'], ['roof', 'Hipped porch roof'], ['copper', 'Copper-toned hip caps'], ['wings', 'Gabled wings'],
-  ['brick', 'Painted brick'], ['posts', 'Six cedar posts'], ['porch', 'Brick porch and steps'],
+  // in the order they sit down the exploded view, so the numbers read 1 to 7 from the top
+  ['dormers', 'Twin dormers'], ['wings', 'Gabled wings'], ['copper', 'Copper-toned hip caps'], ['roof', 'Hipped porch roof'],
+  ['brick', 'Painted brick'], ['porch', 'Brick porch and steps'], ['posts', 'Six cedar posts'],
 ];
 const labelsEl = $('#labels');
 const NS = 'http://www.w3.org/2000/svg';
@@ -193,7 +194,7 @@ function drawPhoto(h, drift) {
 
 // ---------------------------------------------------------------- explore mode
 const PINS = [
-  { at: [0, 8.2, -2.2], title: 'Front of the house', note: 'Painted brick, a charcoal roof and twin dormers.', img: 'basil-front-lit.webp' },
+  { at: [0, 4.3, 3.3], title: 'Front of the house', note: 'Painted brick, a charcoal roof and twin dormers.', img: 'basil-front-lit.webp' },
   { at: [-2.9, 1.5, 3.1], title: 'Front porch', note: 'Cedar posts, brick underfoot and flowers by the door.', img: 'basil-porch.webp' },
   { at: [0.3, 0.5, -20.5], title: 'Pool', note: 'The pool terrace behind the house, at dusk.', img: 'basil-pool-night.webp' },
   { at: [-0.3, 1.2, -13.6], title: 'Back patio', note: 'Covered, with an outdoor kitchen.', img: 'basil-patio.webp' },
@@ -206,7 +207,7 @@ const LOOKS = {
   dusk: { ink: 1, build: 1, dusk: 1, blue: 0, bw: 0 }, blueprint: { ink: 1, build: 1, dusk: 0, blue: 1, bw: 0 },
 };
 const VIEWS = {
-  front: { az: 0, el: 7, dist: 58, t: [0, 3.4, -2] }, porch: { az: 16, el: 5, dist: 24, t: [0.4, 2.2, 2] },
+  front: { az: 0, el: 7, dist: 58, t: [0, 3.4, -2] }, porch: { az: 16, el: 5, dist: 31, t: [0.4, 3.6, 2] },
   pool: { az: 152, el: 24, dist: 58, t: [1, 3.2, -15] }, above: { az: 0, el: 66, dist: 96, t: [1, 0, -10] },
 };
 const viewer = $('#viewer'), pinsEl = $('#pins'), card = $('#card');
@@ -246,7 +247,7 @@ function drawPins(settled) {
   pinTick++;
   pins.forEach((x) => {
     stage.project(x.p.at, pt);
-    const inFrame = pt.visible && pt.x > 24 && pt.x < stage.w - 24 && pt.y > top && pt.y < stage.h - (stage.w < 768 ? 230 : 110);
+    const inFrame = pt.visible && pt.x > 44 && pt.x < stage.w - 44 && pt.y > top && pt.y < stage.h - (stage.w < 768 ? 230 : 110);
     if (inFrame && (settled === true || pinTick % 4 === 0)) x.hid = hidden(x.p.at);
     x.ok = show && inFrame && !x.hid; x.sx = pt.x; x.sy = pt.y; x.depth = stage.camera.position.distanceToSquared(rayAt.fromArray(x.p.at));
   });
@@ -433,6 +434,7 @@ function resize() {
   sizeW = innerWidth; sizeH = innerHeight;
   if (stage) stage.resize();
   measure(); prepareKeys(); needs = 3;
+  if (stage) stage.U.uWipe0.value = innerWidth < 768 ? 0.46 : -0.05;   // on a phone the rising line starts at the top of the words, not behind them
 }
 addEventListener('resize', resize);
 
@@ -443,6 +445,7 @@ function frame(now) {
   const y = scrollY, w = where(y);
   const off = !exploring && y > journeyEnd + 4;
   body.classList.toggle('stage-off', off);
+  body.classList.toggle('is-below', y + innerHeight * 0.55 > journeyEnd);
   furniture(y, w);
   if (off) return;
 
@@ -479,7 +482,7 @@ function frame(now) {
     turned = false;
   } else {
     // the pointer leans the camera a little, except near the photo, where the model has to sit exactly on it
-    const n = w.s.name, hold = n === 'photo' ? 1 : n === 'sell' ? smoother((w.t - 0.56) / 0.3) : n === 'build' ? 1 - smoother((w.t - 0.06) / 0.25) : 0;
+    const n = w.s.name, hold = n === 'photo' ? 1 : n === 'sell' ? smoother((w.t - 0.56) / 0.3) : n === 'build' ? 1 - smoother((w.t - 0.04) / 0.2) : 0;
     const wx = sway.x * (1 - hold), wy = sway.y * (1 - hold);
     stage.sway.x += (wx - stage.sway.x) * Math.min(1, dt * 2.5); stage.sway.y += (wy - stage.sway.y) * Math.min(1, dt * 2.5);
     if (Math.abs(wx - stage.sway.x) > 0.002) moved += 1;
@@ -493,8 +496,11 @@ function frame(now) {
     // drop to the lighter setting if this machine cannot keep up
     if (!forceQ && ready && dt > 0 && counted < 90) { counted++; if (dt > 0.034) slow++; if (counted === 90 && slow > 50) { stage.setQuality('fast'); needs = 2; } }
     const c = stage.low;   // the backdrop at eye level, which is what sits behind the words
-    const blueprint = cur.blue * (1 - clamp01((cur.bw - 0.45) * 8));
-    setTone(po > 0.5 ? 'dark' : stage.tone, blueprint > 0.5 ? '#14100E' : '#' + c.getHexString());
+    // the words change sides when the rising line reaches them: straight away on a phone, where they sit low, halfway up on a wide screen
+    const blueprint = cur.blue * (1 - (innerWidth < 768 ? clamp01(cur.bw * 14) : clamp01((cur.bw - 0.45) * 8)));
+    // while the blueprint is up, the words follow the same switch as their backing, so the two never disagree
+    const tone = po > 0.5 ? 'dark' : cur.blue > 0.5 ? (blueprint > 0.5 ? 'dark' : 'light') : stage.tone;
+    setTone(tone, blueprint > 0.5 ? '#14100E' : '#' + c.getHexString());
     drawTags(exploring ? 0 : clamp01((cur.explode - 0.55) / 0.35) * cur.blue * (1 - clamp01(cur.bw * 6)));
     if (exploring) drawPins();
   }

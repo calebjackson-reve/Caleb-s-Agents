@@ -87,10 +87,10 @@ export function buildGrounds(M) {
   // a low clipped hedge: a rounded section pulled along the run, as boxwood is kept in front of the real house
   const hedgeGeos = [];
   const hedge = (x0, z0, x1, z1) => {
-    const len = Math.hypot(x1 - x0, z1 - z0), w = 0.34, h = 0.52, rad = 0.17;
+    const len = Math.hypot(x1 - x0, z1 - z0), w = 0.34, h = 0.52, rad = 0.07;   // clipped flat, with a visible arris
     const sh = new THREE.Shape();
     sh.moveTo(-w, 0); sh.lineTo(w, 0); sh.lineTo(w, h - rad); sh.quadraticCurveTo(w, h, w - rad, h); sh.lineTo(-w + rad, h); sh.quadraticCurveTo(-w, h, -w, h - rad); sh.lineTo(-w, 0);
-    const geo = new THREE.ExtrudeGeometry(sh, { depth: len, bevelEnabled: true, bevelSize: 0.1, bevelThickness: 0.1, bevelSegments: 3, curveSegments: 6 });
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: len, bevelEnabled: true, bevelSize: 0.05, bevelThickness: 0.05, bevelSegments: 2, curveSegments: 4 });
     geo.deleteAttribute('uv');
     const m = new THREE.Matrix4().makeRotationY(Math.atan2(x1 - x0, z1 - z0)).setPosition(x0, 0.05, z0);
     geo.applyMatrix4(m); hedgeGeos.push(geo);
@@ -162,7 +162,7 @@ export function buildGrounds(M) {
     geo.computeVertexNormals();
     return geo;
   };
-  const trunks = [], crowns = [];
+  const trunks = [], crowns = [], shades = [];
   const tree = (x, z, h, w) => {
     trunks.push({ x, y: h * 0.3, z, sx: Math.max(0.13, w * 0.03), sy: h * 0.6, sz: Math.max(0.13, w * 0.03) });
     const n = 5 + Math.floor(r() * 2);
@@ -170,14 +170,33 @@ export function buildGrounds(M) {
       const a = r() * 6.28, up = r();
       const d = 0.27 * Math.sqrt(r()) * (1 - up * 0.5) * w;
       const s = w * (0.27 + r() * 0.1);
+      if (i === 0) shades.push({ x, z, s: w * 1.25 });
       crowns.push({ x: x + Math.cos(a) * d, y: h * (0.6 + up * 0.3), z: z + Math.sin(a) * d, sx: s, sy: s * (0.8 + r() * 0.2), sz: s, ry: r() * 6.28, tint: 0.9 + up * 0.12 + r() * 0.06 });
     }
   };
-  tree(-14.2, 3.4, 4.4, 3.0); tree(14.4, 3.0, 4.8, 3.2);
+  tree(-14.0, 4.0, 4.4, 3.0); tree(13.7, 4.2, 4.8, 3.2);
   [[50, -64], [-56, -22], [52, -98], [-36, -103], [56, -30], [-57, -80], [22, -105], [-12, -106], [40, -106]]
     .forEach((p) => tree(p[0], p[1], 10 + r() * 4, 10 + r() * 4));
   g.add(instanced(new THREE.CylinderGeometry(0.8, 1.1, 1, 10), M.bark, trunks));
-  g.add(instanced(lumpy(4), M.leaf, crowns));
+  // Trees do not throw a hard shadow that can slide away from them. Each one sits on a soft pool of shade, the way
+  // a model maker would airbrush it, and the house gets the same soft band round its foot.
+  g.add(instanced(lumpy(4), M.leaf, crowns, false));
+  const shadeMat = new THREE.MeshBasicMaterial({ map: glowTexture(), color: 0x3a3028, transparent: true, opacity: 0.2, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  shades.forEach((t) => {
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(t.s * 2, t.s * 2), shadeMat);
+    p.rotation.x = -Math.PI / 2; p.position.set(t.x, 0.062, t.z); p.layers.set(1); g.add(p);
+  });
+  const footTex = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const x = c.getContext('2d'), k = 256 / 36, X = (v) => (v + 18) * k, Z = (v) => (v + 26) * k;   // 36 m square, x -18..18, z -26..10
+    x.shadowColor = 'rgba(255,255,255,1)'; x.shadowBlur = 11; x.shadowOffsetX = 600; x.fillStyle = '#fff';
+    const rect = (x0, x1, z0, z1) => x.fillRect(X(x0) - 600, Z(z0), X(x1) - X(x0), Z(z1) - Z(z0));
+    rect(-D.half, D.half, D.back, D.wingZ); rect(-D.porchHalf, D.porchHalf, 0, D.porchD + 0.9); rect(-D.half, -D.wingIn, D.garageBack, D.back);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  })();
+  const footMat = new THREE.MeshBasicMaterial({ map: footTex, color: 0x3a3028, transparent: true, opacity: 0.2, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  const foot = new THREE.Mesh(new THREE.PlaneGeometry(36, 36), footMat);
+  foot.rotation.x = -Math.PI / 2; foot.position.set(0, 0.058, -8); foot.layers.set(1); g.add(foot);
 
   // After dark. The patio light is a downward cone under its roof, so it lights the slab and the wall and nothing above it.
   // The ground is the backdrop itself, so the light that would pool on it is laid down as soft glows.
@@ -195,9 +214,10 @@ export function buildGrounds(M) {
   pool(0.3, -20.5, 22, 26, new THREE.Color(0.3, 0.75, 0.95), 0.3);    // round the water
   pool(-0.3, -13.5, 14, 8, new THREE.Color(1.0, 0.62, 0.3), 0.26);    // off the patio
   // After dark the ground is the page colour, so anything lying on it has to come down with it or it glows.
-  const lying = [M.concrete, M.gravel, M.mulch].map((m) => ({ m, day: m.color.clone(), night: m.color.clone().multiplyScalar(0.42) }));
+  const lying = [M.concrete, M.gravel, M.mulch, M.pond].map((m) => ({ m, day: m.color.clone(), night: m.color.clone().multiplyScalar(0.42) }));
   function setNight(d) {
     lying.forEach((x) => x.m.color.lerpColors(x.day, x.night, d));
+    shadeMat.opacity = 0.2 * (1 - d * 0.6); footMat.opacity = 0.2 * (1 - d * 0.5);
     M.water.emissiveIntensity = d * 0.3;
     poolLight.intensity = d * 8; poolLight.visible = d > 0.01;
     patioLight.intensity = d * 60; patioLight.visible = d > 0.01;
