@@ -13,7 +13,7 @@ function speckle(ctx, w, h, r, base, spread, n, size = 1.6) {
   }
 }
 
-export function makeMaterials(palette = 'paper') {
+export function makeMaterials(palette = 'real') {
   const r = rng(7);
   const T = {};
 
@@ -77,6 +77,18 @@ export function makeMaterials(palette = 'paper') {
     }
     for (let i = 0; i < 5000; i++) { ctx.fillStyle = `rgba(255,255,255,${r() * 0.05})`; ctx.fillRect(r() * w, r() * h, 1.2, 1.2); }
   }, { repeat: [1 / 2, 1 / 1.4] });
+
+  // Mown grass: a mid green with a fine speckle and broad soft patches, so no two metres look the same. One tile is 9 m.
+  T.grass = canvasTex(512, 512, (ctx, w, h) => {
+    speckle(ctx, w, h, r, '#7b9a50', 0.3, 60000, 1.4);
+    for (let i = 0; i < 90; i++) {
+      const x = r() * w, y = r() * h, rad = 30 + r() * 110;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+      const dark = r() > 0.5;
+      g.addColorStop(0, dark ? 'rgba(38,66,24,0.34)' : 'rgba(196,208,120,0.3)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    }
+  }, { repeat: [1 / 16, 1 / 16] });
 
   // Cedar, grain running up the post.
   T.cedar = canvasTex(128, 512, (ctx, w, h) => {
@@ -151,6 +163,23 @@ export function makeMaterials(palette = 'paper') {
     wreath: std({ color: 0x8f4a4c, roughness: 0.95 }),
     lamp: std({ color: 0x2a2a2a, emissive: 0xffb36b, emissiveIntensity: 0, roughness: 0.4 }),
   };
+  // 'real' is the house as it stands: white painted brick, charcoal shingles, cedar, pale blue shutters, lawn and mulch.
+  if (palette === 'real') {
+    const set = (m, o) => { Object.assign(m, o); if (o.color !== undefined) m.color = new THREE.Color(o.color); m.needsUpdate = true; };
+    set(M.shutter, { color: 0xb7c7d4 });
+    set(M.door, { color: 0x3a2618 });
+    set(M.concrete, { color: 0xd3cec4 });
+    set(M.gravel, { color: 0xbcb2a1 });
+    set(M.mulch, { color: 0x43342a });
+    set(M.shrub, { color: 0x4d6a36 });
+    set(M.leaf, { color: 0x587438 });
+    set(M.bark, { color: 0x5b493a });
+    set(M.copper, { color: 0xa5694a, metalness: 0.35 });
+    set(M.water, { color: 0x4a9db3 });
+    set(M.pond, { color: 0x6c8c90 });
+    set(M.cushion, { color: 0xf2efe8 });
+    M.base = std({ map: T.grass, roughness: 1 });
+  }
   // 'paper' keeps the whole model in the tones of the drawing: ivory, warm grey, ink for the glass, ember for the wreaths.
   // The real colours of the house then only appear in the real photograph. 'material' is the earlier look with a
   // charcoal roof, cedar and sage, kept here in case it is wanted back.
@@ -175,18 +204,21 @@ export function makeMaterials(palette = 'paper') {
     set(M.glass, { color: 0x39424d });
   }
   // Anything on the ground dissolves into the backdrop with distance from the house, so no edge of the land is ever in frame.
-  const fadeOut = (m) => {
+  const fadeOut = (m, near = 58, far = 135, cz = -20) => {
     const prev = m.onBeforeCompile;
     m.onBeforeCompile = (sh, r) => {
       if (prev) prev(sh, r);
       sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vFadeWp;')
         .replace('#include <begin_vertex>', '#include <begin_vertex>\n#ifdef USE_INSTANCING\nvFadeWp = (modelMatrix * instanceMatrix * vec4(position, 1.0)).xyz;\n#else\nvFadeWp = (modelMatrix * vec4(position, 1.0)).xyz;\n#endif');
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vFadeWp;')
-        .replace('#include <fog_fragment>', '#include <fog_fragment>\n#ifdef USE_FOG\ngl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, smoothstep(58.0, 135.0, length(vFadeWp.xz - vec2(0.0, -20.0))));\n#endif');
+        .replace('#include <fog_fragment>', '#include <fog_fragment>\n#ifdef USE_FOG\ngl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, smoothstep(' + near.toFixed(1) + ', ' + far.toFixed(1) + ', length(vFadeWp.xz - vec2(0.0, ' + cz.toFixed(1) + '))));\n#endif');
     };
-    m.customProgramCacheKey = () => 'fadeOut';
+    m.customProgramCacheKey = () => 'fadeOut' + near + '_' + far + '_' + cz;
   };
-  [M.concrete, M.gravel, M.mulch, M.leaf, M.bark, M.pond].forEach(fadeOut);
+  [M.concrete, M.gravel, M.mulch, M.leaf, M.bark, M.pond].forEach((m) => fadeOut(m));
+  // the lawn is an island round the house that melts into the page, the way a rendering is vignetted on its sheet
+  if (palette === 'real') fadeOut(M.base, 30, 84, -10);
+  M.palette = palette;
   // Window glass is never one flat tone: by day it takes more sky toward the top, after dark the light sits lower in the room.
   M.glass.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vGlassY;')

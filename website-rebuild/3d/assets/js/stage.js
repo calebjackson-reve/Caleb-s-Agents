@@ -23,8 +23,22 @@ void main(){
 }`;
 
 const SKY_FRAG = `
-varying vec3 vDir; uniform vec3 uLow; uniform vec3 uHigh;
-void main(){ float h = normalize(vDir).y; gl_FragColor = vec4(mix(uLow, uHigh, smoothstep(0.0, 0.42, h)), 1.0); }`;
+varying vec3 vDir; uniform vec3 uLow; uniform vec3 uHigh; uniform float uCloud;
+float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
+void main(){
+  vec3 d = normalize(vDir); float h = d.y;
+  vec3 col = mix(uLow, uHigh, smoothstep(-0.02, 0.3, h));
+  if (uCloud > 0.0 && h > 0.0) {
+    // soft, slow cloud: three layers of smooth noise on a flat ceiling, thinning toward the horizon
+    vec2 p = d.xz / (h + 0.22) * 1.6;
+    float n = vn(p) * 0.55 + vn(p * 2.1 + 7.3) * 0.3 + vn(p * 4.3 + 2.1) * 0.15;
+    float c = smoothstep(0.5, 0.78, n) * smoothstep(0.03, 0.2, h) * uCloud;
+    col = mix(col, mix(uLow, uHigh, 0.25) * 1.08 + 0.02, c * 0.6);
+  }
+  gl_FragColor = vec4(col, 1.0);
+}`;
 
 const POST_VERT = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 
@@ -48,7 +62,7 @@ uniform float uNear; uniform float uFar; uniform float uExposure;
 uniform float uInk; uniform float uBuild; uniform float uBlue; uniform float uLineW; uniform float uEdges; uniform float uAO;
 uniform float uFocus; uniform float uDof; uniform float uVig; uniform float uLineOn; uniform float uBw; uniform vec3 uInkLine;
 uniform vec3 uPaper; uniform vec3 uLine; uniform vec3 uWashDark; uniform vec3 uWashLight; uniform vec3 uEmber;
-uniform vec2 uFade; uniform vec3 uCenter; uniform float uWipe0;
+uniform vec2 uFade; uniform vec3 uCenter; uniform float uWipe0; uniform float uGroundWash;
 ${TONE}
 float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -115,7 +129,7 @@ void main(){
   float e = edgeAt(uv);
   float L = dot(lit, vec3(0.2126, 0.7152, 0.0722));
   vec3 wash = mix(uWashDark, uWashLight, smoothstep(0.05, 0.86, L));
-  wash = mix(uPaper, wash, fade * mix(0.42, 1.0, smoothstep(0.03, 0.3, wp.y)));
+  wash = mix(uPaper, wash, fade * mix(uGroundWash, 1.0, smoothstep(0.03, 0.3, wp.y)));
   float pg = noise(vUv / uTexel * 0.55) - 0.5;
   vec3 drawing = mix(wash, uLine, e * mix(0.07, 0.9, fade));
   drawing += pg * 0.016 + grain * 0.012;
@@ -224,7 +238,15 @@ function untone(target, expo, out) {
 
 // Three looks the studio moves between: clear day, the light going, and after dark.
 // bg is the backdrop overhead and the page colour behind the words. low is the backdrop at the horizon, which the ground fades into.
-const LOOKS = [
+// Day, the blue hour and nightfall for the real look: a pale sky that meets the page colour at the horizon,
+// then the deep blue of the twilight photograph.
+const LOOKS_REAL = [
+  { bg: '#b4cde6', low: '#f6f4ee', keyI: 3.5, keyC: '#fff2df', hemiSky: '#d5e3f4', hemiGround: '#a9a58f', hemiI: 0.55, env: 0.42, expo: 0.86, envTop: '#bdd4ee', envHor: '#f6f4ee', envFloor: '#8a916c', vig: 0.06 },
+  { bg: '#4c6aa2', low: '#93a6ca', keyI: 1.2, keyC: '#ffd9b8', hemiSky: '#8fa6d0', hemiGround: '#5c6650', hemiI: 0.6, env: 0.4, expo: 0.92, envTop: '#5f7fb8', envHor: '#93a6ca', envFloor: '#4a5244', vig: 0.2 },
+  { bg: '#132549', low: '#2d4776', keyI: 0.6, keyC: '#9fb4e0', hemiSky: '#5f7cb5', hemiGround: '#1e2a22', hemiI: 1.0, env: 0.34, expo: 1.0, envTop: '#1b2f5a', envHor: '#2d4776', envFloor: '#0e140f', vig: 0.38 },
+];
+let LOOKS = LOOKS_REAL;
+const LOOKS_PAPER = [
   { bg: '#FBF8F3', low: '#FBF8F3', keyI: 3.6, keyC: '#fff1df', hemiSky: '#fdfcff', hemiGround: '#f1e6d6', hemiI: 0.5, env: 0.36, expo: 0.84, envTop: '#ffffff', envHor: '#f4eee4', envFloor: '#dccfbb', vig: 0 },
   { bg: '#6c7ca6', low: '#9aabd2', keyI: 1.5, keyC: '#ece4ec', hemiSky: '#a9b8d8', hemiGround: '#737c96', hemiI: 0.62, env: 0.4, expo: 0.9, envTop: '#8795ba', envHor: '#9aabd2', envFloor: '#555e78', vig: 0.2 },
   { bg: '#12141c', low: '#2b3853', keyI: 0.75, keyC: '#9fb0d6', hemiSky: '#7186b3', hemiGround: '#1c1f2a', hemiI: 1.25, env: 0.36, expo: 1.0, envTop: '#1a2238', envHor: '#2b3853', envFloor: '#0b0c10', vig: 0.4 },
@@ -259,7 +281,8 @@ export class Stage {
     const camera = this.camera = new THREE.PerspectiveCamera(30, 1, 0.5, 2400);
     camera.layers.enable(1);
 
-    this.palette = opts.palette || 'paper';
+    this.palette = opts.palette || 'real';
+    LOOKS = this.palette === 'paper' ? LOOKS_PAPER : LOOKS_REAL;
     const { M } = makeMaterials(this.palette);
     this.M = M;
     this.houseKit = buildHouse(M);
@@ -267,7 +290,7 @@ export class Stage {
     scene.add(this.houseKit.house, this.grounds.group);
 
     // the backdrop: one colour by day, a little lighter toward the horizon after dark
-    this.skyU = { uLow: { value: new THREE.Color() }, uHigh: { value: new THREE.Color() } };
+    this.skyU = { uLow: { value: new THREE.Color() }, uHigh: { value: new THREE.Color() }, uCloud: { value: this.palette === 'real' ? 1 : 0 } };
     const dome = new THREE.Mesh(new THREE.SphereGeometry(1900, 24, 12), new THREE.ShaderMaterial({ uniforms: this.skyU, vertexShader: ENV_VERT, fragmentShader: SKY_FRAG, side: THREE.BackSide, depthWrite: false, depthTest: false, fog: false }));
     dome.layers.set(1); dome.renderOrder = -100; dome.frustumCulled = false; scene.add(dome); this.dome = dome;
 
@@ -331,7 +354,7 @@ export class Stage {
       uTexel: { value: new THREE.Vector2() }, uTexelAO: { value: new THREE.Vector2() }, uInvViewProj: { value: new THREE.Matrix4() },
       uNear: { value: camera.near }, uFar: { value: camera.far }, uExposure: { value: 0.8 },
       uInk: { value: 1 }, uBuild: { value: 0 }, uBlue: { value: 0 }, uLineW: { value: 1 }, uEdges: { value: 1 }, uAO: { value: fast ? 0 : 1 },
-      uFocus: { value: 40 }, uDof: { value: 0 }, uVig: { value: 0 }, uLineOn: { value: 0 }, uBw: { value: 0 }, uWipe0: { value: -0.05 }, uInkLine: { value: INK.clone() },
+      uFocus: { value: 40 }, uDof: { value: 0 }, uVig: { value: 0 }, uLineOn: { value: 0 }, uBw: { value: 0 }, uWipe0: { value: -0.05 }, uGroundWash: { value: this.palette === 'paper' ? 0.42 : 0.0 }, uInkLine: { value: INK.clone() },
       uPaper: { value: IVORY.clone() }, uLine: { value: INK.clone() }, uWashDark: { value: new THREE.Color() }, uWashLight: { value: new THREE.Color() }, uEmber: { value: EMBER.clone() },
       uFade: { value: new THREE.Vector2(20, 43) }, uCenter: { value: new THREE.Vector3(0, 0, -6) },
     };

@@ -8,13 +8,19 @@ Start every category at 6. The evidence has to earn each point above that. A 9 m
 
 ## Client direction the judge works inside
 
-These come from Caleb, who owns the page. They are not up for scoring. Judge how well the page does what he asked, not whether he should have asked for something else.
+These come from Caleb, who owns the page. They are not up for scoring. Judge how well the page does what he asked, not whether he should have asked for something else. When two of his notes pull apart, the newest one wins.
+
+Newest, after round 3 (November 12, 2026):
+
+- "I think it could be better as far as looking more like a 3D image of a real world instead of a cartoonish one, and then it actually looks like the house with more detail."
+
+Earlier, still standing where they do not conflict with the note above:
 
 - "I dont want it to look cartoonish either."
 - "I want it look and feel luxury and smooth and breathe taking."
-- "It kind of feels off going from one color to a different color."
+- "I like the architectural stuff, and I think the flow is fine."
 
-What that means on screen: the model keeps one quiet paper palette. The ground is the page itself, with no green lawn and no blue daytime sky. Real colour arrives once, in the real photograph. Do not list "add a lawn" or "tint the sky" as a fix. A roof, a post or a window that is the wrong tone inside that palette is fair game.
+What that means on screen: once the house is built, it should read as the real house in the real world. Real materials (white painted brick, charcoal shingles, cedar, pale blue shutters), a lawn, planting, a sky, believable light. Judge likeness and realism against the reference photos. Anything that reads as a toy or a cartoon is a fair fix: blob trees, flat grass, plastic surfaces, missing detail the photos show. The ink drawing at the top and the blueprint are meant to be drawings and stay that way. The lawn is meant to fade out into the page round the house, like a rendering vignetted on its sheet. That fade is a choice, not a fault, but a hard or ugly edge to it is fair game.
 
 ## Categories
 

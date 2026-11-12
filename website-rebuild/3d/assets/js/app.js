@@ -22,7 +22,7 @@ try {
   const probe = document.createElement('canvas').getContext('webgl2');
   if (!probe || q.has('nowebgl')) throw new Error('no webgl2');
   const small = Math.min(innerWidth, innerHeight) < 700;
-  stage = new Stage($('#canvas'), { maxDpr: small ? 1.75 : 2, shadow: small ? 2048 : 4096, quality: q.get('q') === 'fast' ? 'fast' : 'high' });
+  stage = new Stage($('#canvas'), { maxDpr: small ? 1.75 : 2, shadow: small ? 2048 : 4096, quality: q.get('q') === 'fast' ? 'fast' : 'high', palette: q.get('palette') === 'paper' ? 'paper' : 'real' });
 } catch (err) {
   body.classList.add('no-webgl');
   console.warn('3D stage not available, showing the still drawing instead.', err);

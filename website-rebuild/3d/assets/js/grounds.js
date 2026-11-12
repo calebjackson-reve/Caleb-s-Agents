@@ -86,7 +86,16 @@ export function buildGrounds(M) {
   const balls = [], cones = [];
   // a low clipped hedge: a rounded section pulled along the run, as boxwood is kept in front of the real house
   const hedgeGeos = [];
+  const real = M.palette === 'real';
   const hedge = (x0, z0, x1, z1) => {
+    if (real) {   // a row of young boxwoods in dark mulch, each its own plant, as the listing photos show
+      const run = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(run / 0.92));
+      for (let k = 0; k <= n; k++) {
+        const u = k / n, s = 0.3 + r() * 0.09;
+        balls.push({ x: x0 + (x1 - x0) * u + (r() - 0.5) * 0.1, y: 0.05 + s * 0.82, z: z0 + (z1 - z0) * u + (r() - 0.5) * 0.1, sx: s * 1.08, sy: s, sz: s * 1.08, ry: r() * 6.28, tint: 0.78 + r() * 0.34 });
+      }
+      return;
+    }
     const len = Math.hypot(x1 - x0, z1 - z0), w = 0.34, h = 0.52, rad = 0.07;   // clipped flat, with a visible arris
     const sh = new THREE.Shape();
     sh.moveTo(-w, 0); sh.lineTo(w, 0); sh.lineTo(w, h - rad); sh.quadraticCurveTo(w, h, w - rad, h); sh.lineTo(-w + rad, h); sh.quadraticCurveTo(-w, h, -w, h - rad); sh.lineTo(-w, 0);
@@ -105,7 +114,7 @@ export function buildGrounds(M) {
   });
   [[-6.0, 1.25], [6.0, 1.25]].forEach((p) => cones.push({ x: p[0], y: 0.05 + 0.7, z: p[1], sx: 0.36, sy: 1.4, sz: 0.36, tint: 0.92 }));
   for (let x = -4; x <= 12.5; x += 1.25) cones.push({ x, y: 0.75, z: -28.4, sx: 0.4, sy: 1.5, sz: 0.4, tint: 0.88 + r() * 0.16 });
-  const hedges = new THREE.Mesh(mergeGeometries(hedgeGeos, false), M.shrub); hedges.castShadow = true; hedges.receiveShadow = true; g.add(hedges);
+  if (hedgeGeos.length) { const hedges = new THREE.Mesh(mergeGeometries(hedgeGeos, false), M.shrub); hedges.castShadow = true; hedges.receiveShadow = true; g.add(hedges); }
   g.add(instanced(new THREE.SphereGeometry(1, 14, 9), M.shrub, balls));
   g.add(instanced(new THREE.ConeGeometry(1, 1, 20), M.shrub, cones));
 
@@ -165,13 +174,13 @@ export function buildGrounds(M) {
   const trunks = [], crowns = [], shades = [];
   const tree = (x, z, h, w) => {
     trunks.push({ x, y: h * 0.3, z, sx: Math.max(0.13, w * 0.03), sy: h * 0.6, sz: Math.max(0.13, w * 0.03) });
-    const n = 5 + Math.floor(r() * 2);
+    const n = real ? 22 + Math.floor(r() * 8) : 5 + Math.floor(r() * 2);
     for (let i = 0; i < n; i++) {
-      const a = r() * 6.28, up = r();
-      const d = 0.27 * Math.sqrt(r()) * (1 - up * 0.5) * w;
-      const s = w * (0.27 + r() * 0.1);
+      const a = r() * 6.28, up = real ? Math.pow(r(), 0.8) : r();
+      const d = (real ? 0.5 * (1 - Math.pow(up, 1.6) * 0.62) : 0.27 * (1 - up * 0.5)) * Math.sqrt(r()) * w;
+      const s = w * (real ? (0.12 + r() * 0.09) * (1 - up * 0.25) : 0.27 + r() * 0.1);
       if (i === 0) shades.push({ x, z, s: w * 1.25 });
-      crowns.push({ x: x + Math.cos(a) * d, y: h * (0.6 + up * 0.3), z: z + Math.sin(a) * d, sx: s, sy: s * (0.8 + r() * 0.2), sz: s, ry: r() * 6.28, tint: 0.9 + up * 0.12 + r() * 0.06 });
+      crowns.push({ x: x + Math.cos(a) * d, y: h * (real ? 0.5 + up * 0.46 : 0.6 + up * 0.3), z: z + Math.sin(a) * d, sx: s, sy: s * (0.8 + r() * 0.2), sz: s, ry: r() * 6.28, tint: real ? 0.5 + up * 0.5 + r() * 0.22 : 0.9 + up * 0.12 + r() * 0.06 });
     }
   };
   tree(-14.0, 4.0, 4.4, 3.0); tree(13.7, 4.2, 4.8, 3.2);
@@ -180,7 +189,7 @@ export function buildGrounds(M) {
   g.add(instanced(new THREE.CylinderGeometry(0.8, 1.1, 1, 10), M.bark, trunks));
   // Trees do not throw a hard shadow that can slide away from them. Each one sits on a soft pool of shade, the way
   // a model maker would airbrush it, and the house gets the same soft band round its foot.
-  g.add(instanced(lumpy(4), M.leaf, crowns, false));
+  g.add(instanced(lumpy(real ? 3 : 4), M.leaf, crowns, real));
   const shadeMat = new THREE.MeshBasicMaterial({ map: glowTexture(), color: 0x3a3028, transparent: true, opacity: 0.2, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
   shades.forEach((t) => {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(t.s * 2, t.s * 2), shadeMat);
@@ -214,7 +223,7 @@ export function buildGrounds(M) {
   pool(0.3, -20.5, 22, 26, new THREE.Color(0.3, 0.75, 0.95), 0.3);    // round the water
   pool(-0.3, -13.5, 14, 8, new THREE.Color(1.0, 0.62, 0.3), 0.26);    // off the patio
   // After dark the ground is the page colour, so anything lying on it has to come down with it or it glows.
-  const lying = [M.concrete, M.gravel, M.mulch, M.pond].map((m) => ({ m, day: m.color.clone(), night: m.color.clone().multiplyScalar(0.42) }));
+  const lying = [M.concrete, M.gravel, M.mulch, M.pond].concat(real ? [M.base, M.shrub, M.leaf] : []).map((m) => ({ m, day: m.color.clone(), night: m.color.clone().multiplyScalar(0.42) }));
   function setNight(d) {
     lying.forEach((x) => x.m.color.lerpColors(x.day, x.night, d));
     shadeMat.opacity = 0.2 * (1 - d * 0.6); footMat.opacity = 0.2 * (1 - d * 0.5);

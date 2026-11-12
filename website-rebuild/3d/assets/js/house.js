@@ -126,6 +126,13 @@ export function buildHouse(M) {
       const g = D.roofHalf - 0.38;
       b.add(M.brick, prismZ([[c - g, 3.3], [c + g, 3.3], [c + g, 3.4], [c, D.wingRidge - 0.08], [c - g, 3.4]], D.wingZ - 0.25, D.wingZ));
     });
+    // gutters along the low eaves either side of the porch, and the downspouts the photos show beside it
+    [-1, 1].forEach((s) => {
+      const x0 = s * (D.pavHalf + 0.05), x1 = s * (D.wingC - D.roofHalf);
+      b.add(M.black, box(Math.min(x0, x1), Math.max(x0, x1), 3.42, 3.52, 0.46, 0.58));
+      b.add(M.black, box(s * (D.pavHalf + 0.22) - 0.04, s * (D.pavHalf + 0.22) + 0.04, 0.1, 3.46, 0.06, 0.14));
+      b.add(M.black, box(s * (D.half - 0.12) - 0.04, s * (D.half - 0.12) + 0.04, 0.1, 3.1, D.wingZ + 0.02, D.wingZ + 0.1));
+    });
     // chimney on the back of the house
     b.add(M.brick, box(2.9, 3.9, 0, 6.3, -11.0, -10.2));
     b.add(M.trim, box(2.8, 4.0, 6.3, 6.44, -11.1, -10.1));
@@ -173,6 +180,11 @@ export function buildHouse(M) {
       ring.scale.set(0.72, 1.12, 1); ring.position.set(s * 5.74, D.floor + 1.74, 0.05); walls.add(ring);
       const pane = new THREE.Mesh(new THREE.CircleGeometry(0.3, 32), M.glass);
       pane.scale.set(0.72, 1.12, 1); pane.position.set(s * 5.74, D.floor + 1.74, 0.02); walls.add(pane);
+    });
+    // recessed can lights in the porch ceiling, one over each bay
+    [-3.86, -1.93, 0, 1.93, 3.86].forEach((x) => {
+      const can = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.02, 14), M.lamp);
+      can.position.set(x, D.pavEave - 0.2, 2.2); walls.add(can);
     });
     const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.36, 0.2), M.lamp);
     lantern.position.set(0, D.floor + 2.95, 0.9); walls.add(lantern);
