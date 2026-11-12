@@ -186,6 +186,54 @@ class Files(unittest.TestCase):
                 os.environ["PIPELINE_SOCIAL_DIR"] = old
 
 
+def raw(handle, action="like", platform="facebook", display="", seen="2026-11-11T18:04:00-06:00"):
+    return {"platform": platform, "handle": handle, "action": action, "seen_at": seen, "display_name": display}
+
+
+class FbAliases(unittest.TestCase):
+    def test_each_facebook_verb_is_stored_as_its_canonical_action(self):
+        want = {"reaction": "like", "mention": "comment", "tag": "comment", "page_follow": "follow", "friend_request": "follow"}
+        for verb, canon in want.items():
+            out = SM.normalize_row(raw("example.fb.one", verb))
+            self.assertIsNotNone(out, verb)
+            self.assertEqual((out["action"], out["handle"], out["day"]), (canon, "example.fb.one", date(2026, 11, 11)))
+        self.assertEqual(SM.norm_action("Page Follow"), "follow")
+
+    def test_a_still_unknown_action_is_skipped(self):
+        self.assertIsNone(SM.normalize_row(raw("example.fb.one", "poke")))
+        self.assertEqual(SM.norm_action("poke"), "")
+
+    def test_existing_actions_normalize_as_before(self):
+        self.assertEqual(SM.normalize_row(raw("example.ig.one", "like", "instagram"))["action"], "like")
+        self.assertEqual(SM.normalize_row(raw("example.ig.one", "comment", "ig"))["action"], "comment")
+        self.assertEqual(SM.normalize_row(raw("example.fb.one", "Story Reply"))["action"], "story_reply")
+        self.assertEqual(SM.norm_action("share"), "share")
+
+    def test_profile_id_handle_becomes_the_numeric_id_and_the_row_loads(self):
+        out = SM.normalize_row(raw("profile.php?id=12345678901234", "like"))
+        self.assertIsNotNone(out)
+        self.assertEqual(out["handle"], "12345678901234")
+
+    def test_profile_id_with_a_url_prefix_extracts_the_id(self):
+        out = SM.normalize_row(raw("https://www.facebook.com/profile.php?id=98765432100001", "comment"))
+        self.assertEqual((out["handle"], out["action"]), ("98765432100001", "comment"))
+        self.assertEqual(SM.norm_handle_row("facebook.com/profile.php?id=98765432100002"), "98765432100002")
+
+    def test_an_ordinary_handle_is_unchanged(self):
+        self.assertEqual(SM.normalize_row(raw("@Example.Mia.Denham", "like"))["handle"], "example.mia.denham")
+        self.assertEqual(SM.norm_handle_row("example.mia.denham"), "example.mia.denham")
+
+    def test_an_empty_handle_is_still_skipped_even_with_a_display_name_or_an_alias(self):
+        self.assertIsNone(SM.normalize_row(raw("", "like", display="Nobody Fixture")))
+        self.assertIsNone(SM.normalize_row(raw("", "reaction", display="Nobody Fixture")))
+        self.assertIsNone(SM.normalize_row(raw("   ", "mention")))
+
+    def test_a_query_string_without_profile_digits_is_still_skipped(self):
+        self.assertIsNone(SM.normalize_row(raw("profile.php?id=abc", "like")))
+        self.assertIsNone(SM.normalize_row(raw("profile.php?name=example", "like")))
+        self.assertIsNone(SM.normalize_row(raw("https://www.facebook.com/profile.php?id=", "like")))
+
+
 class Store(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

@@ -26,6 +26,10 @@ THE ENGAGERS FILE (the daily browser check writes it; this module only reads it)
 
 The engagement day is the America/Chicago calendar date of seen_at. Every file inside the 14 day window is read, not
 only today's. A row missing a required field, or with an action or platform it does not know, is skipped and counted.
+Facebook verbs are aliased to the canonical action they count as, and are never stored as their own action:
+reaction -> like; mention, tag -> comment; page_follow, friend_request -> follow. A Facebook handle shaped like
+profile.php?id=NNN (with or without a URL prefix) is read as the numeric id NNN; any other handle is unchanged, and an
+empty handle is still skipped.
 Logs print counts only, never a name.
 
 THE MATCH STORE  $PIPELINE_SOCIAL_DIR/matches.json  (outside git, written atomically)
@@ -64,12 +68,14 @@ import social_signals as social  # noqa: E402
 LOOKBACK = 14
 CHICAGO = ZoneInfo("America/Chicago")
 ACTIONS = ("like", "comment", "share", "follow", "story_reply", "dm")
+FB_ALIASES = {"reaction": "like", "mention": "comment", "tag": "comment", "page_follow": "follow", "friend_request": "follow"}
 PLATFORMS = {"ig": "ig", "instagram": "ig", "fb": "fb", "facebook": "fb"}
 SIGNAL_PLATFORM = {"ig": "instagram", "fb": "facebook"}
 RANK = {"high": 3, "medium": 2, "low": 1}
 MAX_PER_HANDLE = 3
 NAME_FILE = re.compile(r"^engagers-(\d{4}-\d{2}-\d{2})\.(json|csv)$")
 HANDLE_OK = re.compile(r"^[a-z0-9._-]{1,100}$")
+FB_PROFILE_ID = re.compile(r"^(?:(?:https?://)?[^/\s?]+/)?profile\.php\?id=(\d+)$", re.IGNORECASE)
 
 # Small common-nickname map. Two first names are a nickname pair when one group holds both.
 NICKNAMES = [
@@ -125,8 +131,17 @@ def signal_platform(p: str) -> str:
 
 
 def norm_action(v) -> str:
+    """A known action, with the Facebook verbs mapped onto it (FB_ALIASES). Anything else is ''."""
     a = str(v or "").strip().lower().replace(" ", "_").replace("-", "_")
+    a = FB_ALIASES.get(a, a)
     return a if a in ACTIONS else ""
+
+
+def norm_handle_row(v) -> str:
+    """social_signals.norm_handle, plus: a profile.php?id=NNN handle (optional URL prefix) becomes NNN. Otherwise unchanged."""
+    s = str(v or "").strip().lstrip("@")
+    m = FB_PROFILE_ID.match(s)
+    return m.group(1) if m else social.norm_handle(v)
 
 
 def chicago_day(v) -> date | None:
@@ -163,7 +178,7 @@ def normalize_row(raw: dict) -> dict | None:
     """One raw engagers row -> a clean row, or None when a required field is missing or unknown."""
     r = {(k or "").strip().lower(): (v if isinstance(v, str) else ("" if v is None else str(v))).strip() for k, v in (raw or {}).items()}
     platform, action, day = norm_platform(r.get("platform")), norm_action(r.get("action")), chicago_day(r.get("seen_at") or r.get("date"))
-    handle = social.norm_handle(r.get("handle", ""))
+    handle = norm_handle_row(r.get("handle", ""))
     if not (platform and action and day and handle and HANDLE_OK.match(handle)):
         return None
     return {"platform": platform, "handle": handle, "action": action, "day": day, "display_name": r.get("display_name", ""),
