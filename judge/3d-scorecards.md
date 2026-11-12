@@ -55,3 +55,38 @@ What changed between round 1 and round 2, beyond the first fix list:
 - **A frame timer** on the page (`?perf=1`), so the Technical cap can be lifted with a run on a real machine.
 
 The judge listed 34 fixes. Round 3 starts with the four that lift caps: the copy contrast at dusk, the tree cap, the horizon band and the ground speckle.
+
+## Round 3, November 12, 2026
+
+**Overall 7.4. Not a pass.** 144 screenshots. A third judge who saw nothing from rounds 1 or 2. Caleb asked for the loop to stop after this round, so the judge was told to wrap up before a second read. It scored only from the frames it had notes on and listed the rest as not judged: 13 of the desktop viewer frames (the day, dusk and blueprint looks from the set views, and the pool view in dusk and blueprint) plus 4 others. No score was moved to cover them.
+
+| Category | Weight | Score | What held it down |
+| --- | --- | --- | --- |
+| Model craft | 20% | 7.0 | Capped: a small white gap where the back dormer meets the roof valley. Front dormers about 30% too wide against the photo, the main roof one flat tone, trees and planters still read as toys |
+| Light and material | 15% | 7.0 | Capped: a tree shadow sitting away from its tree for two frames at dusk. A flat grey moment halfway through day to dusk, no contact shadow under the house by day, posts near black at dusk where the photo has them amber |
+| Drawing and blueprint | 10% | 6.5 | Capped: lines breaking up on the phone hero and the phone blueprint. Hip caps drawing as dashes from above |
+| Camera and motion | 15% | 7.5 | Both wings off the sides on three phone frames, one empty phone beat, a tree cut by the right edge, porch windows about 40 px off the photo |
+| Explore mode | 15% | 8.0 | Part judged only. What was judged works: looks, take-apart, six pins, close |
+| Page craft | 15% | 8.0 | A grey band on the phone during the blueprint wipe, chapter marks over the model, part labels out of number order |
+| Technical | 10% | 8.0 | Capped at 8: no frame timing from a real graphics card |
+
+What the judge called professional already: the dissolve from model to photograph ("ridge, eave, posts and wing peaks land within a few pixels"), the desktop drawing and blueprint, the exploded view, the dusk lighting on the front, type and layout on both sizes, the phone viewer controls, pins hiding behind roofs, both fallbacks, and a clean browser report (0 errors, 170 to 267 draw calls, about 130,000 triangles).
+
+What moved between round 2 and round 3: Page craft 6.0 to 8.0 (the unreadable dusk copy is gone), Camera 6.5 to 7.5, Explore 7.5 to 8.0, Technical 7.5 to 8.0. Model craft went 8.0 to 7.0. That is a different judge finding a gap the last one did not, and it is recorded as scored.
+
+### Where it stopped
+
+The loop ended here on Caleb's instruction, at 7.4 against a target of 9.5. The 39 fixes from round 3 are in `judge/out/round-3/scorecard.md` on the machine that ran it (git ignores that folder). The ones that would move the score most:
+
+1. Line width set in device pixels so the drawing holds on a phone.
+2. Hip caps lifted clear of the roof so they stop drawing as dashes.
+3. The tree shadow that slides off its tree at dusk, and a contact shadow under the house by day.
+4. Front dormers narrowed about 30% to sit on the photo.
+5. Phone camera pulled back in the buy and sell chapters.
+6. A frame timing run on a real laptop and a real phone (`?perf=1`). Without it Technical stays at 8 and no score can pass.
+
+| Round | Overall |
+| --- | --- |
+| 1 | 6.3 |
+| 2 | 7.1 |
+| 3 | 7.4 |

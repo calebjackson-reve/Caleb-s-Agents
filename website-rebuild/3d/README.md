@@ -14,7 +14,8 @@ Built November 12, 2026. Prototype for Caleb's review. Nothing here is published
 | Published | No. `noindex,nofollow` is on. The deploy workflow does not pick this folder up |
 | Caleb's approval | Pending. See "Needs Caleb's yes" below |
 | Linked from the live site | No |
-| Private review link | https://claude.ai/artifact/Fg9nKQXn7Lruwt5KEUQMMd (only Caleb can open it). A bundled copy of this folder: one script file, Google Fonts, buttons pointing at home.calebjackson.org |
+| 3D judge | Three blind rounds on November 12, 2026: 6.3, 7.1, 7.4 out of 10. Target was 9.5. Stopped at Caleb's request. Cards in `judge/3d-scorecards.md` |
+| Private review link | https://claude.ai/artifact/Fg9nKQXn7Lruwt5KEUQMMd (only Caleb can open it). Version 4, the round 3 build. A bundled copy of this folder: one script file, Google Fonts, buttons pointing at home.calebjackson.org, plus a "Time this page" button |
 
 ## How to look at it
 
