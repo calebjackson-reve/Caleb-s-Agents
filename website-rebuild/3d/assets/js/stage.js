@@ -22,6 +22,10 @@ void main(){
   gl_FragColor = vec4(c, 1.0);
 }`;
 
+const SKY_FRAG = `
+varying vec3 vDir; uniform vec3 uLow; uniform vec3 uHigh;
+void main(){ float h = normalize(vDir).y; gl_FragColor = vec4(mix(uLow, uHigh, smoothstep(0.0, 0.42, h)), 1.0); }`;
+
 const POST_VERT = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 
 const TONE = `
@@ -38,11 +42,11 @@ vec3 toSRGB(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.0
 const POST_FRAG = `
 precision highp float;
 varying vec2 vUv;
-uniform sampler2D tColor; uniform sampler2D tNormal; uniform sampler2D tDepth; uniform sampler2D tAO;
+uniform sampler2D tColor; uniform sampler2D tNormal; uniform sampler2D tDepth; uniform sampler2D tAO; uniform sampler2D tEdge;
 uniform vec2 uTexel; uniform vec2 uTexelAO; uniform mat4 uInvViewProj;
 uniform float uNear; uniform float uFar; uniform float uExposure;
 uniform float uInk; uniform float uBuild; uniform float uBlue; uniform float uLineW; uniform float uEdges; uniform float uAO;
-uniform float uFocus; uniform float uDof; uniform float uVig; uniform float uLineOn;
+uniform float uFocus; uniform float uDof; uniform float uVig; uniform float uLineOn; uniform float uBw; uniform vec3 uInkLine;
 uniform vec3 uPaper; uniform vec3 uLine; uniform vec3 uWashDark; uniform vec3 uWashLight; uniform vec3 uEmber;
 uniform vec2 uFade; uniform vec3 uCenter;
 ${TONE}
@@ -52,26 +56,22 @@ float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f
 float viewZ(float d){ return uNear * uFar / (uFar - d * (uFar - uNear)); }
 vec3 nrm(vec2 uv){ return normalize(texture2D(tNormal, uv).xyz * 2.0 - 1.0); }
 
-float edgeAt(vec2 uv, float w, float fine){
-  vec2 o = uTexel * w;
-  float dc = texture2D(tDepth, uv).r;
-  float d1 = texture2D(tDepth, uv + vec2(o.x, 0.0)).r, d2 = texture2D(tDepth, uv - vec2(o.x, 0.0)).r;
-  float d3 = texture2D(tDepth, uv + vec2(0.0, o.y)).r, d4 = texture2D(tDepth, uv - vec2(0.0, o.y)).r;
-  float z = viewZ(min(dc, min(min(d1, d2), min(d3, d4))));
-  float b = uNear * uFar / (uFar - uNear);
-  float dz = abs(d1 + d2 + d3 + d4 - 4.0 * dc) * z * z / b;
-  float eD = smoothstep(mix(0.35, 0.018, fine), mix(0.9, 0.05, fine), dz);
-  vec3 nc = nrm(uv);
-  float nd = 4.0 - dot(nc, nrm(uv + vec2(o.x, 0.0))) - dot(nc, nrm(uv - vec2(o.x, 0.0))) - dot(nc, nrm(uv + vec2(0.0, o.y))) - dot(nc, nrm(uv - vec2(0.0, o.y)));
-  float eN = smoothstep(mix(0.9, 0.14, fine), mix(1.6, 0.55, fine), nd);
-  return max(eD, eN);
+// Lines come from their own pass (EDGE_FRAG). Reading five soft taps evens the weight and takes the stair-steps off.
+float edgeAt(vec2 uv){
+  vec2 o = uTexel * 0.75;
+  float c = texture2D(tEdge, uv).r;
+  float a = texture2D(tEdge, uv + vec2(o.x, o.y)).r, b = texture2D(tEdge, uv + vec2(-o.x, o.y)).r;
+  float d2 = texture2D(tEdge, uv + vec2(o.x, -o.y)).r, e2 = texture2D(tEdge, uv + vec2(-o.x, -o.y)).r;
+  float mx = max(c, max(max(a, b), max(d2, e2)));
+  float av = (c * 2.0 + a + b + d2 + e2) / 6.0;
+  return smoothstep(0.1, 0.8, mix(av, mx, 0.36));
 }
+float cocAt(float d){ return uDof <= 0.0 ? 0.0 : clamp((abs(viewZ(d) - uFocus) / uFocus - 0.2) * uDof * 1.5, 0.0, 1.0); }
 
 // Shallow focus: sharp at the focus distance, softening in front and behind, like a long lens over a model.
 vec3 shot(vec2 uv, float d){
   if (uDof <= 0.0) return texture2D(tColor, uv).rgb;
-  float z = viewZ(d);
-  float coc = clamp((abs(z - uFocus) / uFocus - 0.2) * uDof * 1.5, 0.0, 1.0);
+  float coc = cocAt(d);
   float lod = coc * 3.0;
   if (lod < 0.15) return texture2D(tColor, uv).rgb;
   vec2 o = uTexel * exp2(lod) * 0.9;
@@ -95,7 +95,7 @@ void main(){
     vec2 c0 = (floor(vUv / uTexelAO + 0.5)) * uTexelAO;
     float o = 0.25 * (texture2D(tAO, c0 + uTexelAO * vec2(-1.0, -1.0)).r + texture2D(tAO, c0 + uTexelAO * vec2(1.0, -1.0)).r
       + texture2D(tAO, c0 + uTexelAO * vec2(-1.0, 1.0)).r + texture2D(tAO, c0 + uTexelAO * vec2(1.0, 1.0)).r);
-    hdr *= mix(vec3(1.0), vec3(o, o * 1.01, o * 1.03) * o, uAO);
+    hdr *= mix(vec3(1.0), vec3(o, o * 1.01, o * 1.03) * sqrt(o), uAO);
   }
   vec3 lit = toSRGB(aces(hdr));
   float grain = hash(vUv * vec2(1931.0, 1217.0)) - 0.5;
@@ -111,25 +111,58 @@ void main(){
 
   vec3 hb = abs(wp - vec3(0.0, 4.0, -8.6)) - vec3(12.4, 5.2, 13.6);
   float fine = sky ? 0.0 : 1.0 - smoothstep(0.0, 1.5, max(hb.x, max(hb.y, hb.z)));
-  float e = edgeAt(vUv, uLineW, fine);
+  float e = edgeAt(vUv);
   float L = dot(lit, vec3(0.2126, 0.7152, 0.0722));
   vec3 wash = mix(uWashDark, uWashLight, smoothstep(0.05, 0.86, L));
   wash = mix(uPaper, wash, fade * mix(0.42, 1.0, smoothstep(0.03, 0.3, wp.y)));
   float pg = noise(vUv / uTexel * 0.55) - 0.5;
-  vec3 drawing = mix(wash, uLine, e * mix(0.14, 0.9, fade) * (0.9 + pg * 0.25));
+  vec3 drawing = mix(wash, uLine, e * mix(0.07, 0.9, fade));
   drawing += pg * 0.016 + grain * 0.012;
 
-  // the build front: the model fills in from the ground up, spreading outward across the base
-  float h = mix(-3.4, 17.0, uBuild);
+  // the build front: the model fills in from the ground up, spreading outward across the land
   float n = (noise(wp.xz * 0.3) - 0.5) * 0.9 + (noise(wp.xy * 0.9) - 0.5) * 0.3;
-  float level = wp.y + n + min(r, 70.0) * 0.045;
+  float level = wp.y + n + min(r, 110.0) * 0.045;
+  float h = mix(-3.4, 17.0, uBuild);
   float built = sky ? smoothstep(0.55, 0.95, uBuild) : smoothstep(h, h - 1.7, level);
-  float a = max(uInk * (1.0 - built), uBlue);
+  // the blueprint gives way to the model behind a level line that climbs the screen, the same move the photo makes
+  float wy = uBw * 1.1 - 0.05;
+  float builtB = 1.0 - smoothstep(wy - 0.012, wy, vUv.y);
+  float aBlue = uBlue * (1.0 - builtB);
+  float a = max(uInk * (1.0 - built), aBlue);
   vec3 col = mix(lit, drawing, a);
-  col = mix(col, uLine, e * uLineOn * (1.0 - a) * mix(0.25, 1.0, fine) * (0.9 + pg * 0.25));
-  float front = sky ? 0.0 : exp(-abs(level - h) * 16.0) * uInk * (1.0 - uBlue) * smoothstep(0.0, 0.05, uBuild) * (1.0 - smoothstep(0.86, 1.0, uBuild));
-  col = mix(col, uEmber, clamp(front, 0.0, 1.0) * 0.7);
+  // ink lines stay on the lit model by day, and soften away where the lens is out of focus
+  col = mix(col, uInkLine, e * uLineOn * (1.0 - a) * mix(0.3, 1.0, fine) * (1.0 - cocAt(d)));
+  float front = sky ? 0.0 : exp(-abs(level - h) * 16.0) * uInk * (1.0 - uBlue) * smoothstep(0.0, 0.05, uBuild) * (1.0 - smoothstep(0.86, 1.0, uBuild)) * (1.0 - smoothstep(80.0, 105.0, r));
+  float frontB = exp(-abs(vUv.y - wy) / uTexel.y * 0.55) * uBlue * smoothstep(0.0, 0.04, uBw) * (1.0 - smoothstep(0.96, 1.0, uBw));
+  col = mix(col, uEmber, clamp(max(front * 0.7, frontB), 0.0, 1.0));
   gl_FragColor = vec4(col, 1.0);
+}`;
+
+const EDGE_FRAG = `
+precision highp float;
+varying vec2 vUv;
+uniform sampler2D tNormal; uniform sampler2D tDepth; uniform vec2 uTexel; uniform mat4 uInvViewProj;
+uniform float uNear; uniform float uFar; uniform float uLineW; uniform float uDetail;
+float viewZ(float d){ return uNear * uFar / (uFar - d * (uFar - uNear)); }
+vec3 nrm(vec2 uv){ return normalize(texture2D(tNormal, uv).xyz * 2.0 - 1.0); }
+void main(){
+  float dc = texture2D(tDepth, vUv).r;
+  vec4 wp4 = uInvViewProj * vec4(vUv * 2.0 - 1.0, dc * 2.0 - 1.0, 1.0);
+  vec3 wp = wp4.xyz / wp4.w;
+  // fine detail (window bars, shutters, trim) is only looked for on the house itself, and less of it as the house gets small on screen
+  vec3 hb = abs(wp - vec3(0.0, 4.0, -8.6)) - vec3(13.2, 5.6, 13.6);
+  float fine = dc > 0.999999 ? 0.0 : (1.0 - smoothstep(0.0, 1.5, max(hb.x, max(hb.y, hb.z)))) * uDetail;
+  vec2 o = uTexel * uLineW;
+  float d1 = texture2D(tDepth, vUv + vec2(o.x, 0.0)).r, d2 = texture2D(tDepth, vUv - vec2(o.x, 0.0)).r;
+  float d3 = texture2D(tDepth, vUv + vec2(0.0, o.y)).r, d4 = texture2D(tDepth, vUv - vec2(0.0, o.y)).r;
+  float z = viewZ(min(dc, min(min(d1, d2), min(d3, d4))));
+  float b = uNear * uFar / (uFar - uNear);
+  float dz = abs(d1 + d2 + d3 + d4 - 4.0 * dc) * z * z / b;
+  float eD = smoothstep(mix(0.35, 0.018, fine), mix(0.9, 0.05, fine), dz);
+  vec3 nc = nrm(vUv);
+  float nd = 4.0 - dot(nc, nrm(vUv + vec2(o.x, 0.0))) - dot(nc, nrm(vUv - vec2(o.x, 0.0))) - dot(nc, nrm(vUv + vec2(0.0, o.y))) - dot(nc, nrm(vUv - vec2(0.0, o.y)));
+  float eN = smoothstep(mix(0.9, 0.14, fine), mix(1.6, 0.55, fine), nd);
+  gl_FragColor = vec4(vec3(max(eD, eN)), 1.0);
 }`;
 
 const AO_FRAG = `
@@ -155,7 +188,9 @@ void main(){
     float dd = dot(v, v);
     occ += max(0.0, dot(n, v) - 0.03 - 0.0015 * -p.z) / (dd + 0.1) * (1.0 - smoothstep(R * R * 0.6, R * R * 2.2, dd));
   }
-  gl_FragColor = vec4(vec3(clamp(1.0 - occ * 0.2, 0.0, 1.0)), 1.0);
+  // contact shading is a close-range effect: far out, where depth gets coarse, it fades away rather than banding
+  float ao = clamp(1.0 - occ * 0.2, 0.0, 1.0);
+  gl_FragColor = vec4(vec3(mix(ao, 1.0, smoothstep(55.0, 120.0, -p.z))), 1.0);
 }`;
 
 // The same tone curve as the shader, in script, so the backdrop can be set to an exact page colour.
@@ -177,11 +212,12 @@ function untone(target, expo, out) {
   return out.setRGB(v[0], v[1], v[2]);
 }
 
-// Three looks the studio moves between: clear day, late warm light, and after dark.
+// Three looks the studio moves between: clear day, the light going, and after dark.
+// bg is the backdrop overhead and the page colour behind the words. low is the backdrop at the horizon, which the ground fades into.
 const LOOKS = [
-  { bg: '#FBF8F3', keyI: 3.3, keyC: '#fff1df', hemiSky: '#fdfcff', hemiGround: '#efe2cf', hemiI: 0.6, env: 0.5, expo: 0.84, envTop: '#ffffff', envHor: '#f4eee4', envFloor: '#dccfbb', vig: 0, lateEl: 38 },
-  { bg: '#8D8578', keyI: 2.0, keyC: '#ffeeda', hemiSky: '#d9d5cf', hemiGround: '#8a8177', hemiI: 0.42, env: 0.36, expo: 0.86, envTop: '#b9b3aa', envHor: '#8d8578', envFloor: '#5d564d', vig: 0.25, lateEl: 19 },
-  { bg: '#14100E', keyI: 0.55, keyC: '#aab4cf', hemiSky: '#2b2f3a', hemiGround: '#0e0c0b', hemiI: 0.22, env: 0.25, expo: 0.98, envTop: '#10152a', envHor: '#232a44', envFloor: '#060505', vig: 0.45, lateEl: 34 },
+  { bg: '#FBF8F3', low: '#FBF8F3', keyI: 3.3, keyC: '#fff1df', hemiSky: '#fdfcff', hemiGround: '#f1e6d6', hemiI: 0.68, env: 0.5, expo: 0.84, envTop: '#ffffff', envHor: '#f4eee4', envFloor: '#dccfbb', vig: 0 },
+  { bg: '#7d8598', low: '#aab1c1', keyI: 1.5, keyC: '#f1e6e0', hemiSky: '#b4bccd', hemiGround: '#7e8494', hemiI: 0.62, env: 0.4, expo: 0.9, envTop: '#9299ad', envHor: '#aab1c1', envFloor: '#5a5f6c', vig: 0.2 },
+  { bg: '#12141c', low: '#2b3853', keyI: 0.75, keyC: '#9fb0d6', hemiSky: '#56688f', hemiGround: '#1c1f2a', hemiI: 0.95, env: 0.3, expo: 1.0, envTop: '#1a2238', envHor: '#2b3853', envFloor: '#0b0c10', vig: 0.4 },
 ];
 const cA = new THREE.Color(), cB = new THREE.Color();
 function lookColor(key, t, out) {
@@ -194,7 +230,8 @@ function lookNum(key, t) {
   return lerp(LOOKS[i][key], LOOKS[i + 1][key], f);
 }
 
-export const DEFAULT_STATE = { az: 0, el: 2, dist: 150, tx: 0, ty: 3.4, tz: 0, fov: 10, ink: 1, build: 0, dusk: 0, blue: 0, explode: 0, sx: 0, sy: 0, sunAz: -42, sunEl: 38, dof: 0, focus: 0 };
+// bw is the blueprint giving way to the model from the ground up (0 is all blueprint, 1 is all model).
+export const DEFAULT_STATE = { az: 0, el: 2, dist: 150, tx: 0, ty: 3.4, tz: 0, fov: 10, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0, sy: 0, sunAz: -42, sunEl: 38, dof: 0, focus: 0 };
 
 export class Stage {
   constructor(canvas, opts = {}) {
@@ -219,6 +256,11 @@ export class Stage {
     this.grounds = buildGrounds(M);
     scene.add(this.houseKit.house, this.grounds.group);
 
+    // the backdrop: one colour by day, a little lighter toward the horizon after dark
+    this.skyU = { uLow: { value: new THREE.Color() }, uHigh: { value: new THREE.Color() } };
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(1900, 24, 12), new THREE.ShaderMaterial({ uniforms: this.skyU, vertexShader: ENV_VERT, fragmentShader: SKY_FRAG, side: THREE.BackSide, depthWrite: false, depthTest: false, fog: false }));
+    dome.layers.set(1); dome.renderOrder = -100; dome.frustumCulled = false; scene.add(dome); this.dome = dome;
+
     // what the model reflects: a soft studio, lighter above, with a glow where the key light is
     this.envU = { uTop: { value: new THREE.Color() }, uHorizon: { value: new THREE.Color() }, uFloor: { value: new THREE.Color() }, uKeyDir: { value: new THREE.Vector3(0, 1, 0) }, uKeyCol: { value: new THREE.Color() } };
     this.envScene = new THREE.Scene();
@@ -232,7 +274,8 @@ export class Stage {
     const sz = this.quality === 'fast' ? 1024 : (opts.shadow || 4096);
     this.sun.shadow.mapSize.set(sz, sz);
     const sc = this.sun.shadow.camera; sc.left = -70; sc.right = 70; sc.top = 70; sc.bottom = -70; sc.near = 1; sc.far = 420;
-    this.sun.shadow.bias = -0.0003; this.sun.shadow.normalBias = 0.06; this.sun.shadow.radius = 5;
+    this.sun.shadow.bias = -0.0003; this.sun.shadow.normalBias = 0.05; this.sun.shadow.radius = 3;
+    this.focusPoint = new THREE.Vector3(0, 0, -6); this.shadowHalf = 70; this.freeShift = 0;
     this.sun.target.position.set(0, 0, -22);
     scene.add(this.sun, this.sun.target);
     this.hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
@@ -244,13 +287,14 @@ export class Stage {
     this.rtNorm = new THREE.WebGLRenderTarget(4, 4, { type: THREE.UnsignedByteType, samples: 0, depthBuffer: true, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
     this.rtNorm.depthTexture = new THREE.DepthTexture(4, 4, THREE.UnsignedIntType);
     this.rtAO = new THREE.WebGLRenderTarget(4, 4, { type: THREE.UnsignedByteType, depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+    this.rtEdge = new THREE.WebGLRenderTarget(4, 4, { type: THREE.UnsignedByteType, depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
     this.normalMat = new THREE.MeshNormalMaterial();
     this.U = {
-      tColor: { value: this.rtColor.texture }, tNormal: { value: this.rtNorm.texture }, tDepth: { value: this.rtNorm.depthTexture }, tAO: { value: this.rtAO.texture },
+      tColor: { value: this.rtColor.texture }, tNormal: { value: this.rtNorm.texture }, tDepth: { value: this.rtNorm.depthTexture }, tAO: { value: this.rtAO.texture }, tEdge: { value: this.rtEdge.texture },
       uTexel: { value: new THREE.Vector2() }, uTexelAO: { value: new THREE.Vector2() }, uInvViewProj: { value: new THREE.Matrix4() },
       uNear: { value: camera.near }, uFar: { value: camera.far }, uExposure: { value: 0.8 },
       uInk: { value: 1 }, uBuild: { value: 0 }, uBlue: { value: 0 }, uLineW: { value: 1 }, uEdges: { value: 1 }, uAO: { value: fast ? 0 : 1 },
-      uFocus: { value: 40 }, uDof: { value: 0 }, uVig: { value: 0 }, uLineOn: { value: 0 },
+      uFocus: { value: 40 }, uDof: { value: 0 }, uVig: { value: 0 }, uLineOn: { value: 0 }, uBw: { value: 0 }, uInkLine: { value: INK.clone() },
       uPaper: { value: IVORY.clone() }, uLine: { value: INK.clone() }, uWashDark: { value: new THREE.Color() }, uWashLight: { value: new THREE.Color() }, uEmber: { value: EMBER.clone() },
       uFade: { value: new THREE.Vector2(20, 43) }, uCenter: { value: new THREE.Vector3(0, 0, -6) },
     };
@@ -260,6 +304,8 @@ export class Stage {
       const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({ uniforms, vertexShader: POST_VERT, fragmentShader: frag, depthTest: false, depthWrite: false }));
       quad.frustumCulled = false; sc2.add(quad); return sc2;
     };
+    this.UE = { tNormal: this.U.tNormal, tDepth: this.U.tDepth, uTexel: this.UA.uTexel, uInvViewProj: this.U.uInvViewProj, uNear: this.U.uNear, uFar: this.U.uFar, uLineW: this.U.uLineW, uDetail: { value: 1 } };
+    this.edgeScene = pass(this.UE, EDGE_FRAG);
     this.aoScene = pass(this.UA, AO_FRAG);
     this.postScene = pass(this.U, POST_FRAG);
     this.postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -268,7 +314,7 @@ export class Stage {
     this.sway = { x: 0, y: 0 };
     this.free = false;
     this.tone = 'paper';
-    this.bg = new THREE.Color(); this.bgScene = new THREE.Color();
+    this.bg = new THREE.Color(); this.bgScene = new THREE.Color(); this.low = new THREE.Color(); this.lowScene = new THREE.Color();
     this._v = new THREE.Vector3(); this._m = new THREE.Matrix4(); this._c = new THREE.Color();
     this.resize();
   }
@@ -282,7 +328,7 @@ export class Stage {
     const pw = Math.max(2, Math.floor(w * dpr)), ph = Math.max(2, Math.floor(h * dpr));
     this.rtColor.setSize(pw, ph); this.rtNorm.setSize(pw, ph);
     const aw = Math.max(2, pw >> 1), ah = Math.max(2, ph >> 1);
-    this.rtAO.setSize(aw, ah);
+    this.rtAO.setSize(aw, ah); this.rtEdge.setSize(pw, ph);
     this.U.uTexel.value.set(1 / pw, 1 / ph); this.U.uTexelAO.value.set(1 / aw, 1 / ah); this.UA.uTexel.value.set(1 / pw, 1 / ph);
     this.U.uLineW.value = Math.max(1, Math.round(dpr * 0.8));
     this.camera.aspect = w / h;
@@ -309,25 +355,39 @@ export class Stage {
       cam.near = Math.min(60, Math.max(0.4, d * 0.22)); cam.far = 2400;
       if (s.sx || s.sy) cam.setViewOffset(this.w, this.h, -s.sx * this.w, -s.sy * this.h, this.w, this.h); else cam.clearViewOffset();
       this.U.uFocus.value = s.focus > 0 ? s.focus : d;
+      this.focusPoint.set(s.tx, 0, s.tz); this.focusDist = d * Math.tan(s.fov * DEG / 2) / Math.tan(15 * DEG);
     } else {
-      cam.clearViewOffset(); cam.fov = 30;
-      const dd = cam.position.distanceTo(this._v.set(0, 2.5, -6));
+      // in the explore mode the picture sits a little high, clear of the controls along the bottom
+      cam.fov = 30;
+      cam.setViewOffset(this.w, this.h, -this.w * this.freeShift, this.h * (this.w < 768 ? 0.1 : 0.05), this.w, this.h);
+      const dd = cam.position.distanceTo(this.focusPoint);
       cam.near = Math.min(30, Math.max(0.4, dd * 0.08)); cam.far = 2400;
-      this.U.uFocus.value = dd;
+      this.U.uFocus.value = dd; this.focusDist = dd;
     }
     cam.updateProjectionMatrix();
+    // how many screen pixels one metre of the house covers: the line pass looks for less fine detail when that is small
+    const pxPerM = this.h / (2 * Math.tan(cam.fov * DEG / 2) * Math.max(1, cam.position.distanceTo(this.focusPoint)));
+    this.UE.uDetail.value = clamp01((pxPerM - 9) / 14);
+    // the shadow map covers only as much ground as the view needs, so shadows stay crisp up close
+    const half = Math.min(70, Math.max(26, this.focusDist * 0.95));
+    if (Math.abs(half - this.shadowHalf) > 0.5) {
+      this.shadowHalf = half;
+      const sc = this.sun.shadow.camera; sc.left = -half; sc.right = half; sc.top = half; sc.bottom = -half; sc.updateProjectionMatrix();
+    }
+    this.sun.target.position.set(Math.round(this.focusPoint.x), 0, Math.round(this.focusPoint.z) - (half > 50 ? 16 : 4));
     this.U.uDof.value = this.quality === 'fast' ? 0 : s.dof;
 
     // light for the time of day
     const t = clamp01(s.dusk);
     const expo = lookNum('expo', t);
     this.U.uExposure.value = expo; this.U.uVig.value = lookNum('vig', t);
-    lookColor('bg', t, this.bg);
-    untone(this.bg, expo, this.bgScene);
-    this.scene.fog.color.copy(this.bgScene);
+    lookColor('bg', t, this.bg); lookColor('low', t, this.low);
+    untone(this.bg, expo, this.bgScene); untone(this.low, expo, this.lowScene);
+    this.skyU.uHigh.value.copy(this.bgScene); this.skyU.uLow.value.copy(this.lowScene);
+    this.scene.fog.color.copy(this.lowScene);
     const night = clamp01((t - 0.5) * 2);
     // by day the key follows the state, so scrolling sweeps the shadows; after dark it becomes a soft cool light from the front
-    const az = lerp(s.sunAz, -34, night) * DEG, el = lerp(lerp(s.sunEl, 19, clamp01(t * 2)), 11, night) * DEG;
+    const az = lerp(s.sunAz, -30, night) * DEG, el = lerp(lerp(s.sunEl, 22, clamp01(t * 2)), 38, night) * DEG;
     const dir = this._v.set(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el));
     this.sun.position.copy(this.sun.target.position).addScaledVector(dir, 200);
     lookColor('keyC', t, this.sun.color); this.sun.intensity = lookNum('keyI', t);
@@ -356,11 +416,13 @@ export class Stage {
     P.uLine.value.copy(INK).lerp(IVORY, b);
     P.uWashLight.value.copy(IVORY).lerp(this._c.copy(INK).lerp(IVORY, 0.09), b);
     P.uWashDark.value.set('#8f867a').lerp(this._c.copy(INK).multiplyScalar(0.75), b);
-    P.uInk.value = s.ink; P.uBuild.value = s.build; P.uBlue.value = s.blue;
-    P.uLineOn.value = this.palette === 'paper' ? 0.62 * (1 - clamp01(t * 2.2)) : 0;
-    P.uEdges.value = (s.ink > 0.002 && s.build < 0.999) || s.blue > 0.002 || P.uLineOn.value > 0.01 ? 1 : 0;
-    const dark = Math.max(s.blue, (1 - inkShare) * clamp01((t - 0.3) * 4));
-    this.tone = dark > 0.5 ? 'dark' : 'light';
+    P.uInk.value = s.ink; P.uBuild.value = s.build; P.uBlue.value = s.blue; P.uBw.value = s.bw;
+    P.uLineOn.value = this.palette === 'paper' ? 0.62 * (1 - clamp01(t * 2.6)) : 0;
+    P.uEdges.value = (s.ink > 0.002 && s.build < 0.999) || (s.blue > 0.002 && s.bw < 0.999) || P.uLineOn.value > 0.01 ? 1 : 0;
+    // the words go light when what is behind them is dark: the blueprint, or the backdrop once the light has gone
+    const blueShare = s.blue * (1 - clamp01((s.bw - 0.45) * 8));
+    const lum = 0.2126 * this.low.r + 0.7152 * this.low.g + 0.0722 * this.low.b;   // linear, so 0.2 is a mid grey
+    this.tone = blueShare > 0.5 || (inkShare < 0.5 && lum < 0.2) ? 'dark' : 'light';
   }
 
   render() {
@@ -369,6 +431,7 @@ export class Stage {
     cam.updateMatrixWorld();
     this.U.uNear.value = cam.near; this.U.uFar.value = cam.far;
 
+    this.dome.position.copy(cam.position);
     r.setRenderTarget(this.rtColor);
     r.setClearColor(this.bgScene, 1); r.clear();
     r.render(this.scene, cam);
@@ -390,6 +453,7 @@ export class Stage {
         this.UA.uProj.value.copy(cam.projectionMatrix); this.UA.uInvProj.value.copy(cam.projectionMatrixInverse);
         r.setRenderTarget(this.rtAO); r.render(this.aoScene, this.postCam);
       }
+      if (this.U.uEdges.value > 0.5) { r.setRenderTarget(this.rtEdge); r.render(this.edgeScene, this.postCam); }
     }
     r.setRenderTarget(null);
     r.render(this.postScene, this.postCam);

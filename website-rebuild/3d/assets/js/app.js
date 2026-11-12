@@ -32,19 +32,19 @@ try {
 // sx and sy slide the picture across the screen so the words have room.
 const base = Object.assign({}, DEFAULT_STATE);
 const K = {
-  hero:    { az: 0, el: 1.6, dist: 150, tx: 0, ty: 3.3, tz: 0, fov: 10, ink: 1, build: 0, dusk: 0, blue: 0, explode: 0, sx: 0.14, sy: 0.15, sunAz: -52, sunEl: 34, dof: 0 },
-  form:    { az: -34, el: 12, dist: 54, tx: 0, ty: 2.6, tz: -3, fov: 26, ink: 1, build: 0, dusk: 0, blue: 0, explode: 0, sx: 0.17, sy: 0.03, sunAz: -76, sunEl: 28, dof: 0 },
-  buy:     { az: -22, el: 8, dist: 47, tx: 0, ty: 2.6, tz: -3, fov: 26, ink: 1, build: 1, dusk: 0, blue: 0, explode: 0, sx: 0.17, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0.45 },
-  sell:    { az: 19, el: 3.2, dist: 19, tx: 0.4, ty: 2.5, tz: 2, fov: 36, ink: 1, build: 1, dusk: 0, blue: 0, explode: 0, sx: 0.2, sy: 0.02, sunAz: -14, sunEl: 34, dof: 0.6 },
+  hero:    { az: 0, el: 1.6, dist: 150, tx: 0, ty: 3.5, tz: 0, fov: 10, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.14, sy: 0.15, sunAz: -52, sunEl: 34, dof: 0 },
+  form:    { az: -34, el: 12, dist: 58, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.19, sy: 0.03, sunAz: -76, sunEl: 28, dof: 0 },
+  buy:     { az: -22, el: 8, dist: 54, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.2, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0.4 },
+  sell:    { az: 13, el: 3.2, dist: 34, tx: 1.6, ty: 3.4, tz: 2, fov: 34, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.2, sy: 0.03, sunAz: -14, sunEl: 34, dof: 0.45 },
   photo:   null,   // worked out from the photo, see matchPhoto()
   build:   null,   // the same camera as the photo, as a blueprint
-  explore: { az: -38, el: 25, dist: 76, tx: 0, ty: 5.2, tz: -6, fov: 24, ink: 1, build: 1, dusk: 0, blue: 1, explode: 1, sx: 0.15, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0 },
-  end:     { az: 30, el: 14, dist: 56, tx: 0, ty: 2.6, tz: -5, fov: 26, ink: 1, build: 1, dusk: 0, blue: 0, explode: 0, sx: 0.13, sy: -0.02, sunAz: -30, sunEl: 40, dof: 0.5 },
+  explore: { az: -38, el: 25, dist: 92, tx: 0, ty: 6.2, tz: -6, fov: 24, ink: 1, build: 1, dusk: 0, blue: 1, bw: 0, explode: 1, sx: 0.09, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0 },
+  end:     { az: 30, el: 14, dist: 60, tx: 0, ty: 2.8, tz: -5, fov: 26, ink: 1, build: 1, dusk: 0, blue: 1, bw: 1, explode: 0, sx: 0.15, sy: -0.02, sunAz: -30, sunEl: 40, dof: 0.4 },
 };
 // Phone framing: the model sits in the upper part of the screen, the words below it.
 const KM = {
-  hero: { sx: 0, sy: 0.1, dist: 168 }, form: { sx: 0, sy: -0.17, dist: 58, az: -30 }, buy: { sx: 0, sy: -0.18, dist: 52 }, sell: { sx: 0, sy: -0.18, az: 12, dist: 17 },
-  explore: { sx: 0, sy: -0.16, dist: 80 }, end: { sx: 0, sy: -0.2, dist: 60 },
+  hero: { sx: 0, sy: 0.1, dist: 176 }, form: { sx: 0, sy: -0.17, dist: 62, az: -30 }, buy: { sx: 0, sy: -0.18, dist: 58 }, sell: { sx: 0, sy: -0.18, az: 10, dist: 22, tx: 0.4 },
+  explore: { sx: 0, sy: -0.22, dist: 86 }, end: { sx: 0, sy: -0.2, dist: 66 },
 };
 const ORDER = ['hero', 'form', 'buy', 'sell', 'photo', 'build', 'explore'];
 const NEXT = { hero: 'form', form: 'buy', buy: 'sell', sell: 'photo', photo: 'build', build: 'explore', explore: 'end' };
@@ -53,37 +53,34 @@ const TRACKS = {
   hero: { _: [0.22, 0.96] },
   form: { _: [0.08, 0.9], build: [0.16, 0.84], dof: [0.6, 0.95] },
   buy: { _: [0.1, 0.9] },
-  sell: { _: [0.22, 0.94], dusk: [0.36, 0.62], dof: [0.2, 0.6] },
+  sell: { _: [0.2, 0.94], dusk: [0.26, 0.74], dof: [0.2, 0.6] },
   photo: { _: [0, 1], dusk: [0.42, 0.66], blue: [0.42, 0.66] },
   build: { _: [0.08, 0.8], explode: [0.32, 0.86] },
-  explore: { _: [0.03, 0.46], explode: [0.02, 0.34], blue: [0.2, 0.44], dof: [0.3, 0.5] },
+  explore: { _: [0.03, 0.4], explode: [0.02, 0.22], bw: [0.12, 0.42], dof: [0.36, 0.46] },
 };
 const PHOTO = { on: [0.03, 0.34], off: [0.72, 0.98] };
+// The camera that took the twilight photo, fitted to landmarks on the house: where it stood, its lens, and where the
+// lens centre falls in the photo's own pixels.
+const CAM = { az: 16.4, el: 2.6, dist: 25.32, focal: 1624.3, cx: 799.1, cy: 520.1, target: [0, 3.6, 2.7] };
 
-// Where the porch sits in the twilight photo, in the photo's own pixels: the feet of the first and last post.
-const SHOT = { w: 1672, h: 941, x1: 493, x2: 1109, floor: 698 };
+// The twilight photo: its size, and how far across it the house runs.
+const SHOT = { w: 1672, h: 941, left: 150, right: 1625 };
 const photoEl = $('#photo'), photoImg = $('#photo img'), photoLine = $('#photo-line');
 let photoBox = { x: 0, y: 0, s: 1 };
 
-// Sets the camera for the photo scene so the model's porch lands on the porch in the photo, whatever the screen shape.
+// Sets the camera for the photo scene to the one that took the photo, so the model lands on the house whatever the screen shape.
 function matchPhoto() {
   const vw = innerWidth, vh = innerHeight;
-  const s = Math.max(vw / SHOT.w, vh / SHOT.h);
+  // fill the screen, but on a wide screen never crop the house itself off the sides
+  let s = Math.max(vw / SHOT.w, vh / SHOT.h);
+  if (vw / vh > 1.2) s = Math.max(vw / SHOT.w, Math.min(s, (0.97 * vw) / (SHOT.right - SHOT.left)));
   photoBox = { x: (vw - SHOT.w * s) / 2, y: (vh - SHOT.h * s) / 2, s };
-  const st = Object.assign({}, base, { az: 6, el: 1.4, dist: 60, tx: 0, ty: 3.4, tz: 2.65, fov: 24, ink: 1, build: 1, dusk: 1, blue: 0, explode: 0, sx: 0, sy: 0, sunAz: -30, sunEl: 36, dof: 0 });
-  if (stage) {
-    const want = (SHOT.x2 - SHOT.x1) * s, a = {}, b = {};
-    const P1 = [-4.83, 0.76, 2.65], P2 = [4.83, 0.76, 2.65];
-    for (let i = 0; i < 4; i++) {
-      stage.apply(st); stage.camera.updateMatrixWorld();
-      stage.project(P1, a); stage.project(P2, b);
-      st.dist *= (b.x - a.x) / want;
-    }
-    stage.apply(st); stage.camera.updateMatrixWorld();
-    stage.project(P1, a); stage.project(P2, b);
-    st.sx = (photoBox.x + ((SHOT.x1 + SHOT.x2) / 2) * s - (a.x + b.x) / 2) / vw;
-    st.sy = (photoBox.y + SHOT.floor * s - (a.y + b.y) / 2) / vh;
-  }
+  const st = Object.assign({}, base, {
+    az: CAM.az, el: CAM.el, dist: CAM.dist, tx: CAM.target[0], ty: CAM.target[1], tz: CAM.target[2],
+    fov: (2 * Math.atan(vh / 2 / (CAM.focal * s))) / DEG,
+    sx: (photoBox.x + CAM.cx * s - vw / 2) / vw, sy: (photoBox.y + CAM.cy * s - vh / 2) / vh,
+    ink: 1, build: 1, dusk: 1, blue: 0, bw: 0, explode: 0, sunAz: -30, sunEl: 36, dof: 0,
+  });
   K.photo = st;
   K.build = Object.assign({}, st, { blue: 1, dusk: 0 });
 }
@@ -131,30 +128,51 @@ function stateAt(y) {
     const w = tr[k] || tr._;
     out[k] = lerp(a[k], b[k], smoother((t - w[0]) / (w[1] - w[0])));
   }
+  // The lens and the distance change together, so the house never shrinks and swells on the way between two views:
+  // what is interpolated is how much of the scene the lens takes in.
+  const w = tr.dist || tr._, u = smoother((t - w[0]) / (w[1] - w[0]));
+  const spanA = a.dist * Math.tan((a.fov * DEG) / 2), spanB = b.dist * Math.tan((b.fov * DEG) / 2);
+  out.dist = (spanA * Math.pow(spanB / spanA, u)) / Math.tan((out.fov * DEG) / 2);
   return out;
 }
 
 // ---------------------------------------------------------------- overlays: photo, part names, pins
 const TAGS = [
-  ['roof', 'Hipped porch roof'], ['copper', 'Copper-toned hip caps'], ['dormers', 'Twin dormers'], ['wings', 'Gabled wings'],
-  ['posts', 'Six cedar posts'], ['brick', 'Painted brick'], ['porch', 'Brick porch and steps'],
+  ['dormers', 'Twin dormers'], ['roof', 'Hipped porch roof'], ['copper', 'Copper-toned hip caps'], ['wings', 'Gabled wings'],
+  ['brick', 'Painted brick'], ['posts', 'Six cedar posts'], ['porch', 'Brick porch and steps'],
 ];
 const labelsEl = $('#labels');
-const tags = TAGS.map(([key, text]) => {
+const NS = 'http://www.w3.org/2000/svg';
+const wires = document.createElementNS(NS, 'svg'); wires.setAttribute('class', 'wires'); labelsEl.appendChild(wires);
+const tags = TAGS.map(([key, text], i) => {
   const el = document.createElement('div'); el.className = 'tag';
-  el.innerHTML = '<i></i><u></u><span></span>'; el.lastChild.textContent = text;
-  labelsEl.appendChild(el); return { key, el };
+  el.innerHTML = '<b></b><span></span>'; el.firstChild.textContent = String(i + 1); el.lastChild.textContent = text;
+  labelsEl.appendChild(el);
+  const dot = document.createElement('i'); dot.className = 'tagdot'; dot.textContent = String(i + 1); labelsEl.appendChild(dot);
+  const wire = document.createElementNS(NS, 'polyline'); wires.appendChild(wire);
+  return { key, el, dot, wire, x: 0, y: 0, ok: false };
 });
 const pt = {};
+// On a wide screen the names stack in a column to the right of the model, each joined to its point by an elbow line.
+// On a phone only numbered points sit on the model and the names are listed in the words below.
 function drawTags(amount) {
-  const phone = innerWidth < 768;
-  tags.forEach((t, i) => {
-    if (amount < 0.01 || !stage || (phone && (i === 1 || i === 3 || i === 6))) { t.el.style.opacity = 0; return; }
-    stage.project(stage.houseKit.anchors[t.key], pt);
-    const flip = pt.x + t.el.offsetWidth + 12 > stage.w;
-    t.el.classList.toggle('flip', flip);
-    t.el.style.opacity = pt.visible ? amount : 0;
-    t.el.style.transform = `translate(${flip ? pt.x - t.el.offsetWidth + 5 : pt.x - 5}px, ${pt.y - t.el.offsetHeight / 2}px)`;
+  const phone = innerWidth < 768, on = amount > 0.01 && stage;
+  labelsEl.style.opacity = on ? amount : 0;
+  if (!on) return;
+  wires.setAttribute('viewBox', `0 0 ${stage.w} ${stage.h}`);
+  tags.forEach((t) => { stage.project(stage.houseKit.anchors[t.key], pt); t.x = pt.x; t.y = pt.y; t.ok = pt.visible; });
+  const order = tags.slice().sort((a, b) => a.y - b.y);
+  const colX = stage.w - Math.max(stage.w * 0.045, 56) - 8, gap = 46;
+  let y = Math.max(stage.h * 0.2, order[0].y - 30);
+  const total = (order.length - 1) * gap; if (y + total > stage.h * 0.86) y = stage.h * 0.86 - total;
+  order.forEach((t) => {
+    t.dot.style.transform = `translate(${t.x}px, ${t.y}px)`; t.dot.style.opacity = t.ok ? 1 : 0;
+    if (phone) { t.el.style.opacity = 0; t.wire.setAttribute('points', ''); return; }
+    const w = t.el.offsetWidth, left = colX - w;
+    t.el.style.opacity = t.ok ? 1 : 0;
+    t.el.style.transform = `translate(${left}px, ${y - t.el.offsetHeight / 2}px)`;
+    t.wire.setAttribute('points', t.ok ? `${t.x},${t.y} ${left - 34},${y} ${left - 8},${y}` : '');
+    y += gap;
   });
 }
 
@@ -166,30 +184,30 @@ function drawPhoto(h, drift) {
   photoEl.style.setProperty('--h', top.toFixed(2) + '%');
   photoLine.style.opacity = Math.min(1, h * 8) * Math.min(1, (1.0 - h) * 8) > 0 ? Math.min(1, h * 8) * Math.max(0, Math.min(1, (1.0 - h) * 8)) : 0;
   photoLine.style.transform = `translateY(${(-top / 100) * innerHeight}px)`;
-  const k = 1 + drift * 0.04, cx = (SHOT.x1 + SHOT.x2) / 2, cy = SHOT.floor - 150;
+  const k = 1 + Math.sin(drift * Math.PI) * 0.02, cx = CAM.cx, cy = CAM.cy;   // eases in a touch and back, so both wipes meet a photo at rest
   photoImg.style.transform = `translate(${photoBox.x - (k - 1) * cx * photoBox.s}px, ${photoBox.y - (k - 1) * cy * photoBox.s}px) scale(${photoBox.s * k})`;
 }
 
 // ---------------------------------------------------------------- explore mode
 const PINS = [
-  { at: [0, 6.6, 0.5], face: [0, 0.3, 1], title: 'Front of the house', note: 'Painted brick, a charcoal roof and twin dormers.', img: 'basil-front-lit.webp' },
-  { at: [-2.9, 1.5, 3.1], face: [0, 0, 1], title: 'Front porch', note: 'Cedar posts, brick underfoot and flowers by the door.', img: 'basil-porch.webp' },
-  { at: [0.3, 0.7, -20.5], face: [0.3, 0.5, -1], title: 'Pool', note: 'The pool terrace behind the house, at dusk.', img: 'basil-pool-night.webp' },
-  { at: [-0.3, 2.4, -12.4], face: [0, 0, -1], title: 'Back patio', note: 'Covered, with an outdoor kitchen.', img: 'basil-patio.webp' },
-  { at: [-11.2, 1.6, -15], face: [-1, 0, 0], title: 'Garage and drive', note: 'Three bays along the side of the house.', img: 'basil-driveway.webp' },
-  { at: [-38, 6.2, -46], title: 'The barn', note: 'White, with a cupola, across the lawn.', img: 'basil-barn.webp' },
-  { at: [-2, 4.4, -68.5], title: 'Gazebo on the pond', note: 'A cedar frame at the edge of the water.', img: 'basil-gazebo.webp' },
+  { at: [0, 7.6, 1.2], title: 'Front of the house', note: 'Painted brick, a charcoal roof and twin dormers.', img: 'basil-front-lit.webp' },
+  { at: [-2.9, 1.5, 3.1], title: 'Front porch', note: 'Cedar posts, brick underfoot and flowers by the door.', img: 'basil-porch.webp' },
+  { at: [0.3, 0.5, -20.5], title: 'Pool', note: 'The pool terrace behind the house, at dusk.', img: 'basil-pool-night.webp' },
+  { at: [-0.3, 1.2, -13.6], title: 'Back patio', note: 'Covered, with an outdoor kitchen.', img: 'basil-patio.webp' },
+  { at: [-11.6, 1.6, -15], title: 'Garage and drive', note: 'Three bays along the side of the house.', img: 'basil-driveway.webp' },
+  { at: [-38, 8.6, -46], title: 'The barn', note: 'White, with a cupola, across the lawn.', img: 'basil-barn.webp' },
+  { at: [-2, 5.2, -68.5], title: 'Gazebo on the pond', note: 'A cedar frame at the edge of the water.', img: 'basil-gazebo.webp' },
 ];
 const LOOKS = {
-  drawing: { ink: 1, build: 0, dusk: 0, blue: 0 }, day: { ink: 1, build: 1, dusk: 0, blue: 0 },
-  dusk: { ink: 1, build: 1, dusk: 1, blue: 0 }, blueprint: { ink: 1, build: 1, dusk: 0, blue: 1 },
+  drawing: { ink: 1, build: 0, dusk: 0, blue: 0, bw: 0 }, day: { ink: 1, build: 1, dusk: 0, blue: 0, bw: 0 },
+  dusk: { ink: 1, build: 1, dusk: 1, blue: 0, bw: 0 }, blueprint: { ink: 1, build: 1, dusk: 0, blue: 1, bw: 0 },
 };
 const VIEWS = {
-  front: { az: 0, el: 7, dist: 54, t: [0, 3, -2] }, porch: { az: 18, el: 4, dist: 18, t: [0.5, 2.5, 2] },
-  pool: { az: 152, el: 22, dist: 48, t: [0, 1.5, -17] }, above: { az: -28, el: 60, dist: 100, t: [0, 0, -22] },
+  front: { az: 0, el: 7, dist: 58, t: [0, 3.4, -2] }, porch: { az: 16, el: 5, dist: 24, t: [0.4, 2.2, 2] },
+  pool: { az: 152, el: 24, dist: 52, t: [1, 1.5, -17] }, above: { az: 0, el: 66, dist: 96, t: [1, 0, -10] },
 };
 const viewer = $('#viewer'), pinsEl = $('#pins'), card = $('#card');
-const free = Object.assign({}, base, LOOKS.day, { explode: 0, dof: 0.35 });
+const free = Object.assign({}, base, LOOKS.day, { explode: 0, dof: 0.3 });
 let exploring = false, controls = null, fly = null, lastFocus = null, turned = false;
 const pins = PINS.map((p) => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'pinbtn';
@@ -206,15 +224,26 @@ function openCard(p, btn) {
 function closeCard() { card.hidden = true; pins.forEach((x) => x.el.classList.remove('is-open')); }
 $('.card-close').addEventListener('click', closeCard);
 
+// A pin only shows when there is a clear line from the camera to the spot it marks. One ray per pin, and only when the view moved.
+const ray = new THREE.Raycaster(), rayDir = new THREE.Vector3(), rayAt = new THREE.Vector3();
+let solids = null, pinTick = 3;
+function hidden(at) {
+  if (!solids) { solids = []; stage.scene.traverse((o) => { if (o.isMesh && !o.isInstancedMesh && o.layers.mask === 1 && o.geometry.attributes.position.count > 60) solids.push(o); }); }
+  const c = stage.camera.position; rayAt.fromArray(at);
+  const far = c.distanceTo(rayAt); rayDir.subVectors(rayAt, c).normalize();
+  ray.set(c, rayDir); ray.far = far - 0.9;
+  return ray.intersectObjects(solids, false).length > 0;
+}
 function drawPins() {
   if (!stage) return;
-  const show = free.blue < 0.5 && free.explode < 0.1;
+  const show = free.blue < 0.5 && free.explode < 0.1 && cur.explode < 0.1, top = Math.max(110, stage.h * 0.14);
+  pinTick++;
   pins.forEach((x) => {
     stage.project(x.p.at, pt);
-    const f = x.p.face, c = stage.camera.position;
-    const facing = !f || (c.x - x.p.at[0]) * f[0] + (c.y - x.p.at[1]) * f[1] + (c.z - x.p.at[2]) * f[2] > 0;
-    const ok = show && facing && pt.visible && pt.x > 20 && pt.x < stage.w - 20 && pt.y > 70 && pt.y < stage.h - 20;
-    x.el.style.opacity = ok ? 1 : 0; x.el.style.pointerEvents = ok ? 'auto' : 'none';
+    const inFrame = pt.visible && pt.x > 24 && pt.x < stage.w - 24 && pt.y > top && pt.y < stage.h - (stage.w < 768 ? 230 : 110);
+    if (inFrame && pinTick % 4 === 0) x.hid = hidden(x.p.at);
+    const ok = show && inFrame && !x.hid;
+    x.el.style.opacity = ok ? 1 : 0; x.el.style.pointerEvents = ok ? 'auto' : 'none'; x.el.tabIndex = ok ? 0 : -1;
     x.el.style.transform = `translate(${pt.x}px, ${pt.y}px)`;
   });
 }
@@ -224,8 +253,8 @@ function viewTo(name, instant) {
   const fit = stage.fit(), a = v.az * DEG, e = v.el * DEG, d = v.dist * fit;
   const pos = new THREE.Vector3(v.t[0] + Math.sin(a) * Math.cos(e) * d, v.t[1] + Math.sin(e) * d, v.t[2] + Math.cos(a) * Math.cos(e) * d);
   const tgt = new THREE.Vector3(...v.t);
-  controls.autoRotate = false;
-  if (instant || reduce || still) { stage.camera.position.copy(pos); controls.target.copy(tgt); controls.update(); return; }
+  controls.autoRotate = false; $('#viewer-hint').classList.add('is-gone');
+  if (instant || reduce || still) { stage.camera.position.copy(pos); controls.target.copy(tgt); controls.update(); turned = true; return; }
   fly = { t: 0, p0: stage.camera.position.clone(), p1: pos, t0: controls.target.clone(), t1: tgt };
 }
 function setLook(name) {
@@ -255,8 +284,9 @@ function openViewer(look) {
     controls.enabled = true;
     Object.assign(cur, free, LOOKS[look] || LOOKS.day, { explode: 0 });
     setLook(look || 'day'); free.explode = 0; $('#apart').value = 0;
-    viewTo('front', true);
-    stage.camera.position.set(-34, 16, 46); controls.target.set(0, 2.6, -4); controls.update();
+    // opens on a three quarter view, pulled back far enough that the whole house fits the screen it is on
+    const k = stage.fit() * (innerWidth < 768 ? 1.18 : 1);
+    controls.target.set(0, 2.6, -4); stage.camera.position.set(-34 * k, 2.6 + 15 * k, -4 + 52 * k); controls.update();
     controls.autoRotate = !reduce && !still;
     $('#viewer-hint').classList.remove('is-gone');
     canvas.style.opacity = 1;
@@ -272,7 +302,7 @@ function closeViewer() {
   setTimeout(() => {
     exploring = false; stage.free = false; controls.enabled = false; fly = null;
     body.classList.remove('is-exploring');
-    Object.assign(cur, stateAt(scrollY));
+    Object.assign(cur, stateAt(scrollY)); needs = 4;   // put the chapter's own camera and look back
     canvas.style.opacity = 1;
     if (lenis) lenis.start();
     setTimeout(() => { viewer.hidden = true; canvas.style.transition = ''; canvas.style.opacity = ''; }, 500);
@@ -329,7 +359,7 @@ $$('a[href^="#"]').forEach((a) => a.addEventListener('click', (e) => {
   const id = a.getAttribute('href').slice(1), s = scenes.find((x) => x.el.id === id);
   if (!s) return;
   e.preventDefault();
-  scrollTo(id === 'top' ? 0 : s.top + s.height * (id === 'explore' ? 0.34 : 0.42));
+  scrollTo(id === 'top' ? 0 : s.top + s.height * (id === 'explore' ? 0.5 : 0.42));
 }));
 
 // keyboard: when a link inside a chapter takes focus, bring that chapter on screen so the focus is never on something hidden
@@ -404,7 +434,7 @@ function frame(now) {
   let po = 0, drift = 0;
   if (!exploring && w.s.name === 'photo') {
     po = Math.min(smoother((w.t - PHOTO.on[0]) / (PHOTO.on[1] - PHOTO.on[0])), 1 - smoother((w.t - PHOTO.off[0]) / (PHOTO.off[1] - PHOTO.off[0])));
-    drift = w.t;
+    drift = smoother((w.t - PHOTO.on[1]) / (PHOTO.off[0] - PHOTO.on[1]));   // the photo only drifts between the two wipes
   }
   drawPhoto(po, drift);
 
@@ -421,6 +451,9 @@ function frame(now) {
       if (fly.t >= 1) fly = null;
     }
     controls.update(dt);
+    stage.focusPoint.copy(controls.target);
+    const want = !card.hidden && innerWidth >= 768 ? 0.11 : 0;
+    if (Math.abs(want - stage.freeShift) > 0.0005) { stage.freeShift += (want - stage.freeShift) * (still || reduce ? 1 : Math.min(1, dt * 6)); moved += 1; }
     if (turned || fly) moved += 1;   // only draw a new frame when the view actually changed
     turned = false;
   } else {
@@ -435,9 +468,10 @@ function frame(now) {
     if (po < 0.999) stage.render();
     // drop to the lighter setting if this machine cannot keep up
     if (!forceQ && ready && dt > 0 && counted < 90) { counted++; if (dt > 0.034) slow++; if (counted === 90 && slow > 50) { stage.setQuality('fast'); needs = 2; } }
-    const c = stage.bg;
-    setTone(po > 0.5 ? 'dark' : stage.tone, cur.blue > 0.5 ? '#14100E' : `rgb(${Math.round(c.r * 255)}, ${Math.round(c.g * 255)}, ${Math.round(c.b * 255)})`);
-    drawTags(exploring ? 0 : clamp01((cur.explode - 0.5) / 0.4) * cur.blue);
+    const c = stage.low;   // the backdrop at eye level, which is what sits behind the words
+    const blueprint = cur.blue * (1 - clamp01((cur.bw - 0.45) * 8));
+    setTone(po > 0.5 ? 'dark' : stage.tone, blueprint > 0.5 ? '#14100E' : '#' + c.getHexString());
+    drawTags(exploring ? 0 : clamp01((cur.explode - 0.55) / 0.35) * cur.blue * (1 - clamp01(cur.bw * 6)));
     if (exploring) drawPins();
   }
   if (!ready) {

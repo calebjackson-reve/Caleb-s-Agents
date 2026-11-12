@@ -1,11 +1,12 @@
-// The site model: an ivory base with the land laid out from the aerial footage. The walk and drive, the beds,
+// The site model: ivory ground with the land laid out from the aerial footage. The walk and drive, the beds,
 // the pool terrace behind, the barn, the pond with its gazebo and a few oaks. Everything is quiet in tone so the house leads.
+// The ground has no edge: it runs far past any camera and dissolves into the backdrop (see fadeOut in materials.js).
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Bin, box, roof, prismX, rng } from './kit.js';
+import { glowTexture } from './materials.js';
 import { D } from './house.js';
 
-export const BASE = { x0: -64, x1: 64, z0: -112, z1: 38, depth: 2.4 };
 
 function instanced(geom, mat, items, cast = true) {
   const mesh = new THREE.InstancedMesh(geom, mat, items.length);
@@ -25,11 +26,9 @@ export function buildGrounds(M) {
   const r = rng(21);
   const H = D.half;
 
-  // the base the whole model stands on
-  const top = new THREE.Mesh(new THREE.PlaneGeometry(BASE.x1 - BASE.x0, BASE.z1 - BASE.z0), M.base);
-  top.rotation.x = -Math.PI / 2; top.position.set((BASE.x0 + BASE.x1) / 2, 0, (BASE.z0 + BASE.z1) / 2); top.receiveShadow = true; g.add(top);
-  const sides = new THREE.Mesh(new THREE.BoxGeometry(BASE.x1 - BASE.x0, BASE.depth, BASE.z1 - BASE.z0), M.baseEdge);
-  sides.position.set((BASE.x0 + BASE.x1) / 2, -BASE.depth / 2 - 0.004, (BASE.z0 + BASE.z1) / 2); sides.receiveShadow = true; g.add(sides);
+  // the ground
+  const top = new THREE.Mesh(new THREE.CircleGeometry(520, 96), M.base);
+  top.rotation.x = -Math.PI / 2; top.position.set(0, 0, -20); top.receiveShadow = true; g.add(top);
 
   const b = new Bin();
   // beds along the front and the right side
@@ -40,7 +39,7 @@ export function buildGrounds(M) {
   b.add(M.concrete, box(-1.3, 1.3, 0, 0.04, D.porchD + 0.96, 8.2));
   b.add(M.concrete, box(-25, -1.3, 0, 0.04, 6.9, 8.2));
   b.add(M.concrete, box(-25, -H, 0, 0.05, D.garageBack - 1.5, -8.5));
-  b.add(M.concrete, box(-25, -18.5, 0, 0.045, -8.5, BASE.z1));
+  b.add(M.concrete, box(-23.4, -20.1, 0, 0.045, -8.5, 150));
   // pool terrace, coping and loungers
   b.add(M.concrete, box(-5.1, 7.2, 0, 0.14, -27.4, -13.4));
   b.add(M.trim, box(-2.55, 3.15, 0.14, 0.2, -25.85, -15.15));
@@ -56,31 +55,40 @@ export function buildGrounds(M) {
   const water = new THREE.Mesh(new THREE.PlaneGeometry(5.3, 10.3), M.water);
   water.rotation.x = -Math.PI / 2; water.position.set(0.3, 0.215, -20.5); water.receiveShadow = true; g.add(water);
 
-  // fence round the pool yard: two rails and fine pickets
+  // fence round the pool yard. Rails and a post every eighth picket are part of every look. The fine pickets sit on
+  // their own layer so they show by day and at dusk but stay out of the line passes, where they would clog into a block.
   const rail = new Bin(), pickets = [];
   const yard = [[-5.1, -27.6], [13.2, -27.6], [13.2, -13.2], [7.4, -13.2]];
   for (let i = 0; i < yard.length - 1; i++) {
     const [x0, z0] = yard[i], [x1, z1] = yard[i + 1];
     const len = Math.hypot(x1 - x0, z1 - z0), n = Math.round(len / 0.16);
-    [0.3, 1.25].forEach((y) => rail.add(M.black, box(Math.min(x0, x1) - 0.02, Math.max(x0, x1) + 0.02, y, y + 0.035, Math.min(z0, z1) - 0.02, Math.max(z0, z1) + 0.02)));
-    for (let k = 0; k <= n; k++) pickets.push({ x: x0 + ((x1 - x0) * k) / n, y: 0.7, z: z0 + ((z1 - z0) * k) / n, sx: 1, sy: 1, sz: 1 });
+    [0.3, 1.25].forEach((y) => rail.add(M.black, box(Math.min(x0, x1) - 0.02, Math.max(x0, x1) + 0.02, y, y + 0.04, Math.min(z0, z1) - 0.02, Math.max(z0, z1) + 0.02)));
+    for (let k = 0; k <= n; k++) {
+      const x = x0 + ((x1 - x0) * k) / n, z = z0 + ((z1 - z0) * k) / n;
+      if (k % 8 === 0 || k === n) rail.add(M.black, box(x - 0.03, x + 0.03, 0, 1.36, z - 0.03, z + 0.03));
+      else pickets.push({ x, y: 0.7, z, sx: 1, sy: 1, sz: 1 });
+    }
   }
   rail.build(g, { cast: false });
-  g.add(instanced(new THREE.BoxGeometry(0.018, 1.3, 0.018), M.black, pickets, false));
+  const picketMesh = instanced(new THREE.BoxGeometry(0.018, 1.3, 0.018), M.black, pickets, false);
+  picketMesh.layers.set(1); g.add(picketMesh);
 
-  // shrubs: a clipped row along the beds, taller ones at the corners
+  // planting, as in the photos: one low clipped hedge along each bed, a few taller accents, a row of cones by the pool
   const balls = [], cones = [];
-  for (let x = 2.5; x <= H + 0.7; x += 0.78) {
-    [-1, 1].forEach((s) => {
-      const k = 0.26 + r() * 0.1;
-      balls.push({ x: s * x + (r() - 0.5) * 0.1, y: 0.05 + k * 0.8, z: 4.55 + (r() - 0.5) * 0.12, sx: k, sy: k * 0.85, sz: k, tint: 0.9 + r() * 0.18 });
-    });
-  }
-  for (let z = -9; z <= 2; z += 0.9) balls.push({ x: H + 0.75, y: 0.3, z, sx: 0.3, sy: 0.27, sz: 0.3, tint: 0.9 + r() * 0.18 });
-  [[-H - 0.55, 3.6], [H + 0.55, 3.6], [-5.6, 3.7], [5.6, 3.7], [-2.6, 3.9], [2.6, 3.9]].forEach((p, i) => {
-    const hh = i < 2 ? 1.9 : 1.15;
-    cones.push({ x: p[0], y: 0.05 + hh / 2, z: p[1], sx: hh * 0.3, sy: hh, sz: hh * 0.3, tint: 0.88 + r() * 0.16 });
+  const hedge = (x0, z0, x1, z1) => {
+    const len = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(len / 0.36);
+    for (let k = 0; k <= n; k++) {
+      const u = k / n, w = 0.4 + r() * 0.07, hh = 0.3 + 0.05 * Math.sin(u * 19 + x0) + r() * 0.04;
+      balls.push({ x: x0 + (x1 - x0) * u + (r() - 0.5) * 0.05, y: 0.05 + hh * 0.72, z: z0 + (z1 - z0) * u + (r() - 0.5) * 0.05, sx: w, sy: hh, sz: w * 0.9, tint: 0.93 + r() * 0.1 });
+    }
+  };
+  [-1, 1].forEach((s) => { hedge(s * 2.5, 4.5, s * (H + 0.6), 4.5); });
+  hedge(H + 0.8, 2.2, H + 0.8, -9);
+  // accents: a rounded shrub by each wing corner and one either side of the steps
+  [[-H - 0.6, 3.5, 0.95], [H + 0.6, 3.5, 0.95], [-2.5, 3.85, 0.62], [2.5, 3.85, 0.62]].forEach((p) => {
+    balls.push({ x: p[0], y: 0.05 + p[2] * 0.8, z: p[1], sx: p[2] * 0.72, sy: p[2], sz: p[2] * 0.72, tint: 0.9 });
   });
+  [[-6.1, 3.75], [6.1, 3.75]].forEach((p) => cones.push({ x: p[0], y: 0.05 + 0.75, z: p[1], sx: 0.42, sy: 1.5, sz: 0.42, tint: 0.92 }));
   for (let x = -4; x <= 12.5; x += 1.25) cones.push({ x, y: 0.75, z: -28.4, sx: 0.4, sy: 1.5, sz: 0.4, tint: 0.88 + r() * 0.16 });
   g.add(instanced(new THREE.SphereGeometry(1, 20, 14), M.shrub, balls));
   g.add(instanced(new THREE.ConeGeometry(1, 1, 20), M.shrub, cones));
@@ -138,7 +146,7 @@ export function buildGrounds(M) {
   };
   const trunks = [], crowns = [];
   const tree = (x, z, h, w) => {
-    trunks.push({ x, y: h * 0.3, z, sx: Math.max(0.07, w * 0.022), sy: h * 0.6, sz: Math.max(0.07, w * 0.022) });
+    trunks.push({ x, y: h * 0.3, z, sx: Math.max(0.13, w * 0.03), sy: h * 0.6, sz: Math.max(0.13, w * 0.03) });
     const n = 5 + Math.floor(r() * 2);
     for (let i = 0; i < n; i++) {
       const a = r() * 6.28, up = r();
@@ -153,13 +161,26 @@ export function buildGrounds(M) {
   g.add(instanced(new THREE.CylinderGeometry(0.8, 1.1, 1, 10), M.bark, trunks));
   g.add(instanced(lumpy(4), M.leaf, crowns));
 
-  // pool light and patio glow, switched on after dark by the stage
-  const poolLight = new THREE.PointLight(0x7fd6f0, 0, 18, 2); poolLight.position.set(0.3, 1.0, -20.5); g.add(poolLight);
-  const patioLight = new THREE.PointLight(0xffc98a, 0, 12, 2); patioLight.position.set(-0.3, 2.8, -11.8); g.add(patioLight);
+  // After dark. The patio light is a downward cone under its roof, so it lights the slab and the wall and nothing above it.
+  // The ground is the backdrop itself, so the light that would pool on it is laid down as soft glows.
+  const poolLight = new THREE.PointLight(0x7fd6f0, 0, 11, 2); poolLight.position.set(0.3, 0.8, -20.5); g.add(poolLight);
+  const patioLight = new THREE.SpotLight(0xffc98a, 0, 9, 1.05, 0.7, 2); patioLight.position.set(-0.3, 3.0, -11.7); patioLight.target.position.set(-0.3, 0, -12.2);
+  g.add(patioLight, patioLight.target);
+  const gtex = glowTexture(), pools = [];
+  const pool = (x, z, w, d, color, strength) => {
+    const m = new THREE.MeshBasicMaterial({ map: gtex, color, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, opacity: 0, fog: false });
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(w, d), m);
+    pl.rotation.x = -Math.PI / 2; pl.position.set(x, 0.09, z); pl.layers.set(1); pl.userData.strength = strength; g.add(pl); pools.push(pl);
+  };
+  pool(0, 6.2, 26, 13, new THREE.Color(1.0, 0.62, 0.3), 0.32);        // in front of the porch
+  pool(-8.5, 5.4, 9, 6, new THREE.Color(1.0, 0.62, 0.3), 0.2); pool(8.5, 5.4, 9, 6, new THREE.Color(1.0, 0.62, 0.3), 0.2);
+  pool(0.3, -20.5, 22, 26, new THREE.Color(0.3, 0.75, 0.95), 0.3);    // round the water
+  pool(-0.3, -13.5, 14, 8, new THREE.Color(1.0, 0.62, 0.3), 0.26);    // off the patio
   function setNight(d) {
-    M.water.emissiveIntensity = d * 1.5;
-    poolLight.intensity = d * 40; poolLight.visible = d > 0.01;
-    patioLight.intensity = d * 30; patioLight.visible = d > 0.01;
+    M.water.emissiveIntensity = d * 0.55;
+    poolLight.intensity = d * 14; poolLight.visible = d > 0.01;
+    patioLight.intensity = d * 60; patioLight.visible = d > 0.01;
+    pools.forEach((pl) => { pl.material.opacity = d * pl.userData.strength; pl.visible = d > 0.01; });
   }
   setNight(0);
 

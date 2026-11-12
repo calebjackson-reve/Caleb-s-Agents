@@ -116,7 +116,8 @@ export function makeMaterials(palette = 'paper') {
     black: std({ color: 0x242224, roughness: 0.5, metalness: 0.3 }),
     paver: std({ map: T.paver, roughness: 0.92 }),
     concrete: std({ color: 0xfaf7f1, roughness: 0.95 }),
-    base: std({ color: 0xfaf6ee, roughness: 0.98 }),
+    // the ground is the page itself: it shows the backdrop colour exactly and only ever darkens where a shadow falls
+    base: new THREE.ShadowMaterial({ color: 0x4a3f34, opacity: 0.24 }),
     baseEdge: std({ color: 0xefe8dc, roughness: 0.9 }),
     mulch: std({ color: 0xcdc3b3, roughness: 1 }),
     gravel: std({ color: 0xe4ddd0, roughness: 1 }),
@@ -130,6 +131,7 @@ export function makeMaterials(palette = 'paper') {
     seam: std({ map: T.seam, roughness: 0.5, metalness: 0.45, side: THREE.DoubleSide }),
     cushion: std({ color: 0xf8f5ef, roughness: 0.9 }),
     ember: std({ color: 0xe87757, roughness: 0.75 }),
+    wreath: std({ color: 0x8f4a4c, roughness: 0.95 }),
     lamp: std({ color: 0x2a2a2a, emissive: 0xffb36b, emissiveIntensity: 0, roughness: 0.4 }),
   };
   // 'paper' keeps the whole model in the tones of the drawing: ivory, warm grey, ink for the glass, ember for the wreaths.
@@ -138,22 +140,35 @@ export function makeMaterials(palette = 'paper') {
   if (palette === 'paper') {
     const set = (m, o) => { Object.assign(m, o); if (o.color !== undefined) m.color = new THREE.Color(o.color); m.needsUpdate = true; };
     set(M.brick, { color: 0xfffbf4 });
-    set(M.shingle, { map: null, bumpMap: T.shingle, bumpScale: 1.6, color: 0xcbc3b6 });
-    set(M.cedar, { map: null, bumpMap: T.cedar, bumpScale: 0.8, color: 0xd6c8b4 });
+    set(M.shingle, { map: null, bumpMap: T.shingle, bumpScale: 1.8, color: 0x8b857c });
+    set(M.cedar, { map: null, bumpMap: T.cedar, bumpScale: 0.8, color: 0xb99c7a });
     set(M.paver, { map: null, bumpMap: T.paver, bumpScale: 0.8, color: 0xddd2c4 });
     set(M.seam, { map: null, color: 0xd0cac0, metalness: 0.1 });
     set(M.shutter, { color: 0xe2e3df });
-    set(M.door, { color: 0x6a6157 });
+    set(M.door, { color: 0x5b4a3c });
     set(M.black, { color: 0x4d4843, metalness: 0.1 });
     set(M.mulch, { color: 0xe6dfd3 });
     set(M.gravel, { color: 0xeee8dd });
-    set(M.shrub, { color: 0xd6d8cb });
+    set(M.shrub, { color: 0xc9ccbb });
     set(M.leaf, { color: 0xe6e5da });
     set(M.bark, { color: 0xd3c9ba });
-    set(M.copper, { color: 0xc9a488, metalness: 0.35 });
+    set(M.copper, { color: 0xb98a6c, metalness: 0.4 });
     set(M.water, { color: 0xd2e1e0 });
     set(M.pond, { color: 0xdae2e0 });
   }
+  // Anything on the ground dissolves into the backdrop with distance from the house, so no edge of the land is ever in frame.
+  const fadeOut = (m) => {
+    const prev = m.onBeforeCompile;
+    m.onBeforeCompile = (sh, r) => {
+      if (prev) prev(sh, r);
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vFadeWp;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\n#ifdef USE_INSTANCING\nvFadeWp = (modelMatrix * instanceMatrix * vec4(position, 1.0)).xyz;\n#else\nvFadeWp = (modelMatrix * vec4(position, 1.0)).xyz;\n#endif');
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vFadeWp;')
+        .replace('#include <fog_fragment>', '#include <fog_fragment>\n#ifdef USE_FOG\ngl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, smoothstep(58.0, 135.0, length(vFadeWp.xz - vec2(0.0, -20.0))));\n#endif');
+    };
+    m.customProgramCacheKey = () => 'fadeOut';
+  };
+  [M.concrete, M.gravel, M.mulch, M.leaf, M.bark, M.pond].forEach(fadeOut);
   return { M, T };
 }
 

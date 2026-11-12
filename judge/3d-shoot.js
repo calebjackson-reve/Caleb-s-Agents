@@ -12,12 +12,15 @@ const path = require('path');
 const [base, out] = process.argv.slice(2);
 if (!base || !out) { console.error('usage: node judge/3d-shoot.js <url> <out dir>'); process.exit(2); }
 const args = ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
+// Scroll positions inside each chapter. The two changes of light (day to dusk in sell, blueprint to model in explore)
+// are shot every 4 to 6 points so a jump would show.
 const SCENES = {
   hero: [0, 0.3, 0.5, 0.7, 0.9], form: [0.1, 0.3, 0.5, 0.7, 0.9], buy: [0.15, 0.4, 0.65, 0.9],
-  sell: [0.1, 0.3, 0.42, 0.5, 0.58, 0.75, 0.95], photo: [0.1, 0.2, 0.3, 0.5, 0.75, 0.85, 0.95],
-  build: [0.15, 0.35, 0.55, 0.75, 0.9], explore: [0.1, 0.25, 0.4],
+  sell: [0.1, 0.24, 0.3, 0.36, 0.42, 0.48, 0.54, 0.6, 0.66, 0.72, 0.8, 0.95], photo: [0.1, 0.2, 0.3, 0.5, 0.75, 0.85, 0.95],
+  build: [0.15, 0.35, 0.55, 0.75, 0.9], explore: [0.05, 0.12, 0.17, 0.22, 0.27, 0.32, 0.37, 0.42, 0.5, 0.6],
 };
-const PHONE = { hero: [0, 0.6], form: [0.5], buy: [0.5], sell: [0.3, 0.6, 0.95], photo: [0.2, 0.5, 0.9], build: [0.4, 0.75], explore: [0.4] };
+const PHONE = { hero: [0, 0.6], form: [0.5], buy: [0.5], sell: [0.3, 0.5, 0.6, 0.95], photo: [0.2, 0.5, 0.9], build: [0.4, 0.75], explore: [0.27, 0.6] };
+const EVERY = ['hero', 'form', 'buy', 'sell', 'photo', 'build', 'explore'];
 const LOOKS = ['drawing', 'day', 'dusk', 'blueprint'], VIEWS = ['front', 'porch', 'pool', 'above'];
 const report = { url: base, when: new Date().toISOString(), errors: [], failed: [], states: {} };
 
@@ -75,13 +78,20 @@ async function explore(browser, w, h, phone, dir, full) {
   const shot = async (name) => { await settle(page, 1800); await page.screenshot({ path: path.join(out, `${dir}/${name}.png`) }); report.states[`${dir}/${name}.png`] = await info(page); };
   const apart = (v) => page.evaluate((x) => { const el = document.querySelector('#apart'); el.value = x; el.dispatchEvent(new Event('input', { bubbles: true })); }, v);
   await shot('00-opening-view');
-  for (const look of (full ? LOOKS : ['day', 'dusk', 'blueprint'])) {
+  for (const look of (full ? LOOKS : ['drawing', 'day', 'dusk', 'blueprint'])) {
     await page.click(`[data-look="${look}"]`);
     await page.waitForTimeout(look === 'dusk' ? 5000 : 1500);
-    for (const view of (full ? VIEWS : ['front', 'pool'])) {
+    for (const view of (full ? VIEWS : ['front', 'porch', 'above'])) {
       await page.evaluate((v) => window.__app.viewTo(v, true), view);
       await shot(`${look}-${view}`);
     }
+  }
+  if (!full) {
+    await page.click('[data-look="day"]'); await page.waitForTimeout(1500);
+    await page.evaluate(() => window.__app.viewTo('front', true));
+    for (const v of [0.5, 1]) { await apart(v); await shot(`apart-day-${Math.round(v * 100)}`); }
+    await apart(0); await settle(page, 800);
+    try { const pins = await page.$$('.pinbtn'); await pins[1].click({ timeout: 4000 }); await shot('pin-porch-from-front'); } catch (e) { report.states['phone: porch pin not clickable'] = String(e.message).split('\n')[0]; }
   }
   if (full) {
     // take it apart, in daylight then as a blueprint
@@ -94,13 +104,23 @@ async function explore(browser, w, h, phone, dir, full) {
     }
     // dusk while taken apart: a state a visitor will reach
     await page.click('[data-look="dusk"]'); await page.waitForTimeout(2500); await apart(0.7); await shot('apart-dusk-70'); await apart(0);
-    // pins: open two photo cards
+    // pins: which ones show from each view, and every photo card opened from a view that shows it
     await page.click('[data-look="day"]'); await page.waitForTimeout(1500);
-    await page.evaluate(() => window.__app.viewTo('front', true)); await settle(page, 1200);
     const pins = await page.$$('.pinbtn');
-    for (const i of [1, 0]) { try { await pins[i].click({ timeout: 4000 }); await shot(`pin-${i}-front-view`); } catch (e) { report.states[`pin ${i} not clickable from front view`] = String(e.message).split('\n')[0]; } }
-    await page.evaluate(() => window.__app.viewTo('pool', true)); await settle(page, 1200);
-    try { await pins[2].click({ timeout: 4000 }); await shot('pin-2-pool-view'); } catch (e) { report.states['pin 2 not clickable from pool view'] = String(e.message).split('\n')[0]; }
+    const names = ['front', 'porch', 'pool', 'patio', 'garage', 'barn', 'gazebo'];
+    const from = { front: [0, 1], pool: [2, 3], above: [4, 5, 6] };
+    for (const view of Object.keys(from)) {
+      await page.evaluate((v) => window.__app.viewTo(v, true), view); await settle(page, 1500);
+      report.states[`pins shown from ${view}`] = await page.evaluate((nm) => Array.from(document.querySelectorAll('.pinbtn')).map((b, i) => (getComputedStyle(b).opacity === '1' ? nm[i] : null)).filter(Boolean), names);
+      for (const i of from[view]) {
+        try { await pins[i].click({ timeout: 4000 }); await shot(`pin-${names[i]}-from-${view}`); } catch (e) { report.states[`pin ${names[i]} not clickable from ${view}`] = String(e.message).split('\n')[0]; }
+      }
+      await page.keyboard.press('Escape'); await page.waitForTimeout(500);
+    }
+    // how far a drag can take the camera: all the way down, and all the way out
+    await page.evaluate(() => { const s = window.__stage; s.camera.position.set(-60, -30, 60); });
+    await page.mouse.move(700, 450); await page.mouse.down(); await page.mouse.move(701, 452, { steps: 2 }); await page.mouse.up();
+    await shot('orbit-limit-low');
     // close and confirm the page comes back
     await page.keyboard.press('Escape'); await page.waitForTimeout(600); await page.keyboard.press('Escape'); await page.waitForTimeout(2500);
     await page.screenshot({ path: path.join(out, `${dir}/zz-after-close.png`) });
@@ -117,17 +137,33 @@ async function explore(browser, w, h, phone, dir, full) {
   await explore(browser, 1440, 900, false, 'explore', true);
   await explore(browser, 390, 844, true, 'explore-phone', false);
 
-  // fallbacks
+  // fallbacks: every chapter with WebGL off, and every chapter with the reduced motion setting on
   fs.mkdirSync(path.join(out, 'fallback'), { recursive: true });
-  { const { ctx, page } = await open(browser, 1440, 900, false, '&nowebgl=1'); await page.screenshot({ path: path.join(out, 'fallback/no-webgl-hero.png') });
-    await page.evaluate(() => { const el = document.querySelector('[data-scene="buy"]'); const r = el.getBoundingClientRect(); window.scrollTo(0, r.top + scrollY + r.height * 0.5); }); await page.waitForTimeout(1800);
-    await page.screenshot({ path: path.join(out, 'fallback/no-webgl-buy.png') }); await ctx.close(); }
+  const at = (page, nm, tt) => page.evaluate(([n2, t2]) => { const el = document.querySelector(`[data-scene="${n2}"]`); const r = el.getBoundingClientRect(); window.scrollTo(0, r.top + scrollY + r.height * t2); }, [nm, tt]);
+  { const { ctx, page } = await open(browser, 1440, 900, false, '&nowebgl=1');
+    for (const nm of EVERY) { await at(page, nm, nm === 'hero' ? 0 : nm === 'explore' ? 0.6 : 0.5); await page.waitForTimeout(1700); await page.screenshot({ path: path.join(out, `fallback/no-webgl-${nm}.png`) }); }
+    report.states['no webgl: explore button shown'] = await page.evaluate(() => getComputedStyle(document.querySelector('#open-viewer')).display !== 'none');
+    await ctx.close(); }
   { const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' }); const page = await ctx.newPage();
     page.on('pageerror', (e) => report.errors.push('reduced motion pageerror: ' + e.message));
     await page.goto(base + '?q=high'); await page.waitForFunction('window.__ready === true', { timeout: 120000 }); await page.waitForTimeout(3000);
-    await page.screenshot({ path: path.join(out, 'fallback/reduced-motion-hero.png') });
-    await page.evaluate(() => { const el = document.querySelector('[data-scene="sell"]'); const r = el.getBoundingClientRect(); window.scrollTo(0, r.top + scrollY + r.height * 0.95); }); await page.waitForTimeout(4000);
-    await page.screenshot({ path: path.join(out, 'fallback/reduced-motion-sell-end.png') }); await ctx.close(); }
+    for (const nm of EVERY) { await at(page, nm, nm === 'hero' ? 0 : nm === 'explore' ? 0.6 : nm === 'sell' ? 0.95 : 0.5); await page.waitForTimeout(3500); await page.screenshot({ path: path.join(out, `fallback/reduced-motion-${nm}.png`) }); }
+    await ctx.close(); }
+  // a sharper screen: four frames at pixel ratio 2
+  { fs.mkdirSync(path.join(out, 'retina'), { recursive: true });
+    const { ctx, page } = await open(browser, 1440, 900, false, '', { deviceScaleFactor: 2 });
+    for (const [nm, tt] of [['hero', 0], ['buy', 0.65], ['sell', 0.95], ['build', 0.9]]) { await at(page, nm, tt); await settle(page, 2500); await page.screenshot({ path: path.join(out, `retina/${nm}-${Math.round(tt * 100)}.png`) }); }
+    await ctx.close(); }
+  // the drone film: two frames a second and a half apart, to show it plays
+  { fs.mkdirSync(path.join(out, 'film'), { recursive: true });
+    const { ctx, page } = await open(browser, 1440, 900, false);
+    await page.evaluate(() => { const el = document.querySelector('.film'); window.scrollTo(0, el.getBoundingClientRect().top + scrollY); });
+    await page.waitForTimeout(2500); await page.screenshot({ path: path.join(out, 'film/a.png') });
+    const t1 = await page.evaluate(() => document.querySelector('.film video').currentTime);
+    await page.waitForTimeout(1500); await page.screenshot({ path: path.join(out, 'film/b.png') });
+    const t2 = await page.evaluate(() => document.querySelector('.film video').currentTime);
+    report.states['drone film seconds played between the two film shots'] = +(t2 - t1).toFixed(2);
+    await ctx.close(); }
 
   // what the browser can tell us about weight and the renderer
   { const { ctx, page } = await open(browser, 1440, 900, false);
