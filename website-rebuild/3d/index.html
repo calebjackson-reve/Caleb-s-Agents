@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Prototype for Caleb's review. Stays out of search until he approves it for launch. -->
+<meta name="robots" content="noindex,nofollow">
+<title>For builders: see it before it's built. Caleb Jackson, REALTOR, Keller Williams First Choice</title>
+<meta name="description" content="For builders and new construction across Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas. Caleb Jackson with Keller Williams First Choice turns a plan into a house buyers can walk around, prices it against real comps and launches it.">
+<meta name="theme-color" content="#FBF8F3">
+<link rel="icon" href="../media/brand/aj-monogram.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/instrument-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/instrument-serif-latin-400-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/page.css">
+<script type="importmap">{"imports":{"three":"./vendor/three/three.module.min.js","three/addons/":"./vendor/three/addons/","lenis":"./vendor/lenis/lenis.mjs"}}</script>
+</head>
+<body data-tone="light" class="is-loading">
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="loader-mark">caleb jackson<span class="dot">.</span></div>
+  <div class="loader-line"><i></i></div>
+</div>
+
+<header class="header" id="header">
+  <a class="wordmark" href="#top" aria-label="Caleb Jackson, Keller Williams First Choice"><span>caleb jackson<span class="dot">.</span></span><small>Keller Williams First Choice</small></a>
+  <nav class="nav" aria-label="Main">
+    <a href="#form">The plan</a>
+    <a href="#buy">The price</a>
+    <a href="#sell">The launch</a>
+    <a href="#explore">The house</a>
+    <a href="../site/communities.html">Communities</a>
+  </nav>
+  <a class="pill" href="sms:+12257470303?&body=Hey%20Caleb%2C%20"><span>Call or text</span><b>(225) 747-0303</b></a>
+</header>
+
+<!-- The 3D stage sits behind the story and is driven by scroll. Everything it shows is also said in the text. -->
+<div class="stage" id="stage" aria-hidden="true">
+  <canvas id="canvas"></canvas>
+  <img class="stage-still" src="assets/img/basil-elevation.webp" alt="" width="1440" height="811">
+</div>
+<div class="photo" id="photo" aria-hidden="true"><img src="../media/listing-basil-ln/basil-front-night.webp" alt="" width="1672" height="941"></div>
+<div class="photo-line" id="photo-line" aria-hidden="true"></div>
+<div class="labels" id="labels" aria-hidden="true"></div>
+
+<nav class="rail" id="rail" aria-label="Chapters">
+  <a href="#top" data-for="hero"><i></i><span>The line</span></a>
+  <a href="#form" data-for="form"><i></i><span>The plan</span></a>
+  <a href="#buy" data-for="buy"><i></i><span>The price</span></a>
+  <a href="#sell" data-for="sell"><i></i><span>The launch</span></a>
+  <a href="#build" data-for="build"><i></i><span>The parts</span></a>
+  <a href="#explore" data-for="explore"><i></i><span>The house</span></a>
+</nav>
+
+<main id="main">
+<div class="journey" id="journey">
+
+  <section class="scene scene-hero" id="top" data-scene="hero" style="--len:1.5" aria-label="Welcome">
+    <div class="pin">
+      <div class="hero-copy copy" data-on="0 0.4">
+        <p class="label rise">For builders and new construction <span class="sep"></span> Keller Williams First Choice</p>
+        <h1>
+          <span class="h-italic line"><span>See it before</span></span>
+          <span class="h-italic line"><span>it's built.</span></span>
+          <span class="h-caps line"><span>So your buyers can too</span></span>
+        </h1>
+        <p class="lead rise">Hand me the plan. I'll hand buyers a house they can walk around.</p>
+      </div>
+      <div class="sheet copy" data-on="0 0.4">
+        <div class="rise"><span class="label">Sheet A-01</span><span>Front elevation</span></div>
+        <div class="rise"><span class="label">Subject</span><span>Basil Lane, St. Francisville. Sold.</span></div>
+        <div class="rise"><span class="label">Note</span><span>A 3D study built from the listing photos to show the method. Not a floor plan, not to scale.</span></div>
+      </div>
+      <div class="cue copy" data-on="0 0.2"><span class="rise">Scroll to build it</span><i></i></div>
+      <div class="copy side left" data-on="0.5 1.01">
+        <p class="label rise">Sheet A-01, turning</p>
+        <h2 class="h-statement"><span class="line"><span>A drawing shows</span></span><span class="line"><span><em>one side.</em></span></span></h2>
+        <p class="body rise">Keep scrolling. The same lines turn in space and become the whole house.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene scene-form" id="form" data-scene="form" style="--len:1.9" aria-label="From drawing to house">
+    <div class="pin">
+      <div class="copy side left" data-on="0.06 0.97">
+        <p class="label rise">From plan to porch</p>
+        <h2 class="h-statement"><span class="line"><span>A plan is hard</span></span><span class="line"><span>to fall for.</span></span><span class="line"><span><em>A house isn't.</em></span></span></h2>
+        <p class="body rise">Most buyers can't read a blueprint. So I turn your plan into a house they can turn, walk up to and see at dusk, before the slab is poured. Baton Rouge, Zachary, St. Francisville, New Roads and the Felicianas.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene scene-buy" id="buy" data-scene="buy" style="--len:1.9" aria-label="Buying">
+    <div class="pin">
+      <div class="copy side left" data-on="0.05 0.97">
+        <p class="label rise"><b>01</b> Price it</p>
+        <h2 class="h-statement"><span class="line"><span>Priced before</span></span><span class="line"><span><em>it's poured.</em></span></span></h2>
+        <p class="body rise">Before you commit to a plan, I'll show you what buyers here are paying for and what they're paying for it. Real comps, area by area, so the plan fits the price point.</p>
+        <p class="rise"><a class="btn" href="sms:+12257470303?&body=Hey%20Caleb%2C%20I%27m%20a%20builder.%20Can%20we%20talk%20through%20a%20project%3F"><span>Talk through a build</span><i>&rarr;</i></a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene scene-sell" id="sell" data-scene="sell" style="--len:2.7" aria-label="Selling">
+    <div class="pin">
+      <!-- the headline reads by day, the light falls with nothing over it, then the rest reads after dark -->
+      <div class="copy side left" data-on="0.03 0.19" data-on-phone="0.03 0.31">
+        <p class="label rise"><b>02</b> Show it</p>
+        <h2 class="h-statement"><span class="line"><span>Launched like it's</span></span><span class="line"><span><em>already standing.</em></span></span></h2>
+      </div>
+      <div class="copy side left" data-on="0.43 0.63" data-on-phone="0.31 0.63">
+        <p class="label rise"><b>02</b> Show it</p>
+        <p class="body rise">Twilight views and a launch week, made from the model while the framing is still going up. Then real photos, drone and film the day it's done.</p>
+        <p class="rise"><a class="btn" href="../site/sell.html"><span>How I launch a home</span><i>&rarr;</i></a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene scene-photo" data-scene="photo" style="--len:1.7" aria-label="The real house">
+    <div class="pin">
+      <div class="copy photo-copy" data-on="0.3 0.86">
+        <p class="label rise">And when it's built</p>
+        <h2 class="h-statement"><span class="line"><span>This is <em>the real one.</em></span></span></h2>
+        <p class="body rise">Basil Lane, St. Francisville. Sold.<br><span class="dim">Photo from the listing. Keller Williams First Choice.</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene scene-build" id="build" data-scene="build" style="--len:2.4" aria-label="For builders">
+    <div class="pin">
+      <div class="copy side left" data-on="0.3 0.92">
+        <p class="label rise"><b>03</b> Know it</p>
+        <h2 class="h-statement"><span class="line"><span>Every part,</span></span><span class="line"><span><em>named.</em></span></span></h2>
+        <p class="body rise"><span class="wide-only">Buyers ask what the roof is, what the posts are, what's brick and what isn't. The model answers before they ask. </span>I'm not an architect. I'm the agent who makes your architect's work easy to buy.</p>
+        <ol class="legend rise"><li>Twin dormers</li><li>Gabled wings</li><li>Copper-toned hip caps</li><li>Hipped porch roof</li><li>Painted brick</li><li>Brick porch and steps</li><li>Six cedar posts</li></ol>
+        <p class="body small rise">I sold a 32-unit property in St. Francisville.</p>
+        <p class="rise"><a class="btn" href="sms:+12257470303?&body=Hey%20Caleb%2C%20I%27m%20a%20builder.%20Can%20we%20talk%20through%20a%20project%3F"><span>Talk through a build</span><i>&rarr;</i></a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene scene-explore" id="explore" data-scene="explore" style="--len:3" aria-label="Explore the house">
+    <div class="pin">
+      <div class="copy explore-copy" data-on="0.44 1.01" data-on-phone="0.06 1.01">
+        <p class="label rise">Your buyer's turn</p>
+        <h2 class="h-statement"><span class="line"><span>Now hand them</span></span><span class="line"><span><em>the house.</em></span></span></h2>
+        <p class="body rise needs-3d">Turn it. Switch between the drawing, daylight, dusk and the blueprint. Take it apart and put it back. This is what a buyer gets on their phone.</p>
+        <p class="body rise only-no3d">This browser can't draw the 3D model. The photos just below are the real house.</p>
+        <p class="rise"><button class="btn solid" type="button" id="open-viewer"><span>Explore Basil Lane</span><i>&rarr;</i></button></p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<section class="inside" data-surface="light" aria-label="Inside Basil Lane">
+  <div class="wrap inside-head">
+    <p class="label reveal">Real photos from the listing</p>
+    <h2 class="h-statement reveal">Then the photos <em>take over.</em></h2>
+    <p class="body reveal">Once a house is standing, it gets shot the way Basil Lane was. St. Francisville. Sold. Every image below is a photograph from the listing.</p>
+  </div>
+  <div class="strip" id="strip" tabindex="0" aria-label="Photo gallery, scroll sideways">
+    <figure><img src="../media/listing-basil-ln/basil-kitchen.webp" alt="Kitchen with a long island and exposed beams" loading="lazy" width="1672" height="941"><figcaption>Kitchen</figcaption></figure>
+    <figure><img src="../media/listing-basil-ln/basil-livingroom.webp" alt="Living room with a brick fireplace" loading="lazy" width="1672" height="941"><figcaption>Living room</figcaption></figure>
+    <figure><img src="../media/listing-basil-ln/basil-master.webp" alt="Primary bedroom" loading="lazy" width="1672" height="941"><figcaption>Primary bedroom</figcaption></figure>
+    <figure><img src="../media/listing-basil-ln/basil-bath.webp" alt="Bath with a freestanding tub behind arched doors" loading="lazy" width="1672" height="941"><figcaption>Primary bath</figcaption></figure>
+    <figure><img src="../media/listing-basil-ln/basil-office.webp" alt="Office in deep blue" loading="lazy" width="1672" height="941"><figcaption>Office</figcaption></figure>
+    <figure><img src="../media/listing-basil-ln/basil-patio.webp" alt="Covered patio with an outdoor kitchen" loading="lazy" width="1672" height="941"><figcaption>Back patio</figcaption></figure>
+    <figure><img src="../media/listing-basil-ln/basil-pool-night.webp" alt="Pool at dusk with the house lit behind it" loading="lazy" width="1672" height="941"><figcaption>Pool at dusk</figcaption></figure>
+    <figure><img src="../media/listing-basil-ln/basil-gazebo.webp" alt="Gazebo on the pond" loading="lazy" width="1672" height="941"><figcaption>Gazebo on the pond</figcaption></figure>
+  </div>
+</section>
+
+<section class="receipts" data-surface="light" aria-label="Production">
+  <div class="wrap receipts-grid">
+    <h2 class="h-statement reveal">The work, <em>in numbers.</em></h2>
+    <div class="stat reveal"><b data-count="81">81</b><span class="label">Closed deals since 2022</span><small>Production records, as of October 7, 2026</small></div>
+    <div class="stat reveal"><b data-count="25.1" data-prefix="$" data-suffix="M">$25.1M</b><span class="label">Closed volume since 2022</span><small>Production records, as of October 7, 2026</small></div>
+    <div class="stat reveal"><b data-count="8">8</b><span class="label">Areas, block by block</span><small>Brand package, July 2026</small></div>
+  </div>
+  <div class="wrap ways">
+    <div class="way reveal"><span class="label">01</span><h3>Send the plan</h3><p>Elevations and a floor plan with dimensions. A PDF or a clear photo works.</p></div>
+    <div class="way reveal"><span class="label">02</span><h3>See the model</h3><p>The house in 3D, and the plan priced against real comps.</p></div>
+    <a class="way reveal" href="sms:+12257470303?&body=Hey%20Caleb%2C%20I%27m%20a%20builder.%20Can%20we%20talk%20through%20a%20project%3F"><span class="label">03</span><h3>Launch it</h3><p>Start with a text. (225) 747-0303.</p><i>&rarr;</i></a>
+  </div>
+</section>
+
+<section class="film" data-surface="dark" aria-label="Closing">
+  <video muted loop playsinline preload="none" poster="../media/video/aerial-1-dusk-estate-16x9-poster.webp" data-autoplay>
+    <source src="../media/video/aerial-1-dusk-estate-16x9.webm" type="video/webm">
+    <source src="../media/video/aerial-1-dusk-estate-16x9.mp4" type="video/mp4">
+  </video>
+  <div class="film-copy">
+    <p class="label reveal">Drone footage of Basil Lane</p>
+    <h2 class="h-display reveal">When it's time to move, <em>we move.</em></h2>
+    <p class="reveal"><a class="btn light" href="sms:+12257470303?&body=Hey%20Caleb%2C%20I%27m%20thinking%20about%20making%20a%20move.%20Can%20we%20talk%3F"><span>Text Caleb</span><b>(225) 747-0303</b><i>&rarr;</i></a></p>
+  </div>
+</section>
+</main>
+
+<footer class="footer" data-surface="dark">
+  <div class="wrap footer-grid">
+    <div><b>Pages</b><a href="../site/search.html">Search</a><a href="../site/communities.html">Communities</a><a href="../site/sell.html">Sell</a><a href="../site/about.html">About</a><a href="../site/contact.html">Contact</a></div>
+    <div><b>Office</b><span>Keller Williams First Choice</span><span>17111 Commerce Centre Drive</span><span>Prairieville, LA 70769</span></div>
+    <div><b>Reach me</b><a href="tel:+12257470303">(225) 747-0303</a><a href="mailto:aire@calebjackson.org">aire@calebjackson.org</a></div>
+    <div><b>About this page</b><span>The 3D house is a computer-made study of Basil Lane, built from the listing photos. It is an illustration, not a floor plan and not to scale. The photographs and drone footage are real.</span></div>
+  </div>
+  <div class="wrap legal"><span>Caleb Jackson, REALTOR&reg;. Keller Williams First Choice. Louisiana license 995709547. Each office is independently owned and operated.</span><span>Equal Housing Opportunity.</span></div>
+  <div class="giant" aria-hidden="true">caleb jackson<span class="dot">.</span></div>
+</footer>
+
+<!-- The explore mode: the same model, handed to the visitor. -->
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Explore the Basil Lane model" hidden>
+  <div class="viewer-top">
+    <div class="viewer-title"><span class="label">3D study</span><b>Basil Lane, St. Francisville. Sold.</b></div>
+    <button class="viewer-close" type="button" id="close-viewer" aria-label="Close and go back to the page"><span>Close</span><i></i></button>
+  </div>
+  <div class="pins" id="pins"></div>
+  <aside class="card" id="card" hidden>
+    <button class="card-close" type="button" aria-label="Close photo"><i></i></button>
+    <img src="" alt="" id="card-img">
+    <div class="card-text"><span class="label">Photo from the listing</span><b id="card-title"></b><p id="card-note"></p></div>
+  </aside>
+  <p class="viewer-hint" id="viewer-hint">Drag to turn the house. Scroll or pinch to move closer.</p>
+  <div class="dock">
+    <div class="seg" role="group" aria-label="Look">
+      <button type="button" data-look="drawing">Drawing</button>
+      <button type="button" data-look="day" aria-pressed="true">Day</button>
+      <button type="button" data-look="dusk">Dusk</button>
+      <button type="button" data-look="blueprint">Blueprint</button>
+    </div>
+    <label class="apart"><span>Take it apart</span><input type="range" id="apart" min="0" max="1" step="0.01" value="0" aria-label="Take the house apart"></label>
+    <div class="seg views" role="group" aria-label="View">
+      <button type="button" data-view="front">Front</button>
+      <button type="button" data-view="porch">Porch</button>
+      <button type="button" data-view="pool">Pool</button>
+      <button type="button" data-view="above">Above</button>
+    </div>
+  </div>
+</div>
+
+<noscript><style>
+.loader{display:none}.stage canvas{display:none}.stage-still{opacity:.35!important}
+.scene{height:auto!important}.pin{position:relative!important;inset:auto!important;padding:10rem 0}
+.copy{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;margin:0 var(--gutter) 6rem;width:auto!important}
+.copy .rise,.copy .line>span,.reveal{opacity:1!important;transform:none!important}.cue,.rail,#open-viewer{display:none!important}
+</style></noscript>
+<script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

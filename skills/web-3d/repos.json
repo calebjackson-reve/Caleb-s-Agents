@@ -1,0 +1,182 @@
+{
+  "checked": "2026-11-12",
+  "source": "GitHub search API, star counts as of 2026-11-12",
+  "repos": [
+    {
+      "name": "dioramas",
+      "repo": "blendi-remade/dioramas",
+      "sha": "868539fb5b64a843071a2247d5d8bacb706a07b1",
+      "group": "recommended",
+      "stars": 904,
+      "size": "334M",
+      "license": "MIT code, CC BY 4.0 assets (credit required)",
+      "use": "Framework for cinematic interactive 3D websites with AI-generated models and images.",
+      "read_first": ["README.md", "ASSET-LICENSES.md"]
+    },
+    {
+      "name": "open-3d-skills",
+      "repo": "Moh4696/open-3d-skills",
+      "sha": "53beb899e77f65d50160a3765f36f5ddb8b3c19b",
+      "group": "recommended",
+      "stars": 345,
+      "size": "2.2M",
+      "license": "MIT",
+      "use": "Eight agent skills: threejs-scene, scroll-film, exploded-view, cursor-rig, alpha-cutout, motion-assets, frame-capture, site-check.",
+      "read_first": ["skills/threejs-scene/SKILL.md", "skills/scroll-film/SKILL.md", "skills/site-check/SKILL.md"]
+    },
+    {
+      "name": "threeui",
+      "repo": "MengTo/threeui",
+      "sha": "68802d5428071ada5c20db8094b1649e6bb770ed",
+      "group": "recommended",
+      "stars": 7231,
+      "size": "89M",
+      "license": "MIT, bundled fonts under SIL OFL 1.1",
+      "use": "Catalog of live interactive 3D components with full source. Copy a component as a starting point.",
+      "read_first": ["README.md", "ASSET-LICENSES.md"]
+    },
+    {
+      "name": "aura-home-tour",
+      "repo": "souranyp-stack/aura-home-tour",
+      "sha": "5bcaa8a33dfab95ebbd0575fb8123504d094a3cc",
+      "group": "recommended",
+      "stars": 2,
+      "size": "1.3M",
+      "license": "none stated, reference only, do not copy code",
+      "use": "Walkable 3D house website with Three.js, GSAP and Lenis. Closest match to a home tour.",
+      "read_first": ["README.md"]
+    },
+    {
+      "name": "taste-skill",
+      "repo": "Leonxlnx/taste-skill",
+      "sha": "f6b76575f949707b4e3c37cd86cb44b0b98643e8",
+      "group": "skills",
+      "stars": 113584,
+      "size": "41M",
+      "license": "MIT",
+      "use": "Web design skill that steers an agent away from generic AI pages. Not 3D, pairs with the 3D skills.",
+      "read_first": ["skills/taste-skill/SKILL.md"]
+    },
+    {
+      "name": "img2threejs",
+      "repo": "img2threejs/img2threejs",
+      "sha": "0c0c49bc168e648dbaf9c8c080474de0b3a941b6",
+      "group": "skills",
+      "stars": 21207,
+      "size": "5.7M",
+      "license": "Apache 2.0",
+      "use": "Rebuilds the object in a reference image as a code-only Three.js model.",
+      "read_first": ["SKILL.md"]
+    },
+    {
+      "name": "awwwards",
+      "repo": "juliobsz/skills",
+      "sha": "add880bd6ec9f5592a1482846fc0dd282c9161bc",
+      "group": "skills",
+      "stars": 1271,
+      "size": "2.1M",
+      "license": "MIT",
+      "use": "Two skills: awwwards builds a polished site from one line, jury scores a site from screenshots and measurements.",
+      "read_first": ["awwwards/SKILL.md", "jury/SKILL.md"]
+    },
+    {
+      "name": "3dviz-pro-max",
+      "repo": "viettranx/3dviz-pro-max",
+      "sha": "d077e0e68915c25be8e71d74684d3144fd1c2aca",
+      "group": "skills",
+      "stars": 1246,
+      "size": "89M",
+      "license": "MIT",
+      "use": "Skill for expressive Three.js and Blender scenes, explainers and interactive models.",
+      "read_first": ["skills/3dviz-pro-max/SKILL.md"]
+    },
+    {
+      "name": "auteur",
+      "repo": "agiwhitelist/auteur",
+      "sha": "9bca227df9877e60dc45d49783c8cbd885eccd9b",
+      "group": "skills",
+      "stars": 1044,
+      "size": "3.0M",
+      "license": "MIT",
+      "use": "Skill that directs a website like a film, with scroll-directed pages and one design system.",
+      "read_first": ["SKILL.md"]
+    },
+    {
+      "name": "canvas-ui",
+      "repo": "DavidHDev/canvas-ui",
+      "sha": "a0be3b7e1f42d0d1bafde470b6794b39f6729502",
+      "group": "skills",
+      "stars": 5398,
+      "size": "20M",
+      "license": "MIT plus Commons Clause (fine to use in a site, not to resell the library)",
+      "use": "WebGL effects that run over real HTML, for React, Vue and Svelte.",
+      "read_first": ["README.md"]
+    },
+    {
+      "name": "saltline",
+      "repo": "realcodebear/saltline-fable-5.2",
+      "sha": "09c51774cd77aad750bd2d6c42af2b1020cb668d",
+      "group": "examples",
+      "stars": 120,
+      "size": "1.4M",
+      "license": "none stated, reference only, do not copy code",
+      "use": "3D shooter demo built with Fable 5.2. Example of what one prompt can produce.",
+      "read_first": []
+    },
+    {
+      "name": "fable-html-files",
+      "repo": "MiaAI-Lab/Claude-Fable-5.2-HTML-Files",
+      "sha": "369dae7fe4102988676f07f147c4bbaefee3ff3a",
+      "group": "examples",
+      "stars": 89,
+      "size": "21M",
+      "license": "none stated, reference only, do not copy code",
+      "use": "76 visual studies with screenshots and the original prompts. Good prompt reference.",
+      "read_first": ["README.md"]
+    },
+    {
+      "name": "fps-repro",
+      "repo": "wquguru/fable52-fps-repro",
+      "sha": "a7e1df3ce32eb2bb05e23ae457fe5fe2bffab961",
+      "group": "examples",
+      "stars": 61,
+      "size": "11M",
+      "license": "MIT",
+      "use": "One-prompt 3D shooter with the prompts and cost data.",
+      "read_first": ["README.md"]
+    },
+    {
+      "name": "awesome-fable",
+      "repo": "fengyiqicoder/awesome-fable-5.2",
+      "sha": "747fc961b97e712ade294e29d9a51615cd49ae3b",
+      "group": "examples",
+      "stars": 34,
+      "size": "48M",
+      "license": "CC0",
+      "use": "List of 57 live games, 3D worlds and web pages built with Fable 5.2.",
+      "read_first": ["README.md"]
+    },
+    {
+      "name": "afterglyph",
+      "repo": "winchxyz/afterglyph",
+      "sha": "13f6b33b99bfef7ac987e2475c51573ad19c55b2",
+      "group": "examples",
+      "stars": 34,
+      "size": "8.1M",
+      "license": "MIT",
+      "use": "Turns an image or video into glyph art you can spin in 3D. One HTML file.",
+      "read_first": ["README.md"]
+    },
+    {
+      "name": "earth-whole-story",
+      "repo": "arpitpatel25/earth-whole-story",
+      "sha": "e5dd60094a3d8455c5f010074aff56a6510fae54",
+      "group": "examples",
+      "stars": 8,
+      "size": "363M",
+      "license": "MIT code, data keeps its source licences (some non-commercial)",
+      "use": "Interactive 3D globe of Earth's history built from one prompt.",
+      "read_first": ["README.md", "LICENSES.md"]
+    }
+  ]
+}
