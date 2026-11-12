@@ -325,12 +325,12 @@ let HOST = null; try { if (window.parent !== window && typeof window.parent.open
   asOf = new Date(st.feed.generated_at || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 const N = people.length;
-const relOf = p => p.type === 'deal' ? 'deal' : p.type === 'client' ? 'client' : p.type === 'recruit' ? 'recruit' : 'sphere';
+const relOf = p => p.type === 'deal' ? 'deal' : p.stage === 'past client' ? 'past client' : p.type === 'client' ? 'client' : p.type === 'recruit' ? 'recruit' : 'sphere';
 const stageOf = p => p.stage === 'showing' ? 'showing scheduled' : (['new lead', 'contacted', 'nurture', 'showing scheduled', 'under contract', 'closed', 'past client'].includes(p.stage) ? p.stage : 'none');
 people.forEach((p, i) => { p.i = i; p.rel = relOf(p); p.stg = stageOf(p); p.seed = rnd(); });
 
 const LENS = {
-  rel: [['client', 'Clients', '#E87757', '#F28A66'], ['sphere', 'Sphere', '#2A2420', '#D8CFC3'], ['recruit', 'Recruits', '#C8A27A', '#C8A27A'], ['deal', 'Live deals', '#B5371A', '#FF6A3D']],
+  rel: [['client', 'Clients', '#E87757', '#F28A66'], ['past client', 'Past clients', '#D4537E', '#D4537E'],['sphere', 'Sphere', '#2A2420', '#D8CFC3'], ['recruit', 'Recruits', '#C8A27A', '#C8A27A'], ['deal', 'Live deals', '#B5371A', '#FF6A3D']],
   stage: [['new lead', 'New lead', '#F5C518', '#F5C518'], ['contacted', 'Contacted', '#3A8FDD', '#3A8FDD'], ['nurture', 'Nurture', '#2DB87A', '#2DB87A'], ['showing scheduled', 'Showing scheduled', '#8B5CF6', '#8B5CF6'],
     ['under contract', 'Under contract', '#E04E28', '#E04E28'], ['closed', 'Closed', '#14100E', '#FBF8F3'], ['past client', 'Past client', '#D4537E', '#D4537E'], ['none', 'Another stage, or none', '#B9B2A8', '#857B72']]
 };

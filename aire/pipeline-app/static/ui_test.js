@@ -863,6 +863,24 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
     check(/const n = people\.filter\(p => inView\(p\) && \(state\.lens === 'rel' \? p\.rel : p\.stg\) === r\[0\]\)\.length/.test(m3) && counted('sphere') === 2 && counted('deal') === 1 && /off\.has\(r\[0\]\) \? off\.delete\(r\[0\]\) : off\.add\(r\[0\]\)/.test(m3) && /!off\.has\(state\.lens === 'rel' \? p\.rel : p\.stg\)/.test(m3), 'chip counts include everyone in frame, hidden or not, and each chip still toggles its layer');
     check(!/localStorage/.test(m3) && !/sessionStorage/.test(m3), 'Home Ground chips are not saved anywhere: the clients-only default applies on every load');
     check(/buildChips\(\); applyFilters\(\); computeDensity\(densTo, showTgt\)/.test(m3), 'the clients-only default is applied on load, before the first counts and density');
+    // Past clients: a Relationship chip, on by default; their roofs show on a fresh load.
+    const relSrc = (/const relOf = (p => [^\n]*?);\n/.exec(m3) || [])[1], rel = relSrc ? new Function('return ' + relSrc)() : () => '?';
+    const pc = type => rel({ type, stage: 'past client' });
+    check(pc('client') === 'past client' && pc('household') === 'past client' && pc('unknown') === 'past client' && pc('') === 'past client' && pc(undefined) === 'past client', 'Stage=past client is rel past client for Type client, household, unknown or blank');
+    check(rel({ type: 'client', stage: 'nurture' }) === 'client' && rel({ type: 'client', stage: '' }) === 'client' && rel({ type: 'recruit', stage: 'nurture' }) === 'recruit' && rel({ type: 'deal', stage: 'under contract' }) === 'deal' && rel({ type: 'household', stage: '' }) === 'sphere' && rel({ type: 'unknown', stage: 'nurture' }) === 'sphere', 'other clients stay client, recruit, deal and sphere keep their rel');
+    check(!offRel.has('past client') && !offRel.has('client') && offRel.size === 3, 'a fresh load hides sphere, recruit and deal and keeps client and past client on');
+    check(/\['past client', 'Past clients'/.test(m3) && /\['client', 'Clients'[^\n]*\['past client', 'Past clients'[^\n]*\['sphere', 'Sphere'/.test(m3), 'the Past clients chip is built beside Clients');
+    const mixed = [{ rel: rel({ type: 'client', stage: 'past client' }) }, { rel: rel({ type: 'household', stage: 'past client' }) }, { rel: 'sphere' }];
+    check(mixed.filter(q => q.rel === 'past client').length === 2 && mixed.filter(q => !offRel.has(q.rel)).length === 2, 'past client roofs are visible on load and the chip count counts everyone of that rel in frame');
+    check(/buildChips\(\); applyFilters\(\)/.test(m3) && !/localStorage/.test(m3), 'boot still calls applyFilters and chips are still not saved');
+    // The People board lists unpinned Stage=past client people from feed.people, and nobody else from there.
+    const unp = run(`(function () { const pins = new Set(((S.data.feed.map || {}).pins || []).map(p => String(p.person_id))); const ppl = Stage.people();
+      return { has: ['2901', '2902'].map(id => ppl.some(r => String(r.person_id) === id)), pinned: ['2901', '2902'].map(id => pins.has(id)),
+        household: ppl.filter(r => r.type === 'household' && String(r.stage || '').toLowerCase() !== 'past client' && !pins.has(String(r.person_id)) && !(S.data.feed.touches_due || []).some(t => String(t.person_id) === String(r.person_id))).length,
+        col: Stage.groups(ppl)['past client'].filter(r => ['2901', '2902'].includes(String(r.person_id))).length }; })()`);
+    check(unp.has[0] && unp.has[1] && !unp.pinned[0] && !unp.pinned[1] && unp.col === 2, 'unpinned Stage=past client people from feed.people show in the Past client column');
+    check(unp.household === 0, 'a household person who is not Stage=past client is not pulled in from feed.people');
+    check(/\(f\.people \|\| \[\]\)\.filter\([^\n]*past client[^\n]*!PARTNER\.has/.test(stagejs), 'the board still leaves partners out when it reads feed.people');
   }
   // The shell.
   check(/<meta name="theme-color" content="#FBF8F3">/.test(indexHtml) && /Instrument\+Serif/.test(indexHtml) && /Nunito/.test(indexHtml) && indexHtml.indexOf('href="light.css"') > indexHtml.indexOf('href="ui.css"'), 'the page reads as the light canvas and loads the two typefaces');
