@@ -729,6 +729,9 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   const lg = run('mapLegend()');
   check(SEVEN.every(s2 => lg.includes(`</i>${s2}</li>`)) && /Pins by stage/.test(lg), 'the map legend lists the seven stages');
   check(/onclick="drawFarm\(\)">Draw farm</.test(run('mapBar()')) && /onclick="mapFit\(\)">Fit</.test(run('mapBar()')), 'Draw farm and Fit stay on the map');
+  check(/onclick="map3d\(true\)">3D</.test(run('mapBar()')), 'the Map bar has a 3D button that opens the model');
+  const m3 = fs.readFileSync(path.join(dir, 'map3d.html'), 'utf8');
+  check(/src=['"]three-0.160.0.min.js['"]/.test(m3) && /fetch\('\/api\/state'/.test(m3) && !/\/api\/(send|call|draft)/.test(m3), 'the 3D map reads /api/state and starts no send, call or draft path');
   // The shell.
   check(/<meta name="theme-color" content="#FBF8F3">/.test(indexHtml) && /Instrument\+Serif/.test(indexHtml) && /Nunito/.test(indexHtml) && indexHtml.indexOf('href="light.css"') > indexHtml.indexOf('href="ui.css"'), 'the page reads as the light canvas and loads the two typefaces');
   check(/--ivory: #FBF8F3; --ink: #14100E; --hair: #F1EFEC;/.test(light), 'canvas, ink and hairline are the approved three');
