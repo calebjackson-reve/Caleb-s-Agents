@@ -229,8 +229,45 @@ def due(folder: Path, now: datetime) -> bool:
     return (now.weekday() > 0 or now.hour >= 6) and not any(v.get("week") == week_of(now.date()) for v in vs)
 
 
-def retrain(folder: Path, ev: dict, today: date) -> dict:
-    """One weekly version for both lists, saved whether or not anything changed, with why."""
+# ---------------- the weekly changelog ----------------
+
+def top_moves(rows: list[dict], wk: str, name: str = "call10") -> list[tuple] | None:
+    """(person_id, rank last time, rank now) for everyone whose place in the top ten changed since the newest earlier
+    week in the log. None when there is no earlier week to compare. People by person_id only, never by name."""
+    mine = [r for r in rows if r.get("list") == name and r.get("week")]
+    before = sorted({r["week"] for r in mine if r["week"] < wk})
+    if not before or not any(r["week"] == wk for r in mine):
+        return None
+    ranks = lambda w: {r["person_id"]: r["rank"] for r in mine if r["week"] == w and r.get("top")}
+    a, b = ranks(before[-1]), ranks(wk)
+    return sorted(((p, a.get(p), b.get(p)) for p in set(a) | set(b) if a.get(p) != b.get(p)), key=lambda m: (m[2] or 99, str(m[0])))
+
+
+def changelog_entry(prev: dict, version: dict, before_rows: dict, moves: list[tuple] | None) -> str:
+    """One dated entry, as Markdown: weights before and after, outcomes added, top ten moves, any rollback."""
+    out = [f"## {version['date']} (version {version['version']}, week of {version['week']})"]
+    for name in FEATURES:
+        old, new, info = prev[name], version["weights"][name], version["lists"][name]
+        fmt = lambda w: ", ".join(f"{k} {w[k]:g}" for k in FEATURES[name])
+        out.append(f"- {name} weights before: {fmt(old)}")
+        out.append(f"- {name} weights after: {fmt(new)}" + ("" if new != old else " (no change)"))
+        out.append(f"- {name} outcomes added since last retrain: {info['rows'] - before_rows.get(name, 0)} (answered now: {info['rows']}, with a yes: {info['yes']})")
+        if info["new_auc"] is not None and info["old_auc"] is not None and info["new_auc"] < info["old_auc"]:
+            out.append(f"- {name} rollback: new weights tested {info['new_auc']} against {info['old_auc']}, last week's weights kept")
+        else:
+            out.append(f"- {name} rollback: none")
+    if moves is None:
+        out.append("- Call these 10 changes: no earlier week in the log to compare")
+    else:
+        word = lambda p, a, b: f"{p} entered at {b}" if a is None else f"{p} left from {a}" if b is None else f"{p} {a} to {b}"
+        out.append("- Call these 10 changes (person_id): " + ("; ".join(word(*m) for m in moves) or "none"))
+    return "\n".join(out) + "\n\n"
+
+
+def retrain(folder: Path, ev: dict, today: date, changelog: Path | None = None, dry: bool = False) -> dict:
+    """One weekly version for both lists, saved whether or not anything changed, with why. It then adds one entry to
+    the changelog (folder/changelog.md, or the path given). dry writes no changelog unless a path is given. The
+    changelog never changes a weight or a rank, and an error in it is recorded on the result, never raised."""
     vs = _read(folder / "versions.json", [])
     prev = current(folder)
     ranked = {(r["list"], r["person_id"], r["day"]): r for r in _lines(folder / "ranked.jsonl")}
@@ -265,6 +302,17 @@ def retrain(folder: Path, ev: dict, today: date) -> dict:
         info["changes"] = {k: round(keep[k] - prev[name][k], 1) for k in feats if round(keep[k] - prev[name][k], 1)}
         version["weights"][name], version["lists"][name] = keep, info
     _write(folder / "versions.json", (vs + [version])[-104:])
+    try:
+        before = {k: v.get("rows", 0) for k, v in (vs[-1]["lists"] if vs else {}).items()}
+        entry = changelog_entry(prev, version, before, top_moves(_lines(folder / "ranked.jsonl"), version["week"]))
+        target = changelog or (None if dry else folder / "changelog.md")
+        if target:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with target.open("a", encoding="utf-8") as fh:
+                fh.write(entry)
+        version["changelog"] = {"entry": entry, "written": bool(target)}
+    except Exception as e:  # the retrain is done and saved: a changelog problem is noted, not raised
+        version["changelog"] = {"error": f"{type(e).__name__}: {e}"[:200], "written": False}
     return version
 
 
