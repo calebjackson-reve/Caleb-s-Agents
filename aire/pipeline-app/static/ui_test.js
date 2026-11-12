@@ -1050,6 +1050,11 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(/<dt>Equity<\/dt><dd class="pc-missing">unknown<small>no source has it<\/small>/.test(full) && /<dt>Last deal with you<\/dt><dd class="pc-missing">unknown/.test(full), 'a fact with no source reads unknown with the reason, never a number');
   check(/class="pc-score">65<\/b>/.test(full) && /Likely-seller score, of 100/.test(ft) && /Owned 8 years, bought with you 2018-05-20/.test(ft) && /Past client/.test(ft), 'the card shows the likely-seller score and its top 2 reasons');
   check(/class="pc-score">unknown<\/b>/.test(cardHTML({ ok: true, facts, known: 5, total: 8, homeowner: false, seller: null })), 'someone with no address gets no seller score, and the card says why');
+  // Last touch uses the computed value from the card payload: a later message or close beats the sheet, and "No last touch on the sheet" is not said.
+  const ltCard = cardHTML({ ok: true, facts, known: 5, total: 8, homeowner: true, seller: null, last_touch: { day: '2026-10-28', from: 'closed sale', days_ago: 1 } });
+  check(/<dt>Last touch<\/dt><dd>[^<]*Oct 28[^<]*closed sale<\/dd>/.test(ltCard) && !/No last touch on the sheet/.test(ltCard), 'the Last touch fact uses the computed last touch from the card, with where it came from', (ltCard.match(/<dt>Last touch<\/dt><dd[^]*?<\/dd>/) || [''])[0]);
+  const fut = cardHTML({ ok: true, facts, known: 5, total: 8, homeowner: true, seller: null, last_touch: { day: '2099-01-01', from: 'email', days_ago: 0 } });
+  check(!/2099|Jan 1/.test((fut.match(/<dt>Last touch<\/dt><dd[^]*?<\/dd>/) || [''])[0]), 'a computed last touch dated in the future is ignored');
   run(`delete Reach.cards[${JSON.stringify(String(who.person_id))}]`);
   check(/Reading the rest of the record/.test(run(`Person.html(${JSON.stringify(who.person_id)})`)), 'until the record arrives the card says it is reading, and shows no placeholder numbers');
 
