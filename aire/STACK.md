@@ -2,7 +2,7 @@
 
 The living record of which tool does which job. Skills read this file instead of asking Caleb. Update it when a tool changes, with the date. Newest decision wins.
 
-Last updated: 2026-11-10 (Grok bridge, one live host)
+Last updated: 2026-11-12 (Claude Code model plan: Haiku / Sonnet / Opus / Fable)
 
 ## One system (Caleb, 2026-10-19)
 Google Workspace is the only database and the only place data lives. Sheets is the database, Gmail the outbox, Calendar the schedule, Drive the files. KW Command stays because the brokerage requires it; the Mac companion reads it and the sheet mirrors it. Claude Code is the engine, this repo is where the code lives. No Supabase, no Airtable, no BoB Tools, no second database of any kind. A tool is added only if a paid subscription already covers it or nothing we pay for can do the job.
@@ -11,12 +11,15 @@ Google Workspace is the only database and the only place data lives. Sheets is t
 Trade money for time. Pick the fastest reliable option. Every tool below is "current" unless marked "watch" (not adopted yet) or "retired".
 
 ## Models
+Always pass `--model` and `--max-budget-usd` on Claude Code runs. Never omit `--model`: the current Claude Code default is Fable 5.2, which is expensive. Never put Claude Code on the Mac mini's scheduled jobs (LaunchAgents); those stay plain Python.
+
 | Job | Tool | Why | Since |
 |---|---|---|---|
-| Bulk and cheap: lead enrichment, listing data cleanup, tagging, first-pass drafts | Claude Haiku 5.5 | Cheapest fast Anthropic model, Oct 7 2026 | 2026-10-19 |
-| Everyday drafting and client copy | Claude Sonnet 5.5 | Mid tier, cache pricing dropped in October | 2026-10-19 |
-| Judgment, routing, anything Caleb reads before a client does | Claude Opus 5.5 or the Claude Code default | Top tier only where it matters | 2026-10-19 |
-| Hard drafts Caleb escalates (upset client, price talk, long silence) and phone calls | Grok bot, through the Pipeline bridge | Calling is built into Grok. Opus 5.5 is the fallback for drafts. Only on Caleb's press. | 2026-11-10 |
+| Matching, classification, log checks, small fixes, first-pass cleanup, cheap tagging and data cleanup | Claude Haiku 5.5 (`--model haiku`) | Cheapest token model that fits | 2026-11-12 |
+| Everyday Pipeline builds, UI, refactors, and draft PRs | Claude Sonnet 5.5 (`--model sonnet`) | Mid tier. Default for almost all builds | 2026-11-12 |
+| Hard architecture or a review after Sonnet already failed | Claude Opus 5.5 (`--model opus`) | Only if Sonnet failed. Atlas can also review instead | 2026-11-12 |
+| Creative work only: brainstorms, design, draft wording | Claude Fable 5.2 (`--model fable`) | Do not use Fable for ordinary builds | 2026-11-12 |
+| Hard drafts Caleb escalates (upset client, price talk, long silence) and phone calls | Grok bot, through the Pipeline bridge | Calling is built into Grok. Only on Caleb's press. | 2026-11-10 |
 | Scoring, due lists, caps, next move rules | No model, plain code | Free and repeatable. A model is called only when a rule cannot answer. | 2026-11-10 |
 | Very long documents (contracts, inspection packets, HOA docs) | Gemini 4 Argon | 1M output, intro pricing through Nov 30 2026 | watch |
 | Client-facing interactive calculators (net sheet, payment, rent vs buy) | Claude artifact, published from this repo | Interactive answers without building an app | 2026-10-19 |
