@@ -215,6 +215,102 @@ def apply_sides(feed: dict, by_person: dict) -> dict:
 
 # ---------------- The Fix list ----------------
 
+# ---------------- The one deal record ----------------
+# The CRM Deals tab's word for each Deals sheet stage, so a CRM row can carry the record's status.
+CRM_WORD = {"contract": "under_contract", "closed": "closed", "out": "lost", "appointment": "active", "offer": "offer", "other": "active"}
+RECORD_FIELDS = ("side", "close", "price", "status")
+DEAL_REASON = re.compile(r"^(Live deal|Deal on the board), .+$")
+SHEET, CRM_TAB = "AIRE Deals sheet", "CRM Deals tab"
+
+
+def records(cards: list[dict], ties: list[dict]) -> list[dict]:
+    """One record per AIRE Deals sheet row: the side, close date, price and status every screen shows. Home, the call
+    list, the contact card, Deals, the Fix list and the board all read these four from here, so no two can disagree.
+    `status` is the sheet's own word. `expired_offer` says an offer is past its deadline, and `open` is the one answer to
+    "is this deal live" (an expired offer is not). The close date is the sheet's act of sale (the cell, or the date
+    written in it)."""
+    tied = {t["key"]: t for t in ties or []}
+    out = []
+    for c in cards or []:
+        key = c.get("key") or cc.deal_key(c.get("deal"))
+        t = tied.get(key) or {}
+        expired = is_expired_offer(c)
+        stage = c.get("stage") or cc.stage_of(c.get("status"))
+        out.append({"key": key, "deal": c.get("deal"), "side": c.get("side") or "", "side_word": insight.side_word(c.get("side")),
+                    "close": cc.act_day(c), "price": c.get("price"), "status": c.get("status") or "Not set", "stage": stage, "expired_offer": expired, "open": stage in OPEN and not expired,
+                    "commission": c.get("commission"), "next": c.get("next") or "", "people": t.get("people") or [], "from": SHEET})
+    return out
+
+
+def _as_crm(rec: dict, row: dict) -> dict:
+    """A CRM Deals tab row (or a map pin, or a fact) saying what the record says. What the CRM tab had is kept in crm_said."""
+    said = {k: row.get(k) for k in ("side", "stage", "price", "expected_close") if k in row}
+    price = rec.get("price")
+    return {**row, "side": rec["side"] or row.get("side") or "", "stage": CRM_WORD.get(rec["stage"], row.get("stage") or ""),
+            "price": (str(int(price)) if float(price).is_integer() else str(price)) if price is not None else "",
+            "expected_close": rec["close"] or "", "status": rec["status"], "expired_offer": rec["expired_offer"], "open": rec["open"],
+            "next_step": rec.get("next") or row.get("next_step") or "", "record": SHEET, "crm_said": said}
+
+
+def apply_records(feed: dict, recs: list[dict]) -> dict:
+    """A copy of the feed where every CRM Deals tab row, every person's deal facts and every deal pin on a street the
+    Deals sheet has says what the record says. A CRM row with no sheet row is kept and marked as CRM only. Shown in
+    Pipeline only: nothing is written to either sheet."""
+    if not isinstance(feed, dict) or "_error" in feed:
+        return feed
+    by = {r["key"]: r for r in recs or []}
+
+    def fix(row):
+        if not isinstance(row, dict):
+            return row
+        rec = by.get(cc.deal_key(row.get("address")))
+        return _as_crm(rec, row) if rec else {**row, "record": CRM_TAB}
+
+    # The heat reason the CRM writes ("Live deal, active") names the CRM tab's stage: say the record's status instead.
+    mine: dict = {}
+    for r in sorted(recs or [], key=lambda r: 0 if r["open"] else 1):
+        if r["open"] or r["expired_offer"]:
+            for p in r["people"]:
+                mine.setdefault(str(p["person_id"]), r)
+
+    def reason(row):
+        rec = mine.get(str(row.get("person_id"))) if isinstance(row, dict) else None
+        if not rec or not isinstance(row.get("reasons"), list):
+            return row
+        say = lambda m: f"{m.group(1)}, {rec['status'].lower()}" if rec["open"] else "Offer past its deadline, not a live deal"
+        return {**row, "reasons": [DEAL_REASON.sub(say, x) if isinstance(x, str) else x for x in row["reasons"]]}
+
+    out = _remap(feed, reason) if mine else dict(feed)
+    if isinstance(feed.get("deals"), list):
+        out["deals"] = [fix(d) for d in feed["deals"]]
+    if isinstance(feed.get("facts"), dict):
+        out["facts"] = {pid: ({**fx, "deals": [fix(d) for d in fx["deals"]]} if isinstance(fx, dict) and isinstance(fx.get("deals"), list) else fx)
+                        for pid, fx in feed["facts"].items()}
+    if isinstance(out.get("map"), dict):
+        out["map"] = {**out["map"], "pins": [fix(p) if isinstance(p, dict) and p.get("kind") == "deal" else p for p in out["map"].get("pins") or []]}
+    return out
+
+
+def person_deals(recs: list[dict], feed: dict, pid: str) -> list[dict]:
+    """The deals a contact card shows for one person: every record they are tied to, then any CRM Deals tab row of
+    theirs the sheet does not have. Closed and lost deals are left out. Open deals first, soonest close first.
+    static/person.js P.deals is the same rule on the screen."""
+    pid, rows, seen = str(pid), [], {r["key"] for r in recs or []}
+    crm = (feed or {}).get("deals") or []
+    for r in recs or []:
+        if any(str(p.get("person_id")) == pid for p in r.get("people") or []) and r["stage"] not in ("closed", "out"):
+            # the CRM row on the same street keeps its own address and last event: the four record fields replace its own
+            same = [d for d in crm if cc.deal_key(d.get("address")) == r["key"]]
+            base = next((d for d in same if str(d.get("person_id")) == pid), same[0] if same else {"address": r["deal"]})
+            rows.append({**_as_crm(r, base), "person_id": pid})
+    for d in crm:
+        k = cc.deal_key(d.get("address"))
+        if str(d.get("person_id")) == pid and k not in seen and str(d.get("stage") or "") not in ("closed", "lost", "out"):
+            seen.add(k)
+            rows.append({**d, "record": CRM_TAB, "open": True, "expired_offer": False, "status": str(d.get("stage") or "").replace("_", " ")})
+    return sorted(rows, key=lambda d: (0 if d.get("open") else 1, d.get("expected_close") or "9"))
+
+
 MLS_SAYS = {"pending": "contract", "sold": "closed", "withdrawn": "out", "expired": "out", "back_on_market": "appointment", "new_listing": "appointment"}
 STAGE_WORDS = {"contract": "under contract", "closed": "closed", "out": "off the market", "appointment": "an active listing", "offer": "an offer", "other": "no status"}
 

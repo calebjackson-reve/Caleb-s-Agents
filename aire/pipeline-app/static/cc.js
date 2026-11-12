@@ -164,7 +164,10 @@
   C.sheetDeal = t => { const k = C.dealKey(t); return ((C.data && C.data.deals) || []).find(r => (r.key || C.dealKey(r.deal)) === k) || null; };
   // An offer past its deadline is not open (links.py decides, so every screen agrees). A row the Mac has not tied yet
   // falls back to its own deadline.
-  C.isExpired = r => { const t = ((C.data && C.data.ties) || []).find(x => x.key === r.key); return t ? !!t.expired_offer : r.stage === 'offer' && !!r.offer && !r.offer.superseded && C.offerExpired(r.offer); };
+  // The one deal record for a street (links.records): the side, close date, price and status every screen shows.
+  C.dealRecords = () => (C.data && C.data.deal_records) || (typeof S !== 'undefined' && S.data && S.data.deal_records) || [];
+  C.dealRecord = t => { const k = C.dealKey(t); return C.dealRecords().find(r => r.key === k) || null; };
+  C.isExpired = r => { const rec = C.dealRecords().find(x => x.key === r.key); if (rec) return !!rec.expired_offer; const t = ((C.data && C.data.ties) || []).find(x => x.key === r.key); return t ? !!t.expired_offer : r.stage === 'offer' && !!r.offer && !r.offer.superseded && C.offerExpired(r.offer); };
   C.openDeals = () => ((C.data && C.data.deals) || []).filter(r => !['closed', 'out'].includes(r.stage) && !C.isExpired(r));
   // The one lead list (cc.merge_leads, test leads already out), within the last n days counting today.
   // Same rule as cc.in_lead_window: a lead with no date is in the 14 days, never in the 7.

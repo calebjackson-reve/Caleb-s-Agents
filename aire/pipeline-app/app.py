@@ -407,6 +407,15 @@ class State:
             return self._demo_cache
         return read_json(self.paths["feed"], {})
 
+    def record_feed(self) -> dict:
+        """The feed with every deal row saying what the one deal record says (links.apply_records). Claude's answers
+        read this, so they give the same side, close date, price and status as the screens."""
+        feed = self.feed() or {}
+        try:
+            return links.apply_records(feed, self.insight().get("records") or []) if feed and "_error" not in feed else feed
+        except Exception:
+            return feed
+
     def check_messages(self) -> dict:
         try:
             p = subprocess.run(["osascript", "-e", 'tell application "Messages" to count accounts'], capture_output=True, text=True, timeout=90)
@@ -431,6 +440,7 @@ class State:
             ins = self.insight()
             fx_log = read_json(self.fix_log_path, [])
             p["ties"], p["deal_counts"], p["checkins"] = ins["ties"], ins["deal_counts"], ins["checkins"]
+            p["deal_records"] = ins["records"]
             p["fixes"] = links.with_decisions(ins["fixes"], fx_log if isinstance(fx_log, list) else [])
             p["cap_note"] = links.cap_note(p.get("goals") or {})
             gone = lambda k: (p["fresh"].get(k) or {}).get("state") == "missing"  # a read that never ran: its numbers are unknown, not 0
@@ -454,7 +464,8 @@ class State:
             cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(cc._rows(raw.get("deals"))), today(), now()), feed.get("deals") or [])
             ties = links.tie(cards, feed)
             over = links.overlay(ties, feed)
-            shown = links.apply_overlay(feed, over)  # a signed contract or a closing sets the stage Pipeline shows, never the sheet
+            recs = links.records(cards, ties)  # the one deal record: side, close date, price and status for every screen
+            shown = links.apply_records(links.apply_overlay(feed, over), recs)  # a signed contract or a closing sets the stage Pipeline shows, never the sheet
             side_of = links.sides(ties)
             sided = links.apply_sides(shown, side_of)  # call list reads the sheet's side. Book keeps `shown`, so its seller score still sees real selling talk.
             weights = learn.current(self.learn_dir)
@@ -462,7 +473,7 @@ class State:
             book = insight.Book(shown, cc.deal_rows(cc._rows(raw.get("deals"))), sales, [{**r, "origin": "email"} for r in leads], today(), weights=weights["seller"])
             self._insight = (key, {"book": book, "call10": insight.call10(sided, today(), done, weights=weights["call10"]), "sellers": book.sellers(25),
                                    "call_pool": insight.call10(sided, today(), done, n=60, weights=weights["call10"])["rows"], "seller_pool": book.sellers(200),
-                                   "ties": ties, "overlay": over, "sides": side_of, "deal_counts": links.counts(ties), "board_contract": links.board_contract(ties),
+                                   "ties": ties, "records": recs, "overlay": over, "sides": side_of, "deal_counts": links.counts(ties), "board_contract": links.board_contract(ties),
                                    "checkins": links.checkins(ties, sales, feed, today()), "fixes": links.fixes(feed, cards, ties, sales)})
         return self._insight[1] or self.insight()  # a retrain cleared it between the two lines: build it again
 
@@ -740,7 +751,7 @@ class State:
         except ImportError:
             raise CRMError("Claude answers need a package that is not installed on this Mac yet. Ask Claude to install it")
         client = anthropic.Anthropic(api_key=self.ask_key)
-        tools = jarvis.Tools(self.feed(), self.sent_today(), {"texts": self.max_texts, "emails": self.max_emails}, today().isoformat())
+        tools = jarvis.Tools(self.record_feed(), self.sent_today(), {"texts": self.max_texts, "emails": self.max_emails}, today().isoformat())
         r = self._ask_call(anthropic, lambda: jarvis.ask(client, self.ask_model, tools, question))
         if r.get("refused"):
             raise CRMError("Claude declined that one")
@@ -857,7 +868,7 @@ class State:
         try:  # a bad row in a read must never take the whole screen down
             ins = self.insight() if feed_ok else {}
             if feed_ok:
-                feed = links.apply_sides(links.apply_overlay(feed, ins["overlay"]), ins.get("sides") or {})
+                feed = links.apply_records(links.apply_sides(links.apply_overlay(feed, ins["overlay"]), ins.get("sides") or {}), ins.get("records") or [])
         except Exception as e:
             ins = {"call10": {"rows": [], "considered": 0, "left_out": {}}, "sellers": []}
             problems.append({"level": "warn", "code": "insight_failed", "text": f"The call list and seller scores could not be worked out ({type(e).__name__}). The rest of the screen is fine."})
@@ -902,6 +913,7 @@ class State:
             "sellers": ins["sellers"] if feed_ok else [],
             "has_facts": "facts" in feed,
             "deal_counts": ins.get("deal_counts"), "board_contract": ins.get("board_contract"), "checkins": ins.get("checkins") or [],
+            "deal_records": ins.get("records") or [],
             "lead_alert": {"on": self.self_alert, "last": ((read_json(self.lead_alert_path, {}) or {}).get("log") or [None])[-1]},
             "text_queue": text_q if "_error" not in text_q else {},
             "email_queue": email_q if "_error" not in email_q else {},

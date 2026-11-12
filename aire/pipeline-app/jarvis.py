@@ -214,7 +214,7 @@ class Tools:
             out.update(days_quiet=d.get("days_quiet"), owes_reply=d.get("owes_reply"), last_texts=(d.get("last_messages") or [])[-3:])
         out["tasks"] = [{"task": t.get("task"), "due": t.get("due"), "overdue": t.get("overdue")}
                         for t in self.f.get("tasks", []) if str(t.get("person_id")) == pid]
-        out["deals"] = [{k: x.get(k) for k in ("address", "side", "stage", "price", "expected_close", "next_step", "last_event")}
+        out["deals"] = [{k: x.get(k) for k in ("address", "side", "stage", "status", "expired_offer", "price", "expected_close", "next_step", "last_event")}
                         for x in self.f.get("deals", []) if str(x.get("person_id")) == pid]
         out["market_nearby"] = [{k: m.get(k) for k in ("date", "label", "address", "city", "price", "value")} | {"miles": m["nearest"].get("miles")}
                                 for m in self.f.get("market", {}).get("rows", []) if str((m.get("nearest") or {}).get("person_id")) == pid][:5]
@@ -250,8 +250,8 @@ class Tools:
                                                  "due": t.get("due"), "overdue": t.get("overdue")} for t in _clip(rows, limit, 10)]}
 
     def deals(self) -> dict:
-        return {"rows": [{k: x.get(k) for k in ("address", "display", "person_id", "side", "stage", "price", "expected_close",
-                                                "next_step", "last_event", "last_event_at")} for x in self.f.get("deals", [])]}
+        return {"rows": [{k: x.get(k) for k in ("address", "display", "person_id", "side", "stage", "status", "expired_offer", "price",
+                                                "expected_close", "next_step", "last_event", "last_event_at")} for x in self.f.get("deals", [])]}
 
     def leads(self) -> dict:
         return {"rows": [{"person_id": x.get("person_id"), "name": x.get("display"), "source": x.get("source"),

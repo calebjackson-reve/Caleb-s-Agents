@@ -150,7 +150,7 @@ function pinCard(p) {
   }
   if (p.kind === 'deal') {
     const s = p.sheet || CC.sheetDeal(p.address);
-    return `<div class="pin-card"><div class="pc-h"><span class="ico">⌂</span><div><b>${esc(s ? s.deal : p.address)}</b><small><span class="tag violet">${esc(s ? s.status : 'Only in the CRM Deals tab')}</span><span>${esc((s && s.side) || p.side || '')}</span></small></div>${x}</div>
+    return `<div class="pin-card"><div class="pc-h"><span class="ico">⌂</span><div><b>${esc(s ? s.deal : p.address)}</b><small><span class="tag violet">${esc(s ? s.status + (CC.isExpired(s) ? ', offer expired' : '') : 'Only in the CRM Deals tab')}</span><span>${esc((s && s.side) || p.side || '')}</span></small></div>${x}</div>
       <dl>${s ? `<dt>Price</dt><dd>${CC.m(s.price)}</dd><dt>Act of sale</dt><dd>${s.act ? esc(CC.day(s.act)) : 'No date on the sheet'}</dd>` : ''}<dt>Client</dt><dd>${p.display ? CC.who(p.display) : 'none'}</dd><dt>Last event</dt><dd>${CC.scrub(p.last_event || 'none', [p.display])}${p.last_event_at ? ' · ' + esc(p.last_event_at.slice(0, 10)) : ''}</dd></dl>
       <div class="acts"><button class="primary" onclick="openDeal(${jsa(p.address)})">✎ Edit deal</button>${p.person_id ? `<button onclick="openCompose(${jsa(p.person_id)})">✉ Compose</button>` : ''}</div></div>`;
   }
