@@ -1,6 +1,8 @@
-# The 3D page for calebjackson.org
+# The builders page for calebjackson.org, in 3D
 
-A scroll story built with three.js. A front elevation drawing of Basil Lane turns into an architect's model, the light goes from day to dusk, the model gives way to the real twilight photo, then it becomes a blueprint that comes apart for builders. At the end the visitor can turn the house themselves.
+"See it before it's built." A scroll story built with three.js for builders and new construction. A front elevation drawing of Basil Lane turns into a paper model, the light goes from day to dusk, the model gives way to the real twilight photo, then it becomes a blueprint that comes apart with the parts named. At the end the visitor can turn the house themselves.
+
+Caleb approved this as the builders page on November 12, 2026 ("yes for builders page"). Basil Lane is the worked example: a finished, sold home shown the way a builder's plan would be shown.
 
 Built November 12, 2026. Prototype for Caleb's review. Nothing here is published.
 
@@ -30,15 +32,15 @@ Walkthrough video and screenshots from the build session are in `verification/`.
 
 | Chapter | What the visitor sees | What it says |
 | --- | --- | --- |
-| The line | Ink elevation of Basil Lane on ivory paper | The dream is the easy part. I handle the rest |
-| The form | The drawing turns in space and fills in from the ground up behind a thin ember line | Every home starts as a line on paper |
-| 01 Buy | The camera walks up to the porch, soft focus behind | Walk up knowing the real number |
-| 02 Sell | Day turns to dusk, the windows and porch lights come on | Sold starts with how it's shown |
-| The photo | The real twilight photo rises over the model, lined up on the porch | This is the real one. Basil Lane, St. Francisville. Sold |
-| 03 Build | Blueprint lines on ink. Roofs lift, dormers lift, posts slide out, parts are named | Builders, bring me in before the slab |
-| Explore | The model back together in daylight, with a button into the explore mode | Now walk around it |
-| Inside | Eight listing photos in a sideways strip | And step inside |
-| Numbers | 81 closed deals, $25.1M, 8 areas, each with its source and date | The work, in numbers |
+| The line | Ink elevation of Basil Lane on ivory paper | See it before it's built. So your buyers can too |
+| The plan | The drawing turns in space and fills in from the ground up behind a thin ember line | A plan is hard to fall for. A house isn't |
+| 01 Price it | The camera walks up to the porch, soft focus behind | Priced before it's poured |
+| 02 Show it | Day turns to dusk, the windows and porch lights come on | Launched like it's already standing |
+| The photo | The real twilight photo rises over the model, lined up on the porch | And when it's built. This is the real one. Basil Lane, St. Francisville. Sold |
+| 03 Know it | Blueprint lines on ink. Roofs lift, dormers lift, posts slide out, parts are named | Every part, named |
+| The house | The model back together in daylight, with a button into the explore mode | Now hand them the house |
+| Photos | Eight listing photos in a sideways strip | Then the photos take over |
+| Numbers and steps | 81 closed deals, $25.1M, 8 areas, each with its source and date. Then three steps: send the plan, see the model, launch it | The work, in numbers |
 | Close | Drone footage of the estate | When it's time to move, we move |
 
 Explore mode: drag to turn, scroll or pinch to zoom, four looks (Drawing, Day, Dusk, Blueprint), a "Take it apart" slider, four set views, and seven pins that open the real listing photo for that spot.
@@ -60,22 +62,26 @@ Explore mode: drag to turn, scroll or pinch to zoom, four looks (Drawing, Day, D
 
 ## Needs Caleb's yes
 
-1. **Builder copy.** This is new. "Builders, bring me in before the slab. I'm not an architect. I'm the agent who can show you what buyers here are paying for, so the plan gets priced before it gets poured. Then I launch it the way you just saw." Confirm this is a service you want to offer in these words.
-2. **The 32-unit line.** "I sold a 32-unit property in St. Francisville." You confirmed the sale in October. It has no year on the page. Give the year, or say to leave it.
-3. **Basil Lane as "Sold".** Matches the current site copy. Confirm it is still right to show it this way with the seller's home in 3D.
-4. **Hero line.** Uses "The dream is the easy part. I handle the rest", the line already live on the rebuild.
-5. **Where this goes.** Replace the home page, sit at its own address such as `/basil-lane`, or stay a private showpiece. Nothing is wired until you pick.
+1. **The builder copy, line by line.** The page is approved as the builders page. The words are my draft. The service claims to confirm: you turn a plan into a 3D house buyers can walk around, you price a plan against real comps before it's built, and you launch new construction with twilight views, drone and film.
+2. **The 32-unit line.** "I sold a 32-unit property in St. Francisville." It has no year on the page. Give the year, or say to leave it.
+3. **Basil Lane as the example.** A sold home, shown in 3D, on a page aimed at builders. Confirm you're fine using it this way.
+4. **The address.** I'd put it at `/builders`. Nothing is wired until you say so.
+5. **The home page teaser.** A short version of the drawing turning into the model, linking here. That means editing `../site/`, which publishes on merge, so it waits for a separate yes.
+
+## Next: a real floor plan in 3D
+
+Caleb wants a real floor plan turned into a 3D layout: roof off, walls standing, rooms you can tap. It needs a plan with dimensions (a builder's plan set, an appraiser's sketch or an MLS floor plan). No plan has been supplied yet, so nothing is built. Basil Lane's inside is not modelled because its floor plan is not known.
 
 ## Compliance check (skills/ai-compliance-check), November 12, 2026
 
-Compliance: PASS, with two flags for Caleb.
+Compliance: PASS, with two flags for Caleb. Re-run on the builder copy the same day.
 
 - Identity: Caleb Jackson, REALTOR, Keller Williams First Choice, 17111 Commerce Centre Drive, Prairieville, LA 70769, license 995709547, (225) 747-0303 and aire@calebjackson.org are on the page. Equal Housing Opportunity is in the footer. No Rêve.
 - Guarantees: none on price, value or timing.
 - Fair housing: copy describes the house and the work, not people.
 - Production numbers: 81 deals and $25.1M show "Production records, as of October 7, 2026". "8 areas" shows "Brand package, July 2026".
 - Flag 1: the 32-unit line has no date. Unknown whether one past sale needs one, ask the broker or add the year.
-- Flag 2: the builder copy is a new service claim. It says "I'm not an architect" on purpose so nothing reads as design services. Needs Caleb's yes.
+- Flag 2: the builder copy is all new service claims. It says "I'm not an architect" on purpose so nothing reads as design services. Nothing promises a sale, a price or a timeline. Needs Caleb's yes on each claim.
 - Texting: text links only open the visitor's own messages app. No form, no automated texts.
 - AI disclosure: the 3D study is labeled as a computer-made illustration in the hero and the footer. Listing photos are shown as shot.
 - Sold status: Basil Lane is shown as sold with the brokerage line.
