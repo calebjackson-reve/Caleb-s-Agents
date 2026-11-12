@@ -402,11 +402,16 @@ def in_days(rows: list[dict], today: date, n: int) -> list[dict]:
 
 
 def due_in(rows: list[dict], today: date, n: int) -> list[dict]:
-    """in_days, plus any row whose Deals sheet and calendar disagree on the closing date when the calendar's date
-    falls in the window. Either date could be the real one, so the row shows under the earlier of the two."""
-    a, b = today.isoformat(), (today + timedelta(days=n)).isoformat()
-    cal = lambda r: (r.get("disagree") or {}).get("calendar") or ""
-    return sorted([r for r in rows if a <= r["day"] <= b or a <= cal(r) <= b], key=lambda r: min(r["day"], cal(r) or r["day"]))
+    """in_days, plus any act of sale whose Deals sheet and calendar days disagree when either day falls in the window.
+    Either day could be the real one, so the row is due on the earliest of its days inside the window, with that day's
+    time. The row keeps both days in 'disagree'. Paydays never use this: they stay on the sheet day."""
+    a, b, out = today.isoformat(), (today + timedelta(days=n)).isoformat(), []
+    for r in rows:
+        days = [(r["day"], r.get("time"))] + [(d["day"], d["time"]) for d in (r.get("disagree") or {}).get("days", []) if d["day"] != r["day"]]
+        hit = min([d for d in days if a <= d[0] <= b], key=lambda d: d[0], default=None)
+        if hit:
+            out.append(r if hit[0] == r["day"] else {**r, "day": hit[0], "time": hit[1]})
+    return sorted(out, key=lambda r: (r["day"], r["deal"]))
 
 
 def clock(start) -> str | None:
@@ -474,6 +479,17 @@ def merge_deals(cards: list[dict], crm_deals: list[dict]) -> tuple[list[dict], l
     return out, only
 
 
+# An act of sale on the calendar: "act of sale" or "closing", but not a closing disclosure, closing docs or a pre-closing walk.
+ACT_RE = re.compile(r"\bact of sale\b|(?<!pre-)(?<!pre )\bclosing\b(?!\s+(?:disclosure|docs?|documents?|costs?|statement|package|figures|gift))", re.I)
+
+
+def act_day(c: dict) -> str | None:
+    """The sheet's act of sale day: the cell when it is a date, else the date read from its words."""
+    if is_day(c.get("act")):
+        return c["act"]
+    return next((s["date"] for s in c.get("checklist") or [] if s.get("step") == "Act of sale" and s.get("date")), None)
+
+
 def contract_deadlines(cal: list[dict], cards: list[dict]) -> list[dict]:
     """Contract dates from the sheet (inspection, appraisal, act of sale) plus the coordinator's calendar dates.
     One row per deal per day: two events for the same deal on the same day are one deadline. When the calendar's
@@ -486,18 +502,24 @@ def contract_deadlines(cal: list[dict], cards: list[dict]) -> list[dict]:
                 rows.append({"deal": c["deal"], "key": c["key"], "day": step["date"], "whats": [step["step"]],
                              "from": {"sheet"}, "note": None, "time": step.get("time"),
                              "said": step.get("note") if step.get("from_text") else None})
+    closes: dict = {}
     for r in cal:
         k = deal_key(r["deal"])
         c = sheet.get(k)
-        act = re.search(r"act of sale|closing", r["what"] + " " + r["title"], re.I)
-        if c and act and is_day(c.get("act")) and r["day"] != c["act"]:
-            for x in rows:
-                if x["key"] == k and x["day"] == c["act"]:
-                    x["note"] = f"the calendar has act of sale on {r['day']}"
-                    x["disagree"] = {"sheet": c["act"], "calendar": r["day"], "time": None if r.get("allDay") else clock(r.get("start"))}
-            continue
+        act = ACT_RE.search(r["what"] + " " + r["title"])
+        sd = act_day(c) if c else None
+        if act and sd:
+            closes.setdefault(k, {}).setdefault(r["day"], None if r.get("allDay") else clock(r.get("start")))
+            if r["day"] != sd:
+                continue
         rows.append({"deal": c["deal"] if c else r["deal"], "key": k, "day": r["day"],
                      "whats": ["Act of sale" if act else r["what"]], "from": {"calendar"}, "note": None, "link": r.get("link")})
+    for k, days in closes.items():
+        sd, off = act_day(sheet[k]), sorted(d for d in days if d != act_day(sheet[k]))
+        for x in rows if off else []:
+            if x["key"] == k and x["day"] == sd:
+                x["note"] = f"the calendar has act of sale on {' and '.join(off)}"
+                x["disagree"] = {"sheet": sd, "calendar": off[0], "time": days[off[0]], "days": [{"day": d, "time": days[d]} for d in sorted(days)]}
     merged = {}
     for r in rows:
         m = merged.get((r["key"], r["day"]))

@@ -44,6 +44,15 @@ class Alerts(unittest.TestCase):
         self.assertEqual([(x["kind"], x["body"]) for x in a], [("lead", "Listing inquiry")])
         self.assertNotIn("Riley", json.dumps(a))  # no client names on the lock screen
 
+    def test_dates_disagree_alert_says_so_and_a_past_day_never_alerts(self):
+        import push
+        now = datetime(2026, 11, 5, 9, 0, tzinfo=cc.CENTRAL)
+        pay = {"leads": [], "problems": [], "deadlines": {"all": [
+            {"day": "2026-11-06", "key": "1 demo", "what": "Act of sale", "time": "10:30AM", "disagree": {"sheet": "2026-11-20", "calendar": "2026-11-06"}},
+            {"day": "2026-11-03", "key": "2 demo", "what": "Act of sale"}]}}
+        a = [x for x in push.new_alerts(pay, {"primed": True}, now)[0] if x["kind"] == "deadline"]
+        self.assertEqual([(x["title"], x["body"]) for x in a], [("Act of sale tomorrow at 10:30AM", "A contract deadline is due tomorrow at 10:30AM. The calendar and the Deals sheet disagree on the day")])
+
     def test_round4_a_date_read_from_words_alerts_with_its_time_and_two_on_one_day_both_alert(self):
         pay = {"leads": [], "problems": [], "deadlines": {"all": [
             {"day": "2026-11-06", "key": "1 demo", "title": "1 Demo Ln - Inspection", "what": "Inspection", "time": "11:59PM"},

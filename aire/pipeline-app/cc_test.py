@@ -306,9 +306,12 @@ class JudgeRound1(unittest.TestCase):
         dl = cc.contract_deadlines(cc.deal_deadlines(evs), cards)
         oak = [r for r in dl if r["key"] == "100 oak"]
         self.assertEqual([(r["day"], r["from"]) for r in oak], [("2026-11-20", "sheet")])  # still one row, sheet date stands
-        self.assertEqual(oak[0]["disagree"], {"sheet": "2026-11-20", "calendar": "2026-11-09", "time": "10:30AM"})
+        self.assertEqual(oak[0]["disagree"], {"sheet": "2026-11-20", "calendar": "2026-11-09", "time": "10:30AM",
+                                              "days": [{"day": "2026-11-09", "time": "10:30AM"}]})
         self.assertEqual(cc.in_days(dl, T, 6), [])  # the sheet date alone is not this week
-        self.assertEqual([r["key"] for r in cc.due_in(dl, T, 6)], ["100 oak"])  # the calendar date is, so it shows
+        # the calendar date is, so it shows, due on the calendar's day and time
+        self.assertEqual([(r["key"], r["day"], r["time"]) for r in cc.due_in(dl, T, 6)], [("100 oak", "2026-11-09", "10:30AM")])
+        self.assertEqual([r["day"] for r in cc.closings(dl, cards, T)], ["2026-11-20"])  # the payday stays on the sheet day
         self.assertEqual(cc.due_in(dl, T, 2), [])  # Nov 9 is not in the next 3 days from Nov 5
         # the sheet date in the week and the calendar date outside it: shown once, flagged
         evs = cc.cal_events([ev("100 Oak Ln - Act of sale", "2026-12-04")], self.COORD)
@@ -319,6 +322,44 @@ class JudgeRound1(unittest.TestCase):
         self.assertEqual(cc.due_in(dl, date(2026, 11, 5), 6), [])
         evs = cc.cal_events([ev("100 Oak Ln - Act of sale", "2026-11-20")], self.COORD)
         self.assertIsNone([r for r in cc.contract_deadlines(cc.deal_deadlines(evs), cards) if r["key"] == "100 oak"][0]["disagree"])
+
+    def test_dates_disagree_edges(self):
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(SHEET), T), [])
+        dls = lambda *e: cc.contract_deadlines(cc.deal_deadlines(cc.cal_events(list(e), self.COORD)), cards)
+        # two calendar closings for one deal: the one this week is not lost to the later one
+        dl = dls(ev("100 Oak Ln - Closing", "2026-11-09T10:30:00-06:00"), ev("100 Oak Ln - Act of sale", "2026-11-22"))
+        self.assertEqual([(r["day"], r["time"]) for r in cc.due_in(dl, T, 6)], [("2026-11-09", "10:30AM")])
+        self.assertEqual([d["day"] for d in cc.due_in(dl, T, 6)[0]["disagree"]["days"]], ["2026-11-09", "2026-11-22"])
+        # the calendar has the sheet's day and a stale one: flagged, and both calendar days are named
+        dl = dls(ev("100 Oak Ln - Closing", "2026-11-09"), ev("100 Oak Ln - Act of sale", "2026-11-20"))
+        oak = [r for r in dl if r["key"] == "100 oak"]
+        self.assertEqual([(r["day"], r["from"]) for r in oak], [("2026-11-20", "both")])
+        self.assertEqual([d["day"] for d in oak[0]["disagree"]["days"]], ["2026-11-09", "2026-11-20"])
+        # a sheet day that has gone by never comes back as due: the row is due on the calendar's day
+        dl = dls(ev("100 Oak Ln - Closing", "2026-12-05"))
+        late = date(2026, 11, 21)
+        self.assertEqual([r["day"] for r in cc.due_in(dl, late, 30)], ["2026-12-05"])
+        self.assertEqual(cc.due_in(dl, late, 6), [])
+        # a closing disclosure, closing docs or a pre-closing walk is not an act of sale
+        for t in ("100 Oak Ln - Closing disclosure due", "100 Oak Ln - Pre-closing walkthrough", "100 Oak Ln - Closing docs to title deadline"):
+            dl = dls(ev(t, "2026-11-09"))
+            self.assertTrue(all(not r["disagree"] for r in dl), t)
+            self.assertEqual([r["what"] for r in dl if r["day"] == "2026-11-09"], [t.split(" - ")[1]], t)
+        # sorted by the day each row is due
+        sheet = SHEET + [["700 Gum St", "Buyer", "Under Contract", "1", "1", "2026-11-07", "2026-11-10", "2026-12-20", "", ""]]
+        cards2, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(sheet), T), [])
+        dl = cc.contract_deadlines(cc.deal_deadlines(cc.cal_events([ev("100 Oak Ln - Closing", "2026-11-09")], self.COORD)), cards2)
+        self.assertEqual([r["day"] for r in cc.due_in(dl, T, 6)], ["2026-11-07", "2026-11-09", "2026-11-10"])
+
+    def test_dates_disagree_reaches_the_screen_data(self):
+        with tempfile.TemporaryDirectory() as d:
+            Path(d, "deals.json").write_text(json.dumps({"at": NOW.isoformat(), "rows": SHEET}))
+            Path(d, "calendar.json").write_text(json.dumps({"at": NOW.isoformat(), "rows": [
+                {"title": "100 Oak Ln - Closing", "start": "2026-11-09T10:30:00-06:00", "end": "2026-11-09T11:30:00-06:00", "allDay": False}]}))
+            p = cc.build(Path(d), NOW)
+        self.assertEqual([(r["deal"], r["day"], r["time"], r["disagree"]["sheet"]) for r in p["deadlines"]["d7"]], [("100 Oak Ln", "2026-11-09", "10:30AM", "2026-11-20")])
+        self.assertEqual(p["deadlines"]["d3"], [])
+        self.assertEqual([r["day"] for r in p["closings"] if r["deal"] == "100 Oak Ln"], ["2026-11-20"])
 
     def test_one_lead_list(self):
         email = [{"name": "Pat Example", "phone": "(225) 555-0101", "email": "pat@example.com", "received": "2026-11-05T08:30:00-06:00",
