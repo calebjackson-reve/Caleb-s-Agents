@@ -206,7 +206,9 @@ Other gaps (inferred): feedback taps are not used by the model. The seller list 
 
 ## 6. Weekly changelog
 
-Each Monday retrain adds one dated entry: weights before and after, outcomes added since the last retrain, rank changes in the top 10 of Call these 10 by `person_id` only (no names), and any rollback. Entries below are appended by hand until the retrain step writes them.
+Each retrain adds one dated entry: weights before and after, outcomes added since the last retrain, rank changes in the top 10 of Call these 10 by `person_id` only (no names), and any rollback (`learn.retrain`, `learn.changelog_entry`).
+
+**The live changelog is `out/learn/changelog.md` on the Mac** (the learn folder, `learn.retrain` default `folder / "changelog.md"`). `out/` is git-ignored, so the retrain never dirties the repo. This file keeps the starting entry and anything Caleb chooses to copy over. Top 10 moves compare this week's logged ranks with the newest earlier week in `ranked.jsonl`, which were ranked under last week's weights. A changelog error is recorded on the retrain result and never stops the retrain.
 
 Current live weights, read from the main checkout without changing anything: `aire/pipeline-app/out/learn/versions.json` (`learn_dir` is `OUT / "learn"` in `app.py State.__init__` when no send log folder is passed). It holds one version, 2026-11-11, with weights **equal to the hand-set defaults**. Both lists said "Not enough outcomes yet: 0 of 40 people with an answer, 0 of 5". Weights are not client data.
 
