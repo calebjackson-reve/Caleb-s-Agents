@@ -291,7 +291,7 @@ function renderNav(c) {
   const td = feed().touches_due || [];
   const cnt = { commission: [np, np > 0], deadlines: [cd ? cd.deadlines.d7.length : 0, cd && cd.deadlines.d3.length > 0], ccleads: [cd ? (cd.lead_counts || {}).d14 ?? cd.leads.length : 0, false],
     sources: [window.CC && CC.data && CC.attention ? CC.attention().length : 0, true],
-    touches: [td.length, td.some(r => r.owes_reply)], tasks: [(feed().tasks || []).length, c.tasks_overdue > 0], deals: [cd ? cd.deals.filter(r => !['closed', 'out'].includes(r.stage)).length : 0, false],
+    touches: [td.length, td.some(r => r.owes_reply)], tasks: [(feed().tasks || []).length, c.tasks_overdue > 0], deals: [cd ? CC.openDeals().length : 0, false],
     queue: [dr.length, false], sent: [(S.data.sent_today || []).filter(s => s.status === 'sent').length, false],
     hot: [heatList('hot').length, heatList('hot').some(r => r.owes_reply)], warm: [heatList('warm').length, false],
     grok: [grokOpen().length, grokOpen().some(j => j.state === 'waiting' || j.state === 'dial_card_shown')] };
@@ -544,7 +544,7 @@ function openBrief() {
   // list.
   const f = feed(), C = window.CC, cd = C && C.data, owes = owesReply(), over = (f.tasks || []).filter(t => t.overdue), dr = readyDrafts();
   const who = v => (C ? C.who(v) : esc(v)), scrub = (t, n) => (C ? C.scrub(t, n) : esc(t));
-  const deals = cd ? cd.deals.filter(x => !['closed', 'out'].includes(x.stage)) : [], leads = cd ? cd.leads : [];
+  const deals = cd ? C.openDeals() : [], leads = cd ? cd.leads : [];
   modal('Morning brief', `<div class="brief">
     <h4>FIRST</h4><ul>${owes.length ? owes.slice(0, 5).map(r => `<li>Answer <b>${who(r.display)}</b>: ${esc(C ? C.cleanMsg((r.last_messages || []).slice(-1)[0]) : '')}</li>`).join('') : '<li>Nobody is waiting on a reply.</li>'}</ul>
     <h4>OVERDUE</h4><ul>${over.length ? over.map(t => `<li>${scrub(t.task, [t.display])} · ${who(t.display || '')}</li>`).join('') : '<li>Nothing overdue.</li>'}</ul>

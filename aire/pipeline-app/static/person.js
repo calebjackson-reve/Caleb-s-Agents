@@ -13,6 +13,22 @@
   const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
   const P = window.Person = {};
 
+  // This person's deals from the one deal record (links.records, the AIRE Deals sheet): every record they are tied to,
+  // then any CRM Deals tab row of theirs the sheet does not have. The same rule as links.person_deals. The card never
+  // reads a close date, price, side or status from the CRM tab when the sheet has the deal.
+  const CRM_WORD = { contract: 'under_contract', closed: 'closed', out: 'lost', appointment: 'active', offer: 'offer', other: 'active' };
+  P.deals = function (id, f) {
+    const recs = C.dealRecords(), have = new Set(recs.map(r => r.key)), rows = (f || feed()).deals || [];
+    // The CRM row on the same street keeps its own address, last event and link. The four record fields replace its own.
+    const crmRow = r => rows.find(d => C.dealKey(d.address) === r.key && String(d.person_id) === id) || rows.find(d => C.dealKey(d.address) === r.key) || {};
+    const mine = recs.filter(r => (r.people || []).some(p => String(p.person_id) === id) && !['closed', 'out'].includes(r.stage))
+      .map(r => ({ ...crmRow(r), address: crmRow(r).address || r.deal, person_id: id, side: r.side, stage: CRM_WORD[r.stage] || r.stage, status: r.status, price: r.price, expected_close: r.close || '',
+        next_step: r.next || crmRow(r).next_step || '', expired_offer: !!r.expired_offer, open: !!r.open, record: 'AIRE Deals sheet' }));
+    const crm = rows.filter(d => String(d.person_id) === id && !have.has(C.dealKey(d.address)) && !DEAD.has(key(d.stage)))
+      .map(d => ({ ...d, open: true, expired_offer: false, record: 'CRM Deals tab' }));
+    return mine.concat(crm).sort((a, b) => (a.open ? 0 : 1) - (b.open ? 0 : 1) || String(a.expected_close || '9').localeCompare(String(b.expected_close || '9')));
+  };
+
   // Everything the feed says about one person, merged. A blank field never overwrites a filled one.
   P.get = function (id) {
     const f = feed(), same = r => String(r.person_id) === String(id), rec = {};
@@ -24,7 +40,7 @@
     put(heatList('hot').concat(heatList('warm')).find(same));
     if (!Object.keys(rec).length) return null;
     return Object.assign(rec, { person_id: String(id), new_lead: !!lead || key(rec.stage) === 'new lead', owes_reply: !!rec.owes_reply,
-      deals: (f.deals || []).filter(d => same(d) && !DEAD.has(key(d.stage))), job: grokJob(String(id)) || null });
+      deals: P.deals(String(id), f), job: grokJob(String(id)) || null });
   };
 
   // Three plain sentences from the record: what to do now, why, and when the next touch is due.
@@ -34,7 +50,7 @@
     today = today || (C.data && C.data.today) || todayISO();
     const cad = feed().cadence_days || {}, band = key(p.band), every = cad[band];
     const last = (p.last_messages || []).slice(-1)[0], said = last ? C.cleanMsg(last) : '';
-    const reasons = p.reasons || [], intent = reasons.find(r => /\b(buying|selling)\b/i.test(r)), deal = (p.deals || [])[0];
+    const reasons = p.reasons || [], intent = reasons.find(r => /\b(buying|selling)\b/i.test(r)), deal = (p.deals || []).find(d => d.open !== false), lapsed = (p.deals || []).find(d => d.expired_offer);
     // Touches due rows carry the last touch date. A map pin carries only how many days they have been quiet, so the
     // date is worked back from that. Only when both are missing does the plan say there is no last touch.
     const lastTouch = dayK(p.last_touch), quiet = lastTouch ? days(today, lastTouch) : p.days_quiet != null ? Number(p.days_quiet) : null;
@@ -48,9 +64,13 @@
       now = 'Send the first reply.';
       why = p.source || p.received ? `New lead${p.source ? ' from ' + p.source : ''}${p.received ? ', came in ' + C.day(dayK(p.received)) : ''}` : 'New lead. No source or date is on the lead';
     } else if (deal) {
-      now = deal.next_step ? `Work the deal at ${deal.address}: ${deal.next_step}` : deal.expected_close ? `Get ${deal.address} to its close on ${C.day(dayK(deal.expected_close))}.`
+      const offer = key(deal.stage) === 'offer', close = deal.expected_close ? C.day(dayK(deal.expected_close)) : '';
+      now = deal.next_step ? `Work the deal at ${deal.address}: ${deal.next_step}` : close && !offer ? `Get ${deal.address} to its close on ${close}.`
         : `Open the deal at ${deal.address}. No next step or close date is logged on it.`;
-      why = `Live deal, ${words(deal.stage)}${deal.expected_close ? ', expected close ' + C.day(dayK(deal.expected_close)) : ''}`;
+      why = `Live deal, ${words(deal.status || deal.stage).toLowerCase()}${close ? (offer ? ', act of sale if accepted ' : ', expected close ') + close : ''}`;
+    } else if (lapsed) {
+      now = `Confirm the offer at ${lapsed.address}: mark it expired on the Deals sheet, or write the new deadline in its note.`;
+      why = `The offer at ${lapsed.address} is past its deadline, so it is not a live deal`;
     } else if (key(p.temp) === 'hot' && intent) {
       now = `Reach out about it: ${lower(intent)}.`;
       why = intent;

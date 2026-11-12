@@ -978,5 +978,41 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(/activity up 2\.5, past down 2\.5/.test(l2) && /Kept the old weights/.test(l2) && /tested worse on the last 90 days/.test(l2) && /0\.61 before, 0\.58 after/.test(l2), 'a version that tested worse is shown as not used, with both test numbers and what changed');
 }
 
+// ---- One deal record: the contact card, the nav count and the open list read links.records, never the CRM tab's own
+// close date, price, side or stage. Made-up people: the CRM tab says Nov 29 and active, the Deals sheet says otherwise.
+{
+  ctx.__recs = [
+    { key: '410 heron', deal: '410 S Heron Ln', side: 'Listing', side_word: 'selling', close: '2026-11-23', price: 300000, status: 'Under Contract', stage: 'contract', expired_offer: false, open: true, next: '', people: [{ person_id: '9001', display: 'Ann Example' }, { person_id: '9003', display: 'Abe Example' }] },
+    { key: '77 egret', deal: '77 Egret Rd', side: 'Listing', side_word: 'selling', close: '2026-11-16', price: 475000, status: 'Offer', stage: 'offer', expired_offer: true, open: false, next: '', people: [{ person_id: '9002', display: 'Bea Sample' }] }];
+  ctx.__rfeed = Object.assign({}, state.feed, {
+    touches_due: [{ person_id: '9001', display: 'Ann Example', band: 'warm', stage: 'nurture' }, { person_id: '9002', display: 'Bea Sample', band: 'warm', stage: 'nurture' },
+      { person_id: '9003', display: 'Abe Example', band: 'warm', stage: 'nurture' }, { person_id: '9004', display: 'Fay Nobody', band: 'warm', stage: 'nurture' }],
+    new_leads: [],
+    deals: [{ person_id: '9001', address: '410 South Heron Lane, Zachary, LA 70791', side: 'Buyer', stage: 'active', price: '310000', expected_close: '2026-11-29', next_step: '' },
+      { person_id: '9002', address: '77 Egret Road, Saint Francisville, LA 70775', side: 'Listing', stage: 'active', price: '510000', expected_close: '', next_step: '' },
+      { person_id: '9004', address: '300 Teal Dr, New Roads, LA 70760', side: 'Buyer', stage: 'active', price: '150000', expected_close: '2026-12-20', next_step: '' }] });
+  run('S.data = Object.assign({}, __state, { feed: __rfeed, deal_records: __recs }); CC.data = Object.assign({}, __cc, { deal_records: __recs, ties: [], deals: __recs.map(r => ({ key: r.key, deal: r.deal, stage: r.stage, status: r.status, side: r.side, act: r.close, price: r.price })) })');
+  const get = id => JSON.parse(run(`JSON.stringify(Person.get('${id}'))`)), planOf = id => JSON.parse(run(`JSON.stringify(Person.plan(Person.get('${id}'), '2026-11-11'))`));
+  const a = get('9001').deals, pa = planOf('9001');
+  check(a.length === 1 && a[0].expected_close === '2026-11-23' && a[0].price === 300000 && a[0].side === 'Listing' && a[0].status === 'Under Contract' && a[0].record === 'AIRE Deals sheet',
+    'contact card: the deal comes from the one deal record, not the CRM tab row', JSON.stringify(a));
+  check(/Nov 23/.test(pa.now + pa.why) && !/Nov 29/.test(pa.now + pa.why) && /^Live deal, under contract/.test(pa.why), 'contact card: the plan names the record\'s close date (Nov 23), never the CRM tab\'s (Nov 29)', JSON.stringify(pa));
+  check(get('9003').deals.length === 1 && get('9003').deals[0].expected_close === '2026-11-23', 'contact card: everyone tied to a deal sees it, with the same date');
+  const b = get('9002').deals, pb = planOf('9002');
+  check(b.length === 1 && b[0].expired_offer && !b[0].open && b[0].price === 475000 && !/^Live deal/.test(pb.why) && /past its deadline/.test(pb.why) && /Confirm the offer at 77 Egret Road/.test(pb.now),
+    'contact card: an expired offer is not a live deal, the same as the Fix list', JSON.stringify(pb));
+  const c = get('9004').deals;
+  check(c.length === 1 && c[0].record === 'CRM Deals tab' && c[0].expected_close === '2026-12-20' && /^Live deal, active/.test(planOf('9004').why), 'contact card: a deal only in the CRM tab still shows, marked as CRM only');
+  check(run('CC.openDeals().length') === 1 && run('CC.isExpired(CC.data.deals[1])') === true && run('CC.dealRecord("77 Egret Road, Saint Francisville").price') === 475000,
+    'the open deals list and the expired check read the record');
+  for (const f of ['person.js', 'app.js', 'mapviews.js', 'voice.js', 'crm-pages.js', 'cc-pages.js', 'cc-today.js', 'fix.js', 'stage.js']) {
+    const src = fs.readFileSync(path.join(dir, f), 'utf8').split('\n').filter(l => !/^\s*\/\//.test(l) && !/function openDeal|const crmRow|const x = sh \?|m-close/.test(l)).join('\n');
+    check(!/\.filter\(\s*\w+ => !\['closed', 'out'\]\.includes\(\w+\.stage\)\)/.test(src), `${f}: open deals are counted with CC.openDeals(), so an expired offer is never counted as live`);
+  }
+  const pj = fs.readFileSync(path.join(dir, 'person.js'), 'utf8');
+  check(!/\(f\.deals \|\| \[\]\)\.filter\(d => same\(d\)/.test(pj) && /C\.dealRecords\(\)/.test(pj), 'person.js: the card no longer reads its deals straight from the CRM tab rows');
+  run('S.data = __state; CC.data = __cc;');
+}
+
 console.log(`\n${fails} failure(s)`);
 process.exit(fails ? 1 : 0);
