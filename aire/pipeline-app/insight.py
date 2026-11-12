@@ -238,8 +238,9 @@ def score_call(r: dict, deals: list[dict], today: date, weights: dict | None = N
     best = top[0] if top else (int(price) if price and price >= 50_000 else 0)
     money = next(p for floor, p in MONEY_PTS if best >= floor) if best else 0
     topic = next((label for rx, label in TOPICS if rx.search(text)), "")
-    if r.get("deal_side") and topic in ("buying", "selling"):
-        topic = r["deal_side"]  # on an open deal the sheet's Side decides. A seller who texts about a showing is still selling.
+    # On a deal that is not closed the sheet's Side decides the word shown, even when the texts guessed the other way
+    # (a seller who texts about a showing is still selling) or said nothing. Scoring still reads `topic`, so this never moves a rank.
+    label = r["deal_side"] if r.get("deal_side") and topic in ("buying", "selling", "") else topic
     talk = bool(deal) or bool(DEAL_TALK.search(text))
     new_lead = str(r.get("stage") or "").strip().lower() == "new lead" or bool(r.get("received"))  # a new lead asked for something
     intent = (TOPIC_PTS if topic or new_lead else 0) + (DEAL_PTS if talk else 0)
@@ -253,14 +254,14 @@ def score_call(r: dict, deals: list[dict], today: date, weights: dict | None = N
     money, intent, waiting, cadence = (scaled(v, k, CALL_MAX, weights) for k, v in (("money", money), ("intent", intent), ("waiting", waiting), ("cadence", cadence)))
     parts = []
     if top:
-        parts.append(f"{topic + ' ' if topic else ''}{'up to ' if top[1] else ''}{money_words(top[0])}")
-    elif topic:
-        parts.append(topic)
+        parts.append(f"{label + ' ' if label else ''}{'up to ' if top[1] else ''}{money_words(top[0])}")
+    elif label:
+        parts.append(label)
     if deal and not top:
         parts.append(f"live deal at {str(deal.get('address') or '').split(',')[0]}" + (f", {money_words(int(price))}" if price and price >= 50_000 else ""))
     elif talk and not deal:
         parts.append("deal talk")
-    if new_lead and not topic and not top:
+    if new_lead and not label and not top:
         parts.insert(0, "new lead" + (f", came in {str(r['received'])[:10]}" if r.get("received") else ""))
     if r.get("owes_reply"):
         parts.append("waiting since today" if waited == 0 else f"waiting {waited} day{'' if waited == 1 else 's'}, since {d.strftime('%b')} {d.day}" if waited else "waiting on your reply")

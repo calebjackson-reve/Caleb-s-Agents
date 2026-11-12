@@ -177,13 +177,14 @@ def apply_overlay(feed: dict, over: dict) -> dict:
 
 
 def sides(ties: list[dict]) -> dict:
-    """person_id -> "selling" or "buying", from the Side column of the Deals sheet row on each of their open deals
-    (Listing is selling, Buyer is buying). Closed deals do not count, so a past buyer who now texts about selling keeps
-    that. Someone on open deals that disagree, or whose side is Both or blank, gets nothing."""
+    """person_id -> "selling" or "buying", from the Side column of the Deals sheet row on each of their deals that are
+    not closed (Listing is selling, Buyer is buying). An expired offer still counts: the sheet still says Offer and
+    Listing. Closed deals do not, so a past buyer who now texts about selling keeps that. Someone on deals that
+    disagree, or whose side is Both or blank, gets nothing."""
     out, clash = {}, set()
     for t in ties:
         word = insight.side_word(t.get("side"))
-        if not word or t["stage"] not in OPEN or t["expired_offer"]:
+        if not word or t["stage"] not in OPEN:
             continue
         for p in t["people"]:
             if out.setdefault(p["person_id"], word) != word:

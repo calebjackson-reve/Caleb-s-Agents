@@ -80,5 +80,22 @@ book = I.Book(FEED, [], [], [], TODAY)
 deal_fact = lambda pid: next(f for f in book.card(pid)["facts"] if f["key"] == "deal")["value"]
 check(deal_fact("2") == "200 S Turnberry Ave, selling, active", "contact card: Turnberry's deal reads selling, not listing: " + str(deal_fact("2")))
 
+# ---- a seller whose texts say nothing about buying or selling, and a seller on an expired offer
+QUIET = person("7", "Quin Quietseven", "700 Basil Ln", "Thanks, talk soon.", "Last contact 3 days ago, no buying or selling signal")
+EXPIRED = person("8", "Ed Expiredeight", "800 Fir St", "Is it still available? Any showing this week?", "Talked about buying 2 days ago")
+P2 = [QUIET, EXPIRED]
+CARDS2 = [card("700 Basil Ln, Town, LA", "contract", "Listing", "7"),
+          {**card("800 Fir St, Town, LA", "offer", "Listing", "8"), "offer": {"expired": True}}]
+FEED2 = {"people": P2, "touches_due": P2, "heat": {"hot": P2, "warm": []}, "new_leads": [],
+         "deals": [{"person_id": "7", "address": "700 Basil Ln", "price": 400000}, {"person_id": "8", "address": "800 Fir St", "price": 250000}]}
+ties2 = links.tie(CARDS2, FEED2)
+by2 = links.sides(ties2)
+check(ties2[1]["expired_offer"] and by2 == {"7": "selling", "8": "selling"}, "an expired offer on a Listing row is still selling, the sheet still says Listing: " + str(by2))
+rows2 = {r["person_id"]: r for r in I.call10(links.apply_sides(FEED2, by2), TODAY, set(), n=20)["rows"]}
+plain2 = {r["person_id"]: r for r in I.call10(FEED2, TODAY, set(), n=20)["rows"]}
+check(rows2["7"]["reason"].startswith("selling, live deal at 700 Basil Ln"), "call list: a Listing person with no buying or selling words in their texts still reads selling: " + rows2["7"]["reason"])
+check(rows2["8"]["reason"].startswith("selling") and plain2["8"]["reason"].startswith("buying"), "call list: the expired-offer seller reads selling, and read buying before the rule")
+check(all(rows2[k]["score"] == plain2[k]["score"] and rows2[k]["points"] == plain2[k]["points"] for k in ("7", "8")), "the label never moves a score or a rank")
+
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")
 sys.exit(1 if fails else 0)
