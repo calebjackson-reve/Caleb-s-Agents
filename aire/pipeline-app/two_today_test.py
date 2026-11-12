@@ -84,6 +84,28 @@ class PracticeRun(unittest.TestCase):
             self.assertTrue(out.exists() and "Mia Example" in out.read_text())
             self.assertFalse(any(n in p.stdout for n in ("Mia", "Jo Example", "example.handle")))
 
+    def test_the_social_folder_replaces_the_hand_filled_list_and_a_confirmed_match_is_linked(self):
+        import json, os
+        with tempfile.TemporaryDirectory() as t:
+            d = Path(t)
+            (d / "engagers-2026-11-11.json").write_text(json.dumps([
+                {"platform": "ig", "handle": "example.new.one", "action": "comment", "seen_at": "2026-11-11T10:00:00-06:00", "post_type": "just_sold", "post_ref": "https://www.instagram.com/p/EXAMPLE-SOLD-1"}]))
+            out = Path(t) / "r.md"
+            env = {**os.environ, "PIPELINE_SOCIAL_DIR": str(d)}
+            run = lambda: subprocess.run([sys.executable, str(Path(TT.__file__)), "--feed", str(EX / "people.json"), "--handles", str(EX / "handles.csv"), "--out", str(out)],
+                                         capture_output=True, text=True, env=env)
+            p = run()
+            self.assertEqual(p.returncode, 0, p.stderr)
+            self.assertIn("1 rows read from 1 social files", p.stdout)
+            self.assertIn("@example.new.one", out.read_text())              # not confirmed: unmatched, shown as not in the CRM, never a text
+            self.assertIn("Not in your CRM yet", out.read_text())
+            (d / "matches.json").write_text(json.dumps({"confirmed": [{"contact_id": "9005", "platform": "ig", "handle": "example.new.one", "confirmed_at": "2026-11-12T10:00:00-06:00"}], "rejected": []}))
+            self.assertEqual(run().returncode, 0)
+            text = out.read_text()
+            self.assertIn("Sam Example", text)
+            self.assertNotIn("Not in your CRM yet", text)
+            self.assertFalse(any(n in p.stdout for n in ("Sam", "example.")))
+
     def test_the_old_five_column_engagers_file_still_loads(self):
         old = [{"handle": "@Example.Mia.Denham", "platform": "Instagram", "action": "Comment", "date": "2026-11-10", "post": "https://www.instagram.com/p/EXAMPLE-SOLD-1/"}]
         rows = TT.social.with_post_types(old, TT.read_csv(EX / "posts.csv"))

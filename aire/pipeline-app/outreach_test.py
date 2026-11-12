@@ -151,6 +151,38 @@ class Reasons(unittest.TestCase):
                                                                     {"person_id": "1", "kind": "6 months after closing", "due": ago(-2), "days": 2}])
         self.assertEqual(O.reason_for("1", ctx), {"type": "home_anniversary", "line": f"Their home anniversary, 2 years, is on {ago(-8)}.", "date": ago(-8), "mention": True})
 
+    def test_saw_on_social_is_a_reason_from_a_fixed_set_of_words(self):
+        act = lambda action, n=2, pt="just_sold", **kw: {"day": T - timedelta(days=n), "action": action, "post_type": pt, "platform": "ig", "question": False, **kw}
+        ctx = ctx_for(person("1", name="Jordan Example"), person("2", name="Casey Example"), person("3", name="Riley Example"), person("4", name="Sam Example"))
+        ctx["social"] = {"1": [act("comment")], "2": [act("share", pt="listing", platform="fb"), act("like", 1)], "3": [act("like", i) for i in (1, 2, 3)], "4": [act("story_reply", pt="")]}
+        self.assertEqual(O.reason_for("1", ctx), {"type": "saw_on_ig", "line": "They commented on your just sold post.", "date": ago(2), "mention": True})
+        self.assertEqual(O.reason_for("2", ctx), {"type": "saw_on_fb", "line": "They shared your listing post.", "date": ago(2), "mention": True})
+        likes = O.reason_for("3", ctx)                                    # likes are a reason to reach out and never something to quote
+        self.assertEqual((likes["mention"], likes["type"]), (False, "saw_on_ig"))
+        self.assertEqual(O.reason_for("4", ctx)["line"], "They replied to your story.")
+        for r in (O.reason_for(p, ctx) for p in "1234"):
+            self.assertNotRegex(r["line"], r"Example|@|\d|example\.")
+
+    def test_social_reason_needs_a_recent_real_estate_action_and_never_a_question(self):
+        act = lambda action, n, pt="listing", **kw: {"day": T - timedelta(days=n), "action": action, "post_type": pt, "platform": "ig", "question": False, **kw}
+        ctx = ctx_for(person("1"))
+        for acts in ([act("comment", 15)], [act("comment", 3, pt="personal")], [act("like", 1), act("like", 2)], [act("comment", 1, question=True)], [act("comment", -2)]):
+            ctx["social"] = {"1": acts}
+            self.assertIsNone(O.reason_for("1", ctx))
+        ctx["social"] = {"1": [act("comment", 14)]}                       # day 14 still counts, the same window as two_today
+        self.assertEqual(O.reason_for("1", ctx)["date"], ago(14))
+
+    def test_a_social_reason_does_not_change_holds_or_the_other_reasons(self):
+        p = person("1", name="Mia Example", last_messages=[ago(45) + ": Example text: we might sell next year"])
+        ctx = ctx_for(p, heat={"warm": [{"person_id": "1", "reasons": ["Talked about selling 45 days ago"]}]})
+        before = O.hold_for("1", ctx)
+        ctx["social"] = {"1": [{"day": T - timedelta(days=2), "action": "comment", "post_type": "listing", "platform": "ig", "question": False}]}
+        self.assertEqual(O.hold_for("1", ctx), before)
+        self.assertEqual(O.reason_for("1", ctx)["type"], "saw_on_ig")     # the fresher reason leads
+        self.assertEqual(O.annotate({"person_id": "1", "name": "Mia Example"}, ctx)["reason"]["type"], "saw_on_ig")
+        ctx["social"] = {"1": [{"day": T - timedelta(days=13), "action": "comment", "post_type": "listing", "platform": "ig", "question": False}]}
+        self.assertEqual(O.reason_for("1", ctx)["type"], "saw_on_ig")     # 13 days old against 45: the fresher one leads
+
     def test_register_is_friendly_until_his_own_texts_show_familiar(self):
         p = person("1", name="Reginald Example", last_outbound=ago(10), days_quiet=10)
         self.assertEqual(O.register_for("1", ctx_for(p), "Reginald"), ("friendly", ""))

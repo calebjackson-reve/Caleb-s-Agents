@@ -1,7 +1,8 @@
 /* Money first on Home, the Fix list, the weekly proof line and the learning scorecard.
    Everything shown is worked out on the Mac (links.py, proof.py, learn.py) from records already there. The only writes
    from this file are Caleb's own taps, logged on this Mac: approve or set aside a Fix list row, and Good call or Not
-   useful on a ranked person. Nothing here sends a message, and nothing here edits a sheet. */
+   useful on a ranked person, and Confirm or Not them on a suggested social match (saved in one local file). Nothing here
+   sends a message, and nothing here edits a sheet. */
 (function () {
   const C = window.CC, F = window.Fix = {};
   const d0 = () => C.data || {};
@@ -62,6 +63,11 @@
     if (r && r.ok) { toast('ok', action === 'approve' ? 'APPROVED' : action === 'reopen' ? 'REOPENED' : 'SET ASIDE', action === 'approve' ? 'Logged. Make the change in the sheet when you can.' : 'Logged.'); C.load(); }
     else toast('err', 'NOT SAVED', (r && r.error) || 'The tap was not saved.');
   };
+  F.matchSocial = async function (platform, handle, contact_id, action) {
+    const r = await api('/api/social-match', { platform, handle, contact_id, action });
+    if (r && r.ok) { toast('ok', action === 'confirm' ? 'CONFIRMED' : 'NOT THEM', action === 'confirm' ? 'Saved on this Mac. Nothing was sent and the CRM was not changed.' : 'Saved on this Mac. That pair will not be suggested again.'); C.load(); }
+    else toast('err', 'NOT SAVED', (r && r.error) || 'The tap was not saved.');
+  };
   F.MAX = 40;
   function fixes() {
     const g = C.guard(); if (g) return g;
@@ -76,10 +82,19 @@
     const linkCard = lk.length ? C.card(`Link this deal <span class="cc-count">${lk.length}</span>`,
       `<p class="cc-note">Live deals with no person on them. Until one is linked, its client can look quiet and get a canned check-in. Put the person on the deal's row in the CRM Deals tab. Pipeline never edits the sheets.</p>
       <ul class="cc-rows">${lk.slice(0, F.MAX).map(r => `<li class="cc-row lk-row"><div class="cc-row-main"><h3>${esc(r.deal)}</h3><p class="cc-note">${esc([r.status, r.side, r.close ? 'closing ' + C.day(r.close) : 'no closing date'].filter(Boolean).join(', '))}</p><p class="cc-note fx-from">${esc(r.why)}</p></div></li>`).join('')}</ul>`, ['deals', 'crm']) : '';
+    // "Match social profiles": engagers the matcher thinks it may know. Candidates only. Confirm and Not them write one local file on
+    // this Mac (matches.json). No send, call or CRM button, and nothing is linked until Caleb taps Confirm.
+    const sm = ((d0().social_matches || {}).pending || []).filter(r => matches(`${r.handle} ${r.display_name} ${r.contact} ${r.why}`));
+    const CONF = { high: 'High', medium: 'Medium', low: 'Low' };
+    const socialCard = sm.length ? C.card(`Match social profiles <span class="cc-count">${sm.length}</span>`,
+      `<p class="cc-note">People who liked, commented on or shared your posts, and who they might be in your CRM. Nothing is linked until you tap Confirm. Confirm and Not them are saved on this Mac only: nothing is sent and the CRM is not changed.</p>
+      <ul class="cc-rows">${sm.slice(0, F.MAX).map(r => `<li class="cc-row fx-row sm-row"><div class="cc-row-main"><h3>Is @${esc(r.handle)} ${C.pname(r.contact)}${r.contact_city ? ' in ' + esc(r.contact_city) : ''}?</h3><p class="cc-note">${esc(r.why)}</p><p class="cc-note fx-from">${esc(r.platform === 'fb' ? 'Facebook' : 'Instagram')}${r.display_name ? ', shown as ' + esc(r.display_name) : ''}. <b>${CONF[r.confidence] || esc(r.confidence)}</b> confidence.</p></div>
+        <div class="cc-acts"><button type="button" class="cc-primary" onclick="Fix.matchSocial(${jsa(r.platform)}, ${jsa(r.handle)}, ${jsa(r.contact_id)}, 'confirm')">Confirm</button><button type="button" onclick="Fix.matchSocial(${jsa(r.platform)}, ${jsa(r.handle)}, ${jsa(r.contact_id)}, 'reject')">Not them</button></div></li>`).join('')}</ul>${sm.length > F.MAX ? `<p class="cc-note">${sm.length - F.MAX} more. Search to narrow the list.</p>` : ''}`, ['crm']) : '';
     const capLine = cap.amount == null ? `<p class="cc-warn">${esc(cap.note || 'The cap is unknown.')}</p>` : `<p class="${cap.differs ? 'cc-warn' : 'cc-note'}">Cap from Goals: <b>${C.m(cap.amount)}</b>. ${esc(cap.note || 'That is $20,000 plus the $3,000 royalty.')}</p>`;
     return `<div class="cc-page">${C.head('Fix list', 'Rows that look wrong, with the problem and a suggested fix. You approve one at a time. Pipeline logs your tap and never edits the sheets.')}
       ${C.card('The cap', capLine, ['goals'])}
       ${linkCard}
+      ${socialCard}
       ${groups || C.card('Nothing to fix', C.empty(S.q ? 'No row matches that search.' : 'No row looks wrong right now.'), ['crm', 'deals'])}
       ${C.card(`Approved, yours to change in the sheet <span class="cc-count">${fx.approved.length}</span>`, fx.approved.length ? `<ul class="cc-rows">${fx.approved.map(r => `<li class="cc-row fx-row"><div class="cc-row-main"><h3>${esc(r.what)}</h3><p class="cc-note">${esc(r.fix)}</p><p class="cc-note fx-from">Approved ${esc(C.day(String(r.at || '').slice(0, 10)))}. It leaves this list once the sheet shows the change.</p></div>
         <div class="cc-acts"><button type="button" onclick="Fix.decide('${esc(r.id)}', 'reopen')">Undo</button></div></li>`).join('')}</ul>` : C.empty('Nothing approved is waiting.'), [])}

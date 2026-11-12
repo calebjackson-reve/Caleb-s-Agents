@@ -8,6 +8,10 @@ for each day the two picks (who and why) and the next three backups.
   python3 two_today.py --example                         # the made-up people in fixtures/two-today-example
   python3 two_today.py [--engagers F] [--handles F] [--posts F] [--feed F] [--end YYYY-MM-DD] [--days 7] [--out F]
 
+Social files: when $PIPELINE_SOCIAL_DIR (default ~/.aire/social) holds engagers-YYYY-MM-DD.json files and neither --example
+nor --engagers is given, those files (and handles confirmed in matches.json, scored like a handle on file) replace the
+hand-filled engagers.csv. An unconfirmed match candidate is unmatched: 0 points, never a text.
+
 Defaults: ../enrichment/out/engagers.csv, handles.csv and (when it is there) posts.csv, ../crm/feed.json, and the
 report goes to out/two-today-practice-<end>.md. Those folders are git-ignored: the real list and the report stay on
 the Mac. Prints counts only, never a name.
@@ -40,6 +44,7 @@ EXAMPLE = HERE / "fixtures" / "two-today-example"
 sys.path.insert(0, str(AIRE / "enrichment" / "execution"))
 
 import outreach  # noqa: E402
+import social_match  # noqa: E402
 import social_signals as social  # noqa: E402
 
 LOOKBACK, REPEAT_DAYS, ENGAGE_CAP = 14, 30, 12
@@ -223,24 +228,38 @@ def main(argv=None) -> int:
     ap.add_argument("--out")
     a = ap.parse_args(argv)
     src = EXAMPLE if a.example else AIRE / "enrichment" / "out"
-    engagers_p, handles_p = Path(a.engagers or src / "engagers.csv"), Path(a.handles or src / "handles.csv")
-    posts_p = Path(a.posts or src / "posts.csv")
     feed_p = Path(a.feed or (EXAMPLE / "people.json" if a.example else AIRE / "crm" / "feed.json"))
-    for p in (engagers_p, handles_p, feed_p):
+    if not feed_p.exists():
+        print(f"two today: {feed_p.name} is not there yet, nothing to score")
+        return 1
+    feed = read_json(feed_p, {})
+    end = _day(a.end) or _day(feed.get("as_of")) or date.today()
+    # Daily social-dir files (social_match.py) win when they are there, --example is off and --engagers is not given.
+    # A missing or empty social dir is not an error: everything below stays on today's defaults.
+    sdir = social_match.social_dir()
+    soc_rows, soc_counts = ([], {"files": 0}) if (a.example or a.engagers) else social_match.load_engagers(sdir, until=end, since=end - timedelta(days=max(a.days, 1) - 1 + LOOKBACK))
+    use_social = soc_counts["files"] > 0
+    engagers_p, handles_p = Path(a.engagers or src / "engagers.csv"), Path(a.handles or src / "handles.csv")
+    posts_p = Path(a.posts or ((sdir / "posts.csv") if use_social and (sdir / "posts.csv").exists() else src / "posts.csv"))
+    for p in ([] if use_social else [engagers_p]) + ([handles_p] if (a.handles or not use_social) else []):
         if not p.exists():
             print(f"two today: {p.name} is not there yet, nothing to score")
             return 1
-    feed = read_json(feed_p, {})
-    end = _day(a.end) or _day(feed.get("as_of")) or date.today()
     logs = (lambda n: []) if a.example else (lambda n: (lambda v: v if isinstance(v, list) else [])(read_json(HERE / "out" / n, [])))
     ctx = outreach.context(feed, end, send_log=logs("send-log.json"), bridge_log=logs("bridge-log.json"))
-    engagers = social.with_post_types(read_csv(engagers_p), read_csv(posts_p) if posts_p.exists() else [])
-    week = run_week(end, a.days, engagers, read_csv(handles_p), ctx)
+    posts = read_csv(posts_p) if posts_p.exists() else []
+    handles = read_csv(handles_p) if handles_p.exists() else []
+    if use_social:
+        engagers = social_match.to_signal_rows(soc_rows, posts)
+        handles = handles + social_match.confirmed_handle_rows(social_match.load_matches(sdir))  # a confirmed match scores like a handle on file
+    else:
+        engagers = social.with_post_types(read_csv(engagers_p), posts)
+    week = run_week(end, a.days, engagers, handles, ctx)
     out = Path(a.out or HERE / "out" / f"two-today-practice-{end.isoformat()}{'-example' if a.example else ''}.md")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(report(week, a.example), encoding="utf-8")
     print(f"two today practice run: {len(week)} days, {sum(len(r['picks']) for r in week)} picks, {sum(len(r['backups']) for r in week)} backups, "
-          f"{len({q['key'] for r in week for q in r['replies']})} to reply to, {len(engagers)} rows read -> {out}")
+          f"{len({q['key'] for r in week for q in r['replies']})} to reply to, {len(engagers)} rows read{f' from {soc_counts["files"]} social files' if use_social else ''} -> {out}")
     return 0
 
 
