@@ -401,6 +401,23 @@ def in_days(rows: list[dict], today: date, n: int) -> list[dict]:
     return [r for r in rows if a <= r["day"] <= b]
 
 
+def due_in(rows: list[dict], today: date, n: int) -> list[dict]:
+    """in_days, plus any row whose Deals sheet and calendar disagree on the closing date when the calendar's date
+    falls in the window. Either date could be the real one, so the row shows under the earlier of the two."""
+    a, b = today.isoformat(), (today + timedelta(days=n)).isoformat()
+    cal = lambda r: (r.get("disagree") or {}).get("calendar") or ""
+    return sorted([r for r in rows if a <= r["day"] <= b or a <= cal(r) <= b], key=lambda r: min(r["day"], cal(r) or r["day"]))
+
+
+def clock(start) -> str | None:
+    """'10:30AM' from a calendar start with a time in it, the same shape as the sheet's times."""
+    try:
+        t = datetime.fromisoformat(str(start))
+    except ValueError:
+        return None
+    return t.strftime("%I:%M%p").lstrip("0") if "T" in str(start) else None
+
+
 # ---------------- One deal source ----------------
 # The AIRE Deals sheet is the one source for a deal's status, price, act of sale and commission. The CRM Deals tab
 # and the calendar are matched to it by street (number plus street name), never added into its numbers.
@@ -477,6 +494,7 @@ def contract_deadlines(cal: list[dict], cards: list[dict]) -> list[dict]:
             for x in rows:
                 if x["key"] == k and x["day"] == c["act"]:
                     x["note"] = f"the calendar has act of sale on {r['day']}"
+                    x["disagree"] = {"sheet": c["act"], "calendar": r["day"], "time": None if r.get("allDay") else clock(r.get("start"))}
             continue
         rows.append({"deal": c["deal"] if c else r["deal"], "key": k, "day": r["day"],
                      "whats": ["Act of sale" if act else r["what"]], "from": {"calendar"}, "note": None, "link": r.get("link")})
@@ -492,12 +510,13 @@ def contract_deadlines(cal: list[dict], cards: list[dict]) -> list[dict]:
         m["from"] |= r["from"]
         m["note"] = m["note"] or r["note"]
         m["link"] = m.get("link") or r.get("link")
+        m["disagree"] = m.get("disagree") or r.get("disagree")
     out = []
     for r in merged.values():
         frm = "both" if len(r["from"]) > 1 else next(iter(r["from"]))
         out.append({"deal": r["deal"], "key": r["key"], "day": r["day"], "what": ", ".join(r["whats"]),
                     "title": f"{r['deal']} - {', '.join(r['whats'])}", "from": frm, "note": r["note"], "link": r.get("link"),
-                    "time": r.get("time"), "said": r.get("said")})
+                    "time": r.get("time"), "said": r.get("said"), "disagree": r.get("disagree")})
     return sorted(out, key=lambda r: (r["day"], r["deal"]))
 
 
@@ -990,8 +1009,8 @@ def build(folder: Path, now: datetime | None = None, feed: dict | None = None, r
         "at": now.isoformat(timespec="seconds"), "today": today.isoformat(), "fresh": fresh,
         "deals": cards, "crm_only_deals": crm_only, "stages": pipeline_stages(deals, len(leads)),
         "calendar": evs, "week": week_load(evs, today),
-        "deadlines": {"all": in_days(dl, today, 30), "d3": in_days(dl, today, 2), "d7": in_days(dl, today, 6),
-                      "deals": len({r["key"] for r in in_days(dl, today, 30)}),
+        "deadlines": {"all": due_in(dl, today, 30), "d3": due_in(dl, today, 2), "d7": due_in(dl, today, 6),
+                      "deals": len({r["key"] for r in due_in(dl, today, 30)}),
                       # A date read from the sheet's words that has gone by and is not marked done: overdue, never dropped.
                       "overdue": [r for r in dl if r.get("said") and (today - timedelta(days=30)).isoformat() <= r["day"] < today.isoformat()],
                       # Contract steps written as words with no date: they are deadlines the dates above cannot count.

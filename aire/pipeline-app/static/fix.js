@@ -18,7 +18,9 @@
     const pay = d0().closings || [], total = pay.reduce((s, r) => s + (r.money || 0), 0), blank = pay.filter(r => r.money == null).length;
     const dl = ((d0().deadlines || {}).d7 || []), over = ((d0().deadlines || {}).overdue || []).length;
     const payRows = pay.slice(0, 4).map(r => `<li><span>${esc(C.day(r.day))}</span><b>${esc(r.deal)}</b><i>${r.money == null ? 'commission unknown' : C.m(r.money)}</i></li>`).join('');
-    const dlRows = dl.slice(0, 5).map(r => `<li><span>${esc(C.day(r.day))}${r.time ? ' ' + esc(r.time) : ''}</span><b>${esc(r.deal || r.title || '')}</b><i>${esc(kindOf(r))}</i></li>`).join('');
+    // The Deals sheet and the calendar name different closing days: both days show, flagged, until one is fixed.
+    const two = r => `<li class="mf-two" title="Deals sheet: ${esc(C.day(r.disagree.sheet))}. Calendar: ${esc(C.day(r.disagree.calendar))}${r.disagree.time ? ' ' + esc(r.disagree.time) : ''}."><span>${esc(C.day(r.disagree.calendar))}${r.disagree.time ? ' ' + esc(r.disagree.time) : ''} on the calendar, ${esc(C.day(r.disagree.sheet))} on the Deals sheet</span><b>${esc(r.deal || r.title || '')}</b><i>${esc(kindOf(r))} <span class="late">dates disagree</span></i></li>`;
+    const dlRows = dl.slice(0, 5).map(r => r.disagree ? two(r) : `<li><span>${esc(C.day(r.day))}${r.time ? ' ' + esc(r.time) : ''}</span><b>${esc(r.deal || r.title || '')}</b><i>${esc(kindOf(r))}</i></li>`).join('');
     return `<section class="mf" aria-label="Money first"><div class="mf-box"><div class="lt-row"><h2>Paydays, next 30 days</h2><button type="button" class="lt-link" onclick="go('commission')">Commission</button></div>
         <p class="mf-big">${blank ? unk : C.m(total)}<small>${pay.length} act${pay.length === 1 ? '' : 's'} of sale, gross${blank ? `, ${blank} with no commission on the sheet` : ''}</small></p>
         ${pay.length ? `<ul class="mf-list">${payRows}</ul>` : '<p class="lt-quiet">No act of sale in the next 30 days.</p>'}<p class="cc-srcline lt-src">${C.src(['deals', 'calendar'])}</p></div>

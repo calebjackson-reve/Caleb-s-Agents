@@ -299,6 +299,27 @@ class JudgeRound1(unittest.TestCase):
         self.assertEqual([(r["day"], r["from"]) for r in oak], [("2026-11-20", "sheet")])
         self.assertIn("2026-11-22", oak[0]["note"])
 
+    def test_sheet_and_calendar_disagree_on_closing_shows_this_week(self):
+        # sheet says Nov 20, the calendar says Nov 9 at 10:30. Nov 9 is inside the week, Nov 20 is not.
+        evs = cc.cal_events([ev("100 Oak Ln - Closing", "2026-11-09T10:30:00-06:00", "2026-11-09T11:30:00-06:00")], self.COORD)
+        cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(SHEET), T), [])
+        dl = cc.contract_deadlines(cc.deal_deadlines(evs), cards)
+        oak = [r for r in dl if r["key"] == "100 oak"]
+        self.assertEqual([(r["day"], r["from"]) for r in oak], [("2026-11-20", "sheet")])  # still one row, sheet date stands
+        self.assertEqual(oak[0]["disagree"], {"sheet": "2026-11-20", "calendar": "2026-11-09", "time": "10:30AM"})
+        self.assertEqual(cc.in_days(dl, T, 6), [])  # the sheet date alone is not this week
+        self.assertEqual([r["key"] for r in cc.due_in(dl, T, 6)], ["100 oak"])  # the calendar date is, so it shows
+        self.assertEqual(cc.due_in(dl, T, 2), [])  # Nov 9 is not in the next 3 days from Nov 5
+        # the sheet date in the week and the calendar date outside it: shown once, flagged
+        evs = cc.cal_events([ev("100 Oak Ln - Act of sale", "2026-12-04")], self.COORD)
+        dl = cc.contract_deadlines(cc.deal_deadlines(evs), cards)
+        wk = cc.due_in(dl, date(2026, 11, 16), 6)
+        self.assertEqual([(r["key"], r["disagree"]["calendar"], r["disagree"]["time"]) for r in wk], [("100 oak", "2026-12-04", None)])
+        # neither date this week: not shown. Dates that agree: no flag.
+        self.assertEqual(cc.due_in(dl, date(2026, 11, 5), 6), [])
+        evs = cc.cal_events([ev("100 Oak Ln - Act of sale", "2026-11-20")], self.COORD)
+        self.assertIsNone([r for r in cc.contract_deadlines(cc.deal_deadlines(evs), cards) if r["key"] == "100 oak"][0]["disagree"])
+
     def test_one_lead_list(self):
         email = [{"name": "Pat Example", "phone": "(225) 555-0101", "email": "pat@example.com", "received": "2026-11-05T08:30:00-06:00",
                   "crm": {"person_id": "P1"}},
