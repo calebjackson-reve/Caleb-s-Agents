@@ -728,7 +728,30 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
       && /class="pc-compose" onclick="openPerson\(/.test(pc) && /onclick="openNote\(/.test(pc), 'the map card shows the stage chip, the cadence word, the facts, a button to their card and plan, and Note'); }
   const lg = run('mapLegend()');
   check(SEVEN.every(s2 => lg.includes(`</i>${s2}</li>`)) && /Pins by stage/.test(lg), 'the map legend lists the seven stages');
-  check(/onclick="drawFarm\(\)">Draw farm</.test(run('mapBar()')) && /onclick="mapFit\(\)">Fit</.test(run('mapBar()')), 'Draw farm and Fit stay on the map');
+  const mapPage = run('viewMap()');
+  check(!/drawFarm\(/.test(mapPage) && !/map3d\(/.test(mapPage) && !/2D map/.test(mapPage) && !/id="pmap"/.test(mapPage) && /id="map-home-ground"/.test(mapPage), 'the Map tab has no 2D map UI: Home Ground is the only view');
+  check(!/function map3d\(/.test(mv) && !/S\.map3d/.test(mv) && /map3dSync\(\)/.test(mv), 'the Map tab has no 2D toggle; Home Ground always fills #main');
+  const m3 = fs.readFileSync(path.join(dir, 'map3d.html'), 'utf8');
+  check(/location\.replace\('\/#map'\)/.test(m3), 'opening /map3d.html on its own takes you to the Map tab in the Pipeline shell');
+  check(!/id="b2d"/.test(m3) && !/HOST\.map3d\(false\)/.test(m3) && !/>2D map</.test(m3), 'Home Ground has no button back to the 2D map');
+  check(/const fail =/.test(m3) && /could not start 3D graphics, so the map cannot draw here/.test(m3), 'if WebGL cannot start, Home Ground shows a short message instead of a 2D map');
+  check(/src=['"]three-0.160.0.min.js['"]/.test(m3) && /fetch\('\/api\/state'/.test(m3) && !/\/api\/(send|call|draft)/.test(m3), 'the 3D map reads /api/state and starts no send, call or draft path');
+  // Home Ground Map: local three.js, people only from /api/state on any host, no baked book of business, contact card through openPerson.
+  check(fs.existsSync(path.join(dir, 'three-0.160.0.min.js')) && !/<script[^>]+src=["']https?:/.test(m3), 'the Home Ground Map loads three.js from the local file, no script CDN');
+  check(!/location\.hostname/.test(m3) && !/GEO\.(pts|meta|farms|cityNames|pipeRiver)/.test(m3) && !/"(pts|meta|farms|cityNames|pipeRiver)":/.test(m3), 'the Home Ground Map reads people from /api/state on every host and bakes in no CRM snapshot');
+  check(/HOST\.openPerson\(p\.id\)/.test(m3) && /typeof window\.parent\.openPerson === 'function'/.test(m3) && /const fail =/.test(m3) && /new THREE\.WebGLRenderer/.test(m3), 'the Home Ground Map opens the contact card with openPerson and says so when WebGL cannot start');
+  check(/Home <i>ground<\/i>/.test(m3) && /<title>Home Ground Map<\/title>/.test(m3), 'the 3D view carries the Home ground name');
+  {
+    const pure = (/<script id="m3pure">([\s\S]*?)<\/script>/.exec(m3) || [])[1] || '';
+    const sb = { window: {} }; vm.createContext(sb); vm.runInContext(pure, sb);
+    const M3 = sb.window.M3, capf = s => s.replace(/\b[a-z]/g, c => c.toUpperCase());
+    const fixture = (((state.feed.map || {}).pins || []).find(p => p.display && /\s/.test(p.display)) || { display: 'Fixture Person' }).display;
+    const person = { name: fixture, rel: 'client', city: 'baton rouge', next: 'Call about the listing' }, w = M3.where(person, capf);
+    const pubText = [M3.title(person, 'public', w), M3.tip(person, 'public', 'Client', w), M3.note(person, 'public')].join('|');
+    check(!pubText.includes(fixture) && !pubText.includes('Call about'), 'in Public mode no title, tooltip or note carries a person\'s name');
+    check(M3.title(person, 'crm', w) === fixture && M3.tip(person, 'crm', 'Client', w).includes(fixture), 'in CRM mode the name shows on the card and tooltip');
+    check(/state\.view === 'public' \? 'Pipeline feed, ' \+ asOf \+ '\. Names and details are left off.'/.test(m3), 'in Public mode the source line does not claim that names are shown');
+  }
   // The shell.
   check(/<meta name="theme-color" content="#FBF8F3">/.test(indexHtml) && /Instrument\+Serif/.test(indexHtml) && /Nunito/.test(indexHtml) && indexHtml.indexOf('href="light.css"') > indexHtml.indexOf('href="ui.css"'), 'the page reads as the light canvas and loads the two typefaces');
   check(/--ivory: #FBF8F3; --ink: #14100E; --hair: #F1EFEC;/.test(light), 'canvas, ink and hairline are the approved three');

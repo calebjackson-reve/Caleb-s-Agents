@@ -23,7 +23,26 @@ mkdir -p "$HOME/Library/LaunchAgents" "$HOME/.aire/logs" "$HOME/Applications"
 # 1. The server, at login and kept alive.
 sed -e "s|__HOME__|$HOME|g" -e "s|__REPO__|$REPO|g" "$HERE/launchd/$LABEL.plist" > "$PLIST"
 launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
-launchctl bootstrap "gui/$(id -u)" "$PLIST"
+# bootout returns before the job is gone; bootstrapping too early fails with "Bootstrap failed: 5: Input/output error".
+waited=0
+while launchctl print "gui/$(id -u)/$LABEL" >/dev/null 2>&1; do
+  if [ "$waited" -ge 10 ]; then
+    echo "install failed: $LABEL is still loaded ${waited}s after launchctl bootout" >&2
+    exit 1
+  fi
+  sleep 1
+  waited=$((waited + 1))
+done
+tries=0
+until launchctl bootstrap "gui/$(id -u)" "$PLIST"; do
+  tries=$((tries + 1))
+  if [ "$tries" -ge 3 ]; then
+    echo "install failed: launchctl bootstrap failed $tries times (error above)" >&2
+    exit 1
+  fi
+  echo "launchctl bootstrap failed (try $tries of 3), retrying in 2s..." >&2
+  sleep 2
+done
 echo "server: launchctl loaded $LABEL (log: ~/.aire/logs/pipeline.log)"
 [ -f "$HOME/.aire/pipeline.env" ] && echo "keys: ~/.aire/pipeline.env found (Claude Q&A and ElevenLabs turn on if their keys are in it)" || echo "keys: no ~/.aire/pipeline.env, Claude Q&A and ElevenLabs stay off (see README)"
 

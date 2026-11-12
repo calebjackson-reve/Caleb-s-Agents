@@ -75,14 +75,8 @@ function mapLegend() {
   return `<h4>Pins by stage</h4><ul>${Stage.names.map(s => `<li><i class="stg-dot ${Stage.cls(s)}"></i>${esc(s)}</li>`).join('')}${other ? '<li><i class="stg-dot stg-none"></i>another stage, or none</li>' : ''}</ul>`;
 }
 function viewMap() {
-  const ok = S.data && S.data.feed_ok, n = peoplePins().length;
-  return `<div class="cc-page cc-wide lt-page lt-map"><h1 class="sr">Map</h1>${ok ? `<div class="map-stage"><div id="pmap"></div>
-      <div class="map-bar" id="map-bar">${mapBar()}</div>
-      <div class="map-meta"><span id="map-n">${n.toLocaleString()} people across the market</span></div>
-      <div class="map-filters" id="map-tools" ${S.mapPanel === 'filters' ? '' : 'hidden'}>${mapTools()}</div>
-      <aside class="map-side" id="map-side" hidden></aside>
-      <div class="map-legend" id="map-legend">${mapLegend()}</div></div>`
-    : CC.empty('The CRM feed did not load, so the map would be a guess. Nothing is shown. Sources has the detail.')}
+  return `<div class="cc-page cc-wide lt-page lt-map"><h1 class="sr">Map</h1>
+    <div class="map-stage" id="map-home-ground"><p class="dim">Home Ground Map is loading.</p></div>
     <p class="cc-srcline lt-src">${CC.src('crm')}<span class="lt-count">${CC.peopleLine()}</span></p></div>`;
 }
 function viewDealMap() {
@@ -90,6 +84,7 @@ function viewDealMap() {
     mapPanel(true), ['crm'], '<div class="cc-acts"><button type="button" onclick="go(\'deals\')">Back to the deal list</button></div>').replace('class="cc-page"', 'class="cc-page cc-wide"');
 }
 function mountMap(dealsOnly) {
+  if (!dealsOnly) { map3dSync(); return; }
   const el = $('#pmap'); if (!el) return;
   if (S.map) S.map.destroy();
   S.mapDealsOnly = !!dealsOnly;
@@ -284,3 +279,26 @@ async function dismissRow(key) {
 // Register the map pages with the Command Center router; the map mounts after the page is on screen.
 Object.assign(CC.views, { map: viewMap, dealmap: viewDealMap, monitor: viewMarket });
 Object.assign(CC.after, { map: () => mountMap(false), dealmap: () => mountMap(true) });
+
+// ---------------------------------------------------------------- the 3D map (map3d.html)
+// Home Ground is the Map tab: the model fills #main inside the Pipeline shell (sidebar, top bar, footer stay).
+// The frame is kept alive between renders so it never reloads while Caleb is on Map. There is no 2D map on this tab.
+// If WebGL cannot start, the frame shows a short message. Card clicks use openPerson; no new send or write path.
+function map3dPlace() {
+  const w = $('#map3d'), m = $('#main'); if (!w || w.hidden || !m) return;
+  const r = m.getBoundingClientRect(); Object.assign(w.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+}
+function map3dSync() {
+  const on = S.view === 'map'; let w = $('#map3d');
+  if (!w) { if (!on) return;
+    w = document.createElement('div'); w.id = 'map3d'; w.style.cssText = 'position:fixed;z-index:5;background:#FBF8F3';
+    w.innerHTML = '<iframe src="/map3d.html" title="Home Ground Map" style="display:block;width:100%;height:100%;border:0"></iframe>';
+    document.body.appendChild(w); }
+  w.hidden = !on; map3dPlace();
+}
+if (window.MutationObserver && window.ResizeObserver) {
+  const m3 = $('#main');
+  new MutationObserver(map3dSync).observe(m3, { childList: true });   // every page change shows or hides the frame
+  new ResizeObserver(map3dPlace).observe(m3);
+  window.addEventListener('resize', map3dPlace);
+}
