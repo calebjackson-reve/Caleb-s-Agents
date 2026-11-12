@@ -75,12 +75,14 @@
     else toast('err', 'NOT SAVED', (r && r.error) || 'The tap was not saved.');
   };
   F.salePick = function (i) { const el = document.getElementById('sp-box-' + i); if (!el) return; el.hidden = !el.hidden; if (!el.hidden) { const q = el.querySelector('input'); if (q) q.focus(); } };
-  F.saleSearch = function (i, key, q) {
+  F.saleSearch = async function (i, key, q) {
     const out = document.getElementById('sp-res-' + i); if (!out) return;
-    const s = String(q || '').trim().toLowerCase(), ppl = ((d0().sale_cards || {}).people || []);
-    const hit = s ? ppl.filter(p => String(p.display).toLowerCase().includes(s)).slice(0, 8) : [];
+    const s = String(q || '').trim();
+    if (!s) { out.innerHTML = ''; return; }
+    const r = await api('/api/sale-people', { q: s });
+    const hit = (r && r.ok && r.people) ? r.people : [];
     out.innerHTML = hit.length ? hit.map(p => `<li><button type="button" onclick="Fix.saleLink(${jsa(key)}, 'pick', ${jsa(p.person_id)})">${esc(p.display)}</button></li>`).join('')
-      : (s ? '<li class="cc-note">No one in your contacts matches that.</li>' : '');
+      : '<li class="cc-note">No one in your contacts matches that.</li>';
   };
   F.MAX = 40;
   function fixes() {

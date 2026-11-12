@@ -460,7 +460,19 @@ class State:
         people = self.sale_people()
         rows = cc._rows(cc.load(self.cc_dir).get("sales"))
         cards = sale_links.pending(rows, sale_links.load_matches(self.sale_matches_path), sale_links.load_links(self.sale_links_path), people)
-        return {"pending": cards, "people": [{"person_id": k, "display": v} for k, v in sorted(people.items(), key=lambda kv: kv[1].lower())]}
+        return {"pending": cards}
+
+    def sale_people_search(self, q: str) -> dict:
+        """Up to eight existing feed people whose display matches q (id and display only). For Pick another contact."""
+        needle = str(q or "").strip().lower()
+        hits = []
+        if needle:
+            for pid, display in sorted(self.sale_people().items(), key=lambda kv: kv[1].lower()):
+                if needle in display.lower():
+                    hits.append({"person_id": pid, "display": display})
+                if len(hits) == 8:
+                    break
+        return {"ok": True, "people": hits}
 
     def sale_decide(self, sale_key: str, action: str, person_id: str = "") -> dict:
         """Caleb's tap on one Who was this sale? card: confirm, pick another feed person, or skip. Only a sale on the pending
@@ -1943,6 +1955,8 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.social_decide(str(body.get("platform", "")), str(body.get("handle", "")), str(body.get("contact_id", "")), str(body.get("action", "")))
             elif u.path == "/api/sale-link":
                 out = s.sale_decide(str(body.get("sale_key", "")), str(body.get("action", "")), str(body.get("person_id", "")))
+            elif u.path == "/api/sale-people":
+                out = s.sale_people_search(str(body.get("q", "")))
             elif u.path == "/api/feedback":
                 out = s.feedback(str(body.get("list", "")), str(body.get("person_id", "")), str(body.get("verdict", "")))
             elif u.path == "/api/lead":
@@ -2573,7 +2587,10 @@ def run_tests() -> int:
     sc6 = s6.sale_cards()
     sug6 = next((c for c in sc6["pending"] if c["suggestion"]), None)
     check(len(sc6["pending"]) >= 5 and sug6 is not None and sug6["owner_names"] and not any(c["address"].startswith("22 Muscadine") for c in sc6["pending"])
-          and all(set(x) == {"person_id", "display"} for x in sc6["people"]), "the Fix list has a card per demo sale (lease skipped), a suggestion with owner names, and people as id + display only")
+          and "people" not in sc6, "the Fix list has a card per demo sale (lease skipped) and a suggestion with owner names, without shipping the whole contact list")
+    search6 = s6.sale_people_search(sug6["suggestion"]["display"].split()[0])
+    check(search6["ok"] and any(x["person_id"] == sug6["suggestion"]["person_id"] and set(x) == {"person_id", "display"} for x in search6["people"]) and s6.sale_people_search("")["people"] == [],
+          "Pick another contact searches existing people by display and returns id and display only")
     s6crm2 = len(s6.crm.log)
     for bad in (("nope", "skip", ""), (sug6["sale_key"], "send", ""), (sug6["sale_key"], "pick", "no-such-person"), (sug6["sale_key"], "pick", "")):
         try:
@@ -2588,7 +2605,7 @@ def run_tests() -> int:
     check(out6s["ok"] and sug6["sale_key"] not in [c["sale_key"] for c in out6s["sale_cards"]["pending"]] and pins1[sug6["address"]]["person_id"] == sug6["suggestion"]["person_id"]
           and pins1[sug6["address"]]["display"] == sug6["suggestion"]["display"] and pins1[sug6["address"]]["sale"] is True and len(s6.crm.log) == s6crm2, "Confirm links the roof to the person, the card leaves the list, and the CRM engine is untouched")
     other6 = next(c for c in sc6["pending"] if c["sale_key"] != sug6["sale_key"])
-    pick6 = next(x for x in sc6["people"] if x["person_id"] != sug6["suggestion"]["person_id"])
+    pick6 = next({"person_id": k, "display": v} for k, v in s6.sale_people().items() if k != sug6["suggestion"]["person_id"])
     s6.sale_decide(other6["sale_key"], "pick", pick6["person_id"])
     third6 = next(c for c in s6.sale_cards()["pending"])
     s6.sale_decide(third6["sale_key"], "skip")
@@ -2624,6 +2641,14 @@ def run_tests() -> int:
         urllib.request.urlopen(r6); check(False, "POST /api/sale-link refuses a foreign origin")
     except urllib.error.HTTPError as e:
         check(e.code == 403, "POST /api/sale-link refuses a foreign origin")
+    r6 = urllib.request.Request(base + "/api/sale-people", data=json.dumps({"q": "Fixture"}).encode(), headers={"Content-Type": "application/json"})
+    sp6 = json.loads(urllib.request.urlopen(r6).read())
+    check(sp6["ok"] and all(set(x) == {"person_id", "display"} for x in sp6["people"]) and len(sp6["people"]) <= 8, "POST /api/sale-people returns id and display only, capped at eight")
+    r6 = urllib.request.Request(base + "/api/sale-people", data=json.dumps({"q": "Fixture"}).encode(), headers={"Content-Type": "application/json", "Origin": "https://evil.example"})
+    try:
+        urllib.request.urlopen(r6); check(False, "POST /api/sale-people refuses a foreign origin")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST /api/sale-people refuses a foreign origin")
     check(ccp["demo"] and ccp["fresh"]["deals"]["state"] == "ok" and ccp["scorecard"]["pending"]["value"] > 0, "GET /api/cc in demo")
     req = urllib.request.Request(base + "/api/touch", data=json.dumps({"person_id": "118", "what": "test"}).encode(),
                                  headers={"Content-Type": "application/json"})

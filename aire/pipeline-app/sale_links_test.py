@@ -88,6 +88,27 @@ with tempfile.TemporaryDirectory() as tmp:
     except ValueError:
         check(True, "a blank person is refused")
 
+    # The live enrichment file uses a top-level "sales" list and M/D/YYYY close dates.
+    sales_doc = Path(tmp) / "sales-owner-matches.json"
+    sales_doc.write_text(json.dumps({"sales": [{"mls": "TEST9", "address": "12 Fixture Row", "city": "Baton Rouge", "zip": "70801", "close_date": "6/10/2025",
+        "side": "buy", "owner_names": ["Pretend Owner"], "tier": "high", "matched_contact_person_id": "9001", "matches": [{"person_id": "9001", "tier": "high"}]}]}))
+    check(len(SL.load_matches(sales_doc)) == 1, "a matches file whose rows sit under sales still loads")
+    joined = SL.pending([sale("12 Fixture Row, Baton Rouge, LA 70801", "2025-06-10")], SL.load_matches(sales_doc), SL.load_links(None), PEOPLE)
+    check(len(joined) == 1 and joined[0]["suggestion"]["person_id"] == "9001" and joined[0]["close"] == "2025-06-10",
+          "a M/D/YYYY close_date joins an ISO sales.json close day")
+    # A list-side card shows the prior (seller) names, not the later buyer.
+    list_doc = [{"address": "40 Example Lane", "city": "Baton Rouge", "zip": "70802", "close_date": "2025-08-01", "side": "Listing",
+                 "owner_names": ["Later Buyer"], "prior_owner_names": ["Pretend Seller"], "tier": "none"}]
+    listed = SL.pending([sale("40 Example Lane, Baton Rouge, LA 70802", "2025-08-01", "Listing")], list_doc, {"confirmed": [], "skipped": []}, PEOPLE)
+    check(listed[0]["owner_names"] == ["Pretend Seller"], "a list-side card shows the prior owner names")
+    badp = Path(tmp) / "enrichment" / "broken-links.json"
+    badp.write_text("{not json")
+    try:
+        SL.confirm(badp, ROWS[2] if False else sale("7 Sample Way, Zachary, LA 70791", "2024-03-03"), "9001")
+        check(False, "a links file that cannot be read is not overwritten")
+    except ValueError:
+        check("{not json" in badp.read_text(), "a links file that cannot be read is not overwritten")
+
     # sale_pins carries the link
     geo_cache = Path(tmp) / "geo.json"
     key = sale_pins._geo().address_key("12 Fixture Row", "Baton Rouge", "LA", "70801")
