@@ -246,11 +246,13 @@ button:focus-visible{outline:2px solid var(--coral);outline-offset:2px}
 window.M3 = {
   shown(s) { const raw = String(s || '').trim(), missingFirst = /^[\uFFFD?]/.test(raw); let t = raw.replace(/^[\uFFFD?]+\s*/, '').trim(); const m = t.match(/^(.*?)(\s+household)$/i); if (!m && !/^household$/i.test(t)) return t; const before = (m ? m[1] : '').trim().replace(/^[\uFFFD?]+\s*/, '').trim(); if (!before) return ''; const parts = before.split(/\s+/).filter(Boolean); if (parts.length >= 2 || missingFirst) return parts[parts.length - 1] + (m ? m[2] : ' household'); return before; },
   where: (p, cap) => p.city ? cap(p.city) : 'this area',
+  saleLine(p) { return p.sale ? [p.sale.year, p.sale.side].filter(Boolean).join(' · ') : ''; },
   title(p, view, where) { const pub = view === 'public', name = this.shown(p.name);
+    if (p.sale) return !pub && p.sale.street ? p.sale.street : 'A closed sale in ' + where;
     if (!pub && name) return name;
     return (p.rel === 'deal' ? 'A live deal in ' : p.rel === 'client' ? 'A client in ' : 'Someone I know in ') + where; },
-  tip(p, view, label, where) { const name = this.shown(p.name); return ((view !== 'public' && name) ? name : label) + ' · ' + where; },
-  note(p, view) { return view === 'public' ? 'The name and details are left off, so nobody can be named from this view.' : (p.next ? 'Next: ' + p.next : 'Live from the Pipeline CRM.'); },
+  tip(p, view, label, where) { if (p.sale) return 'Closed sale' + (this.saleLine(p) ? ' · ' + this.saleLine(p) : '') + ' · ' + where; const name = this.shown(p.name); return ((view !== 'public' && name) ? name : label) + ' · ' + where; },
+  note(p, view) { if (p.sale) return 'A closed sale from the sales record. Not linked to a person yet.'; return view === 'public' ? 'The name and details are left off, so nobody can be named from this view.' : (p.next ? 'Next: ' + p.next : 'Live from the Pipeline CRM.'); },
 
   /* The towns. Each one is a landmark on the overview (crest), counts the people whose city is in its list, and has a street file.
      at: where the landmark stands. see and view: where the camera settles, and how far out, when the town is opened. */
@@ -276,9 +278,10 @@ window.M3 = {
   lines(g) { return g ? g.split(';').map(part => { const a = part.split(','), o = []; let la = 0, lo = 0; for (let i = 0; i + 1 < a.length; i += 2) { la += +a[i]; lo += +a[i + 1]; o.push([la, lo]); } return o; }) : []; },
   decode(doc) { return doc.roads.map(r => ({ c: r.c, n: r.n, lines: this.lines(r.g).map(l => l.map(q => [doc.origin[0] + q[0] * doc.step, doc.origin[1] + q[1] * doc.step])) })); },
   // The city view. A roof's floating label is the person's name in CRM mode and nothing at all in Public mode.
-  roofLabel(p, view) { return view === 'public' ? '' : this.shown(p.name); },
-  cityCard(town, people, view) { const pub = view === 'public', tags = [this.count(people.length)];
+  roofLabel(p, view) { return view === 'public' ? '' : p.sale ? p.sale.street : this.shown(p.name); },
+  cityCard(town, all, view) { const pub = view === 'public', people = all.filter(p => !p.sale), sales = all.length - people.length, tags = [this.count(people.length)];
     [['client', 'client', 'clients'], ['deal', 'live deal', 'live deals'], ['sphere', 'in my sphere', 'in my sphere'], ['recruit', 'recruit', 'recruits']].forEach(([k, one, many]) => { const c = people.filter(p => p.rel === k).length; if (c) tags.push(c + ' ' + (c === 1 ? one : many)); });
+    if (sales) tags.push(sales + (sales === 1 ? ' closed sale' : ' closed sales'));
     const owed = pub ? [] : people.filter(p => p.owes && this.shown(p.name)).slice(0, 6).map(p => ({ i: p.i, label: this.shown(p.name) }));
     return { title: town.name, tags, owed, credit: 'Streets ' + this.OSM,
       note: pub ? 'Each roof sits on its own street. Names and details are left off, so nobody can be named from this view.' : owed.length ? 'You owe these people a reply. Click a name to find the roof.' : 'Each roof sits on its own street. Click one to open the contact card.' }; }
@@ -316,8 +319,9 @@ let HOST = null; try { if (window.parent !== window && typeof window.parent.open
   const pins = st.feed.map.pins || [];
   const norm = c => String(c || '').trim().toLowerCase().replace(/^st\.? /, 'saint ');
   people = pins.filter(p => p && isFinite(p.lat) && isFinite(p.lng) && !['agent', 'vendor', 'lender'].includes(p.type)).map(p => ({ id: p.person_id == null ? '' : String(p.person_id), x: X(p.lng), z: Z(p.lat),
-    stage: String(p.stage || '').toLowerCase().replace(/_/g, ' '), band: p.band || '', owes: !!p.owes_reply, type: p.kind === 'deal' ? 'deal' : (p.type || 'unknown'),
-    quiet: Math.round(p.days_quiet || 0), city: norm(p.city), name: p.display || '', next: p.next_action || '' }))
+    stage: String(p.stage || '').toLowerCase().replace(/_/g, ' '), band: p.band || '', owes: !!p.owes_reply, type: p.kind === 'deal' ? 'deal' : p.kind === 'sale' ? 'sale' : (p.type || 'unknown'),
+    quiet: Math.round(p.days_quiet || 0), city: norm(p.city), name: p.kind === 'sale' ? '' : (p.display || ''), next: p.next_action || '',
+    sale: p.kind === 'sale' ? { street: String(p.address || ''), year: String(p.year || '').slice(0, 4), side: String(p.side || '') } : null }))
     .filter(p => Math.abs(p.x) < HX - .6 && Math.abs(p.z) < HZ - .6);
   farms = (st.farms || []).filter(f => f && Array.isArray(f.polygon) && f.polygon.length >= 3 && !/city limits/i.test(f.name || ''))
     .map(f => { const poly = f.polygon.map(([la, lo]) => [X(lo), Z(la)]); return { name: f.name || '', poly, x: poly.reduce((s, q) => s + q[0], 0) / poly.length, z: poly.reduce((s, q) => s + q[1], 0) / poly.length }; })
@@ -325,7 +329,7 @@ let HOST = null; try { if (window.parent !== window && typeof window.parent.open
   asOf = new Date(st.feed.generated_at || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 const N = people.length;
-const relOf = p => p.type === 'deal' ? 'deal' : p.stage === 'past client' ? 'past client' : p.type === 'client' ? 'client' : p.type === 'recruit' ? 'recruit' : 'sphere';
+const relOf = p => p.type === 'sale' ? 'past client' : p.type === 'deal' ? 'deal' : p.stage === 'past client' ? 'past client' : p.type === 'client' ? 'client' : p.type === 'recruit' ? 'recruit' : 'sphere';
 const stageOf = p => p.stage === 'showing' ? 'showing scheduled' : (['new lead', 'contacted', 'nurture', 'showing scheduled', 'under contract', 'closed', 'past client'].includes(p.stage) ? p.stage : 'none');
 people.forEach((p, i) => { p.i = i; p.rel = relOf(p); p.stg = stageOf(p); p.seed = rnd(); });
 
@@ -698,12 +702,12 @@ canvas.addEventListener('keydown', e => { const s = cam.dist * .08, c = Math.cos
 /* ------------------------------------------------------ hover, pick, card */
 const mouse = { x: 0, y: 0, in: false }, tip = $('#tip'); const sx = new Float32Array(N), sy = new Float32Array(N), sw = new Float32Array(N);
 function nearest(px, py) { let best = -1, bd = 1e9; for (let i = 0; i < N; i++) { if (showCur[i] < .5 || sw[i] <= 0) continue; const d = Math.hypot(sx[i] - px, sy[i] - py - sw[i] * .4); if (d < bd && d < Math.max(13, sw[i] * .9)) { bd = d; best = i; } } return best; }
-const TYPE_LABEL = { client: 'Client', sphere: 'Sphere', recruit: 'Recruit', deal: 'Live deal' };
+const TYPE_LABEL = { 'past client': 'Past client', client: 'Client', sphere: 'Sphere', recruit: 'Recruit', deal: 'Live deal' };
 const where = p => M3.where(p, cap);
 function select(i) { state.sel = i; const card = $('#card'); if (i < 0) { card.hidden = true; return; } const p = people[i], pub = state.view === 'public';
-  $('#cType').textContent = TYPE_LABEL[p.rel] + ' · ' + where(p); $('#cTitle').textContent = M3.title(p, state.view, where(p));
-  const tags = []; const sr = LENS.stage.find(r => r[0] === p.stg); if (p.stg !== 'none') tags.push(`<span class="s" style="background:${sr[2]};color:${p.stg === 'closed' ? '#FBF8F3' : '#14100E'}">${sr[1]}</span>`);
-  if (!pub) { if (p.owes) tags.push('<span class="hot">You owe a reply</span>'); if (p.band) tags.push(`<span>${cap(p.band)} cadence</span>`); if (p.quiet > 0) tags.push(`<span>Quiet ${LIVE ? p.quiet : 'about ' + p.quiet} days</span>`); if (p.stg === 'none') tags.push('<span>No stage yet</span>'); }
+  $('#cType').textContent = (p.sale ? 'Closed sale' : TYPE_LABEL[p.rel]) + ' · ' + where(p); $('#cTitle').textContent = M3.title(p, state.view, where(p));
+  const tags = []; const sr = LENS.stage.find(r => r[0] === p.stg); if (p.stg !== 'none' && !p.sale) tags.push(`<span class="s" style="background:${sr[2]};color:${p.stg === 'closed' ? '#FBF8F3' : '#14100E'}">${sr[1]}</span>`);
+  if (p.sale) { const sl = M3.saleLine(p); tags.push('<span>Sale, not a person</span>'); if (sl) tags.push(`<span>${sl}</span>`); } else if (!pub) { if (p.owes) tags.push('<span class="hot">You owe a reply</span>'); if (p.band) tags.push(`<span>${cap(p.band)} cadence</span>`); if (p.quiet > 0) tags.push(`<span>Quiet ${LIVE ? p.quiet : 'about ' + p.quiet} days</span>`); if (p.stg === 'none') tags.push('<span>No stage yet</span>'); }
   $('#cTags').innerHTML = tags.join(''); $('#cNote').textContent = M3.note(p, state.view);
   const oc = $('#cOpen'); oc.hidden = !(HOST && !pub && p.id); oc.onclick = () => { try { HOST.openPerson(p.id); } catch (e) { } };
   card.hidden = false; selOff.setXY(0, p.x, p.z); selOff.needsUpdate = true; if ($('#legend').classList.contains('open')) sheet(null); }

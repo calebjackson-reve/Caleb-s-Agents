@@ -873,6 +873,21 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
     const mixed = [{ rel: rel({ type: 'client', stage: 'past client' }) }, { rel: rel({ type: 'household', stage: 'past client' }) }, { rel: 'sphere' }];
     check(mixed.filter(q => q.rel === 'past client').length === 2 && mixed.filter(q => !offRel.has(q.rel)).length === 2, 'past client roofs are visible on load and the chip count counts everyone of that rel in frame');
     check(/buildChips\(\); applyFilters\(\)/.test(m3) && !/localStorage/.test(m3), 'boot still calls applyFilters and chips are still not saved');
+    // Closed-sale roofs (PL12): kind=sale pins are Past clients roofs, labeled as a sale, never a person, never Live deals.
+    const salePins = (state.feed.map.pins || []).filter(p => p.kind === 'sale');
+    check(salePins.length >= 5 && salePins.every(p => !p.person_id && p.sale === true && isFinite(p.lat) && isFinite(p.lng) && p.address && p.stage === 'past client'), 'the demo map carries made-up closed-sale pins with coordinates, a street and no person');
+    check(!salePins.some(p => /lease/i.test(p.sale_type || '')) && !salePins.some(p => /Muscadine/.test(p.address)), 'the demo lease row is not pinned');
+    check(/p\.kind === 'sale' \? 'sale'/.test(m3) && /sale: p\.kind === 'sale' \?/.test(m3) && /name: p\.kind === 'sale' \? ''/.test(m3), 'the map reads a sale pin as type sale with no name');
+    const sale = { type: 'sale', stage: 'past client', name: '', city: 'baton rouge', sale: { street: '12 Willow Bend', year: '2025', side: 'Buyer' }, rel: 'past client' };
+    check(rel(sale) === 'past client' && rel({ type: 'deal', stage: 'under contract' }) === 'deal', 'a sale pin is rel past client and a live deal stays rel deal');
+    const saleOff = new Set(['past client']), saleShown = q => !saleOff.has(q.rel);
+    check(!offRel.has(rel(sale)) && !saleShown(sale) && offRel.has('deal') && /\['deal', 'Live deals'/.test(m3), 'a sale roof shows with the Past clients chip on, hides with it off, and Live deals is its own chip');
+    const pureSale = (/<script id="m3pure">([\s\S]*?)<\/script>/.exec(m3) || [])[1] || '', sbs = { window: {} }; vm.createContext(sbs); vm.runInContext(pureSale, sbs);
+    const M3 = sbs.window.M3, capf = s => s.replace(/\b[a-z]/g, c => c.toUpperCase()), sw2 = M3.where(sale, capf);
+    check(M3.title(sale, 'crm', sw2) === '12 Willow Bend' && !/Someone|client in/.test(M3.title(sale, 'crm', sw2)) && M3.title(sale, 'public', sw2) === 'A closed sale in Baton Rouge'
+      && /Closed sale/.test(M3.tip(sale, 'crm', 'Past client', sw2)) && /2025/.test(M3.tip(sale, 'crm', 'Past client', sw2)) && /Not linked to a person/.test(M3.note(sale, 'crm'))
+      && M3.roofLabel(sale, 'crm') === '12 Willow Bend' && M3.roofLabel(sale, 'public') === '' && M3.saleLine(sale) === '2025 · Buyer', 'a sale pin is labeled as a closed sale with street, year and side, and nothing pretends it is a contact');
+    check(/p\.sale \? 'Closed sale' : TYPE_LABEL\[p\.rel\]/.test(m3) && /oc\.hidden = !\(HOST && !pub && p\.id\)/.test(m3), 'a sale card says Closed sale and has no Open contact button because it has no person id');
     // The People board lists unpinned Stage=past client people from feed.people, and nobody else from there.
     const unp = run(`(function () { const pins = new Set(((S.data.feed.map || {}).pins || []).map(p => String(p.person_id))); const ppl = Stage.people();
       return { has: ['2901', '2902'].map(id => ppl.some(r => String(r.person_id) === id)), pinned: ['2901', '2902'].map(id => pins.has(id)),
