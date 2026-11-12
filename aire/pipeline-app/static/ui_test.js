@@ -852,6 +852,18 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
       && M3.title({ name: '?', rel: 'client' }, 'crm', 'Zachary') === 'A client in Zachary'
       && oneBits.every(s => !/household/i.test(s) && !/^\?/.test(s)), 'when there is only one name, the label is that name with no household and no leading ?');
   }
+  {
+    // Home Ground opens on Type=client roofs only; the other chips are one tap away.
+    const offInit = (/const state = \{[^\n]*?off: \{ rel: new Set\((\[[^\]]*\])\), stage: new Set\(\) \}/.exec(m3) || [])[1];
+    const offRel = new Set(offInit ? JSON.parse(offInit.split("'").join('"')) : ['?']);
+    const crowd = [{ rel: 'client' }, { rel: 'sphere' }, { rel: 'sphere' }, { rel: 'recruit' }, { rel: 'deal' }];
+    const shownNow = crowd.filter(q => !offRel.has(q.rel)), counted = r => crowd.filter(q => q.rel === r).length;
+    check(offRel.has('sphere') && offRel.has('recruit') && offRel.has('deal') && !offRel.has('client') && offRel.size === 3 && shownNow.length === 1 && shownNow[0].rel === 'client', 'Home Ground opens showing only client roofs: Sphere, Recruits and Live deals start off');
+    check(/\['client', 'Clients'/.test(m3) && /\['sphere', 'Sphere'/.test(m3) && /\['recruit', 'Recruits'/.test(m3) && /\['deal', 'Live deals'/.test(m3) && /off: \{ rel: new Set\(\[[^\]]*\]\), stage: new Set\(\) \}/.test(m3), 'the Clients, Sphere, Recruits and Live deals chips are all still built');
+    check(/const n = people\.filter\(p => inView\(p\) && \(state\.lens === 'rel' \? p\.rel : p\.stg\) === r\[0\]\)\.length/.test(m3) && counted('sphere') === 2 && counted('deal') === 1 && /off\.has\(r\[0\]\) \? off\.delete\(r\[0\]\) : off\.add\(r\[0\]\)/.test(m3) && /!off\.has\(state\.lens === 'rel' \? p\.rel : p\.stg\)/.test(m3), 'chip counts include everyone in frame, hidden or not, and each chip still toggles its layer');
+    check(!/localStorage/.test(m3) && !/sessionStorage/.test(m3), 'Home Ground chips are not saved anywhere: the clients-only default applies on every load');
+    check(/buildChips\(\); applyFilters\(\); computeDensity\(densTo, showTgt\)/.test(m3), 'the clients-only default is applied on load, before the first counts and density');
+  }
   // The shell.
   check(/<meta name="theme-color" content="#FBF8F3">/.test(indexHtml) && /Instrument\+Serif/.test(indexHtml) && /Nunito/.test(indexHtml) && indexHtml.indexOf('href="light.css"') > indexHtml.indexOf('href="ui.css"'), 'the page reads as the light canvas and loads the two typefaces');
   check(/--ivory: #FBF8F3; --ink: #14100E; --hair: #F1EFEC;/.test(light), 'canvas, ink and hairline are the approved three');
