@@ -71,8 +71,8 @@ async function chapters(browser, w, h, phone, dir, plan) {
 async function explore(browser, w, h, phone, dir, full) {
   fs.mkdirSync(path.join(out, dir), { recursive: true });
   const { ctx, page } = await open(browser, w, h, phone);
-  await page.evaluate(() => { const el = document.querySelector('[data-scene="explore"]'); const r = el.getBoundingClientRect(); window.scrollTo(0, r.top + scrollY + r.height * 0.4); });
-  await settle(page, 800);
+  await page.evaluate(() => { const el = document.querySelector('[data-scene="explore"]'); const r = el.getBoundingClientRect(); window.scrollTo(0, r.top + scrollY + r.height * 0.62); });
+  await settle(page, 1500);
   await page.click('#open-viewer');
   await page.waitForTimeout(6000);
   const shot = async (name) => { await settle(page, 1800); await page.screenshot({ path: path.join(out, `${dir}/${name}.png`) }); report.states[`${dir}/${name}.png`] = await info(page); };
