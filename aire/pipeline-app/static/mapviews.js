@@ -66,7 +66,7 @@ function mapTools() {
 }
 function mapBar() {
   const b = (k, label) => `<button type="button" aria-pressed="${S.mapPanel === k}" onclick="mapOpen('${k}')">${label}</button>`;
-  return `<button type="button" onclick="drawFarm()">Draw farm</button><button type="button" onclick="mapFit()">Fit</button>${b('filters', 'Filters')}${b('lists', 'Lists and farms')}<button type="button" onclick="map3d(true)">3D</button>`;
+  return `<button type="button" onclick="drawFarm()">Draw farm</button><button type="button" onclick="mapFit()">Fit</button>${b('filters', 'Filters')}${b('lists', 'Lists and farms')}`;
 }
 function mapOpen(k) { S.mapPanel = S.mapPanel === k ? '' : k; if (k === 'lists') { S.pick = ''; if (S.map) S.map.setData({ selected: '' }); } mapUpdate(); }
 // The legend: the same seven colors as everywhere else. A stone dot only shows when someone on the map has no such stage.
@@ -284,28 +284,3 @@ async function dismissRow(key) {
 // Register the map pages with the Command Center router; the map mounts after the page is on screen.
 Object.assign(CC.views, { map: viewMap, dealmap: viewDealMap, monitor: viewMarket });
 Object.assign(CC.after, { map: () => mountMap(false), dealmap: () => mountMap(true) });
-
-// ---------------------------------------------------------------- the 3D map (map3d.html)
-// The same people at the same coordinates, as houses on a model of the market. It runs in its own frame over the Map
-// page and is kept alive between renders, so it never reloads while Caleb is in it. Its card buttons call the same
-// functions as the card above (openPerson, openNote, openTask, touched, openDeal): no new send or write path.
-S.map3d = false;
-function map3dPlace() {
-  const w = $('#map3d'), m = $('#main'); if (!w || w.hidden || !m) return;
-  const r = m.getBoundingClientRect(); Object.assign(w.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
-}
-function map3dSync() {
-  const on = !!S.map3d && S.view === 'map'; let w = $('#map3d');
-  if (!w) { if (!on) return;
-    w = document.createElement('div'); w.id = 'map3d'; w.style.cssText = 'position:fixed;z-index:5;background:#FBF8F3';
-    w.innerHTML = '<iframe src="/map3d.html" title="3D map" style="display:block;width:100%;height:100%;border:0"></iframe>';
-    document.body.appendChild(w); }
-  w.hidden = !on; map3dPlace();
-}
-function map3d(on) { S.map3d = on == null ? !S.map3d : !!on; map3dSync(); mapUpdate(); }
-if (window.MutationObserver && window.ResizeObserver) {
-  const m3 = $('#main');
-  new MutationObserver(map3dSync).observe(m3, { childList: true });   // every page change shows or hides the frame
-  new ResizeObserver(map3dPlace).observe(m3);
-  window.addEventListener('resize', map3dPlace);
-}
