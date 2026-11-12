@@ -171,6 +171,13 @@ TOPIC_PTS, DEAL_PTS, WAIT_BASE, WAIT_MAX = 20, 10, 5, 20
 CADENCE_PTS = {"hot": 10, "warm": 7, "lukewarm": 4, "cold": 2, "ice-cold": 1}
 
 
+def side_word(side) -> str:
+    """The Deals sheet's Side column as the word Pipeline shows: Listing is selling, Buyer is buying. Both, dual or
+    blank has no single word, so it is empty and the caller keeps whatever it had."""
+    s = str(side or "").strip().lower()
+    return "selling" if s.startswith("list") else "buying" if s.startswith("buy") else ""
+
+
 def amounts(text: str) -> list[tuple[int, bool]]:
     """Dollar figures a person wrote, as (dollars, is a ceiling). Only $ or k or million forms between $50,000 and
     $20,000,000 count, so a phone number, a date or a $500 repair is never read as a budget."""
@@ -231,6 +238,8 @@ def score_call(r: dict, deals: list[dict], today: date, weights: dict | None = N
     best = top[0] if top else (int(price) if price and price >= 50_000 else 0)
     money = next(p for floor, p in MONEY_PTS if best >= floor) if best else 0
     topic = next((label for rx, label in TOPICS if rx.search(text)), "")
+    if r.get("deal_side") and topic in ("buying", "selling"):
+        topic = r["deal_side"]  # on an open deal the sheet's Side decides. A seller who texts about a showing is still selling.
     talk = bool(deal) or bool(DEAL_TALK.search(text))
     new_lead = str(r.get("stage") or "").strip().lower() == "new lead" or bool(r.get("received"))  # a new lead asked for something
     intent = (TOPIC_PTS if topic or new_lead else 0) + (DEAL_PTS if talk else 0)
@@ -459,7 +468,7 @@ class Book:
             "equity": None,
             "years": (f"{yo['years']} year{'' if yo['years'] == 1 else 's'}, since {yo['since']}", f"bought with you, {yo['from']}") if yo else None,
             "source": (str(fx["source"]), "CRM sheet") if fx.get("source") else None,
-            "deal": (", ".join(x for x in (last["address"], last["side"], last["status"], last["day"]) if x), last["from"]) if last else None,
+            "deal": (", ".join(x for x in (last["address"], ("" if "closed" in last["status"] else side_word(last["side"])) or last["side"], last["status"], last["day"]) if x), last["from"]) if last else None,
             "household": (", ".join(fx["household"]), "same address on the CRM sheet") if fx.get("household") else None,
         }
         why = {"equity": "no mortgage balance in any source", "years": "no purchase date on the sheet, and no closed purchase with you at this address",

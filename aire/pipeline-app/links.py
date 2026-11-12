@@ -151,15 +151,8 @@ def checkins(ties: list[dict], sales: list[dict], feed: dict, today: date, windo
     return sorted(rows, key=lambda r: r["due"])
 
 
-def apply_overlay(feed: dict, over: dict) -> dict:
-    """A copy of the feed with each tied person's stage set from their deal, the sheet's stage kept as sheet_stage."""
-    if not over:
-        return feed
-
-    def fix(r):
-        o = over.get(str(r.get("person_id"))) if isinstance(r, dict) else None
-        return {**r, "stage": o["stage"], "sheet_stage": r.get("stage") or "", "stage_from": o["deal"]} if o and str(r.get("stage") or "").strip().lower() != o["stage"] else r
-
+def _remap(feed: dict, fix) -> dict:
+    """A copy of the feed with fix(row) applied to every person row the screens read."""
     out = dict(feed)
     for k in ("touches_due", "new_leads", "people", "partners"):
         if isinstance(feed.get(k), list):
@@ -169,6 +162,54 @@ def apply_overlay(feed: dict, over: dict) -> dict:
     if isinstance(feed.get("map"), dict):
         out["map"] = {**feed["map"], "pins": [fix(p) if p.get("kind") == "person" else p for p in feed["map"].get("pins") or []]}
     return out
+
+
+def apply_overlay(feed: dict, over: dict) -> dict:
+    """A copy of the feed with each tied person's stage set from their deal, the sheet's stage kept as sheet_stage."""
+    if not over:
+        return feed
+
+    def fix(r):
+        o = over.get(str(r.get("person_id"))) if isinstance(r, dict) else None
+        return {**r, "stage": o["stage"], "sheet_stage": r.get("stage") or "", "stage_from": o["deal"]} if o and str(r.get("stage") or "").strip().lower() != o["stage"] else r
+
+    return _remap(feed, fix)
+
+
+def sides(ties: list[dict]) -> dict:
+    """person_id -> "selling" or "buying", from the Side column of the Deals sheet row on each of their open deals
+    (Listing is selling, Buyer is buying). Closed deals do not count, so a past buyer who now texts about selling keeps
+    that. Someone on open deals that disagree, or whose side is Both or blank, gets nothing."""
+    out, clash = {}, set()
+    for t in ties:
+        word = insight.side_word(t.get("side"))
+        if not word or t["stage"] not in OPEN or t["expired_offer"]:
+            continue
+        for p in t["people"]:
+            if out.setdefault(p["person_id"], word) != word:
+                clash.add(p["person_id"])
+    return {pid: w for pid, w in out.items() if pid not in clash}
+
+
+TALKED = re.compile(r"^(Talked about )(buying|selling)\b")
+
+
+def apply_sides(feed: dict, by_person: dict) -> dict:
+    """A copy of the feed where each deal person carries deal_side, and the text-guessed "Talked about buying" or
+    "Talked about selling" reason says the sheet's side instead. Moving, renting and investing reasons are left alone."""
+    if not by_person:
+        return feed
+
+    def fix(r):
+        w = by_person.get(str(r.get("person_id"))) if isinstance(r, dict) else None
+        if not w:
+            return r
+        row = {**r, "deal_side": w}
+        if isinstance(r.get("reasons"), list):
+            row["reasons"] = [TALKED.sub(lambda m: m.group(1) + w, x) if isinstance(x, str) else x for x in r["reasons"]]
+        return row
+
+    return _remap(feed, fix)
 
 
 # ---------------- The Fix list ----------------

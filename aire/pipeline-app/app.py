@@ -455,12 +455,14 @@ class State:
             ties = links.tie(cards, feed)
             over = links.overlay(ties, feed)
             shown = links.apply_overlay(feed, over)  # a signed contract or a closing sets the stage Pipeline shows, never the sheet
+            side_of = links.sides(ties)
+            sided = links.apply_sides(shown, side_of)  # call list reads the sheet's side. Book keeps `shown`, so its seller score still sees real selling talk.
             weights = learn.current(self.learn_dir)
             leads = cc.attach_crm(cc._rows(raw.get("leads")), (feed.get("new_leads") or []) + (feed.get("touches_due") or []))
             book = insight.Book(shown, cc.deal_rows(cc._rows(raw.get("deals"))), sales, [{**r, "origin": "email"} for r in leads], today(), weights=weights["seller"])
-            self._insight = (key, {"book": book, "call10": insight.call10(shown, today(), done, weights=weights["call10"]), "sellers": book.sellers(25),
-                                   "call_pool": insight.call10(shown, today(), done, n=60, weights=weights["call10"])["rows"], "seller_pool": book.sellers(200),
-                                   "ties": ties, "overlay": over, "deal_counts": links.counts(ties), "board_contract": links.board_contract(ties),
+            self._insight = (key, {"book": book, "call10": insight.call10(sided, today(), done, weights=weights["call10"]), "sellers": book.sellers(25),
+                                   "call_pool": insight.call10(sided, today(), done, n=60, weights=weights["call10"])["rows"], "seller_pool": book.sellers(200),
+                                   "ties": ties, "overlay": over, "sides": side_of, "deal_counts": links.counts(ties), "board_contract": links.board_contract(ties),
                                    "checkins": links.checkins(ties, sales, feed, today()), "fixes": links.fixes(feed, cards, ties, sales)})
         return self._insight[1] or self.insight()  # a retrain cleared it between the two lines: build it again
 
@@ -855,7 +857,7 @@ class State:
         try:  # a bad row in a read must never take the whole screen down
             ins = self.insight() if feed_ok else {}
             if feed_ok:
-                feed = links.apply_overlay(feed, ins["overlay"])
+                feed = links.apply_sides(links.apply_overlay(feed, ins["overlay"]), ins.get("sides") or {})
         except Exception as e:
             ins = {"call10": {"rows": [], "considered": 0, "left_out": {}}, "sellers": []}
             problems.append({"level": "warn", "code": "insight_failed", "text": f"The call list and seller scores could not be worked out ({type(e).__name__}). The rest of the screen is fine."})
