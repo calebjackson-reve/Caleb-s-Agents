@@ -902,6 +902,18 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   check(/Paydays, next 30 days/.test(mf) && pay.slice(0, 4).every(r => mf.includes(run(`esc(${JSON.stringify(r.deal)})`))) && /Deadlines this week/.test(mf) && new RegExp(`class="mf-big">${d7.length}<`).test(mf),
     'the money block lists each payday in 30 days and counts the deadlines in 7');
   check(d7.length === 0 || /Inspection|Appraisal|Financing|Act of sale|Deadline/.test(mf), 'each deadline says what kind it is');
+  { // The Deals sheet and the calendar disagree on a closing day and one of the two is this week: Home shows it, flagged.
+    const row = { deal: '100 Fixture Ln', key: '100 fixture', day: '2026-11-13', time: '10:30AM', what: 'Act of sale', title: '100 Fixture Ln - Act of sale', from: 'sheet', note: 'the calendar has act of sale on 2026-11-13',
+      disagree: { sheet: '2026-11-20', calendar: '2026-11-13', time: '10:30AM', days: [{ day: '2026-11-13', time: '10:30AM' }, { day: '2026-11-27', time: null }] } };
+    run(`CC.data = Object.assign({}, __cc, { deadlines: Object.assign({}, __cc.deadlines, { all: [${JSON.stringify(row)}], d7: [${JSON.stringify(row)}], d3: [], overdue: [] }) })`);
+    const h2 = render('home'), m2 = txt(h2.slice(h2.indexOf('aria-label="Money first"'), h2.indexOf('aria-label="New leads"')));
+    check(/class="mf-big">1</.test(h2) && /100 Fixture Ln/.test(m2) && /dates disagree/.test(m2) && /Nov 13 10:30AM and \S+ Nov 27 on the calendar/.test(m2) && /Nov 20 on the Deals sheet/.test(m2) && !/No contract deadline in the next 7 days/.test(m2),
+      'a closing whose sheet and calendar dates disagree shows on Home as a deadline with every day and a dates disagree flag', m2.slice(0, 400));
+    const says = /Dates disagree\. Deals sheet: \S+ Nov 20\. Calendar: \S+ Nov 13 10:30AM and \S+ Nov 27\./;
+    check(says.test(txt(render('deadlines'))), 'the Deadlines page says the dates disagree and names each day', txt(render('deadlines')).slice(0, 300));
+    check(says.test(txt(render('dash'))), 'the Dashboard deadline list says the dates disagree');
+    run('CC.data = __cc');
+  }
   run('CC.data = Object.assign({}, __cc, { closings: [{ deal: "1 Blank Way", day: __cc.today, money: null }] })');
   check(/unknown/.test(render('home').split('aria-label="New leads"')[0]) && /commission unknown/.test(render('home')), 'a payday with no commission on the sheet reads unknown, never $0');
   run('CC.data = __cc');

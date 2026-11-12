@@ -77,11 +77,12 @@ def new_alerts(payload: dict, state: dict, now: datetime) -> tuple[list[dict], d
     for d in (payload.get("deadlines") or {}).get("all") or []:
         what = " and ".join(d.get("whats") or []) or d.get("what") or "Deadline"  # a step name, never the client
         key = f"{d.get('day')}|{d.get('key')}|{what}"
-        if d.get("day", "9") <= soon and key not in seen.setdefault("deadlines", set()):
+        if now.date().isoformat() <= d.get("day", "9") <= soon and key not in seen.setdefault("deadlines", set()):
             seen["deadlines"].add(key)
             when = "today" if d["day"] == now.date().isoformat() else "tomorrow"
             at = f" at {d['time']}" if d.get("time") else ""
-            out.append({"kind": "deadline", "title": f"{what} {when}{at}", "body": f"A contract deadline is due {when}{at}", "page": "deadlines"})
+            two = ". The calendar and the Deals sheet disagree on the day" if d.get("disagree") else ""
+            out.append({"kind": "deadline", "title": f"{what} {when}{at}", "body": f"A contract deadline is due {when}{at}{two}", "page": "deadlines"})
     failed = {p["name"] for p in payload.get("problems") or [] if p.get("state") == "failed"}
     for name in sorted(failed - set(state.get("failed") or [])):
         out.append({"kind": "sync", "title": "A read failed", "body": f"{name} did not update. Open Sources.", "page": "sources"})
