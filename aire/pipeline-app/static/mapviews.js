@@ -66,7 +66,10 @@ function mapTools() {
 }
 function mapBar() {
   const b = (k, label) => `<button type="button" aria-pressed="${S.mapPanel === k}" onclick="mapOpen('${k}')">${label}</button>`;
-  return `<button type="button" onclick="drawFarm()">Draw farm</button><button type="button" onclick="mapFit()">Fit</button>${b('filters', 'Filters')}${b('lists', 'Lists and farms')}<button type="button" title="Home Ground Map" onclick="map3d(true)">3D</button>`;
+  const mode = S.map3d
+    ? `<button type="button" aria-pressed="true" onclick="map3d(false)">2D map</button>`
+    : `<button type="button" title="Home Ground Map" aria-pressed="false" onclick="map3d(true)">3D</button>`;
+  return `<button type="button" onclick="drawFarm()">Draw farm</button><button type="button" onclick="mapFit()">Fit</button>${b('filters', 'Filters')}${b('lists', 'Lists and farms')}${mode}`;
 }
 function mapOpen(k) { S.mapPanel = S.mapPanel === k ? '' : k; if (k === 'lists') { S.pick = ''; if (S.map) S.map.setData({ selected: '' }); } mapUpdate(); }
 // The legend: the same seven colors as everywhere else. A stone dot only shows when someone on the map has no such stage.
@@ -90,6 +93,7 @@ function viewDealMap() {
     mapPanel(true), ['crm'], '<div class="cc-acts"><button type="button" onclick="go(\'deals\')">Back to the deal list</button></div>').replace('class="cc-page"', 'class="cc-page cc-wide"');
 }
 function mountMap(dealsOnly) {
+  if (!dealsOnly && S.map3d) { map3dSync(); return; }
   const el = $('#pmap'); if (!el) return;
   if (S.map) S.map.destroy();
   S.mapDealsOnly = !!dealsOnly;
@@ -286,10 +290,10 @@ Object.assign(CC.views, { map: viewMap, dealmap: viewDealMap, monitor: viewMarke
 Object.assign(CC.after, { map: () => mountMap(false), dealmap: () => mountMap(true) });
 
 // ---------------------------------------------------------------- the 3D map (map3d.html)
-// The same people at the same coordinates, as houses on a model of the market. It runs in its own frame over the Map
-// page and is kept alive between renders, so it never reloads while Caleb is in it. Its card buttons call the same
-// functions as the card above (openPerson, openNote, openTask, touched, openDeal): no new send or write path.
-S.map3d = false;
+// Home Ground is the Map tab: the model fills #main inside the Pipeline shell (sidebar, top bar, footer stay).
+// The frame is kept alive between renders so it never reloads while Caleb is on Map. The 2D map is a fallback
+// toggle. Card clicks call the same functions as the 2D card (openPerson, and no new send or write path).
+S.map3d = true;
 function map3dPlace() {
   const w = $('#map3d'), m = $('#main'); if (!w || w.hidden || !m) return;
   const r = m.getBoundingClientRect(); Object.assign(w.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
@@ -302,7 +306,16 @@ function map3dSync() {
     document.body.appendChild(w); }
   w.hidden = !on; map3dPlace();
 }
-function map3d(on) { S.map3d = on == null ? !S.map3d : !!on; map3dSync(); mapUpdate(); }
+function map3d(on) {
+  S.map3d = on == null ? !S.map3d : !!on;
+  map3dSync();
+  if (!S.map3d && S.view === 'map' && !S.mapDealsOnly) {
+    if (!S.map) mountMap(false);
+    else mapUpdate();
+  } else {
+    mapUpdate();
+  }
+}
 if (window.MutationObserver && window.ResizeObserver) {
   const m3 = $('#main');
   new MutationObserver(map3dSync).observe(m3, { childList: true });   // every page change shows or hides the frame

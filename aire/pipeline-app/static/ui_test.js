@@ -729,8 +729,11 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   const lg = run('mapLegend()');
   check(SEVEN.every(s2 => lg.includes(`</i>${s2}</li>`)) && /Pins by stage/.test(lg), 'the map legend lists the seven stages');
   check(/onclick="drawFarm\(\)">Draw farm</.test(run('mapBar()')) && /onclick="mapFit\(\)">Fit</.test(run('mapBar()')), 'Draw farm and Fit stay on the map');
-  check(/onclick="map3d\(true\)">3D</.test(run('mapBar()')), 'the Map bar has a 3D button that opens the Home Ground Map');
+  check(run('S.map3d') === true && /onclick="map3d\(false\)">2D map</.test(run('mapBar()')), 'Home Ground is the Map tab by default, with a 2D map fallback');
+  check(/onclick="map3d\(true\)">3D</.test(run('S.map3d = false; mapBar()')), 'the 2D map has a 3D button back to Home Ground');
+  run('S.map3d = true');
   const m3 = fs.readFileSync(path.join(dir, 'map3d.html'), 'utf8');
+  check(/location\.replace\('\/#map'\)/.test(m3), 'opening /map3d.html on its own takes you to the Map tab in the Pipeline shell');
   check(/src=['"]three-0.160.0.min.js['"]/.test(m3) && /fetch\('\/api\/state'/.test(m3) && !/\/api\/(send|call|draft)/.test(m3), 'the 3D map reads /api/state and starts no send, call or draft path');
   // Home Ground Map: local three.js, people only from /api/state on any host, no baked book of business, contact card through openPerson.
   check(fs.existsSync(path.join(dir, 'three-0.160.0.min.js')) && !/<script[^>]+src=["']https?:/.test(m3), 'the Home Ground Map loads three.js from the local file, no script CDN');
