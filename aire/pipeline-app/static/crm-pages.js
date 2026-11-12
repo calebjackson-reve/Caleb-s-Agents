@@ -188,9 +188,18 @@
         <p class="cc-note">${d.reply ? '“' + esc(C.cleanMsg(d.last_messages.slice(-1)[0])) + '”' : esc(d.body.slice(0, 140))}${d.to ? ' · to ' + (d.kind === 'text' ? C.ph(d.to) : C.em(d.to)) : ''}</p></div>
       <div class="cc-acts"><button type="button" class="cc-primary" onclick="openCompose('${esc(d.person_id)}', ${i})">${d.reply ? 'Write a reply' : 'Open'}</button>${contactBtns(d.person_id, Object.assign({}, d.row || {}, d.kind === 'text' ? { phone: d.to } : { email: d.to }, { display: d.name }))}</div></li>`; };
     const shown = all.filter(d => matches(`${d.name} ${d.body} ${d.subject}`)), ready = shown.filter(d => !d.reply), reply = shown.filter(d => d.reply);
-    const body = !shown.length ? (S.q ? C.noMatch() : C.empty('No drafts waiting. New ones come with the next feed refresh.'))
+    // Held, no draft: the people the hold rules kept off the queue, from both queues, one row a person. Display only:
+    // the name, the reason as the rules wrote it, and the day the hold ends when there is one. Nothing to tap.
+    const heldSeen = new Set(), held = (S.data.text_queue || {}).held || [], heldAll = held.concat((S.data.email_queue || {}).held || [])
+      .filter(h => { const k = String((h && (h.person_id || h.name)) || ''); if (!h || !k || heldSeen.has(k)) return false; heldSeen.add(k); return true; });
+    const heldShown = heldAll.filter(h => matches(`${h.name || ''} ${h.why || ''}`));
+    const heldRow = h => `<li class="cc-row held-row"><span class="cc-av" aria-hidden="true">${h.kind === 'email' ? '✉' : '▭'}</span>
+      <div class="cc-row-main"><h3>${C.who(h.name)}</h3><p class="cc-row-why">${esc(h.why || 'Held by the outreach rules.')}</p>${h.until ? `<p class="cc-note held-until">Until ${esc(C.day(String(h.until).slice(0, 10)))}</p>` : ''}</div></li>`;
+    const heldSec = heldShown.length ? `<h3 class="cc-sub-h">Held, no draft <span class="cc-count">${heldShown.length}</span></h3><p class="cc-note">Not drafts: the outreach rules kept these people off the queue today. Nothing to send here.</p><ul class="cc-rows">${heldShown.map(heldRow).join('')}</ul>` : '';
+    const body = !shown.length ? (heldShown.length ? (S.q ? '' : C.empty('No drafts waiting. New ones come with the next feed refresh.')) + heldSec : S.q ? C.noMatch() : C.empty('No drafts waiting. New ones come with the next feed refresh.'))
       : `<h3 class="cc-sub-h">Ready to send <span class="cc-count">${ready.length}</span></h3>${ready.length ? `<ul class="cc-rows">${ready.map(row).join('')}</ul>` : C.empty('No written drafts right now.')}
-        ${reply.length ? `<h3 class="cc-sub-h">Replies to write <span class="cc-count">${reply.length}</span></h3><p class="cc-note">Not drafts: these people texted last, so there is no template. They are not counted as drafts ready.</p><ul class="cc-rows">${reply.map(row).join('')}</ul>` : ''}`;
+        ${reply.length ? `<h3 class="cc-sub-h">Replies to write <span class="cc-count">${reply.length}</span></h3><p class="cc-note">Not drafts: these people texted last, so there is no template. They are not counted as drafts ready.</p><ul class="cc-rows">${reply.map(row).join('')}</ul>` : ''}
+        ${heldSec}`;
     // One owe-a-reply number: Touches due's. Replies to write cover the ones with a usable first name; the rest are named here.
     const owe = owesReply().length, rf = all.filter(d => d.reply).length;
     const why = owe ? ` ${owe} owe a reply (the same number as Touches due). ${rf === owe ? 'Each is under Replies to write.' : `${rf} are under Replies to write. The other ${owe - rf} have no first name on file or were already answered today, so they are on Touches due only.`}` : '';
