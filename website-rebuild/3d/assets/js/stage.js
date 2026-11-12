@@ -88,11 +88,12 @@ vec3 shot(vec2 uv, float d){
 }
 
 void main(){
-  float d = texture2D(tDepth, vUv).r;
+  vec2 uv = vUv;
+  float d = texture2D(tDepth, uv).r;
   bool sky = d > 0.999999;
-  vec3 hdr = shot(vUv, d);
+  vec3 hdr = shot(uv, d);
   if (uAO > 0.0) {
-    vec2 c0 = (floor(vUv / uTexelAO + 0.5)) * uTexelAO;
+    vec2 c0 = (floor(uv / uTexelAO + 0.5)) * uTexelAO;
     float o = 0.25 * (texture2D(tAO, c0 + uTexelAO * vec2(-1.0, -1.0)).r + texture2D(tAO, c0 + uTexelAO * vec2(1.0, -1.0)).r
       + texture2D(tAO, c0 + uTexelAO * vec2(-1.0, 1.0)).r + texture2D(tAO, c0 + uTexelAO * vec2(1.0, 1.0)).r);
     hdr *= mix(vec3(1.0), vec3(o, o * 1.01, o * 1.03) * sqrt(o), uAO);
@@ -104,14 +105,14 @@ void main(){
   lit += grain * 0.011;
   if (uEdges < 0.5) { gl_FragColor = vec4(lit, 1.0); return; }
 
-  vec4 wp4 = uInvViewProj * vec4(vUv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0);
+  vec4 wp4 = uInvViewProj * vec4(uv * 2.0 - 1.0, d * 2.0 - 1.0, 1.0);
   vec3 wp = wp4.xyz / wp4.w;
   float r = length(wp.xz - uCenter.xz);
   float fade = sky ? 0.0 : 1.0 - smoothstep(uFade.x, uFade.y, r);
 
-  vec3 hb = abs(wp - vec3(0.0, 4.0, -8.6)) - vec3(12.4, 5.2, 13.6);
+  vec3 hb = abs(wp - vec3(0.0, 4.0, -8.6)) - vec3(13.1, 5.2, 13.6);
   float fine = sky ? 0.0 : 1.0 - smoothstep(0.0, 1.5, max(hb.x, max(hb.y, hb.z)));
-  float e = edgeAt(vUv);
+  float e = edgeAt(uv);
   float L = dot(lit, vec3(0.2126, 0.7152, 0.0722));
   vec3 wash = mix(uWashDark, uWashLight, smoothstep(0.05, 0.86, L));
   wash = mix(uPaper, wash, fade * mix(0.42, 1.0, smoothstep(0.03, 0.3, wp.y)));
@@ -150,7 +151,7 @@ void main(){
   vec4 wp4 = uInvViewProj * vec4(vUv * 2.0 - 1.0, dc * 2.0 - 1.0, 1.0);
   vec3 wp = wp4.xyz / wp4.w;
   // fine detail (window bars, shutters, trim) is only looked for on the house itself, and less of it as the house gets small on screen
-  vec3 hb = abs(wp - vec3(0.0, 4.0, -8.6)) - vec3(13.2, 5.6, 13.6);
+  vec3 hb = abs(wp - vec3(0.0, 4.0, -8.6)) - vec3(13.9, 5.6, 13.6);
   float fine = dc > 0.999999 ? 0.0 : (1.0 - smoothstep(0.0, 1.5, max(hb.x, max(hb.y, hb.z)))) * uDetail;
   vec2 o = uTexel * uLineW;
   float d1 = texture2D(tDepth, vUv + vec2(o.x, 0.0)).r, d2 = texture2D(tDepth, vUv - vec2(o.x, 0.0)).r;
@@ -358,7 +359,7 @@ export class Stage {
       this.focusPoint.set(s.tx, 0, s.tz); this.focusDist = d * Math.tan(s.fov * DEG / 2) / Math.tan(15 * DEG);
     } else {
       // in the explore mode the picture sits a little high, clear of the controls along the bottom
-      cam.fov = 30;
+      cam.fov = 30 + 12 * (s.explode || 0);   // the lens widens as the house comes apart, so the lifted parts stay in frame
       cam.setViewOffset(this.w, this.h, -this.w * this.freeShift, this.h * (this.w < 768 ? 0.1 : 0.05), this.w, this.h);
       const dd = cam.position.distanceTo(this.focusPoint);
       cam.near = Math.min(30, Math.max(0.4, dd * 0.08)); cam.far = 2400;

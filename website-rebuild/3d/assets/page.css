@@ -106,6 +106,7 @@ body.stage-off .photo { visibility: hidden; }
 .tag b, .tagdot { display: grid; place-items: center; width: 2rem; height: 2rem; min-width: 16px; min-height: 16px; border-radius: 50%; background: var(--ember); color: var(--ink); font-size: max(1.1rem, 9px); font-weight: 600; font-style: normal; letter-spacing: 0; line-height: 1; }
 .tagdot { position: absolute; left: 0; top: 0; margin: -1rem 0 0 -1rem; box-shadow: 0 0 0 0.4rem rgba(232, 119, 87, 0.22); will-change: transform; }
 .legend { display: none; }
+@media (max-width: 767px) { .wide-only { display: none; } }
 @media (max-width: 767px) {
   .tag { display: none; } .wires { display: none; }
   .tagdot { width: 1.9rem; height: 1.9rem; font-size: 1.05rem; margin: -0.95rem 0 0 -0.95rem; }

@@ -5,6 +5,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import Lenis from 'lenis';
 import { Stage, DEFAULT_STATE } from './stage.js';
 import { lerp, clamp01, smoother } from './kit.js';
+import { CAM } from './match.js';
+import { runPerf } from './perf.js';
 
 const q = new URLSearchParams(location.search);
 const body = document.body;
@@ -33,18 +35,18 @@ try {
 const base = Object.assign({}, DEFAULT_STATE);
 const K = {
   hero:    { az: 0, el: 1.6, dist: 150, tx: 0, ty: 3.5, tz: 0, fov: 10, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.14, sy: 0.15, sunAz: -52, sunEl: 34, dof: 0 },
-  form:    { az: -34, el: 12, dist: 58, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.19, sy: 0.03, sunAz: -76, sunEl: 28, dof: 0 },
-  buy:     { az: -22, el: 8, dist: 54, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.2, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0.4 },
-  sell:    { az: 13, el: 3.2, dist: 34, tx: 1.6, ty: 3.4, tz: 2, fov: 34, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.2, sy: 0.03, sunAz: -14, sunEl: 34, dof: 0.45 },
+  form:    { az: -34, el: 12, dist: 72, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 0, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.21, sy: 0.03, sunAz: -76, sunEl: 28, dof: 0 },
+  buy:     { az: -22, el: 8, dist: 68, tx: 0, ty: 2.8, tz: -3, fov: 26, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.21, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0.4 },
+  sell:    { az: 13, el: 3.2, dist: 46, tx: 0.6, ty: 3.4, tz: 2, fov: 34, ink: 1, build: 1, dusk: 0, blue: 0, bw: 0, explode: 0, sx: 0.21, sy: 0.03, sunAz: -14, sunEl: 34, dof: 0.45 },
   photo:   null,   // worked out from the photo, see matchPhoto()
   build:   null,   // the same camera as the photo, as a blueprint
-  explore: { az: -38, el: 25, dist: 92, tx: 0, ty: 6.2, tz: -6, fov: 24, ink: 1, build: 1, dusk: 0, blue: 1, bw: 0, explode: 1, sx: 0.09, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0 },
-  end:     { az: 30, el: 14, dist: 60, tx: 0, ty: 2.8, tz: -5, fov: 26, ink: 1, build: 1, dusk: 0, blue: 1, bw: 1, explode: 0, sx: 0.15, sy: -0.02, sunAz: -30, sunEl: 40, dof: 0.4 },
+  explore: { az: -38, el: 25, dist: 108, tx: 0, ty: 6.6, tz: -6, fov: 24, ink: 1, build: 1, dusk: 0, blue: 1, bw: 0, explode: 1, sx: 0.06, sy: 0.02, sunAz: -38, sunEl: 40, dof: 0 },
+  end:     { az: 30, el: 14, dist: 74, tx: 0, ty: 2.8, tz: -5, fov: 26, ink: 1, build: 1, dusk: 0, blue: 1, bw: 1, explode: 0, sx: 0.2, sy: -0.02, sunAz: -30, sunEl: 40, dof: 0.4 },
 };
 // Phone framing: the model sits in the upper part of the screen, the words below it.
 const KM = {
-  hero: { sx: 0, sy: 0.1, dist: 176 }, form: { sx: 0, sy: -0.17, dist: 62, az: -30 }, buy: { sx: 0, sy: -0.18, dist: 58 }, sell: { sx: 0, sy: -0.18, az: 10, dist: 22, tx: 0.4 },
-  explore: { sx: 0, sy: -0.22, dist: 86 }, end: { sx: 0, sy: -0.2, dist: 66 },
+  hero: { sx: 0, sy: 0.1, dist: 208 }, form: { sx: 0, sy: -0.17, dist: 86, az: -30 }, buy: { sx: 0, sy: -0.18, dist: 90 }, sell: { sx: 0, sy: -0.18, az: 10, dist: 21, tx: 0.2 },
+  explore: { sx: 0, sy: -0.25, dist: 104 }, end: { sx: 0, sy: -0.2, dist: 86 },
 };
 const ORDER = ['hero', 'form', 'buy', 'sell', 'photo', 'build', 'explore'];
 const NEXT = { hero: 'form', form: 'buy', buy: 'sell', sell: 'photo', photo: 'build', build: 'explore', explore: 'end' };
@@ -53,7 +55,7 @@ const TRACKS = {
   hero: { _: [0.22, 0.96] },
   form: { _: [0.08, 0.9], build: [0.16, 0.84], dof: [0.6, 0.95] },
   buy: { _: [0.1, 0.9] },
-  sell: { _: [0.2, 0.94], dusk: [0.26, 0.74], dof: [0.2, 0.6] },
+  sell: { _: [0.5, 0.95], dusk: [0.16, 0.6], dof: [0.5, 0.8] },
   photo: { _: [0, 1], dusk: [0.42, 0.66], blue: [0.42, 0.66] },
   build: { _: [0.08, 0.8], explode: [0.32, 0.86] },
   explore: { _: [0.03, 0.4], explode: [0.02, 0.22], bw: [0.12, 0.42], dof: [0.36, 0.46] },
@@ -61,7 +63,6 @@ const TRACKS = {
 const PHOTO = { on: [0.03, 0.34], off: [0.72, 0.98] };
 // The camera that took the twilight photo, fitted to landmarks on the house: where it stood, its lens, and where the
 // lens centre falls in the photo's own pixels.
-const CAM = { az: 16.4, el: 2.6, dist: 25.32, focal: 1624.3, cx: 799.1, cy: 520.1, target: [0, 3.6, 2.7] };
 
 // The twilight photo: its size, and how far across it the house runs.
 const SHOT = { w: 1672, h: 941, left: 150, right: 1625 };
@@ -190,11 +191,11 @@ function drawPhoto(h, drift) {
 
 // ---------------------------------------------------------------- explore mode
 const PINS = [
-  { at: [0, 7.6, 1.2], title: 'Front of the house', note: 'Painted brick, a charcoal roof and twin dormers.', img: 'basil-front-lit.webp' },
+  { at: [0, 8.2, -2.2], title: 'Front of the house', note: 'Painted brick, a charcoal roof and twin dormers.', img: 'basil-front-lit.webp' },
   { at: [-2.9, 1.5, 3.1], title: 'Front porch', note: 'Cedar posts, brick underfoot and flowers by the door.', img: 'basil-porch.webp' },
   { at: [0.3, 0.5, -20.5], title: 'Pool', note: 'The pool terrace behind the house, at dusk.', img: 'basil-pool-night.webp' },
   { at: [-0.3, 1.2, -13.6], title: 'Back patio', note: 'Covered, with an outdoor kitchen.', img: 'basil-patio.webp' },
-  { at: [-11.6, 1.6, -15], title: 'Garage and drive', note: 'Three bays along the side of the house.', img: 'basil-driveway.webp' },
+  { at: [-12.3, 1.6, -15], title: 'Garage and drive', note: 'Three bays along the side of the house.', img: 'basil-driveway.webp' },
   { at: [-38, 8.6, -46], title: 'The barn', note: 'White, with a cupola, across the lawn.', img: 'basil-barn.webp' },
   { at: [-2, 5.2, -68.5], title: 'Gazebo on the pond', note: 'A cedar frame at the edge of the water.', img: 'basil-gazebo.webp' },
 ];
@@ -204,7 +205,7 @@ const LOOKS = {
 };
 const VIEWS = {
   front: { az: 0, el: 7, dist: 58, t: [0, 3.4, -2] }, porch: { az: 16, el: 5, dist: 24, t: [0.4, 2.2, 2] },
-  pool: { az: 152, el: 24, dist: 52, t: [1, 1.5, -17] }, above: { az: 0, el: 66, dist: 96, t: [1, 0, -10] },
+  pool: { az: 152, el: 24, dist: 58, t: [1, 3.2, -15] }, above: { az: 0, el: 66, dist: 96, t: [1, 0, -10] },
 };
 const viewer = $('#viewer'), pinsEl = $('#pins'), card = $('#card');
 const free = Object.assign({}, base, LOOKS.day, { explode: 0, dof: 0.3 });
@@ -454,15 +455,18 @@ function frame(now) {
     stage.focusPoint.copy(controls.target);
     const want = !card.hidden && innerWidth >= 768 ? 0.11 : 0;
     if (Math.abs(want - stage.freeShift) > 0.0005) { stage.freeShift += (want - stage.freeShift) * (still || reduce ? 1 : Math.min(1, dt * 6)); moved += 1; }
-    if (turned || fly) moved += 1;   // only draw a new frame when the view actually changed
+    if (turned || fly || forceDraw) moved += 1;   // only draw a new frame when the view actually changed
     turned = false;
   } else {
-    stage.sway.x += (sway.x - stage.sway.x) * Math.min(1, dt * 2.5); stage.sway.y += (sway.y - stage.sway.y) * Math.min(1, dt * 2.5);
-    if (Math.abs(sway.x - stage.sway.x) > 0.002) moved += 1;
+    // the pointer leans the camera a little, except near the photo, where the model has to sit exactly on it
+    const n = w.s.name, hold = n === 'photo' ? 1 : n === 'sell' ? smoother((w.t - 0.45) / 0.4) : n === 'build' ? 1 - smoother((w.t - 0.08) / 0.3) : 0;
+    const wx = sway.x * (1 - hold), wy = sway.y * (1 - hold);
+    stage.sway.x += (wx - stage.sway.x) * Math.min(1, dt * 2.5); stage.sway.y += (wy - stage.sway.y) * Math.min(1, dt * 2.5);
+    if (Math.abs(wx - stage.sway.x) > 0.002) moved += 1;
   }
 
   const sig = stage.w + 'x' + stage.h;
-  if (moved > 1e-4 || needs > 0 || sig !== shown) {
+  if (moved > 1e-4 || needs > 0 || forceDraw || sig !== shown) {
     shown = sig; if (needs > 0) needs--;
     stage.apply(cur);
     if (po < 0.999) stage.render();
@@ -479,6 +483,40 @@ function frame(now) {
     setTimeout(() => { body.classList.remove('is-loading'); body.classList.add('is-ready'); }, still ? 0 : 500);
   }
 }
+
+// ---------------------------------------------------------------- frame timing
+// ?perf=1, or Shift+P three times: scroll the whole story and then turn the model in the viewer, drawing every frame,
+// and show how long the frames took on this machine. See perf.js.
+let forceDraw = false;
+function startPerf() {
+  if (!stage) return;
+  const top = scenes[0].top, end = journeyEnd - innerHeight;
+  const go = (y) => { if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else window.scrollTo(0, y); };
+  const ex = scenes.find((x) => x.name === 'explore');
+  const tgt = new THREE.Vector3(0, 3.4, -4);
+  runPerf({
+    stage, force: (on) => { forceDraw = on; },
+    phases: [
+      { name: 'scroll', label: 'Scrolling the whole story', seconds: 24, begin: () => { if (exploring) closeViewer(); }, drive: (u) => go(top + (end - top) * u) },
+      { name: 'orbit', label: 'Turning the model in the viewer', seconds: 10,
+        begin: () => { go(ex.top + ex.height * 0.62); openViewer('day'); },
+        drive: (u) => {
+          if (!controls) return;
+          const a = u * Math.PI * 2, d = 62 * stage.fit(), e = 16 * DEG;
+          controls.autoRotate = false; fly = null;
+          stage.camera.position.set(tgt.x + Math.sin(a) * Math.cos(e) * d, tgt.y + Math.sin(e) * d, tgt.z + Math.cos(a) * Math.cos(e) * d);
+          controls.target.copy(tgt); controls.update(); turned = true;
+        },
+        end: () => closeViewer() },
+    ],
+  });
+}
+let pKeys = 0, pLast = 0;
+addEventListener('keydown', (e) => {
+  if (e.key !== 'P' || !e.shiftKey) return;
+  const now = performance.now(); pKeys = now - pLast < 900 ? pKeys + 1 : 1; pLast = now;
+  if (pKeys >= 3) { pKeys = 0; startPerf(); }
+});
 
 // ---------------------------------------------------------------- start
 function start() {
@@ -498,6 +536,7 @@ function start() {
       if (q.has('pin')) pins[parseInt(q.get('pin'), 10)].el.click();
     }, 500);
   }, 700);
-  window.__stage = stage; window.__app = { cur, keys, openViewer, closeViewer, setLook, viewTo };
+  if (q.has('perf')) setTimeout(startPerf, 1500);
+  window.__stage = stage; window.__app = { cur, keys, openViewer, closeViewer, setLook, viewTo, startPerf };
 }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(start, start); else start();

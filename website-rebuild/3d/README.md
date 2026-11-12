@@ -100,13 +100,31 @@ No build step. Plain files, ES modules, an import map.
 | `assets/js/grounds.js` | Base, walk, drive, pool terrace, barn, pond, gazebo, trees |
 | `assets/js/materials.js` | Materials and textures, painted in code |
 | `assets/js/kit.js` | Geometry helpers |
+| `assets/js/match.js` | The camera that lines the model up with the twilight photo. Written by the photo fit, not by hand |
+| `assets/js/perf.js` | The frame timer. See "Timing it on a real machine" |
 | `dev.html` | A bare stage for checking one view, for example `dev.html?az=-30&el=10&dist=50&fov=26&build=1` |
 | `vendor/` | three.js r169 (MIT), Lenis 1.3.4 (MIT), each with its licence file |
 | `assets/fonts/` | Instrument Serif and Instrument Sans (SIL OFL), with licence files |
 
-Useful switches on the address: `?at=buy:0.5` jumps to the middle of a chapter, `?view=1&look=dusk` opens the explore mode, `?q=fast` forces the lighter setting, `?nowebgl=1` shows the fallback, `?still=1` turns easing off for screenshots.
+Useful switches on the address: `?perf=1` runs the frame timer, `?at=buy:0.5` jumps to the middle of a chapter, `?view=1&look=dusk` opens the explore mode, `?q=fast` forces the lighter setting, `?nowebgl=1` shows the fallback, `?still=1` turns easing off for screenshots.
 
 How it stays fast: the model is about 170,000 triangles and 140 draw calls a frame. It only draws a new frame when something moved. If a device runs slow for the first second and a half it drops to a lighter setting on its own (no soft shading, no focus blur, smaller shadows). With no WebGL the page shows the still elevation drawing and all the copy still reads.
+
+### How the model meets the photo
+
+The page ends its story by wiping from the model to the real twilight photo, so the model has to sit on that photo.
+
+- **What was done (November 12, 2026):** 50 points were picked on the photo (post tops and feet, dormer peaks and windows, both gable peaks and eaves, bay corners, the oval windows, the roof ridge) and matched to the same points on the model. A least-squares fit then solved the camera and the house dimensions together.
+- **What it found:** the wings sit about 2.5 m behind the porch front, close to level with the porch's back wall. The first model had them level with the porch front. The aerial photo shows the same thing. The photo was taken from about 42 m with a long lens.
+- **Result:** about 5 photo pixels of error on average, 20 at worst, on a 1672 pixel wide photo. Before the fit the right wing was off by about 60.
+- **Inference, not measured:** the house is treated as a mirror image left to right. The head-on daytime photo supports that.
+- **If the house changes shape,** fit the camera again. Do not nudge `match.js` by hand.
+
+### Timing it on a real machine
+
+The cloud machine that builds this page has no graphics card, so it cannot say how smooth the page is. The page can time itself instead.
+
+Open the page with `?perf=1` on the end of the address, or press Shift+P three times. It scrolls the whole story for 24 seconds, then turns the model in the viewer for 10, drawing every frame. A card then shows the median, 95th percentile and worst frame time, the share of late frames, and the graphics chip. "Copy result" puts the numbers on the clipboard. Paste them into `judge/3d-scorecards.md`.
 
 Method reference: the `threejs-scene`, `exploded-view` and `site-check` skills from `Moh4696/open-3d-skills` (MIT), pulled with `skills/web-3d`. Their approach was followed. No code was copied.
 
@@ -121,7 +139,7 @@ Checked in headless Chromium on November 12, 2026:
 
 Not checked, say so before calling it done:
 
-- Frame rate. The test machine has no graphics card, so it draws in software and its timing means nothing. Needs a look on a real laptop and a real phone.
+- Frame rate. The test machine has no graphics card, so it draws in software and its timing means nothing. The page now has its own timer (`?perf=1`). It needs one run on a real laptop and one on a real phone.
 - Safari and iPhone. Only Chromium was run.
 - Reduced motion with a real setting turned on. The code path is there and was read, not watched.
 - A slow connection.

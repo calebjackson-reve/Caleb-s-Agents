@@ -1,23 +1,28 @@
 // The Basil Lane house, built in code from the listing photos and the front elevation drawing.
-// Sizes are in metres and were read off the elevation using the front door (about 2.4 m) as the ruler.
+// Sizes are in metres. They started from the elevation, with the front door (about 2.4 m) as the ruler, and were then
+// fitted to the twilight photo: 50 points on the photo against the same points on the model (see README).
 // It is an illustration of the outside of the house. It is not a floor plan and it is not to scale.
 import * as THREE from 'three';
 import { Bin, box, roof, prismZ, prismX } from './kit.js';
 import { glowTexture } from './materials.js';
 
 export const D = {
-  half: 11.15,       // half the width of the front
-  wingIn: 5.85,      // where the wings start, measured from the centre
-  wingC: 8.5,        // centre line of each wing
-  porchD: 2.95,      // porch depth
-  wingZ: 2.7,        // front wall of the wings
-  bayZ: 3.3,         // front of the small gabled bays
+  half: 11.85,       // half the width of the front
+  wingIn: 6.4,       // where the wings start, measured from the centre
+  wingC: 9.1,        // centre line of each wing
+  porchD: 2.95,      // porch depth: the porch stands forward of everything else
+  wingZ: 0.25,       // front wall of the wings, which sit back almost level with the porch's back wall
+  bayZ: 0.85,        // front of the small gabled bays
   back: -10,         // back wall of the main house
   garageBack: -20,   // back wall of the garage wing
   floor: 0.76,       // porch floor above the lawn
-  pavHalf: 5.8, pavEave: 3.95, pavRidge: 9.15,
-  wingEave: 3.3, wingRidge: 7.0,
-  barRidge: 7.0,
+  porchHalf: 5.6,    // half the width of the porch floor
+  pavHalf: 5.4, pavEave: 3.85, pavRidge: 9.3,
+  pavBack: -10.45,   // back eave of the tall porch roof, which puts its short ridge well behind the dormers
+  pavRidgeHalf: 1.5,
+  wingEave: 3.16, wingRidge: 7.0, roofHalf: 2.95,
+  bayHalf: 1.82, bayRoofHalf: 2.14, bayEave: 3.17, bayRidge: 5.8,
+  barRidge: 7.5,
 };
 
 const m4 = (x, y, z, ry = 0) => new THREE.Matrix4().makeRotationY(ry).setPosition(x, y, z);
@@ -86,7 +91,7 @@ function addDormer(bin, M, mat, o = {}) {
   bin.add(M.shingle, roof(spec), mat);
   bin.add(M.trim, beam([spec.x0, spec.y - 0.06, 0.25], [0, spec.ridgeY - 0.06, 0.25], 0.05, 0.16), mat);
   bin.add(M.trim, beam([spec.x1, spec.y - 0.06, 0.25], [0, spec.ridgeY - 0.06, 0.25], 0.05, 0.16), mat);
-  addWindow(bin, M, 0.72, 1.05, { cols: 2, rows: 2 }, mat.clone().multiply(new THREE.Matrix4().makeTranslation(0, 0.22, 0)));
+  addWindow(bin, M, o.glass || 0.72, 1.05, { cols: 2, rows: 2 }, mat.clone().multiply(new THREE.Matrix4().makeTranslation(0, 0.22, 0)));
 }
 
 export function buildHouse(M) {
@@ -101,7 +106,7 @@ export function buildHouse(M) {
   // ---------- porch floor and steps ----------
   {
     const b = new Bin();
-    b.add(M.paver, box(-WI, WI, 0, D.floor, 0, D.porchD));
+    b.add(M.paver, box(-D.porchHalf, D.porchHalf, 0, D.floor, 0, D.porchD));
     for (let i = 1; i <= 3; i++) b.add(M.paver, box(-1.6, 1.6, 0, D.floor - 0.19 * i, D.porchD + 0.32 * (i - 1), D.porchD + 0.32 * i));
     [-1, 1].forEach((s) => b.add(M.paver, box(Math.min(s * 1.6, s * 1.98), Math.max(s * 1.6, s * 1.98), 0, 0.62, D.porchD, D.porchD + 1.0)));
     // back patio slab
@@ -112,12 +117,13 @@ export function buildHouse(M) {
   // ---------- walls ----------
   {
     const b = new Bin();
-    b.add(M.brick, box(-WI, WI, 0, 4.0, D.back, 0));
-    b.add(M.brick, box(WI, H, 0, 3.72, D.back, D.wingZ));
-    b.add(M.brick, box(-H, -WI, 0, 3.72, D.garageBack, D.wingZ));
+    b.add(M.brick, box(-WI, WI, 0, 3.8, D.back, 0));
+    b.add(M.brick, box(WI, H, 0, 3.4, D.back, D.wingZ));
+    b.add(M.brick, box(-H, -WI, 0, 3.4, D.garageBack, D.wingZ));
     [-1, 1].forEach((s) => {
       const c = s * D.wingC;
-      b.add(M.brick, prismZ([[c - 2.65, 3.6], [c + 2.65, 3.6], [c + 2.65, 3.72], [c, D.wingRidge - 0.08], [c - 2.65, 3.72]], D.wingZ - 0.25, D.wingZ));
+      const g = D.roofHalf - 0.38;
+      b.add(M.brick, prismZ([[c - g, 3.3], [c + g, 3.3], [c + g, 3.4], [c, D.wingRidge - 0.08], [c - g, 3.4]], D.wingZ - 0.25, D.wingZ));
     });
     // chimney on the back of the house
     b.add(M.brick, box(2.9, 3.9, 0, 6.3, -11.0, -10.2));
@@ -161,12 +167,12 @@ export function buildHouse(M) {
       const fern = new THREE.Mesh(new THREE.SphereGeometry(0.36, 12, 8), M.leaf);
       fern.scale.y = 0.7; fern.position.set(s * 1.22, D.floor + 0.7, 0.45); fern.castShadow = true; walls.add(fern);
     });
-    // the two oval windows on the porch wall, beside the wings
+    // the two oval windows, on the short stretch of wall between the porch and each wing
     [-1, 1].forEach((s) => {
       const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 8, 32), M.trim);
-      ring.scale.set(0.72, 1.12, 1); ring.position.set(s * 5.02, D.floor + 1.75, 0.05); walls.add(ring);
+      ring.scale.set(0.72, 1.12, 1); ring.position.set(s * 5.74, D.floor + 1.74, 0.05); walls.add(ring);
       const pane = new THREE.Mesh(new THREE.CircleGeometry(0.3, 32), M.glass);
-      pane.scale.set(0.72, 1.12, 1); pane.position.set(s * 5.02, D.floor + 1.75, 0.02); walls.add(pane);
+      pane.scale.set(0.72, 1.12, 1); pane.position.set(s * 5.74, D.floor + 1.74, 0.02); walls.add(pane);
     });
     const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.36, 0.2), M.lamp);
     lantern.position.set(0, D.floor + 2.95, 0.9); walls.add(lantern);
@@ -178,7 +184,7 @@ export function buildHouse(M) {
   {
     const b = new Bin();
     [-4.83, -2.9, -0.97, 0.97, 2.9, 4.83].forEach((x) => b.add(M.cedar, box(x - 0.14, x + 0.14, D.floor, 3.74, 2.5, 2.78)));
-    b.add(M.trim, box(-WI - 0.2, WI + 0.2, 3.72, 3.9, 2.42, 2.9));
+    b.add(M.trim, box(-D.pavHalf, D.pavHalf, 3.72, 3.9, 2.42, 2.9));
     b.build(part('posts', [0, 0, 5.5], [0.6, 1]));
     const r = new Bin();
     [-4.9, -0.2, 4.4].forEach((x) => r.add(M.cedar, box(x - 0.12, x + 0.12, 0.3, 3.2, -13.3, -13.06)));
@@ -187,22 +193,23 @@ export function buildHouse(M) {
     const gb = new Bin();
     [-1, 1].forEach((s) => {
       const c = s * D.wingC;
-      gb.add(M.brick, prismZ([[c - 2, 0], [c + 2, 0], [c + 2, 3.31], [c, 5.63], [c - 2, 3.31]], D.wingZ, D.bayZ));
+      const bh = D.bayHalf;
+      gb.add(M.brick, prismZ([[c - bh, 0], [c + bh, 0], [c + bh, D.bayEave + 0.3], [c, D.bayRidge - 0.08], [c - bh, D.bayEave + 0.3]], D.wingZ, D.bayZ));
       [[0, 0], [0.16, 0], [-0.16, 0], [0, 0.16], [0, -0.16]].forEach((q) => gb.add(M.black, box(c + q[0] - 0.035, c + q[0] + 0.035, 4.5 + q[1] - 0.035, 4.5 + q[1] + 0.035, D.bayZ - 0.02, D.bayZ + 0.012)));
-      addWindow(gb, M, 1.34, 2.05, { cols: 2, rows: 2, mullion: true, lintel: true }, m4(c, 1.05, D.bayZ));
+      addWindow(gb, M, 1.44, 1.88, { cols: 2, rows: 2, mullion: true, lintel: true }, m4(c, 1.1, D.bayZ));
     });
     gb.build(part('gables', [0, 0, 4.4], [0.6, 1]));
   }
 
   // ---------- main roof: the long ridge, the two wings, the bays and the back patio ----------
   {
-    const b = new Bin();
+    const b = new Bin(), RH = D.roofHalf, BH = D.bayRoofHalf;
     const specs = [
       { x0: -D.wingC, x1: D.wingC, z0: D.back - 0.45, z1: 0.5, y: 3.55, ridgeY: D.barRidge, axis: 'x' },
-      { x0: D.wingC - 3, x1: D.wingC + 3, z0: D.back - 0.45, z1: D.wingZ + 0.35, y: D.wingEave, ridgeY: D.wingRidge, axis: 'z', hipA: 3.0 },
-      { x0: -D.wingC - 3, x1: -D.wingC + 3, z0: D.garageBack - 0.45, z1: D.wingZ + 0.35, y: D.wingEave, ridgeY: D.wingRidge, axis: 'z', hipA: 3.0 },
-      { x0: D.wingC - 2.3, x1: D.wingC + 2.3, z0: 2.2, z1: D.bayZ + 0.3, y: 2.95, ridgeY: 5.71, axis: 'z' },
-      { x0: -D.wingC - 2.3, x1: -D.wingC + 2.3, z0: 2.2, z1: D.bayZ + 0.3, y: 2.95, ridgeY: 5.71, axis: 'z' },
+      { x0: D.wingC - RH, x1: D.wingC + RH, z0: D.back - 0.45, z1: D.wingZ + 0.35, y: D.wingEave, ridgeY: D.wingRidge, axis: 'z', hipA: RH },
+      { x0: -D.wingC - RH, x1: -D.wingC + RH, z0: D.garageBack - 0.45, z1: D.wingZ + 0.35, y: D.wingEave, ridgeY: D.wingRidge, axis: 'z', hipA: RH },
+      { x0: D.wingC - BH, x1: D.wingC + BH, z0: D.wingZ - 0.5, z1: D.bayZ + 0.3, y: D.bayEave, ridgeY: D.bayRidge, axis: 'z' },
+      { x0: -D.wingC - BH, x1: -D.wingC + BH, z0: D.wingZ - 0.5, z1: D.bayZ + 0.3, y: D.bayEave, ridgeY: D.bayRidge, axis: 'z' },
     ];
     specs.forEach((s, i) => { b.add(M.shingle, roof(s)); if (i > 0) addFascia(b, M, s); });
     b.add(M.shingle, roof({ x0: -WI - 0.2, x1: 4.8, z0: -13.7, z1: D.back + 0.1, y: 3.2, ridgeY: 3.95, axis: 'x', ridgeAt: 1 }));
@@ -214,13 +221,14 @@ export function buildHouse(M) {
   {
     const b = new Bin();
     const PH = D.pavHalf;
-    const s = { x0: -PH, x1: PH, z0: -5.05, z1: 3.15, y: D.pavEave, ridgeY: D.pavRidge, axis: 'x', hipA: PH - 1.3, hipB: PH - 1.3 };
+    const RHalf = D.pavRidgeHalf;
+    const s = { x0: -PH, x1: PH, z0: D.pavBack, z1: 3.15, y: D.pavEave, ridgeY: D.pavRidge, axis: 'x', hipA: PH - RHalf, hipB: PH - RHalf };
     b.add(M.shingle, roof(s));
     b.add(M.trim, box(-PH, PH, D.pavEave - 0.19, D.pavEave, -0.2, 3.15));   // fascia and the porch ceiling in one slab
     const zr = (s.z0 + s.z1) / 2, lift = 0.03;
-    const R = [[-1.3, D.pavRidge + lift, zr], [1.3, D.pavRidge + lift, zr]];
+    const R = [[-RHalf, D.pavRidge + lift, zr], [RHalf, D.pavRidge + lift, zr]];
     b.add(M.copper, beam(R[0], R[1], 0.16, 0.07));
-    [[-PH, s.y + lift, 3.15, 0], [-PH, s.y + lift, -5.05, 0], [PH, s.y + lift, 3.15, 1], [PH, s.y + lift, -5.05, 1]]
+    [[-PH, s.y + lift, 3.15, 0], [-PH, s.y + lift, D.pavBack, 0], [PH, s.y + lift, 3.15, 1], [PH, s.y + lift, D.pavBack, 1]]
       .forEach((c) => b.add(M.copper, beam([c[0], c[1], c[2]], R[c[3]], 0.16, 0.07)));
     b.build(part('roofPorch', [0, 7.2, 0], [0.18, 0.6]));
   }
@@ -229,12 +237,12 @@ export function buildHouse(M) {
   {
     // each dormer set rides just above the roof it sits on when the house comes apart
     const b = new Bin();
-    [-1.5, 1.5].forEach((x) => addDormer(b, M, m4(x, 4.6, 2.64), { len: 2.2, hWall: 1.35, rise: 1.0 }));
+    [-1.5, 1.5].forEach((x) => addDormer(b, M, m4(x, 4.65, 2.64), { len: 3.7, hWall: 1.35, rise: 1.0, glass: 0.62 }));
     b.build(part('dormersFront', [0, 9.9, 0], [0, 0.4]));
     const gd = new Bin();
-    addDormer(gd, M, m4(-D.wingC - 2.2, 4.25, -13.4, -Math.PI / 2), { len: 2.1 });
-    addDormer(gd, M, m4(-D.wingC - 2.2, 4.25, -17.2, -Math.PI / 2), { len: 2.1 });
-    addDormer(gd, M, m4(-D.wingC + 2.2, 4.25, -15.3, Math.PI / 2), { len: 2.1 });
+    addDormer(gd, M, m4(-D.wingC - 1.95, 4.25, -13.4, -Math.PI / 2), { len: 2.1 });
+    addDormer(gd, M, m4(-D.wingC - 1.95, 4.25, -17.2, -Math.PI / 2), { len: 2.1 });
+    addDormer(gd, M, m4(-D.wingC + 1.95, 4.25, -15.3, Math.PI / 2), { len: 2.1 });
     gd.build(part('dormersGarage', [0, 6.0, 0], [0, 0.4]));
   }
 
@@ -270,8 +278,8 @@ export function buildHouse(M) {
     p.position.set(x, y + h / 2, z); p.rotation.y = ry; p.layers.set(1); night.add(p); washes.push(p);
   };
   [-1, 1].forEach((s) => {
-    wash(s * D.wingC - 1.38, 0.05, D.bayZ + 0.03, 1.2, 3.2);
-    wash(s * D.wingC + 1.38, 0.05, D.bayZ + 0.03, 1.2, 3.2);
+    wash(s * D.wingC - 1.3, 0.05, D.bayZ + 0.03, 1.1, 3.2);
+    wash(s * D.wingC + 1.3, 0.05, D.bayZ + 0.03, 1.1, 3.2);
   });
   wash(H + 0.03, 0.05, -4.7, 2.0, 3.4, Math.PI / 2);
 
@@ -304,9 +312,10 @@ export function buildHouse(M) {
     });
   };
   const PH = D.pavHalf, WC = D.wingC;
-  leader('roofPorch', [[-PH, D.pavEave, 3.15], [PH, D.pavEave, 3.15], [-PH, D.pavEave, -5.05], [PH, D.pavEave, -5.05]]);
-  leader('roofMain', [[-WC - 3, 3.3, 3.05], [WC + 3, 3.3, 3.05], [WC + 3, 3.3, -10.45], [-WC - 3, 3.3, -20.45], [-WC + 3, 3.3, -20.45]]);
-  leader('dormersFront', [[-1.5, 5.95, 2.66], [1.5, 5.95, 2.66]]);
+  leader('roofPorch', [[-PH, D.pavEave, 3.15], [PH, D.pavEave, 3.15], [-PH, D.pavEave, D.pavBack], [PH, D.pavEave, D.pavBack]]);
+  const RH = D.roofHalf;
+  leader('roofMain', [[-WC - RH, 3.3, D.wingZ + 0.35], [WC + RH, 3.3, D.wingZ + 0.35], [WC + RH, 3.3, -10.45], [-WC - RH, 3.3, -20.45], [-WC + RH, 3.3, -20.45]]);
+  leader('dormersFront', [[-1.5, 6.0, 2.66], [1.5, 6.0, 2.66]]);
   leader('posts', [[-4.83, 0.8, 2.8], [4.83, 0.8, 2.8]]);
   leader('gables', [[-WC, 0.1, D.bayZ], [WC, 0.1, D.bayZ]]);
 
@@ -326,13 +335,13 @@ export function buildHouse(M) {
 
   // Points that labels and photo pins hang on. Each one rides with its part when the house comes apart.
   const anchors = {
-    roof: { part: 'roofPorch', at: [-2.6, 7.6, 0.3] },
-    copper: { part: 'roofPorch', at: [3.78, 6.29, 1.3] },
-    dormers: { part: 'dormersFront', at: [1.5, 6.9, 2.66] },
+    roof: { part: 'roofPorch', at: [0, 4.75, 2.0] },
+    copper: { part: 'roofPorch', at: [3.62, 6.35, 0.03] },
+    dormers: { part: 'dormersFront', at: [-1.5, 6.95, 2.66] },
     posts: { part: 'posts', at: [4.83, 2.4, 2.8] },
     brick: { part: 'gables', at: [D.wingC + 1.4, 2.6, D.bayZ] },
     porch: { part: 'base', at: [3.6, D.floor, 2.95] },
-    wings: { part: 'roofMain', at: [D.wingC, 6.4, 1.2] },
+    wings: { part: 'roofMain', at: [D.wingC, D.wingRidge, -1.2] },
     door: { part: 'walls', at: [0, 2.6, 0.2] },
   };
 

@@ -32,8 +32,13 @@ export function buildGrounds(M) {
 
   const b = new Bin();
   // beds along the front and the right side
-  b.add(M.mulch, box(-H - 1.3, -1.98, 0, 0.05, D.wingZ - 0.2, 5.0));
-  b.add(M.mulch, box(1.98, H + 1.3, 0, 0.05, D.wingZ - 0.2, 5.0));
+  // the beds follow the front of the house: forward round the porch, stepping back in front of the wings
+  const PF = D.porchHalf;
+  [-1, 1].forEach((sd) => {
+    const bx = (a, c, z0, z1) => b.add(M.mulch, box(Math.min(sd * a, sd * c), Math.max(sd * a, sd * c), 0, 0.05, z0, z1));
+    bx(1.98, PF + 0.9, D.porchD - 0.4, 4.7);
+    bx(PF, H + 1.3, 0, 3.1);
+  });
   b.add(M.mulch, box(H, H + 1.3, 0, 0.05, D.back, D.wingZ));
   // front walk, the path across to the drive, the drive and the lane out
   b.add(M.concrete, box(-1.3, 1.3, 0, 0.04, D.porchD + 0.96, 8.2));
@@ -82,13 +87,15 @@ export function buildGrounds(M) {
       balls.push({ x: x0 + (x1 - x0) * u + (r() - 0.5) * 0.05, y: 0.05 + hh * 0.72, z: z0 + (z1 - z0) * u + (r() - 0.5) * 0.05, sx: w, sy: hh, sz: w * 0.9, tint: 0.93 + r() * 0.1 });
     }
   };
-  [-1, 1].forEach((s) => { hedge(s * 2.5, 4.5, s * (H + 0.6), 4.5); });
-  hedge(H + 0.8, 2.2, H + 0.8, -9);
+  [-1, 1].forEach((s) => {
+    hedge(s * 2.5, 4.3, s * (PF + 0.55), 4.3); hedge(s * (PF + 0.55), 4.3, s * (PF + 0.55), 2.7); hedge(s * (PF + 0.55), 2.7, s * (H + 0.75), 2.7);
+  });
+  hedge(H + 0.8, 2.7, H + 0.8, -9);
   // accents: a rounded shrub by each wing corner and one either side of the steps
-  [[-H - 0.6, 3.5, 0.95], [H + 0.6, 3.5, 0.95], [-2.5, 3.85, 0.62], [2.5, 3.85, 0.62]].forEach((p) => {
+  [[-H - 0.55, 1.5, 0.95], [H + 0.55, 1.5, 0.95], [-2.5, 3.75, 0.62], [2.5, 3.75, 0.62]].forEach((p) => {
     balls.push({ x: p[0], y: 0.05 + p[2] * 0.8, z: p[1], sx: p[2] * 0.72, sy: p[2], sz: p[2] * 0.72, tint: 0.9 });
   });
-  [[-6.1, 3.75], [6.1, 3.75]].forEach((p) => cones.push({ x: p[0], y: 0.05 + 0.75, z: p[1], sx: 0.42, sy: 1.5, sz: 0.42, tint: 0.92 }));
+  [[-6.0, 1.25], [6.0, 1.25]].forEach((p) => cones.push({ x: p[0], y: 0.05 + 0.7, z: p[1], sx: 0.36, sy: 1.4, sz: 0.36, tint: 0.92 }));
   for (let x = -4; x <= 12.5; x += 1.25) cones.push({ x, y: 0.75, z: -28.4, sx: 0.4, sy: 1.5, sz: 0.4, tint: 0.88 + r() * 0.16 });
   g.add(instanced(new THREE.SphereGeometry(1, 20, 14), M.shrub, balls));
   g.add(instanced(new THREE.ConeGeometry(1, 1, 20), M.shrub, cones));
@@ -173,7 +180,7 @@ export function buildGrounds(M) {
     pl.rotation.x = -Math.PI / 2; pl.position.set(x, 0.09, z); pl.layers.set(1); pl.userData.strength = strength; g.add(pl); pools.push(pl);
   };
   pool(0, 6.2, 26, 13, new THREE.Color(1.0, 0.62, 0.3), 0.32);        // in front of the porch
-  pool(-8.5, 5.4, 9, 6, new THREE.Color(1.0, 0.62, 0.3), 0.2); pool(8.5, 5.4, 9, 6, new THREE.Color(1.0, 0.62, 0.3), 0.2);
+  pool(-D.wingC, 3.0, 9, 6, new THREE.Color(1.0, 0.62, 0.3), 0.2); pool(D.wingC, 3.0, 9, 6, new THREE.Color(1.0, 0.62, 0.3), 0.2);
   pool(0.3, -20.5, 22, 26, new THREE.Color(0.3, 0.75, 0.95), 0.3);    // round the water
   pool(-0.3, -13.5, 14, 8, new THREE.Color(1.0, 0.62, 0.3), 0.26);    // off the patio
   function setNight(d) {
