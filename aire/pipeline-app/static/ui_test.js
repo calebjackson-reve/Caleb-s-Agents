@@ -751,6 +751,32 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
     check(!pubText.includes(fixture) && !pubText.includes('Call about'), 'in Public mode no title, tooltip or note carries a person\'s name');
     check(M3.title(person, 'crm', w) === fixture && M3.tip(person, 'crm', 'Client', w).includes(fixture), 'in CRM mode the name shows on the card and tooltip');
     check(/state\.view === 'public' \? 'Pipeline feed, ' \+ asOf \+ '\. Names and details are left off.'/.test(m3), 'in Public mode the source line does not claim that names are shown');
+    // Home Ground, towns and streets: every town is a landmark, a town opens to its streets and comes back, and Public mode names nobody there either.
+    const TOWN_NAMES = ['Baton Rouge', 'Zachary', 'St. Francisville', 'New Roads', 'The Felicianas', 'Central', 'Denham Springs', 'Prairieville'], ROAD_CLASSES = ['motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'street'];
+    check(TOWN_NAMES.every(n => M3.TOWNS.some(t => t.name === n && t.slug && Array.isArray(t.at) && t.cities.length)) && M3.TOWNS.every(t => new RegExp('\\b' + t.crest + '\\(g, y\\) \\{').test(m3))
+      && new Set(M3.TOWNS.map(t => t.crest)).size === M3.TOWNS.length && /CREST\[pl\.crest\]\(body/.test(m3), 'every known town is on the Home Ground overview with its own landmark');
+    check(M3.townOf({ city: 'zachary' }) === 1 && M3.townOf({ city: 'saint francisville' }) === 2 && M3.townOf({ city: 'nowhere' }) === -1 && M3.count(1) === '1 person' && M3.count(12) === '12 people'
+      && /t\.lab\.small\.textContent = M3\.count\(t\.n\)/.test(m3) && /\* roofK;/.test(m3), 'the overview counts people per town and leaves single roofs for the city view');
+    const opened = M3.open({ mode: 'overview', city: null }, 'zachary'), backed = M3.back(opened);
+    check(opened.mode === 'city' && opened.city === 'zachary' && opened.file === 'geo/streets-zachary.json' && M3.open({ mode: 'overview', city: null }, 'atlantis').mode === 'overview' && backed.mode === 'overview' && backed.city === null
+      && /function openCity\(slug\)/.test(m3) && /function backToOverview\(/.test(m3) && /id="bBack"[^>]*>[^<]*Back to overview</.test(m3) && /\$\('#bBack'\)\.onclick = \(\) => backToOverview\(\)/.test(m3)
+      && /window\.__map = \{[^}]*openCity, backToOverview/.test(m3) && /if \(t\.slug\) openCity\(t\.slug\)/.test(m3), 'clicking a town opens its street view, and Back to overview returns');
+    const geoDir = path.join(dir, 'geo'), geoFiles = fs.readdirSync(geoDir).filter(f => /\.json$/.test(f));
+    let geoOk = geoFiles.length === M3.TOWNS.length, geoBytes = 0, lineN = 0;
+    for (const t of M3.TOWNS) { const fp = path.join(dir, M3.streetFile(t.slug)); if (!fs.existsSync(fp)) { geoOk = false; continue; }
+      const raw = fs.readFileSync(fp, 'utf8'), doc = JSON.parse(raw), [s0, w0, n0, e0] = doc.bbox; geoBytes += raw.length;
+      const keysOk = Object.keys(doc).every(k => ['v', 'city', 'slug', 'attribution', 'license', 'source', 'contents', 'origin', 'step', 'bbox', 'roads'].includes(k))
+        && doc.roads.every(r => Object.keys(r).join() === 'c,n,g' && ROAD_CLASSES.includes(r.c) && typeof r.n === 'string' && /^[-\d,;]*$/.test(r.g) && (r.c !== 'street' || r.n === ''));
+      const inBox = M3.decode(doc).every(r => r.lines.every(l => { lineN++; return l.length >= 2 && l.every(q => q[0] >= s0 - 1e-6 && q[0] <= n0 + 1e-6 && q[1] >= w0 - 1e-6 && q[1] <= e0 + 1e-6); }));
+      if (!(keysOk && inBox && doc.slug === t.slug && t.at[0] > s0 && t.at[0] < n0 && t.at[1] > w0 && t.at[1] < e0 && /OpenStreetMap contributors/.test(doc.attribution) && /ODbL/.test(doc.license) && raw.length < 300000)) geoOk = false; }
+    check(geoOk && lineN > 1000 && geoBytes < 600000 && /OpenStreetMap contributors/.test(fs.readFileSync(path.join(geoDir, 'ATTRIBUTION.md'), 'utf8')), 'each town has a small street file of public OpenStreetMap roads and nothing else, inside its own box, with the credit');
+    check(/fetch\(M3\.streetFile\(pl\.slug\)/.test(m3) && !/overpass|api\.openstreetmap|tile\.openstreetmap|nominatim/i.test(m3) && (m3.match(/fetch\(/g) || []).length === 2, 'street data is the bundled file, fetched when a town is opened; the browser never asks OpenStreetMap for it');
+    check(/© OpenStreetMap contributors<\/a>, ODbL/.test(m3) && /openstreetmap\.org\/copyright/.test(m3) && /ODbL/.test(M3.OSM), 'the OpenStreetMap credit shows on the map');
+    const folks = [{ i: 0, name: fixture, rel: 'client', owes: true, city: 'zachary' }, { i: 1, name: 'Second ' + fixture, rel: 'sphere', owes: false, city: 'zachary' }];
+    const pubCity = JSON.stringify([M3.cityCard(M3.town('zachary'), folks, 'public'), folks.map(q => M3.roofLabel(q, 'public')), folks.map(q => M3.tip(q, 'public', 'Client', 'Zachary')), folks.map(q => M3.title(q, 'public', 'Zachary'))]);
+    const crmCity = M3.cityCard(M3.town('zachary'), folks, 'crm');
+    check(!pubCity.includes(fixture) && /2 people/.test(pubCity) && /1 client/.test(pubCity) && /state\.view !== 'public' && l\.p >= 0/.test(m3), 'in Public mode the city street view shows counts and no person\'s name: no card, roof label or tooltip carries one');
+    check(crmCity.title === 'Zachary' && crmCity.owed.length === 1 && crmCity.owed[0].label === fixture && M3.roofLabel(folks[0], 'crm') === fixture, 'in CRM mode the city view names the people owed a reply and labels their roofs');
   }
   // The shell.
   check(/<meta name="theme-color" content="#FBF8F3">/.test(indexHtml) && /Instrument\+Serif/.test(indexHtml) && /Nunito/.test(indexHtml) && indexHtml.indexOf('href="light.css"') > indexHtml.indexOf('href="ui.css"'), 'the page reads as the light canvas and loads the two typefaces');
