@@ -43,7 +43,8 @@ FEED = {
                {"person_id": "4", "display": "Dot Pretend", "stage": "nurture", "street": ""},
                {"person_id": "5", "display": "Eli Fiction", "stage": "nurture", "street": "12 Lark Ave"},
                {"person_id": "6", "display": "Fay Nobody", "stage": "nurture", "street": ""}],
-    "touches_due": [{"person_id": "1", "display": "Ann Example", "stage": "nurture", "phone": "+12255550101", "reasons": ["Talked about buying"]},
+    "touches_due": [{"person_id": "1", "display": "Ann Example", "stage": "nurture", "phone": "+12255550101", "reasons": ["Live deal, active", "Talked about buying"]},
+                    {"person_id": "2", "display": "Bea Sample", "stage": "nurture", "phone": "+12255550102", "reasons": ["Live deal, active", "You marked them hot"]},
                     {"person_id": "3", "display": "Cal Madeup", "stage": "nurture", "phone": "+12255550103", "reasons": ["Talked about selling"]}],
     "deals": [
         {"deal_id": "410-heron", "person_id": "1", "display": "Ann Example", "address": "410 South Heron Lane, Zachary, LA 70791", "side": "Listing", "stage": "active",
@@ -90,6 +91,10 @@ check(views["Map pin"]["77 egret"] == {"side": "Listing", "status": "Offer", "op
       "the map pin, the board count and the Deals page all say it is not open")
 check(links.counts(links.tie(cc.merge_deals(cc.deal_cards(cc.deal_rows(SHEET), TODAY, NOW), FEED["deals"])[0], FEED))["open"] == sum(1 for r in recs if r["open"]) == 4,
       "the open count is the number of open records")
+
+why = {r["person_id"]: r["reasons"] for r in links.apply_records(FEED, recs)["touches_due"]}
+check(why["1"] == ["Live deal, under contract", "Talked about buying"] and why["2"] == ["Offer past its deadline, not a live deal", "You marked them hot"]
+      and FEED["touches_due"][0]["reasons"][0] == "Live deal, active", "the heat reason says the record's status, not the CRM tab's stage")
 
 # ---- side and price
 check(views["Contact card"]["5 wren"]["side"] == "Buyer" and views["Contact card"]["5 wren"]["price"] == 210000 and views["Claude answers"]["5 wren"]["side"] == "Buyer",

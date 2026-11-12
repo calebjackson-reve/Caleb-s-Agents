@@ -219,6 +219,7 @@ def apply_sides(feed: dict, by_person: dict) -> dict:
 # The CRM Deals tab's word for each Deals sheet stage, so a CRM row can carry the record's status.
 CRM_WORD = {"contract": "under_contract", "closed": "closed", "out": "lost", "appointment": "active", "offer": "offer", "other": "active"}
 RECORD_FIELDS = ("side", "close", "price", "status")
+DEAL_REASON = re.compile(r"^(Live deal|Deal on the board), .+$")
 SHEET, CRM_TAB = "AIRE Deals sheet", "CRM Deals tab"
 
 
@@ -265,14 +266,28 @@ def apply_records(feed: dict, recs: list[dict]) -> dict:
         rec = by.get(cc.deal_key(row.get("address")))
         return _as_crm(rec, row) if rec else {**row, "record": CRM_TAB}
 
-    out = dict(feed)
+    # The heat reason the CRM writes ("Live deal, active") names the CRM tab's stage: say the record's status instead.
+    mine: dict = {}
+    for r in sorted(recs or [], key=lambda r: 0 if r["open"] else 1):
+        if r["open"] or r["expired_offer"]:
+            for p in r["people"]:
+                mine.setdefault(str(p["person_id"]), r)
+
+    def reason(row):
+        rec = mine.get(str(row.get("person_id"))) if isinstance(row, dict) else None
+        if not rec or not isinstance(row.get("reasons"), list):
+            return row
+        say = lambda m: f"{m.group(1)}, {rec['status'].lower()}" if rec["open"] else "Offer past its deadline, not a live deal"
+        return {**row, "reasons": [DEAL_REASON.sub(say, x) if isinstance(x, str) else x for x in row["reasons"]]}
+
+    out = _remap(feed, reason) if mine else dict(feed)
     if isinstance(feed.get("deals"), list):
         out["deals"] = [fix(d) for d in feed["deals"]]
     if isinstance(feed.get("facts"), dict):
         out["facts"] = {pid: ({**fx, "deals": [fix(d) for d in fx["deals"]]} if isinstance(fx, dict) and isinstance(fx.get("deals"), list) else fx)
                         for pid, fx in feed["facts"].items()}
-    if isinstance(feed.get("map"), dict):
-        out["map"] = {**feed["map"], "pins": [fix(p) if isinstance(p, dict) and p.get("kind") == "deal" else p for p in feed["map"].get("pins") or []]}
+    if isinstance(out.get("map"), dict):
+        out["map"] = {**out["map"], "pins": [fix(p) if isinstance(p, dict) and p.get("kind") == "deal" else p for p in out["map"].get("pins") or []]}
     return out
 
 
