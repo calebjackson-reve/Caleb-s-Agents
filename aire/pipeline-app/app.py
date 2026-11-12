@@ -77,6 +77,7 @@ import proof  # noqa: E402  (the weekly proof line)
 import learn  # noqa: E402  (the learning loop for the seller score and the call list)
 import insight  # noqa: E402  (the call list, the fuller contact card, the likely-seller score)
 import handoff  # noqa: E402  (texts and emails Caleb sends himself from the Text and Email buttons)
+import sale_pins  # noqa: E402  (closed-sale roofs on Home Ground: Census-geocoded once, cached outside git)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -404,6 +405,26 @@ class State:
         # Demo reads the real folder only when PIPELINE_SOCIAL_DIR is set on purpose, so a demo never shows anyone's real handles.
         self.social_dir = social_match.social_dir() if (not demo or os.getenv("PIPELINE_SOCIAL_DIR")) else None
         self._social: tuple = (None, None)
+        # Closed-sale roofs. Demo reads a made-up cache and never has a geocoder. Live reads ~/.aire/enrichment/closed-sales-geo.json;
+        # only serve() sets sale_geocoder, so a test or a bare State never sends an address anywhere.
+        self.sale_cache_path = FIXTURES / "sale-geo.json" if demo else sale_pins.default_cache_path()
+        self.sale_geocoder = None
+        self._sale: tuple = (None, [], {})
+        self._sale_retry = 0.0
+
+    def sale_roofs(self) -> tuple[list, dict]:
+        """Sale pins from the sales record, rebuilt only when sales.json changes. Counts carry no addresses."""
+        f = self.cc_dir / "sales.json"
+        stamp = (f.stat().st_mtime_ns if f.exists() else 0, str(self.sale_cache_path), self.sale_geocoder is not None)
+        if self._sale[0] != stamp or (self._sale[2].get("error") and time.time() > self._sale_retry):
+            try:
+                rows = cc._rows(cc.load(self.cc_dir).get("sales"))
+                pins, counts = sale_pins.build(rows, self.sale_cache_path, self.sale_geocoder)
+            except Exception as e:  # a bad sales row must never take the map down
+                pins, counts = [], {"error": type(e).__name__}
+            self._sale = (stamp, pins, counts)
+            self._sale_retry = time.time() + 600  # a failed geocode (network down) is tried again in ten minutes, not on every refresh
+        return self._sale[1], self._sale[2]
 
     # ---- reads
     def feed(self) -> dict:
@@ -960,6 +981,10 @@ class State:
             gone = self.dismissed()
             if gone:
                 feed = {**feed, "market": {**feed["market"], "rows": [r for r in feed["market"].get("rows", []) if r.get("id") not in gone]}}
+        if feed_ok and isinstance(feed.get("map"), dict):  # closed-sale roofs ride beside the people pins as kind=sale
+            spins, scounts = self.sale_roofs()
+            feed = {**feed, "map": {**feed["map"], "pins": list(feed["map"].get("pins") or []) + spins,
+                                    "counts": {**(feed["map"].get("counts") or {}), "sales": scounts.get("matched", 0), "sales_missed": scounts.get("misses", 0)}}}
         problems = []
         try:  # a bad row in a read must never take the whole screen down
             ins = self.insight() if feed_ok else {}
@@ -2683,7 +2708,10 @@ def main(argv=None) -> int:
             paths["feed"] = Path(a.demo_feed)
         if a.demo_status:
             paths["command_status"] = Path(a.demo_status)
-    serve(State(demo=a.demo, paths=paths), a.port, open_browser=not a.no_open)
+    st = State(demo=a.demo, paths=paths)
+    if not a.demo:
+        st.sale_geocoder = sale_pins.census_geocoder  # live only: new sale addresses go to the free Census geocoder once, then the cache
+    serve(st, a.port, open_browser=not a.no_open)
     return 0
 
 
