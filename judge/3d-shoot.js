@@ -1,7 +1,9 @@
 // Shoots the evidence a 3D judge scores from: every chapter as a frame sequence, the explore mode in every look
 // from every view, take-apart steps, pins, the phone, the fallbacks, and what the browser measured.
 //
-//   node judge/3d-shoot.js <base url of the page> <out dir>
+//   node judge/3d-shoot.js <base url of the page> <out dir> [part]
+//   part is one of: desktop, phone, explore, explore-phone, extras, merge. Leave it out to run everything.
+//   Each part writes its own report file, so a part that dies can be run again without redoing the rest.
 //   node judge/3d-shoot.js http://127.0.0.1:8791/3d/index.html judge/out/round-1
 //
 // Needs Playwright. In a cloud session it is already installed. Output goes under judge/out/, which git ignores.
@@ -9,7 +11,8 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const [base, out] = process.argv.slice(2);
+const [base, out, part] = process.argv.slice(2);
+const want = (name) => !part || part === name;
 if (!base || !out) { console.error('usage: node judge/3d-shoot.js <url> <out dir>'); process.exit(2); }
 const args = ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'];
 // Scroll positions inside each chapter. The two changes of light (day to dusk in sell, blueprint to model in explore)
@@ -131,11 +134,24 @@ async function explore(browser, w, h, phone, dir, full) {
 
 (async () => {
   fs.mkdirSync(out, { recursive: true });
+  if (part === 'merge') {   // join the part reports into one report.json
+    const all = { url: base, when: new Date().toISOString(), errors: [], failed: [], states: {} };
+    for (const f of fs.readdirSync(out).filter((x) => /^report-.*\.json$/.test(x)).sort()) {
+      const r = JSON.parse(fs.readFileSync(path.join(out, f), 'utf8'));
+      all.errors.push(...r.errors); all.failed.push(...r.failed); Object.assign(all.states, r.states);
+      if (r.renderer) all.renderer = r.renderer; if (r.transfer) all.transfer = r.transfer; if (r.note) all.note = r.note;
+    }
+    all.errors = Array.from(new Set(all.errors)); all.failed = Array.from(new Set(all.failed));
+    fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(all, null, 2));
+    console.log('merged', Object.keys(all.states).length, 'entries, errors', all.errors.length, 'failed', all.failed.length);
+    return;
+  }
   const browser = await chromium.launch({ args });
-  await chapters(browser, 1440, 900, false, 'desktop', SCENES);
-  await chapters(browser, 390, 844, true, 'phone', PHONE);
-  await explore(browser, 1440, 900, false, 'explore', true);
-  await explore(browser, 390, 844, true, 'explore-phone', false);
+  if (want('desktop')) await chapters(browser, 1440, 900, false, 'desktop', SCENES);
+  if (want('phone')) await chapters(browser, 390, 844, true, 'phone', PHONE);
+  if (want('explore')) await explore(browser, 1440, 900, false, 'explore', true);
+  if (want('explore-phone')) await explore(browser, 390, 844, true, 'explore-phone', false);
+  if (want('extras')) {
 
   // fallbacks: every chapter with WebGL off, and every chapter with the reduced motion setting on
   fs.mkdirSync(path.join(out, 'fallback'), { recursive: true });
@@ -170,9 +186,10 @@ async function explore(browser, w, h, phone, dir, full) {
     report.renderer = await page.evaluate(() => { const gl = document.createElement('canvas').getContext('webgl2'); const e = gl.getExtension('WEBGL_debug_renderer_info'); return e ? gl.getParameter(e.UNMASKED_RENDERER_WEBGL) : 'unknown'; });
     report.transfer = await page.evaluate(() => { const r = performance.getEntriesByType('resource'); const sum = (f) => Math.round(r.filter(f).reduce((a, x) => a + (x.transferSize || x.encodedBodySize || 0), 0) / 1024); return { requests: r.length, script_kb: sum((x) => /\.m?js/.test(x.name)), image_kb: sum((x) => /\.(webp|jpg|png|svg)/.test(x.name)), font_kb: sum((x) => /woff2/.test(x.name)), total_kb: sum(() => true) }; });
     await ctx.close(); }
+  }
   report.note = 'Rendered in software (no graphics card on this machine). Frame timing was not measured and ready_ms is not what a visitor would see.';
   report.errors = Array.from(new Set(report.errors)); report.failed = Array.from(new Set(report.failed));
-  fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
+  fs.writeFileSync(path.join(out, part ? `report-${part}.json` : 'report.json'), JSON.stringify(report, null, 2));
   await browser.close();
-  console.log('done', out, 'errors', report.errors.length, 'failed', report.failed.length);
+  console.log('done', out, part || 'all', 'errors', report.errors.length, 'failed', report.failed.length);
 })();
