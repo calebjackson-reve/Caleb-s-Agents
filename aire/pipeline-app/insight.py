@@ -380,14 +380,21 @@ class Book:
     def deals_for(self, pid: str, street: str) -> list[dict]:
         """Every deal on record for this person or this house, newest first: the CRM Deals tab (by person), the AIRE
         Deals sheet and the sales record (by house number and street)."""
-        out = []
+        out, seen = [], set()
         for d in (self.facts.get(str(pid)) or {}).get("deals") or []:
+            if d.get("record") == "AIRE Deals sheet":  # links.apply_records: this CRM row says what the one deal record says
+                seen.add(cc.deal_key(d.get("address")))
+                out.append({"address": d.get("address") or "", "side": str(d.get("side") or "").lower(),
+                            "status": "closed" if d.get("stage") == "closed" else "offer expired" if d.get("expired_offer") else str(d.get("status") or "").lower(),
+                            "day": str(d.get("expected_close") or "")[:10], "price": cc.num(d.get("price")), "from": "AIRE Deals sheet",
+                            "here": same_home(d.get("address"), street)})
+                continue
             out.append({"address": d.get("address") or "", "side": str(d.get("side") or "").lower(), "status": str(d.get("stage") or "").replace("_", " "),
                         "day": str(d.get("expected_close") or d.get("updated_at") or "")[:10], "price": cc.num(d.get("price")), "from": "CRM Deals tab",
                         "here": same_home(d.get("address"), street)})
         h = _house(street)
         for d in self.sheet.get(h, []) if h else []:
-            if same_home(d.get("deal"), street):
+            if same_home(d.get("deal"), street) and cc.deal_key(d.get("deal")) not in seen:
                 out.append({"address": d["deal"], "side": str(d.get("side") or "").lower(), "status": str(d.get("status") or "").lower(),
                             "day": str(d.get("act") or "")[:10], "price": d.get("price"), "from": "AIRE Deals sheet", "here": True})
         for d in self.sales.get(h, []) if h else []:
