@@ -586,7 +586,7 @@ function syncUI() { $$('.seg').forEach(seg => { const v = state[seg.dataset.ctl]
   $$('#layers button').forEach(b => b.setAttribute('aria-pressed', String(!!state.layers[b.dataset.l]))); $('#bOrbit').setAttribute('aria-pressed', String(state.orbit)); $('#bTop').setAttribute('aria-pressed', String(!fly && goal.phi < .12));
   $('#lReplies').hidden = state.view === 'public'; $('.seg[data-ctl="lens"]').hidden = state.view === 'public';
   $('#modeName').textContent = state.view === 'public' ? 'Public view' : LIVE ? 'Live CRM on this Mac' : 'CRM view, names left off';
-  $('#srcLine').textContent = LIVE ? 'Pipeline feed, ' + asOf + '. Real spots and names, on this Mac only.' : 'Pipeline feed, ' + asOf + '. Spots are shifted a few blocks.'; }
+  $('#srcLine').textContent = state.view === 'public' ? 'Pipeline feed, ' + asOf + '. Names and details are left off.' : (LIVE ? 'Pipeline feed, ' + asOf + '. Real spots and names, on this Mac only.' : 'Pipeline feed, ' + asOf + '. Spots are shifted a few blocks.'); }
 $$('.seg').forEach(seg => seg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const ctl = seg.dataset.ctl, v = b.dataset.v; if (state[ctl] === v) return;
   if (ctl === 'light') { setLight(v); buildChips(); hint(v); } else if (ctl === 'lens') { setLens(v); buildChips(); applyFilters(); } else if (ctl === 'view') { state.view = v; if (v === 'public') { state.lens = 'rel'; setLens('rel'); } buildChips(); applyFilters(); select(-1); hint(v === 'public' ? 'public' : 'homes'); }
   else { state[ctl] = v; hint(v); if (ctl === 'ground' && v === 'relief' && goal.phi < .6) flyTo({ phi: 1.02 }, 1.4); } state[ctl] = v; syncUI(); }));

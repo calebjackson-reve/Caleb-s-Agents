@@ -746,6 +746,7 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
     const pubText = [M3.title(person, 'public', w), M3.tip(person, 'public', 'Client', w), M3.note(person, 'public')].join('|');
     check(!pubText.includes(fixture) && !pubText.includes('Call about'), 'in Public mode no title, tooltip or note carries a person\'s name');
     check(M3.title(person, 'crm', w) === fixture && M3.tip(person, 'crm', 'Client', w).includes(fixture), 'in CRM mode the name shows on the card and tooltip');
+    check(/state\.view === 'public' \? 'Pipeline feed, ' \+ asOf \+ '\. Names and details are left off.'/.test(m3), 'in Public mode the source line does not claim that names are shown');
   }
   // The shell.
   check(/<meta name="theme-color" content="#FBF8F3">/.test(indexHtml) && /Instrument\+Serif/.test(indexHtml) && /Nunito/.test(indexHtml) && indexHtml.indexOf('href="light.css"') > indexHtml.indexOf('href="ui.css"'), 'the page reads as the light canvas and loads the two typefaces');
