@@ -7,3 +7,17 @@ queue-*.md
 *.audit.jsonl
 # Local app folder on the Mac with real CRM snapshots. Never tracked (Caleb, client data rule).
 aire/app/
+# Video Engine dashboard: media and local state never go in git. Storage lives at /workspace/video.
+aire/video-dashboard/node_modules/
+aire/video-dashboard/storage/
+aire/video-dashboard/.env*
+aire/video-dashboard/**/*.mp4
+aire/video-dashboard/**/*.mov
+aire/video-dashboard/**/*.m4v
+aire/video-dashboard/**/*.webm
+aire/video-dashboard/**/*.mkv
+aire/video-dashboard/**/*.mp3
+aire/video-dashboard/**/*.wav
+aire/video-dashboard/**/*.m4a
+aire/video-dashboard/**/*.jpg
+aire/video-dashboard/**/*.png

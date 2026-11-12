@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Engine</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="#/">Video Engine</a>
+    <nav id="nav">
+      <a href="#/" data-nav="jobs">Jobs</a>
+      <a href="#/inbox" data-nav="inbox">Inbox</a>
+      <a href="#/queue" data-nav="queue">Renders</a>
+      <a href="#/activity" data-nav="activity">Activity</a>
+    </nav>
+  </header>
+  <main id="view" aria-live="polite"><p class="muted">Loading…</p></main>
+  <dialog id="player" aria-label="Media player"></dialog>
+  <div id="toasts" role="status"></div>
+  <script src="/app.js"></script>
+</body>
+</html>
