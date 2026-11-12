@@ -28,6 +28,8 @@
       for (const [k, v] of Object.entries({ ...r, ...extra })) if (v !== '' && v != null) cur[k] = v; by.set(r.person_id, cur); };
     // Agents, lenders and vendors are partners, not people in the pipeline: left out here as they are on the map.
     ((f.map || {}).pins || []).filter(p => p.kind === 'person' && !PARTNER.has(p.type)).forEach(p => put(p));
+    // Stage=past client people with no map pin still belong on the board. Only them, not the rest of the contacts.
+    (f.people || []).filter(p => p && key(p.stage).replace(/_/g, ' ') === 'past client' && !PARTNER.has(p.type)).forEach(p => put(p));
     (f.touches_due || []).forEach(r => put(r, { due: true }));
     (f.new_leads || []).forEach(r => put(r, { stage: 'new lead', due: true }));
     return [...by.values()];
