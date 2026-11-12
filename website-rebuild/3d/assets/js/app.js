@@ -20,7 +20,7 @@ try {
   const probe = document.createElement('canvas').getContext('webgl2');
   if (!probe || q.has('nowebgl')) throw new Error('no webgl2');
   const small = Math.min(innerWidth, innerHeight) < 700;
-  stage = new Stage($('#canvas'), { maxDpr: small ? 1.75 : 2, quality: q.get('q') === 'fast' ? 'fast' : 'high' });
+  stage = new Stage($('#canvas'), { maxDpr: small ? 1.75 : 2, shadow: small ? 2048 : 4096, quality: q.get('q') === 'fast' ? 'fast' : 'high' });
 } catch (err) {
   body.classList.add('no-webgl');
   console.warn('3D stage not available, showing the still drawing instead.', err);
@@ -375,7 +375,11 @@ const cur = Object.assign({}, base);
 let last = performance.now(), shown = '', slow = 0, counted = 0, ready = false, needs = 3;
 const forceQ = q.has('q');
 
+let sizeW = 0, sizeH = 0;
 function resize() {
+  // a phone's address bar sliding away changes the height a little on every scroll: not worth rebuilding the stage for
+  if (innerWidth === sizeW && Math.abs(innerHeight - sizeH) < 130) return;
+  sizeW = innerWidth; sizeH = innerHeight;
   if (stage) stage.resize();
   measure(); prepareKeys(); needs = 3;
 }

@@ -227,7 +227,7 @@ export class Stage {
     // light: one key that casts the shadows, and a soft fill from above and below
     this.sun = new THREE.DirectionalLight(0xffffff, 3);
     this.sun.castShadow = true;
-    const sz = this.quality === 'fast' ? 1024 : 4096;
+    const sz = this.quality === 'fast' ? 1024 : (opts.shadow || 4096);
     this.sun.shadow.mapSize.set(sz, sz);
     const sc = this.sun.shadow.camera; sc.left = -70; sc.right = 70; sc.top = 70; sc.bottom = -70; sc.near = 1; sc.far = 420;
     this.sun.shadow.bias = -0.0003; this.sun.shadow.normalBias = 0.06; this.sun.shadow.radius = 5;

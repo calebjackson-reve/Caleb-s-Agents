@@ -41,6 +41,11 @@ em { font-style: italic; }
 /* text tone follows what the stage is showing */
 body[data-tone="dark"] { --fg: var(--ivory); --fg-2: rgba(251, 248, 243, 0.7); --hair: rgba(251, 248, 243, 0.22); --bg: var(--ink); }
 
+/* smooth scrolling library */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
 /* ---------- loader ---------- */
 .loader { position: fixed; inset: 0; z-index: 90; background: var(--ink); color: var(--ivory); display: grid; place-items: center; transition: opacity 0.9s var(--ease), visibility 0s linear 0.9s; }
 .loader-mark { font-family: var(--serif); font-size: 5.2rem; letter-spacing: -0.01em; }
@@ -81,6 +86,7 @@ body.is-ready .stage canvas { opacity: 1; }
 body.no-webgl .stage-still { opacity: 1; }
 body.no-webgl .stage canvas { display: none; }
 body.stage-off .stage { visibility: hidden; }
+body.no-webgl #open-viewer { display: none; }
 
 .photo { position: fixed; inset: 0; z-index: 1; overflow: hidden; opacity: 0; pointer-events: none; --h: 0%;
   -webkit-mask-image: linear-gradient(to top, #000 0, #000 calc(var(--h) - 7%), transparent var(--h)); mask-image: linear-gradient(to top, #000 0, #000 calc(var(--h) - 7%), transparent var(--h)); }
