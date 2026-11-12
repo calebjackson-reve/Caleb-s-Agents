@@ -335,7 +335,7 @@ const LENS = {
     ['under contract', 'Under contract', '#E04E28', '#E04E28'], ['closed', 'Closed', '#14100E', '#FBF8F3'], ['past client', 'Past client', '#D4537E', '#D4537E'], ['none', 'Another stage, or none', '#B9B2A8', '#857B72']]
 };
 const TALL = { hot: 4.2, warm: 3.2, lukewarm: 2.5, cold: 1.7, 'ice-cold': 1.1, '': .6 };
-const state = { lens: 'rel', marker: 'homes', light: 'day', ground: 'flat', view: 'crm', off: { rel: new Set(), stage: new Set() },
+const state = { lens: 'rel', marker: 'homes', light: 'day', ground: 'flat', view: 'crm', off: { rel: new Set(['sphere', 'recruit', 'deal']), stage: new Set() },
   layers: { cities: true, parishes: true, farms: false, names: true, replies: true }, orbit: false, sel: -1, hover: -1, mode: 'overview', city: null, hotTown: null };
 // roofK: 0 at overview zoom, where each town's landmark stands in for its roofs; 1 in a town's streets, where every roof shows.
 let roofK = 0, pegS = 0, roadsOn = false, roofLabT = 0, cityOut = 99, cityTok = 0;
