@@ -12,6 +12,7 @@ Built November 12, 2026. Prototype for Caleb's review. Nothing here is published
 | Published | No. `noindex,nofollow` is on. The deploy workflow does not pick this folder up |
 | Caleb's approval | Pending. See "Needs Caleb's yes" below |
 | Linked from the live site | No |
+| Private review link | https://claude.ai/artifact/Fg9nKQXn7Lruwt5KEUQMMd (only Caleb can open it). A bundled copy of this folder: one script file, Google Fonts, buttons pointing at home.calebjackson.org |
 
 ## How to look at it
 
