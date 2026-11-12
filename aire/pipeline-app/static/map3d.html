@@ -242,9 +242,9 @@ button:focus-visible{outline:2px solid var(--coral);outline-offset:2px}
 <script id="m3pure">
 /* Pure rules, no WebGL. Labels: in Public mode no person's display name is ever returned, on the overview or in a town's streets.
    Also the towns of the overview, the open-a-town and back-to-overview steps, and the reader for the prepared street files.
-   shown() strips a leading '?' or replacement character (a missing first name in the CRM) so it never appears on a label. */
+   shown() never starts a label with '?'. "Last household" is used only when a last name is present; a single name is shown as itself, without household. */
 window.M3 = {
-  shown(s) { return String(s || '').replace(/^[\uFFFD?]+\s*/, '').trim(); },
+  shown(s) { const raw = String(s || '').trim(), missingFirst = /^[\uFFFD?]/.test(raw); let t = raw.replace(/^[\uFFFD?]+\s*/, '').trim(); const m = t.match(/^(.*?)(\s+household)$/i); if (!m && !/^household$/i.test(t)) return t; const before = (m ? m[1] : '').trim().replace(/^[\uFFFD?]+\s*/, '').trim(); if (!before) return ''; const parts = before.split(/\s+/).filter(Boolean); if (parts.length >= 2 || missingFirst) return parts[parts.length - 1] + (m ? m[2] : ' household'); return before; },
   where: (p, cap) => p.city ? cap(p.city) : 'this area',
   title(p, view, where) { const pub = view === 'public', name = this.shown(p.name);
     if (!pub && name) return name;

@@ -777,13 +777,19 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
     const crmCity = M3.cityCard(M3.town('zachary'), folks, 'crm');
     check(!pubCity.includes(fixture) && /2 people/.test(pubCity) && /1 client/.test(pubCity) && /state\.view !== 'public' && l\.p >= 0/.test(m3), 'in Public mode the city street view shows counts and no person\'s name: no card, roof label or tooltip carries one');
     check(crmCity.title === 'Zachary' && crmCity.owed.length === 1 && crmCity.owed[0].label === fixture && M3.roofLabel(folks[0], 'crm') === fixture, 'in CRM mode the city view names the people owed a reply and labels their roofs');
-    const odd = { name: '?Fixture Household', rel: 'client', owes: true, city: 'zachary', i: 2 };
-    const oddCard = M3.cityCard(M3.town('zachary'), [odd], 'crm');
-    const oddShown = [M3.shown(odd.name), M3.title(odd, 'crm', 'Zachary'), M3.roofLabel(odd, 'crm'), oddCard.owed[0] && oddCard.owed[0].label];
-    const oddTip = M3.tip(odd, 'crm', 'Client', 'Zachary');
-    check(oddShown.every(s => s === 'Fixture Household') && oddTip === 'Fixture Household · Zachary' && ![...oddShown, oddTip].some(s => /^\?/.test(s) || /\?Fixture/.test(s))
-      && M3.roofLabel({ name: '?' }, 'crm') === '' && M3.title({ name: '?', rel: 'client' }, 'crm', 'Zachary') === 'A client in Zachary'
-      && M3.shown('\uFFFD  Fixture Household') === 'Fixture Household' && M3.shown('? Fixture Household') === 'Fixture Household', 'a leading ? or replacement character is never shown on a name, roof label, card title, tooltip or reply list');
+    const withLast = { name: '?Fixture Household', rel: 'client', owes: true, city: 'zachary', i: 2 };
+    const lastCard = M3.cityCard(M3.town('zachary'), [withLast], 'crm');
+    const lastBits = [M3.shown(withLast.name), M3.title(withLast, 'crm', 'Zachary'), M3.roofLabel(withLast, 'crm'), lastCard.owed[0] && lastCard.owed[0].label];
+    check(lastBits.every(s => s === 'Fixture Household') && M3.tip(withLast, 'crm', 'Client', 'Zachary') === 'Fixture Household · Zachary'
+      && M3.shown('? Fixture Household') === 'Fixture Household' && M3.shown('\uFFFD Fixture Household') === 'Fixture Household'
+      && M3.shown('Pat Fixture household') === 'Fixture household' && lastBits.every(s => !/^\?/.test(s)), 'when a last name is present, the label is that last name plus household, never a leading ?');
+    const oneName = { name: 'Pat household', rel: 'client', owes: true, city: 'zachary', i: 3 };
+    const oneCard = M3.cityCard(M3.town('zachary'), [oneName], 'crm');
+    const oneBits = [M3.shown(oneName.name), M3.title(oneName, 'crm', 'Zachary'), M3.roofLabel(oneName, 'crm'), oneCard.owed[0] && oneCard.owed[0].label];
+    check(oneBits.every(s => s === 'Pat') && M3.tip(oneName, 'crm', 'Client', 'Zachary') === 'Pat · Zachary'
+      && M3.shown('Pat') === 'Pat' && M3.shown('? household') === '' && M3.roofLabel({ name: '?' }, 'crm') === ''
+      && M3.title({ name: '?', rel: 'client' }, 'crm', 'Zachary') === 'A client in Zachary'
+      && oneBits.every(s => !/household/i.test(s) && !/^\?/.test(s)), 'when there is only one name, the label is that name with no household and no leading ?');
   }
   // The shell.
   check(/<meta name="theme-color" content="#FBF8F3">/.test(indexHtml) && /Instrument\+Serif/.test(indexHtml) && /Nunito/.test(indexHtml) && indexHtml.indexOf('href="light.css"') > indexHtml.indexOf('href="ui.css"'), 'the page reads as the light canvas and loads the two typefaces');
