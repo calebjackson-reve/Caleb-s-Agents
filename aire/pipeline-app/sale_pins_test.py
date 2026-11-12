@@ -80,6 +80,13 @@ with tempfile.TemporaryDirectory() as tmp:
     check(p3 == [] and c3.get("error") == "OSError" and not (Path(tmp) / "b.json").exists(), "a geocoder failure pins nothing and caches nothing, so the next build retries")
     p4, c4 = sale_pins.build([row("5 No City Rd")], Path(tmp) / "u.json", fake)
     check(p4 == [] and c4["unusable"] == 1, "a street with no city or zip is not sent to the geocoder")
+    # Live sales often have no commas: "12 Fixture Row Baton Rouge 70801". A trailing ZIP (and optional LA) is enough.
+    n2 = len(sent)
+    loose = [row("18 Loose Lane Fixture 70807"), row("19 Loose Court LA 70808")]
+    pl, cl = sale_pins.build(loose, Path(tmp) / "loose.json", fake)
+    check(cl["unusable"] == 0 and len(pl) == 2 and all(p["kind"] == "sale" for p in pl), "a no-comma address with a trailing ZIP is usable and can pin")
+    check(len(sent) == n2 + 1 and sent[-1][0].endswith("|70807") and any(i.endswith("|70808") for i in sent[-1]), "the trailing ZIP is sent as the zip, not left stuck on the street")
+    check({p["address"] for p in pl} == {"18 Loose Lane Fixture", "19 Loose Court"}, "the ZIP and optional LA are stripped off the street")
 
 # The demo: made-up sales, the fixture cache, no geocoder, no ~/.aire/.
 import app  # noqa: E402

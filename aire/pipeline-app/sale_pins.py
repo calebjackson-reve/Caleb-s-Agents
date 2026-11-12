@@ -38,10 +38,27 @@ def is_lease(row: dict) -> bool:
     return "lease" in str(row.get("type") or "").lower()
 
 
+def _loose_tail(street: str) -> tuple[str, str, str]:
+    """When a sale row has no commas ('12 Fixture Row Baton Rouge 70801'), pull a trailing ZIP (and optional LA)
+    off the end so usable_address can see the zip. The leftover stays the street; we do not guess a city."""
+    import re
+    m = re.search(r"^(.*?)\s+(?:(LA)\s+)?(\d{5}(?:-\d{4})?)\s*$", street or "", re.I)
+    if not m:
+        return street, "", ""
+    return m.group(1).strip(), (m.group(2) or "").upper(), m.group(3)
+
+
 def _parts(row: dict, geo) -> tuple[str, str, str, str]:
     street, city, state, zip_ = geo.split_address(str(row.get("address") or ""))
-    return (street, city or str(row.get("city") or "").strip(), state or str(row.get("state") or "").strip(),
-            zip_ or str(row.get("zip") or "").strip())
+    city = city or str(row.get("city") or "").strip()
+    state = state or str(row.get("state") or "").strip()
+    zip_ = zip_ or str(row.get("zip") or "").strip()
+    if street and not city and not zip_:
+        street, st2, zip_ = _loose_tail(street)
+        state = state or st2
+    if zip_ and not state:
+        state = "LA"
+    return street, city, state, zip_
 
 
 def read_cache(path: Path | None) -> dict:
