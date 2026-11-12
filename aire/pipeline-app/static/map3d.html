@@ -787,7 +787,7 @@ function sheet(which) { [['legend', '#shLegend'], ['dock', '#shDock']].forEach((
 $('#shLegend').onclick = () => sheet('legend'); $('#shDock').onclick = () => sheet('dock');
 
 /* ------------------------------------------------------------------ boot */
-setLight(state.light, true); setLens(state.lens); colCur.set(colTgt); buildChips(); computeDensity(densTo, showTgt); densCur.set(densTo); uploadDensity(); refreshCounts(); syncUI(); hint('homes'); applyCam();
+setLight(state.light, true); setLens(state.lens); colCur.set(colTgt); buildChips(); applyFilters(); computeDensity(densTo, showTgt); densCur.set(densTo); uploadDensity(); refreshCounts(); syncUI(); hint('homes'); applyCam();
 if (reduce) { Object.assign(cam, HOME); Object.assign(goal, HOME); } else { flyTo(HOME, 3.4); if (fly) fly.intro = true; }
 requestAnimationFrame(() => $('#cover').classList.add('gone'));
 const L = new THREE.Vector3(), R = new THREE.Vector3(), U = new THREE.Vector3(), C = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
