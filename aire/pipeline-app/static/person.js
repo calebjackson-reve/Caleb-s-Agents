@@ -46,6 +46,17 @@
   // Three plain sentences from the record: what to do now, why, and when the next touch is due.
   // The order is the brief's: a reply owed, a new lead, a live deal, a hot buying or selling reason, then the logged
   // next step or a check-in on their cadence.
+  // Last touch: the latest of the sheet date, the last 1:1 message, the last email and the last close. The computed value comes
+  // with the record card (Reach.cards, insight.last_touch). Until it arrives, the latest of the dates already on p. Dates after today are ignored.
+  P.touch = function (p, today) {
+    today = today || (C.data && C.data.today) || todayISO();
+    const c = (typeof Reach !== 'undefined' && Reach.cards && Reach.cards[String(p.person_id)]) || null, lt = c && c.ok && c.last_touch;
+    if (lt && dayK(lt.day) && dayK(lt.day) <= today) return { day: dayK(lt.day), from: lt.from || '' };
+    let best = null;
+    [['CRM sheet', p.last_touch], ['iMessage', p.last_inbound], ['iMessage', p.last_outbound]].forEach(([from, v]) => { const d = dayK(v); if (d && d <= today && (!best || d > best.day)) best = { day: d, from }; });
+    return best;
+  };
+
   P.plan = function (p, today) {
     today = today || (C.data && C.data.today) || todayISO();
     const cad = feed().cadence_days || {}, band = key(p.band), every = cad[band];
@@ -53,7 +64,7 @@
     const reasons = p.reasons || [], intent = reasons.find(r => /\b(buying|selling)\b/i.test(r)), deal = (p.deals || []).find(d => d.open !== false), lapsed = (p.deals || []).find(d => d.expired_offer);
     // Touches due rows carry the last touch date. A map pin carries only how many days they have been quiet, so the
     // date is worked back from that. Only when both are missing does the plan say there is no last touch.
-    const lastTouch = dayK(p.last_touch), quiet = lastTouch ? days(today, lastTouch) : p.days_quiet != null ? Number(p.days_quiet) : null;
+    const lastTouch = (P.touch(p, today) || {}).day, quiet = lastTouch ? days(today, lastTouch) : p.days_quiet != null ? Number(p.days_quiet) : null;
     const lastK = lastTouch || (quiet != null ? C.addDaysK(today, -quiet) : '');
     const lower = s => s[0].toLowerCase() + s.slice(1);
     let now, why;
@@ -109,7 +120,7 @@
     const x = '<button type="button" class="x" onclick="closeDrawer()" aria-label="Close">×</button>';
     const p = P.get(id);
     if (!p) return `<section class="panel pcard"><div class="dh"><div class="who"><b>Not in the feed</b></div>${x}</div><div class="dbody"><p class="lt-quiet">This person is not in the CRM feed right now, so there is nothing true to show. Refresh, or find them in the CRM sheet.</p></div></section>`;
-    const today = (C.data && C.data.today) || todayISO(), ph = normPhone(p.phone), lastTouch = dayK(p.last_touch), quiet = p.days_quiet != null ? Number(p.days_quiet) : null;
+    const today = (C.data && C.data.today) || todayISO(), ph = normPhone(p.phone), touch = P.touch(p, today), lastTouch = touch && touch.day, quiet = p.days_quiet != null ? Number(p.days_quiet) : null;
     const last = (p.last_messages || []).slice(-1)[0], place = [p.address, p.city, p.zip].filter(Boolean).join(', ');
     const fact = (k, v, missing) => `<dt>${k}</dt><dd${v ? '' : ' class="pc-missing"'}>${v || esc(missing)}</dd>`;
     const heat = p.heat != null ? `${esc(String(p.heat))} of 100, ${esc(p.temp || '')}${(p.reasons || []).length ? `<ul>${p.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}` : '';
@@ -121,7 +132,7 @@
           ${fact('Phone', ph ? esc(fmtPhone(ph)) : p.phone ? esc(p.phone) + ' (not a valid US number)' : '', 'No phone on the sheet')}
           ${fact('Email', p.email ? esc(p.email) : '', 'No email on the sheet')}
           ${fact('Place', esc(place), 'No address or city on the sheet')}
-          ${fact('Last touch', lastTouch ? `${esc(C.day(lastTouch))}, ${plural(days(today, lastTouch), 'day')} ago` : quiet != null ? `${plural(quiet, 'day')} ago` : '', 'No last touch on the sheet')}
+          ${fact('Last touch', lastTouch ? `${esc(C.day(lastTouch))}, ${plural(days(today, lastTouch), 'day')} ago${touch.from ? ', ' + esc(touch.from) : ''}` : quiet != null ? `${plural(quiet, 'day')} ago` : '', 'No last touch on the sheet')}
           ${fact('Next step', p.next_action ? esc(p.next_action) : '', 'No next step logged')}
           ${fact('Reply', p.owes_reply ? 'You owe them a reply' : 'You do not owe them a reply', '')}
           ${fact('Last message', last ? '“' + esc(C.cleanMsg(last)) + '”' : '', 'No message from them in the feed')}

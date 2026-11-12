@@ -349,12 +349,50 @@ def _index(rows: list[dict], key: str) -> dict:
     return out
 
 
+def load_mail_signals(path=None) -> dict:
+    """The optional gmail-signals.json that gmail_signals.py writes ({email: {last_inbound, last_outbound, ...}}). A read
+    and nothing else: no Gmail call, nothing written. Missing or unreadable means {} and email is simply skipped."""
+    import json
+    import os
+    from pathlib import Path
+    cands = [Path(path)] if path else [Path(os.environ["AIRE_GMAIL_SIGNALS"])] if os.environ.get("AIRE_GMAIL_SIGNALS") else \
+        [Path(__file__).resolve().parent.parent / "enrichment" / "out" / "gmail-signals.json"]
+    for c in cands:
+        try:
+            d = json.loads(c.read_text())
+            return {str(k).strip().lower(): v for k, v in d.items() if isinstance(v, dict)} if isinstance(d, dict) else {}
+        except (OSError, ValueError):
+            pass
+    return {}
+
+
+def last_touch(p: dict, deals: list[dict], today: date, mail: dict | None = None) -> dict | None:
+    """The latest of: the sheet's Last_Touch, the last 1:1 iMessage (the feed's last_inbound / last_outbound), the last
+    1:1 email (gmail-signals), and the last closed deal. Display only, never written back. Group chats are already
+    dropped upstream (imessage_signals.GROUP_MIN_PEOPLE), so this only takes dates from those signals and has no chat
+    parser. Dates after today and empty sources are skipped. Ties keep the order sheet, iMessage, email, close."""
+    em = str(p.get("email") or "").strip().lower()
+    ms = (mail or {}).get(em) or {} if em else {}
+    cands = [("CRM sheet", p.get("last_touch")),
+             ("iMessage", p.get("last_inbound")), ("iMessage", p.get("last_outbound")),
+             ("email", ms.get("last_inbound")), ("email", ms.get("last_outbound"))]
+    cands += [("closed sale", d.get("day")) for d in deals if "closed" in str(d.get("status") or "")]
+    best = None
+    for src, v in cands:
+        d = _day(v)
+        if d and d <= today and (best is None or d > best[0]):
+            best = (d, src)
+    return {"day": best[0].isoformat(), "from": best[1], "days_ago": (today - best[0]).days} if best else None
+
+
 class Book:
     """The reads the card and the score need, indexed once: the feed, the AIRE Deals sheet rows and the sales record."""
 
     def __init__(self, feed: dict, deals_sheet: list[dict] | None = None, sales: list[dict] | None = None,
-                 leads: list[dict] | None = None, today: date | None = None, weights: dict | None = None):
+                 leads: list[dict] | None = None, today: date | None = None, weights: dict | None = None,
+                 mail_signals: dict | None = None):
         f = feed or {}
+        self.mail_signals = mail_signals  # None: read the optional gmail-signals.json on first use
         self.weights = weights
         # Flexmls listings that expired or were withdrawn, by house number: someone who tried to sell and did not.
         self.off_market = _index([m for m in (f.get("market") or {}).get("rows") or [] if m.get("type") in ("expired", "withdrawn")], "address")
@@ -402,6 +440,14 @@ class Book:
                 out.append({"address": d["address"], "side": str(d.get("side") or "").lower(), "status": "lease closed" if "lease" in str(d.get("type") or "").lower() else "closed",
                             "day": str(d.get("close") or "")[:10], "price": cc.num(d.get("price")), "from": "sales record", "here": True})
         return sorted(out, key=lambda d: d["day"] if _day(d["day"]) else "", reverse=True)
+
+    def mail(self) -> dict:
+        if self.mail_signals is None:
+            self.mail_signals = load_mail_signals()
+        return self.mail_signals
+
+    def last_touch(self, p: dict, deals: list[dict]) -> dict | None:
+        return last_touch(p, deals, self.today, self.mail())
 
     def years_owned(self, deals: list[dict]) -> dict | None:
         """Years since they bought this house with Caleb: a closed buyer side at their own address. Nothing else in
@@ -484,7 +530,8 @@ class Book:
         facts = [{"key": k, "label": label, "value": val[k][0] if val[k] else None, "from": val[k][1] if val[k] else "",
                   "why": "" if val[k] else (no_facts if k in ("value", "source", "household") and no_facts else why.get(k, "not on the sheet"))} for k, label in FIELDS]
         return {"ok": True, "person_id": str(pid), "facts": facts, "known": sum(1 for x in facts if x["value"]), "total": len(facts),
-                "seller": self.seller(pid, p, deals), "homeowner": bool(_house(p.get("street")))}
+                "seller": self.seller(pid, p, deals), "homeowner": bool(_house(p.get("street"))),
+                "last_touch": self.last_touch(p, deals)}
 
     def sellers(self, n: int = 25) -> list[dict]:
         """The top n homeowners by score, highest first. A score of 0 is never listed."""

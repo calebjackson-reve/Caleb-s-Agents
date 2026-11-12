@@ -176,5 +176,39 @@ check(I.waiting_since({**ch, "last_touch": ""}) == date(2026, 9, 24), "with no a
 check(I.waiting_since({**ch, "last_messages": []}) == date(2026, 11, 10) and I.waiting_since({**ch, "last_touch": "2026-11-11"}) == date(2026, 9, 24) and I.waiting_since({"owes_reply": True}) is None,
       "no message dates falls back to their last text, a touch after their last text is not an answer to it, and no dates at all is unknown")
 
+# ---- last touch: latest of sheet, 1:1 iMessage, email, closed deal. Fake people only; display value, nothing written back.
+# Group chats are never read here: the helper only takes dates from signals that imessage_signals.py already filtered to 1:1.
+import json
+import os
+import tempfile
+
+lt = lambda p, deals=(), mail=None: I.last_touch(p, list(deals), TODAY, mail)
+check(lt({"last_touch": "2026-05-01"}) == {"day": "2026-05-01", "from": "CRM sheet", "days_ago": 194}, "sheet only: that day, from the CRM sheet")
+check(lt({"last_touch": "2026-05-01", "last_inbound": "2026-10-02"})["from"] == "iMessage" and lt({"last_touch": "2026-05-01", "last_outbound": "2026-10-05"})["day"] == "2026-10-05",
+      "a newer 1:1 iMessage, in or out, beats an older sheet date")
+check(lt({"last_touch": "2026-10-09", "last_inbound": "2026-10-02"})["from"] == "CRM sheet", "an older iMessage does not beat a newer sheet date")
+mail = {"fixture@example.com": {"last_inbound": "2026-10-20", "last_outbound": ""}}
+check(lt({"email": "Fixture@Example.com", "last_touch": "2026-05-01", "last_outbound": "2026-09-01"}, mail=mail) == {"day": "2026-10-20", "from": "email", "days_ago": 22}, "a newer email from a fake gmail-signals dict wins")
+check(lt({"email": "other@example.com", "last_touch": "2026-05-01"}, mail=mail)["from"] == "CRM sheet" and lt({"email": "x@example.com", "last_touch": "2026-05-01"}, mail=None)["from"] == "CRM sheet",
+      "someone not in the email file, or no email file at all, still gets the other sources")
+with tempfile.TemporaryDirectory() as td:
+    fp = os.path.join(td, "gmail-signals.json")
+    open(fp, "w").write(json.dumps({"Fixture@Example.com": {"last_inbound": "2026-10-20"}}))
+    check(I.load_mail_signals(fp) == {"fixture@example.com": {"last_inbound": "2026-10-20"}}, "a fake gmail-signals file is read, keys lowercased")
+    check(I.load_mail_signals(os.path.join(td, "missing.json")) == {}, "a missing email file is fine")
+    open(fp, "w").write("not json")
+    check(I.load_mail_signals(fp) == {}, "an unreadable email file is skipped")
+closed = {"status": "closed", "day": "2026-10-28"}
+check(lt({"last_touch": "2026-05-01"}, [closed]) == {"day": "2026-10-28", "from": "closed sale", "days_ago": 14}, "a newer close wins")
+check(lt({"last_touch": "2026-05-01"}, [{"status": "lease closed", "day": "2026-10-28"}])["from"] == "closed sale", "a closed lease counts")
+check(lt({"last_touch": "2026-05-01"}, [{"status": "under contract", "day": "2026-11-01"}, {"status": "offer expired", "day": "2026-11-02"}])["from"] == "CRM sheet",
+      "a live or non-closed deal day does not count")
+check(lt({}) is None and lt({"last_touch": "", "last_inbound": None, "last_outbound": "x"}, [{"status": "closed", "day": ""}], {}) is None, "empty sources are skipped, all empty means no last touch")
+check(lt({"last_touch": "2026-05-01", "last_inbound": "2026-11-12"}, [{"status": "closed", "day": "2027-01-01"}])["day"] == "2026-05-01", "a date after today is ignored")
+check(lt({"last_touch": "2026-11-11"})["days_ago"] == 0, "today counts")
+cb = I.Book({"people": [{"person_id": "80", "display": "Fixture Fran", "street": "4 Demo St", "email": "fran@example.com", "last_touch": "2026-01-01", "last_inbound": "2026-10-01"}]},
+            [], [{"close": "2026-10-15", "address": "4 Demo St", "side": "Buyer", "price": 1}], [], TODAY, mail_signals={"fran@example.com": {"last_outbound": "2026-10-10"}})
+check(cb.card("80")["last_touch"] == {"day": "2026-10-15", "from": "closed sale", "days_ago": 27}, "Book.card carries the computed last touch, close included")
+
 print("\nALL PASS" if not fails else f"\n{fails} FAILED")
 sys.exit(1 if fails else 0)
