@@ -1,0 +1,15 @@
+{
+  "name": "video-dashboard",
+  "version": "1.0.0",
+  "description": "Video Engine dashboard: local jobs, media, trims, ffmpeg render queue and reference breakdowns. Localhost only.",
+  "private": true,
+  "license": "UNLICENSED",
+  "main": "server.js",
+  "bin": { "vx": "cli.js" },
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server.js",
+    "vx": "node cli.js",
+    "test": "node --test --test-concurrency=1 \"test/*.test.js\""
+  }
+}

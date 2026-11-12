@@ -16,6 +16,7 @@ AIRE is Caleb's AI real estate agent system. Read `STATUS.md` before touching an
 | `market-update/` | Monthly market update scripts and Motion prompts. |
 | `crm/` | CRM engine on the one AIRE CRM sheet: Gmail ingest, cadence, tasks, deals, feed.json for the Pipeline app. |
 | `pipeline-app/` | Pipeline, Caleb's one daily tool: Jarvis-style screen over the CRM feed, the one sender, the one caller of `crm.py`. `python3 aire/pipeline-app/app.py --demo` to see it. |
+| `video-dashboard/` | Video Engine dashboard: local page, CLI and JSON API for video jobs, media, trims, ffmpeg renders and reference breakdowns. `cd aire/video-dashboard && npm start`, then http://127.0.0.1:4848. Media lives in `/workspace/video`, never in git. |
 | `pipeline/` | Historical pipeline template. Deals are now the Deals tab of the AIRE CRM sheet. |
 | `rollout-2026-10/WEEK-2.md` | Week 2: calculator proof, bulk tier pipeline, Meta One memo. |
 | `calculators/` | Interactive pages for calebjackson.org. Seller net sheet first. |
