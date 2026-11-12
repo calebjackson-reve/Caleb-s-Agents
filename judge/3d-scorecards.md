@@ -30,3 +30,28 @@ The judge listed 41 fixes. What was changed for round 2:
 - **Camera:** lens and distance now change together so the house never shrinks mid-move, a line of copy for the turning beat, the photo held still during both wipes and no longer cropping the house, the day to dusk change spread over more scroll, the blueprint giving way to the model behind a rising line.
 - **Explore mode:** "Above" reframed over the controls, pins hidden when a wall is in the way, the chapter's own camera restored on close, take-apart restaged with dotted leaders, the photo card moved clear of the house, larger control type.
 - **Evidence:** the shoot now covers what the judge could not see: denser frames across both changes of light, every chapter with WebGL off and with reduced motion, more of the phone viewer, every pin, an orbit limit, four frames at pixel ratio 2, and the drone film playing.
+
+## Round 2, November 12, 2026
+
+**Overall 7.1. Not a pass.** 144 screenshots. A new judge who saw nothing from round 1.
+
+| Category | Weight | Score | What held it down |
+| --- | --- | --- | --- |
+| Model craft | 20% | 8.0 | Flat window glass, sausage hedges, a grey ellipse for the pond, bare props |
+| Light and material | 15% | 7.0 | Capped: a hard band at the horizon while the model builds. Day roof too pale, no shade under the porch, roofs crushed to black from the pool at dusk |
+| Drawing and blueprint | 10% | 6.5 | Capped: speckled dots along the walk and drive. Uneven line weight on the ground, lines breaking up at phone size |
+| Camera and motion | 15% | 6.5 | Capped: a black cap left on a tree after the blueprint wipe. Words over the model on the phone, the left wing fading under the copy panel |
+| Explore mode | 15% | 7.5 | A pin showing through the roof on the phone, no pins in the blueprint look, take-apart cluttered on the phone |
+| Page craft | 15% | 6.0 | Capped: copy unreadable for a few frames while day turns to dusk (the "02" label at 1.04 to 1) |
+| Technical | 10% | 7.5 | Capped at 8: no frame timing from a real graphics card. Fallback states with loose ends |
+
+What the judge called professional already: the dusk model to twilight photo wipe ("roof, dormers, gables and windows land on the photo"), the dusk lighting on the front, day to dusk with no pop, line quality at pixel ratio 2, the named parts, the pin cards, the phone control card, the type, and the budgets (238 draw calls and 196,446 triangles at peak, no errors).
+
+What changed between round 1 and round 2, beyond the first fix list:
+
+- **The model was fitted to the photo.** 50 points on the twilight photo against the same points on the model. The wings moved about 2.5 m back, the tall roof got deeper, the oval windows moved out between the porch and the wings. Error went from about 60 photo pixels on the right wing to about 5 on average.
+- **Framing:** every chapter pulled back so the whole house shows.
+- **Bugs found along the way:** the pointer leaned the camera at the photo moment, and photo pins kept an old answer about what was in front of them.
+- **A frame timer** on the page (`?perf=1`), so the Technical cap can be lifted with a run on a real machine.
+
+The judge listed 34 fixes. Round 3 starts with the four that lift caps: the copy contrast at dusk, the tree cap, the horizon band and the ground speckle.
