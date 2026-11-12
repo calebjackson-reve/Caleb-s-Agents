@@ -84,6 +84,15 @@ def counts(ties: list[dict]) -> dict:
             "expired_offers": sum(1 for t in ties if t["expired_offer"])}
 
 
+def unlinked(ties: list[dict]) -> list[dict]:
+    """The "Link this deal" list: live Deals sheet rows tied to no person, so a live client is hiding behind them.
+    Read only. The fix is Caleb's, on the CRM Deals tab: Pipeline never writes either sheet. Soonest closing first."""
+    rows = [{"key": t["key"], "deal": t.get("deal") or "", "stage": t["stage"], "status": t.get("status") or "Not set", "side": t.get("side") or "",
+             "close": str(t.get("act") or "")[:10], "why": "No person is tied to this deal: no CRM Deals tab link, nobody at this address, no full name in its note."}
+            for t in ties or [] if t.get("stage") in OPEN and not t.get("expired_offer") and not t.get("people")]
+    return sorted(rows, key=lambda r: (r["close"] or "9", r["deal"]))
+
+
 def overlay(ties: list[dict], feed: dict) -> dict:
     """person_id -> the stage their deal puts them in, with the deal and the sheet's own stage. Under contract wins
     over a past closing. Only these two stages are ever set from a deal."""

@@ -40,6 +40,11 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from pools import audience, first_name as _first_name, SELLER_WORDS  # noqa: E402  (the library Pipeline imports)
 
+_PIPELINE = str(Path(__file__).resolve().parent.parent / "pipeline-app")
+if _PIPELINE not in sys.path:
+    sys.path.append(_PIPELINE)
+import outreach  # noqa: E402  (the hold rules: who gets no canned draft. Standard library only, nothing sends)
+
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates.md"
 SENT_LOG = HERE / "sent-log.json"
@@ -248,13 +253,18 @@ MAX_EMAILS = int(os.getenv("FOLLOWUP_MAX_EMAILS", "25"))
 MAX_TEXTS = int(os.getenv("FOLLOWUP_MAX_TEXTS", "25"))
 
 
-def build_feed_queue(feed: dict, t: dict, as_of: date, max_emails: int = MAX_EMAILS, max_texts: int = MAX_TEXTS) -> dict:
+def build_feed_queue(feed: dict, t: dict, as_of: date, max_emails: int = MAX_EMAILS, max_texts: int = MAX_TEXTS,
+                     send_log: list | None = None, bridge_log: list | None = None) -> dict:
     """The engine already decided who is due. This picks the pool, the template, and email vs text.
     The feed is already sorted (owes_reply, then hot, warm, lukewarm, cold, ice-cold, then longest silence), so the
-    daily caps keep the hottest people and defer the rest to tomorrow. Reply-first people are never capped."""
+    daily caps keep the hottest people and defer the rest to tomorrow. Reply-first people are never capped.
+    Anyone a hold rule says no to (outreach.hold_for: mid-deal, a soft no, no answer to the last two, reached out
+    inside 7 days and the rest) gets no template and no cap slot. They are listed under `held` with the reason.
+    `send_log` and `bridge_log` are Pipeline's own logs, when the caller has them."""
     sent_log = load_json(SENT_LOG, {})
-    queue, texts, reply_first, skipped = [], [], [], []
+    queue, texts, reply_first, skipped, held = [], [], [], [], []
     deferred = 0
+    ctx = outreach.context(feed, as_of, send_log=send_log, bridge_log=bridge_log)
     rows = [dict(r, _section="client") for r in feed.get("touches_due", [])] + \
            [dict(r, _section="partner") for r in feed.get("partners", [])]
     for r in rows:
@@ -271,6 +281,10 @@ def build_feed_queue(feed: dict, t: dict, as_of: date, max_emails: int = MAX_EMA
             reply_first.append({"person_id": r.get("person_id", ""), "name": name, "phone": r.get("phone", ""),
                                 "email": r.get("email", ""), "last_messages": r.get("last_messages", []),
                                 "next_action": r.get("next_action", "")})
+            continue
+        hold = outreach.hold_for(str(r.get("person_id", "")), ctx, "email" if (r.get("email") or "").strip() else "text")
+        if hold:
+            held.append({"person_id": str(r.get("person_id", "")), "name": name, "kind": "email" if (r.get("email") or "").strip() else "text", **hold})
             continue
         pool = audience(r)
         used = [e["template"] for e in sent_log.get(key, []) if e.get("pool", e.get("stage")) == pool]
@@ -300,7 +314,7 @@ def build_feed_queue(feed: dict, t: dict, as_of: date, max_emails: int = MAX_EMA
             texts.append({**base, "template": idx, "text": fill(tpool[idx], base)})
         else:
             skipped.append((name, "no email or phone"))
-    return {"queue": queue, "texts": texts, "reply_first": reply_first, "skipped": skipped, "flagged": [],
+    return {"queue": queue, "texts": texts, "reply_first": reply_first, "skipped": skipped, "flagged": [], "held": held,
             "deferred": deferred, "gmail": False, "source": "feed", "feed_generated_at": feed.get("generated_at", "")}
 
 
@@ -324,16 +338,20 @@ def write_text_queue(result: dict, as_of: date) -> Path:
         quiet = f"{q['day']}d quiet" if q.get("day_known", True) else "never logged"
         lines += [f"{i}. {q['name']} {q['phone']} (id:{q['person_id']}) {q['stage']}, {quiet}, template {q['template'] + 1}",
                   f"   {q['text']}", ""]
+    held = result.get("held") or []
+    if held:
+        lines += ["## Held, no draft", ""] + [f"- {h['name']} (id:{h['person_id']}): {h['why']}" + (f" Until {h['until']}." if h.get("until") else "") for h in held] + [""]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     (OUT / "email-queue.json").write_text(json.dumps({
         "generated_at": datetime.now(CENTRAL).isoformat(timespec="seconds"), "as_of": as_of.isoformat(),
+        "held": [h for h in held if h.get("kind") == "email"],
         "drafts": [{"person_id": q["person_id"], "name": q["name"], "email": q["email"], "pool": q["stage"],
                     "template": q["template"] + 1, "subject": q["subject"], "body": q["body"], "days_quiet": q["day"]}
                    for q in result["queue"]],
     }, indent=1, ensure_ascii=False))
     (OUT / "text-queue.json").write_text(json.dumps({
         "generated_at": datetime.now(CENTRAL).isoformat(timespec="seconds"), "as_of": as_of.isoformat(),
-        "reply_first": result["reply_first"],
+        "reply_first": result["reply_first"], "held": [h for h in held if h.get("kind") != "email"],
         "drafts": [{"person_id": q["person_id"], "name": q["name"], "phone": q["phone"], "pool": q["stage"],
                     "template": q["template"] + 1, "text": q["text"], "days_quiet": q["day"]} for q in result["texts"]],
     }, indent=1, ensure_ascii=False))
