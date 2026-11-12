@@ -777,6 +777,13 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
     const crmCity = M3.cityCard(M3.town('zachary'), folks, 'crm');
     check(!pubCity.includes(fixture) && /2 people/.test(pubCity) && /1 client/.test(pubCity) && /state\.view !== 'public' && l\.p >= 0/.test(m3), 'in Public mode the city street view shows counts and no person\'s name: no card, roof label or tooltip carries one');
     check(crmCity.title === 'Zachary' && crmCity.owed.length === 1 && crmCity.owed[0].label === fixture && M3.roofLabel(folks[0], 'crm') === fixture, 'in CRM mode the city view names the people owed a reply and labels their roofs');
+    const odd = { name: '?Fixture Household', rel: 'client', owes: true, city: 'zachary', i: 2 };
+    const oddCard = M3.cityCard(M3.town('zachary'), [odd], 'crm');
+    const oddShown = [M3.shown(odd.name), M3.title(odd, 'crm', 'Zachary'), M3.roofLabel(odd, 'crm'), oddCard.owed[0] && oddCard.owed[0].label];
+    const oddTip = M3.tip(odd, 'crm', 'Client', 'Zachary');
+    check(oddShown.every(s => s === 'Fixture Household') && oddTip === 'Fixture Household · Zachary' && ![...oddShown, oddTip].some(s => /^\?/.test(s) || /\?Fixture/.test(s))
+      && M3.roofLabel({ name: '?' }, 'crm') === '' && M3.title({ name: '?', rel: 'client' }, 'crm', 'Zachary') === 'A client in Zachary'
+      && M3.shown('\uFFFD  Fixture Household') === 'Fixture Household' && M3.shown('? Fixture Household') === 'Fixture Household', 'a leading ? or replacement character is never shown on a name, roof label, card title, tooltip or reply list');
   }
   // The shell.
   check(/<meta name="theme-color" content="#FBF8F3">/.test(indexHtml) && /Instrument\+Serif/.test(indexHtml) && /Nunito/.test(indexHtml) && indexHtml.indexOf('href="light.css"') > indexHtml.indexOf('href="ui.css"'), 'the page reads as the light canvas and loads the two typefaces');
