@@ -195,7 +195,7 @@ const PINS = [
   { at: [-2.9, 1.5, 3.1], title: 'Front porch', note: 'Cedar posts, brick underfoot and flowers by the door.', img: 'basil-porch.webp' },
   { at: [0.3, 0.5, -20.5], title: 'Pool', note: 'The pool terrace behind the house, at dusk.', img: 'basil-pool-night.webp' },
   { at: [-0.3, 1.2, -13.6], title: 'Back patio', note: 'Covered, with an outdoor kitchen.', img: 'basil-patio.webp' },
-  { at: [-12.3, 1.6, -15], title: 'Garage and drive', note: 'Three bays along the side of the house.', img: 'basil-driveway.webp' },
+  { at: [-13.6, 1.2, -15], title: 'Garage and drive', note: 'Three bays along the side of the house.', img: 'basil-driveway.webp' },
   { at: [-38, 8.6, -46], title: 'The barn', note: 'White, with a cupola, across the lawn.', img: 'basil-barn.webp' },
   { at: [-2, 5.2, -68.5], title: 'Gazebo on the pond', note: 'A cedar frame at the edge of the water.', img: 'basil-gazebo.webp' },
 ];
@@ -229,11 +229,13 @@ $('.card-close').addEventListener('click', closeCard);
 const ray = new THREE.Raycaster(), rayDir = new THREE.Vector3(), rayAt = new THREE.Vector3();
 let solids = null, pinTick = 3;
 function hidden(at) {
-  if (!solids) { solids = []; stage.scene.traverse((o) => { if (o.isMesh && !o.isInstancedMesh && o.layers.mask === 1 && o.geometry.attributes.position.count > 60) solids.push(o); }); }
+  if (!solids) { solids = []; stage.scene.traverse((o) => { if (o.isMesh && !o.isInstancedMesh && o.layers.mask === 1 && o.geometry.attributes.position.count >= 12) solids.push(o); }); }
   const c = stage.camera.position; rayAt.fromArray(at);
   const far = c.distanceTo(rayAt); rayDir.subVectors(rayAt, c).normalize();
   ray.set(c, rayDir); ray.far = far - 0.9;
-  return ray.intersectObjects(solids, false).length > 0;
+  // parts that are switched off (the dotted leaders of the take-apart view) do not block anything
+  const shown = (o) => { for (let n = o; n; n = n.parent) if (!n.visible) return false; return true; };
+  return ray.intersectObjects(solids, false).some((h) => shown(h.object));
 }
 let pinTimer = 0;
 function drawPins(settled) {
