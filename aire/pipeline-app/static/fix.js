@@ -71,9 +71,15 @@
       <div class="cc-acts"><button type="button" class="cc-primary" onclick="Fix.decide('${esc(r.id)}', 'approve')">Approve</button><button type="button" onclick="Fix.decide('${esc(r.id)}', 'dismiss')">Not a problem</button></div></li>`;
     const groups = KINDS.map(([k, label]) => { const rs = rows.filter(r => r.kind === k); return rs.length ? C.card(`${label} <span class="cc-count">${rs.length}</span>`,
       `<ul class="cc-rows">${rs.slice(0, F.MAX).map(row).join('')}</ul>${rs.length > F.MAX ? `<p class="cc-note">${rs.length - F.MAX} more. Search to narrow the list.</p>` : ''}`, k === 'mls' ? ['deals', 'permits'] : k === 'offer' || k === 'price' ? ['deals', 'crm'] : ['crm']) : ''; }).join('');
+    // "Link this deal": live Deals rows with no person tied. Read only, no button: the fix is typed on the CRM Deals tab.
+    const lk = (d0().link_deals || []).filter(r => matches(`${r.deal} ${r.status} ${r.side}`));
+    const linkCard = lk.length ? C.card(`Link this deal <span class="cc-count">${lk.length}</span>`,
+      `<p class="cc-note">Live deals with no person on them. Until one is linked, its client can look quiet and get a canned check-in. Put the person on the deal's row in the CRM Deals tab. Pipeline never edits the sheets.</p>
+      <ul class="cc-rows">${lk.slice(0, F.MAX).map(r => `<li class="cc-row lk-row"><div class="cc-row-main"><h3>${esc(r.deal)}</h3><p class="cc-note">${esc([r.status, r.side, r.close ? 'closing ' + C.day(r.close) : 'no closing date'].filter(Boolean).join(', '))}</p><p class="cc-note fx-from">${esc(r.why)}</p></div></li>`).join('')}</ul>`, ['deals', 'crm']) : '';
     const capLine = cap.amount == null ? `<p class="cc-warn">${esc(cap.note || 'The cap is unknown.')}</p>` : `<p class="${cap.differs ? 'cc-warn' : 'cc-note'}">Cap from Goals: <b>${C.m(cap.amount)}</b>. ${esc(cap.note || 'That is $20,000 plus the $3,000 royalty.')}</p>`;
     return `<div class="cc-page">${C.head('Fix list', 'Rows that look wrong, with the problem and a suggested fix. You approve one at a time. Pipeline logs your tap and never edits the sheets.')}
       ${C.card('The cap', capLine, ['goals'])}
+      ${linkCard}
       ${groups || C.card('Nothing to fix', C.empty(S.q ? 'No row matches that search.' : 'No row looks wrong right now.'), ['crm', 'deals'])}
       ${C.card(`Approved, yours to change in the sheet <span class="cc-count">${fx.approved.length}</span>`, fx.approved.length ? `<ul class="cc-rows">${fx.approved.map(r => `<li class="cc-row fx-row"><div class="cc-row-main"><h3>${esc(r.what)}</h3><p class="cc-note">${esc(r.fix)}</p><p class="cc-note fx-from">Approved ${esc(C.day(String(r.at || '').slice(0, 10)))}. It leaves this list once the sheet shows the change.</p></div>
         <div class="cc-acts"><button type="button" onclick="Fix.decide('${esc(r.id)}', 'reopen')">Undo</button></div></li>`).join('')}</ul>` : C.empty('Nothing approved is waiting.'), [])}

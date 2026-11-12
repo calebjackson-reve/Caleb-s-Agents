@@ -71,6 +71,7 @@ import cc_ask  # noqa: E402  (Ask Claude on every Command Center page)
 import bridge  # noqa: E402  (jobs out to Grok bot, result files back)
 import drafter  # noqa: E402  (Claude writes each draft from the template, in Caleb's voice)
 import links  # noqa: E402  (deals tied to people, the Fix list)
+import outreach  # noqa: E402  (the hold rules: who gets no canned draft, and the reason a draft may lead with)
 import proof  # noqa: E402  (the weekly proof line)
 import learn  # noqa: E402  (the learning loop for the seller score and the call list)
 import insight  # noqa: E402  (the call list, the fuller contact card, the likely-seller score)
@@ -442,6 +443,7 @@ class State:
             p["ties"], p["deal_counts"], p["checkins"] = ins["ties"], ins["deal_counts"], ins["checkins"]
             p["deal_records"] = ins["records"]
             p["fixes"] = links.with_decisions(ins["fixes"], fx_log if isinstance(fx_log, list) else [])
+            p["link_deals"] = ins.get("link_deals") or []  # live Deals rows with no person tied. Read only: nothing is written anywhere.
             p["cap_note"] = links.cap_note(p.get("goals") or {})
             gone = lambda k: (p["fresh"].get(k) or {}).get("state") == "missing"  # a read that never ran: its numbers are unknown, not 0
             p["proof"] = {**proof.build(today(), None if gone("leads") else p["leads"], self.send_log(), self.bridge_log(), p["calendar"], None if gone("deals") else ins["ties"], read_json(self.proof_path.with_name(self.proof_path.name.replace("proof", "appointments")), [])), "monday": today().weekday() == 0}
@@ -454,7 +456,8 @@ class State:
     def insight(self) -> dict:
         """The call list, the likely sellers and the book the contact card reads, worked out once per feed and read."""
         feed = self.feed() or {}
-        done = {r.get("person_id") for r in self.send_log() if r.get("status") == "sent" and str(r.get("at", "")).startswith(today().isoformat()) and r.get("person_id")}
+        # Already reached today: a text or email that really went, or a call through Grok that finished (outreach.reached_today).
+        done = outreach.reached_today(self.send_log(), self.bridge_log(), today().isoformat())
         stamp = lambda n: (lambda p: p.stat().st_mtime_ns if p.exists() else 0)(self.cc_dir / f"{n}.json")
         vstamp = (lambda p: p.stat().st_mtime_ns if p.exists() else 0)(self.learn_dir / "versions.json")
         key = (feed.get("generated_at"), today().isoformat(), now().strftime("%H:%M")[:4], tuple(sorted(done)), stamp("deals"), stamp("sales"), stamp("leads"), vstamp)
@@ -474,8 +477,31 @@ class State:
             self._insight = (key, {"book": book, "call10": insight.call10(sided, today(), done, weights=weights["call10"]), "sellers": book.sellers(25),
                                    "call_pool": insight.call10(sided, today(), done, n=60, weights=weights["call10"])["rows"], "seller_pool": book.sellers(200),
                                    "ties": ties, "records": recs, "overlay": over, "sides": side_of, "deal_counts": links.counts(ties), "board_contract": links.board_contract(ties),
-                                   "checkins": links.checkins(ties, sales, feed, today()), "fixes": links.fixes(feed, cards, ties, sales)})
+                                   "checkins": links.checkins(ties, sales, feed, today()), "fixes": links.fixes(feed, cards, ties, sales),
+                                   "link_deals": links.unlinked(ties)})
         return self._insight[1] or self.insight()  # a retrain cleared it between the two lines: build it again
+
+    def screened_queues(self, feed: dict | None = None) -> tuple[dict, dict]:
+        """The text and email queue files with the hold rules applied as they are read (outreach.screen), so a queue
+        file written before a deal was linked or a call was made cannot show a canned check-in. Each kept draft carries
+        its reason, register and recent openers for the drafter. If the rules cannot be worked out, no draft is shown."""
+        text_q, email_q = read_json(self.paths["text_queue"], {}), read_json(self.paths["email_queue"], {})
+        feed = self.feed() if feed is None else feed
+        if not feed or "_error" in feed:
+            return text_q, email_q
+        try:
+            try:
+                ins = self.insight()
+            except Exception:
+                ins = {}
+            day = (insight._day(feed.get("as_of")) if self.demo else None) or today()  # the made-up feed is read as of its own day
+            ctx = outreach.context(feed, day, self.send_log(), self.bridge_log(), ins.get("ties"), ins.get("checkins"))
+            text_q, email_q, _ = outreach.screen(text_q, email_q, ctx)
+        except Exception as e:
+            note = f"The hold rules could not be worked out ({type(e).__name__}), so no draft is shown."
+            text_q = {**text_q, "drafts": [], "screen_error": note} if isinstance(text_q, dict) and "_error" not in text_q else text_q
+            email_q = {**email_q, "drafts": [], "screen_error": note} if isinstance(email_q, dict) and "_error" not in email_q else email_q
+        return text_q, email_q
 
     # ---- the Fix list, Good call and Not useful, and the weekly learning. All of it stays in files on this Mac.
     def fix_decide(self, fix_id: str, action: str) -> dict:
@@ -845,8 +871,7 @@ class State:
     def snapshot(self) -> dict:
         feed = self.feed()
         run = self.feed_run()
-        text_q = read_json(self.paths["text_queue"], {})
-        email_q = read_json(self.paths["email_queue"], {})
+        text_q, email_q = self.screened_queues(feed)  # held people are out before anything else reads the drafts
         command = read_json(self.paths["command_status"], {})
         feed_age = 0 if self.demo else file_age_minutes(self.paths["feed"])
         sent = self.sent_today()
@@ -914,6 +939,7 @@ class State:
             "has_facts": "facts" in feed,
             "deal_counts": ins.get("deal_counts"), "board_contract": ins.get("board_contract"), "checkins": ins.get("checkins") or [],
             "deal_records": ins.get("records") or [],
+            "link_deals": ins.get("link_deals") or [],  # live Deals rows with no person tied: a read-only list
             "lead_alert": {"on": self.self_alert, "last": ((read_json(self.lead_alert_path, {}) or {}).get("log") or [None])[-1]},
             "text_queue": text_q if "_error" not in text_q else {},
             "email_queue": email_q if "_error" not in email_q else {},
@@ -1354,8 +1380,8 @@ class State:
                 self.draft_note = "the anthropic package is not installed"
                 return {"written": 0, "note": self.draft_note}
         try:
-            r = drafter.run(client, read_json(self.paths["text_queue"], {}), read_json(self.paths["email_queue"], {}),
-                            out_dir / "handoff", out_dir / "draft-usage.json", now(), self.signoff())
+            text_q, email_q = self.screened_queues()  # nobody on hold is drafted for, and each item carries its reason
+            r = drafter.run(client, text_q, email_q, out_dir / "handoff", out_dir / "draft-usage.json", now(), self.signoff())
         except Exception as e:
             out_of_credit = "credit balance" in str(e).lower()
             r = {"written": 0, "note": "Claude is out of API credits, top them up in the Anthropic console" if out_of_credit else f"{type(e).__name__}: {e}"[:160]}

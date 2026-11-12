@@ -38,10 +38,17 @@ def main(argv=None) -> int:
         print("predraft: feed says header_ok false, no drafts written")
         return 1
     as_of = date.fromisoformat(feed.get("as_of") or date.today().isoformat())
-    result = followups.build_feed_queue(feed, followups.load_templates(), as_of)
+    def log(name: str) -> list:  # Pipeline's own send and call logs, read only, so the hold rules see what already went out
+        try:
+            rows = json.loads((HERE / "out" / name).read_text(encoding="utf-8"))
+            return rows if isinstance(rows, list) else []
+        except (OSError, ValueError):
+            return []
+
+    result = followups.build_feed_queue(feed, followups.load_templates(), as_of, send_log=log("send-log.json"), bridge_log=log("bridge-log.json"))
     followups.write_text_queue(result, as_of)
     print(f"predraft: {len(result['reply_first'])} reply first, {len(result['texts'])} texts, {len(result['queue'])} emails, "
-          f"{result['deferred']} deferred")
+          f"{result['deferred']} deferred, {len(result['held'])} held")
     return 0
 
 

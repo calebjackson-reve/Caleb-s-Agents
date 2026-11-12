@@ -1015,6 +1015,13 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   const fp2 = txt(render('fixes'));
   check(/No row looks wrong right now/.test(fp2) && /Approved, yours to change in the sheet 1/.test(fp2) && /2 set aside as not a problem. 1 approved and since fixed/.test(fp2), 'approved rows wait in their own list, and the page counts what was set aside and fixed');
   run('CC.data = __cc');
+  // 6b. "Link this deal": live deals with no person tied, read only
+  check(Array.isArray(ccdata.link_deals) && Array.isArray(state.link_deals) && (ccdata.link_deals.length ? /Link this deal/.test(ft) : !/Link this deal/.test(ft)), 'the state carries the Link this deal list, and the Fix list shows it only when there is one');
+  run(`CC.data = Object.assign({}, __cc, { link_deals: [{ key: '700 fixture', deal: '700 Fixture Rd', stage: 'contract', status: 'Under Contract', side: 'Buyer', close: '2026-11-25', why: 'No person is tied to this deal.' }] })`);
+  const lp = render('fixes'), lsec = lp.slice(lp.indexOf('Link this deal'), lp.indexOf('</ul>', lp.indexOf('Link this deal')));
+  check(/Link this deal <span class="cc-count">1</.test(lp) && /700 Fixture Rd/.test(lsec) && /Under Contract, Buyer, closing/.test(txt(lsec)) && /never edits the sheets/.test(txt(lsec)), 'Link this deal lists the deal with its status, side and closing date');
+  check(!/<button|onclick|<input|<form/.test(lsec) && (lp.match(/class="cc-row lk-row"/g) || []).length === 1, 'Link this deal is read only: no button, nothing to tap');
+  run('CC.data = __cc');
 
   // 8. the weekly proof line
   const pr = ccdata.proof;

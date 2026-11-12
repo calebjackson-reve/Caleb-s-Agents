@@ -56,6 +56,11 @@ check([p["person_id"] for p in t["12 oak"]["people"]] == ["1", "2"] and t["12 oa
 check([p["person_id"] for p in t["40 pine"]["people"]] == ["3"] and t["40 pine"]["how"] == "CRM Deals tab", "the CRM Deals tab link wins")
 check([p["person_id"] for p in t["5 ash"]["people"]] == ["4"] and t["5 ash"]["how"] == "name in the deal's note", "then the whole name in the deal's note")
 check(t["9 fig"]["people"] == [] and t["9 fig"]["how"] == "", "a deal nobody matches is tied to nobody, never a guess")
+lk = links.unlinked(ties)
+check([r["key"] for r in lk] == ["3 bay", "55 birch", "9 fig"] and all(r["why"].startswith("No person is tied") for r in lk) and lk[2]["status"] == "Pending",
+      "Link this deal: every live deal with no person tied is listed, and an expired offer or a closed deal is not")
+check(links.unlinked([{**x, "people": [{"person_id": "1", "display": "Ann Buyer"}]} for x in ties]) == [] and "8 gum" not in [r["key"] for r in lk] and "5 ash" not in [r["key"] for r in lk],
+      "a deal with a person on it is not on the list")
 over = links.overlay(ties, feed)
 check(over["1"]["stage"] == "under contract" and over["3"]["stage"] == "under contract" and over["4"]["stage"] == "past client" and over["8"]["stage"] == "past client" and "5" not in over,
       "a signed contract makes them Under contract, a closing makes them Past client")
