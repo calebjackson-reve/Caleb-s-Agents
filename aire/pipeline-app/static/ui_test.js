@@ -887,6 +887,12 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
     check(M3.title(sale, 'crm', sw2) === '12 Willow Bend' && !/Someone|client in/.test(M3.title(sale, 'crm', sw2)) && M3.title(sale, 'public', sw2) === 'A closed sale in Baton Rouge'
       && /Closed sale/.test(M3.tip(sale, 'crm', 'Past client', sw2)) && /2025/.test(M3.tip(sale, 'crm', 'Past client', sw2)) && /Not linked to a person/.test(M3.note(sale, 'crm'))
       && M3.roofLabel(sale, 'crm') === '12 Willow Bend' && M3.roofLabel(sale, 'public') === '' && M3.saleLine(sale) === '2025 · Buyer', 'a sale pin is labeled as a closed sale with street, year and side, and nothing pretends it is a contact');
+    const linkedSale = { ...sale, sale: { ...sale.sale, person: 'Pretend Person' } };
+    check(M3.salePerson(linkedSale, 'crm') === 'Pretend Person' && M3.salePerson(linkedSale, 'public') === '' && M3.salePerson(sale, 'crm') === '', 'a linked sale shows its person on the CRM view only');
+    check(/Pretend Person/.test(M3.note(linkedSale, 'crm')) && !/Pretend Person/.test(M3.note(linkedSale, 'public') + M3.title(linkedSale, 'public', sw2) + M3.tip(linkedSale, 'public', 'Past client', sw2) + M3.roofLabel(linkedSale, 'public')) && rel(linkedSale) === 'past client'
+      && M3.tip(linkedSale, 'crm', 'Past client', sw2).startsWith('Closed sale') && !/Pretend Person/.test(M3.tip(linkedSale, 'crm', 'Past client', sw2)), 'a linked sale is still a sale, and the public view never names the person');
+    check(/person: p\.person_id \? String\(p\.display/.test(m3), 'the map hands a sale pin its person only when the pin carries a person id');
+    check(/Who was this sale\?/.test(fs.readFileSync(path.join(dir, 'fix.js'), 'utf8')) && /Pick another contact/.test(fs.readFileSync(path.join(dir, 'fix.js'), 'utf8')) && /Not a client \/ skip/.test(fs.readFileSync(path.join(dir, 'fix.js'), 'utf8')), 'the Fix list has the Who was this sale? card with Confirm, Pick another contact and skip');
     check(/p\.sale \? 'Closed sale' : TYPE_LABEL\[p\.rel\]/.test(m3) && /oc\.hidden = !\(HOST && !pub && p\.id\)/.test(m3), 'a sale card says Closed sale and has no Open contact button because it has no person id');
     // The People board lists unpinned Stage=past client people from feed.people, and nobody else from there.
     const unp = run(`(function () { const pins = new Set(((S.data.feed.map || {}).pins || []).map(p => String(p.person_id))); const ppl = Stage.people();

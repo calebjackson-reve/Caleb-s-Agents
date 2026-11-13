@@ -120,8 +120,11 @@ def resolve(rows: list[dict], cache_path: Path | None, geocoder=None, now: datet
     return cache, counts
 
 
-def build(rows: list[dict], cache_path: Path | None, geocoder=None, now: datetime | None = None) -> tuple[list[dict], dict]:
-    """The sale pins and counts only (counts carry no addresses)."""
+def build(rows: list[dict], cache_path: Path | None, geocoder=None, now: datetime | None = None,
+          linked=None, people: dict | None = None) -> tuple[list[dict], dict]:
+    """The sale pins and counts only (counts carry no addresses). `linked(row) -> person_id | None` is Caleb's confirmed
+    sale link (sale_links.resolver); `people` is {person_id: display} from the feed. A link to someone no longer in the
+    feed is ignored, so the pin falls back to unlinked."""
     geo = _geo()
     cache, counts = resolve(rows, cache_path, geocoder, now)
     pins, seen = [], set()
@@ -140,8 +143,10 @@ def build(rows: list[dict], cache_path: Path | None, geocoder=None, now: datetim
         if pk in seen:
             continue
         seen.add(pk)
-        pins.append({"key": pk, "kind": "sale", "person_id": None, "sale": True, "display": "", "type": "sale", "stage": "past client",
-                     "label": "Closed sale, not linked to a person", "lat": c["lat"], "lng": c["lng"], "address": street, "city": city, "zip": zip_,
+        pid = str(linked(r) or "") if linked else ""
+        who = (people or {}).get(pid) if pid else None
+        pins.append({"key": pk, "kind": "sale", "person_id": pid if who else None, "sale": True, "display": who or "", "type": "sale", "stage": "past client",
+                     "label": "Closed sale, linked to a person (confirmed)" if who else "Closed sale, not linked to a person", "lat": c["lat"], "lng": c["lng"], "address": street, "city": city, "zip": zip_,
                      "close": close, "year": close[:4], "side": str(r.get("side") or ""), "price": r.get("price"), "sale_type": str(r.get("type") or "")})
     counts["matched"] = len(pins)
     return pins, counts

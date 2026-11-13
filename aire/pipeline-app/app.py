@@ -77,6 +77,7 @@ import proof  # noqa: E402  (the weekly proof line)
 import learn  # noqa: E402  (the learning loop for the seller score and the call list)
 import insight  # noqa: E402  (the call list, the fuller contact card, the likely-seller score)
 import handoff  # noqa: E402  (texts and emails Caleb sends himself from the Text and Email buttons)
+import sale_links  # noqa: E402  (Who was this sale? Confirm / Pick / Skip write only sale-links.json on this Mac)
 import sale_pins  # noqa: E402  (closed-sale roofs on Home Ground: Census-geocoded once, cached outside git)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
@@ -409,22 +410,99 @@ class State:
         # only serve() sets sale_geocoder, so a test or a bare State never sends an address anywhere.
         self.sale_cache_path = FIXTURES / "sale-geo.json" if demo else sale_pins.default_cache_path()
         self.sale_geocoder = None
+        # Sale links: suggestions (sales-owner-matches.json) and Caleb's answers (sale-links.json) live in ~/.aire/enrichment, outside git.
+        # Demo never reads them: it uses a made-up matches file in its own cc folder and a throwaway links file, unless an override env is set on purpose.
+        env_m, env_l = os.getenv("PIPELINE_SALE_MATCHES"), os.getenv("PIPELINE_SALE_LINKS")
+        self.sale_matches_path = Path(env_m) if env_m else (self.cc_dir / "sales-owner-matches.json" if demo else sale_links.default_matches_path())
+        self.sale_links_path = Path(env_l) if env_l else (local / "demo-sale-links.json" if demo else sale_links.default_links_path())
         self._sale: tuple = (None, [], {})
         self._sale_retry = 0.0
 
     def sale_roofs(self) -> tuple[list, dict]:
         """Sale pins from the sales record, rebuilt only when sales.json changes. Counts carry no addresses."""
         f = self.cc_dir / "sales.json"
-        stamp = (f.stat().st_mtime_ns if f.exists() else 0, str(self.sale_cache_path), self.sale_geocoder is not None)
+        lf = self.sale_links_path
+        stamp = (f.stat().st_mtime_ns if f.exists() else 0, str(self.sale_cache_path), self.sale_geocoder is not None,
+                 lf.stat().st_mtime_ns if lf.exists() else 0, (self.feed() or {}).get("generated_at"))
         if self._sale[0] != stamp or (self._sale[2].get("error") and time.time() > self._sale_retry):
             try:
                 rows = cc._rows(cc.load(self.cc_dir).get("sales"))
-                pins, counts = sale_pins.build(rows, self.sale_cache_path, self.sale_geocoder)
+                pins, counts = sale_pins.build(rows, self.sale_cache_path, self.sale_geocoder,
+                                               linked=sale_links.resolver(sale_links.load_links(lf)), people=self.sale_people())
             except Exception as e:  # a bad sales row must never take the map down
                 pins, counts = [], {"error": type(e).__name__}
             self._sale = (stamp, pins, counts)
             self._sale_retry = time.time() + 600  # a failed geocode (network down) is tried again in ten minutes, not on every refresh
         return self._sale[1], self._sale[2]
+
+    def confirmed_sale_closes(self, sales: list) -> dict:
+        """{person_id: [{close}]} from the confirmed sale links, for last touch. A link whose sale is no longer in the sales record is ignored."""
+        links = sale_links.load_links(self.sale_links_path)
+        if not links["confirmed"]:
+            return {}
+        known = [sale_links.ident(r) for r in sales if not sale_pins.is_lease(r)]
+        out: dict = {}
+        for e in links["confirmed"]:
+            if e.get("person_id") and any(sale_links._same(e, k) for k in known):
+                out.setdefault(str(e["person_id"]), []).append({"close": str(e.get("close") or "")[:10]})
+        return out
+
+    def sale_people(self) -> dict:
+        """{person_id: display} for the feed people: all a sale link ever needs to know about a person."""
+        feed = self.feed() or {}
+        return {str(p["person_id"]): str(p.get("display") or "") for p in feed.get("people") or [] if isinstance(p, dict) and p.get("person_id") and p.get("display")}
+
+    def sale_cards(self) -> dict:
+        """The Who was this sale? cards for the Fix list, plus every feed person (id and display only) for Pick another contact."""
+        feed = self.feed() or {}
+        if not feed or "_error" in feed:
+            return {"pending": [], "people": []}
+        people = self.sale_people()
+        rows = cc._rows(cc.load(self.cc_dir).get("sales"))
+        cards = sale_links.pending(rows, sale_links.load_matches(self.sale_matches_path), sale_links.load_links(self.sale_links_path), people)
+        return {"pending": cards}
+
+    def sale_people_search(self, q: str) -> dict:
+        """Up to eight existing feed people whose display matches q (id and display only). For Pick another contact."""
+        needle = str(q or "").strip().lower()
+        hits = []
+        if needle:
+            for pid, display in sorted(self.sale_people().items(), key=lambda kv: kv[1].lower()):
+                if needle in display.lower():
+                    hits.append({"person_id": pid, "display": display})
+                if len(hits) == 8:
+                    break
+        return {"ok": True, "people": hits}
+
+    def sale_decide(self, sale_key: str, action: str, person_id: str = "") -> dict:
+        """Caleb's tap on one Who was this sale? card: confirm, pick another feed person, or skip. Only a sale on the pending
+        list and a person already in the feed can be answered. Writes sale-links.json and nothing else."""
+        if action not in ("confirm", "pick", "skip"):
+            raise CRMError("a sale is confirmed, picked or skipped")
+        feed = self.feed() or {}
+        if not feed or "_error" in feed:
+            raise CRMError("the CRM feed is not loaded, so nothing was saved")
+        pid = str(person_id or "").strip()
+        with self.lock:
+            rows = cc._rows(cc.load(self.cc_dir).get("sales"))
+            card = next((c for c in self.sale_cards()["pending"] if c["sale_key"] == str(sale_key or "")), None)
+            row = next((r for r in rows if card and sale_links.ident(r)["sale_key"] == card["sale_key"]), None)
+            if card is None or row is None:
+                raise CRMError("that sale is no longer on the list")
+            if action == "skip":
+                pid = ""
+                sale_links.skip(self.sale_links_path, row)
+            else:
+                if action == "confirm":
+                    pid = (card.get("suggestion") or {}).get("person_id") or ""
+                    if not pid:
+                        raise CRMError("there is no suggested contact to confirm")
+                if pid not in self.sale_people():
+                    raise CRMError("that person is not in the contact list")
+                sale_links.confirm(self.sale_links_path, row, pid)
+            self._sale = (None, [], {})
+            self._insight = (None, None)
+        return {"ok": True, "result": {"sale_key": card["sale_key"], "action": action, "person_id": pid}, "sale_cards": self.sale_cards()}
 
     # ---- reads
     def feed(self) -> dict:
@@ -477,6 +555,7 @@ class State:
         except Exception as e:
             p["round58_error"] = f"{type(e).__name__}: {e}"[:200]
         p["social_matches"] = self.social_matches()  # Match social profiles on the Fix list: candidates only, no phone, email or message text
+        p["sale_cards"] = self.sale_cards()  # Who was this sale? on the Fix list: address, owner names, a suggested person. No phone or email.
         p["speed"] = insight.lead_cards(p["leads"])  # the New leads card on Home: no reply yet, newest first, a first text each
         return p
 
@@ -487,7 +566,8 @@ class State:
         done = outreach.reached_today(self.send_log(), self.bridge_log(), today().isoformat())
         stamp = lambda n: (lambda p: p.stat().st_mtime_ns if p.exists() else 0)(self.cc_dir / f"{n}.json")
         vstamp = (lambda p: p.stat().st_mtime_ns if p.exists() else 0)(self.learn_dir / "versions.json")
-        key = (feed.get("generated_at"), today().isoformat(), now().strftime("%H:%M")[:4], tuple(sorted(done)), stamp("deals"), stamp("sales"), stamp("leads"), vstamp)
+        key = (feed.get("generated_at"), today().isoformat(), now().strftime("%H:%M")[:4], tuple(sorted(done)), stamp("deals"), stamp("sales"), stamp("leads"), vstamp,
+               (lambda p: p.stat().st_mtime_ns if p.exists() else 0)(self.sale_links_path))
         if self._insight[0] != key:
             raw = cc.load(self.cc_dir)
             sales = cc._rows(raw.get("sales"))
@@ -500,7 +580,8 @@ class State:
             sided = links.apply_sides(shown, side_of)  # call list reads the sheet's side. Book keeps `shown`, so its seller score still sees real selling talk.
             weights = learn.current(self.learn_dir)
             leads = cc.attach_crm(cc._rows(raw.get("leads")), (feed.get("new_leads") or []) + (feed.get("touches_due") or []))
-            book = insight.Book(shown, cc.deal_rows(cc._rows(raw.get("deals"))), sales, [{**r, "origin": "email"} for r in leads], today(), weights=weights["seller"])
+            book = insight.Book(shown, cc.deal_rows(cc._rows(raw.get("deals"))), sales, [{**r, "origin": "email"} for r in leads], today(), weights=weights["seller"],
+                                 sale_links=self.confirmed_sale_closes(sales))
             self._insight = (key, {"book": book, "call10": insight.call10(sided, today(), done, weights=weights["call10"]), "sellers": book.sellers(25),
                                    "call_pool": insight.call10(sided, today(), done, n=60, weights=weights["call10"])["rows"], "seller_pool": book.sellers(200),
                                    "ties": ties, "records": recs, "overlay": over, "sides": side_of, "deal_counts": links.counts(ties), "board_contract": links.board_contract(ties),
@@ -1037,6 +1118,7 @@ class State:
             "deal_records": ins.get("records") or [],
             "link_deals": ins.get("link_deals") or [],  # live Deals rows with no person tied: a read-only list
             "social_matches": self.social_matches() if feed_ok else {"pending": [], "pending_total": 0, "confirmed": 0, "linked": 0, "rows": 0, "files": 0},
+            "sale_cards": self.sale_cards() if feed_ok else {"pending": [], "people": []},
             "lead_alert": {"on": self.self_alert, "last": ((read_json(self.lead_alert_path, {}) or {}).get("log") or [None])[-1]},
             "text_queue": text_q if "_error" not in text_q else {},
             "email_queue": email_q if "_error" not in email_q else {},
@@ -1871,6 +1953,10 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.fix_decide(str(body.get("id", "")), str(body.get("action", "")))
             elif u.path == "/api/social-match":
                 out = s.social_decide(str(body.get("platform", "")), str(body.get("handle", "")), str(body.get("contact_id", "")), str(body.get("action", "")))
+            elif u.path == "/api/sale-link":
+                out = s.sale_decide(str(body.get("sale_key", "")), str(body.get("action", "")), str(body.get("person_id", "")))
+            elif u.path == "/api/sale-people":
+                out = s.sale_people_search(str(body.get("q", "")))
             elif u.path == "/api/feedback":
                 out = s.feedback(str(body.get("list", "")), str(body.get("person_id", "")), str(body.get("verdict", "")))
             elif u.path == "/api/lead":
@@ -2495,6 +2581,37 @@ def run_tests() -> int:
     check(out6["ok"] and out6["social_matches"]["pending"] == [] and out6["social_matches"]["confirmed"] == 1 and len(s6.crm.log) == s6crm
           and sorted(p.name for p in soc6.iterdir()) == [f"engagers-{day6.isoformat()}.json", "matches.json"],
           "Confirm writes only matches.json: the CRM engine is untouched and the pair leaves the list")
+    # Who was this sale?: demo reads only the made-up matches in its own cc folder; answers land in one throwaway links file, never the CRM.
+    live_m, live_l = sale_links.default_matches_path(), sale_links.default_links_path()
+    check(s6.sale_matches_path != live_m and s6.sale_links_path != live_l and s6.sale_matches_path.parent == s6.cc_dir and "sale_cards" in p6, "demo reads no live sale matches or links, and the payload carries sale_cards")
+    sc6 = s6.sale_cards()
+    sug6 = next((c for c in sc6["pending"] if c["suggestion"]), None)
+    check(len(sc6["pending"]) >= 5 and sug6 is not None and sug6["owner_names"] and not any(c["address"].startswith("22 Muscadine") for c in sc6["pending"])
+          and "people" not in sc6, "the Fix list has a card per demo sale (lease skipped) and a suggestion with owner names, without shipping the whole contact list")
+    search6 = s6.sale_people_search(sug6["suggestion"]["display"].split()[0])
+    check(search6["ok"] and any(x["person_id"] == sug6["suggestion"]["person_id"] and set(x) == {"person_id", "display"} for x in search6["people"]) and s6.sale_people_search("")["people"] == [],
+          "Pick another contact searches existing people by display and returns id and display only")
+    s6crm2 = len(s6.crm.log)
+    for bad in (("nope", "skip", ""), (sug6["sale_key"], "send", ""), (sug6["sale_key"], "pick", "no-such-person"), (sug6["sale_key"], "pick", "")):
+        try:
+            s6.sale_decide(*bad); check(False, "bad sale-link input is refused")
+        except CRMError:
+            check(True, "bad sale-link input is refused")
+    check(not s6.sale_links_path.exists(), "a refused tap writes nothing")
+    pins0 = {p["address"]: p for p in s6.sale_roofs()[0]}
+    check(pins0[sug6["address"]]["person_id"] is None, "before a confirm the sale roof is not linked")
+    out6s = s6.sale_decide(sug6["sale_key"], "confirm")
+    pins1 = {p["address"]: p for p in s6.sale_roofs()[0]}
+    check(out6s["ok"] and sug6["sale_key"] not in [c["sale_key"] for c in out6s["sale_cards"]["pending"]] and pins1[sug6["address"]]["person_id"] == sug6["suggestion"]["person_id"]
+          and pins1[sug6["address"]]["display"] == sug6["suggestion"]["display"] and pins1[sug6["address"]]["sale"] is True and len(s6.crm.log) == s6crm2, "Confirm links the roof to the person, the card leaves the list, and the CRM engine is untouched")
+    other6 = next(c for c in sc6["pending"] if c["sale_key"] != sug6["sale_key"])
+    pick6 = next({"person_id": k, "display": v} for k, v in s6.sale_people().items() if k != sug6["suggestion"]["person_id"])
+    s6.sale_decide(other6["sale_key"], "pick", pick6["person_id"])
+    third6 = next(c for c in s6.sale_cards()["pending"])
+    s6.sale_decide(third6["sale_key"], "skip")
+    lk6 = sale_links.load_links(s6.sale_links_path)
+    check(len(lk6["confirmed"]) == 2 and len(lk6["skipped"]) == 1 and third6["sale_key"] not in [c["sale_key"] for c in s6.sale_cards()["pending"]], "Pick another contact and Not a client / skip are saved and leave the list")
+    check(s6.confirmed_sale_closes(cc._rows(cc.load(s6.cc_dir).get("sales")))[sug6["suggestion"]["person_id"]][0]["close"] == sug6["close"], "a confirmed link feeds last touch the close day")
     check(s6.feedback("call10", "247", "good")["ok"] and s6.cc_payload()["learn"]["log"]["good"] == 1, "Good call is logged for the learning loop")
     try:
         s6.feedback("call10", "247", "amazing"); check(False, "feedback takes good or not_useful only")
@@ -2517,6 +2634,21 @@ def run_tests() -> int:
         urllib.request.urlopen(r6); check(False, "POST /api/social-match refuses a foreign origin")
     except urllib.error.HTTPError as e:
         check(e.code == 403, "POST /api/social-match refuses a foreign origin")
+    r6 = urllib.request.Request(base + "/api/sale-link", data=json.dumps({"sale_key": "nope", "action": "skip"}).encode(), headers={"Content-Type": "application/json"})
+    check(json.loads(urllib.request.urlopen(r6).read())["ok"] is False, "POST /api/sale-link refuses a sale that is not on the list")
+    r6 = urllib.request.Request(base + "/api/sale-link", data=json.dumps({"sale_key": "nope", "action": "skip"}).encode(), headers={"Content-Type": "application/json", "Origin": "https://evil.example"})
+    try:
+        urllib.request.urlopen(r6); check(False, "POST /api/sale-link refuses a foreign origin")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST /api/sale-link refuses a foreign origin")
+    r6 = urllib.request.Request(base + "/api/sale-people", data=json.dumps({"q": "Fixture"}).encode(), headers={"Content-Type": "application/json"})
+    sp6 = json.loads(urllib.request.urlopen(r6).read())
+    check(sp6["ok"] and all(set(x) == {"person_id", "display"} for x in sp6["people"]) and len(sp6["people"]) <= 8, "POST /api/sale-people returns id and display only, capped at eight")
+    r6 = urllib.request.Request(base + "/api/sale-people", data=json.dumps({"q": "Fixture"}).encode(), headers={"Content-Type": "application/json", "Origin": "https://evil.example"})
+    try:
+        urllib.request.urlopen(r6); check(False, "POST /api/sale-people refuses a foreign origin")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST /api/sale-people refuses a foreign origin")
     check(ccp["demo"] and ccp["fresh"]["deals"]["state"] == "ok" and ccp["scorecard"]["pending"]["value"] > 0, "GET /api/cc in demo")
     req = urllib.request.Request(base + "/api/touch", data=json.dumps({"person_id": "118", "what": "test"}).encode(),
                                  headers={"Content-Type": "application/json"})

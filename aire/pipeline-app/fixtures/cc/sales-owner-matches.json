@@ -1,0 +1,5 @@
+{"rows": [
+ {"mls": "DEMO-1001", "address": "12 Willow Bend", "city": "", "zip": "", "close_date": "{{Y3-06-10}}", "side": "Buyer", "owner_names": ["Pretend Owner Fixture61"], "prior_owner_names": [], "tier": "high", "matched_contact_person_id": "2001", "matches": [{"person_id": "2001", "tier": "high"}]},
+ {"mls": "DEMO-1002", "address": "40 Tupelo Lane", "city": "", "zip": "", "close_date": "{{Y3-10-02}}", "side": "Listing", "owner_names": ["Mock Owner Fixture62"], "prior_owner_names": [], "tier": "medium", "matched_contact_person_id": "2002", "matches": [{"person_id": "2002", "tier": "medium"}]},
+ {"mls": "DEMO-1003", "address": "7 Gum Springs Rd", "city": "", "zip": "", "close_date": "{{Y2-02-20}}", "side": "Buyer", "owner_names": ["Tester Owner Fixture"], "prior_owner_names": [], "tier": "", "matched_contact_person_id": null, "matches": []}
+]}
