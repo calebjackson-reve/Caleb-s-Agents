@@ -546,7 +546,9 @@ class State:
             fx_log = read_json(self.fix_log_path, [])
             p["ties"], p["deal_counts"], p["checkins"] = ins["ties"], ins["deal_counts"], ins["checkins"]
             p["deal_records"] = ins["records"]
-            p["fixes"] = links.with_decisions(ins["fixes"], fx_log if isinstance(fx_log, list) else [])
+            fx_log = fx_log if isinstance(fx_log, list) else []
+            p["fixes"] = links.with_decisions(ins["fixes"], fx_log)
+            self._fix_duplicate_choices(p["fixes"], fx_log)
             p["link_deals"] = ins.get("link_deals") or []  # live Deals rows with no person tied. Read only: nothing is written anywhere.
             p["cap_note"] = links.cap_note(p.get("goals") or {})
             gone = lambda k: (p["fresh"].get(k) or {}).get("state") == "missing"  # a read that never ran: its numbers are unknown, not 0
@@ -613,7 +615,37 @@ class State:
         return text_q, email_q
 
     # ---- the Fix list, Good call and Not useful, and the weekly learning. All of it stays in files on this Mac.
-    def fix_decide(self, fix_id: str, action: str) -> dict:
+    @staticmethod
+    def _keep_text(keeper: str, n_ids: int) -> str:
+        return f"Keep {keeper}, copy anything missing onto it, and delete the other{'s' if n_ids > 2 else ''} in the Contacts tab."
+
+    def _fix_duplicate_choices(self, fixes: dict, fx_log: list) -> None:
+        """Duplicate people rows: list every contact in the group as a choice (id, name, stage, city, last touch, and only
+        whether there is a phone or an email, never the number or address), and show the keeper Caleb picked on approved rows.
+        Read only. Old log rows without a keeper keep the suggested fix text."""
+        feed = self.feed() or {}
+        people = links._people(feed)
+        last = {}
+        for e in fx_log:
+            last[e.get("id")] = e
+        for r in fixes.get("open", []):
+            if r.get("kind") != "duplicate":
+                continue
+            ids = str(r.get("ref") or "").split("+")
+            r["options"] = []
+            for i, pid in enumerate(ids):
+                q = people.get(pid, {})
+                r["options"].append({"id": pid, "display": str(q.get("display") or "").strip() or "no name", "stage": str(q.get("stage") or "").strip(),
+                                     "city": str(q.get("city") or "").strip(), "last_touch": str(q.get("last_touch") or "")[:10],
+                                     "has_phone": bool(q.get("has_phone") or str(q.get("phone") or "").strip()), "has_email": bool(q.get("has_email") or str(q.get("email") or "").strip()), "suggested": i == 0})
+        for r in fixes.get("approved", []):
+            k = str(last.get(r["id"], {}).get("keeper") or "")
+            ids = str(r.get("ref") or "").split("+")
+            if r.get("kind") == "duplicate" and k in ids:
+                r["keeper"] = k
+                r["fix"] = self._keep_text(k, len(ids))
+
+    def fix_decide(self, fix_id: str, action: str, keeper: str = "") -> dict:
         """Caleb's tap on one Fix list row: approve (his to change in the sheet) or dismiss. Logged, nothing else.
         Pipeline never edits the sheets from here."""
         if action not in ("approve", "dismiss", "reopen"):
@@ -627,7 +659,14 @@ class State:
             elif not row:
                 raise CRMError("that row is no longer on the Fix list")
             else:
-                log.append({"at": now().isoformat(timespec="seconds"), "id": fix_id, "action": action, **{k: row[k] for k in ("kind", "ref", "what", "problem", "fix")}})
+                rec = {"at": now().isoformat(timespec="seconds"), "id": fix_id, "action": action, **{k: row[k] for k in ("kind", "ref", "what", "problem", "fix")}}
+                if keeper and action == "approve":  # Duplicate people: the contact Caleb chose to keep. Recorded here only, nothing is merged or deleted.
+                    ids = str(row["ref"]).split("+")
+                    if row["kind"] != "duplicate" or keeper not in ids:
+                        raise CRMError("that contact is not in this group")
+                    rec["keeper"] = keeper
+                    rec["fix"] = self._keep_text(keeper, len(ids))
+                log.append(rec)
             write_json(self.fix_log_path, log[-2000:])
         return {"ok": True, "result": {"id": fix_id, "action": action}}
 
@@ -1950,7 +1989,7 @@ class Handler(BaseHTTPRequestHandler):
             elif u.path == "/api/dismiss":
                 out = s.dismiss(body.get("id", ""))
             elif u.path == "/api/fix":
-                out = s.fix_decide(str(body.get("id", "")), str(body.get("action", "")))
+                out = s.fix_decide(str(body.get("id", "")), str(body.get("action", "")), str(body.get("keeper", "") or ""))
             elif u.path == "/api/social-match":
                 out = s.social_decide(str(body.get("platform", "")), str(body.get("handle", "")), str(body.get("contact_id", "")), str(body.get("action", "")))
             elif u.path == "/api/sale-link":
@@ -2551,6 +2590,31 @@ def run_tests() -> int:
     check(s6.fix_decide(f0["id"], "approve")["ok"] and [r["id"] for r in s6.cc_payload()["fixes"]["approved"]] == [f0["id"]] and read_json(s6.fix_log_path, [])[0]["problem"] == f0["problem"],
           "approving a Fix list row logs it with the problem, and moves it to approved")
     check(s6.fix_decide(f0["id"], "reopen")["ok"] and not s6.cc_payload()["fixes"]["approved"] and len(s6.crm.log) == before, "undo reopens it, and no tap on the Fix list ever reaches the CRM engine or a sheet")
+    # Duplicate people: every contact is a choice, the suggestion is preselected, Confirm records the keeper Caleb picked (local log only)
+    d6 = next(r for r in p6["fixes"]["open"] if r["kind"] == "duplicate")
+    ids6 = d6["ref"].split("+")
+    check([o["id"] for o in d6["options"]] == ids6 and [o["id"] for o in d6["options"] if o["suggested"]] == [ids6[0]]
+          and all(set(o) == {"id", "display", "stage", "city", "last_touch", "has_phone", "has_email", "suggested"} for o in d6["options"]), "each duplicate group lists every contact as an option, the first one suggested")
+    check(not re.search(r"\+?\d{3}[-. ]?\d{3}[-. ]?\d{4}|@", json.dumps(d6["options"])) and all(isinstance(o["has_phone"], bool) and isinstance(o["has_email"], bool) for o in d6["options"]),
+          "duplicate options carry only has phone and has email, never the number or address")
+    try:
+        s6.fix_decide(d6["id"], "approve", "not-in-group"); check(False, "a keeper outside the group is refused")
+    except CRMError:
+        check(not read_json(s6.fix_log_path, []), "a keeper outside the group is refused and nothing is logged")
+    pick6 = ids6[1]
+    check(s6.fix_decide(d6["id"], "approve", pick6)["ok"], "Confirm with a keeper that was not the suggestion is accepted")
+    lg6 = read_json(s6.fix_log_path, [])
+    ap6 = next(r for r in s6.cc_payload()["fixes"]["approved"] if r["id"] == d6["id"])
+    check(lg6[-1]["keeper"] == pick6 and ap6["keeper"] == pick6 and ap6["fix"].startswith(f"Keep {pick6}, copy anything missing onto it, and delete the other") and ap6["fix"].endswith("in the Contacts tab.")
+          and not any(r["id"] == d6["id"] for r in s6.cc_payload()["fixes"]["open"]) and len(s6.crm.log) == before, "the chosen keeper is logged, the approved text names it, and the card left the open list without touching the CRM")
+    old6 = [{**{k: lg6[-1][k] for k in lg6[-1] if k not in ("keeper",)}}]  # an old Approve row has no keeper
+    s6.fix_log_path.write_text(json.dumps(old6))
+    ap6b = next(r for r in s6.cc_payload()["fixes"]["approved"] if r["id"] == d6["id"])
+    check("keeper" not in ap6b and ap6b["fix"] == d6["fix"], "an old Approve row without a keeper still loads with the suggested text")
+    check(s6.fix_decide(d6["id"], "reopen")["ok"], "reopen clears the picked duplicate")
+    d6b = next(r for r in s6.cc_payload()["fixes"]["open"] if r["kind"] == "duplicate" and r["id"] != d6["id"])
+    check(s6.fix_decide(d6b["id"], "dismiss")["ok"] and read_json(s6.fix_log_path, [])[-1]["action"] == "dismiss" and "keeper" not in read_json(s6.fix_log_path, [])[-1], "Not a problem still sets a duplicate aside")
+    s6.fix_decide(d6b["id"], "reopen")
     try:
         s6.fix_decide("nope", "approve"); check(False, "a row that is not on the list cannot be approved")
     except CRMError:

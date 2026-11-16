@@ -58,10 +58,21 @@
 
   // ---------------- The Fix list
   const KINDS = [['offer', 'Offers past their deadline'], ['stage', 'Stage does not match the deals'], ['price', 'Deal price'], ['mls', 'Deals sheet against Flexmls'], ['duplicate', 'Duplicate people'], ['no_name', 'No name']];
-  F.decide = async function (id, action) {
-    const r = await api('/api/fix', { id, action });
+  F.decide = async function (id, action, keeper) {
+    const r = await api('/api/fix', { id, action, keeper: keeper ? String(keeper) : '' });
     if (r && r.ok) { toast('ok', action === 'approve' ? 'APPROVED' : action === 'reopen' ? 'REOPENED' : 'SET ASIDE', action === 'approve' ? 'Logged. Make the change in the sheet when you can.' : 'Logged.'); C.load(); }
     else toast('err', 'NOT SAVED', (r && r.error) || 'The tap was not saved.');
+  };
+  // Duplicate people: pick which contact to keep, then Confirm. The tap and the chosen id are logged on this Mac only (fix-log.json).
+  // Nothing is merged, copied or deleted: the change is made by hand in the Contacts tab.
+  F.keep = {};
+  F.pickKeeper = function (fixId, pid) { F.keep[fixId] = pid; };
+  F.confirmKeeper = function (fixId, fallback) { return F.decide(fixId, 'approve', F.keep[fixId] || fallback).then(() => { delete F.keep[fixId]; }); };
+  F.dupOptions = function (r) {
+    const sel = F.keep[r.id] || ((r.options.find(o => o.suggested) || r.options[0] || {}).id);
+    const facts = o => [o.stage ? esc(o.stage) : '', o.city ? esc(o.city) : '', o.last_touch ? 'last touch ' + esc(C.day(o.last_touch)) : 'no last touch', o.has_phone ? 'has phone' : 'no phone', o.has_email ? 'has email' : 'no email'].filter(Boolean).join(', ');
+    return `<fieldset class="fx-pick"><legend class="cc-note"><b>Which one do you keep?</b></legend>${r.options.map(o => `<label class="fx-opt"><input type="radio" name="keep-${esc(r.id)}" value="${esc(o.id)}"${o.id === sel ? ' checked' : ''} onchange="Fix.pickKeeper('${esc(r.id)}', ${jsa(o.id)})">
+      <span class="fx-opt-main"><b>${C.pname(o.display)}</b> <small>(${esc(o.id)})</small>${o.suggested ? ' <span class="fx-sugg">Suggested</span>' : ''}<small class="fx-opt-facts">${facts(o)}</small></span></label>`).join('')}</fieldset>`;
   };
   F.matchSocial = async function (platform, handle, contact_id, action) {
     const r = await api('/api/social-match', { platform, handle, contact_id, action });
@@ -89,7 +100,9 @@
     const g = C.guard(); if (g) return g;
     const fx = d0().fixes || { open: [], approved: [], dismissed: 0, resolved: 0 }, cap = d0().cap_note || {};
     const rows = fx.open.filter(r => matches(`${r.what} ${r.problem} ${r.fix}`));
-    const row = r => `<li class="cc-row fx-row"><div class="cc-row-main"><h3>${esc(r.what)}</h3><p class="cc-note"><b>Problem.</b> ${esc(r.problem)}</p><p class="cc-note"><b>Suggested fix.</b> ${esc(r.fix)}</p><p class="cc-note fx-from">From the ${esc(r.from)}</p></div>
+    const dupRow = r => `<li class="cc-row fx-row fx-dup"><div class="cc-row-main"><h3>${esc(r.what)}</h3><p class="cc-note"><b>Problem.</b> ${esc(r.problem)}</p><p class="cc-note"><b>Suggested fix.</b> ${esc(r.fix)}</p>${F.dupOptions(r)}<p class="cc-note fx-from">Pick the contact to keep. Confirm is saved on this Mac only: nothing is merged or deleted, and the CRM is not changed. From the ${esc(r.from)}</p></div>
+      <div class="cc-acts"><button type="button" class="cc-primary" onclick="Fix.confirmKeeper('${esc(r.id)}', ${jsa(((r.options.find(o => o.suggested) || r.options[0] || {}).id))})">Confirm</button><button type="button" onclick="Fix.decide('${esc(r.id)}', 'dismiss')">Not a problem</button></div></li>`;
+    const row = r => (r.kind === 'duplicate' && (r.options || []).length > 1) ? dupRow(r) : `<li class="cc-row fx-row"><div class="cc-row-main"><h3>${esc(r.what)}</h3><p class="cc-note"><b>Problem.</b> ${esc(r.problem)}</p><p class="cc-note"><b>Suggested fix.</b> ${esc(r.fix)}</p><p class="cc-note fx-from">From the ${esc(r.from)}</p></div>
       <div class="cc-acts"><button type="button" class="cc-primary" onclick="Fix.decide('${esc(r.id)}', 'approve')">Approve</button><button type="button" onclick="Fix.decide('${esc(r.id)}', 'dismiss')">Not a problem</button></div></li>`;
     const groups = KINDS.map(([k, label]) => { const rs = rows.filter(r => r.kind === k); return rs.length ? C.card(`${label} <span class="cc-count">${rs.length}</span>`,
       `<ul class="cc-rows">${rs.slice(0, F.MAX).map(row).join('')}</ul>${rs.length > F.MAX ? `<p class="cc-note">${rs.length - F.MAX} more. Search to narrow the list.</p>` : ''}`, k === 'mls' ? ['deals', 'permits'] : k === 'offer' || k === 'price' ? ['deals', 'crm'] : ['crm']) : ''; }).join('');

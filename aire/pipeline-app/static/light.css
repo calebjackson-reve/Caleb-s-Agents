@@ -318,5 +318,12 @@ button, a, .nav button, .lt-link, .lt-page li button b, .cc-row, .lt-page li, in
 .cc-page .cc-rows .cc-row.fx-row, .cc-page .cc-rows .cc-row.lk-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 20px; align-items: start; }
 .cc-page .cc-rows .cc-row.fx-row .cc-row-main, .cc-page .cc-rows .cc-row.lk-row .cc-row-main { min-width: 0; } .cc-page .cc-rows .cc-row.fx-row .cc-acts { margin: 0; flex-wrap: nowrap; }
 @media (max-width: 720px) { .cc-page .cc-rows .cc-row.fx-row, .cc-page .cc-rows .cc-row.lk-row { grid-template-columns: 1fr; } }
+/* Duplicate people: one radio row per contact in the group, the suggested keeper preselected. */
+.fx-pick { border: 0; margin: 8px 0 0; padding: 0; min-width: 0; } .fx-pick legend { padding: 0; margin-bottom: 4px; }
+.fx-opt { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; margin: 0 0 6px; border: 1px solid var(--rule); border-radius: 8px; cursor: pointer; min-height: 44px; }
+.fx-opt:has(input:checked) { border-color: var(--coral); } .fx-opt input { margin: 3px 0 0; flex: none; width: 18px; height: 18px; }
+.fx-opt:focus-within { outline: 2px solid var(--coral); outline-offset: 2px; }
+.fx-opt-main { min-width: 0; overflow-wrap: anywhere; } .fx-opt-main small { color: var(--stone); font-size: 12px; } .fx-opt-facts { display: block; }
+.fx-sugg { font-size: 11px; font-weight: 600; color: var(--coral); border: 1px solid var(--coral); border-radius: 99px; padding: 1px 7px; }
 /* A closing whose Deals sheet and calendar dates disagree: name and flag on one line, both days under it. */
 .mf-list li.mf-two { grid-template-columns: minmax(0, 1fr) auto; } .mf-list li.mf-two > span { grid-column: 1 / -1; order: 2; }

@@ -1132,6 +1132,22 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
   const fp2 = txt(render('fixes'));
   check(/No row looks wrong right now/.test(fp2) && /Approved, yours to change in the sheet 1/.test(fp2) && /2 set aside as not a problem. 1 approved and since fixed/.test(fp2), 'approved rows wait in their own list, and the page counts what was set aside and fixed');
   run('CC.data = __cc');
+  // 6a. Duplicate people: radio rows per contact, the suggestion preselected, Confirm with the chosen keeper, Not a problem kept
+  { const dup = { id: 'abc123def456', kind: 'duplicate', ref: '3211+615', what: 'Example One (3211), Example Two (615)', problem: '2 contacts share one phone.', fix: 'Keep 3211, copy anything missing onto it, and delete the other in the Contacts tab.', from: 'CRM sheet',
+      options: [{ id: '3211', display: 'Example One', stage: 'nurture', city: 'Zachary', last_touch: '2026-10-01', has_phone: true, has_email: false, suggested: true }, { id: '615', display: 'Example Two', stage: '', city: '', last_touch: '', has_phone: true, has_email: true, suggested: false }] };
+    run(`CC.data = Object.assign({}, __cc, { fixes: { open: [${JSON.stringify(dup)}, { id: 'old000000001', kind: 'duplicate', ref: '9+8', what: 'Old Row', problem: 'p', fix: 'f', from: 'CRM sheet' }], approved: [], dismissed: 0, resolved: 0 } })`);
+    const dp6 = render('fixes'), di = dp6.indexOf('Example One'), dsec = dp6.slice(dp6.lastIndexOf('<li', di), dp6.indexOf('</li>', dp6.indexOf('Not a problem', di)));
+    check((dsec.match(/type="radio"/g) || []).length === 2 && /value="3211" checked/.test(dsec) && !/value="615" checked/.test(dsec) && /\(3211\)/.test(dsec) && /\(615\)/.test(dsec) && /Suggested<\/span>/.test(dsec) && (dsec.match(/Suggested<\/span>/g) || []).length === 1,
+      'a duplicate card lists each contact as a radio option with id, and the suggested one is preselected and marked');
+    check(/has phone/.test(dsec) && /has email/.test(dsec) && /no email/.test(dsec) && /Zachary/.test(dsec) && /nurture/.test(dsec) && !/@|\d{3}-\d{4}/.test(dsec), 'each option shows plain facts and only has phone / has email, never the number or address');
+    check(/Fix\.confirmKeeper\('abc123def456', &quot;3211&quot;\)[^]*?>Confirm</.test(dsec) && /Fix\.decide\('abc123def456', 'dismiss'\)">Not a problem/.test(dsec) && !/'approve'\)">Approve</.test(dsec), 'a duplicate card has Confirm and Not a problem instead of Approve');
+    check(!/type="radio"/.test(dp6.slice(dp6.indexOf('Old Row'))) && /Old Row/.test(dp6) && /Approve</.test(dp6.slice(dp6.indexOf('Old Row'))), 'a duplicate row without options still renders the plain Approve card');
+    const sent = []; run(`globalThis.__sent = []; globalThis.__keep = [api, toast, CC.load]; api = async (u, b) => { __sent.push([u, b]); return { ok: true }; }; toast = () => {}; CC.load = () => {}; Fix.pickKeeper('abc123def456', '615')`);
+    run(`Fix.confirmKeeper('abc123def456', '3211')`); const posts = run('__sent'); run('[api, toast, CC.load] = __keep');
+    check(posts.length === 1 && posts[0][0] === '/api/fix' && posts[0][1].action === 'approve' && posts[0][1].keeper === '615' && posts[0][1].id === 'abc123def456', 'Confirm posts the keeper that was picked, not the suggestion');
+    run(`CC.data = Object.assign({}, __cc, { fixes: { open: [], approved: [Object.assign({ at: '2026-11-16T09:00:00', keeper: '615' }, ${JSON.stringify(dup)}, { fix: 'Keep 615, copy anything missing onto it, and delete the other in the Contacts tab.' })], dismissed: 0, resolved: 0 } })`);
+    check(/Approved, yours to change in the sheet 1/.test(txt(render('fixes'))) && /Keep 615, copy anything missing onto it, and delete the other in the Contacts tab\./.test(txt(render('fixes'))), 'the approved card names the keeper that was picked');
+    run('CC.data = __cc'); }
   // 6b. "Link this deal": live deals with no person tied, read only
   check(Array.isArray(ccdata.link_deals) && Array.isArray(state.link_deals) && (ccdata.link_deals.length ? /Link this deal/.test(ft) : !/Link this deal/.test(ft)), 'the state carries the Link this deal list, and the Fix list shows it only when there is one');
   run(`CC.data = Object.assign({}, __cc, { link_deals: [{ key: '700 fixture', deal: '700 Fixture Rd', stage: 'contract', status: 'Under Contract', side: 'Buyer', close: '2026-11-25', why: 'No person is tied to this deal.' }] })`);
