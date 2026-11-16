@@ -8,11 +8,13 @@
 
   // ---------------- people and free text. Nothing here hides: names, phones, emails, messages and dollars show as
   // they are. Only the Bank page masks its own figures (cc-sources.js).
-  C.who = v => (!v ? '' : esc(v));
+  C.who = v => (!v ? '' : esc(C.clean(v)));
   // A person's name wherever one shows: the name on the contact (the feed sends display, or first and last when display
   // is blank), and when the sheet has none it says so. Never made up, never written back.
   C.NO_NAME = 'No name on the sheet';
-  C.name = v => String(v || '').trim() || C.NO_NAME;
+  // "?Smith household" reads "Smith"; "Ann Smith" is unchanged. Mirrors names.clean_name in names.py.
+  C.clean = v => { let t = String(v || '').replace(/^[\s?\uFFFD]+/, '').replace(/\s+household\s*$/i, '').replace(/^[\s?\uFFFD]+/, '').trim(); return /^household$/i.test(t) ? '' : t; };
+  C.name = v => C.clean(v) || C.NO_NAME;
   C.pname = v => esc(C.name(v));
   C.ph = v => (!v ? '' : esc(fmtPhone(v)));
   C.em = v => (!v ? '' : esc(v));
