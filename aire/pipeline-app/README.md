@@ -334,6 +334,9 @@ Every Command Center page has an **Ask Claude about this page** box under its ti
 
 ## The screen
 
+**The November 4 dashboard and the Estate skin (superseded).** `static/dash.js`, `dash.css`, `theme-estate.css` and `estate-polish.css` were the first morning board and a dark glass look. Home and the approved light look replaced them on main (2026-11-19 merge), so `index.html` no longer loads them; the files stay for reference. What survives in use: the `/api/dash` route (world totals from `aire/world/data.json`, the Mac-only `brief.json`, `history.json`, `aire/ai-visibility/summary.json`, the tools board and Open-Meteo weather cached 15 minutes, a fixed weather card in demo), ready for a Home card, and the `/world/` page.
+
+
 | View | Key | What is on it |
 |---|---|---|
 | Command Center | `1` | CRM overview, the particle core with telemetry and the voice transcript, live feed (replies owed, overdue, new leads, deal events, hot people), active deals with stage bars, today's timeline, quick commands, send gauges, band chart, sources. |

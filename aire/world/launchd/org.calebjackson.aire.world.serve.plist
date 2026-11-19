@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- AIRE World page server, localhost only, port 4751. install.sh fills in __HOME__ and __REPO__. -->
+	<key>Label</key>
+	<string>org.calebjackson.aire.world.serve</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/usr/bin/python3</string>
+		<string>-m</string>
+		<string>http.server</string>
+		<string>4751</string>
+		<string>--bind</string>
+		<string>127.0.0.1</string>
+		<string>--directory</string>
+		<string>__REPO__/aire/world</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>__HOME__/.aire/logs/world-serve.log</string>
+	<key>StandardErrorPath</key>
+	<string>__HOME__/.aire/logs/world-serve.err</string>
+</dict>
+</plist>

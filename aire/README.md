@@ -11,7 +11,12 @@ AIRE is Caleb's AI real estate agent system. Read `STATUS.md` before touching an
 | `offer/` | What Caleb teaches or sells to agents, three tiers. Drafts. |
 | `rollout-2026-10/WEEK-3.md` | Week 3: dashboard proof, pipeline sheet, market update. |
 | `approvals/` | The page of decisions waiting on Caleb, one button each. |
-| `dashboard/` | Market and pipeline dashboard page. |
+| `world/` | AIRE World: the business as a miniature town running on the CRM sheet. sync.py (merge by address then email, totals only), the Three.js page, the 5-minute Mac loop. |
+| `business-map/` | The 3D map of the business: 8 departments, every job in the repo, live tiles, a center node that answers in each department's voice. Fish Audio voice layer in `business-map/voice/`. |
+| `4x/` | The plan to quadruple closings in 2027: sourced baseline, conversation math per source, levers tied to what is built, connectors to switch on. |
+| `ai-visibility/` | How AI answers talk about Caleb, measured the FirstAnswer way on the Claude API with web search: prompt groups, mention and citation rates, position, competitors, cited domains, recommendations. |
+| `lp-webhook/` | Luxury Presence leads pushed to the Website leads sheet by webhook (receiver in `website-rebuild/functions/lp-webhook.gs`), registered with `register.py`. Research with proof in its README. |
+| `dashboard/` | Market and pipeline dashboard page (older, flat). |
 | `market-data/` | Dated GBRAR market reports as JSON, with source. |
 | `market-update/` | Monthly market update scripts and Motion prompts. |
 | `crm/` | CRM engine on the one AIRE CRM sheet: Gmail ingest, cadence, tasks, deals, feed.json for the Pipeline app. |

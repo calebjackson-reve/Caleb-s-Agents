@@ -1,0 +1,2489 @@
+{
+ "built_at": "2026-11-04T17:28:39Z",
+ "owner": "Caleb Jackson, REALTOR, Keller Williams First Choice",
+ "system": "AIRE",
+ "departments": [
+  {
+   "id": "leadgen",
+   "label": "Lead Generation",
+   "tagline": "Every inquiry answered inside a minute, every lead tagged.",
+   "voice": "quick and bright, the first voice a new lead hears",
+   "count": 29
+  },
+  {
+   "id": "nurture",
+   "label": "Nurture and Follow-up",
+   "tagline": "The right touch, on the right day, approved by Caleb first.",
+   "voice": "warm and patient, never pushy",
+   "count": 16
+  },
+  {
+   "id": "deals",
+   "label": "Deals and Transactions",
+   "tagline": "Contract to close: deadlines, proposals, signatures.",
+   "voice": "calm and exact, reads a deadline like a pilot reads a checklist",
+   "count": 9
+  },
+  {
+   "id": "market",
+   "label": "Market Intelligence",
+   "tagline": "Permits, listings, comps and farms, refreshed twice a day.",
+   "voice": "measured analyst, every number carries its source and date",
+   "count": 14
+  },
+  {
+   "id": "marketing",
+   "label": "Marketing and Content",
+   "tagline": "Reels, just-solds, the site and the monthly market update.",
+   "voice": "upbeat creative director with a Louisiana ease",
+   "count": 35
+  },
+  {
+   "id": "ops",
+   "label": "Operations",
+   "tagline": "The CRM engine, schedules, compliance and the morning run.",
+   "voice": "steady back-office lead, low and unhurried",
+   "count": 23
+  },
+  {
+   "id": "engine",
+   "label": "AI Engine",
+   "tagline": "How AIRE is built: Claude Code, agents, workflows, apps.",
+   "voice": "the builder, precise and a little playful",
+   "count": 109
+  },
+  {
+   "id": "offer",
+   "label": "Agent Offer and Education",
+   "tagline": "What Caleb teaches and sells to other agents: Skool, workshops, tiers.",
+   "voice": "coach on stage, generous and clear",
+   "count": 17
+  }
+ ],
+ "nodes": [
+  {
+   "id": "deals:proposal-directive",
+   "dept": "deals",
+   "name": "Proposal directive",
+   "kind": "directive",
+   "path": "aire/proposal/directive.md",
+   "about": "Transcript in, proposal and follow-up email out.",
+   "exists": true
+  },
+  {
+   "id": "deals:offer-memo",
+   "dept": "deals",
+   "name": "Offer memo",
+   "kind": "doc",
+   "path": "aire/offer/OFFER-2026-10.md",
+   "about": "What goes into an offer and what Caleb checks before it is sent.",
+   "exists": true
+  },
+  {
+   "id": "deals:pipeline-template",
+   "dept": "deals",
+   "name": "Pipeline template",
+   "kind": "doc",
+   "path": "aire/pipeline/pipeline-template.csv",
+   "about": "Historical deals template. Deals now live in the CRM sheet's Deals tab.",
+   "exists": true
+  },
+  {
+   "id": "deals:approvals-page",
+   "dept": "deals",
+   "name": "Approvals page",
+   "kind": "page",
+   "path": "aire/approvals/index.html",
+   "about": "Decisions waiting on Caleb, one button each.",
+   "exists": true
+  },
+  {
+   "id": "deals:proposal-template",
+   "dept": "deals",
+   "name": "Proposal template",
+   "kind": "page",
+   "path": "aire/proposal/template-listing.html",
+   "about": "The listing proposal page clients sign.",
+   "exists": true
+  },
+  {
+   "id": "deals:listing-proposal",
+   "dept": "deals",
+   "name": "Listing proposal",
+   "kind": "script",
+   "path": "aire/proposal/proposal.py",
+   "about": "Call recording to listing proposal: one-page HTML with signature pad and email draft.",
+   "exists": true
+  },
+  {
+   "id": "deals:compliance-fix",
+   "dept": "deals",
+   "name": "Compliance fix",
+   "kind": "skill",
+   "path": "skills: transact-compliance-fix, tc-agreement-review-gate",
+   "about": "Review gate on every agreement before the TC sends it.",
+   "exists": null
+  },
+  {
+   "id": "deals:seller-net-sheet",
+   "dept": "deals",
+   "name": "Seller net sheet",
+   "kind": "skill",
+   "path": "skills: seller-net-sheet",
+   "about": "Net sheet from list price, payoff and closing costs.",
+   "exists": null
+  },
+  {
+   "id": "deals:transaction-forms",
+   "dept": "deals",
+   "name": "Transaction forms",
+   "kind": "skill",
+   "path": "skills: transact-fill-form, transact-open-deal, transact-signing-prep",
+   "about": "Chat skills that open a deal, fill forms and prep signing in Transact.",
+   "exists": null
+  },
+  {
+   "id": "engine:skill-aa-agent-chat-room-debate",
+   "dept": "engine",
+   "name": "aa-agent-chat-room-debate",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-agent-chat-room-debate/SKILL.md",
+   "about": "Runs a shared chat room (chat.json) where several agents with assigned personas (systems thinker, pragmatist, edge-case finder, user advocate, contrarian) de...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-context-window-management",
+   "dept": "engine",
+   "name": "aa-context-window-management",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-context-window-management/SKILL.md",
+   "about": "Manages the agent's context window: audits what is eating tokens before the first message (system prompt, CLAUDE.md, memory, skills, MCP tools), understands...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-core-agent-loop",
+   "dept": "engine",
+   "name": "aa-core-agent-loop",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-core-agent-loop/SKILL.md",
+   "about": "Explains and applies the core AI agent loop (observe, think, act, repeat until a definition of done is met) and the \"agent = LLM + tools + memory + loop\" arc...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-multi-agent-chrome-orchestration",
+   "dept": "engine",
+   "name": "aa-multi-agent-chrome-orchestration",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-multi-agent-chrome-orchestration/SKILL.md",
+   "about": "Orchestrates many parallel browser agents, each with its own Chrome DevTools MCP instance, workspace and CLAUDE.md, coordinated through a shared chat file, t...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-multi-model-mcp-orchestration",
+   "dept": "engine",
+   "name": "aa-multi-model-mcp-orchestration",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-multi-model-mcp-orchestration/SKILL.md",
+   "about": "Sets up one agent (usually Claude Code) as a manager that delegates subtasks to other models (Codex for backend and tests, Gemini for front end and video) re...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-pick-model-by-strength",
+   "dept": "engine",
+   "name": "aa-pick-model-by-strength",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-pick-model-by-strength/SKILL.md",
+   "about": "Chooses which AI agent platform or model (Claude Code, Codex/GPT, Gemini/Antigravity) to use for a given job based on Nick Saraev's observed strengths and we...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-prompt-contract",
+   "dept": "engine",
+   "name": "aa-prompt-contract",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-prompt-contract/SKILL.md",
+   "about": "Before any non-trivial task, drafts a four-section prompt contract (Goal, Constraints, Format, Failure conditions) from the request, presents it for approval...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-reverse-prompting",
+   "dept": "engine",
+   "name": "aa-reverse-prompting",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-reverse-prompting/SKILL.md",
+   "about": "Before building, has the agent ask five dynamically generated clarifying questions to surface non-obvious preferences, assumptions and constraints, then (opt...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-self-modifying-claude-md",
+   "dept": "engine",
+   "name": "aa-self-modifying-claude-md",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-self-modifying-claude-md/SKILL.md",
+   "about": "Sets up a self-modifying, self-correcting CLAUDE.md (or AGENTS.md / GEMINI.md) with a numbered \"Learned Rules\" section that the agent appends to every time C...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-skills-as-sops",
+   "dept": "engine",
+   "name": "aa-skills-as-sops",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-skills-as-sops/SKILL.md",
+   "about": "Turns a repeatable workflow into an agent skill (SKILL.md with YAML front matter) so the agent does the same thing the same way every time instead of improvi...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-stochastic-consensus",
+   "dept": "engine",
+   "name": "aa-stochastic-consensus",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-stochastic-consensus/SKILL.md",
+   "about": "Spawns N parallel sub-agents with slightly varied framings of the same question, then aggregates their answers into a consensus map (consensus, divergent, ou...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-sub-agent-verification-loop",
+   "dept": "engine",
+   "name": "aa-sub-agent-verification-loop",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-sub-agent-verification-loop/SKILL.md",
+   "about": "Runs an implementer, reviewer, resolver loop where a fresh-context sub-agent reviews only the output (not the reasoning) of the agent that built it, for corr...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-tiered-model-cost-routing",
+   "dept": "engine",
+   "name": "aa-tiered-model-cost-routing",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-tiered-model-cost-routing/SKILL.md",
+   "about": "Cuts multi-agent token cost by routing work across model tiers with a 60-30-10 rule (cheap models like Haiku or Flash for bulk work, mid-tier like Sonnet for...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aa-video-to-action-pipeline",
+   "dept": "engine",
+   "name": "aa-video-to-action-pipeline",
+   "kind": "skill",
+   "path": "skills/nick-saraev/ai-agents-course/aa-video-to-action-pipeline/SKILL.md",
+   "about": "Turns a YouTube or recorded video tutorial into a hyper-detailed numbered step file via Gemini video understanding, then has Claude Code execute those steps...",
+   "exists": true,
+   "group": "ai-agents-course"
+  },
+  {
+   "id": "engine:skill-aw-api-docs-pasting",
+   "dept": "engine",
+   "name": "aw-api-docs-pasting",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-api-docs-pasting/SKILL.md",
+   "about": "Gets the agent to connect to any API quickly by pasting the exact endpoint documentation into context (or using the vendor's \"copy for LLM\" markdown) instead...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-claude-skills-format",
+   "dept": "engine",
+   "name": "aw-claude-skills-format",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-claude-skills-format/SKILL.md",
+   "about": "Builds a Claude Skill (a skills/<name>/SKILL.md folder with YAML front matter, scripts and resources) as the Claude-specific alternative to DOE directives, i...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-cloud-webhook-deploy",
+   "dept": "engine",
+   "name": "aw-cloud-webhook-deploy",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-cloud-webhook-deploy/SKILL.md",
+   "about": "Deploys a battle-tested execution script to the cloud (Modal in Nick's demo, trigger.dev as an alternative) as a webhook URL so external systems like a CRM,...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-crm-wrapper",
+   "dept": "engine",
+   "name": "aw-crm-wrapper",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-crm-wrapper/SKILL.md",
+   "about": "Builds an agentic wrapper around a CRM (ClickUp in Nick's demo, any CRM with an API or MCP) so Caleb can say \"new lead Jane Doe, meeting booked\" and the agen...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-deterministic-scripts",
+   "dept": "engine",
+   "name": "aw-deterministic-scripts",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-deterministic-scripts/SKILL.md",
+   "about": "Decides what the LLM should do versus what a deterministic script should do, and pushes math, sorting, API calls, data transforms and file operations into at...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-doe-framework",
+   "dept": "engine",
+   "name": "aw-doe-framework",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-doe-framework/SKILL.md",
+   "about": "Applies Nick Saraev's DOE framework (Directive, Orchestration, Execution) to turn a probabilistic AI agent into a reliable three-layer business automation wh...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-hooks-notifications",
+   "dept": "engine",
+   "name": "aw-hooks-notifications",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-hooks-notifications/SKILL.md",
+   "about": "Sets up Claude Code hooks that play a chime or system notification when an agent finishes a task or needs a human, so Caleb can run long workflows and backgr...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-human-in-the-loop-safety",
+   "dept": "engine",
+   "name": "aw-human-in-the-loop-safety",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-human-in-the-loop-safety/SKILL.md",
+   "about": "Decides where a human must review before an agentic workflow acts, using Nick Saraev's magnitude-of-outcome and sensitivity-to-quality rule, and adds safety...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-improve-and-chain-workflows",
+   "dept": "engine",
+   "name": "aw-improve-and-chain-workflows",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-improve-and-chain-workflows/SKILL.md",
+   "about": "Improves existing agentic workflows over time with the \"make it faster, make it cheaper\" loop and Nick's order-of-magnitude rule (only optimize for 10x gains...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-mcp-when-and-how",
+   "dept": "engine",
+   "name": "aw-mcp-when-and-how",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-mcp-when-and-how/SKILL.md",
+   "about": "Decides when to use Model Context Protocol (MCP) servers versus execution scripts, connects an MCP (Gmail, ClickUp, Google Drive) by asking the agent to do t...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-operating-the-agent",
+   "dept": "engine",
+   "name": "aw-operating-the-agent",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-operating-the-agent/SKILL.md",
+   "about": "Day-to-day habits for using (not building) agentic workflows efficiently, speaking prompts by voice, being specific with inputs up front, pasting context ins...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-parallel-agents",
+   "dept": "engine",
+   "name": "aw-parallel-agents",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-parallel-agents/SKILL.md",
+   "about": "Runs multiple agent instances in parallel, both to build a workflow three to five different ways at once in isolated tmp folders and pick the winner, and to...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-ptmro-agent-loop",
+   "dept": "engine",
+   "name": "aw-ptmro-agent-loop",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-ptmro-agent-loop/SKILL.md",
+   "about": "Explains the five steps every agent runs on each message (Planning, Tools, Memory, Reflection, Orchestration, the PTMRO loop) and where a human should interv...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-scheduled-deploy",
+   "dept": "engine",
+   "name": "aw-scheduled-deploy",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-scheduled-deploy/SKILL.md",
+   "about": "Deploys an execution script as a scheduled cloud function (cron on Modal) so recurring work like a daily lead pull, a Monday 9am report or a 5-minute check r...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-self-annealing",
+   "dept": "engine",
+   "name": "aw-self-annealing",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-self-annealing/SKILL.md",
+   "about": "Makes agentic workflows self-annealing so that every error triggers a diagnose, fix, update, re-run loop and the directive and scripts harden over time inste...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-sub-agents",
+   "dept": "engine",
+   "name": "aw-sub-agents",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-sub-agents/SKILL.md",
+   "about": "Uses Claude Code sub-agents to isolate context and parallelize work, specifically Nick Saraev's two recommended ones, a reviewer sub-agent that checks execut...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-system-prompt-agents-md",
+   "dept": "engine",
+   "name": "aw-system-prompt-agents-md",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-system-prompt-agents-md/SKILL.md",
+   "about": "Writes or upgrades the agent system prompt file (CLAUDE.md, AGENTS.md, GEMINI.md) using Nick Saraev's required ingredients, explaining the framework and its...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-transcript-to-proposal",
+   "dept": "engine",
+   "name": "aw-transcript-to-proposal",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-transcript-to-proposal/SKILL.md",
+   "about": "Turns a call transcript (sales call, listing appointment, buyer consultation) into a polished, consistently formatted proposal or summary document with a fol...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-workspace-setup",
+   "dept": "engine",
+   "name": "aw-workspace-setup",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-workspace-setup/SKILL.md",
+   "about": "Sets up a DOE agent workspace from scratch in an IDE (VS Code, Antigravity, Cursor) with the directives and execution folders, a .env for secrets, tmp and re...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-aw-writing-directives",
+   "dept": "engine",
+   "name": "aw-writing-directives",
+   "kind": "skill",
+   "path": "skills/nick-saraev/agentic-workflows-course/aw-writing-directives/SKILL.md",
+   "about": "Writes a strong DOE directive (the natural-language SOP an agent follows) with the four required parts, objective, input spec, step-by-step process and defin...",
+   "exists": true,
+   "group": "agentic-workflows-course"
+  },
+  {
+   "id": "engine:skill-cc-agent-teams",
+   "dept": "engine",
+   "name": "cc-agent-teams",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-agent-teams/SKILL.md",
+   "about": "Enables and runs Claude Code agent teams (a team lead orchestrating independent Claude instances that share a task board and message each other) for design-v...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-claude-directory-rules",
+   "dept": "engine",
+   "name": "cc-claude-directory-rules",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-claude-directory-rules/SKILL.md",
+   "about": "Sets up the hidden .claude folder structure Nick Saraev walks through (settings.json, settings.local.json, CLAUDE.local.md, rules/, agents/, skills/, .mcp.js...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-claude-md-project-brain",
+   "dept": "engine",
+   "name": "cc-claude-md-project-brain",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-claude-md-project-brain/SKILL.md",
+   "about": "Writes, initializes and prunes a CLAUDE.md \"project brain\" file the way Nick Saraev teaches it, including /init, the 200 to 500 line rule, primacy ordering a...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-context-and-token-management",
+   "dept": "engine",
+   "name": "cc-context-and-token-management",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-context-and-token-management/SKILL.md",
+   "about": "Diagnoses and reduces Claude Code context usage using /context, /compact, /clear, /cost, /model thinking settings and a custom status line, following Nick Sa...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-git-worktrees-parallel",
+   "dept": "engine",
+   "name": "cc-git-worktrees-parallel",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-git-worktrees-parallel/SKILL.md",
+   "about": "Uses git worktrees so several Claude Code instances or agent teammates can each build a different feature or page in its own isolated folder on the same repo...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-mcp-prototype-then-skill",
+   "dept": "engine",
+   "name": "cc-mcp-prototype-then-skill",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-mcp-prototype-then-skill/SKILL.md",
+   "about": "Installs an MCP server (Chrome DevTools, ClickUp, Gmail or any tool with an MCP JSON snippet), uses it to prove a workflow quickly, measures its token cost w...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-modal-deploy-endpoint",
+   "dept": "engine",
+   "name": "cc-modal-deploy-endpoint",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-modal-deploy-endpoint/SKILL.md",
+   "about": "Deploys a script, skill or small web form to a public URL on Modal from Claude Code, so a workflow can be triggered by a browser visit, a webhook, or a no-co...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-permission-modes",
+   "dept": "engine",
+   "name": "cc-permission-modes",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-permission-modes/SKILL.md",
+   "about": "Explains and configures Claude Code permission modes (ask before edits, accept edits, plan, bypass permissions, delegate) and the /permissions allow, ask and...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-plan-mode-full-stack-build",
+   "dept": "engine",
+   "name": "cc-plan-mode-full-stack-build",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-plan-mode-full-stack-build/SKILL.md",
+   "about": "Builds a complete app (front end, login, database, payments, live deploy) using Claude Code plan mode the way Nick Saraev built his PandaDoc-style proposal g...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-screenshot-loop-website-design",
+   "dept": "engine",
+   "name": "cc-screenshot-loop-website-design",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-screenshot-loop-website-design/SKILL.md",
+   "about": "Builds a high-end website, landing page, dashboard or app front end by giving Claude Code a reference design screenshot plus copied CSS and letting it screen...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-skills-sop-to-skill",
+   "dept": "engine",
+   "name": "cc-skills-sop-to-skill",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-skills-sop-to-skill/SKILL.md",
+   "about": "Turns a repeatable piece of knowledge work (an SOP, a checklist, a thing Caleb does every week) into a Claude Code skill folder with a SKILL.md checklist and...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-subagents-research-review-qa",
+   "dept": "engine",
+   "name": "cc-subagents-research-review-qa",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-subagents-research-review-qa/SKILL.md",
+   "about": "Creates and uses Claude Code subagents in .claude/agents the way Nick Saraev does: the three worth having (researcher, code reviewer, QA tester), the edit, r...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cc-verify-loop-and-parallel-tabs",
+   "dept": "engine",
+   "name": "cc-verify-loop-and-parallel-tabs",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-full-course/cc-verify-loop-and-parallel-tabs/SKILL.md",
+   "about": "Applies Nick Saraev's core Claude Code building philosophy: every job runs as task, do the task, verify the result, and you keep several Claude instances bus...",
+   "exists": true,
+   "group": "claude-code-full-course"
+  },
+  {
+   "id": "engine:skill-cca-agent-teams-consensus-build",
+   "dept": "engine",
+   "name": "cca-agent-teams-consensus-build",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-agent-teams-consensus-build/SKILL.md",
+   "about": "Uses Claude Code's agent teams feature to run Nick Saraev's full improve-and-ship loop on a real app: a team of analyst agents with different framings reache...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-auto-research-loop",
+   "dept": "engine",
+   "name": "cca-auto-research-loop",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-auto-research-loop/SKILL.md",
+   "about": "Sets up a Karpathy-style auto-research loop the way Nick Saraev does: define a metric, a change method and a fast assessment, clone the autoresearch repo, wr...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-automation-ladder",
+   "dept": "engine",
+   "name": "cca-automation-ladder",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-automation-ladder/SKILL.md",
+   "about": "Picks the right level of internet automation using Nick Saraev's ladder (HTTP requests via web fetch, browser automation via Chrome DevTools MCP or Browser U...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-claude-md-global-vs-local",
+   "dept": "engine",
+   "name": "cca-claude-md-global-vs-local",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-claude-md-global-vs-local/SKILL.md",
+   "about": "Designs and splits CLAUDE.md system prompts using Nick Saraev's four-pillar model (knowledge compression, preferences and conventions, declaration of capabil...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-fan-out-fan-in-research",
+   "dept": "engine",
+   "name": "cca-fan-out-fan-in-research",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-fan-out-fan-in-research/SKILL.md",
+   "about": "Parallelizes research or analysis by fanning out to several cheap subagents (Sonnet or Haiku) that each take a different angle, then fanning in to one Opus s...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-insights-global-distill",
+   "dept": "engine",
+   "name": "cca-insights-global-distill",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-insights-global-distill/SKILL.md",
+   "about": "Runs Nick Saraev's global system-prompt loop: after several local learning loops, run /insights across Claude Code history, distill the report into high-info...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-lean-agent-hierarchies",
+   "dept": "engine",
+   "name": "cca-lean-agent-hierarchies",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-lean-agent-hierarchies/SKILL.md",
+   "about": "Chooses and configures a lean multi-agent structure per Nick Saraev: skills and subagents are two flavors of the same markdown SOP, bloated CEO/CTO org chart...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-local-learning-loop",
+   "dept": "engine",
+   "name": "cca-local-learning-loop",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-local-learning-loop/SKILL.md",
+   "about": "Runs Nick Saraev's local system-prompt learning loop on a project (run /init, plan a feature, instantiate it, ask \"how could you have done this faster and fo...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-model-chat-debate",
+   "dept": "engine",
+   "name": "cca-model-chat-debate",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-model-chat-debate/SKILL.md",
+   "about": "Runs Nick Saraev's \"model-chat\" debate pattern: several Claude instances share one conversation room, take round-robin turns (parallel within each round), se...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-model-diversification",
+   "dept": "engine",
+   "name": "cca-model-diversification",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-model-diversification/SKILL.md",
+   "about": "Protects Caleb's workflow from Claude outages and performance degradations using Nick Saraev's \"don't run a monoculture\" plan: keep roughly 70% on Claude Cod...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-security-80-20",
+   "dept": "engine",
+   "name": "cca-security-80-20",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-security-80-20/SKILL.md",
+   "about": "Applies Nick Saraev's 80/20 security checklist for Claude Code projects: keep secrets only in .env and never in chat (conversation logs in ~/.claude store ev...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-stochastic-consensus",
+   "dept": "engine",
+   "name": "cca-stochastic-consensus",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-stochastic-consensus/SKILL.md",
+   "about": "Runs Nick Saraev's stochastic multi-agent consensus: spawn n subagents with the same question but different personas, collect every idea, count how often eac...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cca-workspace-organization",
+   "dept": "engine",
+   "name": "cca-workspace-organization",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-advanced/cca-workspace-organization/SKILL.md",
+   "about": "Organizes Claude Code workspaces the way Nick Saraev does: a business workspace and a personal workspace, each with .claude/ (skills, agents), active/ for al...",
+   "exists": true,
+   "group": "claude-code-advanced"
+  },
+  {
+   "id": "engine:skill-cx-agents-md-portability",
+   "dept": "engine",
+   "name": "cx-agents-md-portability",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-agents-md-portability/SKILL.md",
+   "about": "Keeps the same system prompt and skills working across Claude Code, Codex and Gemini by treating AGENTS.md and CLAUDE.md as linked system prompts, syncing th...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-anti-slop-writing",
+   "dept": "engine",
+   "name": "cx-anti-slop-writing",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-anti-slop-writing/SKILL.md",
+   "about": "Applies Nick Saraev's rules for removing AI-sounding writing from generated copy, minimum sentence length, lowercase for social, no hashtags, no bold-hook-bl...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-browser-computer-use",
+   "dept": "engine",
+   "name": "cx-browser-computer-use",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-browser-computer-use/SKILL.md",
+   "about": "Uses browser control and computer (desktop) control from the agent to read or act on pages and apps that have no API, pulling data from an open Google Sheet...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-content-repurposing",
+   "dept": "engine",
+   "name": "cx-content-repurposing",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-content-repurposing/SKILL.md",
+   "about": "Builds an organic content repurposing pipeline that takes one long piece (newsletter, blog, video transcript) and produces platform-fit X posts, LinkedIn pos...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-deliver-to-clients-security",
+   "dept": "engine",
+   "name": "cx-deliver-to-clients-security",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-deliver-to-clients-security/SKILL.md",
+   "about": "Delivers AI agents and automations to a client or teammate the way Nick Saraev does, on their infrastructure and their token bill, as either skills plus auto...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-event-automation-local-to-cloud",
+   "dept": "engine",
+   "name": "cx-event-automation-local-to-cloud",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-event-automation-local-to-cloud/SKILL.md",
+   "about": "Turns a verified skill into an automation that runs without Caleb, first a local scheduled \"heartbeat\" that polls a folder or inbox with a dedup ledger, then...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-four-levels-ladder",
+   "dept": "engine",
+   "name": "cx-four-levels-ladder",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-four-levels-ladder/SKILL.md",
+   "about": "Takes any business task up Nick Saraev's four levels, prompt, agent skill, local automation, cloud automation, in that order, with the right checkpoint at ea...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-maintenance-github-versioning",
+   "dept": "engine",
+   "name": "cx-maintenance-github-versioning",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-maintenance-github-versioning/SKILL.md",
+   "about": "Keeps automations and apps alive over time using Nick Saraev's three failure causes (dependency and API breaking or non-breaking changes, upgrades available,...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-parallel-subagents",
+   "dept": "engine",
+   "name": "cx-parallel-subagents",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-parallel-subagents/SKILL.md",
+   "about": "Runs independent work as parallel sub-agents (fan out, fan in) so three 5-minute tasks finish in 5 minutes instead of 15, and uses fresh-context sub-agents t...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-pipeline-hygiene-champion",
+   "dept": "engine",
+   "name": "cx-pipeline-hygiene-champion",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-pipeline-hygiene-champion/SKILL.md",
+   "about": "Builds a daily \"champion\" that reads every open record in the CRM, project board and internal ops list, finds stale deals, overdue projects and unanswered re...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-plugins-and-mcp",
+   "dept": "engine",
+   "name": "cx-plugins-and-mcp",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-plugins-and-mcp/SKILL.md",
+   "about": "Connects an AI coding agent to an external service the right way, first-party plugin or connector when one exists, otherwise a manually added MCP server (str...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-prompt-to-skill",
+   "dept": "engine",
+   "name": "cx-prompt-to-skill",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-prompt-to-skill/SKILL.md",
+   "about": "Converts a working prompt conversation into a reusable agent skill (SKILL.md plus scripts, references and assets) by pruning the back and forth into a bare-b...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-race-framework",
+   "dept": "engine",
+   "name": "cx-race-framework",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-race-framework/SKILL.md",
+   "about": "Picks which business process to automate first using Nick Saraev's RACE framework (Reach, Acquisition, Conversion, Expansion) and the compounding multiplier...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-sales-call-to-proposal",
+   "dept": "engine",
+   "name": "cx-sales-call-to-proposal",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-sales-call-to-proposal/SKILL.md",
+   "about": "Builds a system that turns a sales call transcript or voice memo into a finished, hosted HTML proposal with signature canvas, package selection and a checkou...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-skill-evals-self-healing",
+   "dept": "engine",
+   "name": "cx-skill-evals-self-healing",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-skill-evals-self-healing/SKILL.md",
+   "about": "Hardens a skill or automation after it works once by running it many times, scoring the runs, feeding failures back so the skill patches itself, and pruning...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-variant-sampling-prompting",
+   "dept": "engine",
+   "name": "cx-variant-sampling-prompting",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-variant-sampling-prompting/SKILL.md",
+   "about": "Nick Saraev's prompting habits for AI coding agents, generate many variants and pick the best instead of judging one output, dictate long context-rich prompt...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-voice-agent-build",
+   "dept": "engine",
+   "name": "cx-voice-agent-build",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-voice-agent-build/SKILL.md",
+   "about": "Builds a phone-callable voice agent in stages, a local web MVP on a realtime voice API with a calendar tool and confirmation step, then a Twilio number route...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-cx-voice-agent-fit-matrix",
+   "dept": "engine",
+   "name": "cx-voice-agent-fit-matrix",
+   "kind": "skill",
+   "path": "skills/nick-saraev/codex-course/cx-voice-agent-fit-matrix/SKILL.md",
+   "about": "Decides whether a voice agent belongs in a process using Nick Saraev's lifetime value versus volume matrix, voice agents only for high-volume, low-LTV calls,...",
+   "exists": true,
+   "group": "codex-course"
+  },
+  {
+   "id": "engine:skill-ma-ai-features-edge-functions",
+   "dept": "engine",
+   "name": "ma-ai-features-edge-functions",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-ai-features-edge-functions/SKILL.md",
+   "about": "Adds AI features to a mobile app the way Nick Saraev did for smart coaching nudges and weekly reflections: a Supabase Edge Function on a schedule reads the u...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-ai-generated-visual-assets",
+   "dept": "engine",
+   "name": "ma-ai-generated-visual-assets",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-ai-generated-visual-assets/SKILL.md",
+   "about": "Produces a polished, illustrated app look by having Claude write an image-generation prompt for the app, generating full-screen mockups with an AI image mode...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-app-store-submission",
+   "dept": "engine",
+   "name": "ma-app-store-submission",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-app-store-submission/SKILL.md",
+   "about": "Takes a finished Expo app through Nick Saraev's production and submission flow: prepare app.json and eas.json (icons, splash, adaptive icon, permissions), bu...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-claude-md-context-hygiene",
+   "dept": "engine",
+   "name": "ma-claude-md-context-hygiene",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-claude-md-context-hygiene/SKILL.md",
+   "about": "Keeps a Claude Code app project cheap and sharp by running /init after the first demo, updating CLAUDE.md whenever the app changes shape, and managing contex...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-design-upgrade-loop",
+   "dept": "engine",
+   "name": "ma-design-upgrade-loop",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-design-upgrade-loop/SKILL.md",
+   "about": "Upgrades a working app's look after the functionality is done and before the database is added, using Nick Saraev's design loop: screenshot a reference app o...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-expo-workspace-setup",
+   "dept": "engine",
+   "name": "ma-expo-workspace-setup",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-expo-workspace-setup/SKILL.md",
+   "about": "Sets up Claude Code inside an editor (Antigravity or VS Code with the Claude Code extension), scaffolds an Expo + React Native workspace with one prompt, and...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-feedback-dump-iteration",
+   "dept": "engine",
+   "name": "ma-feedback-dump-iteration",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-feedback-dump-iteration/SKILL.md",
+   "about": "Runs Nick Saraev's build-then-walk-through loop: test the app in Chrome, voice-dump every issue into one batched prompt, ask for developer test controls and...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-five-step-app-design-framework",
+   "dept": "engine",
+   "name": "ma-five-step-app-design-framework",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-five-step-app-design-framework/SKILL.md",
+   "about": "Turns a vague app idea into a scoped MVP using Nick Saraev's five-step framework (core function, core loop, accessory features, surface area check, retention...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-github-checkpoint",
+   "dept": "engine",
+   "name": "ma-github-checkpoint",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-github-checkpoint/SKILL.md",
+   "about": "Pushes an app to GitHub through Claude Code so every AI-made change is version-controlled and can be rolled back, with a README and a properly named repo and...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-mobile-framework-choice",
+   "dept": "engine",
+   "name": "ma-mobile-framework-choice",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-mobile-framework-choice/SKILL.md",
+   "about": "Picks the right mobile app stack (Expo + React Native by default, versus Flutter/Firebase or Capacitor) and lays out Nick Saraev's web-first, local-to-cloud...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-security-audit-loop",
+   "dept": "engine",
+   "name": "ma-security-audit-loop",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-security-audit-loop/SKILL.md",
+   "about": "Runs Nick Saraev's security audit for vibe-coded mobile apps: in a fresh /clear session paste a comprehensive audit prompt that hunts hallucinated packages,...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-supabase-database-auth",
+   "dept": "engine",
+   "name": "ma-supabase-database-auth",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-supabase-database-auth/SKILL.md",
+   "about": "Moves an Expo app from on-device storage to a Supabase Postgres database with email/password auth and local-first caching, using Nick Saraev's hand-off flow...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-ma-three-tier-testing-loop",
+   "dept": "engine",
+   "name": "ma-three-tier-testing-loop",
+   "kind": "skill",
+   "path": "skills/nick-saraev/mobile-apps-course/ma-three-tier-testing-loop/SKILL.md",
+   "about": "Runs Nick Saraev's mandatory three-tier mobile test (Chrome at phone width, then a phone mirror, then the real phone via Expo Go) and catches the phone-only...",
+   "exists": true,
+   "group": "mobile-apps-course"
+  },
+  {
+   "id": "engine:skill-vc-ai-assets-nano-banana-veo",
+   "dept": "engine",
+   "name": "vc-ai-assets-nano-banana-veo",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-ai-assets-nano-banana-veo/SKILL.md",
+   "about": "Produces custom visual assets for a vibe-coded site with Google AI Studio the way Nick Saraev does: generate a hero image with Nano Banana at the right aspec...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-anti-slop-content-prompting",
+   "dept": "engine",
+   "name": "vc-anti-slop-content-prompting",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-anti-slop-content-prompting/SKILL.md",
+   "about": "Writes and configures AI content prompts that avoid \"LLM-isms\" the way Nick Saraev tuned Splinter and Leadzo: no hashtags, no emojis, no alternating very-sho...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-antigravity-dual-model-setup",
+   "dept": "engine",
+   "name": "vc-antigravity-dual-model-setup",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-antigravity-dual-model-setup/SKILL.md",
+   "about": "Sets up and operates Nick Saraev's two-model vibe coding environment, Google Antigravity (Gemini 3.1 Pro High in the agent chat) plus the Claude Code extensi...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-api-wrapper-app",
+   "dept": "engine",
+   "name": "vc-api-wrapper-app",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-api-wrapper-app/SKILL.md",
+   "about": "Builds a SaaS feature that wraps a third-party API (Apify scrapers, AnyMailFinder enrichment, Anthropic or OpenAI for personalization, Google's Nano Banana i...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-app-planning-spec",
+   "dept": "engine",
+   "name": "vc-app-planning-spec",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-app-planning-spec/SKILL.md",
+   "about": "Turns a rough app idea into a build-ready spec the way Nick Saraev does it: sketch the page map in Excalidraw (landing, auth, config/onboarding, the core act...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-debugging-iteration",
+   "dept": "engine",
+   "name": "vc-debugging-iteration",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-debugging-iteration/SKILL.md",
+   "about": "Steers an AI build back on track using Nick Saraev's iteration habits: paste the exact error plus a tight screenshot, batch all issues into one voice dump, s...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-deploy-to-production",
+   "dept": "engine",
+   "name": "vc-deploy-to-production",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-deploy-to-production/SKILL.md",
+   "about": "Pushes a vibe-coded app live the way Nick Saraev does it, from Netlify drag-and-drop for static sites to agent-driven Netlify CLI deploys for full-stack apps...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-design-loop",
+   "dept": "engine",
+   "name": "vc-design-loop",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-design-loop/SKILL.md",
+   "about": "Applies Nick Saraev's vibe coding design loop for building a full-stack SaaS app: inspiration screenshot from Dribbble or Godly, optional animated hero asset...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-distribution-go-to-market",
+   "dept": "engine",
+   "name": "vc-distribution-go-to-market",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-distribution-go-to-market/SKILL.md",
+   "about": "Plans how to actually sell a vibe-coded product using Nick Saraev's distribution-over-software thesis: spend about 5 percent of effort building and 95 percen...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-model-handoff-context-backup",
+   "dept": "engine",
+   "name": "vc-model-handoff-context-backup",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-model-handoff-context-backup/SKILL.md",
+   "about": "Protects a long AI build against rate limits and context exhaustion the way Nick Saraev does, by checkpointing progress into GEMINI.md, logging every change...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-one-shot-landing-page",
+   "dept": "engine",
+   "name": "vc-one-shot-landing-page",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-one-shot-landing-page/SKILL.md",
+   "about": "One-shots a high-end landing page or portfolio site with Gemini 3.1 Pro High in Antigravity using Nick Saraev's \"cinematic landing page builder\" GEMINI.md pr...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-parallel-agents",
+   "dept": "engine",
+   "name": "vc-parallel-agents",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-parallel-agents/SKILL.md",
+   "about": "Runs several Antigravity or Claude Code agents at once using the Agent Manager, Playground and Inbox so you build 2 to 4 app variants or work on separate par...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-rules-and-workflows",
+   "dept": "engine",
+   "name": "vc-rules-and-workflows",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-rules-and-workflows/SKILL.md",
+   "about": "Configures Antigravity rules (always-on GEMINI.md style guides and workspace rules under .agent/rules), reusable workflows (slash-command SOPs like a code-re...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-security-audit",
+   "dept": "engine",
+   "name": "vc-security-audit",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-security-audit/SKILL.md",
+   "about": "Runs Nick Saraev's 80/20 security pass on a vibe-coded app, checking the five things that cause most breaches (exposed env vars and API keys, missing Supabas...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-stripe-payments",
+   "dept": "engine",
+   "name": "vc-stripe-payments",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-stripe-payments/SKILL.md",
+   "about": "Adds Stripe payments to a vibe-coded app using Nick Saraev's pattern: pick one-time, subscription or credit-based model, create a Stripe sandbox, give the ag...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-supabase-full-stack-stack",
+   "dept": "engine",
+   "name": "vc-supabase-full-stack-stack",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-supabase-full-stack-stack/SKILL.md",
+   "about": "Wires a locally working vibe-coded app to the standard stack Nick Saraev uses (Next.js or Vite front end, Supabase for database and auth, Netlify serverless...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-value-based-pricing",
+   "dept": "engine",
+   "name": "vc-value-based-pricing",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-value-based-pricing/SKILL.md",
+   "about": "Prices a product, app or service using Nick Saraev's value-based pricing (VBP): quantify direct expense savings plus opportunity-cost revenue the customer ga...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "engine:skill-vc-web-app-fundamentals",
+   "dept": "engine",
+   "name": "vc-web-app-fundamentals",
+   "kind": "skill",
+   "path": "skills/nick-saraev/vibe-coding-course/vc-web-app-fundamentals/SKILL.md",
+   "about": "Explains the 80/20 of how modern web apps work in Nick Saraev's plain-English mental models (client is your browser, server does the logic, database is a Goo...",
+   "exists": true,
+   "group": "vibe-coding-course"
+  },
+  {
+   "id": "leadgen:enrichment-directive",
+   "dept": "leadgen",
+   "name": "Enrichment directive",
+   "kind": "directive",
+   "path": "aire/enrichment/directive.md",
+   "about": "The rules every enrichment run follows.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:lead-enrichment-directive",
+   "dept": "leadgen",
+   "name": "Lead enrichment directive",
+   "kind": "directive",
+   "path": "aire/lead-enrichment/directive.md",
+   "about": "How a raw lead list becomes tagged, scored rows.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:speed-to-lead-responder",
+   "dept": "leadgen",
+   "name": "Speed to lead responder",
+   "kind": "directive",
+   "path": "aire/speed-to-lead/directive.md",
+   "about": "Website inquiry responder. Templates, dry run by default, runner lives on the Mac.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:luxury-presence-integration",
+   "dept": "leadgen",
+   "name": "Luxury Presence integration",
+   "kind": "doc",
+   "path": "lp-integration/README.md",
+   "about": "Site fixes, motion and tokens for the IDX site, one support case per topic.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:seller-net-sheet-calculator",
+   "dept": "leadgen",
+   "name": "Seller net sheet calculator",
+   "kind": "page",
+   "path": "aire/calculators/net-sheet.html",
+   "about": "Interactive seller net sheet for calebjackson.org. Math checked in a headless browser.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:crm-client",
+   "dept": "leadgen",
+   "name": "CRM client",
+   "kind": "script",
+   "path": "aire/enrichment/execution/crm_client.py",
+   "about": "The one read and write path to the AIRE CRM sheet.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:enrichment-runner",
+   "dept": "leadgen",
+   "name": "Enrichment runner",
+   "kind": "script",
+   "path": "aire/enrichment/execution/run_enrichment.py",
+   "about": "Runs the whole enrichment pass over the CRM sheet.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:enrichment-tests",
+   "dept": "leadgen",
+   "name": "Enrichment tests",
+   "kind": "script",
+   "path": "aire/enrichment/tests/test_enrichment.py",
+   "about": "Offline checks for the enrichment pipeline.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:gmail-signals",
+   "dept": "leadgen",
+   "name": "Gmail signals",
+   "kind": "script",
+   "path": "aire/enrichment/execution/gmail_signals.py",
+   "about": "Reads who wrote, who replied and how long ago, from Gmail.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:identity-resolver",
+   "dept": "leadgen",
+   "name": "Identity resolver",
+   "kind": "script",
+   "path": "aire/enrichment/execution/identity.py",
+   "about": "Matches a contact across email, phone and text signals without duplicates.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:imessage-signals",
+   "dept": "leadgen",
+   "name": "iMessage signals",
+   "kind": "script",
+   "path": "aire/enrichment/execution/imessage_signals.py",
+   "about": "Reads text activity. Group chats with two or more others are left out.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:lead-enrichment-haiku",
+   "dept": "leadgen",
+   "name": "Lead enrichment (Haiku)",
+   "kind": "script",
+   "path": "aire/lead-enrichment/enrich.py",
+   "about": "Bulk tier lead tagging on Haiku 5.5 with JSON schema output. DRY_RUN default.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:llm-tagger",
+   "dept": "leadgen",
+   "name": "LLM tagger",
+   "kind": "script",
+   "path": "aire/enrichment/execution/llm_tag.py",
+   "about": "Model pass that tags intent and stage on each contact.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:merge-hwc",
+   "dept": "leadgen",
+   "name": "Merge HWC",
+   "kind": "script",
+   "path": "aire/enrichment/execution/merge_hwc.py",
+   "about": "Merges hot, warm, cold labels back into the one CRM sheet.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:score-and-label",
+   "dept": "leadgen",
+   "name": "Score and label",
+   "kind": "script",
+   "path": "aire/enrichment/execution/score_and_label.py",
+   "about": "Turns signals into hot, warm and cold labels.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:social-signals",
+   "dept": "leadgen",
+   "name": "Social signals",
+   "kind": "script",
+   "path": "aire/enrichment/execution/social_signals.py",
+   "about": "Adds public social signals to a contact's record.",
+   "exists": true
+  },
+  {
+   "id": "leadgen:skill-ce-ai-casualization-layer",
+   "dept": "leadgen",
+   "name": "ce-ai-casualization-layer",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-ai-casualization-layer/SKILL.md",
+   "about": "Uses AI the only way Nick Saraev recommends for cold outreach copy: not to write the email, but to fill small templated variables (casual company name, neigh...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-campaign-goal-and-frame",
+   "dept": "leadgen",
+   "name": "ce-campaign-goal-and-frame",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-campaign-goal-and-frame/SKILL.md",
+   "about": "Sets up an outbound campaign the way Nick Saraev does before any copy is written: a one-sentence goal with one chosen action (reply, watch, or book), KPIs fo...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-cold-read-opener",
+   "dept": "leadgen",
+   "name": "ce-cold-read-opener",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-cold-read-opener/SKILL.md",
+   "about": "Writes first-line personalizations using Nick Saraev's cold reading technique: short, informal statements that apply to most of the audience but feel written...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-compliant-outbound-guardrails",
+   "dept": "leadgen",
+   "name": "ce-compliant-outbound-guardrails",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-compliant-outbound-guardrails/SKILL.md",
+   "about": "Applies the lawful, deliverability-safe version of Nick Saraev's \"gray hat\" chapter to Caleb's outreach: no purchased or fake personas, no account renting, n...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-four-step-framework",
+   "dept": "leadgen",
+   "name": "ce-four-step-framework",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-four-step-framework/SKILL.md",
+   "about": "Writes or restructures any cold email, text, or DM with Nick Saraev's four-step copywriting formula (Personalization, Who am I and why it matters, Offer, Cal...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-offer-formula",
+   "dept": "leadgen",
+   "name": "ce-offer-formula",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-offer-formula/SKILL.md",
+   "about": "Builds a specific, time-bound, risk-reversed offer using Nick Saraev's formula (Conversion = ROI x Trust / Friction, phrased as \"I will do X in Y time or Z r...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-one-step-cta",
+   "dept": "leadgen",
+   "name": "ce-one-step-cta",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-one-step-cta/SKILL.md",
+   "about": "Writes calls to action that leave exactly one step between \"yes\" and booked, using Nick Saraev's rule of a specific ask with specific times and a default act...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-platform-surfaces",
+   "dept": "leadgen",
+   "name": "ce-platform-surfaces",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-platform-surfaces/SKILL.md",
+   "about": "Adapts one piece of outbound copy to each platform's visible surfaces and character limits (email sender name, subject plus ~150-char teaser, address and ava...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-roast-and-rewrite",
+   "dept": "leadgen",
+   "name": "ce-roast-and-rewrite",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-roast-and-rewrite/SKILL.md",
+   "about": "Roasts and rewrites an existing cold email, text, or DM the way Nick Saraev does live in the course: score it against the seven trust principles, diagnose th...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-seven-trust-principles",
+   "dept": "leadgen",
+   "name": "ce-seven-trust-principles",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-seven-trust-principles/SKILL.md",
+   "about": "Scores and strengthens any outbound message (cold email, text, LinkedIn or Instagram DM, voicemail script, even a letter to a homeowner) against Nick Saraev'...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-subject-line-deniability",
+   "dept": "leadgen",
+   "name": "ce-subject-line-deniability",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-subject-line-deniability/SKILL.md",
+   "about": "Writes subject lines and teasers on Nick Saraev's plausible deniability rule: the subject never sells, it just buys the click by looking like a note from som...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-sunday-iteration",
+   "dept": "leadgen",
+   "name": "ce-sunday-iteration",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-sunday-iteration/SKILL.md",
+   "about": "Runs outbound campaigns as a data experiment per Nick Saraev: multiple variants always live, 500 to 1,000 sends per variant before judging, a fixed weekly it...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "leadgen:skill-ce-two-touch-follow-up",
+   "dept": "leadgen",
+   "name": "ce-two-touch-follow-up",
+   "kind": "skill",
+   "path": "skills/nick-saraev/cold-email-course/ce-two-touch-follow-up/SKILL.md",
+   "about": "Designs follow-up sequences the Nick Saraev way: start with two touches only (initial plus one short human ping with a new subject), and add a third or fourt...",
+   "exists": true,
+   "group": "cold-email-course"
+  },
+  {
+   "id": "market:farms-example",
+   "dept": "market",
+   "name": "Farms (example)",
+   "kind": "doc",
+   "path": "aire/map-crm/farms.example.json",
+   "about": "Shape of a drawn farm. Real farms stay on the Mac.",
+   "exists": true
+  },
+  {
+   "id": "market:gbrar-report-2026-09",
+   "dept": "market",
+   "name": "GBRAR report 2026-09",
+   "kind": "doc",
+   "path": "aire/market-data/gbrar-2026-09.json",
+   "about": "Dated market stats with their source.",
+   "exists": true
+  },
+  {
+   "id": "market:map-crm-contract",
+   "dept": "market",
+   "name": "Map CRM contract",
+   "kind": "doc",
+   "path": "aire/map-crm/CONTRACT.md",
+   "about": "Map page, Market Monitor and deals map toggle for Pipeline.",
+   "exists": true
+  },
+  {
+   "id": "market:monthly-market-update-script",
+   "dept": "market",
+   "name": "Monthly market update script",
+   "kind": "doc",
+   "path": "aire/market-update/2026-10-script.md",
+   "about": "Script and Motion prompts for the monthly update.",
+   "exists": true
+  },
+  {
+   "id": "market:reference-teardowns",
+   "dept": "market",
+   "name": "Reference teardowns",
+   "kind": "doc",
+   "path": "aire/research/reference-teardowns/README.md",
+   "about": "Measured teardowns of reference sites: FIND, SOBHA, ZORGE.",
+   "exists": true
+  },
+  {
+   "id": "market:market-refresh-schedule",
+   "dept": "market",
+   "name": "Market refresh schedule",
+   "kind": "schedule",
+   "path": "aire/map-crm/launchd/org.calebjackson.aire.market.plist",
+   "about": "8:00 am and 3:00 pm every day on the Mac.",
+   "exists": true
+  },
+  {
+   "id": "market:geocoder",
+   "dept": "market",
+   "name": "Geocoder",
+   "kind": "script",
+   "path": "aire/map-crm/geo.py",
+   "about": "Pins contacts and permits on the map with free geocoders.",
+   "exists": true
+  },
+  {
+   "id": "market:map-crm-installer",
+   "dept": "market",
+   "name": "Map CRM installer",
+   "kind": "script",
+   "path": "aire/map-crm/install.sh",
+   "about": "Installs or removes the market launch agent.",
+   "exists": true
+  },
+  {
+   "id": "market:market-monitor",
+   "dept": "market",
+   "name": "Market monitor",
+   "kind": "script",
+   "path": "aire/map-crm/monitor.py",
+   "about": "Reads permits and Flexmls saved-search alerts into the cache. 73 rows from 8 alerts in the first live dry run.",
+   "exists": true
+  },
+  {
+   "id": "market:market-refresh",
+   "dept": "market",
+   "name": "Market refresh",
+   "kind": "script",
+   "path": "aire/map-crm/refresh_market.sh",
+   "about": "Permits and Flexmls mail into the cache, then the feed rebuild.",
+   "exists": true
+  },
+  {
+   "id": "market:vertical-market-video",
+   "dept": "market",
+   "name": "Vertical market video",
+   "kind": "script",
+   "path": "aire/market-update/vertical/render.mjs",
+   "about": "Renders the vertical market update.",
+   "exists": true
+  },
+  {
+   "id": "market:baton-rouge-market-command",
+   "dept": "market",
+   "name": "Baton Rouge market command",
+   "kind": "skill",
+   "path": "skills: command-market-baton-rouge-la",
+   "about": "Market answer for Baton Rouge with sources and dates.",
+   "exists": null
+  },
+  {
+   "id": "market:flexmls-cma",
+   "dept": "market",
+   "name": "Flexmls CMA",
+   "kind": "skill",
+   "path": "skills: flexmls-cma, flexmls-comp-rankings",
+   "about": "CMA and comp rankings from Flexmls.",
+   "exists": null
+  },
+  {
+   "id": "market:zillow-lookups",
+   "dept": "market",
+   "name": "Zillow lookups",
+   "kind": "skill",
+   "path": "connector: Zillow",
+   "about": "Zestimate, property details, affordability.",
+   "exists": null
+  },
+  {
+   "id": "marketing:lesson-the-floor-is-rising",
+   "dept": "marketing",
+   "name": "Lesson: the floor is rising",
+   "kind": "doc",
+   "path": "lessons/the-floor-is-rising/LESSON.md",
+   "about": "Lesson draft.",
+   "exists": true
+  },
+  {
+   "id": "marketing:motion-kit-teardown",
+   "dept": "marketing",
+   "name": "Motion kit teardown",
+   "kind": "doc",
+   "path": "motion-kit/TEARDOWN.md",
+   "about": "How the original does each effect.",
+   "exists": true
+  },
+  {
+   "id": "marketing:website-rebuild",
+   "dept": "marketing",
+   "name": "Website rebuild",
+   "kind": "doc",
+   "path": "website-rebuild/DESIGN-SYSTEM.md",
+   "about": "Design system, punch list, go-live plan for calebjackson.org.",
+   "exists": true
+  },
+  {
+   "id": "marketing:architectural-preview",
+   "dept": "marketing",
+   "name": "Architectural preview",
+   "kind": "page",
+   "path": "architectural-preview/index.html",
+   "about": "Preview page with verification log.",
+   "exists": true
+  },
+  {
+   "id": "marketing:lesson-reverse-engineer-everything",
+   "dept": "marketing",
+   "name": "Lesson: reverse engineer everything",
+   "kind": "page",
+   "path": "lessons/reverse-engineer-everything/lesson.html",
+   "about": "Published lesson page.",
+   "exists": true
+  },
+  {
+   "id": "marketing:motion-kit",
+   "dept": "marketing",
+   "name": "Motion kit",
+   "kind": "page",
+   "path": "motion-kit/index.html",
+   "about": "Scroll, cursor and hover effects rebuilt from heronaiapp.com for the site.",
+   "exists": true
+  },
+  {
+   "id": "marketing:capture-summary",
+   "dept": "marketing",
+   "name": "Capture summary",
+   "kind": "script",
+   "path": "aire/research/reference-capture/summarize.py",
+   "about": "Summarizes a capture run.",
+   "exists": true
+  },
+  {
+   "id": "marketing:font-compare",
+   "dept": "marketing",
+   "name": "Font compare",
+   "kind": "script",
+   "path": "aire/research/reference-capture/fontcompare.mjs",
+   "about": "Compares type across reference captures.",
+   "exists": true
+  },
+  {
+   "id": "marketing:just-sold-renderer",
+   "dept": "marketing",
+   "name": "Just-sold renderer",
+   "kind": "script",
+   "path": "aire/social/just-sold/2026-10/render.mjs",
+   "about": "Renders the just-sold post set.",
+   "exists": true
+  },
+  {
+   "id": "marketing:reference-capture",
+   "dept": "marketing",
+   "name": "Reference capture",
+   "kind": "script",
+   "path": "aire/research/reference-capture/capture.mjs",
+   "about": "Captures reference sites frame by frame for teardowns.",
+   "exists": true
+  },
+  {
+   "id": "marketing:site-build",
+   "dept": "marketing",
+   "name": "Site build",
+   "kind": "script",
+   "path": "website-rebuild/site/scripts/build.py",
+   "about": "Builds the static site.",
+   "exists": true
+  },
+  {
+   "id": "marketing:site-deploy-cloudflare",
+   "dept": "marketing",
+   "name": "Site deploy (Cloudflare)",
+   "kind": "script",
+   "path": "website-rebuild/site/scripts/deploy-cloudflare.sh",
+   "about": "Deploys the built site. Runs only on Caleb's go.",
+   "exists": true
+  },
+  {
+   "id": "marketing:site-dist",
+   "dept": "marketing",
+   "name": "Site dist",
+   "kind": "script",
+   "path": "website-rebuild/site/scripts/dist.py",
+   "about": "Packages the site for upload.",
+   "exists": true
+  },
+  {
+   "id": "marketing:skill-brand-consistency",
+   "dept": "marketing",
+   "name": "brand-consistency",
+   "kind": "skill",
+   "path": "skills/brand-consistency/SKILL.md",
+   "about": "Audit and fix Caleb Jackson's public identity across the website, Google Business Profile, social profiles and listing portals, and measure search and AI vis...",
+   "exists": true,
+   "group": "own"
+  },
+  {
+   "id": "marketing:metricool-scheduling",
+   "dept": "marketing",
+   "name": "Metricool scheduling",
+   "kind": "skill",
+   "path": "connector: Metricool",
+   "about": "Drafts only. Caleb schedules.",
+   "exists": null
+  },
+  {
+   "id": "marketing:skill-mk-ai-image-ad-templates",
+   "dept": "marketing",
+   "name": "mk-ai-image-ad-templates",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-ai-image-ad-templates/SKILL.md",
+   "about": "Builds an AI image-model ad generator (GPT image 2 or similar via API) that stays on-template, using Nick Saraev's method of verifying the model manually fir...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-automate-or-keep-human",
+   "dept": "marketing",
+   "name": "mk-automate-or-keep-human",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-automate-or-keep-human/SKILL.md",
+   "about": "Applies Nick Saraev's \"effectiveness beats efficiency\" filter to decide whether a marketing or client-facing task should be automated, automated with human Q...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-claude-desktop-workspace-setup",
+   "dept": "marketing",
+   "name": "mk-claude-desktop-workspace-setup",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-claude-desktop-workspace-setup/SKILL.md",
+   "about": "Sets up and operates the Claude desktop app's Code tab the way Nick Saraev runs a marketing workspace: permission modes, model and effort choice, context-win...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-cold-email-icebreakers",
+   "dept": "marketing",
+   "name": "mk-cold-email-icebreakers",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-cold-email-icebreakers/SKILL.md",
+   "about": "Builds a cold-outreach enrichment skill that scrapes a lead list (Apify), self-checks the list against your ICP, writes fuzzy \"thing in common\" icebreakers a...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-connect-tools-keys-and-connectors",
+   "dept": "marketing",
+   "name": "mk-connect-tools-keys-and-connectors",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-connect-tools-keys-and-connectors/SKILL.md",
+   "about": "Connects an outside service to Claude Code the way Nick Saraev does it, in order of preference: built-in connector, custom MCP connector URL, vendor CLI logi...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-crm-followup-cadence",
+   "dept": "marketing",
+   "name": "mk-crm-followup-cadence",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-crm-followup-cadence/SKILL.md",
+   "about": "Automates soft, human-sounding follow-up emails (and SMS) from a CRM on a fixed days-outstanding cadence using a pre-written template pool, checks the real e...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-fuzzy-variables-newsletter",
+   "dept": "marketing",
+   "name": "mk-fuzzy-variables-newsletter",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-fuzzy-variables-newsletter/SKILL.md",
+   "about": "Personalizes a human-written email template at scale by having Claude turn each subscriber's hard data (name, why they signed up, challenge, tools) into shor...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-marketing-dashboard-variants",
+   "dept": "marketing",
+   "name": "mk-marketing-dashboard-variants",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-marketing-dashboard-variants/SKILL.md",
+   "about": "Builds a proprietary marketing analytics dashboard with Claude Code using Nick Saraev's method: assemble all data sources into one folder, let the smartest m...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-procedural-ad-generator",
+   "dept": "marketing",
+   "name": "mk-procedural-ad-generator",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-procedural-ad-generator/SKILL.md",
+   "about": "Builds a cheap, repeatable static-ad generator in Claude Code using Nick Saraev's compositing method: save winning ad formats as a template folder, have Clau...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-prompt-skill-loop-routine-ladder",
+   "dept": "marketing",
+   "name": "mk-prompt-skill-loop-routine-ladder",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-prompt-skill-loop-routine-ladder/SKILL.md",
+   "about": "Turns a manual Claude Code process into a reusable skill, then a scheduled local loop, then a cloud routine, following Nick Saraev's four-step automation lad...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-race-bottleneck-thinking",
+   "dept": "marketing",
+   "name": "mk-race-bottleneck-thinking",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-race-bottleneck-thinking/SKILL.md",
+   "about": "Decides which marketing automation to build first by mapping the business to Nick Saraev's RACE pipeline (Reach, Acquire, Close, Expand) and finding the sing...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-self-healing-error-logging",
+   "dept": "marketing",
+   "name": "mk-self-healing-error-logging",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-self-healing-error-logging/SKILL.md",
+   "about": "Hardens a Claude skill, loop, or routine for unattended production using Nick Saraev's three maintenance moves: collect logins up front so Claude can re-auth...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-speed-to-lead-email-sms",
+   "dept": "marketing",
+   "name": "mk-speed-to-lead-email-sms",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-speed-to-lead-email-sms/SKILL.md",
+   "about": "Builds a speed-to-lead system where a new inquiry (form fill landing in an inbox) triggers a short, human-sounding personalized email and SMS within about a...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:skill-mk-ugc-video-ad-pipeline",
+   "dept": "marketing",
+   "name": "mk-ugc-video-ad-pipeline",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-code-marketing/mk-ugc-video-ad-pipeline/SKILL.md",
+   "about": "Generates UGC-style talking-head video ads at scale by having Claude Code drive Higgsfield (or a similar video model aggregator): product image + influencer...",
+   "exists": true,
+   "group": "claude-code-marketing"
+  },
+  {
+   "id": "marketing:motion-reel",
+   "dept": "marketing",
+   "name": "Motion reel",
+   "kind": "skill",
+   "path": "skills: motion-reel, reanimate-motion, whiteboard-rules-reel",
+   "about": "Reel builds in Claude Motion.",
+   "exists": null
+  },
+  {
+   "id": "marketing:skill-teardown",
+   "dept": "marketing",
+   "name": "teardown",
+   "kind": "skill",
+   "path": "skills/teardown/SKILL.md",
+   "about": "Reverse engineer something that worked (a reel, listing video, listing presentation, landing page, email or text sequence, or a software feature) into a Blue...",
+   "exists": true,
+   "group": "own"
+  },
+  {
+   "id": "marketing:skill-teardown-tuesday",
+   "dept": "marketing",
+   "name": "teardown-tuesday",
+   "kind": "skill",
+   "path": "skills/teardown-tuesday/SKILL.md",
+   "about": "Weekly content review for Caleb Jackson. Pulls last week's social post results from Metricool, tears down the best and worst post with the teardown skill, an...",
+   "exists": true,
+   "group": "own"
+  },
+  {
+   "id": "marketing:skill-yt-auto-outlier-finder",
+   "dept": "marketing",
+   "name": "yt-auto-outlier-finder",
+   "kind": "skill",
+   "path": "skills/nick-saraev/youtube-automation/yt-auto-outlier-finder/SKILL.md",
+   "about": "Finds video ideas the way Nick Saraev does, by pulling high-performing \"outlier\" videos from adjacent niches (views divided by the channel's average, with a...",
+   "exists": true,
+   "group": "youtube-automation"
+  },
+  {
+   "id": "marketing:skill-yt-auto-thumbnail-faceswap",
+   "dept": "marketing",
+   "name": "yt-auto-thumbnail-faceswap",
+   "kind": "skill",
+   "path": "skills/nick-saraev/youtube-automation/yt-auto-thumbnail-faceswap/SKILL.md",
+   "about": "Rebuilds a proven YouTube thumbnail with Caleb's face the way Nick Saraev does it, matching head direction (yaw and pitch via MediaPipe) to the closest photo...",
+   "exists": true,
+   "group": "youtube-automation"
+  },
+  {
+   "id": "marketing:skill-yt-auto-video-editor",
+   "dept": "marketing",
+   "name": "yt-auto-video-editor",
+   "kind": "skill",
+   "path": "skills/nick-saraev/youtube-automation/yt-auto-video-editor/SKILL.md",
+   "about": "Edits a talking-head recording end to end the way Nick Saraev automates his YouTube channel: neural silence removal, \"cut cut\" mistake removal, audio enhance...",
+   "exists": true,
+   "group": "youtube-automation"
+  },
+  {
+   "id": "nurture:command-reader-directive",
+   "dept": "nurture",
+   "name": "Command reader directive",
+   "kind": "directive",
+   "path": "aire/command-reader/directive.md",
+   "about": "What the reader may read and where it writes.",
+   "exists": true
+  },
+  {
+   "id": "nurture:follow-up-directive",
+   "dept": "nurture",
+   "name": "Follow-up directive",
+   "kind": "directive",
+   "path": "aire/follow-up/directive.md",
+   "about": "When a touch is due and what it may say.",
+   "exists": true
+  },
+  {
+   "id": "nurture:morning-run",
+   "dept": "nurture",
+   "name": "Morning run",
+   "kind": "directive",
+   "path": "aire/morning-run/directive.md",
+   "about": "The morning sequence: ingest, cadence, queue, brief.",
+   "exists": true
+  },
+  {
+   "id": "nurture:follow-up-templates",
+   "dept": "nurture",
+   "name": "Follow-up templates",
+   "kind": "doc",
+   "path": "aire/follow-up/templates.md",
+   "about": "The approved words, one pool per situation.",
+   "exists": true
+  },
+  {
+   "id": "nurture:mac-companion",
+   "dept": "nurture",
+   "name": "Mac companion",
+   "kind": "doc",
+   "path": "aire/morning-run/mac-companion.md",
+   "about": "What runs on the Mac each morning and how to check it.",
+   "exists": true
+  },
+  {
+   "id": "nurture:pipeline-daily-screen",
+   "dept": "nurture",
+   "name": "Pipeline daily screen",
+   "kind": "page",
+   "path": "aire/pipeline-app/app.py",
+   "about": "Caleb's one daily tool: Jarvis-style screen over the CRM feed, the one sender.",
+   "exists": true
+  },
+  {
+   "id": "nurture:command-reader-schedule",
+   "dept": "nurture",
+   "name": "Command reader schedule",
+   "kind": "schedule",
+   "path": "aire/command-reader/org.calebjackson.aire.command.plist",
+   "about": "Runs the Command reader on a schedule.",
+   "exists": true
+  },
+  {
+   "id": "nurture:pipeline-launch-agent",
+   "dept": "nurture",
+   "name": "Pipeline launch agent",
+   "kind": "schedule",
+   "path": "aire/pipeline-app/launchd/org.calebjackson.aire.pipeline.plist",
+   "about": "Keeps Pipeline running on the Mac, live sender, 25 texts a day cap.",
+   "exists": true
+  },
+  {
+   "id": "nurture:command-reader",
+   "dept": "nurture",
+   "name": "Command reader",
+   "kind": "script",
+   "path": "aire/command-reader/command_reader.py",
+   "about": "Reads KW Command on the Mac so the sheet mirrors it. Read only.",
+   "exists": true
+  },
+  {
+   "id": "nurture:follow-up-cadence",
+   "dept": "nurture",
+   "name": "Follow-up cadence",
+   "kind": "script",
+   "path": "aire/follow-up/followups.py",
+   "about": "Daily cadence: KW Command export in, morning approval queue out.",
+   "exists": true
+  },
+  {
+   "id": "nurture:jarvis-eval",
+   "dept": "nurture",
+   "name": "Jarvis eval",
+   "kind": "script",
+   "path": "aire/pipeline-app/eval_jarvis.py",
+   "about": "Replays spoken-style commands through the microphone path and scores them.",
+   "exists": true
+  },
+  {
+   "id": "nurture:jarvis-voice-commands",
+   "dept": "nurture",
+   "name": "Jarvis voice commands",
+   "kind": "script",
+   "path": "aire/pipeline-app/jarvis.py",
+   "about": "77 spoken commands answered from the feed, median 7 ms. Only weather and calendar go to Claude.",
+   "exists": true
+  },
+  {
+   "id": "nurture:pipeline-installer",
+   "dept": "nurture",
+   "name": "Pipeline installer",
+   "kind": "script",
+   "path": "aire/pipeline-app/install.sh",
+   "about": "Installs the Pipeline launch agent.",
+   "exists": true
+  },
+  {
+   "id": "nurture:predraft-replies",
+   "dept": "nurture",
+   "name": "Predraft replies",
+   "kind": "script",
+   "path": "aire/pipeline-app/predraft.py",
+   "about": "Drafts the next text for a contact before Caleb opens the box.",
+   "exists": true
+  },
+  {
+   "id": "nurture:speech-engine",
+   "dept": "nurture",
+   "name": "Speech engine",
+   "kind": "script",
+   "path": "aire/pipeline-app/speech_engine.py",
+   "about": "Text to speech for Pipeline. The slot Fish Audio S2.1 Pro drops into.",
+   "exists": true
+  },
+  {
+   "id": "nurture:template-pools",
+   "dept": "nurture",
+   "name": "Template pools",
+   "kind": "script",
+   "path": "aire/follow-up/pools.py",
+   "about": "Four template pools, no repeats, quiet hours, opt-out flags.",
+   "exists": true
+  },
+  {
+   "id": "offer:chat-skill-bundles",
+   "dept": "offer",
+   "name": "Chat skill bundles",
+   "kind": "doc",
+   "path": "chat-skills",
+   "about": "Twelve skills zipped for the Claude app.",
+   "exists": null
+  },
+  {
+   "id": "offer:offer-tiers",
+   "dept": "offer",
+   "name": "Offer tiers",
+   "kind": "doc",
+   "path": "aire/offer/OFFER-2026-10.md",
+   "about": "Three tiers of what Caleb teaches or sells.",
+   "exists": true
+  },
+  {
+   "id": "offer:skool-status",
+   "dept": "offer",
+   "name": "Skool status",
+   "kind": "doc",
+   "path": "SKOOL-AI-FOR-AGENTS/STATUS.md",
+   "about": "Where the Skool group stands.",
+   "exists": true
+  },
+  {
+   "id": "offer:skool-shot-board",
+   "dept": "offer",
+   "name": "Skool shot board",
+   "kind": "page",
+   "path": "SKOOL-AI-FOR-AGENTS/shot-board.html",
+   "about": "Shot list for the group's video.",
+   "exists": true
+  },
+  {
+   "id": "offer:ai-for-agents-skool",
+   "dept": "offer",
+   "name": "AI for Agents (Skool)",
+   "kind": "program",
+   "path": "programs/ai-for-agents/PLAN.md",
+   "about": "The community program: foundation, production, challenge, posts.",
+   "exists": true
+  },
+  {
+   "id": "offer:ai-workshops",
+   "dept": "offer",
+   "name": "AI workshops",
+   "kind": "program",
+   "path": "programs/ai-workshops/PROGRAM.md",
+   "about": "Live workshop program for agents.",
+   "exists": true
+  },
+  {
+   "id": "offer:skill-agent-offer-builder",
+   "dept": "offer",
+   "name": "agent-offer-builder",
+   "kind": "skill",
+   "path": "skills/agent-offer-builder/SKILL.md",
+   "about": "Turns a working AIRE system or workflow into something Caleb can teach or sell to other agents, in three tiers (free Skool content, paid workshop, done-for-y...",
+   "exists": true,
+   "group": "own"
+  },
+  {
+   "id": "offer:skill-cs-browser-automation-skills",
+   "dept": "offer",
+   "name": "cs-browser-automation-skills",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-skills-course/cs-browser-automation-skills/SKILL.md",
+   "about": "Builds one-off personal or admin skills that drive a logged-in website through Chrome DevTools MCP, modeled on Nick Saraev's WeWork desk booking and Amazon p...",
+   "exists": true,
+   "group": "claude-skills-course"
+  },
+  {
+   "id": "offer:skill-cs-cold-email-campaign-cloner",
+   "dept": "offer",
+   "name": "cs-cold-email-campaign-cloner",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-skills-course/cs-cold-email-campaign-cloner/SKILL.md",
+   "about": "Builds a cold email campaign skill modeled on Nick Saraev's \"/cold-email-campaigns\", which takes a client or offer brief, finds the highest-performing existi...",
+   "exists": true,
+   "group": "claude-skills-course"
+  },
+  {
+   "id": "offer:skill-cs-follow-up-nurture",
+   "dept": "offer",
+   "name": "cs-follow-up-nurture",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-skills-course/cs-follow-up-nurture/SKILL.md",
+   "about": "Builds and runs a daily pipeline follow-up skill modeled on Nick Saraev's \"/follow-up-nurture\", which reads every lead's stage and prior email thread and dra...",
+   "exists": true,
+   "group": "claude-skills-course"
+  },
+  {
+   "id": "offer:skill-cs-lead-scraper-to-sheet",
+   "dept": "offer",
+   "name": "cs-lead-scraper-to-sheet",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-skills-course/cs-lead-scraper-to-sheet/SKILL.md",
+   "about": "Builds a natural-language lead scraping skill modeled on Nick Saraev's LinkedIn Sales Navigator scraper, which turns \"scrape me 50 <role> in <place>\" into fi...",
+   "exists": true,
+   "group": "claude-skills-course"
+  },
+  {
+   "id": "offer:skill-cs-outreach-website-builder",
+   "dept": "offer",
+   "name": "cs-outreach-website-builder",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-skills-course/cs-outreach-website-builder/SKILL.md",
+   "about": "Builds a one-prompt website generator skill modeled on Nick Saraev's outreach site builder, which produces a high-quality templated-but-unique site for a pro...",
+   "exists": true,
+   "group": "claude-skills-course"
+  },
+  {
+   "id": "offer:skill-cs-skill-anatomy-and-matching",
+   "dept": "offer",
+   "name": "cs-skill-anatomy-and-matching",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-skills-course/cs-skill-anatomy-and-matching/SKILL.md",
+   "about": "Explains and applies the anatomy of a Claude Code skill as Nick Saraev teaches it, including front matter, skill matching, progressive disclosure, the hidden...",
+   "exists": true,
+   "group": "claude-skills-course"
+  },
+  {
+   "id": "offer:skill-cs-sop-to-skill",
+   "dept": "offer",
+   "name": "cs-sop-to-skill",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-skills-course/cs-sop-to-skill/SKILL.md",
+   "about": "Turns any standard operating procedure, checklist or voice-dictated bullet list into a Claude Code skill using Nick Saraev's skillspec-in-CLAUDE.md method, t...",
+   "exists": true,
+   "group": "claude-skills-course"
+  },
+  {
+   "id": "offer:skill-cs-three-skill-archetypes",
+   "dept": "offer",
+   "name": "cs-three-skill-archetypes",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-skills-course/cs-three-skill-archetypes/SKILL.md",
+   "about": "Chooses and builds the right shape of skill using Nick Saraev's three archetypes (pure SOP, SOP plus script, templates plus parallel subagents) demonstrated...",
+   "exists": true,
+   "group": "claude-skills-course"
+  },
+  {
+   "id": "offer:skill-cs-thumbnail-variant-generator",
+   "dept": "offer",
+   "name": "cs-thumbnail-variant-generator",
+   "kind": "skill",
+   "path": "skills/nick-saraev/claude-skills-course/cs-thumbnail-variant-generator/SKILL.md",
+   "about": "Builds a one-shot image skill that reproduces a reference thumbnail or viral image with Caleb's face superimposed realistically, generating several variants...",
+   "exists": true,
+   "group": "claude-skills-course"
+  },
+  {
+   "id": "offer:skill-ns-25k-roadmap",
+   "dept": "offer",
+   "name": "ns-25k-roadmap",
+   "kind": "skill",
+   "path": "skills/nick-saraev/roadmap-25k/ns-25k-roadmap/SKILL.md",
+   "about": "Applies Nick Saraev's 22-step \"Roadmap to $25K/Month With Automation\" and his three-stage automation customer journey (lead gen, one-call sales with proposal...",
+   "exists": true,
+   "group": "roadmap-25k"
+  },
+  {
+   "id": "ops:crm-directive",
+   "dept": "ops",
+   "name": "CRM directive",
+   "kind": "directive",
+   "path": "aire/crm/directive.md",
+   "about": "The gates every CRM write passes.",
+   "exists": true
+  },
+  {
+   "id": "ops:brand-audit-2026-10-29",
+   "dept": "ops",
+   "name": "Brand audit 2026-10-29",
+   "kind": "doc",
+   "path": "audits/2026-10-29",
+   "about": "Latest identity and visibility audit.",
+   "exists": true
+  },
+  {
+   "id": "ops:command-center-contract",
+   "dept": "ops",
+   "name": "Command center contract",
+   "kind": "doc",
+   "path": "aire/command-center/CONTRACT.md",
+   "about": "Who came in, who is due, what is out, what ran overnight.",
+   "exists": true
+  },
+  {
+   "id": "ops:feed-contract",
+   "dept": "ops",
+   "name": "Feed contract",
+   "kind": "doc",
+   "path": "aire/crm/FEED.md",
+   "about": "What feed.json holds and who reads it.",
+   "exists": true
+  },
+  {
+   "id": "ops:global-claude-md",
+   "dept": "ops",
+   "name": "Global CLAUDE.md",
+   "kind": "doc",
+   "path": "global-claude-md/CLAUDE.md",
+   "about": "The rules every session reads.",
+   "exists": true
+  },
+  {
+   "id": "ops:rollout-plan-oct-2026",
+   "dept": "ops",
+   "name": "Rollout plan Oct 2026",
+   "kind": "doc",
+   "path": "aire/rollout-2026-10/PLAN.md",
+   "about": "Five arenas, four weeks, definition of done.",
+   "exists": true
+  },
+  {
+   "id": "ops:stack-memory",
+   "dept": "ops",
+   "name": "Stack memory",
+   "kind": "doc",
+   "path": "aire/STACK.md",
+   "about": "Which tool does which job. One system: Google Workspace is the only database.",
+   "exists": true
+  },
+  {
+   "id": "ops:status-log",
+   "dept": "ops",
+   "name": "Status log",
+   "kind": "doc",
+   "path": "aire/STATUS.md",
+   "about": "Newest first. What was done, what needs Caleb.",
+   "exists": true
+  },
+  {
+   "id": "ops:weekly-ai-brief",
+   "dept": "ops",
+   "name": "Weekly AI brief",
+   "kind": "schedule",
+   "path": "skills/ai-weekly-brief/SKILL.md",
+   "about": "Every Monday 7:47 am Central, fresh session, opens a draft PR.",
+   "exists": true
+  },
+  {
+   "id": "ops:client-data-guard",
+   "dept": "ops",
+   "name": "Client data guard",
+   "kind": "script",
+   "path": "tools/check-no-client-data.py",
+   "about": "Runs before every push. Names, phones, emails never reach GitHub.",
+   "exists": true
+  },
+  {
+   "id": "ops:command-center-clickthrough",
+   "dept": "ops",
+   "name": "Command center clickthrough",
+   "kind": "script",
+   "path": "aire/command-center/tests/clickthrough.mjs",
+   "about": "Drives Chromium through every action on the morning page.",
+   "exists": true
+  },
+  {
+   "id": "ops:command-center-sync",
+   "dept": "ops",
+   "name": "Command center sync",
+   "kind": "script",
+   "path": "aire/command-center/sync.py",
+   "about": "Reads the tools' own files into the morning page. Localhost only.",
+   "exists": true
+  },
+  {
+   "id": "ops:crm-click-test",
+   "dept": "ops",
+   "name": "CRM click test",
+   "kind": "script",
+   "path": "aire/command-center/tests/crm-click.mjs",
+   "about": "Click test over the CRM feed.",
+   "exists": true
+  },
+  {
+   "id": "ops:crm-engine",
+   "dept": "ops",
+   "name": "CRM engine",
+   "kind": "script",
+   "path": "aire/crm/crm.py",
+   "about": "Gmail ingest, cadence, tasks, deals and feed.json on the one CRM sheet. 3,626 contacts.",
+   "exists": true
+  },
+  {
+   "id": "ops:feed-refresh",
+   "dept": "ops",
+   "name": "Feed refresh",
+   "kind": "script",
+   "path": "aire/crm/refresh_feed.sh",
+   "about": "Rebuilds feed.json for Pipeline.",
+   "exists": true
+  },
+  {
+   "id": "ops:git-hooks-installer",
+   "dept": "ops",
+   "name": "Git hooks installer",
+   "kind": "script",
+   "path": "tools/install-hooks.sh",
+   "about": "Makes the pre-push hook run the guard.",
+   "exists": true
+  },
+  {
+   "id": "ops:hourly-ingest",
+   "dept": "ops",
+   "name": "Hourly ingest",
+   "kind": "script",
+   "path": "aire/crm/ingest_hourly.sh",
+   "about": "Pulls new mail into the CRM every hour.",
+   "exists": true
+  },
+  {
+   "id": "ops:local-setup",
+   "dept": "ops",
+   "name": "Local setup",
+   "kind": "script",
+   "path": "scripts/setup-local.sh",
+   "about": "Sets up the repo on a new Mac.",
+   "exists": true
+  },
+  {
+   "id": "ops:skill-ai-compliance-check",
+   "dept": "ops",
+   "name": "ai-compliance-check",
+   "kind": "skill",
+   "path": "skills/ai-compliance-check/SKILL.md",
+   "about": "Checks any client-facing or public draft (email, text, social post, listing remarks, website copy, video, chatbot reply, market stat) against Louisiana Real...",
+   "exists": true,
+   "group": "own"
+  },
+  {
+   "id": "ops:skill-ai-weekly-brief",
+   "dept": "ops",
+   "name": "ai-weekly-brief",
+   "kind": "skill",
+   "path": "skills/ai-weekly-brief/SKILL.md",
+   "about": "Weekly sweep of what changed in AI and the major apps (OpenAI, Anthropic, Google Workspace, Meta, Microsoft, Notion, HubSpot, Zapier, n8n, video models, Real...",
+   "exists": true,
+   "group": "own"
+  },
+  {
+   "id": "ops:skill-aire-stack",
+   "dept": "ops",
+   "name": "aire-stack",
+   "kind": "skill",
+   "path": "skills/aire-stack/SKILL.md",
+   "about": "The memory of which AI model, app and subscription Caleb uses for each job in AIRE, read from aire/STACK.md so nobody has to re-explain the setup. Use when a...",
+   "exists": true,
+   "group": "own"
+  },
+  {
+   "id": "ops:earshot-ears",
+   "dept": "ops",
+   "name": "Earshot (ears)",
+   "kind": "skill",
+   "path": "skills: earshot",
+   "about": "Measures and audits every sound before it ships. LUFS, true peak, sync.",
+   "exists": null
+  },
+  {
+   "id": "ops:morning-brief",
+   "dept": "ops",
+   "name": "Morning brief",
+   "kind": "skill",
+   "path": "skills: morning",
+   "about": "The morning read-out.",
+   "exists": null
+  }
+ ]
+}

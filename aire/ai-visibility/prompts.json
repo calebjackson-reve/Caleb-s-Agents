@@ -1,0 +1,38 @@
+{
+  "brand": {
+    "name": "Caleb Jackson",
+    "aliases": ["Caleb Jackson", "calebjackson.org", "Keller Williams First Choice -Caleb Jackson"],
+    "domains": ["calebjackson.org"],
+    "brokerage": "Keller Williams First Choice",
+    "markets": ["St. Francisville", "Baton Rouge", "Zachary", "Prairieville", "New Roads", "Felicianas"]
+  },
+  "competitors": [
+    {"name": "Burns & Co.", "domains": ["burnsandco.com"]},
+    {"name": "Property First Realty Group", "domains": ["propertyfirstrealtygroup.com"]},
+    {"name": "The W Group", "domains": ["thewgrouprealestate.com"]},
+    {"name": "Keller Williams First Choice", "domains": ["kwfirstchoice.com"], "note": "the brokerage itself, counted separately"}
+  ],
+  "location": {"city": "Baton Rouge", "region": "Louisiana", "country": "US", "timezone": "America/Chicago"},
+  "groups": {
+    "seller": [
+      "I'm selling a house in St. Francisville, Louisiana. Which real estate agents should I talk to?",
+      "I'm selling a home in Baton Rouge. Which agents should I interview?",
+      "Who are the best listing agents in Zachary, Louisiana?",
+      "How do I sell land in the Felicianas?"
+    ],
+    "buyer": [
+      "Who is a good buyer's agent for St. Francisville, LA?",
+      "Best buyer's agent in Baton Rouge for a first home?",
+      "Which real estate agent should I use to buy a house in Prairieville, Louisiana?"
+    ],
+    "local_knowledge": [
+      "Compare Copper Mill and Beaver Creek golf community homes in Zachary, LA.",
+      "What should I know before buying False River waterfront property?",
+      "Is St. Francisville, Louisiana a good place to buy a home right now?"
+    ],
+    "branded": [
+      "Who is Caleb Jackson, the realtor in Louisiana, and what brokerage is he with?",
+      "Is Caleb Jackson with Keller Williams First Choice a good realtor?"
+    ]
+  }
+}
