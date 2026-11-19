@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Market Monitor refresh at 8:00 and 15:00. install.sh fills in __HOME__ and __REPO__ and copies this to ~/Library/LaunchAgents. -->
+	<key>Label</key>
+	<string>org.calebjackson.aire.market</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>__HOME__/aire-mini/bin/host-guard</string>
+		<string>/bin/sh</string>
+		<string>__REPO__/aire/map-crm/refresh_market.sh</string>
+	</array>
+	<key>StartCalendarInterval</key>
+	<array>
+		<dict><key>Hour</key><integer>8</integer><key>Minute</key><integer>0</integer></dict>
+		<dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>0</integer></dict>
+	</array>
+	<key>StandardErrorPath</key>
+	<string>__HOME__/.aire/logs/market.launchd.err</string>
+</dict>
+</plist>

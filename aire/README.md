@@ -6,6 +6,7 @@ AIRE is Caleb's AI real estate agent system. Read `STATUS.md` before touching an
 |---|---|
 | `STATUS.md` | Status log, newest first. What was done, what needs Caleb. |
 | `STACK.md` | Living memory of which tool does which job. Skills read it. Caleb edits it. |
+| `map-crm/` | Map page, Market Monitor and deals map toggle for Pipeline. Engine side built (geocoder, permit and MLS monitor, feed sections). Pipeline pages are Sol's on the Mac. |
 | `rollout-2026-10/WEEK-4.md` | Week 4: live email decision, the agent offer. |
 | `offer/` | What Caleb teaches or sells to agents, three tiers. Drafts. |
 | `rollout-2026-10/WEEK-3.md` | Week 3: dashboard proof, pipeline sheet, market update. |
@@ -14,6 +15,7 @@ AIRE is Caleb's AI real estate agent system. Read `STATUS.md` before touching an
 | `market-data/` | Dated GBRAR market reports as JSON, with source. |
 | `market-update/` | Monthly market update scripts and Motion prompts. |
 | `crm/` | CRM engine on the one AIRE CRM sheet: Gmail ingest, cadence, tasks, deals, feed.json for the Pipeline app. |
+| `pipeline-app/` | Pipeline, Caleb's one daily tool: Jarvis-style screen over the CRM feed, the one sender, the one caller of `crm.py`. `python3 aire/pipeline-app/app.py --demo` to see it. |
 | `pipeline/` | Historical pipeline template. Deals are now the Deals tab of the AIRE CRM sheet. |
 | `rollout-2026-10/WEEK-2.md` | Week 2: calculator proof, bulk tier pipeline, Meta One memo. |
 | `calculators/` | Interactive pages for calebjackson.org. Seller net sheet first. |

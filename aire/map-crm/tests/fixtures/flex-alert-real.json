@@ -1,0 +1,18 @@
+[
+ {
+  "id": "r1",
+  "subject": "AIRE Farm - Fixture Town",
+  "from": "Fixture Agent via Flexmls <alerts@example.com>",
+  "date_iso": "2026-10-29T09:07:00-05:00",
+  "body": "Listings for \"Subscription AIRE Farm - Fixture Town\"\n\nAIRE Farm - Fixture Town\n\n\n$1,250,000.00\n100 Fixture Hill, St. Francisville, LA 70775\nActive - MLS #200ZZZ\n\n\n\n$149,000.00\n402 Fixture Lane, 2a, Baton Rouge, LA 70808\nActive - MLS #2026099901\n\n\n\n$279,500.00\n9 Fixture Ct, Zachary, LA 70791\nPending - MLS #2026099902\n\n\n\nFollow this link to view the news feed in flexmls: https://www.flexmls.com/notifications.html?example\n\n\nFixture Agent\nKeller Williams Realty-First Choice\nLicense #: 000000000\n",
+  "html": "<html><head><style>.x{color:red}</style></head><body><h1>AIRE Farm - Fixture Town</h1><table><tr><td><b>$1,250,000</b></td></tr><tr><td>100 Fixture Hill</td></tr><tr><td>St. Francisville, LA 70775 &bull;</td></tr><tr><td>#200ZZZ</td></tr><tr><td><span>New Listing</span></td></tr><tr><td><b>$149,000</b></td></tr><tr><td>402 Fixture Lane</td></tr><tr><td>Baton Rouge, LA 70808 &bull;</td></tr><tr><td>#2026099901</td></tr><tr><td><span>Price Change</span></td></tr><tr><td><b>$279,500</b></td></tr><tr><td>9 Fixture Ct</td></tr><tr><td>Zachary, LA 70791 &bull;</td></tr><tr><td>#2026099902</td></tr><tr><td><span>Active</span></td></tr></table><a>View Listings</a></body></html>"
+ },
+ {
+  "id": "r2",
+  "subject": "Fixture Agent would like to email listings to you",
+  "from": "Flexmls <alerts@example.com>",
+  "date_iso": "2026-10-27T10:00:00-05:00",
+  "body": "Click to confirm you want listing emails.",
+  "html": ""
+ }
+]

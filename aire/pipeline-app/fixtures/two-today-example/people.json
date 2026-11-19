@@ -1,0 +1,24 @@
+{
+ "_note": "EXAMPLE ONLY. Every person, town pairing, handle, phone and text in this folder is made up. It has the shape of the CRM feed (aire/crm/FEED.md) so two_today.py can be run and tested without any real data.",
+ "as_of": "2026-11-12",
+ "cadence_days": {"hot": 7, "warm": 14, "lukewarm": 30, "cold": 90, "ice-cold": 365},
+ "people": [
+  {"person_id": "9001", "display": "Mia Example", "band": "warm", "stage": "past client", "type": "client", "city": "Denham Springs", "last_touch": "", "last_inbound": "2026-09-28", "last_outbound": "2026-09-28"},
+  {"person_id": "9002", "display": "Jo Example", "band": "cold", "stage": "past client", "type": "client", "city": "Baker", "last_touch": "", "last_inbound": "2026-07-10", "last_outbound": "2026-07-15"},
+  {"person_id": "9003", "display": "Alex Example", "band": "lukewarm", "stage": "nurture", "type": "client", "city": "Walker", "last_touch": "", "last_inbound": "2026-10-25", "last_outbound": "2026-10-24"},
+  {"person_id": "9004", "display": "Reggie Example", "band": "hot", "stage": "nurture", "type": "client", "city": "Prairieville", "last_touch": "", "last_inbound": "2026-11-10", "last_outbound": "2026-11-11"},
+  {"person_id": "9005", "display": "Sam Example", "band": "warm", "stage": "nurture", "type": "client", "city": "Zachary", "last_touch": "", "last_inbound": "2026-10-01", "last_outbound": "2026-10-02"},
+  {"person_id": "9006", "display": "Tyler Example", "band": "warm", "stage": "nurture", "type": "client", "city": "Gonzales", "last_touch": "", "last_inbound": "2026-10-23", "last_outbound": "2026-10-20"},
+  {"person_id": "9007", "display": "Dana Example", "band": "warm", "stage": "nurture", "type": "client", "city": "Central", "last_touch": "", "last_inbound": "2026-10-23", "last_outbound": "2026-10-23"}
+ ],
+ "touches_due": [
+  {"person_id": "9001", "display": "Mia Example", "band": "warm", "phone": "+12255550101", "email": "", "days_quiet": 45, "owes_reply": false, "last_inbound": "2026-09-28", "last_outbound": "2026-09-28", "last_messages": ["2026-09-28: Example text: we might sell next year"], "type": "client", "stage": "past client"},
+  {"person_id": "9002", "display": "Jo Example", "band": "cold", "phone": "+12255550102", "email": "", "days_quiet": 120, "owes_reply": false, "last_inbound": "2026-07-10", "last_outbound": "2026-07-15", "last_messages": [], "type": "client", "stage": "past client"},
+  {"person_id": "9005", "display": "Sam Example", "band": "warm", "phone": "+12255550105", "email": "", "days_quiet": 41, "owes_reply": false, "last_inbound": "2026-10-01", "last_outbound": "2026-10-02", "last_messages": [], "type": "client", "stage": "nurture"},
+  {"person_id": "9006", "display": "Tyler Example", "band": "warm", "phone": "+12255550106", "email": "", "days_quiet": 20, "owes_reply": false, "last_inbound": "2026-10-23", "last_outbound": "2026-10-20", "last_messages": ["2026-10-23: Example text: we're staying put for now, thanks"], "type": "client", "stage": "nurture"},
+  {"person_id": "9007", "display": "Dana Example", "band": "warm", "phone": "+12255550107", "email": "", "days_quiet": 20, "owes_reply": false, "last_inbound": "2026-10-23", "last_outbound": "2026-10-23", "last_messages": ["2026-10-23: Example text: did the inspection report come back"], "type": "client", "stage": "nurture"}
+ ],
+ "deals": [],
+ "no_text_consent": [],
+ "label_review": []
+}

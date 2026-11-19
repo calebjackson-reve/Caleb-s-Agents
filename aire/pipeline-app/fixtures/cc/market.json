@@ -1,0 +1,8 @@
+{"at": "{{NOW-90}}", "source": "Freddie Mac rate (FRED), Realtor.com inventory, GBRAR monthly (demo)", "error": null, "rows": {
+ "rate": {"rate": 7.18, "date": "{{D-0}}", "prior": 7.24, "prior_date": "{{D-7}}", "change": -0.06},
+ "areas": [
+  {"area": "St. Francisville", "level": "zip", "id": "70775", "month": "202610", "active": 46, "active_yy": 0.12, "median_price": 477450, "median_price_yy": 0.04, "dom": 130, "dom_yy": 0.1, "new": 9, "flag": false},
+  {"area": "Zachary", "level": "zip", "id": "70791", "month": "202610", "active": 156, "active_yy": -0.05, "median_price": 315000, "median_price_yy": 0.02, "dom": 77, "dom_yy": 0.08, "new": 31, "flag": false},
+  {"area": "East Baton Rouge Parish", "level": "county", "id": "22033", "month": "202610", "active": 1889, "active_yy": 0.07, "median_price": 285000, "median_price_yy": -0.01, "dom": 78, "dom_yy": 0.11, "new": 402, "flag": false}],
+ "gbrar": {"source": "GBRAR MLS monthly indicators (demo)", "month": "2026-09", "pulled": "2026-10-19",
+  "snapshot": {"median_price": {"now": 269000}, "closed_sales": {"now": 737}, "months_supply": {"now": 4.6}, "days_on_market": {"now": 79}}}}}

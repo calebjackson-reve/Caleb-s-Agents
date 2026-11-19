@@ -1,0 +1,4 @@
+{"at": "{{NOW-20}}", "source": "Scorecard history tab (demo)", "error": null, "rows": [
+ {"day":"{{D-35}}","gci":22545,"pending":9540,"closings":2,"leads7":2,"appts7":3},
+ {"day":"{{D-21}}","gci":31515,"pending":9540,"closings":3,"leads7":4,"appts7":5},
+ {"day":"{{D-8}}","gci":31515,"pending":9540,"closings":3,"leads7":3,"appts7":4}]}

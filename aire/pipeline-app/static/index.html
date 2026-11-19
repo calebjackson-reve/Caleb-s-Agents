@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="theme-color" content="#FBF8F3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pipeline">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="cc.css">
+<link rel="stylesheet" href="ui.css">
+<!-- The approved light look. System serif and sans stand in when the Mac is offline and the fonts can't load. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="light.css">
+</head>
+<body>
+<div id="boot" class="boot">
+  <div class="boot-title">Pipeline</div>
+  <div class="boot-sub" id="boot-sub">reading the CRM</div>
+  <div class="boot-bar"><i id="boot-bar"></i></div>
+</div>
+
+<div id="app" class="app" hidden>
+  <aside class="side panel" style="--i:0">
+    <div class="brand">
+      <div class="brand-name" aria-label="Pipeline">pipeline<i aria-hidden="true">.</i></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="voice-status" id="voice-status">
+      <div class="mini-h">Voice</div>
+      <div class="wave" id="wave" hidden></div>
+      <button type="button" class="orb" id="mic" title="Talk to Pipeline (v)">Voice</button>
+      <div class="voice-state" id="voice-state">tap to talk</div>
+      <form class="type-cmd" id="type-form"><input id="type-cmd" placeholder="or type a command" autocomplete="off"></form>
+    </div>
+    <div class="send-status">
+      <div class="mini-h">Sending</div>
+      <div class="mode" id="mode">DRY RUN</div>
+      <div class="caps-mini" id="caps-mini"></div>
+      <div class="mode-sub" id="mode-sub">sends are logged, nothing leaves the Mac</div>
+    </div>
+    <button type="button" class="ghost-btn" id="open-sheet">Open the CRM sheet</button>
+    <div class="side-foot"><b>Caleb Jackson</b><span>Keller Williams First Choice</span></div>
+  </aside>
+
+  <header class="top panel" style="--i:1">
+    <button type="button" class="status-chip" id="status-chip" title="Open Sources"><b><i class="dot"></i><span id="status-word">Reading</span></b></button>
+    <div class="clock"><div class="date" id="date"></div><div class="time" id="time"></div></div>
+    <div class="top-right">
+      <label class="search"><span>⌕</span><input id="search" placeholder="Search people, deals, tasks" autocomplete="off"><kbd>/</kbd></label>
+      <button type="button" class="icon-btn" id="refresh" title="Refresh the CRM feed (r)" aria-label="Refresh the CRM feed">⟳</button>
+      <button type="button" class="icon-btn" id="bell" title="What needs attention" aria-label="What needs attention"><span>!</span><b id="bell-count" hidden></b></button>
+      <button type="button" class="icon-btn" id="help" title="Keys" aria-label="Keys">?</button>
+      <div class="operator"><div><div class="op-name">Caleb Jackson</div><div class="op-sub">REALTOR · KW First Choice</div></div><div class="avatar">CJ</div></div>
+    </div>
+  </header>
+
+  <main class="main" id="main"></main>
+
+  <footer class="bottom panel" style="--i:12">
+    <div class="foot-chips" id="foot-chips"></div>
+    <button type="button" class="talk" id="talk"><span class="talk-text"><b id="talk-title">TALK TO PIPELINE</b><i id="talk-sub">say "hey Pipeline"</i></span></button>
+    <div class="foot-right">
+      <button type="button" class="ghost-btn" id="compose-next">Next draft</button>
+      <button type="button" class="ghost-btn" id="brief">Morning brief</button>
+    </div>
+  </footer>
+</div>
+
+<div id="drawer" class="drawer" hidden></div>
+<div id="modal" class="modal" hidden></div>
+<div id="toasts" class="toasts"></div>
+<script src="voice.js"></script>
+<script src="app.js"></script>
+<script src="cc.js"></script>
+<script src="cc-pages.js"></script>
+<script src="crm-pages.js"></script>
+<script src="map.js"></script>
+<script src="mapviews.js"></script>
+<script src="reach.js"></script>
+<script src="fix.js"></script>
+<script src="stage.js"></script>
+<script src="person.js"></script>
+<script src="cc-score.js"></script>
+<script src="cc-life.js"></script>
+<script src="cc-today.js"></script>
+<script src="cc-sources.js"></script>
+<script>
+// The home-screen install: the service worker keeps the shell and the last data for when the Mac can't be reached.
+if ('serviceWorker' in navigator) {
+  // Ask the Mac for a new build on load, every 5 minutes and whenever the window comes back, so an app left open
+  // for days still finds out.
+  navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then(r => {
+    const check = () => r.update().catch(() => {});
+    check(); setInterval(check, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  }).catch(() => {});
+  // A new build took over: a small note with Reload. If the window is in the background, reload quietly.
+  let hadSw = !!navigator.serviceWorker.controller, noted = false;
+  const fresh = () => location.reload();
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadSw) { hadSw = true; return; }
+    if (document.hidden) return fresh();
+    if (noted) return; noted = true;
+    const n = document.createElement('div');
+    n.id = 'sw-updated'; n.setAttribute('role', 'status');
+    n.innerHTML = 'Pipeline updated. <button type="button">Reload</button>';
+    n.querySelector('button').addEventListener('click', fresh);
+    document.body.appendChild(n);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) fresh(); });
+  });
+  navigator.serviceWorker.addEventListener('message', e => { if (window.CC && e.data && 'online' in e.data && CC.offline !== !e.data.online) { CC.offline = !e.data.online; CC.rerender(); } });
+}
+</script>
+</body>
+</html>

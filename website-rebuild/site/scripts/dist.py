@@ -9,10 +9,16 @@ site = root / 'site'
 out = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'dist'
 if out.exists(): shutil.rmtree(out)
 (out / 'assets').mkdir(parents=True)
-def fix(text): return text.replace('../media/', '/media/').replace('<meta name="robots" content="noindex,nofollow">', '<meta name="robots" content="index,follow">')
+def fix(text):
+    text = text.replace('../media/', '/media/').replace('<meta name="robots" content="noindex,nofollow">', '<meta name="robots" content="index,follow">')
+    # canonical/og URLs are written for calebjackson.org by build.py; rewrite for a staging host
+    return text.replace('https://calebjackson.org/', 'https://' + host + '/')
 for f in site.glob('*.html'):
     if not f.name.startswith('_'): (out / f.name).write_text(fix(f.read_text()))
-lead = os.environ.get('LEAD_WEBHOOK', '')
+# The Apps Script web app deployed by Caleb on Oct 29 2026 (Website leads sheet). Not a secret:
+# it ships in the public site.js either way. LEAD_WEBHOOK still overrides it for a redeploy.
+DEFAULT_LEAD_WEBHOOK = 'https://script.google.com/macros/s/AKfycbyS494Eel5vQc0uNtdk2pLB4m-qAmKwyTM-htmhJ491RwGLpn2inLdJPwyEQo6WyII0Pg/exec'
+lead = os.environ.get('LEAD_WEBHOOK', '') or DEFAULT_LEAD_WEBHOOK
 for f in (site / 'assets').glob('*'):
     text = fix(f.read_text())
     if f.name == 'site.js' and lead: text = text.replace("var LEAD_URL = '/api/lead';", "var LEAD_URL = '" + lead.replace("'", '') + "';")
@@ -24,22 +30,67 @@ for f in (site / 'review').glob('*'):
     if f.name == 'og-card.html': continue
     if f.suffix == '.html': (out / 'review' / f.name).write_text(f.read_text().replace('home.calebjackson.org', host))
     else: shutil.copy2(f, out / 'review' / f.name)
+# The builders page (website-rebuild/3d) ships as /builders/. It keeps its own folder so its relative paths to its
+# scripts, fonts and three.js keep working. Caleb approved it for launch on November 12, 2026.
+b3 = root / '3d'
+builders = []
+if (b3 / 'index.html').exists():
+    dst = out / 'builders'
+    shutil.copytree(b3 / 'assets', dst / 'assets'); shutil.copytree(b3 / 'vendor', dst / 'vendor')
+    fix3 = lambda text: fix(text).replace('../site/', '/')
+    (dst / 'index.html').write_text(fix3((b3 / 'index.html').read_text()).replace(
+        '<!-- Prototype for Caleb\'s review. Stays out of search until he approves it for launch. -->\n', '').replace(
+        '<meta name="theme-color"', '<link rel="canonical" href="https://' + host + '/builders/">\n<meta name="theme-color"', 1))
+    for f in (dst / 'assets').rglob('*'):
+        if f.suffix in ('.js', '.css'): f.write_text(fix3(f.read_text()))
+    builders = [dst / 'index.html'] + [f for f in (dst / 'assets').rglob('*') if f.suffix in ('.js', '.css')]
 refs = set()
-for f in list(out.glob('*.html')) + list((out / 'assets').glob('*')):
-    refs.update(re.findall(r'/media/[^"\' )]+', f.read_text()))
+for f in list(out.glob('*.html')) + list((out / 'assets').glob('*')) + builders:
+    text = f.read_text()
+    refs.update(re.findall(r'/media/[^"\' )]+', text))
+    # the builders page names its pin photos by file name and adds the folder in code
+    if f in builders: refs.update('/media/listing-basil-ln/' + n for n in re.findall(r"img: '([^']+\.webp)'", text))
 for r in sorted(refs):
     src = root / r.lstrip('/')
-    if src.exists():
+    if src.is_file():
         dst = out / r.lstrip('/'); dst.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(src, dst)
-    else: print('missing', r)
-(out / '_redirects').write_text('/home-search https://search.calebjackson.org 301\n/about /about.html 301\n/sell /sell.html 301\n/contact /contact.html 301\n/communities /communities.html 301\n/search /search.html 301\n')
-# GitHub Pages ignores _redirects, so the one old LP path that matters gets a stub page too
-(out / 'home-search').mkdir(); (out / 'home-search' / 'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Home Search</title><meta http-equiv="refresh" content="0;url=https://search.calebjackson.org"><link rel="canonical" href="https://search.calebjackson.org"><a href="https://search.calebjackson.org">Search homes</a>\n')
+    elif not src.is_dir(): print('missing', r)
+# Old LP URLs (live sitemap-static.xml and sitemap-neighborhoods-dpages.xml, read Oct 29 2026)
+# mapped to the closest new page. GitHub Pages ignores _redirects, so each old path gets a
+# meta-refresh stub page; _redirects carries the same map for a host that honors it.
+# GitHub Pages serves /about from about.html on its own, so same-named pages need no stub.
+# Old blog posts are not stubbed: they fall to 404.html, which shows the home page.
+SEARCH = 'https://search.calebjackson.org'
+REDIRECTS = {
+    'home-search': SEARCH, 'home-search/listings': SEARCH,
+    'buy': '/search.html', 'properties': '/search.html',
+    'home-valuation': '/sell.html', 'seller-net-sheet': '/sell.html',
+    'true-payment-calculator': '/sell.html', 'tools': '/sell.html',
+    'market-report': '/sell.html',
+    # /profile and /contact-us are linked from old LP templates and 404 on the live site (2026-10-29 audit)
+    'profile': '/about.html', 'contact-us': '/contact.html',
+    'testimonials': '/about.html', 'video-gallery': '/about.html',
+    'relocate': '/communities.html', 'blog': '/',
+    'ai-showing-plan': '/', 'flood-zone-check': '/',
+    'neighborhood-match-quiz': '/', 'terms-and-conditions': '/',
+}
+for n in ['baton-rouge', 'false-river-waterfront', 'zachary-golf', 'historic-br', 'santa-maria',
+          'university-club-plantation', 'country-club-of-louisiana', 'new-roads',
+          'st-francisville', 'garden-district', 'bocage']:
+    REDIRECTS['neighborhoods/' + n] = '/communities.html'
+redirect_lines = []
+for old, new in REDIRECTS.items():
+    target = new if new.startswith('http') else 'https://' + host + new
+    redirect_lines.append('/' + old + ' ' + target + ' 301')
+    stub = out / old; stub.mkdir(parents=True, exist_ok=True)
+    (stub / 'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Moved</title><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0;url=' + target + '"><link rel="canonical" href="' + target + '"><a href="' + target + '">Continue</a>\n')
+(out / '_redirects').write_text('\n'.join(redirect_lines) + '\n')
 (out / '_headers').write_text('/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n/media/*\n  Cache-Control: public, max-age=31536000, immutable\n/assets/*\n  Cache-Control: public, max-age=86400\n')
 (out / '404.html').write_text((out / 'index.html').read_text())
 (out / 'CNAME').write_text(host + '\n')
 (out / '.nojekyll').write_text('')
 (out / 'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: https://' + host + '/sitemap.xml\n')
 pages = ['index', 'search', 'communities', 'sell', 'about', 'contact']
-(out / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>https://' + host + '/{"" if p=="index" else p+".html"}</loc></url>\n' for p in pages) + '</urlset>\n')
+locs = ['' if p == 'index' else p + '.html' for p in pages] + (['builders/'] if builders else [])
+(out / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join('  <url><loc>https://' + host + '/' + l + '</loc></url>\n' for l in locs) + '</urlset>\n')
 print('dist built at', out, 'files', sum(1 for _ in out.rglob('*') if _.is_file()))

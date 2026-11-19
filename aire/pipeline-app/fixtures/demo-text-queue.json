@@ -1,0 +1,76 @@
+{
+ "generated_at": "2026-10-22T16:46:00-05:00",
+ "as_of": "2026-10-22",
+ "reply_first": [
+  {
+   "person_id": "247",
+   "name": "Taylor Sample",
+   "phone": "+12255550142",
+   "email": "",
+   "last_messages": [
+    "2026-10-20: are yall still doing open houses this weekend",
+    "2026-10-21: also my brother might be looking in zachary",
+    "2026-10-21: let me know"
+   ],
+   "next_action": "Confirm counter reached the other agent"
+  },
+  {
+   "person_id": "312",
+   "name": "Morgan Demo",
+   "phone": "+12255550111",
+   "email": "morgan.demo@example.com",
+   "last_messages": [
+    "2026-10-21: hey what did the appraisal come back at"
+   ],
+   "next_action": ""
+  },
+  {
+   "person_id": "118",
+   "name": "Riley Quiet",
+   "phone": "+12255550118",
+   "email": "",
+   "last_messages": [
+    "2026-10-20: thinking about listing in spring, what do you think its worth"
+   ],
+   "next_action": "Send the Zachary comps"
+  }
+ ],
+ "drafts": [
+  {
+   "person_id": "401",
+   "name": "Casey Night",
+   "phone": "+12255550140",
+   "pool": "seller-candidate",
+   "template": 2,
+   "text": "Hey Casey, Caleb here. Still thinking about the move? I ran the numbers on your street this week and they look good. Want me to send them over?",
+   "days_quiet": 12
+  },
+  {
+   "person_id": "720",
+   "name": "Sky Newquiet",
+   "phone": "+12255550172",
+   "pool": "sphere",
+   "template": 1,
+   "text": "Hey Sky, it's Caleb. Been a minute. How's the house treating you?",
+   "days_quiet": 33
+  },
+  {
+   "person_id": "811",
+   "name": "Reese Demo",
+   "phone": "+12255550181",
+   "pool": "sphere",
+   "template": 4,
+   "text": "Hey Reese, Caleb Jackson here. Hope fall is treating you well. Anything I can help with on the house front?",
+   "days_quiet": 94
+  },
+  {
+   "person_id": "7230",
+   "name": "Quinn Newlead",
+   "phone": "+12255550199",
+   "pool": "new-lead",
+   "template": 1,
+   "text": "Hi Quinn, this is Caleb Jackson with Keller Williams First Choice. Saw you were looking at homes online. What area are you hoping for?",
+   "days_quiet": 1
+  }
+ ]
+}

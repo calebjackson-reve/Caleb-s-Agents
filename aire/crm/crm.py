@@ -6,11 +6,13 @@ contact and never shows anything on a screen: it reads the sheet, applies the sa
 gates the Mac's crm_client uses, and writes feed.json for the native Pipeline app.
 
 Tabs it reads: Contacts, Notes, Connector Log (all existed on 2026-10-16).
-Tabs it adds if missing: Tasks, Deals. No column is ever added to Contacts.
+Tabs it adds if missing: Tasks, Deals, Geo. No column is ever added to Contacts.
 
   python3 crm.py auth                      # one-time Google sign-in on the Mac (Sheets + Gmail read only)
   python3 crm.py check                     # live header matches what this file expects; nothing written
-  python3 crm.py feed [--out feed.json]    # touches due, tasks, deals, new leads for the Pipeline app
+  python3 crm.py feed [--out feed.json]    # touches due, tasks, deals, new leads, map pins, market rows for the Pipeline app
+  python3 crm.py geocode [--dry-run] [--report FILE]   # Contacts and Deals addresses -> Geo tab (Census geocoder, free)
+  python3 crm.py lead "Name" --source "Market Monitor permit 2026-10-26" [--phone] [--email]   # Make lead from the monitor
   python3 crm.py due                       # who is past their band's cadence
   python3 crm.py tasks                     # open tasks, overdue first
   python3 crm.py deals                     # live deals
@@ -48,6 +50,11 @@ from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
 AIRE = HERE.parent
+sys.path.insert(0, str(AIRE / "map-crm"))
+import geo  # noqa: E402  (aire/map-crm/geo.py: pure geometry and the Census geocoder, nothing Google)
+
+MARKET_CACHE = AIRE / "map-crm" / "cache" / "signals.json"   # written by aire/map-crm/monitor.py, stays on the Mac
+DISMISSED = AIRE / "map-crm" / "cache" / "dismissed.json"    # ids the Pipeline app dismissed, stays on the Mac
 SHEET_ID = os.getenv("AIRE_CRM_SHEET", "1w9izcliqmXlFR3_O3dnP2G5SGfCrua7mrCLCE7cdoDc")
 FEED = HERE / "feed.json"
 AUDIT = Path(os.getenv("AIRE_CRM_AUDIT", str(Path.home() / "aire" / "crm" / "audit.jsonl")))
@@ -88,8 +95,12 @@ SCHEMA = {
     "Tasks": ["task_id", "person_id", "display", "task", "due", "status", "source", "created_at", "done_at"],
     "Deals": ["deal_id", "person_id", "display", "address", "side", "stage", "price", "expected_close",
               "next_step", "last_event", "last_event_at", "source", "updated_at", "commission"],
+    # One row per geocoded Contacts or Deals address. key is 'person:<person_id>' or 'deal:<deal_id>'.
+    # match is match, tie or no_match; only match rows carry lat and lng. A tie or no_match row is kept so the
+    # next run skips it until the address in the sheet changes, and so the report can list it for Caleb to fix.
+    "Geo": ["key", "kind", "ref_id", "address", "lat", "lng", "match", "geocoded_at"],
 }
-ADDED_TABS = ["Tasks", "Deals"]
+ADDED_TABS = ["Tasks", "Deals", "Geo"]
 
 # Caleb's five-step scale (2026-10-20): the only band values. Days between touches by band.
 # Blank band is not on the touch list. Legacy values still read correctly through norm_band().
@@ -106,6 +117,27 @@ def norm_band(v: str | None) -> str:
         return v
     return LEGACY_BAND.get(v.upper(), "")
 NEVER_TOUCH_TYPES = {"vendor", "agent", "lender"}
+# Label review (Caleb, 2026-10-29): four ways a band or Type can be wrong. Suggestions only. A fix is written by
+# relabel, which the Pipeline app runs only when Caleb taps yes.
+REVIEW_TEXTING_DAYS = 30   # texts both ways this recently: the relationship is live, cold or blank is wrong
+REVIEW_QUIET_DAYS = 60     # hot or warm with no touch and no text this long is not hot
+PAST_CLIENT_BAND = "cold"  # a past client with no band never comes up; quarterly is the floor
+REVIEW_RULES = ["texting_but_cold", "hot_gone_quiet", "past_client_no_band", "pro_as_client"]
+PRO_PATTERNS = [  # checked against display and email; first match wins
+    ("lender", re.compile(r"\b(mortgage|lending|lender|loans?|home ?loans?)\b|@(rocketmortgage|guildmortgage|fairwaymc|movement|cmgfi|bankplus|b1bank|redriverbank)\.", re.I)),
+    ("agent", re.compile(r"\b(realty|realtors?|real estate|keller ?williams|re/?max|exp realty|coldwell|century ?21|latter ?& ?blum)\b|@(kw|kwrealty|remax|exprealty|cbrealty|latterblum|c21)\.", re.I)),
+    ("vendor", re.compile(r"\b(title|inspections?|inspector|insurance|appraisals?|roofing|plumbing|hvac|construction|builders?|pest)\b", re.I)),
+]
+
+
+def pro_kind(c: dict) -> str:
+    """'lender', 'agent' or 'vendor' when the contact's name or email says so, else ''. Deliberately narrow: a
+    business word in the name or a known brokerage or lender email domain. Never a guess from texts."""
+    text = f"{c.get('display', '')} {c.get('email', '')}"
+    for kind, pat in PRO_PATTERNS:
+        if pat.search(text):
+            return kind
+    return ""
 PARTNER_CADENCE_DAYS = 60  # agents, lenders, vendors: their own section in the feed, not the client touch list
 LIVE_DEAL_STAGES = {"lead", "consult", "active", "showing", "under_contract", "unknown"}
 DEAL_STAGES = LIVE_DEAL_STAGES | {"closed", "fell_through"}
@@ -142,6 +174,11 @@ def phone_key(phone: str) -> str:
 
 def email_key(email: str) -> str:
     return (email or "").strip().lower()
+
+
+def shown_name(c: dict) -> str:
+    """The name to show for a contact: the display name, or first and last when display is blank. Never invented."""
+    return str(c.get("display") or "").strip() or " ".join(p for p in (str(c.get("first") or "").strip(), str(c.get("last") or "").strip()) if p)
 
 
 def name_key(name: str) -> str:
@@ -483,7 +520,7 @@ class CRM:
         self.b.append("Connector Log", [{"At (CT)": now_sheet(), "Tool": tool, "Client": self.client,
                                          "person_id": str(person_id), "Detail": detail}])
 
-    def update_contact(self, person_id: str, fields: dict, reason: str) -> dict:
+    def update_contact(self, person_id: str, fields: dict, reason: str, allow_type: bool = False) -> dict:
         c = self.by_id(person_id)
         if not c:
             raise GateError(f"no contact with person_id {person_id}; writes are by person_id only")
@@ -492,7 +529,7 @@ class CRM:
             raise GateError(f"{sorted(bad)} is never written by this tool")
         if "Do_Not_Contact" in fields:
             raise GateError("Do_Not_Contact changes go through set_do_not_contact")
-        unknown = set(fields) - WRITABLE
+        unknown = set(fields) - WRITABLE - ({"Type"} if allow_type else set())
         if unknown:
             raise GateError(f"not a column this tool may write: {sorted(unknown)}")
         changes = {k: v for k, v in fields.items() if str(c.get(k, "")) != str(v)}
@@ -519,6 +556,9 @@ class CRM:
                        source: str = "", next_action: str = "", type_: str = "client") -> dict:
         """A new row with a minted person_id. Refuses when an email, phone or exact name already exists."""
         hits = self.find(display, email, phone)
+        dnc = next((h for h in hits if str(h.get("Do_Not_Contact") or "").strip().upper() == "YES"), None)
+        if dnc:
+            raise GateError(f"{display!r} matches person_id {dnc['person_id']} by {dnc['_match']}, who is on Do Not Contact. Not added.")
         if hits:
             raise GateError(f"{display!r} matches person_id {hits[0]['person_id']} by {hits[0]['_match']}; update, don't create")
         band = norm_band(band) if band else ""
@@ -583,6 +623,29 @@ class CRM:
                 self._audit("task_done", t.get("person_id", ""), f"{t['task']} [{task_id}]")
                 return True
         return False
+
+    def relabel(self, person_id: str, band: str = "", type_: str = "", expect_band: str | None = None) -> dict:
+        """Caleb's yes on a label review suggestion: band to the five-step scale, or Type to agent, lender or vendor.
+        This is the only path that writes Type, and it only moves someone off the client list. expect_band guards
+        a stale review the same way set_stage's expect does."""
+        band, type_ = (band or "").strip().lower(), (type_ or "").strip().lower()
+        if not band and not type_:
+            raise GateError("relabel needs --band or --type")
+        if band and band not in CADENCE_DAYS:
+            raise GateError("band must be one of: " + ", ".join(CADENCE_DAYS))
+        if type_ and type_ not in NEVER_TOUCH_TYPES:
+            raise GateError("relabel only moves Type to: " + ", ".join(sorted(NEVER_TOUCH_TYPES)))
+        c = self.by_id(person_id)
+        if not c:
+            raise GateError(f"no contact with person_id {person_id}; writes are by person_id only")
+        before = {"band": norm_band(c.get("band")), "Type": (c.get("Type") or "").lower()}
+        if expect_band is not None and before["band"] != norm_band(expect_band):
+            raise GateError(f"band changed since you reviewed it (now {before['band'] or 'blank'}). Nothing written. Review again.")
+        fields = {**({"band": band} if band else {}), **({"Type": type_} if type_ else {})}
+        changes = self.update_contact(person_id, fields, "relabel", allow_type=bool(type_))
+        if changes:
+            self.add_note(person_id, "Label: " + ", ".join(f"{k} {before[k] or 'blank'} -> {v}" for k, v in changes.items()))
+        return {"person_id": str(person_id), "before": before, "changes": changes}
 
     def set_stage(self, person_id: str, stage: str, expect: str | None = None, day: str | None = None) -> dict:
         """Stage moves and Last_Touch moves forward, like the Mac's update_stage.py. expect guards a stale review."""
@@ -742,7 +805,7 @@ class CRM:
             days = (as_of - date.fromisoformat(last)).days if last else None
             owes = bool(sig.get("owes_reply"))
             if owes or days is None or days >= CADENCE_DAYS[band]:
-                out.append({"person_id": c["person_id"], "display": c.get("display", ""), "band": band,
+                out.append({"person_id": c["person_id"], "display": shown_name(c), "band": band,
                             "phone": c.get("primary_phone", ""), "email": c.get("email", ""),
                             "days_quiet": days, "last_touch": c.get("Last_Touch", ""),
                             "last_inbound": sig.get("last_inbound", ""), "last_outbound": sig.get("last_outbound", ""),
@@ -781,7 +844,7 @@ class CRM:
             if (c["person_id"], nxt) in existing:
                 continue
             due = as_of if band == "hot" else as_of + timedelta(days=3)
-            out.append({"person_id": c["person_id"], "display": c.get("display", ""), "task": nxt,
+            out.append({"person_id": c["person_id"], "display": shown_name(c), "task": nxt,
                         "due": due.isoformat(), "source": "Next_Action", "band": band})
         return out
 
@@ -812,10 +875,165 @@ class CRM:
             last = parse_touch(c.get("Last_Touch", ""), as_of)
             days = (as_of - date.fromisoformat(last)).days if last else None
             if days is None or days >= PARTNER_CADENCE_DAYS:
-                out.append({"person_id": c["person_id"], "display": c.get("display", ""), "type": typ, "band": band,
+                out.append({"person_id": c["person_id"], "display": shown_name(c), "type": typ, "band": band,
                             "phone": c.get("primary_phone", ""), "email": c.get("email", ""), "days_quiet": days,
                             "last_touch": c.get("Last_Touch", ""), "next_action": nxt})
         return sorted(out, key=lambda x: -(x["days_quiet"] if x["days_quiet"] is not None else 99999))
+
+    def label_review(self, as_of: date | None = None, signals: dict | None = None) -> list[dict]:
+        """Contacts whose band or Type looks wrong next to their own record, one row per person with the rule, the
+        suggested fix and the reason in plain words. Do_Not_Contact people are skipped. Read only."""
+        as_of = as_of or today()
+        signals = signals or {}
+
+        def ago(d: str) -> int | None:
+            d = (d or "")[:10]
+            return (as_of - date.fromisoformat(d)).days if d and d <= as_of.isoformat() else None
+
+        out = []
+        for c in self.contacts():
+            if (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
+            sig = signals.get(c["person_id"], {})
+            band, typ = norm_band(c.get("band")), (c.get("Type") or "").lower()
+            row = {"person_id": c["person_id"], "display": shown_name(c), "band": band, "type": typ,
+                   "stage": c.get("Stage", ""), "suggest_band": "", "suggest_type": ""}
+            pro = pro_kind(c)
+            if pro and typ not in NEVER_TOUCH_TYPES:
+                out.append({**row, "rule": "pro_as_client", "suggest_type": pro,
+                            "why": f"name or email reads like a {pro}, but Type is {typ or 'blank'}, so they sit on the client touch list"})
+                continue
+            if typ in NEVER_TOUCH_TYPES:
+                continue
+            din, dout = ago(sig.get("last_inbound", "")), ago(sig.get("last_outbound", ""))
+            if band in ("", "cold", "ice-cold") and din is not None and dout is not None \
+                    and din <= REVIEW_TEXTING_DAYS and dout <= REVIEW_TEXTING_DAYS:
+                n = sig.get("in_30", 0)
+                out.append({**row, "rule": "texting_but_cold", "suggest_band": "warm",
+                            "why": f"texting both ways, last from them {din} days ago{f' ({n} texts in 30 days)' if n else ''}, but band is {band or 'blank'}"})
+                continue
+            if (c.get("Stage") or "").strip().lower() == "past client" and not band:
+                out.append({**row, "rule": "past_client_no_band", "suggest_band": PAST_CLIENT_BAND,
+                            "why": "past client with no band, so they never come up for a touch"})
+                continue
+            if band in ("hot", "warm"):
+                seen = [x for x in (ago(parse_touch(c.get("Last_Touch", ""), as_of)), din, dout) if x is not None]
+                quiet = min(seen) if seen else None
+                if quiet is None or quiet >= REVIEW_QUIET_DAYS:
+                    out.append({**row, "rule": "hot_gone_quiet", "suggest_band": "lukewarm", "days_quiet": quiet,
+                                "why": f"marked {band} but " + ("nothing logged or texted, ever" if quiet is None
+                                                                else f"no touch or text in {quiet} days") + ". Call them today or cool the band"})
+        return sorted(out, key=lambda r: (REVIEW_RULES.index(r["rule"]), r["display"]))
+
+    def heat(self, as_of: date | None = None, signals: dict | None = None) -> dict:
+        """Everyone Caleb may contact, scored by heat.py: what they did and when, not the band column. Returns the
+        Hot and Warm lists (hottest first), the count at each temperature, and how the score compares with the
+        sheet's band. Read only: the band column is never written from here."""
+        import heat as heat_mod
+        as_of = as_of or today()
+        signals = signals or {}
+        deal_by = {}
+        for d in self.live_deals():
+            if d.get("person_id"):
+                deal_by.setdefault(str(d["person_id"]), d.get("stage", ""))
+        rows, counts = [], {t: 0 for t in heat_mod.TEMPS}
+        versus = {"same": 0, "hotter_than_band": 0, "cooler_than_band": 0, "no_band": 0}
+        # The sheet's band down the side, heat across: where the 'cooler' people actually sit.
+        cross = {b: {t: 0 for t in heat_mod.TEMPS} for b in list(heat_mod.TEMPS) + ["none"]}
+        dated = any(v.get("dated") for v in signals.values())
+        for c in self.contacts():
+            sig = signals.get(c["person_id"], {})
+            lead_age = None
+            if "lead" in (c.get("Stage") or "").lower():
+                m = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", c.get("Source", "") or "")
+                if m and m.group(1) <= as_of.isoformat():
+                    lead_age = (as_of - date.fromisoformat(m.group(1))).days
+            h = heat_mod.score(c, sig, as_of, deal_stage=deal_by.get(str(c["person_id"]), ""), lead_age=lead_age,
+                               last_touch=parse_touch(c.get("Last_Touch", ""), as_of))
+            if h["status"] != "ok":
+                continue
+            counts[h["temp"]] += 1
+            band = norm_band(c.get("band"))
+            cross[band or "none"][h["temp"]] += 1
+            if not band:
+                versus["no_band"] += 1
+            else:
+                a, b = BAND_ORDER[h["temp"]], BAND_ORDER[band]
+                versus["same" if a == b else "hotter_than_band" if a < b else "cooler_than_band"] += 1
+            if h["temp"] in ("hot", "warm"):
+                rows.append({"person_id": c["person_id"], "display": shown_name(c), "temp": h["temp"], "heat": h["heat"],
+                             "reasons": h["reasons"], "band": band, "stage": c.get("Stage", ""), "type": (c.get("Type") or "").lower(),
+                             "phone": c.get("primary_phone", ""), "email": c.get("email", ""), "days_quiet": h.get("days_quiet"),
+                             "owes_reply": bool(sig.get("owes_reply")), "last_inbound": sig.get("last_inbound", ""),
+                             "last_outbound": sig.get("last_outbound", ""), "last_messages": sig.get("last_messages", []),
+                             "last_touch": c.get("Last_Touch", ""), "next_action": c.get("Next_Action", "")})
+        rows.sort(key=lambda r: (-r["heat"], r["days_quiet"] if r["days_quiet"] is not None else 99999, r["display"]))
+        return {"hot": [r for r in rows if r["temp"] == "hot"], "warm": [r for r in rows if r["temp"] == "warm"],
+                "counts": counts, "versus_band": versus, "band_by_heat": cross, "scored": sum(counts.values()),
+                # False means the signals file predates dated intent words, so intent is not being counted yet.
+                "dated_intent": dated, "thresholds": dict(heat_mod.THRESHOLDS)}
+
+    def people(self, signals: dict | None = None) -> list[dict]:
+        """Everyone Caleb may contact, compact, so Pipeline's voice can find anyone by name, street or town, not only
+        the people due today. Do_Not_Contact people are left out. Read only."""
+        signals = signals or {}
+        out = []
+        for c in self.contacts():
+            if (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
+            sig = signals.get(c["person_id"], {})
+            out.append({"person_id": c["person_id"], "display": shown_name(c), "band": norm_band(c.get("band")),
+                        "stage": c.get("Stage", ""), "type": (c.get("Type") or "").lower(), "street": c.get("street", ""),
+                        "city": c.get("city", ""), "last_touch": c.get("Last_Touch", ""), "next_action": c.get("Next_Action", ""),
+                        "last_inbound": sig.get("last_inbound", ""), "last_outbound": sig.get("last_outbound", ""),
+                        "has_phone": bool(c.get("primary_phone")), "has_email": bool(c.get("email"))})
+        return out
+
+    def facts(self, as_of: date | None = None) -> dict:
+        """What the contact card needs beyond the lists above, by person_id, only the fields the sheet holds: the
+        parish assessment (fair_market_value), homestead, lead source, address, the other contacts at the same address
+        (household), their Deals tab rows with closed ones, and their notes from the last 12 months (at most 3, newest
+        first). Do_Not_Contact people are left out. Nothing is worked out or guessed here. Read only."""
+        as_of = as_of or today()
+        cutoff = (as_of - timedelta(days=365)).isoformat()
+        ok = [c for c in self.contacts() if (c.get("Do_Not_Contact") or "").upper() != "YES"]
+        home = lambda c: (re.sub(r"[^a-z0-9]+", " ", (c.get("street") or "").lower()).strip(), (c.get("zip") or "").strip()[:5])
+        at_home: dict[tuple, list[dict]] = {}
+        for c in ok:
+            k = home(c)
+            if k[0] and re.match(r"\d", k[0]):  # a street with a house number, the same test the map uses
+                at_home.setdefault(k, []).append(c)
+        notes: dict[str, list[dict]] = {}
+        for n in self.notes():
+            at, text = str(n.get("At") or "")[:10], str(n.get("Note") or "").strip()
+            if n.get("person_id") and text and cutoff <= at <= "9999" and not text.startswith(("Do_Not_Contact set", "texting consent")):
+                notes.setdefault(str(n["person_id"]), []).append({"at": at, "note": text[:200]})
+        deals: dict[str, list[dict]] = {}
+        for d in self.deals():
+            if d.get("person_id"):
+                deals.setdefault(str(d["person_id"]), []).append(
+                    {k: d.get(k, "") for k in ("address", "side", "stage", "price", "expected_close", "updated_at")})
+        out = {}
+        for c in ok:
+            row = {"fair_market_value": c.get("fair_market_value", ""), "homestead": c.get("homestead", ""), "source": c.get("Source", ""),
+                   "street": c.get("street", ""), "city": c.get("city", ""), "zip": c.get("zip", ""),
+                   "household": sorted(shown_name(x) for x in at_home.get(home(c), []) if x["person_id"] != c["person_id"] and shown_name(x)),
+                   "deals": deals.get(c["person_id"], []),
+                   "notes": sorted(notes.get(c["person_id"], []), key=lambda n: n["at"], reverse=True)[:3]}
+            row = {k: v for k, v in row.items() if v not in ("", None, [])}
+            if row:
+                out[c["person_id"]] = row
+        return out
+
+    def no_text_consent(self) -> list[str]:
+        """person_ids whose newest website form said not to text them (lead_note writes the line). Pipeline refuses
+        a text to anyone here. Someone with no form on file is not listed: no answer is not a no. Read only."""
+        last: dict[str, str] = {}
+        for n in self.notes():
+            m = re.search(r"texting consent: (yes|NO)", n.get("Note", "") or "")
+            if m and n.get("person_id"):
+                last[str(n["person_id"])] = m.group(1)
+        return sorted(pid for pid, v in last.items() if v == "NO")
 
     def new_leads(self, days: int = 14, as_of: date | None = None) -> list[dict]:
         as_of = as_of or today()
@@ -823,16 +1041,175 @@ class CRM:
         out = []
         for c in self.contacts():
             m = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", c.get("Source", ""))
+            if (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
             if (c.get("Stage") or "") == "new lead" and m and m.group(1) >= cutoff:
-                out.append({"person_id": c["person_id"], "display": c.get("display", ""), "phone": c.get("primary_phone", ""),
+                out.append({"person_id": c["person_id"], "display": shown_name(c), "phone": c.get("primary_phone", ""),
                             "email": c.get("email", ""), "source": c.get("Source", ""), "received": m.group(1),
                             "next_action": c.get("Next_Action", "")})
         return sorted(out, key=lambda x: x["received"], reverse=True)
 
-    def feed(self, as_of: date | None = None, signals: dict | None = None, signals_file: str = "") -> dict:
+    # ---- geo: the Map page
+
+    def geo_rows(self) -> list[dict]:
+        return self._rows("Geo")
+
+    def wanted_addresses(self) -> list[dict]:
+        """Every Contacts row with a usable address plus every live deal, as the geocoder wants them.
+        Do_Not_Contact people are left out: they are never pinned or prospected."""
+        out = []
+        for c in self.contacts():
+            if (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
+            if not geo.usable_address(c.get("street", ""), c.get("city", ""), c.get("zip", "")):
+                continue
+            out.append({"id": f"person:{c['person_id']}", "kind": "person", "ref_id": c["person_id"],
+                        "street": c.get("street", "").strip(), "city": c.get("city", "").strip(),
+                        "state": (c.get("state", "").strip() or "LA"), "zip": str(c.get("zip", "")).strip()[:5]})
+        for d in self.live_deals():
+            street, city, state, zip_ = geo.split_address(d.get("address", ""))
+            if not street:
+                continue
+            out.append({"id": f"deal:{d['deal_id']}", "kind": "deal", "ref_id": d["deal_id"],
+                        "street": street, "city": city or "Baton Rouge", "state": state or "LA", "zip": zip_})
+        return out
+
+    def geocode(self, geocoder=None, as_of: date | None = None) -> dict:
+        """Contacts and Deals addresses into the Geo tab through the Census geocoder. Idempotent: a row whose
+        address is unchanged since its last run is skipped, matched or not. Unmatched and tied addresses are
+        kept with no coordinates and listed in the report for Caleb to fix in the sheet; nothing is guessed.
+        One audit line per run (the Geo rows themselves are the record), never one per contact."""
+        geocoder = geocoder or geo.census_batch_geocode
+        wanted = self.wanted_addresses()
+        existing = {r["key"]: r for r in self.geo_rows()}
+        todo, skipped = [], 0
+        for w in wanted:
+            key = geo.address_key(w["street"], w["city"], w["state"], w["zip"])
+            have = existing.get(w["id"])
+            if have and have.get("address") == key:
+                skipped += 1
+                continue
+            todo.append({**w, "_key": key, "_update": bool(have)})
+        results = geocoder([{k: t[k] for k in ("id", "street", "city", "state", "zip")} for t in todo]) if todo else {}
+        stamp = now_iso()
+        new_rows, updated, unmatched = [], 0, []
+        for t in todo:
+            r = results.get(t["id"], {"status": "no_match", "lat": None, "lng": None})
+            row = {"key": t["id"], "kind": t["kind"], "ref_id": t["ref_id"], "address": t["_key"],
+                   "lat": "" if r["lat"] is None else str(r["lat"]), "lng": "" if r["lng"] is None else str(r["lng"]),
+                   "match": r["status"], "geocoded_at": stamp}
+            if r["status"] != "match":
+                unmatched.append({"key": t["id"], "kind": t["kind"], "ref_id": t["ref_id"], "status": r["status"],
+                                  "address": f"{t['street']}, {t['city']}, {t['state']} {t['zip']}".strip(", ")})
+            if t["_update"]:
+                self.b.update_row("Geo", "key", t["id"], {k: v for k, v in row.items() if k != "key"})
+                updated += 1
+                if self._dry():
+                    existing[t["id"]].update(row)
+            else:
+                new_rows.append(row)
+        if new_rows:
+            self.b.append("Geo", new_rows)
+            if self._dry():
+                self._overlay.setdefault("Geo", []).extend(new_rows)
+        counts = {"wanted": len(wanted), "skipped_unchanged": skipped, "sent": len(todo),
+                  "matched": sum(1 for t in todo if results.get(t["id"], {}).get("status") == "match"),
+                  "tie": sum(1 for u in unmatched if u["status"] == "tie"),
+                  "no_match": sum(1 for u in unmatched if u["status"] == "no_match"),
+                  "new_rows": len(new_rows), "updated_rows": updated}
+        if todo:
+            self._audit("geocode", "", "geocode run: " + ", ".join(f"{k} {v}" for k, v in counts.items()))
+        return {"counts": counts, "unmatched": unmatched}
+
+    def map_pins(self, as_of: date | None = None, signals: dict | None = None) -> dict:
+        """Every geocoded contact and live deal as a pin. Read only. People who are Do_Not_Contact, or whose
+        Geo row has no coordinates, are not pins. Partners (agent, lender, vendor) are pins with their type so
+        the app can hide them by default."""
+        as_of = as_of or today()
+        signals = signals or {}
+        geo_by_key = {r["key"]: r for r in self.geo_rows() if r.get("match") == "match" and r.get("lat") and r.get("lng")}
+        new_lead_ids = {l["person_id"] for l in self.new_leads(as_of=as_of)}
+        pins, ungeocoded = [], 0
+        for c in self.contacts():
+            if (c.get("Do_Not_Contact") or "").upper() == "YES":
+                continue
+            g = geo_by_key.get(f"person:{c['person_id']}")
+            if not g:
+                if geo.usable_address(c.get("street", ""), c.get("city", ""), c.get("zip", "")):
+                    ungeocoded += 1
+                continue
+            sig = signals.get(c["person_id"], {})
+            band = norm_band(sig.get("label")) or norm_band(c.get("band"))
+            last = parse_touch(c.get("Last_Touch", ""), as_of)
+            last_msg = max(sig.get("last_inbound", ""), sig.get("last_outbound", ""))[:10]
+            if last_msg and last_msg <= as_of.isoformat() and (not last or last_msg > last):
+                last = last_msg
+            pins.append({"key": f"person:{c['person_id']}", "kind": "person", "person_id": c["person_id"],
+                         "display": shown_name(c), "band": band, "stage": c.get("Stage", ""),
+                         "type": (c.get("Type") or "").lower(), "lat": float(g["lat"]), "lng": float(g["lng"]),
+                         "days_quiet": (as_of - date.fromisoformat(last)).days if last else None,
+                         "owes_reply": bool(sig.get("owes_reply")), "next_action": c.get("Next_Action", ""),
+                         "phone": c.get("primary_phone", ""), "email": c.get("email", ""),
+                         "address": c.get("street", ""), "city": c.get("city", ""), "zip": c.get("zip", ""),
+                         "new_lead": c["person_id"] in new_lead_ids})
+        for d in self.live_deals():
+            g = geo_by_key.get(f"deal:{d['deal_id']}")
+            if not g:
+                continue
+            pins.append({"key": f"deal:{d['deal_id']}", "kind": "deal", "deal_id": d["deal_id"],
+                         "person_id": d.get("person_id", ""), "display": d.get("display", ""), "address": d.get("address", ""),
+                         "stage": d.get("stage", "unknown"), "side": d.get("side", ""), "lat": float(g["lat"]), "lng": float(g["lng"]),
+                         "last_event": d.get("last_event", ""), "last_event_at": d.get("last_event_at", "")})
+        return {"pins": pins, "counts": {"persons": sum(1 for p in pins if p["kind"] == "person"),
+                                         "deals": sum(1 for p in pins if p["kind"] == "deal"),
+                                         "ungeocoded_contacts": ungeocoded}}
+
+    def market(self, rows: list[dict], farms: list[dict], pins: list[dict], dismissed: set[str] | None = None) -> dict:
+        """Market Monitor rows (from aire/map-crm/monitor.py) joined to the map: farm tag and nearest known
+        contact within two miles. Dismissed ids are dropped. Read only."""
+        dismissed = dismissed or set()
+        people = [p for p in pins if p["kind"] == "person"]
+        out = []
+        for r in rows:
+            if r.get("id") in dismissed:
+                continue
+            row = dict(r)
+            lat, lng = row.get("lat"), row.get("lng")
+            if lat is not None and lng is not None:
+                row["farm"] = row.get("farm") or geo.farm_for(lat, lng, farms)
+                near = geo.nearest(lat, lng, people)
+                row["nearest"] = {"person_id": near["person_id"], "display": near["display"], "band": near["band"],
+                                  "miles": near["miles"]} if near else {}
+            else:
+                row.setdefault("farm", "")
+                row["nearest"] = {}
+            out.append(row)
+        out.sort(key=lambda r: (r.get("date") or ""), reverse=True)
+        by_type: dict[str, int] = {}
+        by_farm: dict[str, int] = {}
+        for r in out:
+            by_type[r.get("type", "")] = by_type.get(r.get("type", ""), 0) + 1
+            by_farm[r.get("farm") or "(outside farms)"] = by_farm.get(r.get("farm") or "(outside farms)", 0) + 1
+        return {"rows": out, "counts": {"rows": len(out), "by_type": by_type, "by_farm": by_farm,
+                                        "dismissed": len(dismissed)}}
+
+    def farm_counts(self, farms: list[dict], pins: list[dict]) -> list[dict]:
+        """Each farm with how many known people sit inside it, by band."""
+        out = []
+        for f in farms:
+            inside = [p for p in pins if p["kind"] == "person" and geo.point_in_polygon(p["lat"], p["lng"], f["polygon"])]
+            out.append({"id": f["id"], "name": f["name"], "polygon": f["polygon"], "people": len(inside),
+                        "by_band": {b: sum(1 for p in inside if p["band"] == b) for b in list(BAND_ORDER) + [""]}})
+        return out
+
+    def feed(self, as_of: date | None = None, signals: dict | None = None, signals_file: str = "",
+             market_rows: list[dict] | None = None, farms: list[dict] | None = None,
+             dismissed: set[str] | None = None) -> dict:
         """Everything the Pipeline app shows. See FEED.md. Read only."""
         as_of = as_of or today()
         due = self.due(as_of, signals)
+        pins = self.map_pins(as_of, signals)
+        farms = farms or []
         tasks = self.open_tasks(as_of) + [{**t, "task_id": "", "status": "open", "overdue": t["due"] < as_of.isoformat()}
                                           for t in self.next_action_tasks(as_of)]
         deals = self.live_deals()
@@ -848,9 +1225,31 @@ class CRM:
                        "deals_live": len(deals)},
             "touches_due": due, "tasks": sorted(tasks, key=lambda t: t["due"] or "9999"), "deals": deals,
             "new_leads": self.new_leads(as_of=as_of),
+            "no_text_consent": self.no_text_consent(),
+            "heat": self.heat(as_of, signals),
             "partners": self.partners(as_of),
+            "label_review": self.label_review(as_of, signals),
+            "people": self.people(signals),
+            "facts": self.facts(as_of),
             "cadence_days": CADENCE_DAYS,
+            "map": {**pins, "farms": self.farm_counts(farms, pins["pins"])},
+            "market": self.market(market_rows or [], farms, pins["pins"], dismissed),
         }
+
+
+def load_market(path: Path = MARKET_CACHE) -> list[dict]:
+    """cache/signals.json from aire/map-crm/monitor.py: {"rows": [...]} or a bare list. Missing file means []."""
+    if not path.exists():
+        return []
+    data = json.loads(path.read_text())
+    return data.get("rows", []) if isinstance(data, dict) else data
+
+
+def load_dismissed(path: Path = DISMISSED) -> set[str]:
+    if not path.exists():
+        return set()
+    data = json.loads(path.read_text())
+    return set(data.get("ids", data) if isinstance(data, dict) else data)
 
 
 def load_signals(path: Path, contacts: list[dict]) -> dict:
@@ -883,11 +1282,21 @@ def load_signals(path: Path, contacts: list[dict]) -> dict:
         ai = ask[:10]
         age = (today() - date.fromisoformat(ai)).days if ai else None
         recent = sig.get("recent_inbound", [])
+        # A broadcast sender (a daily group-style text sent one to one, automated MLS links) is never waiting on Caleb:
+        # 10 or more texts in 30 days with Caleb answering fewer than one in ten over 90 days (Caleb, 2026-10-29).
+        broadcast = int(sig.get("in_30", 0)) >= 10 and int(sig.get("out_90", 0)) * 10 < int(sig.get("in_90", 0))
         out[c["person_id"]] = {"label": "", "last_inbound": li, "last_outbound": lo,
                                # They texted last within 60 days, today included. A text from this morning is the most urgent one.
-                               "owes_reply": bool(ai) and ai > lo and age is not None and 0 <= age <= 60,
+                               "owes_reply": bool(ai) and ai > lo and age is not None and 0 <= age <= 60 and not broadcast,
+                               "broadcast": broadcast,
                                "last_inbound_at": ask,
                                "signal_score": int(sig.get("in_90", 0)),
+                               "in_30": int(sig.get("in_30", 0) or 0),
+                               # What heat.py scores on: counts both ways and intent words with their dates.
+                               "in_90": int(sig.get("in_90", 0) or 0), "out_30": int(sig.get("out_30", 0) or 0),
+                               "out_90": int(sig.get("out_90", 0) or 0), "kw_30": sig.get("kw_30") or {},
+                               "kw_90": sig.get("kw_90") or {}, "kw_last": sig.get("kw_last") or {},
+                               "dated": "kw_last" in sig,
                                # The last three things they actually said, so the Pipeline app can show them above the
                                # compose box. Stays in feed.json on the Mac, never in the sheet or git.
                                "last_messages": recent[-3:]}
@@ -1256,6 +1665,101 @@ def hwc_report_md(report: dict, stamp: str, dry_run: bool = True) -> str:
     return "\n".join(L)
 
 
+# ------------------------------------------------------------ website leads
+# Bridge from the "Website leads" sheet (the Apps Script catcher behind the
+# calebjackson.org forms, see website-rebuild/functions/) into this CRM,
+# through the same gates as every other write. Leads stay in their own sheet;
+# only real people with a phone or email are promoted here.
+
+LEADS_SHEET_ID = os.getenv("AIRE_LEADS_SHEET", "16sasu66UttsPMXBmkGk9M-jDGlfuvDoZXv4ZOGW-p0A")
+LEAD_MARK = "crm_import"  # column this tool adds to the leads sheet so a row is imported once
+
+
+def lead_note(d: dict) -> str:
+    keep = ["kind", "address", "area", "max", "when", "slot", "message", "page"]
+    parts = [f"{k}: {d[k]}" for k in keep if (d.get(k) or "").strip()]
+    consent = "texting consent: yes" if (d.get("consent") or "").lower() in ("yes", "true", "1") else "texting consent: NO, do not text"
+    return "Website lead " + (d.get("at") or "") + ". " + consent + ". " + "; ".join(parts)
+
+
+def import_website_leads(crm: "CRM", rows: list[dict], as_of: date) -> dict:
+    """Each unimported lead row becomes a note and a call-today task on the matching contact,
+    or a new hot contact when nobody matches. A Do_Not_Contact match gets nothing. Returns the
+    report and, per processed row index, the mark to write back so the row is never redone."""
+    rep = {"created": 0, "matched": 0, "dnc": 0, "skipped": 0, "already": 0, "marks": {}, "events": []}
+    for i, d in enumerate(rows):
+        if (d.get(LEAD_MARK) or "").strip():
+            rep["already"] += 1
+            continue
+        name = (d.get("name") or "").strip()
+        email = (d.get("email") or "").strip()
+        phone = phone_key(d.get("phone") or "")
+        if not email and not phone:
+            rep["skipped"] += 1
+            rep["marks"][i] = "skipped: no phone or email"
+            rep["events"].append(f"row {i + 2}: skipped, no phone or email")
+            continue
+        hits = crm.find(name, email, phone)
+        if hits and (hits[0].get("Do_Not_Contact") or "").upper() == "YES":
+            rep["dnc"] += 1
+            rep["marks"][i] = f"dnc: person_id {hits[0]['person_id']} is Do_Not_Contact"
+            rep["events"].append(f"row {i + 2}: {name or email or phone} is Do_Not_Contact, nothing written")
+            continue
+        if hits:
+            pid = hits[0]["person_id"]
+            rep["matched"] += 1
+            action = f"matched person_id {pid} by {hits[0]['_match']}"
+        else:
+            row = crm.create_contact(display=name or email or phone, phone=(d.get("phone") or "").strip(),
+                                     email=email, band="hot", source="website",
+                                     next_action="Call website lead", type_="client")
+            pid = row["person_id"]
+            rep["created"] += 1
+            action = f"created person_id {pid}"
+        crm.add_note(pid, lead_note(d), by="website")
+        crm.add_task(pid, f"Call website lead ({(d.get('kind') or 'contact').strip()})", as_of.isoformat(), source="website")
+        rep["marks"][i] = f"{pid} {as_of.isoformat()}"
+        rep["events"].append(f"row {i + 2}: {action}, note + call task added")
+    return rep
+
+
+class LeadsSheet:
+    """The Website leads spreadsheet, first tab, read once. mark() writes the crm_import cell
+    so a row is only ever imported once. Uses the same Google token as the CRM backend."""
+
+    def __init__(self, sheet_id: str = LEADS_SHEET_ID, dry_run: bool = False):
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+        if not TOKEN.exists():
+            sys.exit(f"No Google token at {TOKEN}. Run: python3 crm.py auth")
+        self.svc = build("sheets", "v4", credentials=Credentials.from_authorized_user_file(str(TOKEN), SCOPES),
+                         cache_discovery=False)
+        self.sheet_id = sheet_id
+        self.dry_run = dry_run
+        meta = self.svc.spreadsheets().get(spreadsheetId=sheet_id, fields="sheets.properties.title").execute(num_retries=6)
+        self.tab = meta["sheets"][0]["properties"]["title"]
+        res = self.svc.spreadsheets().values().get(spreadsheetId=sheet_id, range=f"'{self.tab}'!A1:Z").execute(num_retries=6)
+        values = res.get("values", [])
+        self.header = values[0] if values else []
+        self._rows = pad(values[1:], self.header) if values else []
+
+    def rows(self) -> list[dict]:
+        return [dict(r) for r in self._rows]
+
+    def mark(self, index: int, value: str) -> None:
+        if self.dry_run:
+            return
+        if LEAD_MARK not in self.header:
+            self.svc.spreadsheets().values().update(
+                spreadsheetId=self.sheet_id, range=f"'{self.tab}'!{col_letter(len(self.header))}1",
+                valueInputOption="RAW", body={"values": [[LEAD_MARK]]}).execute(num_retries=6)
+            self.header.append(LEAD_MARK)
+        cell = f"'{self.tab}'!{col_letter(self.header.index(LEAD_MARK))}{index + 2}"
+        self.svc.spreadsheets().values().update(
+            spreadsheetId=self.sheet_id, range=cell, valueInputOption="RAW",
+            body={"values": [[value]]}).execute(num_retries=6)
+
+
 # -------------------------------------------------------------------- tests
 
 
@@ -1284,9 +1788,9 @@ def run_tests() -> int:
     # header and tabs
     chk = crm.check()
     check("live header has every expected column", chk["contacts_header_ok"])
-    check("Tasks and Deals are the only tabs to add", chk["tabs_to_add"] == ["Tasks", "Deals"])
+    check("Tasks, Deals and Geo are the only tabs to add", chk["tabs_to_add"] == ["Tasks", "Deals", "Geo"])
     added = crm.ensure_tabs()
-    check("ensure_tabs adds exactly those two", added == ["Tasks", "Deals"] and crm.ensure_tabs() == [])
+    check("ensure_tabs adds exactly those three", added == ["Tasks", "Deals", "Geo"] and crm.ensure_tabs() == [])
     bad = LocalBackend(tmp / "bad.json")
     bad.data["header"] = [c for c in CONTACT_COLUMNS if c != "Do_Not_Contact"]
     check("missing column is reported", CRM(bad, audit).check()["missing_columns"] == ["Do_Not_Contact"])
@@ -1454,6 +1958,13 @@ def run_tests() -> int:
     ph2 = next(c for c in crm.contacts() if phone_key(c.get("primary_phone")))
     sigf2.write_text(json.dumps({"+1" + phone_key(ph2["primary_phone"]): {"last_inbound": today().isoformat() + "T08:00:00", "last_outbound": "2026-01-01T08:00:00", "in_90": 1, "recent_inbound": []}}))
     check("a text from today counts as owes_reply", load_signals(sigf2, crm.contacts())[ph2["person_id"]]["owes_reply"] is True)
+    sigf3 = tmp / "sig-broadcast.json"
+    base = json.loads(sigf2.read_text())
+    k2 = next(iter(base))
+    sigf3.write_text(json.dumps({k2: {**base[k2], "in_30": 27, "in_90": 79, "out_90": 1}}))
+    check("a broadcast sender (27 texts in 30 days, 1 reply in 90) is not waiting on a reply", load_signals(sigf3, crm.contacts())[ph2["person_id"]]["owes_reply"] is False)
+    sigf3.write_text(json.dumps({k2: {**base[k2], "in_30": 27, "in_90": 79, "out_90": 30}}))
+    check("someone who texts a lot and gets answers still is", load_signals(sigf3, crm.contacts())[ph2["person_id"]]["owes_reply"] is True)
 
     # stage, note, dnc: the Pipeline app's writes, on a fresh copy of the fixture
     db2 = tmp / "db2.json"
@@ -1489,6 +2000,82 @@ def run_tests() -> int:
     check("dnc twice is a no-op", c2.set_do_not_contact("6", "again") is False)
     check("Do_Not_Contact cannot be written back through update_contact", raises(lambda: c2.update_contact("6", {"Do_Not_Contact": "NO"}, "x")))
     check("touch refuses a DNC person", raises(lambda: c2.touch("6", "called")))
+    try:
+        c2.create_contact(c2.by_id("6")["display"], "", "")
+        dnc_msg = ""
+    except GateError as e:
+        dnc_msg = str(e)
+    check("a new lead matching a DNC person is refused and says Do Not Contact", "Do Not Contact" in dnc_msg)
+    # geocode and the map feed, on a fresh fixture with a fake geocoder (no network in tests)
+    db3 = tmp / "db3.json"
+    db3.write_text((HERE / "tests" / "fixtures" / "fake-crm.json").read_text())
+    c3 = CRM(LocalBackend(db3), audit_path=tmp / "audit3.jsonl")
+    c3.ensure_tabs()
+    c3.upsert_deal("9241 Fixture Tree Dr, Baton Rouge, LA 70810", "seeded", "2026-10-20", stage="active", side="listing")
+    wanted = c3.wanted_addresses()
+    check("wanted addresses: numbered street plus city or zip, never DNC, plus live deals",
+          {w["id"] for w in wanted} == {"person:1", "person:2", "person:3", "person:6", "deal:" + slug("9241 Fixture Tree Dr, Baton Rouge, LA 70810")})
+    sent = []
+    def fake_geocoder(items):
+        sent.append([i["id"] for i in items])
+        fixed = {"person:1": (30.40, -91.10), "person:2": (30.65, -91.15), "person:6": (30.58, -91.17)}
+        out = {}
+        for i in items:
+            if i["id"] in fixed:
+                out[i["id"]] = {"status": "match", "lat": fixed[i["id"]][0], "lng": fixed[i["id"]][1]}
+            elif i["id"] == "person:3":
+                out[i["id"]] = {"status": "tie", "lat": None, "lng": None}
+            else:
+                out[i["id"]] = {"status": "match", "lat": 30.41, "lng": -91.11}
+        return out
+    r = c3.geocode(fake_geocoder, as_of)
+    check("geocode sends every wanted address once and writes one Geo row each", sent and len(sent[0]) == 5 and len(c3.geo_rows()) == 5)
+    check("geocode counts matched, tie, no_match", r["counts"]["matched"] == 4 and r["counts"]["tie"] == 1 and r["counts"]["no_match"] == 0)
+    check("a tie is not pinned and is listed for Caleb", any(u["key"] == "person:3" and u["status"] == "tie" for u in r["unmatched"])
+          and next(g for g in c3.geo_rows() if g["key"] == "person:3")["lat"] == "")
+    check("geocode is one audit line, not one per row", sum(1 for x in c3.b.read("Connector Log") if x["Tool"] == "geocode") == 1)
+    r2 = c3.geocode(fake_geocoder, as_of)
+    check("geocode is idempotent: unchanged addresses are skipped, nothing sent", r2["counts"]["sent"] == 0 and r2["counts"]["skipped_unchanged"] == 5 and len(sent) == 1)
+    c3.b.data["Contacts"][2]["street"] = "303 Fixture Elm Street"; c3._contacts = None
+    r3 = c3.geocode(fake_geocoder, as_of)
+    check("a changed address is re-sent and updates its Geo row in place", r3["counts"]["sent"] == 1 and r3["counts"]["updated_rows"] == 1 and len(c3.geo_rows()) == 5)
+    m = c3.map_pins(as_of)
+    keys = {p["key"] for p in m["pins"]}
+    check("map pins only matched rows, never DNC, deals included", keys == {"person:1", "person:2", "person:6", "deal:" + slug("9241 Fixture Tree Dr, Baton Rouge, LA 70810")})
+    check("map counts the contacts still waiting on a geocode", m["counts"]["ungeocoded_contacts"] == 1)
+    check("a pin's name is the display name, or first and last when display is blank, and never made up",
+          shown_name({"display": " Pat Fixture ", "first": "P", "last": "F"}) == "Pat Fixture" and shown_name({"display": "", "first": "Pat", "last": "Fixture"}) == "Pat Fixture"
+          and shown_name({"display": "", "first": "Pat", "last": ""}) == "Pat" and shown_name({}) == "")
+    check("partner pins carry their type so the app can hide them", next(p for p in m["pins"] if p["key"] == "person:6")["type"] == "vendor")
+    check("person pins carry band, days_quiet and float coordinates", all(isinstance(p["lat"], float) for p in m["pins"])
+          and next(p for p in m["pins"] if p["key"] == "person:1")["band"] == "hot")
+    farms = [{"id": "south", "name": "South", "polygon": [[30.45, -91.15], [30.45, -91.05], [30.35, -91.05], [30.35, -91.15]]}]
+    fc = c3.farm_counts(farms, m["pins"])
+    check("farm counts the known people inside by band", fc[0]["people"] == 1 and fc[0]["by_band"]["hot"] == 1)
+    rows = [{"id": "permit:1", "type": "permit", "date": "2026-10-19", "address": "1 Fixture Way", "lat": 30.401, "lng": -91.101, "value": 25000},
+            {"id": "permit:2", "type": "permit", "date": "2026-10-20", "address": "2 Fixture Way", "lat": 30.90, "lng": -91.50, "value": 1000},
+            {"id": "permit:3", "type": "permit", "date": "2026-10-18", "address": "3 Fixture Way", "lat": None, "lng": None, "value": 0},
+            {"id": "mls:x", "type": "new_listing", "date": "2026-10-21", "address": "4 Fixture Way", "lat": 30.402, "lng": -91.102, "price": 300000}]
+    mk = c3.market(rows, farms, m["pins"], dismissed={"permit:3"})
+    check("market drops dismissed rows and sorts newest first", [x["id"] for x in mk["rows"]] == ["mls:x", "permit:2", "permit:1"])
+    check("market tags the farm and the nearest known person within two miles", mk["rows"][2]["farm"] == "south"
+          and mk["rows"][2]["nearest"]["person_id"] == "1" and mk["rows"][2]["nearest"]["miles"] < 0.2)
+    check("market leaves nearest empty when nobody is within two miles", mk["rows"][1]["nearest"] == {} and mk["rows"][1]["farm"] == "")
+    check("market counts by type and farm", mk["counts"]["by_type"] == {"new_listing": 1, "permit": 2} and mk["counts"]["by_farm"]["south"] == 2)
+    f3 = c3.feed(as_of, market_rows=rows, farms=farms)
+    check("feed carries map and market", f3["map"]["counts"]["persons"] == 3 and f3["map"]["farms"][0]["id"] == "south" and f3["market"]["counts"]["rows"] == 4)
+    check("feed without a market cache still has empty map and market sections", c3.feed(as_of)["market"]["rows"] == [] and "pins" in c3.feed(as_of)["map"])
+    out = subprocess.run([sys.executable, __file__, "--local", str(db3), "--json", "lead", "Permit Person", "--source", "Market Monitor permit 2026-10-26", "--phone", "225-555-0177"], capture_output=True, text=True)
+    one = json.loads(out.stdout.strip().splitlines()[-1])
+    check("lead creates a warm new-lead contact through the app write path", out.returncode == 0 and one["ok"] and one["result"]["band"] == "warm" and one["result"]["Stage"] == "new lead")
+    out = subprocess.run([sys.executable, __file__, "--local", str(db3), "--json", "lead", "Permit Person", "--source", "Market Monitor permit 2026-10-26", "--phone", "225-555-0177"], capture_output=True, text=True)
+    check("lead refuses a duplicate", out.returncode == 1 and json.loads(out.stdout.strip().splitlines()[-1])["ok"] is False)
+    dry3 = CRM(LocalBackend(db3, dry_run=True), audit_path=tmp / "dry3.jsonl")
+    dry3.b.data["Contacts"][0]["street"] = "111 Fixture Oak Dr"
+    before3 = db3.read_text()
+    rd = dry3.geocode(fake_geocoder, as_of)
+    check("geocode dry run plans the write and changes nothing", rd["counts"]["sent"] == 1 and db3.read_text() == before3 and len(dry3.b.writes) >= 1)
+
     out = subprocess.run([sys.executable, __file__, "--local", str(db2), "--json", "note", "999", "x"], capture_output=True, text=True)
     one = out.stdout.strip().splitlines()
     check("--json prints exactly one JSON error object and exits 1", out.returncode == 1 and len(one) == 1 and json.loads(one[0])["ok"] is False)
@@ -1497,6 +2084,99 @@ def run_tests() -> int:
     check("--json dry run reports planned writes and performs none", out.returncode == 0 and len(one) == 1 and json.loads(one[0])["planned_writes"] >= 1
           and json.loads(db2.read_text())["Contacts"][2]["Stage"] == "past client")
 
+    # website leads: dedupe, DNC silence, creation, idempotence
+    db3 = tmp / "db3.json"
+    db3.write_text((HERE / "tests" / "fixtures" / "fake-crm.json").read_text())
+    c3 = CRM(LocalBackend(db3), audit_path=tmp / "audit3.jsonl")
+    c3.ensure_tabs()
+    known = next(c for c in c3.contacts() if (c.get("email") or "").strip())
+    dnc_pid = c3.contacts()[1]["person_id"]
+    c3.set_do_not_contact(dnc_pid, "fixture")
+    leads = [
+        {"at": "2026-10-29", "kind": "contact", "name": "Brand New Lead", "phone": "(225) 555-0199", "email": "", "message": "wants to sell", "consent": "yes"},
+        {"at": "2026-10-29", "kind": "sell", "name": "", "phone": "", "email": known["email"], "message": "net sheet question"},
+        {"at": "2026-10-29", "kind": "contact", "name": c3.contacts()[1]["display"], "phone": c3.contacts()[1]["primary_phone"], "email": ""},
+        {"at": "2026-10-29", "kind": "contact", "name": "Bot Row", "phone": "", "email": ""},
+        {"at": "2026-10-29", "kind": "contact", "name": "Done Before", "phone": "5551112222", "email": "", LEAD_MARK: "12 2026-10-28"},
+    ]
+    n_contacts = len(c3.contacts())
+    rep = import_website_leads(c3, leads, as_of)
+    check("website lead with no match creates one hot contact", rep["created"] == 1 and len(c3.contacts()) == n_contacts + 1
+          and c3.contacts()[-1]["band"] == "hot" and c3.contacts()[-1]["Source"] == "website")
+    check("website lead matching an email is a note and task, not a new row", rep["matched"] == 1
+          and any(n.get("person_id") == known["person_id"] and "Website lead" in n.get("Note", "") for n in c3.notes()))
+    check("website lead on a Do_Not_Contact person writes nothing", rep["dnc"] == 1
+          and not any(t["person_id"] == dnc_pid for t in c3.open_tasks(as_of)))
+    check("no phone or email is skipped, imported row is not redone", rep["skipped"] == 1 and rep["already"] == 1)
+    check("every processed row gets a mark so it never imports twice", set(rep["marks"]) == {0, 1, 2, 3})
+    check("texting consent lands in the note", any("consent: yes" in n.get("Note", "") for n in c3.notes())
+          and any("do not text" in n.get("Note", "") for n in c3.notes()))
+    said_no = c3.no_text_consent()
+    check("a form without the consent box puts that person on the no-text list, a yes does not",
+          known["person_id"] in said_no and c3.contacts()[-1]["person_id"] not in said_no
+          and c3.feed(as_of)["no_text_consent"] == said_no)
+    c3.note(known["person_id"], lead_note({"at": "2026-10-30", "kind": "contact", "consent": "yes"}))
+    check("a later form with the box checked takes them back off", known["person_id"] not in c3.no_text_consent())
+    rep2 = import_website_leads(c3, [dict(leads[i], **{LEAD_MARK: rep["marks"].get(i, "x")}) for i in range(len(leads))], as_of)
+    check("a second run over marked rows does nothing", rep2["created"] + rep2["matched"] + rep2["dnc"] + rep2["skipped"] == 0)
+
+    # label review and relabel (Caleb's four rules, 2026-10-29), on a fresh fixture
+    db4 = tmp / "db4.json"
+    db4.write_text((HERE / "tests" / "fixtures" / "fake-crm.json").read_text())
+    c4 = CRM(LocalBackend(db4), audit_path=tmp / "audit4.jsonl")
+    c4.ensure_tabs()
+    pro = c4.create_contact("Delta Title Co", "+12255550199", "", band="cold", source="test")
+    sig4 = {"3": {"last_inbound": "2026-10-15", "last_outbound": "2026-10-16", "in_30": 4}}
+    lr = {r["person_id"]: r for r in c4.label_review(as_of, sig4)}
+    check("texting both ways but cold: suggest warm", lr.get("3", {}).get("rule") == "texting_but_cold" and lr["3"]["suggest_band"] == "warm")
+    check("past client with no band: suggest the quarterly band", lr.get("4", {}).get("rule") == "past_client_no_band" and lr["4"]["suggest_band"] == PAST_CLIENT_BAND)
+    check("business name on a client: suggest the pro Type", lr.get(pro["person_id"], {}).get("suggest_type") == "vendor")
+    check("Do_Not_Contact and people already typed vendor are never reviewed", "5" not in lr and "6" not in lr)
+    check("recently touched hot and warm are not flagged", "1" not in lr and "2" not in lr)
+    late = {r["person_id"]: r for r in c4.label_review(date(2027, 1, 1), sig4)}
+    check("hot with no touch or text in 60+ days: flagged with the days", late.get("1", {}).get("rule") == "hot_gone_quiet" and late["1"]["days_quiet"] == 75)
+    check("old texts no longer count as texting", late.get("3", {}).get("rule") != "texting_but_cold")
+    ppl = {x["person_id"] for x in c4.people()}
+    check("people directory has everyone but Do_Not_Contact", "5" not in ppl and {"1", "4", "7", pro["person_id"]} <= ppl)
+    check("Type is still refused outside relabel", raises(lambda: c4.update_contact("1", {"Type": "agent"}, "t")))
+    check("relabel only moves Type to agent, lender or vendor", raises(lambda: c4.relabel("1", type_="client")))
+    check("relabel refuses an unknown band", raises(lambda: c4.relabel("1", band="lava")))
+    check("relabel refuses a stale review", raises(lambda: c4.relabel("3", band="warm", expect_band="hot")))
+    r = c4.relabel("3", band="warm", expect_band="NURTURE")
+    check("relabel writes the band and notes the before and after", r["changes"] == {"band": "warm"} and c4.by_id("3")["band"] == "warm"
+          and any(n["person_id"] == "3" and "band cold -> warm" in n["Note"] for n in c4.notes()))
+    r = c4.relabel(pro["person_id"], type_="vendor")
+    check("relabel writes Type and the audit log has it", c4.by_id(pro["person_id"])["Type"] == "vendor"
+          and any(x["Tool"] == "update_contact" and "Type='vendor'" in x["Detail"] for x in c4.b.read("Connector Log")))
+    check("feed carries label_review and people", {"label_review", "people"} <= set(c4.feed(as_of, sig4)))
+    # facts for the contact card: only what the sheet holds, nobody on Do_Not_Contact
+    fa, fb = c4.create_contact("Facts Alpha", "+12255550301", "", band="cold", source="Website 2026-10-01"), c4.create_contact("Facts Beta", "+12255550302", "", band="cold", source="test")
+    for x in (fa, fb):
+        x.update(street="12 Fact Ln", zip="70775")
+    fa["fair_market_value"] = "250000"
+    c4.add_note(fa["person_id"], "Expecting a baby in March")
+    fx = c4.feed(as_of, sig4)["facts"]
+    check("facts carry the assessment, source, household and notes from the sheet", fx[fa["person_id"]]["fair_market_value"] == "250000"
+          and fx[fa["person_id"]]["source"] == "Website 2026-10-01" and fx[fa["person_id"]]["household"] == ["Facts Beta"]
+          and fx[fa["person_id"]]["notes"][0]["note"] == "Expecting a baby in March")
+    check("facts leave out Do_Not_Contact people and blank fields", "5" not in fx and "fair_market_value" not in fx[fb["person_id"]])
+    hf = c4.feed(as_of, sig4)["heat"]
+    ids = {x["person_id"] for x in c4.contacts() if (x.get("Do_Not_Contact") or "").upper() != "YES" and (x.get("Type") or "").lower() not in ("vendor", "agent", "lender", "recruit")}
+    check("the band by heat table adds up to everyone scored", sum(sum(r.values()) for r in hf["band_by_heat"].values()) == hf["scored"]
+          and sum(hf["band_by_heat"]["none"].values()) == hf["versus_band"]["no_band"])
+    check("heat scores everyone who may be contacted and nobody else", hf["scored"] == len(ids) == sum(hf["counts"].values())
+          and sum(hf["versus_band"].values()) == hf["scored"] and "5" not in {r["person_id"] for r in hf["hot"] + hf["warm"]})
+    check("the hot and warm lists are sorted hottest first and carry their reasons",
+          all(r["reasons"] and r["temp"] == "hot" and r["heat"] >= 50 for r in hf["hot"]) and all(30 <= r["heat"] < 50 for r in hf["warm"])
+          and [r["heat"] for r in hf["hot"]] == sorted((r["heat"] for r in hf["hot"]), reverse=True))
+    hs = c4.heat(as_of, {**sig4, "3": {**sig4.get("3", {}), "kw_30": {"sell": 2}, "kw_90": {"sell": 2}, "kw_last": {"sell": as_of.isoformat()}, "in_30": 3,
+                                      "out_30": 2, "last_inbound": as_of.isoformat(), "last_outbound": as_of.isoformat(), "dated": True}})
+    check("someone the sheet calls cold who is talking about selling this week lands on the hot list",
+          "3" in {r["person_id"] for r in hs["hot"]} and hs["dated_intent"] and hs["versus_band"]["hotter_than_band"] >= 1)
+    before = json.dumps(c4.contacts(), sort_keys=True)
+    c4.heat(as_of, sig4)
+    check("scoring heat writes nothing to the sheet", json.dumps(c4.contacts(), sort_keys=True) == before)
+
     print(f"\n{'ALL PASS' if not fails else str(len(fails)) + ' FAILED'}")
     return 1 if fails else 0
 
@@ -1504,12 +2184,24 @@ def run_tests() -> int:
 # ---------------------------------------------------------------------- cli
 
 
-APP_WRITES = {"touch", "done", "task", "stage", "note", "dnc", "deal"}
+APP_WRITES = {"touch", "done", "task", "stage", "note", "dnc", "deal", "lead", "relabel"}
 
 
 def run_app_write(crm: "CRM", a, as_of: date):
     if a.cmd == "touch":
         return crm.touch(a.person_id, a.what, day=as_of.isoformat())
+    if a.cmd == "lead":
+        # Market Monitor's "Make lead": a new contact through the same create path as a website lead.
+        # Refused when the name, phone or email already exists (update that person instead).
+        if not (a.name or "").strip():
+            raise GateError("a lead needs a name")
+        if not (a.source or "").strip():
+            raise GateError("a lead needs a source, like 'Market Monitor permit 2026-10-26'")
+        row = crm.create_contact(a.name.strip(), a.phone or "", a.email or "", band=a.band or "warm", stage="new lead",
+                                 source=a.source.strip(), next_action=a.next_action or "Reach out: market signal", type_="client")
+        if a.note:
+            crm.add_note(row["person_id"], a.note)
+        return {k: row[k] for k in ("person_id", "display", "band", "Stage", "Source")}
     if a.cmd == "done":
         if not crm.done(a.task_id):
             raise GateError("no such open task")
@@ -1519,6 +2211,8 @@ def run_app_write(crm: "CRM", a, as_of: date):
         return crm.add_task(a.person_id, a.task, a.due)
     if a.cmd == "stage":
         return crm.set_stage(a.person_id, a.stage, expect=a.expect, day=as_of.isoformat())
+    if a.cmd == "relabel":
+        return crm.relabel(a.person_id, band=a.band or "", type_=a.type or "", expect_band=a.expect_band)
     if a.cmd == "note":
         return crm.note(a.person_id, a.text)
     if a.cmd == "dnc":
@@ -1546,7 +2240,16 @@ def main(argv=None) -> int:
     sub.add_parser("check")
     p = sub.add_parser("feed"); p.add_argument("--out", default=str(FEED))
     p.add_argument("--signals", help="enriched.csv or imessage-signals.json from aire/enrichment: rank by texts first")
+    p.add_argument("--market", default=str(MARKET_CACHE), help="cache/signals.json from aire/map-crm/monitor.py (skipped when missing)")
+    p.add_argument("--farms", default=str(geo.FARMS_LOCAL), help="farms.local.json drawn in the Pipeline app (skipped when missing)")
+    p = sub.add_parser("geocode", help="Contacts and Deals addresses into the Geo tab. Idempotent, free (Census geocoder)")
+    p.add_argument("--report", help="write the counts and the unmatched addresses here (client data: keep it on the Mac)")
+    p = sub.add_parser("lead", help="Make lead from the Market Monitor: a new contact, Stage new lead")
+    p.add_argument("name"); p.add_argument("--source", required=True); p.add_argument("--phone", default="")
+    p.add_argument("--email", default=""); p.add_argument("--band", default="warm", choices=sorted(CADENCE_DAYS))
+    p.add_argument("--next-action", default=""); p.add_argument("--note", default="")
     p = sub.add_parser("due"); p.add_argument("--signals")
+    p = sub.add_parser("heat"); p.add_argument("--signals"); p.add_argument("--names", action="store_true")
     sub.add_parser("tasks")
     sub.add_parser("deals")
     p = sub.add_parser("ingest"); p.add_argument("--hours", type=int, default=26); p.add_argument("--messages", help="JSON file of messages instead of Gmail")
@@ -1557,6 +2260,9 @@ def main(argv=None) -> int:
     p = sub.add_parser("done"); p.add_argument("task_id")
     p = sub.add_parser("stage"); p.add_argument("person_id"); p.add_argument("stage"); p.add_argument("--expect", help="refuse if the current Stage differs")
     p = sub.add_parser("note"); p.add_argument("person_id"); p.add_argument("text")
+    p = sub.add_parser("relabel", help="Caleb's yes on a label review: --band to the five-step scale, or --type agent/lender/vendor")
+    p.add_argument("person_id"); p.add_argument("--band"); p.add_argument("--type"); p.add_argument("--expect-band", help="refuse if the band changed")
+    p = sub.add_parser("label-review", help="who looks mislabeled, by rule. Read only"); p.add_argument("--signals")
     p = sub.add_parser("dnc", help="Do_Not_Contact to YES. One way: there is no command to set it back to NO")
     p.add_argument("person_id"); p.add_argument("--reason", required=True)
     p = sub.add_parser("deal", help="Caleb's correction to one deal, matched by street")
@@ -1564,6 +2270,9 @@ def main(argv=None) -> int:
     p.add_argument("--clear-close", action="store_true"); p.add_argument("--next-step"); p.add_argument("--person")
     p.add_argument("--event"); p.add_argument("--expect", help="refuse if the deal's stage differs")
     p.add_argument("--create", action="store_true"); p.add_argument("--side", choices=["buyer", "seller"])
+    p = sub.add_parser("website-leads", help="import new rows from the Website leads sheet: note + call task, or a new hot contact")
+    p.add_argument("--leads", help="JSON file of lead rows instead of the live leads sheet")
+    p.add_argument("--leads-sheet", default=LEADS_SHEET_ID)
     p = sub.add_parser("merge-hwc"); p.add_argument("--hwc", required=True); p.add_argument("--report", required=True)
     p.add_argument("--apply", action="store_true", help="only after Caleb has said yes to the report")
     a = ap.parse_args(argv)
@@ -1598,16 +2307,61 @@ def main(argv=None) -> int:
         print(json.dumps(crm.check(), indent=1))
     elif a.cmd == "feed":
         sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
-        f = crm.feed(as_of, sig, a.signals or "")
+        f = crm.feed(as_of, sig, a.signals or "", market_rows=load_market(Path(a.market)), farms=geo.load_farms(Path(a.farms)),
+                     dismissed=load_dismissed())
         Path(a.out).write_text(json.dumps(f, indent=1, ensure_ascii=False))
         print(f"{a.out}: " + ", ".join(f"{k} {v}" for k, v in f["counts"].items() if not isinstance(v, dict))
-              + (f", signals for {f['signals']['people']} people, {f['signals']['owes_reply']} owe a reply" if sig else ""))
+              + (f", signals for {f['signals']['people']} people, {f['signals']['owes_reply']} owe a reply" if sig else "")
+              + f", map {f['map']['counts']['persons']} people + {f['map']['counts']['deals']} deals pinned"
+              + f" ({f['map']['counts']['ungeocoded_contacts']} addresses not geocoded yet), market {f['market']['counts']['rows']} rows")
+    elif a.cmd == "geocode":
+        crm.ensure_tabs()
+        r = crm.geocode(as_of=as_of)
+        print("geocode: " + ", ".join(f"{k} {v}" for k, v in r["counts"].items()))
+        if a.report:
+            L = [f"# Geocode run {as_of.isoformat()}", "", "Counts: " + ", ".join(f"{k} {v}" for k, v in r["counts"].items()), "",
+                 "## Not pinned (fix the address in the sheet, the next run retries it)", "",
+                 "| key | status | address |", "|---|---|---|"]
+            L += [f"| {u['key']} | {u['status']} | {u['address']} |" for u in r["unmatched"]]
+            Path(a.report).write_text("\n".join(L) + "\n")
+            print(f"{a.report}: {len(r['unmatched'])} unmatched listed (client data, keep it on the Mac)")
+        elif r["unmatched"]:
+            print(f"{len(r['unmatched'])} addresses not matched; pass --report FILE to list them")
+    elif a.cmd == "label-review":
+        sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
+        rows = crm.label_review(as_of, sig)
+        for rule in REVIEW_RULES:
+            print(f"{rule}: {sum(1 for r in rows if r['rule'] == rule)}")
+        for r in rows:
+            fix = r["suggest_band"] or r["suggest_type"]
+            print(f"  {r['rule']:20} #{r['person_id']:<5} {r['display']:30} {r['band'] or r['type'] or 'blank':9} -> {fix:9} {r['why']}")
     elif a.cmd == "due":
         sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
         for d in crm.due(as_of, sig):
             days = "never" if d["days_quiet"] is None else f"{d['days_quiet']}d"
             flag = "REPLY" if d["owes_reply"] else "     "
             print(f"{flag} {d['band']:8} {days:>6}  #{d['person_id']:<5} {d['display']:30} {d['phone']:14} {d['next_action']}")
+    elif a.cmd == "heat":
+        # The audit view: counts only, so it is safe to paste. --names adds the Hot and Warm rows for Caleb's eyes.
+        sig = load_signals(Path(a.signals), crm.contacts()) if a.signals else None
+        h = crm.heat(as_of, sig)
+        if a.json:
+            print(json.dumps({"ok": True, "result": {k: h[k] for k in ("counts", "versus_band", "band_by_heat", "scored", "dated_intent", "thresholds")}}))
+        else:
+            print(f"scored {h['scored']} people who may be contacted, as of {as_of.isoformat()}")
+            print("by heat:      " + ", ".join(f"{t} {n}" for t, n in h["counts"].items()))
+            v = h["versus_band"]
+            print(f"next to the sheet's band: same {v['same']}, heat says hotter {v['hotter_than_band']}, heat says cooler {v['cooler_than_band']}, no band on the sheet {v['no_band']}")
+            temps = list(h["counts"])
+            print("sheet band down, heat across:")
+            print(f"  {'':10}" + "".join(f"{t:>10}" for t in temps))
+            for b, row in h["band_by_heat"].items():
+                print(f"  {b:10}" + "".join(f"{row[t]:>10}" for t in temps))
+            if not h["dated_intent"]:
+                print("note: the signals file has no dated intent words yet. Run the feed refresh once so buying and selling talk is counted.")
+            if a.names:
+                for r in h["hot"] + h["warm"]:
+                    print(f"{r['temp']:5} {r['heat']:3}  #{r['person_id']:<5} {r['display']:30} " + " | ".join(r["reasons"][:2]))
     elif a.cmd == "tasks":
         for t in crm.open_tasks(as_of) + crm.next_action_tasks(as_of):
             print(f"{'OVERDUE' if t.get('overdue') else '       '} {t['due']} #{t['person_id']:<5} {t['display']:28} {t['task']} [{t.get('task_id', 'next_action')}]")
@@ -1633,8 +2387,24 @@ def main(argv=None) -> int:
         print(crm.add_task(a.person_id, a.task, a.due))
     elif a.cmd == "done":
         print("done" if crm.done(a.task_id) else "no such open task")
-    elif a.cmd in ("stage", "note", "dnc", "deal"):
+    elif a.cmd in ("stage", "note", "dnc", "deal", "lead", "relabel"):
         print(run_app_write(crm, a, as_of))
+    elif a.cmd == "website-leads":
+        crm.ensure_tabs()
+        src = None
+        if a.leads:
+            rows = json.loads(Path(a.leads).read_text())
+        else:
+            src = LeadsSheet(a.leads_sheet, dry_run=a.dry_run)
+            rows = src.rows()
+        rep = import_website_leads(crm, rows, as_of)
+        if src is not None:
+            for i, v in rep["marks"].items():
+                src.mark(i, v)
+        for e in rep.pop("events"):
+            print("  " + e)
+        rep.pop("marks")
+        print(", ".join(f"{k} {v}" for k, v in rep.items()))
     elif a.cmd == "merge-hwc":
         hwc = json.loads(Path(a.hwc).read_text())
         hwc = hwc.get("Contacts", hwc) if isinstance(hwc, dict) else hwc

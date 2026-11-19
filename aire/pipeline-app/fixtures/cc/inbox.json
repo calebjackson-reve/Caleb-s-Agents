@@ -1,0 +1,4 @@
+{"at": "{{NOW-20}}", "source": "Gmail, inbox, last 3 days (demo)", "error": null, "rows": [
+ {"threadId":"i1","sender":"Title Desk <closings@example.com>","subject":"Closing docs for 1418 Magnolia Bend","received":"{{D+0}}"},
+ {"threadId":"i2","sender":"Sam Lender","subject":"Pre-approval update","received":"{{D-1}}"},
+ {"threadId":"i3","sender":"Neighborhood HOA","subject":"November newsletter","received":"{{D-2}}"}]}

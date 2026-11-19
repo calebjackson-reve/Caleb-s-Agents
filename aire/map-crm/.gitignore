@@ -1,0 +1,5 @@
+cache/
+out/
+farms.local.json
+*.report.md
+__pycache__/

@@ -1,0 +1,56 @@
+{
+ "generated_at": "2026-10-22T16:46:00-05:00",
+ "as_of": "2026-10-22",
+ "drafts": [
+  {
+   "person_id": "85",
+   "name": "Jordan Sample",
+   "email": "jordan.sample@example.com",
+   "pool": "active-buyer",
+   "template": 3,
+   "subject": "Quick update on the search",
+   "body": "Hi Jordan,\n\nTwo new listings hit in your range this week and one of them has the big backyard you mentioned. Want me to set up a showing for Saturday?\n\nThanks,\nCaleb Jackson\nREALTOR, Keller Williams First Choice\n(225) 747-0303",
+   "days_quiet": 9
+  },
+  {
+   "person_id": "503",
+   "name": "Avery Example",
+   "email": "avery.example@example.com",
+   "pool": "past-client",
+   "template": 1,
+   "subject": "How's the house?",
+   "body": "Hi Avery,\n\nJust checking in. It's been a little while since closing and I wanted to see how the house is treating you. If you ever need a contractor name or a quick value check, I'm here.\n\nThanks,\nCaleb Jackson\nREALTOR, Keller Williams First Choice\n(225) 747-0303",
+   "days_quiet": 16
+  },
+  {
+   "person_id": "612",
+   "name": "Drew Sample",
+   "email": "drew.sample@example.com",
+   "pool": "past-client",
+   "template": 2,
+   "subject": "One year already",
+   "body": "Hi Drew,\n\nHard to believe it's been a year since we closed. Happy house anniversary. If you want to know what it would sell for today, I can run that for you, no strings.\n\nThanks,\nCaleb Jackson\nREALTOR, Keller Williams First Choice\n(225) 747-0303",
+   "days_quiet": 19
+  },
+  {
+   "person_id": "7229",
+   "name": "Sam Newlead",
+   "email": "sam.newlead@example.com",
+   "pool": "new-lead",
+   "template": 1,
+   "subject": "Saw your search",
+   "body": "Hi Sam,\n\nCaleb Jackson here with Keller Williams First Choice. Thanks for looking around on the site. What part of town are you leaning toward? I can send a short list that fits.\n\nThanks,\nCaleb Jackson\nREALTOR, Keller Williams First Choice\n(225) 747-0303",
+   "days_quiet": 0
+  },
+  {
+   "person_id": "905",
+   "name": "Parker Example",
+   "email": "parker.example@example.com",
+   "pool": "sphere",
+   "template": 1,
+   "subject": "Long time",
+   "body": "Hi Parker,\n\nIt has been a while. Hope all is well on your end. If anything on the real estate side comes up, for you or someone you know, I'd love to help.\n\nThanks,\nCaleb Jackson\nREALTOR, Keller Williams First Choice\n(225) 747-0303",
+   "days_quiet": null
+  }
+ ]
+}

@@ -2,6 +2,295 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-10, evening: only Bank hides, names on the map, the contact card and its plan
+
+**Confirmed by Caleb**
+- Hide only bank account info. Names, contacts and money always show.
+- The map shows first and last names. Keep the 150 pin label rule for now.
+- Ask Claude keeps sending names and amounts, never phones or emails. Bank figures stay out while hidden.
+- Clicking a person opens a contact card with that person's own plan, not the message box.
+- Coral moves to `#E04E28`. Hover, focus, short motion, Start here, Text and Call beside a name, color in More.
+
+**Done (branch `claude/pipeline-light-stage-tabs`, draft PR 105)**
+- `f574431`: the sitewide Show and Hide is gone. Only the Bank page hides its own figures. Map pins show the whole name on hover and as labels once 150 or fewer share the view.
+- This commit: `static/person.js` (the contact card and plan), Start here and row buttons in `stage.js`, the name fallback in `crm.py` feed rows and on every page, the lead form Save test, and the coral, hover, motion and More colors in `light.css`.
+- A fresh checker reviewed both rounds. Its findings were fixed before each commit: two ways the bank figures could stay shown, a wrong "no last touch" for people known only from the map, a message box that stayed open after a send, and a placeholder name that could reach the send log and Grok.
+- Tests: `ui_test.py` 405 checks, `app.py --test` 148, `bridge.py --test` 28, `crm.py --test` and `heat.py --test` pass. Client-data check clean.
+
+**Not verified**
+- Nothing here has run as the live app on 4747. Seen only on the demo on 4811 with made up people, in Chrome on the mini.
+- Hover, focus and reduced motion are checked by reading the stylesheet, not on a phone.
+- How many blank names the first and last fallback fills on the real sheet. The live feed had 1,738 of 3,655 people with no display name before it.
+
+**Inference**
+- Group colors in More are my pick from the stage palette: Today yellow, Deals purple, Numbers blue, You green, System ink, Hot pink, Warm yellow. Coral stays off them so it only means under contract or a highlight.
+- After a send, a message opened for someone with no draft in the queue now closes. It used to stay open with Send live again. That is one line in `sendNow`, after the send, and it changes nothing about what is sent.
+
+**Needs Caleb**
+- Look at the demo, then mark PR 105 ready and merge if it is right.
+- On a phone the More groups are a sideways strip and get no color tab. Say so if you want one there.
+
+## 2026-11-10, late afternoon: heat score, Hot and Warm lists, and the audit
+
+**Confirmed by Caleb**
+- "Build an algorithm and a hot and warm list under my leads, where I can go and click on them specifically, and it doesn't have a button that I have to press." And: audit how hot, warm and cold are established and build a better automated way to find these leads.
+
+**Found (the audit, `enrichment/AUDIT-2026-11-10-temperature.md`)**
+- The scorer was never wired into the live app. Hot, warm and cold on screen were the sheet's band column, and the ranking inside a band was a count of texts. Intent words had no dates and fired on everyday talk. A hot band kept itself hot. "inactive" read as "active". Nothing cooled.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `crm/heat.py`: one deterministic score, 0 to 100, with reasons. No model, no writes. 19 checks.
+- `enrichment/execution/imessage_signals.py`: intent words are dated and the patterns are tighter.
+- `crm/crm.py`: the feed carries `heat`. `crm.py heat` prints counts only. 158 checks.
+- Pipeline: Hot and Warm pages under Leads. The whole row is the click target, no buttons. Demo screenshots 27 to 30.
+
+**Not verified**
+- Not run on real data. No count of real people at each temperature. No backtest against closed deals. The thresholds are a starting point.
+
+**Inference**
+- Reading "doesn't have a button that I have to press" as: the lists fill themselves, and a row opens on one click with no button inside it.
+
+**Needs Caleb**
+- Merge, pull on the mini, let one feed refresh run, then open Hot and Warm. Run `crm.py heat --signals ...` on the mini and send back the counts line.
+- Say which names on the Hot list are wrong and why, so the weights get tuned on his book.
+
+## 2026-11-10, afternoon: Grok on the screen, and the mini on main
+
+**Confirmed by Caleb**
+- Merged PR 102 and PR 103. The mini now runs `main` (the Mac session reported it on `main` with the Scorecard, the draft writer and the Grok code, sender and caller both dry).
+- "I dont think it has all the new buttons and grok installations on the visuals and front end design can we look into that and fix it."
+
+**Found**
+- The Grok controls were one plain block at the bottom of the message box, built against the old look. No button on the cards, no page in the menu. On a phone the message box was a fixed 520px, so only its right half showed.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- A **Call** button on every card with a valid number and a CRM id. It opens the message box on the Grok panel.
+- The Grok panel redone in the current design: Call and Hard draft tabs, a status box, a line saying what will and will not happen, the caps.
+- A **Grok calls** page in the Today group, with a count of what is waiting on Caleb.
+- Privacy switch now hides Grok drafts, call summaries, names and numbers.
+- The message box fits a phone screen.
+- 148 checks in `app.py --test`, `ui_test.py` and `bridge.py --test` all pass. Demo screenshots 22 to 26 in `pipeline-app/screenshots/`, made up people.
+
+**Not verified**
+- Not seen on the mini's screen or on Caleb's iPhone. No real job has gone to Grok.
+
+**Needs Caleb**
+- Merge, pull on the mini, restart, and look at a card, the message box and the Grok calls page.
+
+## 2026-11-10, later: the Grok bridge, dry
+
+**Confirmed by Caleb**
+- Passed on Grok's word that its Pipeline bridge webhook routine is ready, takes only `call` and `hard_draft` jobs, and writes one result file per `job_id`.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `pipeline-app/bridge.py`: builds the job in the contract's shape, checks Grok's limits before it leaves, posts it, reads result files. 28 offline checks.
+- `pipeline-app/app.py`: `/api/call` and `/api/draft/escalate`, through Do Not Contact, quiet hours and the live host. A finished call is logged once as a touch. A card nobody tapped reads expired. 14 new checks, 113 in all, 0 failures.
+- The compose box has a GROK block: Call through Grok, Hard draft from Grok, Use this draft. Each card shows the job's state.
+- Demo screenshots on made up people: `screenshots/20-grok-call-dry-run.png`, `21-grok-hard-draft.png`.
+
+**Not verified**
+- No job has been posted to Grok's real webhook. The cloud session has no URL or key and should not. How the key and header are sent is a best reading of the three values Grok named.
+- Nothing has run on the mini.
+
+**Needs Caleb**
+- On the mini, in `~/.aire/pipeline.env`: `PIPELINE_GROK_WEBHOOK_URL`, `PIPELINE_GROK_AUTH_HEADER` (and `PIPELINE_GROK_WEBHOOK_KEY` if the panel shows the key apart from the header), `PIPELINE_TRANSFER_TO`. Leave `PIPELINE_CALLER` off until he wants the first real job.
+- Either register the mini with Grok, or install Google Drive for desktop on the mini and point `PIPELINE_BRIDGE_RESULTS` at the Pipeline Bridge Results folder. Without one of those, results cannot reach Pipeline.
+
+## 2026-11-10: Grok bridge plan, and three new send gates
+
+**Confirmed by Caleb**
+- Pipeline stays the one CRM screen and sender. Grok adds approved phone calls and the harder drafts through a webhook. The 2026-10-19 rule keeping Grok to reading and briefs is lifted. Every text and call still waits for his press. Obsidian is the notes layer, the Sheet stays the record.
+- "Live Pipeline is the Mac mini." The MacBook Air is a second checkout and never sends.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `pipeline-app/CONTRACT-grok-bridge.md`: the build contract, with Grok's job and result format and its calling limits.
+- `STACK.md`: Grok row rewritten, Obsidian row added, one live host noted, plain code and Grok added to the model table.
+- `crm/crm.py`: the feed carries `no_text_consent`, the people whose newest website form left the texting box unchecked. 2 new checks, 153 in all (`python3 aire/crm/crm.py --test`).
+- `pipeline-app/app.py` `State.send()`: a text to someone on that list is refused. Nothing goes between 8 pm and 8 am Central, except a text back to someone waiting on a reply. `PIPELINE_SENDER=live` only works on the Mac named in `PIPELINE_LIVE_HOST`. 13 new checks, 99 in all, 0 failures (`python3 aire/pipeline-app/app.py --test`).
+- README: gate order now matches the code (cap first), test count corrected.
+- The Command Center pages, iPhone access over Tailscale, phone alerts and Ask Claude (PR 95, merged 2026-11-06) never got an entry here. They are documented in `pipeline-app/README.md`.
+
+**Not verified**
+- Nothing here has run on the mini. Everything Grok said about its calling (limits, the Call card, no number needed) is Grok's word, not a test.
+- KW Command reading is still a login heartbeat only. Which Deals sheet the Scorecard reads is still unchecked.
+
+**Inference**
+- The quiet hours exception for replies is my call, not Caleb's words. It is one line to remove.
+
+**Needs Caleb**
+- After merge, on the mini: add `PIPELINE_LIVE_HOST=<name from hostname -s>` to `~/.aire/pipeline.env` and restart Pipeline. Until then sending is dry and the screen says so.
+- One live text to his own number. Register the mini with Grok. Then tell Grok to create the webhook routine.
+
+## 2026-11-05: Text button on each card, delivery shows on its own
+
+**Confirmed by Caleb**
+- Wants to click a lead's Text button in the dashboard and have the text go from there, "visibly updating on its own every time I send a text." Picked sending in the app, then "Yes, build it" for Pipeline on his own number through Messages, no new line, no cost.
+
+**Done (branch `claude/text-button-auto-log`, not merged)**
+- Touches due and New leads cards: `Text <first name>` button when a phone is on file. Opens the compose box set to text. SEND is still his press, through the Do Not Contact, cap and live gates.
+- After a send the drawer closes and the card shows `Texted 9:42 AM · delivered` (or sending, failed, dry run). `app.py` `last_texts()` re-reads `chat.db` for unconfirmed live texts for 30 minutes and saves the result in the send log as `delivery`. The screen polls every 4 seconds while one is unconfirmed.
+- 8 new offline checks, 65 in all, 0 failures (`python3 aire/pipeline-app/app.py --test`).
+
+**Not verified**
+- Not run on the Mac yet. No screenshot from the cloud session (no browser there). A real send, still Caleb's first press, to his own number first.
+
+**Needs Caleb**
+- Review and merge the PR. Then the first live test text to his own number, on his yes.
+- KW Command still does not see texts sent from Pipeline until the DevHub API is approved.
+
+## 2026-10-29, afternoon: no group chats, Market Monitor twice a day
+
+**Confirmed by Caleb**
+- "No group chats." "I want a daily job to refresh twice a day at 8am and 3pm." Email stays live with texts.
+
+**Done**
+- `enrichment/execution/imessage_signals.py`: a chat with Caleb plus 2 or more others is a group and is left out (was 3 or more others, rule of 2026-10-20). 79 such chats had inbound texts in the last 90 days.
+- `crm/crm.py` `load_signals`: a broadcast sender is never "waiting on a reply": 10 or more texts in 30 days with Caleb answering fewer than one in ten over 90 days. On 2026-10-29 that took 3 of 51 off the owes-a-reply list (a daily Bible-study text sent one to one, an MLS link number, and a run of tapbacks); nobody in a live conversation.
+- `map-crm/refresh_market.sh` + LaunchAgent `org.calebjackson.aire.market` (8:00 and 15:00, through host-guard): permits and Flexmls mail into the cache, then the feed rebuild. `sh aire/map-crm/install.sh` installs it, `--remove` takes it out. Log `~/.aire/logs/market.log`.
+- Caleb's first farm (zachary) had been drawn in a test copy of Pipeline on port 4749 and saved in the test folder; copied to the live `map-crm/farms.local.json`.
+
+**Not done: the 52 unpinned contacts**
+- The addresses are well formed; the free geocoders do not know them (new subdivisions, rural highways, units, out of state). Census matched 0 (46 no match, 6 ties), OpenStreetMap Nominatim matched 1 of 52 by exact house number and ZIP, Census with spelling variants 1 more. Placing the rest needs a paid geocoder, Caleb's call.
+
+## 2026-10-29, afternoon: Claude Q&A on, faster and cheaper
+
+**Confirmed by Caleb**
+- Added Anthropic credits ("try now"). Earlier: "do a series of tests and Q and A with the voice command to improve its efficiency."
+
+**Measured on the real feed, the same 4 Claude-only questions each time**
+- Opus 5.5 (the old default), feed sent fresh each time: 3.4 to 5.7 s, about 4 cents a question, one answer cut off mid sentence at the 400-token cap.
+- Sonnet 5.5: 2.5 to 3.1 s, complete and accurate. Haiku 5.5: 2.3 to 2.7 s but miscounted tasks and returned "I have nothing on that" once. Sonnet 5.5 is the new default (Caleb's rule: fastest reliable).
+- With the feed in a cached system block: under 1 cent a question on Sonnet (8 questions, 6 cents). The first question after a pause still paid the cache write (8 to 23 s); after it, 1.8 to 2.3 s.
+
+**Done**
+- `ASK_MODEL_DEFAULT` is `claude-sonnet-5-5`, cost estimate per model (`ASK_PRICES`, Anthropic prices as of 2026-10-06, cache reads at a tenth).
+- Feed in a cached system block with sorted keys, question in the user turn. Answer cap 500 (the existing test's limit), trimmed to the last whole sentence if it is hit.
+- Claude now also sees the 10 hot and warm contacts quiet the longest, everyone waiting on a reply (up to 40, last text), and the market and map counts.
+- Voice on, or "hey Pipeline": `POST /api/ask/warm` writes the cache with a `max_tokens` 0 request (same model, system and effort as a real question), skipped when the same feed was warmed under 4 minutes ago. After a warm-up the first question took 2.2 s.
+- Removed `PIPELINE_ASK_MODEL=claude-opus-5-5` from `~/.aire/pipeline.env` (a template line from the morning, it pinned the old default). Only that line was touched.
+
+## 2026-10-29, afternoon: live texting from Pipeline
+
+**Confirmed by Caleb**
+- "I want to be able to send a text directly out of the pipeline app."
+
+**Done**
+- Texts go through Messages.app as iMessage first. Messages accepts an iMessage send even for a number that is not on iMessage and marks it failed later, so Pipeline reads the result back from `~/Library/Messages/chat.db` (read only, the venv Python already has Full Disk Access). On an error it sends once as SMS through the iPhone. Both failing shows NOT SENT, is logged as `failed` in `out/send-log.json`, and no touch is written. In the last 60 days 254 of Caleb's texts went as SMS, so the fallback matters.
+- In live mode Pipeline asks Messages a harmless question at start, so the macOS Allow box shows then, and a missing permission is a warning on screen.
+- `PIPELINE_SENDER=live` in the LaunchAgent. Every text still needs Caleb's press on Send, Do Not Contact is checked through the engine, the cap stays 25 texts a day.
+- 9 offline checks for the fallback, the chat.db read and the failed-send log. The chat.db read was checked against the real database (a text sent today reads as delivered).
+
+**Not verified**
+- A real send. The first one is Caleb's press.
+
+## 2026-10-29, afternoon: voice commands tested and rebuilt
+
+**Confirmed by Caleb**
+- "Go in and do a series of tests and Q and A with the voice command to improve its efficiency."
+
+**Done (on the Mac, tested on the real feed with sending in dry run and ElevenLabs off)**
+- 77 spoken-style commands typed through the same path the microphone uses (`Voice.type`), four rounds. Before: about 20 of 40 right, plurals missed ("tasks", "deals", "leads"), "what did I send" and "what's next" opened compose, "give me an update" rebuilt the feed, "who's gone quiet" stopped the voice, a contact with no name was read as a blank. After: 75 of 77 answered from the feed, median 7 ms; only weather and calendar go to Claude.
+- Root bug: `voice.js` read the app state as `window.S`, but the app keeps it in a top-level `const S`, so Claude Q&A, the ElevenLabs voice and calls were always off no matter the keys. Fixed.
+- New commands: who should I call first, which deal closes next, how many deals under contract, a deal by street ("tell me about Buffalo Hollow"), a person by name ("what did Josh say", "how is Marci"), hot or warm counts, permits by kind ("any roof permits", "new builds this week"), new listings, the map, CRM size, texts left today, open or go to any page. Commands that would write or send ("text Josh", "call Bryan", "log a call with Greg Bergeron", "remind me to call Marci tomorrow") only open the box; Caleb presses Send or Save. A first name that matches several people says so.
+- Spoken text drops emoji and line breaks. Claude errors are one plain sentence.
+
+**Needs Caleb**
+- The Anthropic API account behind Pipeline (and OmniRoute's anthropic route) is out of credits, so Claude Q&A cannot answer yet. Topping it up is Caleb's call.
+
+## 2026-10-29: Map and Market Monitor are in Pipeline
+
+**Confirmed by Caleb**
+- "Build those other integrations and put them on there", after the engine dry runs: the Pipeline pages from the 2026-10-27 contract.
+
+**Done (on the Mac, tested)**
+- Pipeline has a Map page (`8`), a Market Monitor page (`9`) and a LIST / MAP switch on Deals. Farms are drawn on the map and saved to `map-crm/farms.local.json`. Make lead, Make deal, Dismiss, call list and postcard list all work through `app.py` and `crm.py`. Details and proof in `map-crm/PIPELINE-CHANGES.md`.
+- Flexmls alerts: `monitor.py` now reads the real layout of the "AIRE Farm - <town>" saved-search mail (price, address, "Status - MLS #" in text, the event word in the HTML). Live dry run went from 0 rows to 73 from 8 alerts: 22 new listings and 51 listing changes (Flexmls printed "Active" with a change icon and no event word, so the kind of change is shown as not stated rather than guessed). The 12 mails still skipped are account notices, not alerts.
+- Fixed a bug on `main`: every Pipeline dialog (Touched, Task, Note, Do Not Contact, deal editor) returned nothing on Save, so those writes never happened from the screen. Confirmed on the live app before the fix, fixed and re-tested.
+
+**Needs Caleb**
+- Draw the first real farms. Until then every signal reads "outside your farms".
+- Ascension and Livingston permits are still not in (no public permit source verified, open choice 1).
+
+## 2026-10-27: Map CRM and Market Monitor, engine built, Pipeline pages next
+
+**Confirmed by Caleb**
+- Wants the map CRM from an Instagram reel (alex.poplawskii, Tampa CRE broker, Claude Code CRM with a permit Market Monitor and a satellite map of every record) inside Pipeline. Use both data paths (Command and MLS through existing channels, plus parish public records), build both a Map page and a Market Monitor page, add a map toggle to the deals view. "Build it and push", defaults on every open choice.
+
+**Done**
+- `aire/map-crm/CONTRACT.md`: the prompt contract with Sol's review, modify, verify order and a status line on what is built.
+- `aire/crm/crm.py`: new Geo tab (added only when missing, like Tasks and Deals), `geocode` (Census batch geocoder, free, idempotent, ties resolved only when every candidate is one point, unmatched listed in a report and never pinned, one audit line per run), `lead` write for the Market Monitor's Make lead (same create path as a website lead, refuses duplicates), and `map` plus `market` sections in `feed.json` (pins by band with deals and farms, market rows with farm and nearest known person within two miles). 128 offline checks pass.
+- `aire/map-crm/geo.py`: geometry and the geocoder, 21 checks. `aire/map-crm/monitor.py`: EBR permits from the live SODA endpoint plus Flexmls alert mail, one row shape, farm tag, dry run by default, 15 checks.
+- Proof from the cloud: live SODA dry run returned 239 residential permits issued Oct 13 to 26 (70 roof, 57 minor, 54 moved in, 31 new build, 13 remodel), 238 with coordinates, the one without geocoded by Census. `crm.py geocode` run on a local snapshot through the real Census service pinned a public address and refused three made-up ones. `monitor.py pull --write` then `crm.py feed` on fixtures produced a feed with 8 market rows, farm tags and nearest-person joins. `FEED.md` documents the sections and the app's new calls.
+- Watched the reel through Chrome on the Mac mini. Audio not available, screens described in the contract.
+
+**Inference**
+- Louisiana is a non-disclosure state, so sold prices come only from MLS. Public records give permits, not prices.
+- Only East Baton Rouge has a public permit dataset found so far. Ascension and Livingston not verified.
+- ROAM MLS went live on Flexmls on 2026-10-26 (GBRAR mail). No saved-search alerts existed in aire@ yet, so the Flexmls parser follows the standard alert layout against a made-up fixture and reports what it cannot parse. It is unverified until the first real alert arrives.
+
+**Needs Caleb**
+- On the Mac: `git pull`, then the first-run steps in `aire/map-crm/README.md` (`crm.py geocode` creates the Geo tab and takes a few minutes for 3,600 contacts). The geocode report says which addresses to fix in the sheet.
+- Create one Flexmls saved-search alert per farm area to aire@ (new and changed listings, daily). Send the first alert's text with names removed so the parser can be checked against it.
+- Point Sol at `aire/map-crm/README.md`, section "What Sol builds in Pipeline".
+
+## 2026-10-22, evening: Pipeline rebuilt from the ground up, Jarvis style
+
+**Confirmed by Caleb (this session)**
+- "Build it from the ground up with only Claude Code as the main source", with the Jarvis command center look he sent (dark navy HUD, cyan glow, cut-corner panels, left nav, center core, live feed on the right, big action pill at the bottom), "change it up some" and "more animations". He also said he still wants the buttons, toggles, charts and systems of that reference. Two Instagram reels he sent as motion and voice references could not be opened from the cloud (Instagram shows a login wall), so the motion is from the still image only.
+
+**Done (cloud, tested against fixtures)**
+- `aire/pipeline-app/` now holds the whole app: `app.py` (standard-library Python server, the one caller of `crm.py`), `static/` (the screen, no build step, offline), `predraft.py` (drafts from the feed through `follow-up/pools.py` and `followups.build_feed_queue`), `fixtures/` (made-up people for `--demo`), `launchd/` and `install.sh` (server at login, Dock app in a Chrome app window). README has the build and run steps, every `crm.py` command the app calls, the three send gates and the screenshots.
+- What it does today: Command Center (overview counts, rotating core, live feed, active deals with stage bars, today's timeline, quick commands, send gauges, band chart, sources), Touches due, Tasks, Deals, New leads, Drafts queue, Sent today, compose drawer (text or email, their last three texts above the draft, send, skip, touched), deal editor, new task, note, Do Not Contact with reason, morning brief, problems list, keyboard shortcuts, search. Every write is `crm.py --json --client pipeline` with `touch`, `done` (with `sync-tasks` first for Next_Action rows), `task`, `deal`, `note`, `dnc`. Refresh runs `refresh_feed.sh` in the background.
+- Sends: Do Not Contact check through the engine's gate (dry-run touch), daily cap 25 texts and 25 emails from `out/send-log.json`, `PIPELINE_SENDER=live` or dry run. Dry run is the default and the screen says so.
+- `aire/crm/refresh_feed.sh` runs `pipeline-app/predraft.py` with the venv Python; the Codex folder fallback stays only for `Sources/predraft.py`.
+- 27 offline checks pass (`app.py --test`). 12 screenshots from the demo in `pipeline-app/screenshots/`, no real people in them.
+
+**Added the same evening, from the reels**
+- A Claude session on the Mac watched the two reels in Chrome and wrote up what is in them; Caleb pasted the notes into the cloud session and they are saved as `pipeline-app/REFERENCE.md` (Blueprint, Proof, Unknowns). What went into Pipeline: a particle neural-network core in the center (five clusters by band, streaks, radar sweep, energy follows the voice state), a voice loop in the browser (`static/voice.js`: wake word "hey Pipeline", Chrome speech recognition, speechSynthesis with a British voice, intents matched by plain words against the feed, no LLM, nothing sent by voice), LISTENING / THINKING / SPEAKING on the status chip, a transcript line and telemetry ticker in the core panel, a mic orb and typed-command box in the sidebar, and the bottom pill is now TALK TO PIPELINE with Compose next beside it. The intents were exercised by typing in headless Chromium (the brief reads the right names and counts); the microphone half runs only in Chrome on the Mac.
+
+- Caleb then asked for the Claude Q&A step and the ElevenLabs voice. Both added, both off until the key is in `~/.aire/pipeline.env`: a question the intents do not know goes to Claude (`claude-opus-5-5`, low effort, refusal fallback on, short spoken answer) with a compact view of today's feed (names, bands, next actions, last texts, tasks, deals, leads; no phones or emails), and everything Pipeline says goes through ElevenLabs (Daniel, `eleven_flash_v2_5`) with the browser voice as the fallback. Usage and a cost estimate in `out/voice-usage.json` and the Sources panel. Tested with the network faked; not yet called for real.
+
+- Calls through the ElevenLabs Speech Engine (Caleb: "create a Speech Engine instance, connect it to my own LLM through the transcript server protocol, stream speech back in real time"). `pipeline-app/speech_engine.py` is the transcript server on the ElevenLabs Python SDK: `create` makes the resource pointing at a public wss:// URL (ngrok), `serve` answers each transcript with Claude streamed (same feed view as the Q&A, cached in the system prompt, call rules on top), interruptions handled by the SDK. `app.py` mints the WebRTC token at `/api/voice/token`, the screen loads the pinned ElevenLabs client on demand and the bottom pill becomes CALL PIPELINE when all three keys are in `~/.aire/pipeline.env`. 9 offline checks for the server, 2 more in app.py. Not yet run against ElevenLabs for real.
+
+**Stubbed or not verified**
+- A real Speech Engine call: needs ngrok, the resource and the keys on the Mac. Steps in the README under "Calls".
+- The real Claude and ElevenLabs calls. The request shapes and counters are tested; the first real call happens on the Mac after the keys are in `~/.aire/pipeline.env`.
+- The microphone half of the voice loop and the spoken answers: headless Chromium has neither. First run on the Mac: open Chrome, press `v`, allow the mic, say "hey Pipeline, brief".
+- Live sending (Messages via `osascript`, Gmail via the follow-up token), refresh from the screen on the Mac, `install.sh` and the LaunchAgent: written for macOS, not run there. First real send should be to Caleb himself.
+- `stage` is served (`/api/stage`) but has no button.
+- The old Codex SwiftUI app is replaced, not copied. Its folder on the Mac and the Drive zip are not needed.
+
+**Needs Caleb**
+- On the Mac: `python3 aire/pipeline-app/app.py --demo` to see it, then `sh aire/crm/refresh_feed.sh` and `~/.aire/venv/bin/python aire/pipeline-app/app.py` for the real feed, then `sh aire/pipeline-app/install.sh` to keep it at login.
+- Say when to flip `PIPELINE_SENDER` to `live`, and whether 25 and 25 stay the caps.
+- Put `ANTHROPIC_API_KEY` and `ELEVENLABS_API_KEY` in `~/.aire/pipeline.env` on the Mac to turn on the Q&A step and the voice. Both spend per call; the screen shows the running count.
+- The Mac had no Homebrew and `~/.aire/venv` was on Python 3.9 (end of life). The Mac session is rebuilding it on 3.13 with uv; the LaunchAgent, `install.sh` and `refresh_feed.sh` only need `~/.aire/venv/bin/python`, so uv is fine. Full Disk Access must be granted to the real 3.13 binary (`readlink -f ~/.aire/venv/bin/python`), not the venv symlink.
+- For calls: `pip install elevenlabs` in the venv, run ngrok, `speech_engine.py create --ws-url wss://<ngrok host>/ws --save`, then `speech_engine.py serve`. Speech Engine minutes bill on the ElevenLabs plan on top of the Claude tokens.
+- The visual improvements list from before this rebuild was never found. Say what is still missing after seeing this version.
+- If the "Build, run and screenshot the Pipeline app" task card was started on the Mac, stop it: it would copy the Codex source into the same folder.
+
+## 2026-10-22: the Pipeline app gets a home in the repo
+
+**Confirmed (from the repo, not from running the app)**
+- The native Mac Pipeline app is Caleb's one daily tool and no parallel dashboard is built (`aire/STACK.md`, 2026-10-19). Codex built it on 2026-10-19 at `~/Documents/Codex/2026-10-19/task-3/PipelinePanel` on the Mac. Codex and ChatGPT were cancelled the same day, so Claude Code on the Mac maintains it now.
+- What it is wired to, from `aire/crm/FEED.md`, `crm.py` and `aire/follow-up/README.md`: it reads `crm/feed.json` (touches due, tasks, deals, new leads, counts, `header_ok`), `follow-up/out/text-queue.json` and `email-queue.json` (drafts for its compose box) and `command-reader/out/status.json` (the Command "login needed" warning). It writes back through `crm.py --json --client pipeline` with `touch`, `done`, `task`, `deal` (`stage`, `note`, `dnc` are also available), and refreshes with `ingest` then `feed`. Its `Sources/predraft.py` imports `follow-up/pools.py` and is run by `refresh_feed.sh` every 15 minutes.
+- The morning run of 2026-10-21 counted 7 touches logged by Pipeline the day before, so the `touch` path works on the real sheet (from the morning run log below).
+- A `pipeline-airdrop.zip` (230 MB) was uploaded to Caleb's Drive on 2026-10-22 at 2:30 pm Central. Inference: it is the app folder with build output. The cloud session could not unpack it (the Drive tool returns file bytes into the chat, and 230 MB does not fit).
+
+**Done (cloud)**
+- `aire/pipeline-app/` created: README with what the app reads, every `crm.py` command it calls back and the exact contract (`--json --client pipeline`, one JSON object out), a `.gitignore` for feed, queues, status, logs, audit files and build output, and `screenshots/README.md` naming the eight screenshots to take. No source yet.
+- `aire/crm/refresh_feed.sh`: `PIPELINE_PANEL` now defaults to `aire/pipeline-app`. The env override stays. Until the copy lands, it falls back to the Codex folder on the Mac when that folder still has `Sources/predraft.py`, so tonight's feed refresh does not lose the predraft step.
+- `aire/README.md` lists the new folder.
+
+**Not done, needs the Mac**
+- The copy itself, the build and run command, and the screenshots. A cloud session cannot read `~/Documents` on the Mac. Steps are in `aire/pipeline-app/README.md`, "Bringing the source into this folder", and in the suggested task card for this session.
+- What is stubbed and what broke in the app: unknown from here. The Mac session fills that in from the source and from running it.
+- The list of visual improvements Caleb asked for: not found in the repo, Slack, or Wispr Flow notes. Caleb, say them again in the Mac session or add them here.
+
+**Needs Caleb**
+- Start the "Copy the Pipeline app into aire/pipeline-app" task on the Mac (Claude Desktop or `claude remote-control` in `~/Caleb-s-Agents`).
+- Confirm the Drive zip is the app folder, or delete it if it was only for this session. It never gets committed.
+
 ## 2026-10-20: CRM engine, no more junk deals, feed ranks by texts first
 
 **Confirmed by Caleb (through the Mac session)**

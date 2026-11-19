@@ -4,3 +4,4 @@ cache/
 *.csv
 !tests/fixtures/*.csv
 __pycache__/
+out
