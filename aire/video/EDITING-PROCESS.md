@@ -2,7 +2,7 @@
 
 For Grok bot, Claude Code, or any agent that cuts a video for Caleb. Follow the steps in order. Do not skip a step because the last job went fine.
 
-Written 2026-11-19. Steps 1 and 5 are proven on a real Instagram reference. Steps 3, 4 and 6 are proven on made-up test clips only. No real listing has been cut with this process yet.
+Written 2026-11-19. Steps 1 and 5 are proven on a real Instagram reference. Step 0 is proven on one real clip. Steps 3, 4 and 6 are proven on made-up test clips only. No real listing has been cut with this process yet.
 
 ## The one rule
 
@@ -19,6 +19,20 @@ job/
   edl.json       the cut list. The only file that gets edited
   out/           previews, finals, timing.json
 ```
+
+## Step 0. When the footage and the editor are on different computers
+
+Raw clips are too big to pass around. One real clip from 2026-11-19 was 9.9 MB for 1.6 seconds of 4K. The Google Drive connector hands an agent nothing over 10 MB.
+
+On the computer that holds the footage:
+
+```bash
+python3 aire/video/proxies.py job/raw
+```
+
+It writes `job/proxies/` with a small copy of every clip under the same file name. That one real clip came out at 0.09 MB with the same 97 frames. Upload the `proxies` folder to Drive.
+
+The editor cuts from the proxies and sends back `edl.json`. Because names and timing match, the same cut list builds the final from the raw clips. Nobody has to make client footage public by link.
 
 ## Step 1. Watch the reference
 
