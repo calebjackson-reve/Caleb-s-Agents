@@ -1,0 +1,4 @@
+{"at": "{{NOW-20}}", "source": "Gmail, Chase alerts, last 30 days, read only (demo)", "error": null, "rows": [
+ {"threadId":"b1","sender":"Chase","subject":"Your account balance","snippet":"Your available balance is $18,420.55","received":"{{D-1}}T07:02:00-06:00","type":"Balance","amount":18420.55},
+ {"threadId":"b2","sender":"Chase","subject":"Direct deposit posted","snippet":"A direct deposit of $8,970.00 posted","received":"{{D-38}}T09:15:00-06:00","type":"Deposit","amount":8970.0},
+ {"threadId":"b3","sender":"Chase","subject":"Card used for an online purchase","snippet":"","received":"{{D-2}}T16:40:00-06:00","type":"Alert","amount":null}]}

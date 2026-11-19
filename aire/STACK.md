@@ -2,7 +2,7 @@
 
 The living record of which tool does which job. Skills read this file instead of asking Caleb. Update it when a tool changes, with the date. Newest decision wins.
 
-Last updated: 2026-10-19 (one-system rule)
+Last updated: 2026-11-10 (Grok bridge, one live host)
 
 ## One system (Caleb, 2026-10-19)
 Google Workspace is the only database and the only place data lives. Sheets is the database, Gmail the outbox, Calendar the schedule, Drive the files. KW Command stays because the brokerage requires it; the Mac companion reads it and the sheet mirrors it. Claude Code is the engine, this repo is where the code lives. No Supabase, no Airtable, no BoB Tools, no second database of any kind. A tool is added only if a paid subscription already covers it or nothing we pay for can do the job.
@@ -16,6 +16,8 @@ Trade money for time. Pick the fastest reliable option. Every tool below is "cur
 | Bulk and cheap: lead enrichment, listing data cleanup, tagging, first-pass drafts | Claude Haiku 5.5 | Cheapest fast Anthropic model, Oct 7 2026 | 2026-10-19 |
 | Everyday drafting and client copy | Claude Sonnet 5.5 | Mid tier, cache pricing dropped in October | 2026-10-19 |
 | Judgment, routing, anything Caleb reads before a client does | Claude Opus 5.5 or the Claude Code default | Top tier only where it matters | 2026-10-19 |
+| Hard drafts Caleb escalates (upset client, price talk, long silence) and phone calls | Grok bot, through the Pipeline bridge | Calling is built into Grok. Opus 5.5 is the fallback for drafts. Only on Caleb's press. | 2026-11-10 |
+| Scoring, due lists, caps, next move rules | No model, plain code | Free and repeatable. A model is called only when a rule cannot answer. | 2026-11-10 |
 | Very long documents (contracts, inspection packets, HOA docs) | Gemini 4 Argon | 1M output, intro pricing through Nov 30 2026 | watch |
 | Client-facing interactive calculators (net sheet, payment, rent vs buy) | Claude artifact, published from this repo | Interactive answers without building an app | 2026-10-19 |
 
@@ -28,9 +30,10 @@ Trade money for time. Pick the fastest reliable option. Every tool below is "cur
 | Social scheduling and GBP analytics | Metricool | Drafts only, Caleb schedules. |
 | Speed to lead | aire/speed-to-lead directive on the Mac | DRY_RUN until Caleb flips it. |
 | Running AIRE on the Mac | Apple Terminal with Claude Code | Free, built in. Every Mac-side tool starts here. |
-| Quick briefs and plugins (news, X, read-outs on the go) | Grok | Caleb keeps it (2026-10-19). Reading and briefs only, never client data or outbound drafts. Anything it produces that touches AIRE gets saved here. |
+| Briefs, X and public social reads, hard drafts, phone calls | Grok bot | Caleb lifted the reading-only rule on 2026-11-10. Grok may see client data and write hard drafts. It never sends a text or email: Pipeline is the one sender. A call dials only after Caleb taps Grok's own Call card. Contract: `aire/pipeline-app/CONTRACT-grok-bridge.md`. |
+| Notes and memory | Obsidian vault on the Mac, an AIRE folder inside it | Notes layer only (Caleb, 2026-11-10). The Sheet stays the system of record. The vault is outside this repo and never pushed. |
 | Dashboards | aire/command-center on the Mac, reading the Google Sheets | Phone view later: a Claude Dashboard over the same sheet, never a second database. |
-| Daily view | Pipeline (`aire/pipeline-app/`, local Python server plus a Jarvis-style screen, rebuilt 2026-10-22), reading aire/crm/feed.json | Caleb's one daily tool (2026-10-19). The command center web app was rejected as the front end; improve Pipeline, never build a parallel dashboard. |
+| Daily view | Pipeline (`aire/pipeline-app/`, local Python server plus a Jarvis-style screen, rebuilt 2026-10-22), reading aire/crm/feed.json | Caleb's one daily tool (2026-10-19). The command center web app was rejected as the front end; improve Pipeline, never build a parallel dashboard. One live host (Caleb, 2026-11-10): the Mac mini is the only Mac that sends, set with `PIPELINE_LIVE_HOST`. The MacBook Air is a second checkout and never sends. |
 | Short explainer video, no AI people | Claude Motion beta | watch. Candidate: monthly market update. |
 | Generated video for ads | Kling 4.0 via Higgsfield | Disclose as AI-generated. Never for listing photos. |
 | Community | Skool, AI for Agents group | See SKOOL-AI-FOR-AGENTS/ |

@@ -1,0 +1,11 @@
+{
+ "12 willow bend|||": {"lat": 30.4410, "lng": -91.1620, "match": "match", "geocoded_at": "2026-01-01T00:00:00+00:00"},
+ "40 tupelo lane|||": {"lat": 30.4235, "lng": -91.1340, "match": "match", "geocoded_at": "2026-01-01T00:00:00+00:00"},
+ "7 gum springs rd|||": {"lat": 30.4702, "lng": -91.1850, "match": "match", "geocoded_at": "2026-01-01T00:00:00+00:00"},
+ "91 camellia ct|||": {"lat": 30.4550, "lng": -91.1105, "match": "match", "geocoded_at": "2026-01-01T00:00:00+00:00"},
+ "3 persimmon way|||": {"lat": 30.4098, "lng": -91.1760, "match": "match", "geocoded_at": "2026-01-01T00:00:00+00:00"},
+ "58 mayhaw st|||": {"lat": 30.4880, "lng": -91.1490, "match": "match", "geocoded_at": "2026-01-01T00:00:00+00:00"},
+ "600 satsuma dr|||": {"lat": 30.3990, "lng": -91.1200, "match": "match", "geocoded_at": "2026-01-01T00:00:00+00:00"},
+ "14 sassafras ln|||": {"lat": 30.4330, "lng": -91.2010, "match": "match", "geocoded_at": "2026-01-01T00:00:00+00:00"},
+ "310 sugar mill way|||": {"lat": null, "lng": null, "match": "tie", "geocoded_at": "2026-01-01T00:00:00+00:00"}
+}

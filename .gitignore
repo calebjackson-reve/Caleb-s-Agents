@@ -12,3 +12,5 @@ skills/third-party/
 video-studio/engine/public/
 video-studio/engine/node_modules/
 video-studio/engine/bin/
+# Local app folder on the Mac with real CRM snapshots. Never tracked (Caleb, client data rule).
+aire/app/
