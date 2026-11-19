@@ -2,6 +2,25 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-19: brief for Grok and a lesson checker
+
+**Asked by Caleb**
+- An audit of how a Skool lesson gets made, start to finish, so Grok (chief of staff) knows what to tell Claude Code (worker), and so new lessons keep the vibe code lingo of the finished ones.
+
+**Done**
+- `BRIEF-FOR-GROK.md`: what is on record, the ten-part order every finished lesson follows, a lingo card pulled from three finished lesson transcripts in Drive, and how to command Claude Code.
+- `lesson_check.py`: eight checks on a script or a transcript (repeated passages, banned punctuation, hype words, undated prices, unexplained tech words, the closing action, the agent-in-control line, client data). Tested on all ten lessons and one made-up bad transcript.
+
+**Found**
+- Three finished lesson videos in Drive belong to a second course, AI TC Masterclass, taught on Grok bot. This repo has no record of how they were made.
+- The first upload of "AI Setup Foundation" has a passage of roughly 230 words twice in its transcript. Two uploads share that title with different scripts.
+- All ten lessons here say 8 to 11 minutes and hold 358 to 510 words, about 2.5 to 3.5 minutes spoken.
+
+**Needs Caleb**
+- Watch the first "AI Setup Foundation" upload around the repeat and say which upload is final.
+- Say who wrote the finished scripts and what made the videos, so the brief's unknowns can be closed.
+- Say whether "Grok bot uses a Cursor account to sign in" is right.
+
 ## 2026-10-19: first pinned post drafted
 
 **Done**
