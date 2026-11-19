@@ -89,6 +89,7 @@ For each clip note the usable seconds, what room it is and which way the camera 
 - `focus` is where the crop looks, `[left to right, top to bottom]`, 0 to 1. Set it on any shot where the vertical crop cuts off the subject.
 - Take the shot count and shot lengths from the reference's `teardown.json`. Do not guess them.
 - Clips shot at 60 frames a second can run at `"speed": 0.5` and stay smooth. That gives the slow push-in feel. Never slow a 30 frames a second clip, it turns choppy.
+- An optional top-level `"titles"` list puts text on screen. Each title has `start`, `end`, a `y` position and `lines` with `text`, `size` and a `font` file. Sizes are a fraction of the short side, and a long line shrinks to fit.
 - An optional top-level `"look"` holds ffmpeg filters for the color look, so the grade lives in the cut list too.
 
 ## Step 4. Build the preview
@@ -170,7 +171,7 @@ Source: `instagram.com/p/DX16PojSA9s`, account baycreativesmedia, posted 2026-05
 
 ## What the tools do not do yet
 
-- No text or titles. The address card has to be added another way.
+- Titles are plain text only: lines, size, position and a fade, set under `"titles"` in the cut list. No animation.
 - Color look is a plain filter string in the cut list. It is not a real grade.
 - Music only. Sound from the raw clips is dropped.
 - Hard cuts only, which is all this reference needs.

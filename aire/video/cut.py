@@ -25,6 +25,35 @@ def lufs(path, chain="anull"):
     return float(m[-1]) if m else None
 
 
+def title_filters(edl, root, w, h, tmp):
+    """drawtext filters for the cut list's titles. Sizes and positions are fractions of the frame height."""
+    out = []
+    for ti, t in enumerate(edl.get("titles", [])):
+        s0, e0, f = t["start"], t["end"], t.get("fade", 0.25)
+        y = t.get("y", 0.68) * h
+        alpha = f"if(lt(t,{s0 + f}),(t-{s0})/{f},if(gt(t,{e0 - f}),({e0}-t)/{f},1))"
+        for li, ln in enumerate(t["lines"]):
+            px = max(int(ln.get("size", 0.04) * min(w, h)), 8)  # sized off the short side so every shape matches
+            font_path = root / ln["font"] if ln.get("font") else None
+            if font_path:  # shrink a long line until it fits inside 90 percent of the width
+                try:
+                    from PIL import ImageFont
+                    while px > 8 and ImageFont.truetype(str(font_path), px).getlength(ln["text"]) > 0.9 * w:
+                        px -= 1
+                except ImportError:
+                    pass
+            txt = tmp / f"title-{ti}-{li}.txt"
+            txt.write_text(ln["text"])
+            font = f":fontfile='{font_path}'" if font_path else ""
+            x = "(w-text_w)/2" if t.get("align", "center") == "center" else str(int(t.get("x", 0.07) * w))
+            out.append(f"drawtext=textfile='{txt}'{font}:fontsize={px}:fontcolor=white:alpha='{alpha}':x={x}:y={int(y)}"
+                       f":borderw={max(px // 28, 1)}:bordercolor=black@0.45"
+                       f":shadowcolor=black@0.7:shadowx={max(px // 18, 1)}:shadowy={max(px // 18, 1)}"
+                       f":enable='between(t,{s0},{e0})'")
+            y += px * ln.get("gap", 1.35)
+    return ",".join(out)
+
+
 def size(shape, short):
     a, b = SHAPES[shape]
     w, h = (short, short * b // a) if a < b else (short * a // b, short)
@@ -82,7 +111,9 @@ def main():
                 gain = round(gain + (-14.0 - float(m[-1])), 2)
             cmd += [*src_a, "-filter:a", f"{shape_a},volume={gain}dB,alimiter=limit=0.84:level=0",
                     "-c:a", "aac", "-b:a", "192k", "-shortest"]
-        run(cmd + ["-c:v", "copy", "-movflags", "+faststart", str(dest)])
+        titles = title_filters(edl, root, w, h, cache)
+        vid = ["-vf", titles, *enc] if titles else ["-c:v", "copy"]  # titles need one more encode, plain cuts do not
+        run(cmd + [*vid, "-movflags", "+faststart", str(dest)])
         timing["shapes"][shape] = {"file": dest.name, "size": [w, h], "loudness_lufs": lufs(dest), "segments_built": built,
                                    "segments_reused": len(segs) - built, "seconds": round(time.time() - t0, 1)}
         print(f"{dest.name}  {w}x{h}  built {built}, reused {len(segs) - built}  {timing['shapes'][shape]['seconds']} s")
