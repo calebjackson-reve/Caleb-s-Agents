@@ -2,7 +2,7 @@
 
 For Grok bot, Claude Code, or any agent that cuts a video for Caleb. Follow the steps in order. Do not skip a step because the last job went fine.
 
-Written 2026-11-19. Steps 1 and 5 are proven on a real Instagram reference. Step 0 is proven on a real 9.7 GB transfer and one real clip. Steps 3, 4 and 6 are proven on made-up test clips only. No real listing has been cut with this process yet.
+Written 2026-11-19. Steps 1 and 5 are proven on a real Instagram reference. Step 0 is proven on a real 9.7 GB transfer and one real clip. Steps 0 to 6 were run on one real listing on 2026-11-19, to a preview. Step 7, the final export, has not been run on real footage.
 
 ## The one rule
 
@@ -88,6 +88,8 @@ For each clip note the usable seconds, what room it is and which way the camera 
 - `out - in`, divided by `speed`, is how long the shot runs on screen.
 - `focus` is where the crop looks, `[left to right, top to bottom]`, 0 to 1. Set it on any shot where the vertical crop cuts off the subject.
 - Take the shot count and shot lengths from the reference's `teardown.json`. Do not guess them.
+- Clips shot at 60 frames a second can run at `"speed": 0.5` and stay smooth. That gives the slow push-in feel. Never slow a 30 frames a second clip, it turns choppy.
+- An optional top-level `"look"` holds ffmpeg filters for the color look, so the grade lives in the cut list too.
 
 ## Step 4. Build the preview
 
@@ -169,7 +171,7 @@ Source: `instagram.com/p/DX16PojSA9s`, account baycreativesmedia, posted 2026-05
 ## What the tools do not do yet
 
 - No text or titles. The address card has to be added another way.
-- No color look. The warm, dark-corner grade is not applied.
+- Color look is a plain filter string in the cut list. It is not a real grade.
 - Music only. Sound from the raw clips is dropped.
 - Hard cuts only, which is all this reference needs.
 
