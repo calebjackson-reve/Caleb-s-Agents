@@ -108,3 +108,41 @@ Caleb asked for the round 3 fixes on November 12, 2026. These are in the page. N
 - **Page:** the photo fills the screen (no 4 pixel strips), chapter marks hide below the 3D part, the photo label moved off the busy edge, garage door panel lines and wreaths dropped from the line drawing.
 
 Still open from the round 3 list: the faint background sketch behind the hero subhead, a far tree showing over the ridge in the pool view, the fence showing past the right wing in one frame, draw calls (267 at peak, the judge wants under 120), part labels with reduced motion on, and the frame timing run that only a real laptop and phone can do.
+
+## Round 4, November 12, 2026: the real look
+
+**Overall 7.4. Not a pass.** 144 screenshots, all read. A fourth judge who saw nothing from earlier rounds, scoring against Caleb's newest note: "more like a 3D image of a real world instead of a cartoonish one, and then it actually looks like the house with more detail."
+
+This is the version that went live at `/builders/` the same day, on Caleb's word: "I like it. Let's put it live on the website."
+
+| Category | Weight | Score | What held it down |
+| --- | --- | --- | --- |
+| Model craft | 20% | 6.5 | Trees are clusters of smooth balls, hedges are rows of identical balls twice the size of the real boxwood, dormer roofs have siding where the photo has shingles, a tree, the barn and the pond stand in white space past the lawn |
+| Light and material | 15% | 6.5 | Dusk is much darker and colder than the photo it wipes to, window glass is flat black by day and flat cream at dusk, shadow edges are blocky up close |
+| Drawing and blueprint | 10% | 7.0 | Capped: the two long hips still break into dashes from above |
+| Camera and motion | 15% | 7.5 | Background and foreground blur makes the scene read as a miniature, a few edge crops |
+| Explore mode | 15% | 8.0 | All 16 look and view pairs work. Barn pin floats on the roof on the phone, take-apart names nothing |
+| Page craft | 15% | 8.5 | Body copy shown with no headline after dark, two markers overlap on the phone |
+| Technical | 10% | 8.0 | Capped at 8: no frame timing from a real graphics card. Would be 9 |
+
+The judge on the newest note: "The house itself now matches the real one in outline. Lay desktop/26 over desktop/29 and the ridge, gables, posts and dormers sit where the photo puts them. That part is good." Then it named where it still reads as a toy: the trees, the hedges, things floating past the lawn, the tilt-shift blur, the flat windows, the cold dusk, the flat lawn and pool.
+
+What it called professional: the photo match ("the best idea on the page and it is built with care"), the ink drawing, the blueprint on a phone, the house proportions (roof to wall ratio 1.55 against 1.54 in the photo), the brick, shingle and cedar textures, the viewer controls, the type, the fallbacks, a clean browser report.
+
+The overall number did not move from round 3 because the brief changed. Round 3 was scored as a paper model. Round 4 is scored as the real house in the real world, which is a harder test.
+
+The six fixes that would buy the most realism, in the judge's order:
+
+1. Real tree canopies in place of ball clusters, with the two front trees sized like the photo.
+2. Hedges cut to about 40% of their size, flattened, varied, with dark mulch and groundcover.
+3. Dusk lifted and warmed to the photo: sky about twice as bright, gable uplights flooding the whole face, amber on the posts.
+4. Real glass: a sky reflection by day, warm rooms that differ at dusk, curtains, proper sashes.
+5. The blur cut by about 70%, so it stops reading as a miniature.
+6. Ground and a contact shadow under the tree, barn and pond past the lawn, or fade them with it.
+
+| Round | Overall | Brief |
+| --- | --- | --- |
+| 1 | 6.3 | Paper model |
+| 2 | 7.1 | Paper model |
+| 3 | 7.4 | Paper model (part judged) |
+| 4 | 7.4 | Real house, real world |
