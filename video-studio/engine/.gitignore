@@ -1,0 +1,14 @@
+# Media, builds and renders stay on the Mac (see PHASE-0.md step 7)
+node_modules/
+bin/
+public/
+out/
+# Copied or adapted from Michael Ly's remotion-reel skill (millee.md). No
+# license, so not ours to publish in this public repo. Restore them on a new
+# machine with tools/fetch-millee-skills.sh and the copy step in PHASE-0.md.
+scripts/camera-check.py
+scripts/caption-tone.py
+scripts/measure-hook.py
+scripts/retime-captions.py
+scripts/verify-audio.py
+src/shared/
