@@ -2,7 +2,7 @@
 
 For Grok bot, Claude Code, or any agent that cuts a video for Caleb. Follow the steps in order. Do not skip a step because the last job went fine.
 
-Written 2026-11-19. Steps 1 and 5 are proven on a real Instagram reference. Step 0 is proven on one real clip. Steps 3, 4 and 6 are proven on made-up test clips only. No real listing has been cut with this process yet.
+Written 2026-11-19. Steps 1 and 5 are proven on a real Instagram reference. Step 0 is proven on a real 9.7 GB transfer and one real clip. Steps 3, 4 and 6 are proven on made-up test clips only. No real listing has been cut with this process yet.
 
 ## The one rule
 
@@ -20,19 +20,27 @@ job/
   out/           previews, finals, timing.json
 ```
 
-## Step 0. When the footage and the editor are on different computers
+## Step 0. Get the footage
 
-Raw clips are too big to pass around. One real clip from 2026-11-19 was 9.9 MB for 1.6 seconds of 4K. The Google Drive connector hands an agent nothing over 10 MB.
-
-On the computer that holds the footage:
+**The standard way in is a WeTransfer link** (Caleb, 2026-11-19). It has no size limit and works from any computer.
 
 ```bash
-python3 aire/video/proxies.py job/raw
+python3 aire/video/fetch.py "<wetransfer link>" job
 ```
 
-It writes `job/proxies/` with a small copy of every clip under the same file name. That one real clip came out at 0.09 MB with the same 97 frames. Upload the `proxies` folder to Drive.
+It downloads the transfer and unzips every video into `job/raw/`. Add `--check` to see if a link is still live without downloading. Links normally stop working about a week after they are sent, so fetch the day the link arrives.
 
-The editor cuts from the proxies and sends back `edl.json`. Because names and timing match, the same cut list builds the final from the raw clips. Nobody has to make client footage public by link.
+Do not pass raw footage through Google Drive. The Drive connector hands an agent nothing over 10 MB, and one real clip was 9.9 MB for 1.6 seconds of 4K.
+
+**When two agents on different computers need the same footage**, the one holding it runs:
+
+```bash
+python3 aire/video/inbox.py job/raw
+```
+
+That writes `job/raw/proxies/` with a small copy of every clip under the same name, a `clip-log.csv` that flags dark, shaky and very short clips, and `all-clips.jpg`. Upload the `proxies` folder. A cut list written on the proxies builds the final from the raw clips unchanged. Add `--watch` to leave it running on a folder so new clips are handled as they land.
+
+Nobody makes client footage public by link.
 
 ## Step 1. Watch the reference
 
