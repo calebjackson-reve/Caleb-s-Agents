@@ -2,6 +2,125 @@
 
 Newest first. Every entry says what was done, what it was based on, and what needs Caleb.
 
+## 2026-11-10, evening: only Bank hides, names on the map, the contact card and its plan
+
+**Confirmed by Caleb**
+- Hide only bank account info. Names, contacts and money always show.
+- The map shows first and last names. Keep the 150 pin label rule for now.
+- Ask Claude keeps sending names and amounts, never phones or emails. Bank figures stay out while hidden.
+- Clicking a person opens a contact card with that person's own plan, not the message box.
+- Coral moves to `#E04E28`. Hover, focus, short motion, Start here, Text and Call beside a name, color in More.
+
+**Done (branch `claude/pipeline-light-stage-tabs`, draft PR 105)**
+- `f574431`: the sitewide Show and Hide is gone. Only the Bank page hides its own figures. Map pins show the whole name on hover and as labels once 150 or fewer share the view.
+- This commit: `static/person.js` (the contact card and plan), Start here and row buttons in `stage.js`, the name fallback in `crm.py` feed rows and on every page, the lead form Save test, and the coral, hover, motion and More colors in `light.css`.
+- A fresh checker reviewed both rounds. Its findings were fixed before each commit: two ways the bank figures could stay shown, a wrong "no last touch" for people known only from the map, a message box that stayed open after a send, and a placeholder name that could reach the send log and Grok.
+- Tests: `ui_test.py` 405 checks, `app.py --test` 148, `bridge.py --test` 28, `crm.py --test` and `heat.py --test` pass. Client-data check clean.
+
+**Not verified**
+- Nothing here has run as the live app on 4747. Seen only on the demo on 4811 with made up people, in Chrome on the mini.
+- Hover, focus and reduced motion are checked by reading the stylesheet, not on a phone.
+- How many blank names the first and last fallback fills on the real sheet. The live feed had 1,738 of 3,655 people with no display name before it.
+
+**Inference**
+- Group colors in More are my pick from the stage palette: Today yellow, Deals purple, Numbers blue, You green, System ink, Hot pink, Warm yellow. Coral stays off them so it only means under contract or a highlight.
+- After a send, a message opened for someone with no draft in the queue now closes. It used to stay open with Send live again. That is one line in `sendNow`, after the send, and it changes nothing about what is sent.
+
+**Needs Caleb**
+- Look at the demo, then mark PR 105 ready and merge if it is right.
+- On a phone the More groups are a sideways strip and get no color tab. Say so if you want one there.
+
+## 2026-11-10, late afternoon: heat score, Hot and Warm lists, and the audit
+
+**Confirmed by Caleb**
+- "Build an algorithm and a hot and warm list under my leads, where I can go and click on them specifically, and it doesn't have a button that I have to press." And: audit how hot, warm and cold are established and build a better automated way to find these leads.
+
+**Found (the audit, `enrichment/AUDIT-2026-11-10-temperature.md`)**
+- The scorer was never wired into the live app. Hot, warm and cold on screen were the sheet's band column, and the ranking inside a band was a count of texts. Intent words had no dates and fired on everyday talk. A hot band kept itself hot. "inactive" read as "active". Nothing cooled.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `crm/heat.py`: one deterministic score, 0 to 100, with reasons. No model, no writes. 19 checks.
+- `enrichment/execution/imessage_signals.py`: intent words are dated and the patterns are tighter.
+- `crm/crm.py`: the feed carries `heat`. `crm.py heat` prints counts only. 158 checks.
+- Pipeline: Hot and Warm pages under Leads. The whole row is the click target, no buttons. Demo screenshots 27 to 30.
+
+**Not verified**
+- Not run on real data. No count of real people at each temperature. No backtest against closed deals. The thresholds are a starting point.
+
+**Inference**
+- Reading "doesn't have a button that I have to press" as: the lists fill themselves, and a row opens on one click with no button inside it.
+
+**Needs Caleb**
+- Merge, pull on the mini, let one feed refresh run, then open Hot and Warm. Run `crm.py heat --signals ...` on the mini and send back the counts line.
+- Say which names on the Hot list are wrong and why, so the weights get tuned on his book.
+
+## 2026-11-10, afternoon: Grok on the screen, and the mini on main
+
+**Confirmed by Caleb**
+- Merged PR 102 and PR 103. The mini now runs `main` (the Mac session reported it on `main` with the Scorecard, the draft writer and the Grok code, sender and caller both dry).
+- "I dont think it has all the new buttons and grok installations on the visuals and front end design can we look into that and fix it."
+
+**Found**
+- The Grok controls were one plain block at the bottom of the message box, built against the old look. No button on the cards, no page in the menu. On a phone the message box was a fixed 520px, so only its right half showed.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- A **Call** button on every card with a valid number and a CRM id. It opens the message box on the Grok panel.
+- The Grok panel redone in the current design: Call and Hard draft tabs, a status box, a line saying what will and will not happen, the caps.
+- A **Grok calls** page in the Today group, with a count of what is waiting on Caleb.
+- Privacy switch now hides Grok drafts, call summaries, names and numbers.
+- The message box fits a phone screen.
+- 148 checks in `app.py --test`, `ui_test.py` and `bridge.py --test` all pass. Demo screenshots 22 to 26 in `pipeline-app/screenshots/`, made up people.
+
+**Not verified**
+- Not seen on the mini's screen or on Caleb's iPhone. No real job has gone to Grok.
+
+**Needs Caleb**
+- Merge, pull on the mini, restart, and look at a card, the message box and the Grok calls page.
+
+## 2026-11-10, later: the Grok bridge, dry
+
+**Confirmed by Caleb**
+- Passed on Grok's word that its Pipeline bridge webhook routine is ready, takes only `call` and `hard_draft` jobs, and writes one result file per `job_id`.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `pipeline-app/bridge.py`: builds the job in the contract's shape, checks Grok's limits before it leaves, posts it, reads result files. 28 offline checks.
+- `pipeline-app/app.py`: `/api/call` and `/api/draft/escalate`, through Do Not Contact, quiet hours and the live host. A finished call is logged once as a touch. A card nobody tapped reads expired. 14 new checks, 113 in all, 0 failures.
+- The compose box has a GROK block: Call through Grok, Hard draft from Grok, Use this draft. Each card shows the job's state.
+- Demo screenshots on made up people: `screenshots/20-grok-call-dry-run.png`, `21-grok-hard-draft.png`.
+
+**Not verified**
+- No job has been posted to Grok's real webhook. The cloud session has no URL or key and should not. How the key and header are sent is a best reading of the three values Grok named.
+- Nothing has run on the mini.
+
+**Needs Caleb**
+- On the mini, in `~/.aire/pipeline.env`: `PIPELINE_GROK_WEBHOOK_URL`, `PIPELINE_GROK_AUTH_HEADER` (and `PIPELINE_GROK_WEBHOOK_KEY` if the panel shows the key apart from the header), `PIPELINE_TRANSFER_TO`. Leave `PIPELINE_CALLER` off until he wants the first real job.
+- Either register the mini with Grok, or install Google Drive for desktop on the mini and point `PIPELINE_BRIDGE_RESULTS` at the Pipeline Bridge Results folder. Without one of those, results cannot reach Pipeline.
+
+## 2026-11-10: Grok bridge plan, and three new send gates
+
+**Confirmed by Caleb**
+- Pipeline stays the one CRM screen and sender. Grok adds approved phone calls and the harder drafts through a webhook. The 2026-10-19 rule keeping Grok to reading and briefs is lifted. Every text and call still waits for his press. Obsidian is the notes layer, the Sheet stays the record.
+- "Live Pipeline is the Mac mini." The MacBook Air is a second checkout and never sends.
+
+**Done (branch `claude/youthful-cori-51kii6`)**
+- `pipeline-app/CONTRACT-grok-bridge.md`: the build contract, with Grok's job and result format and its calling limits.
+- `STACK.md`: Grok row rewritten, Obsidian row added, one live host noted, plain code and Grok added to the model table.
+- `crm/crm.py`: the feed carries `no_text_consent`, the people whose newest website form left the texting box unchecked. 2 new checks, 153 in all (`python3 aire/crm/crm.py --test`).
+- `pipeline-app/app.py` `State.send()`: a text to someone on that list is refused. Nothing goes between 8 pm and 8 am Central, except a text back to someone waiting on a reply. `PIPELINE_SENDER=live` only works on the Mac named in `PIPELINE_LIVE_HOST`. 13 new checks, 99 in all, 0 failures (`python3 aire/pipeline-app/app.py --test`).
+- README: gate order now matches the code (cap first), test count corrected.
+- The Command Center pages, iPhone access over Tailscale, phone alerts and Ask Claude (PR 95, merged 2026-11-06) never got an entry here. They are documented in `pipeline-app/README.md`.
+
+**Not verified**
+- Nothing here has run on the mini. Everything Grok said about its calling (limits, the Call card, no number needed) is Grok's word, not a test.
+- KW Command reading is still a login heartbeat only. Which Deals sheet the Scorecard reads is still unchecked.
+
+**Inference**
+- The quiet hours exception for replies is my call, not Caleb's words. It is one line to remove.
+
+**Needs Caleb**
+- After merge, on the mini: add `PIPELINE_LIVE_HOST=<name from hostname -s>` to `~/.aire/pipeline.env` and restart Pipeline. Until then sending is dry and the screen says so.
+- One live text to his own number. Register the mini with Grok. Then tell Grok to create the webhook routine.
+
 ## 2026-11-05: Text button on each card, delivery shows on its own
 
 **Confirmed by Caleb**

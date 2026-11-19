@@ -1,0 +1,10 @@
+[
+  {"platform": "ig", "handle": "example.dana", "display_name": "Dana Sample", "profile_url": "https://www.instagram.com/example.dana/", "action": "comment", "post_ref": "https://www.instagram.com/p/EXAMPLE-SOLD-1", "seen_at": "2026-11-11T18:04:00-06:00", "bio_town": "Central", "post_type": "just_sold", "said": "Example comment: love this one"},
+  {"platform": "instagram", "handle": "@Example.Riley", "display_name": "Riley Sample", "action": "like", "post_ref": "https://www.instagram.com/p/EXAMPLE-SOLD-1", "seen_at": "2026-11-11T09:00:00-06:00"},
+  {"platform": "ig", "handle": "example.casey.tester", "action": "share", "post_ref": "https://www.instagram.com/p/EXAMPLE-LISTING-1", "seen_at": "2026-11-11", "bio_town": "Saint George", "post_type": "listing"},
+  {"platform": "ig", "handle": "example.mike", "display_name": "Mike Fixture", "action": "comment", "seen_at": "2026-11-10T12:00:00-06:00", "bio_town": "Zachary"},
+  {"platform": "ig", "handle": "example.jordan", "display_name": "Jordan Example", "action": "like", "seen_at": "2026-11-10T12:00:00-06:00"},
+  {"platform": "ig", "handle": "example.pat", "display_name": "Pat", "action": "comment", "seen_at": "2026-11-10T12:00:00-06:00"},
+  {"platform": "fb", "handle": "example.liz", "display_name": "Liz Demo", "action": "comment", "seen_at": "2026-11-10T12:00:00-06:00", "bio_town": "Prairieville"},
+  {"platform": "ig", "handle": "example.family", "display_name": "Someone Fixture", "action": "like", "seen_at": "2026-11-09T12:00:00-06:00", "bio_town": "Walker"}
+]

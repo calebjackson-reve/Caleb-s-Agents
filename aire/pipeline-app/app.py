@@ -42,18 +42,21 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import platform
 import re
+import socket
 import subprocess
+import tempfile
 import sys
 import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 import ipaddress
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -63,6 +66,21 @@ HERE = Path(__file__).resolve().parent
 AIRE = HERE.parent
 sys.path.insert(0, str(HERE))
 import jarvis  # noqa: E402  (the voice's tools and tool loop)
+import cc  # noqa: E402  (Command Center numbers)
+import auth  # noqa: E402  (the login for anything but this Mac)
+import push  # noqa: E402  (phone alerts)
+import cc_ask  # noqa: E402  (Ask Claude on every Command Center page)
+import bridge  # noqa: E402  (jobs out to Grok bot, result files back)
+import drafter  # noqa: E402  (Claude writes each draft from the template, in Caleb's voice)
+import links  # noqa: E402  (deals tied to people, the Fix list)
+import outreach  # noqa: E402  (the hold rules: who gets no canned draft, and the reason a draft may lead with)
+import social_match  # noqa: E402  (engagers file to CRM candidates; Confirm / Not them write only matches.json)
+import proof  # noqa: E402  (the weekly proof line)
+import learn  # noqa: E402  (the learning loop for the seller score and the call list)
+import insight  # noqa: E402  (the call list, the fuller contact card, the likely-seller score)
+import handoff  # noqa: E402  (texts and emails Caleb sends himself from the Text and Email buttons)
+import sale_links  # noqa: E402  (Who was this sale? Confirm / Pick / Skip write only sale-links.json on this Mac)
+import sale_pins  # noqa: E402  (closed-sale roofs on Home Ground: Census-geocoded once, cached outside git)
 STATIC = HERE / "static"
 FIXTURES = HERE / "fixtures"
 OUT = HERE / "out"
@@ -84,22 +102,26 @@ def load_env_file(path: Path = ENV_FILE) -> int:
             if k and k not in os.environ:
                 os.environ[k] = v
                 n += 1
-    except FileNotFoundError:
+    except OSError:  # missing, or a sandbox that blocks the key folder: run without keys
         pass
     return n
 
 
+# PIPELINE_DATA_ROOT points the CRM views at another checkout's aire/ folder (a branch preview reading the live
+# feed, drafts, map files and engine). The send log never moves: a preview's dry runs must not count against the
+# live daily caps.
+DATA = Path(os.getenv("PIPELINE_DATA_ROOT") or AIRE).expanduser()
 PATHS = {
-    "feed": AIRE / "crm" / "feed.json",
-    "text_queue": AIRE / "follow-up" / "out" / "text-queue.json",
-    "email_queue": AIRE / "follow-up" / "out" / "email-queue.json",
-    "command_status": AIRE / "command-reader" / "out" / "status.json",
+    "feed": DATA / "crm" / "feed.json",
+    "text_queue": DATA / "follow-up" / "out" / "text-queue.json",
+    "email_queue": DATA / "follow-up" / "out" / "email-queue.json",
+    "command_status": DATA / "command-reader" / "out" / "status.json",
     "send_log": OUT / "send-log.json",
     "voice_usage": OUT / "voice-usage.json",
     "feed_log": Path.home() / ".aire" / "logs" / "feed.log",
-    "farms": AIRE / "map-crm" / "farms.local.json",
-    "dismissed": AIRE / "map-crm" / "cache" / "dismissed.json",
-    "lists": AIRE / "map-crm" / "out",
+    "farms": DATA / "map-crm" / "farms.local.json",
+    "dismissed": DATA / "map-crm" / "cache" / "dismissed.json",
+    "lists": DATA / "map-crm" / "out",
 }
 # Sonnet 5.5: on 4 real questions (2026-10-29) it answered in 2.5 to 3.1 s with complete, accurate answers; Opus 5.5
 # took 3.4 to 5.7 s and cut one answer off; Haiku 5.5 was faster but miscounted and dropped an answer.
@@ -121,7 +143,6 @@ DEMO_PATHS = {
     "dismissed": OUT / "demo-dismissed.json",
     "lists": OUT / "demo-lists",
 }
-CRM_PY = AIRE / "crm" / "crm.py"
 
 # ---- the dashboard page (static/dash.js). Everything it shows comes from files the Mac already writes plus one weather call.
 WORLD = AIRE / "world"
@@ -184,7 +205,8 @@ def tool_rows(paths: dict, world: dict, command: dict, feed_age, sent_today: int
     rows.append({"key": "market", "name": "Market Monitor", "state": "ok" if world and (world.get("market") or {}).get("gbrar") else "off", "detail": "GBRAR loaded" if world and (world.get("market") or {}).get("gbrar") else "no data"})
     rows.append({"key": "lp", "name": "Luxury Presence webhook", "state": "off", "detail": "register it (aire/lp-webhook)"})
     return rows
-REFRESH_SH = AIRE / "crm" / "refresh_feed.sh"
+CRM_PY = DATA / "crm" / "crm.py"
+REFRESH_SH = DATA / "crm" / "refresh_feed.sh"
 SHEET_URL = "https://docs.google.com/spreadsheets/d/{sheet_id}/edit"
 COMMAND_URL = "https://agent.kw.com/command"
 DEAL_STAGES = ["lead", "consult", "active", "showing", "under_contract", "closed", "lost"]
@@ -192,6 +214,33 @@ DEAL_STAGES = ["lead", "consult", "active", "showing", "under_contract", "closed
 
 def now() -> datetime:
     return datetime.now(CENTRAL)
+
+
+# Nothing leaves between 8 pm and 8 am Central (aire/follow-up/directive.md). One exception: a text back to someone
+# who texted last and is still waiting, because that is a conversation they started.
+QUIET_START, QUIET_END = 20, 8
+
+
+def in_quiet_hours(at: datetime) -> bool:
+    return at.hour >= QUIET_START or at.hour < QUIET_END
+
+
+def short_host(name: str) -> str:
+    return (name or "").strip().lower().split(".")[0]
+
+
+def live_gate(sender: str, live_host: str, this_host: str) -> tuple[str, str]:
+    """One live host (Caleb, 2026-11-10): only the Mac named in PIPELINE_LIVE_HOST may send. Anywhere else live
+    becomes dry, with the reason for the screen. Two live Macs would split the caps and could text someone twice."""
+    if sender != "live":
+        return sender, ""
+    want, have = short_host(live_host), short_host(this_host)
+    if not want:
+        return "dry", (f"Sending is dry: PIPELINE_SENDER is live but PIPELINE_LIVE_HOST is not set. On the Mac that sends, "
+                       f"add PIPELINE_LIVE_HOST={have} to ~/.aire/pipeline.env and restart Pipeline.")
+    if want != have:
+        return "dry", f"Sending is dry on this Mac ({have}). Only {want} sends, so nobody gets the same text twice."
+    return "live", ""
 
 
 def today() -> date:
@@ -369,6 +418,20 @@ class State:
         self.max_texts = int(os.getenv("PIPELINE_MAX_TEXTS", "25"))
         self.max_emails = int(os.getenv("PIPELINE_MAX_EMAILS", "25"))
         self.sender = "dry" if demo else (os.getenv("PIPELINE_SENDER", "dry").strip().lower() or "dry")
+        self.sender, self.sender_blocked = live_gate(self.sender, os.getenv("PIPELINE_LIVE_HOST", ""), socket.gethostname())
+        self.clock = now  # the send gates read the time through this, so the tests can set it
+        # Grok bridge (CONTRACT-grok-bridge.md): calls and hard drafts. Dry unless PIPELINE_CALLER=live on the live host.
+        self.caller = "dry" if demo else (os.getenv("PIPELINE_CALLER", "dry").strip().lower() or "dry")
+        self.caller, self.caller_blocked = live_gate(self.caller, os.getenv("PIPELINE_LIVE_HOST", ""), socket.gethostname())
+        self.bridge_log_path = (send_log.parent / "bridge-log.json") if send_log else OUT / ("demo-bridge-log.json" if demo else "bridge-log.json")
+        self.bridge_results = (send_log.parent / "bridge") if send_log else (
+            OUT / "demo-bridge" if demo else Path(os.getenv("PIPELINE_BRIDGE_RESULTS") or OUT / "bridge").expanduser())
+        self.bridge_writeback = ({"method": "local_file", "hint": "aire/pipeline-app/out/bridge"}
+                                 if os.getenv("PIPELINE_BRIDGE_WRITEBACK", "").strip().lower() == "local"
+                                 else {"method": "google_drive", "hint": "Pipeline Bridge Results"})
+        self.max_hard_drafts = int(os.getenv("PIPELINE_MAX_HARD_DRAFTS", "10"))
+        self.transfer_to = "" if demo else os.getenv("PIPELINE_TRANSFER_TO", "")
+        self.bridge_post = bridge.post_job
         self.crm = DemoCRM(self) if demo else EngineCRM(python_for_crm())
         self.refresh = {"running": False, "started": "", "finished": "", "ok": None, "detail": ""}
         self.usage_path = (send_log.parent / "voice-usage.json") if send_log else OUT / ("demo-voice-usage.json" if demo else "voice-usage.json")
@@ -386,7 +449,129 @@ class State:
         self.messages = {"checked": False, "ok": None, "detail": ""}
         if self.sender == "live" and not demo and platform.system() == "Darwin":
             threading.Thread(target=self.check_messages, daemon=True).start()
+        self.handoff_state = {"messages_ok": None, "gmail_ok": None, "detail": ""}
+        self._gmail = None
+        self._signoff: str | None = None
+        self.draft_note = ""
         self.started = now().isoformat(timespec="seconds")
+        # Command Center reads: out/cc/ on the Mac (written by the sync), made-up fixtures in demo.
+        self.ask_log = (send_log.parent / "ask-usage.json") if send_log else OUT / ("demo-ask-usage.json" if demo else "ask-usage.json")
+        self.push_subs = (send_log.parent if send_log else OUT) / ("demo-push-subs.json" if demo else "push-subs.json")
+        self.push_key = (send_log.parent / "push-keys.json") if send_log else (OUT / "demo-push-keys.json" if demo else push.KEY_FILE)
+        self.auth = auth.Auth((send_log.parent if send_log else OUT) / ("demo-sessions.json" if demo else "sessions.json"),
+                              login_file=Path(os.getenv("PIPELINE_LOGIN_FILE") or auth.LOGIN_FILE))
+        # The new-lead alert to Caleb himself: only on the one Mac that may send, never in demo. PIPELINE_SELF_ALERT=off stops it.
+        self.lead_alert_path = (send_log.parent if send_log else OUT) / ("demo-lead-alerts.json" if demo else "lead-alerts.json")
+        self.self_alert = (not demo and platform.system() == "Darwin" and os.getenv("PIPELINE_SELF_ALERT", "on").strip().lower() != "off"
+                           and bool(short_host(os.getenv("PIPELINE_LIVE_HOST", ""))) and short_host(os.getenv("PIPELINE_LIVE_HOST", "")) == short_host(socket.gethostname()))
+        self._insight: tuple = (None, None)
+        # Local records only, on this Mac: Caleb's Fix list taps, the weekly proof rows, and the learning loop's folder.
+        local = send_log.parent if send_log else OUT
+        self.fix_log_path = local / ("demo-fix-log.json" if demo else "fix-log.json")
+        self.proof_path = local / ("demo-proof.json" if demo else "proof.json")
+        self.learn_dir = local / ("demo-learn" if demo else "learn")
+        self.cc_dir = cc.demo_folder(FIXTURES / "cc", Path(tempfile.mkdtemp(prefix="pipeline-cc-"))) if demo else OUT / "cc"
+        # Social matching: the engagers files and matches.json live in $PIPELINE_SOCIAL_DIR (default ~/.aire/social), outside git.
+        # Demo reads the real folder only when PIPELINE_SOCIAL_DIR is set on purpose, so a demo never shows anyone's real handles.
+        self.social_dir = social_match.social_dir() if (not demo or os.getenv("PIPELINE_SOCIAL_DIR")) else None
+        self._social: tuple = (None, None)
+        # Closed-sale roofs. Demo reads a made-up cache and never has a geocoder. Live reads ~/.aire/enrichment/closed-sales-geo.json;
+        # only serve() sets sale_geocoder, so a test or a bare State never sends an address anywhere.
+        self.sale_cache_path = FIXTURES / "sale-geo.json" if demo else sale_pins.default_cache_path()
+        self.sale_geocoder = None
+        # Sale links: suggestions (sales-owner-matches.json) and Caleb's answers (sale-links.json) live in ~/.aire/enrichment, outside git.
+        # Demo never reads them: it uses a made-up matches file in its own cc folder and a throwaway links file, unless an override env is set on purpose.
+        env_m, env_l = os.getenv("PIPELINE_SALE_MATCHES"), os.getenv("PIPELINE_SALE_LINKS")
+        self.sale_matches_path = Path(env_m) if env_m else (self.cc_dir / "sales-owner-matches.json" if demo else sale_links.default_matches_path())
+        self.sale_links_path = Path(env_l) if env_l else (local / "demo-sale-links.json" if demo else sale_links.default_links_path())
+        self._sale: tuple = (None, [], {})
+        self._sale_retry = 0.0
+
+    def sale_roofs(self) -> tuple[list, dict]:
+        """Sale pins from the sales record, rebuilt only when sales.json changes. Counts carry no addresses."""
+        f = self.cc_dir / "sales.json"
+        lf = self.sale_links_path
+        stamp = (f.stat().st_mtime_ns if f.exists() else 0, str(self.sale_cache_path), self.sale_geocoder is not None,
+                 lf.stat().st_mtime_ns if lf.exists() else 0, (self.feed() or {}).get("generated_at"))
+        if self._sale[0] != stamp or (self._sale[2].get("error") and time.time() > self._sale_retry):
+            try:
+                rows = cc._rows(cc.load(self.cc_dir).get("sales"))
+                pins, counts = sale_pins.build(rows, self.sale_cache_path, self.sale_geocoder,
+                                               linked=sale_links.resolver(sale_links.load_links(lf)), people=self.sale_people())
+            except Exception as e:  # a bad sales row must never take the map down
+                pins, counts = [], {"error": type(e).__name__}
+            self._sale = (stamp, pins, counts)
+            self._sale_retry = time.time() + 600  # a failed geocode (network down) is tried again in ten minutes, not on every refresh
+        return self._sale[1], self._sale[2]
+
+    def confirmed_sale_closes(self, sales: list) -> dict:
+        """{person_id: [{close}]} from the confirmed sale links, for last touch. A link whose sale is no longer in the sales record is ignored."""
+        links = sale_links.load_links(self.sale_links_path)
+        if not links["confirmed"]:
+            return {}
+        known = [sale_links.ident(r) for r in sales if not sale_pins.is_lease(r)]
+        out: dict = {}
+        for e in links["confirmed"]:
+            if e.get("person_id") and any(sale_links._same(e, k) for k in known):
+                out.setdefault(str(e["person_id"]), []).append({"close": str(e.get("close") or "")[:10]})
+        return out
+
+    def sale_people(self) -> dict:
+        """{person_id: display} for the feed people: all a sale link ever needs to know about a person."""
+        feed = self.feed() or {}
+        return {str(p["person_id"]): str(p.get("display") or "") for p in feed.get("people") or [] if isinstance(p, dict) and p.get("person_id") and p.get("display")}
+
+    def sale_cards(self) -> dict:
+        """The Who was this sale? cards for the Fix list, plus every feed person (id and display only) for Pick another contact."""
+        feed = self.feed() or {}
+        if not feed or "_error" in feed:
+            return {"pending": [], "people": []}
+        people = self.sale_people()
+        rows = cc._rows(cc.load(self.cc_dir).get("sales"))
+        cards = sale_links.pending(rows, sale_links.load_matches(self.sale_matches_path), sale_links.load_links(self.sale_links_path), people)
+        return {"pending": cards}
+
+    def sale_people_search(self, q: str) -> dict:
+        """Up to eight existing feed people whose display matches q (id and display only). For Pick another contact."""
+        needle = str(q or "").strip().lower()
+        hits = []
+        if needle:
+            for pid, display in sorted(self.sale_people().items(), key=lambda kv: kv[1].lower()):
+                if needle in display.lower():
+                    hits.append({"person_id": pid, "display": display})
+                if len(hits) == 8:
+                    break
+        return {"ok": True, "people": hits}
+
+    def sale_decide(self, sale_key: str, action: str, person_id: str = "") -> dict:
+        """Caleb's tap on one Who was this sale? card: confirm, pick another feed person, or skip. Only a sale on the pending
+        list and a person already in the feed can be answered. Writes sale-links.json and nothing else."""
+        if action not in ("confirm", "pick", "skip"):
+            raise CRMError("a sale is confirmed, picked or skipped")
+        feed = self.feed() or {}
+        if not feed or "_error" in feed:
+            raise CRMError("the CRM feed is not loaded, so nothing was saved")
+        pid = str(person_id or "").strip()
+        with self.lock:
+            rows = cc._rows(cc.load(self.cc_dir).get("sales"))
+            card = next((c for c in self.sale_cards()["pending"] if c["sale_key"] == str(sale_key or "")), None)
+            row = next((r for r in rows if card and sale_links.ident(r)["sale_key"] == card["sale_key"]), None)
+            if card is None or row is None:
+                raise CRMError("that sale is no longer on the list")
+            if action == "skip":
+                pid = ""
+                sale_links.skip(self.sale_links_path, row)
+            else:
+                if action == "confirm":
+                    pid = (card.get("suggestion") or {}).get("person_id") or ""
+                    if not pid:
+                        raise CRMError("there is no suggested contact to confirm")
+                if pid not in self.sale_people():
+                    raise CRMError("that person is not in the contact list")
+                sale_links.confirm(self.sale_links_path, row, pid)
+            self._sale = (None, [], {})
+            self._insight = (None, None)
+        return {"ok": True, "result": {"sale_key": card["sale_key"], "action": action, "person_id": pid}, "sale_cards": self.sale_cards()}
 
     # ---- reads
     def feed(self) -> dict:
@@ -395,6 +580,15 @@ class State:
                 self._demo_cache = read_json(self.paths["feed"], {})
             return self._demo_cache
         return read_json(self.paths["feed"], {})
+
+    def record_feed(self) -> dict:
+        """The feed with every deal row saying what the one deal record says (links.apply_records). Claude's answers
+        read this, so they give the same side, close date, price and status as the screens."""
+        feed = self.feed() or {}
+        try:
+            return links.apply_records(feed, self.insight().get("records") or []) if feed and "_error" not in feed else feed
+        except Exception:
+            return feed
 
     def check_messages(self) -> dict:
         try:
@@ -410,10 +604,301 @@ class State:
         log = read_json(self.send_log_path, [])
         return log if isinstance(log, list) else []
 
+    def cc_payload(self) -> dict:
+        """The Command Center payload: one lead list, one deal source, built with the CRM feed. A lead counts as
+        replied once a real (not dry run) text or email went to that person."""
+        sent = {r.get("person_id") for r in self.send_log() if r.get("status") == "sent" and r.get("person_id")}
+        p = cc.build(self.cc_dir, feed=self.feed() or {}, replied=sent)
+        p["formula"] = insight.formula()  # the scoring rules in words, for the Sources page
+        try:  # deals tied to people, the Fix list, the proof line and the learning scorecard: never worth losing the page over
+            ins = self.insight()
+            fx_log = read_json(self.fix_log_path, [])
+            p["ties"], p["deal_counts"], p["checkins"] = ins["ties"], ins["deal_counts"], ins["checkins"]
+            p["deal_records"] = ins["records"]
+            fx_log = fx_log if isinstance(fx_log, list) else []
+            p["fixes"] = links.with_decisions(ins["fixes"], fx_log)
+            self._fix_duplicate_choices(p["fixes"], fx_log)
+            p["link_deals"] = ins.get("link_deals") or []  # live Deals rows with no person tied. Read only: nothing is written anywhere.
+            p["cap_note"] = links.cap_note(p.get("goals") or {})
+            gone = lambda k: (p["fresh"].get(k) or {}).get("state") == "missing"  # a read that never ran: its numbers are unknown, not 0
+            p["proof"] = {**proof.build(today(), None if gone("leads") else p["leads"], self.send_log(), self.bridge_log(), p["calendar"], None if gone("deals") else ins["ties"], read_json(self.proof_path.with_name(self.proof_path.name.replace("proof", "appointments")), [])), "monday": today().weekday() == 0}
+            p["learn"] = learn.scorecard(self.learn_dir, self.learn_events(p["calendar"], ins["ties"]), today())
+        except Exception as e:
+            p["round58_error"] = f"{type(e).__name__}: {e}"[:200]
+        p["social_matches"] = self.social_matches()  # Match social profiles on the Fix list: candidates only, no phone, email or message text
+        p["sale_cards"] = self.sale_cards()  # Who was this sale? on the Fix list: address, owner names, a suggested person. No phone or email.
+        p["speed"] = insight.lead_cards(p["leads"])  # the New leads card on Home: no reply yet, newest first, a first text each
+        return p
+
+    def insight(self) -> dict:
+        """The call list, the likely sellers and the book the contact card reads, worked out once per feed and read."""
+        feed = self.feed() or {}
+        # Already reached today: a text or email that really went, or a call through Grok that finished (outreach.reached_today).
+        done = outreach.reached_today(self.send_log(), self.bridge_log(), today().isoformat())
+        stamp = lambda n: (lambda p: p.stat().st_mtime_ns if p.exists() else 0)(self.cc_dir / f"{n}.json")
+        vstamp = (lambda p: p.stat().st_mtime_ns if p.exists() else 0)(self.learn_dir / "versions.json")
+        key = (feed.get("generated_at"), today().isoformat(), now().strftime("%H:%M")[:4], tuple(sorted(done)), stamp("deals"), stamp("sales"), stamp("leads"), vstamp,
+               (lambda p: p.stat().st_mtime_ns if p.exists() else 0)(self.sale_links_path))
+        if self._insight[0] != key:
+            raw = cc.load(self.cc_dir)
+            sales = cc._rows(raw.get("sales"))
+            cards, _ = cc.merge_deals(cc.deal_cards(cc.deal_rows(cc._rows(raw.get("deals"))), today(), now()), feed.get("deals") or [])
+            ties = links.tie(cards, feed)
+            over = links.overlay(ties, feed)
+            recs = links.records(cards, ties)  # the one deal record: side, close date, price and status for every screen
+            shown = links.apply_records(links.apply_overlay(feed, over), recs)  # a signed contract or a closing sets the stage Pipeline shows, never the sheet
+            side_of = links.sides(ties)
+            sided = links.apply_sides(shown, side_of)  # call list reads the sheet's side. Book keeps `shown`, so its seller score still sees real selling talk.
+            weights = learn.current(self.learn_dir)
+            leads = cc.attach_crm(cc._rows(raw.get("leads")), (feed.get("new_leads") or []) + (feed.get("touches_due") or []))
+            book = insight.Book(shown, cc.deal_rows(cc._rows(raw.get("deals"))), sales, [{**r, "origin": "email"} for r in leads], today(), weights=weights["seller"],
+                                 sale_links=self.confirmed_sale_closes(sales))
+            self._insight = (key, {"book": book, "call10": insight.call10(sided, today(), done, weights=weights["call10"]), "sellers": book.sellers(25),
+                                   "call_pool": insight.call10(sided, today(), done, n=60, weights=weights["call10"])["rows"], "seller_pool": book.sellers(200),
+                                   "ties": ties, "records": recs, "overlay": over, "sides": side_of, "deal_counts": links.counts(ties), "board_contract": links.board_contract(ties),
+                                   "checkins": links.checkins(ties, sales, feed, today()), "fixes": links.fixes(feed, cards, ties, sales),
+                                   "link_deals": links.unlinked(ties)})
+        return self._insight[1] or self.insight()  # a retrain cleared it between the two lines: build it again
+
+    def screened_queues(self, feed: dict | None = None) -> tuple[dict, dict]:
+        """The text and email queue files with the hold rules applied as they are read (outreach.screen), so a queue
+        file written before a deal was linked or a call was made cannot show a canned check-in. Each kept draft carries
+        its reason, register and recent openers for the drafter. If the rules cannot be worked out, no draft is shown."""
+        text_q, email_q = read_json(self.paths["text_queue"], {}), read_json(self.paths["email_queue"], {})
+        feed = self.feed() if feed is None else feed
+        if not feed or "_error" in feed:
+            return text_q, email_q
+        try:
+            try:
+                ins = self.insight()
+            except Exception:
+                ins = {}
+            day = (insight._day(feed.get("as_of")) if self.demo else None) or today()  # the made-up feed is read as of its own day
+            ctx = outreach.context(feed, day, self.send_log(), self.bridge_log(), ins.get("ties"), ins.get("checkins"))
+            ctx["social"] = self.social_state().get("_reason") or {}  # "saw on IG/FB" reasons for linked people; empty when there are no files
+            text_q, email_q, _ = outreach.screen(text_q, email_q, ctx)
+        except Exception as e:
+            note = f"The hold rules could not be worked out ({type(e).__name__}), so no draft is shown."
+            text_q = {**text_q, "drafts": [], "screen_error": note} if isinstance(text_q, dict) and "_error" not in text_q else text_q
+            email_q = {**email_q, "drafts": [], "screen_error": note} if isinstance(email_q, dict) and "_error" not in email_q else email_q
+        return text_q, email_q
+
+    # ---- the Fix list, Good call and Not useful, and the weekly learning. All of it stays in files on this Mac.
+    @staticmethod
+    def _keep_text(keeper: str, n_ids: int) -> str:
+        return f"Keep {keeper}, copy anything missing onto it, and delete the other{'s' if n_ids > 2 else ''} in the Contacts tab."
+
+    def _fix_duplicate_choices(self, fixes: dict, fx_log: list) -> None:
+        """Duplicate people rows: list every contact in the group as a choice (id, name, stage, city, last touch, and only
+        whether there is a phone or an email, never the number or address), and show the keeper Caleb picked on approved rows.
+        Read only. Old log rows without a keeper keep the suggested fix text."""
+        feed = self.feed() or {}
+        people = links._people(feed)
+        last = {}
+        for e in fx_log:
+            last[e.get("id")] = e
+        for r in fixes.get("open", []):
+            if r.get("kind") != "duplicate":
+                continue
+            ids = str(r.get("ref") or "").split("+")
+            r["options"] = []
+            for i, pid in enumerate(ids):
+                q = people.get(pid, {})
+                r["options"].append({"id": pid, "display": str(q.get("display") or "").strip() or "no name", "stage": str(q.get("stage") or "").strip(),
+                                     "city": str(q.get("city") or "").strip(), "last_touch": str(q.get("last_touch") or "")[:10],
+                                     "has_phone": bool(q.get("has_phone") or str(q.get("phone") or "").strip()), "has_email": bool(q.get("has_email") or str(q.get("email") or "").strip()), "suggested": i == 0})
+        for r in fixes.get("approved", []):
+            k = str(last.get(r["id"], {}).get("keeper") or "")
+            ids = str(r.get("ref") or "").split("+")
+            if r.get("kind") == "duplicate" and k in ids:
+                r["keeper"] = k
+                r["fix"] = self._keep_text(k, len(ids))
+
+    def fix_decide(self, fix_id: str, action: str, keeper: str = "") -> dict:
+        """Caleb's tap on one Fix list row: approve (his to change in the sheet) or dismiss. Logged, nothing else.
+        Pipeline never edits the sheets from here."""
+        if action not in ("approve", "dismiss", "reopen"):
+            raise CRMError("a fix is approved, set aside or reopened")
+        row = next((r for r in self.insight()["fixes"] if r["id"] == fix_id), None)
+        with self.lock:
+            log = read_json(self.fix_log_path, [])
+            log = log if isinstance(log, list) else []
+            if action == "reopen":
+                log = [e for e in log if e.get("id") != fix_id]
+            elif not row:
+                raise CRMError("that row is no longer on the Fix list")
+            else:
+                rec = {"at": now().isoformat(timespec="seconds"), "id": fix_id, "action": action, **{k: row[k] for k in ("kind", "ref", "what", "problem", "fix")}}
+                if keeper and action == "approve":  # Duplicate people: the contact Caleb chose to keep. Recorded here only, nothing is merged or deleted.
+                    ids = str(row["ref"]).split("+")
+                    if row["kind"] != "duplicate" or keeper not in ids:
+                        raise CRMError("that contact is not in this group")
+                    rec["keeper"] = keeper
+                    rec["fix"] = self._keep_text(keeper, len(ids))
+                log.append(rec)
+            write_json(self.fix_log_path, log[-2000:])
+        return {"ok": True, "result": {"id": fix_id, "action": action}}
+
+    # ---- Match social profiles. Reads the engagers files; Confirm and Not them write only $PIPELINE_SOCIAL_DIR/matches.json.
+    # Nothing here touches the CRM, a sheet or the Deals tab, and nothing here sends.
+    def _social_day(self, feed: dict) -> date:
+        return (insight._day(feed.get("as_of")) if self.demo else None) or today()
+
+    def _social_handles(self) -> list[dict]:
+        """handles.csv (person_id,platform,handle) from the enrichment folder: read only. Demo never reads it."""
+        p = HERE.parent / "enrichment" / "out" / "handles.csv"
+        if self.demo or not p.exists():
+            return []
+        try:
+            with p.open(newline="", encoding="utf-8-sig") as f:
+                return [{(k or "").strip().lower(): (v or "").strip() for k, v in r.items()} for r in csv.DictReader(f)]
+        except OSError:
+            return []
+
+    def social_state(self) -> dict:
+        """{pending, pending_total, confirmed, linked, rows, files} for the Fix list, and the recent engagement of linked
+        people for the drafter's reason. No phone, email or message text goes into `pending`. Cached on the files."""
+        empty = {"pending": [], "pending_total": 0, "confirmed": 0, "linked": 0, "rows": 0, "files": 0}
+        d, feed = self.social_dir, self.feed() or {}
+        if d is None or not feed or "_error" in feed:
+            return empty
+        day = self._social_day(feed)
+        try:
+            files = tuple(sorted((p.name, p.stat().st_mtime_ns) for p in d.iterdir() if p.name == "matches.json" or p.name.startswith("engagers-"))) if d.is_dir() else ()
+            key = (str(d), feed.get("generated_at"), day.isoformat(), files)
+            if self._social[0] != key:
+                handles = self._social_handles()
+                rows, _ = social_match.load_engagers(d, until=day)
+                hs = handles + social_match.confirmed_handle_rows(social_match.load_matches(d))
+                self._social = (key, {**social_match.view(d, outreach.context(feed, day), handles, day),
+                                      "_reason": social_match.for_ctx(social_match.to_signal_rows(rows), hs, day)})
+            return self._social[1]
+        except Exception:
+            return empty
+
+    def social_decide(self, platform: str, handle: str, contact_id: str, action: str) -> dict:
+        """Caleb's tap on one Match social profiles row: Confirm, or Not them. Only a pair that is on the pending list can be
+        answered. Writes matches.json and nothing else."""
+        if self.social_dir is None:
+            raise CRMError("Social matching has no folder to write to here")
+        if action not in ("confirm", "reject"):
+            raise CRMError("a match is confirmed or marked Not them")
+        feed = self.feed() or {}
+        if not feed or "_error" in feed:
+            raise CRMError("the CRM feed is not loaded, so nothing was saved")
+        plat, h, cid = social_match.norm_platform(platform), social_match.social.norm_handle(str(handle or "")), str(contact_id or "").strip()
+        day = self._social_day(feed)
+        with self.lock:
+            full = social_match.view(self.social_dir, outreach.context(feed, day), self._social_handles(), day, cap=10 ** 6)
+            if not any(c["platform"] == plat and c["handle"] == h and str(c["contact_id"]) == cid for c in full["pending"]):
+                raise CRMError("that match is no longer on the list")
+            try:
+                social_match.decide(self.social_dir, plat, h, cid, action)
+            except ValueError as e:
+                raise CRMError(str(e))
+            self._social = (None, None)
+        return {"ok": True, "result": {"platform": plat, "handle": h, "contact_id": cid, "action": action}, "social_matches": self.social_matches()}
+
+    def social_matches(self) -> dict:
+        """social_state without the drafter's private half: what /api/state and /api/cc carry."""
+        return {k: v for k, v in self.social_state().items() if not k.startswith("_")}
+
+    def feedback(self, which: str, person_id: str, verdict: str) -> dict:
+        try:
+            return {"ok": True, "result": learn.add_feedback(self.learn_dir, which, person_id, verdict, now())}
+        except ValueError as e:
+            raise CRMError(str(e))
+
+    def learn_events(self, calendar: list | None = None, ties: list | None = None) -> dict:
+        if calendar is None:
+            raw = cc.load(self.cc_dir)
+            calendar = cc.cal_events(cc._rows(raw.get("calendar")), ((raw.get("config") or {}).get("rows") or {}).get("coordinator_domains") or [])
+        kept = read_json(self.proof_path.with_name(self.proof_path.name.replace("proof", "appointments")), [])  # the calendar read only looks forward
+        return learn.events(self.feed() or {}, self.send_log(), self.bridge_log(), (kept if isinstance(kept, list) else []) + list(calendar),
+                            ties if ties is not None else self.insight()["ties"])
+
+    def learn_pass(self, at: datetime | None = None) -> dict:
+        """Log who was ranked this week, refresh what happened to everyone logged, keep last week's proof row, and on
+        Monday after 6 AM fit the weekly version. Local math on local files."""
+        at = at or now()
+        ins = self.insight()
+        added = learn.log_ranked(self.learn_dir, at.date(), ins["call_pool"], ins["seller_pool"])
+        ev = self.learn_events()
+        learn.outcome_log(self.learn_dir, ev, at.date())
+        version = learn.retrain(self.learn_dir, ev, at.date()) if learn.due(self.learn_dir, at) else None
+        if version:
+            self._insight = (None, None)
+        ap = self.proof_path.with_name(self.proof_path.name.replace("proof", "appointments"))
+        with self.lock:  # the calendar read only looks forward, so appointments that have happened are kept here
+            seen = read_json(ap, [])
+            write_json(ap, proof.past_appointments(seen if isinstance(seen, list) else [], self.cc_payload()["calendar"], at.date()))
+        p = self.cc_payload()
+        if "proof" in p:
+            with self.lock:
+                hist = read_json(self.proof_path, [])
+                write_json(self.proof_path, proof.keep(hist if isinstance(hist, list) else [], {k: v for k, v in p["proof"].items() if k != "monday"}))
+        return {"logged": added, "version": version}
+
+    def learn_loop(self, sleep=time.sleep) -> None:
+        while True:
+            try:
+                self.learn_pass()
+            except Exception:
+                pass
+            sleep(600)
+
+    def lead_alert_pass(self, notify=None, text=None) -> dict:
+        """Tell Caleb about each new lead once: a notification on this Mac and one iMessage to his own number
+        (SELF_ALERT_TO). The only send Pipeline makes without a tap, and it can reach nobody else: the number is not a
+        parameter. The first pass only learns the leads already there."""
+        cards = insight.lead_cards(self.cc_payload()["leads"])
+        ready = bool((read_json(self.cc_dir / "leads.json", {}) or {}).get("at"))  # the lead read has landed at least once
+        with self.lock:  # remember them first, so a lead can never alert twice even if a send hangs or fails
+            doc = read_json(self.lead_alert_path, {})
+            doc = doc if isinstance(doc, dict) and "_error" not in doc else {}
+            fresh, state = insight.new_lead_alerts(cards, doc.get("state") or {}, ready)
+            if state != doc.get("state"):
+                write_json(self.lead_alert_path, {"state": state, "log": doc.get("log") or []})
+        on, done = self.self_alert or notify is not None or text is not None, []
+        for c in fresh:  # outside the lock: Messages can take seconds to answer
+            line = insight.alert_text(c)
+            e = {"at": now().isoformat(timespec="seconds"), "key": c["key"], "text": line, "mac": "off", "imessage": "off"}
+            if on:
+                try:
+                    (notify or notify_mac)("Pipeline", line)
+                    e["mac"] = "shown"
+                except Exception as ex:
+                    e["mac"] = f"failed: {ex}"[:120]
+                try:
+                    e["imessage"] = (text or send_imessage)(SELF_ALERT_TO, line)
+                except Exception as ex:
+                    e["imessage"] = f"failed: {ex}"[:160]
+            done.append(e)
+        if done:
+            with self.lock:
+                doc = read_json(self.lead_alert_path, {})
+                write_json(self.lead_alert_path, {"state": (doc or {}).get("state") or state, "log": (((doc or {}).get("log") or []) + done)[-100:]})
+        return {"new": len(fresh), "alerts": done}
+
+    def lead_loop(self, sleep=time.sleep) -> None:
+        while True:
+            try:
+                self.lead_alert_pass()
+            except Exception:
+                pass
+            sleep(60)
+
     def sent_today(self) -> dict:
         d = today().isoformat()
         rows = [r for r in self.send_log() if r.get("at", "").startswith(d) and r.get("status") in ("sent", "dry-run")]
         return {"texts": sum(1 for r in rows if r["kind"] == "text"), "emails": sum(1 for r in rows if r["kind"] == "email")}
+
+    def left_today(self) -> dict:
+        """What really left the Mac today, and what was only a dry run. The screen never calls a dry run sent."""
+        d = today().isoformat()
+        rows = [r for r in self.send_log() if r.get("at", "").startswith(d)]
+        n = lambda st, k: sum(1 for r in rows if r.get("status") == st and r.get("kind") == k)
+        return {"sent_texts": n("sent", "text"), "sent_emails": n("sent", "email"), "dry_texts": n("dry-run", "text"), "dry_emails": n("dry-run", "email")}
 
     def last_texts(self, days: int = 30, recheck_minutes: int = 30, db: Path | None = None) -> dict:
         """The newest text to each person in the last `days`, for the "Texted 9:42 AM · delivered" line on their card.
@@ -434,7 +919,7 @@ class State:
                 continue
             if "delivery" not in r:
                 r["delivery"] = delivery_from_detail(r.get("status", ""), r.get("detail", ""))
-            if live and r.get("status") == "sent" and r["delivery"] in ("pending", "sent", "unknown") and now().timestamp() - t < recheck_minutes * 60:
+            if live and r.get("via") != "handoff" and r.get("status") == "sent" and r["delivery"] in ("pending", "sent", "unknown") and now().timestamp() - t < recheck_minutes * 60:
                 st = delivery_state(r.get("to", ""), t, db or CHAT_DB)
                 if st in ("delivered", "error", "sent") and st != r["delivery"]:
                     r["delivery"], changed = st, True
@@ -508,7 +993,7 @@ class State:
         try:
             from elevenlabs import ElevenLabs
         except ImportError:
-            raise CRMError("the elevenlabs package is not installed in Pipeline's Python (pip install elevenlabs)")
+            raise CRMError("Call mode needs a voice package that is not installed on this Mac yet. Ask Claude to install it")
         try:
             resp = ElevenLabs(api_key=self.eleven_key).conversational_ai.conversations.get_webrtc_token(agent_id=self.speech_engine_id)
         except Exception as e:
@@ -527,9 +1012,16 @@ class State:
                 "has_phone": bool(r.get("phone")), "has_email": bool(r.get("email"))} for r in f.get("touches_due", [])[:25]]
         tasks = [{"task": t.get("task"), "who": t.get("display"), "due": t.get("due"), "overdue": t.get("overdue"), "source": t.get("source")}
                  for t in f.get("tasks", [])[:20]]
-        deals = [{"address": d.get("address"), "who": d.get("display"), "side": d.get("side"), "stage": d.get("stage"), "price": d.get("price"),
-                  "expected_close": d.get("expected_close"), "next_step": d.get("next_step"), "last_event": d.get("last_event")} for d in f.get("deals", [])[:15]]
-        leads = [{"name": l.get("display"), "source": l.get("source"), "received": l.get("received"), "next_action": l.get("next_action")} for l in f.get("new_leads", [])[:15]]
+        # Deals and leads as the screens show them: the AIRE Deals sheet (the one deal source) and the one lead list
+        # (14 days, test leads out), so a spoken answer never disagrees with a page.
+        try:
+            cp = self.cc_payload()
+        except Exception:  # noqa: BLE001  (a missing Command Center cache must not break the voice)
+            cp = {}
+        deals = [{"address": d.get("deal"), "status": d.get("status"), "side": d.get("side"), "price": d.get("price"),
+                  "act_of_sale": d.get("act"), "next_step": d.get("next")} for d in cp.get("deals", []) if d.get("stage") not in ("closed", "out")][:15]
+        leads = [{"name": l.get("name"), "source": l.get("source"), "received": l.get("received"), "needs": (l.get("due") or {}).get("label")}
+                 for l in cp.get("leads", [])][:15]
         # The whole due list is too big to send, so the people a question most often reaches past the top 25 for:
         # hot and warm contacts quiet the longest, and everyone waiting on a reply.
         allrows = f.get("touches_due", [])
@@ -564,15 +1056,34 @@ class State:
         try:
             import anthropic
         except ImportError:
-            raise CRMError("the anthropic package is not installed in Pipeline's Python (pip install anthropic in ~/.aire/venv)")
+            raise CRMError("Claude answers need a package that is not installed on this Mac yet. Ask Claude to install it")
         client = anthropic.Anthropic(api_key=self.ask_key)
-        tools = jarvis.Tools(self.feed(), self.sent_today(), {"texts": self.max_texts, "emails": self.max_emails}, today().isoformat())
+        tools = jarvis.Tools(self.record_feed(), self.sent_today(), {"texts": self.max_texts, "emails": self.max_emails}, today().isoformat())
         r = self._ask_call(anthropic, lambda: jarvis.ask(client, self.ask_model, tools, question))
         if r.get("refused"):
             raise CRMError("Claude declined that one")
         u = self.log_claude("ask", r.get("model", self.ask_model), r["usage"], tool_calls=len(r["calls"]))
         return {"ok": True, "result": {"answer": r["answer"] or "I have nothing on that.", "model": r.get("model", self.ask_model),
                                        "proposals": r["proposals"], "tools_used": [c["tool"] for c in r["calls"]]}, "usage": u}
+
+    def cc_ask(self, page: str, question: str, private: bool) -> dict:
+        """Ask Claude about one Command Center page. Sonnet 5.5, low effort, a daily dollar cap (cc_ask.py)."""
+        if self.demo:
+            return {"ok": True, "answer": "Demo mode: on the Mac, with the Anthropic key set, Claude answers from this page's numbers. "
+                    "You asked: " + question[:160], "cost": 0, "spent": 0, "cap": cc_ask.CAP}
+        if not self.ask_key:
+            raise CRMError("Ask Claude is off: set ANTHROPIC_API_KEY in Pipeline's key file and restart Pipeline")
+        try:
+            import anthropic
+        except ImportError:
+            raise CRMError("Claude answers need a package that is not installed on this Mac yet. Ask Claude to install it")
+        p = self.cc_payload()
+        client = anthropic.Anthropic(api_key=self.ask_key, timeout=60.0)
+        try:
+            r = self._ask_call(anthropic, lambda: cc_ask.ask(client, p, page, question, private, self.ask_log, now()))
+        except ValueError as e:
+            raise CRMError(str(e))
+        return {"ok": True, **r}
 
     def _ask_call(self, anthropic, call):
         """Run one Claude call, turning SDK errors into sentences Pipeline can say out loud."""
@@ -631,32 +1142,67 @@ class State:
         self._bump_usage(spoken_chars=len(text))
         return audio
 
+    def feed_run(self) -> dict | None:
+        """How the last feed rebuild went, from the end of its log (refresh_feed.sh). None in demo or with no log."""
+        p = self.paths.get("feed_log")
+        if self.demo or not p:
+            return None
+        return feed_run_status(p, now())
+
     def snapshot(self) -> dict:
         feed = self.feed()
-        text_q = read_json(self.paths["text_queue"], {})
-        email_q = read_json(self.paths["email_queue"], {})
+        run = self.feed_run()
+        text_q, email_q = self.screened_queues(feed)  # held people are out before anything else reads the drafts
         command = read_json(self.paths["command_status"], {})
         feed_age = 0 if self.demo else file_age_minutes(self.paths["feed"])
         sent = self.sent_today()
         feed_ok = bool(feed) and "_error" not in feed
+        out_dir = self.send_log_path.parent
+        text_q, email_q, by_claude = drafter.apply(text_q, email_q, read_json(out_dir / "handoff" / "claude-drafts.json", {}), self.signoff())
+        log = self.send_log()
+        if feed_ok:  # a send Caleb made by hand and Pipeline confirmed is a touch, here only, never in the sheet
+            feed, text_q, email_q, _ = handoff.apply_touches(feed, text_q, email_q, log, today().isoformat())
+        by_person: dict = {}
+        for r in log[-400:]:
+            if r.get("person_id") and r.get("status") in ("sent", "opened"):
+                by_person.setdefault(r["person_id"], []).append({k: (r.get(k) or "")[:140] for k in ("at", "kind", "status", "sent_at", "confirmed_by", "service", "subject", "text")})
         if feed_ok and isinstance(feed.get("market"), dict):
             gone = self.dismissed()
             if gone:
                 feed = {**feed, "market": {**feed["market"], "rows": [r for r in feed["market"].get("rows", []) if r.get("id") not in gone]}}
+        if feed_ok and isinstance(feed.get("map"), dict):  # closed-sale roofs ride beside the people pins as kind=sale
+            spins, scounts = self.sale_roofs()
+            feed = {**feed, "map": {**feed["map"], "pins": list(feed["map"].get("pins") or []) + spins,
+                                    "counts": {**(feed["map"].get("counts") or {}), "sales": scounts.get("matched", 0), "sales_missed": scounts.get("misses", 0)}}}
         problems = []
+        try:  # a bad row in a read must never take the whole screen down
+            ins = self.insight() if feed_ok else {}
+            if feed_ok:
+                feed = links.apply_records(links.apply_sides(links.apply_overlay(feed, ins["overlay"]), ins.get("sides") or {}), ins.get("records") or [])
+        except Exception as e:
+            ins = {"call10": {"rows": [], "considered": 0, "left_out": {}}, "sellers": []}
+            problems.append({"level": "warn", "code": "insight_failed", "text": f"The call list and seller scores could not be worked out ({type(e).__name__}). The rest of the screen is fine."})
         if not feed:
-            problems.append({"level": "warn", "code": "no_feed", "text": "No feed.json yet. Run the refresh."})
+            problems.append({"level": "warn", "code": "no_feed", "text": "The CRM feed has not been built yet. Press refresh to build it."})
         elif "_error" in feed:
-            problems.append({"level": "warn", "code": "feed_unreadable", "text": f"feed.json could not be read ({feed['_error']})."})
+            problems.append({"level": "warn", "code": "feed_unreadable", "text": "The CRM feed could not be read. Press refresh to rebuild it."})
         elif feed.get("header_ok") is False:
             problems.append({"level": "stop", "code": "header_not_ok",
                              "text": "The Contacts header lost a column the engine needs: " + ", ".join(feed.get("missing_columns", []))})
+        if run and run["state"] == "failed":
+            problems.append({"level": "warn", "code": "feed_failed", "text": f"The CRM feed rebuild failed at {run['at_text']}: {run['detail']}. "
+                                                                          "The screens show the last good feed."})
         if feed_age is not None and feed_age > 60:
             problems.append({"level": "warn", "code": "feed_stale", "text": f"Feed is {feed_age // 60}h {feed_age % 60}m old."})
         if self.messages.get("checked") and not self.messages.get("ok"):
             problems.append({"level": "warn", "code": "messages_permission",
                              "text": "Pipeline cannot control Messages yet, so texts will not send. System Settings, Privacy and Security, Automation: "
-                                     "turn on Messages for Pipeline's Python, then restart Pipeline. (" + self.messages.get("detail", "")[:80] + ")"})
+                                     "turn on Messages for the Python entry Pipeline runs on, then restart Pipeline."})
+        if self.sender_blocked:
+            problems.append({"level": "warn", "code": "not_live_host", "text": self.sender_blocked})
+        elif self.caller_blocked:
+            problems.append({"level": "warn", "code": "not_live_host",
+                             "text": self.caller_blocked.replace("PIPELINE_SENDER", "PIPELINE_CALLER").replace("Sending is dry", "Grok jobs are dry")})
         if command.get("state") == "login needed":
             problems.append({"level": "warn", "code": "command_login",
                              "text": "Command needs a login. " + (command.get("detail") or "Open the AIRE Chrome profile and sign in once.")})
@@ -670,13 +1216,29 @@ class State:
             "platform": platform.system(),
             "feed_ok": feed_ok,
             "feed_age_minutes": feed_age,
-            "feed": feed if feed_ok else {},
+            "feed_run": run,
+            # facts (assessment, notes, household for every contact) stay on the server: a card asks for one person.
+            "feed": {k: v for k, v in feed.items() if k != "facts"} if feed_ok else {},
+            "call10": ins["call10"] if feed_ok else {"rows": [], "considered": 0, "left_out": {}},
+            "sellers": ins["sellers"] if feed_ok else [],
+            "has_facts": "facts" in feed,
+            "deal_counts": ins.get("deal_counts"), "board_contract": ins.get("board_contract"), "checkins": ins.get("checkins") or [],
+            "deal_records": ins.get("records") or [],
+            "link_deals": ins.get("link_deals") or [],  # live Deals rows with no person tied: a read-only list
+            "social_matches": self.social_matches() if feed_ok else {"pending": [], "pending_total": 0, "confirmed": 0, "linked": 0, "rows": 0, "files": 0},
+            "sale_cards": self.sale_cards() if feed_ok else {"pending": [], "people": []},
+            "lead_alert": {"on": self.self_alert, "last": ((read_json(self.lead_alert_path, {}) or {}).get("log") or [None])[-1]},
             "text_queue": text_q if "_error" not in text_q else {},
             "email_queue": email_q if "_error" not in email_q else {},
             "command": command if "_error" not in command else {},
-            "caps": {"texts": self.max_texts, "emails": self.max_emails, "sent_texts": sent["texts"], "sent_emails": sent["emails"]},
+            "caps": {"texts": self.max_texts, "emails": self.max_emails, **self.left_today()},
             "sent_today": [r for r in self.send_log() if r.get("at", "").startswith(today().isoformat())][-50:],
             "last_texts": self.last_texts(),
+            "bridge": self.bridge_view(),
+            "handoff": {**self.handoff_state, "pending": handoff.pending(log, now().timestamp())},
+            "sent_log": {k: v[-5:] for k, v in by_person.items()},
+            "drafts_by": {"on": drafter.ON and bool(self.ask_key or by_claude), "model": drafter.MODEL, "written": by_claude, "cap": drafter.CAP,
+                          "spent": cc_ask.spent_today(out_dir / "draft-usage.json", now()), "note": self.draft_note},
             "refresh": self.refresh,
             "problems": problems,
             "links": {"sheet": SHEET_URL.format(sheet_id=feed.get("sheet_id", "")) if feed.get("sheet_id") else "", "command": COMMAND_URL},
@@ -811,11 +1373,11 @@ class State:
             write_json(self.paths["dismissed"], {"ids": ids})
         return {"ok": True, "result": {"id": row_id, "dismissed": len(ids)}}
 
-    def make_lead(self, name: str, source: str, phone: str = "", email: str = "", note: str = "") -> dict:
+    def make_lead(self, name: str, source: str, phone: str = "", email: str = "", note: str = "", next_action: str = "") -> dict:
         if not name.strip() or not source.strip():
             raise CRMError("a lead needs a name and a source")
         args = ["lead", name.strip(), "--source", source.strip()]
-        for flag, v in (("--phone", phone), ("--email", email), ("--note", note)):
+        for flag, v in (("--phone", phone), ("--email", email), ("--note", note), ("--next-action", next_action)):
             if v and v.strip():
                 args += [flag, v.strip()]
         return self.crm.run(args)
@@ -870,6 +1432,12 @@ class State:
             raise CRMError("the draft is empty")
         if kind == "email" and not subject.strip():
             raise CRMError("an email needs a subject")
+        if kind == "text":
+            to = norm_phone(to) or ""
+            if not to:
+                raise CRMError("not a valid US number: use 10 digits")
+        elif not re.fullmatch(r"[^\s@<>,;]+@[^\s@<>,;]+\.[A-Za-z]{2,}", to.strip()):
+            raise CRMError("not a valid email address")
         sent = self.sent_today()
         cap = self.max_texts if kind == "text" else self.max_emails
         used = sent["texts"] if kind == "text" else sent["emails"]
@@ -877,6 +1445,15 @@ class State:
             raise CRMError(f"daily cap reached: {used} of {cap} {kind}s today. The rest wait for tomorrow.")
         # Do Not Contact, through the engine's own gate, without writing anything.
         self.crm.run(["touch", person_id, "pre-send check"], dry_run=True)
+        feed = self.feed() or {}
+        if kind == "text" and str(person_id) in {str(x) for x in feed.get("no_text_consent", [])}:
+            raise CRMError("no text consent: their website form did not check the box to be texted. Email or call instead.")
+        if in_quiet_hours(self.clock()):
+            waiting = kind == "text" and any(str(d.get("person_id")) == str(person_id) and d.get("owes_reply")
+                                             for d in feed.get("touches_due", []))
+            if not waiting:
+                raise CRMError("quiet hours: nothing goes out between 8 pm and 8 am Central, except a text back to "
+                               "someone waiting on your reply. This one waits for morning.")
         status, detail = "dry-run", "PIPELINE_SENDER is not live, nothing left the Mac"
         if self.sender == "live" and not self.demo:
             try:
@@ -891,7 +1468,7 @@ class State:
                 raise
             status = "sent"
         entry = {"at": now().isoformat(timespec="seconds"), "kind": kind, "person_id": person_id, "display": display,
-                 "to": to.strip(), "subject": subject.strip(), "chars": len(body), "status": status, "detail": detail,
+                 "to": to.strip(), "subject": subject.strip(), "chars": len(body), "text": body, "status": status, "detail": detail,
                  "delivery": delivery_from_detail(status, detail)}
         with self.lock:
             log = self.send_log()
@@ -904,6 +1481,239 @@ class State:
         elif self.demo:
             touched = self.crm.run(["touch", person_id, f"{kind} (demo)"])
         return {"ok": True, "result": entry, "touched": touched, "caps": {**self.sent_today(), "texts_cap": self.max_texts, "emails_cap": self.max_emails}}
+
+    # ---- Grok bridge: calls and hard drafts. Nothing here sends a text or an email, and nothing dials:
+    # a call job only asks Grok to show Caleb its Call card.
+    def bridge_log(self) -> list[dict]:
+        log = read_json(self.bridge_log_path, [])
+        return log if isinstance(log, list) else []
+
+    def bridge_job(self, job_type: str, person_id: str, display: str = "", phone: str = "", purpose: str = "",
+                   objective: str = "", context: str = "", instructions: str = "") -> dict:
+        if not person_id:
+            raise CRMError("every Grok job is tied to a person_id so the result can be logged")
+        # Do Not Contact, through the engine's own gate, without writing anything.
+        self.crm.run(["touch", person_id, "pre-call check"], dry_run=True)
+        at = self.clock()
+        feed = self.feed() or {}
+        row = next((r for r in feed.get("touches_due", []) + feed.get("new_leads", []) if str(r.get("person_id")) == str(person_id)), {})
+        who = {"person_id": person_id, "display": display or row.get("display", ""), "phone": phone or row.get("phone", ""),
+               "band": row.get("band", ""), "stage": row.get("stage", "")}
+        log = self.bridge_log()
+        try:
+            if job_type == "call":
+                if in_quiet_hours(at):
+                    raise CRMError("quiet hours: no calls between 8 pm and 8 am Central. This one waits for morning.")
+                job = bridge.build_job("call", who, at, purpose=purpose, objective=objective, context=context,
+                                       transfer_to=self.transfer_to, writeback=self.bridge_writeback)
+                bridge.check_call_limits(log, job["person"]["phone_e164"], at)
+            else:
+                used = sum(1 for r in log if r.get("job_type") == "hard_draft" and r.get("at", "")[:10] == at.date().isoformat())
+                if used >= self.max_hard_drafts:
+                    raise CRMError(f"daily cap reached: {used} of {self.max_hard_drafts} hard drafts today. Write this one yourself or wait for tomorrow.")
+                job = bridge.build_job("hard_draft", who, at, draft_instructions=instructions, context=context, writeback=self.bridge_writeback)
+        except bridge.BridgeError as e:
+            raise CRMError(str(e)) from None
+        entry = {"at": at.isoformat(timespec="seconds"), "job_id": job["job_id"], "job_type": job_type, "person_id": str(person_id),
+                 "display": who["display"], "to": job["person"].get("phone_e164", ""), "purpose": job["purpose"],
+                 "ask": (objective or instructions).strip()[:200], "status": "dry-run",
+                 "detail": "PIPELINE_CALLER is not live, nothing left the Mac", "result": None, "touched": False}
+        failed = None
+        if self.caller == "live" and not self.demo:
+            try:
+                self.bridge_post(job, os.getenv("PIPELINE_GROK_WEBHOOK_URL", ""), os.getenv("PIPELINE_GROK_WEBHOOK_KEY", ""),
+                                 os.getenv("PIPELINE_GROK_AUTH_HEADER", ""))
+                entry.update(status="posted", detail="Grok has the job. Open Grok and tap the Call card within 30 minutes."
+                             if job_type == "call" else "Grok has the job. The draft shows here when it is ready.")
+            except bridge.BridgeError as e:
+                failed = str(e)
+                entry.update(status="post_failed", detail=failed[:200])
+        with self.lock:
+            log = self.bridge_log()
+            log.append(entry)
+            write_json(self.bridge_log_path, log)
+        if failed:
+            raise CRMError(failed)
+        return {"ok": True, "result": entry}
+
+    def bridge_sync(self) -> list[dict]:
+        """Match result files to the jobs that asked for them. A finished call is logged once in the CRM, the
+        same way a sent text is. Returns the log."""
+        results = bridge.read_results(self.bridge_results)
+        to_touch = []
+        with self.lock:
+            log = self.bridge_log()
+            changed = False
+            for e in log:
+                res = results.get(e.get("job_id"))
+                if res and (e.get("result") or {}).get("status") != res["status"]:
+                    e["result"] = res
+                    changed = True
+                if (e.get("job_type") == "call" and e.get("status") == "posted" and (e.get("result") or {}).get("status") == "completed"
+                        and not e.get("touched")):
+                    e["touched"] = True  # marked before the write so two screens asking at once log it once
+                    changed = True
+                    to_touch.append(e)
+            if changed:
+                write_json(self.bridge_log_path, log)
+        for e in to_touch:
+            r = e["result"]
+            try:
+                self.crm.run(["touch", e["person_id"], ("call through Grok: " + " ".join(x for x in (r["outcome"], r["summary"]) if x))[:200]])
+            except CRMError as err:  # the call still happened: keep the result, show why the CRM line is missing
+                with self.lock:
+                    log = self.bridge_log()
+                    for x in log:
+                        if x.get("job_id") == e["job_id"]:
+                            x["touch_error"] = str(err)[:200]
+                    write_json(self.bridge_log_path, log)
+        return self.bridge_log() if to_touch else log
+
+    def bridge_view(self) -> dict:
+        """What the screen needs: the newest Grok job per person and today's counts. No webhook URL, no key."""
+        at = self.clock()
+        log = self.bridge_sync()
+        jobs: dict[str, dict] = {}
+        for e in log:
+            res = e.get("result") or {}
+            state = res.get("status") or ("expired" if bridge.card_expired(e, at) else "waiting" if e.get("status") == "posted" else e.get("status"))
+            jobs[e["person_id"]] = {"job_id": e["job_id"], "job_type": e["job_type"], "at": e["at"], "state": state, "purpose": e.get("purpose", ""),
+                                    "ask": e.get("ask", ""), "outcome": res.get("outcome", ""), "summary": res.get("summary", ""),
+                                    "draft_text": res.get("draft_text"), "touch_error": e.get("touch_error", "")}
+        since = (at.timestamp() - 86400)
+        calls = sum(1 for e in log if e["job_type"] == "call" and e["status"] == "posted" and datetime.fromisoformat(e["at"]).timestamp() > since)
+        drafts = sum(1 for e in log if e["job_type"] == "hard_draft" and e["at"][:10] == at.date().isoformat())
+        recent = [{"job_id": e["job_id"], "job_type": e["job_type"], "at": e["at"], "person_id": e["person_id"], "display": e.get("display", ""),
+                   "to": e.get("to", ""), **{k: jobs[e["person_id"]][k] for k in ("state", "outcome", "summary", "draft_text", "touch_error")
+                                             if jobs[e["person_id"]]["job_id"] == e["job_id"]},
+                   "purpose": e.get("purpose", ""), "ask": e.get("ask", "")} for e in reversed(log[-40:])]
+        for r, e in zip(recent, reversed(log[-40:])):  # an older job for the same person keeps its own state
+            if "state" not in r:
+                res = e.get("result") or {}
+                r.update(state=res.get("status") or ("expired" if bridge.card_expired(e, at) else "waiting" if e.get("status") == "posted" else e.get("status")),
+                         outcome=res.get("outcome", ""), summary=res.get("summary", ""), draft_text=res.get("draft_text"), touch_error=e.get("touch_error", ""))
+        return {"caller": self.caller, "purposes": bridge.PURPOSES, "jobs": jobs, "recent": recent,
+                "calls_24h": calls, "calls_cap": bridge.MAX_CALLS_24H, "drafts_today": drafts, "drafts_cap": self.max_hard_drafts}
+    # ---- hand-off: Caleb sends it himself in Messages or Gmail, Pipeline finds out (handoff.py)
+    def opened(self, kind: str, person_id: str, to: str, body: str, subject: str = "", display: str = "", draft: str = "", pool: str = "") -> dict:
+        """The Text or Email button opened Messages or Gmail. Logged as opened. Nothing is sent from here."""
+        if kind not in ("text", "email"):
+            raise CRMError("kind must be text or email")
+        to = (norm_phone(to) or "") if kind == "text" else to.strip()
+        if not to or (kind == "email" and not re.fullmatch(r"[^\s@<>,;]+@[^\s@<>,;]+\.[A-Za-z]{2,}", to)):
+            raise CRMError("not a valid " + ("US number" if kind == "text" else "email address"))
+        if kind == "text" and person_id and str(person_id) in {str(x) for x in (self.feed() or {}).get("no_text_consent", [])}:
+            raise CRMError("no text consent: their website form did not check the box to be texted. Email or call instead.")
+        with self.lock:
+            log = self.send_log()
+            entry, made = handoff.open_entry(log, now().isoformat(timespec="seconds"), kind, person_id, display, to, body, subject.strip(), draft, pool)
+            if made:
+                write_json(self.send_log_path, log)
+        return {"ok": True, "result": entry, "new": made}
+
+    def _save_handoff(self, log: list) -> None:
+        """Write confirmed lines onto the newest copy of the log, so a click that landed meanwhile is kept."""
+        with self.lock:
+            done = {e["id"]: e for e in log if e.get("id") and e.get("status") == "sent"}
+            fresh = [done.get(e.get("id"), e) if handoff.is_open(e) else e for e in self.send_log()]
+            write_json(self.send_log_path, fresh)
+
+    def handoff_check(self, db: Path | None = None, gmail=None) -> dict:
+        """One pass: look for the real send of every message opened in the last 15 minutes. Read only."""
+        log, at = self.send_log(), now().timestamp()
+        live = [e for e in log if handoff.is_open(e) and handoff.age(e, at) <= handoff.WINDOW + 60]
+        if not live:
+            return {"changed": 0}
+        if db is None and not self.demo and platform.system() == "Darwin":
+            db = CHAT_DB
+        if gmail is None and not self.demo and any(e["kind"] == "email" for e in live):
+            try:
+                if self._gmail is None:
+                    import cc_sync  # the read-only Google sign-in the Command Center sync already uses
+                    self._gmail = cc_sync.services()["gmail"]
+                gmail = self._gmail
+            except Exception as e:
+                self.handoff_state.update(gmail_ok=False, detail=f"{type(e).__name__}: {e}"[:160])
+        r = handoff.check(log, at, db, gmail)
+        self.handoff_state.update({k: r[k] for k in ("messages_ok", "gmail_ok") if r[k] is not None})
+        if r["changed"]:
+            self._save_handoff(log)
+            for e in log:
+                if e.get("id") in r["ids"]:
+                    handoff.record_pair(self.send_log_path.parent / "handoff", e)
+        return r
+
+    def handoff_answer(self, entry_id: str, sent: bool, db: Path | None = None) -> dict:
+        """Caleb's answer to "Did that send?": Sent marks it sent by him, Not sent takes the line out. On Sent, a
+        text's real words are read from Messages history when they are there (he may have rewritten all of it)."""
+        if db is None and not self.demo and platform.system() == "Darwin":
+            db = CHAT_DB
+        with self.lock:
+            log = self.send_log()
+            e = handoff.answer(log, entry_id, bool(sent), now().isoformat(timespec="seconds"))
+            if not e:
+                raise CRMError("that message is not waiting on an answer")
+            if sent and e.get("kind") == "text" and db is not None:
+                try:
+                    hit = handoff.find_sent_text(e["to"], datetime.fromisoformat(e["at"]).timestamp(), "", db, {x.get("msg_id") for x in log if x.get("msg_id")})
+                except handoff.Unreadable:
+                    hit = None
+                if hit:
+                    e.update(sent_at=hit["sent_at"], service=hit["service"], msg_id=hit["msg_id"], sent_text=hit["sent_text"])
+            write_json(self.send_log_path, log)
+        if sent:
+            handoff.record_pair(self.send_log_path.parent / "handoff", e)
+        return {"ok": True, "result": e, "sent": bool(sent)}
+
+    # ---- Claude writes each draft (drafter.py)
+    def signoff(self) -> str:
+        """The email sign-off the follow-up library adds. Claude never rewrites it."""
+        if self._signoff is None:
+            try:
+                sys.path.insert(0, str(AIRE / "follow-up"))
+                import followups
+                self._signoff = followups.SIGNOFF
+            except Exception:
+                self._signoff = ""
+        return self._signoff
+
+    def draft_pass(self, client=None) -> dict:
+        """Have Claude write the drafts that have no kept version yet. Never raises: the templates stay on a failure."""
+        out_dir = self.send_log_path.parent
+        if client is None:
+            if self.demo or not drafter.ON or not self.ask_key:
+                self.draft_note = "turned off" if not drafter.ON else "" if self.demo else "no Anthropic key on this Mac"
+                return {"written": 0, "note": self.draft_note}
+            try:
+                import anthropic
+                client = anthropic.Anthropic(api_key=self.ask_key, timeout=120.0)
+            except ImportError:
+                self.draft_note = "the anthropic package is not installed"
+                return {"written": 0, "note": self.draft_note}
+        try:
+            text_q, email_q = self.screened_queues()  # nobody on hold is drafted for, and each item carries its reason
+            r = drafter.run(client, text_q, email_q, out_dir / "handoff", out_dir / "draft-usage.json", now(), self.signoff())
+        except Exception as e:
+            out_of_credit = "credit balance" in str(e).lower()
+            r = {"written": 0, "note": "Claude is out of API credits, top them up in the Anthropic console" if out_of_credit else f"{type(e).__name__}: {e}"[:160]}
+        self.draft_note = r["note"]
+        return r
+
+    def draft_loop(self, sleep=time.sleep) -> None:
+        while True:
+            self.draft_pass()
+            sleep(300)
+
+    def handoff_loop(self, sleep=time.sleep) -> None:
+        if not self.demo and platform.system() == "Darwin":
+            ok, detail = handoff.probe(CHAT_DB)
+            self.handoff_state.update(messages_ok=ok, detail=detail)
+        while True:
+            sleep(60)
+            try:
+                self.handoff_check()
+            except Exception:
+                pass
 
     # ---- refresh
     def start_refresh(self) -> dict:
@@ -937,12 +1747,28 @@ class State:
         return self.refresh
 
 
+def norm_phone(v: str) -> str | None:
+    """+1 and 10 digits, or None. "(225) 747-0303", "225.747.0303" and "+1 225 747 0303" are all +12257470303."""
+    d = re.sub(r"\D", "", str(v or ""))
+    d = d[1:] if len(d) == 11 and d[0] == "1" else d
+    return "+1" + d if re.fullmatch(r"[2-9]\d{2}[2-9]\d{6}", d) else None
+
+
 def csv_safe(v: str, column: str = "") -> str:
     """A cell that a spreadsheet would run as a formula gets a leading apostrophe. Addresses come from city
     permit data, so this is not hypothetical. A phone number like +12255550142 stays as it is."""
     if column == "phone" and re.fullmatch(r"\+?[\d ()-]+", v):
         return v
     return "'" + v if v[:1] in ("=", "+", "-", "@", "\t", "\r") else v
+
+
+SELF_ALERT_TO = "+12257470303"  # Caleb's own number (2026-11-11). The new-lead alert goes here and to nobody else.
+
+
+def notify_mac(title: str, text: str) -> None:
+    """A macOS notification on this Mac. The words go in as arguments, never inside the script."""
+    subprocess.run(["osascript", "-e", "on run argv\ndisplay notification (item 2 of argv) with title (item 1 of argv)\nend run", title, text],
+                   capture_output=True, text=True, timeout=20)
 
 
 CHAT_DB = Path.home() / "Library" / "Messages" / "chat.db"
@@ -1043,7 +1869,7 @@ def send_gmail(to: str, subject: str, body: str) -> str:
         raise CRMError(f"follow-up library not importable: {e}")
     svc = followups.gmail_service_or_none()
     if svc is None:
-        raise CRMError("no Gmail token at aire/follow-up/token.json; run the follow-up auth once")
+        raise CRMError("email can't send yet: Gmail is not connected on this Mac. Ask Claude to connect it once")
     followups.send_email(svc, to, subject, body)
     return "Gmail accepted it"
 
@@ -1058,12 +1884,17 @@ class Handler(BaseHTTPRequestHandler):
         if os.getenv("PIPELINE_VERBOSE"):
             super().log_message(fmt, *args)
 
-    def _json(self, code: int, data) -> None:
+    def _json(self, code: int, data, cookie: str | None = None) -> None:
         raw = json.dumps(data, ensure_ascii=False, default=str).encode("utf-8")
         self.send_response(code)
+        if cookie:
+            self.send_header("Set-Cookie", cookie)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
         self.wfile.write(raw)
 
@@ -1073,12 +1904,17 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
             return
         ctype = {".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8",
-                 ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon"}.get(path.suffix, "application/octet-stream")
+                 ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json"}.get(path.suffix, "application/octet-stream")
         raw = path.read_bytes()
+        if path.name == "sw.js":
+            raw = raw.replace(b"__BUILD__", static_build().encode())
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Referrer-Policy", "no-referrer")
         self.end_headers()
         self.wfile.write(raw)
 
@@ -1086,12 +1922,49 @@ class Handler(BaseHTTPRequestHandler):
         if not allowed(self.client_address[0]):
             return self._json(403, {"ok": False, "error": "not this Mac or Caleb's Tailscale"})
         u = urllib.parse.urlparse(self.path)
+        if not self._gate(u.path):
+            return
+        if u.path == "/login":
+            return self._file("login.html")
         if u.path == "/api/state":
-            return self._json(200, self.state.snapshot())
+            # local: this request came from the Mac itself. Send now is offered there only.
+            return self._json(200, {**self.state.snapshot(), "local": auth.Auth.is_local(self.headers, self.server.server_address[1])})
         if u.path == "/api/refresh":
             return self._json(200, self.state.refresh)
         if u.path == "/api/dash":
             return self._json(200, self.state.dash())
+        if u.path == "/api/push/key":
+            return self._json(200, {"ok": True, "key": push.keys(self.state.push_key)["public"]})
+        if u.path == "/api/alerts":
+            d = push._read(self.state.cc_dir / "alerts.json", {"rows": []})
+            return self._json(200, {"ok": True, "rows": d.get("rows", [])[:20], "phones": len(push._read(self.state.push_subs, []))})
+        if u.path == "/api/photos":
+            # Which deals have photos and how many. Names only by deal key, never a file path.
+            return self._json(200, {"ok": True, "deals": {k: len(v) for k, v in deal_photos().items()}})
+        m = re.fullmatch(r"/photo/([a-z0-9 %+-]+)/(\d{1,3})", u.path)
+        if m:
+            # One photo by deal key and number, from the list above. No path from the request reaches the disk.
+            files = deal_photos().get(urllib.parse.unquote_plus(m.group(1)).replace("-", " "), [])
+            i = int(m.group(2))
+            if not 0 <= i < len(files):
+                return self._json(404, {"ok": False, "error": "no such photo"})
+            raw = files[i].read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", PHOTO_EXT[files[i].suffix.lower()])
+            self.send_header("Content-Length", str(len(raw)))
+            self.send_header("Cache-Control", "private, max-age=86400")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            self.wfile.write(raw)
+            return
+        if u.path == "/api/card":
+            pid = (urllib.parse.parse_qs(u.query).get("id") or [""])[0]
+            return self._json(200, self.state.insight()["book"].card(pid))
+        if u.path == "/api/cc":
+            p = self.state.cc_payload()
+            p["ask"] = {"on": bool(self.state.ask_key) or self.state.demo, "cap": cc_ask.CAP, "model": cc_ask.MODEL, "pages": list(cc_ask.PAGES),
+                        "spent": cc_ask.spent_today(self.state.ask_log, now())}
+            return self._json(200, {**p, "demo": self.state.demo})
         if u.path == "/api/voice/token":
             try:
                 return self._json(200, self.state.call_token())
@@ -1125,19 +1998,79 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(raw)
+    def _same_origin(self) -> bool:
+        """Refuse a POST that a web page on another site sent (CSRF), or one that came in under a foreign
+        Host name (DNS rebinding). Tools with no Origin header, like curl and the tests, still work."""
+        port = self.server.server_address[1]
+        ok = {f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"} | set(filter(None, os.getenv("PIPELINE_HOSTS", "").split(",")))
+        host = (self.headers.get("Host") or "").lower()
+        # A Tailscale name (tailscale serve) is allowed too: only this tailnet's devices can resolve it, and it always
+        # needs the login. Origin must still equal Host, so a page on another site cannot press Pipeline's buttons.
+        tailnet = host.split(":")[0].endswith(".ts.net")
+        if host not in ok and not tailnet:
+            return False
+        origin = self.headers.get("Origin")
+        return origin is None or urllib.parse.urlparse(origin).netloc.lower() == host or urllib.parse.urlparse(origin).netloc in ok
+
+    def _gate(self, path: str) -> bool:
+        """True when the request may go on. From this Mac: always. Otherwise: a passcode session, except the login
+        page, the app manifest, icons and the service worker, which hold no data."""
+        a = self.state.auth
+        if a.is_local(self.headers, self.server.server_address[1]) or path in auth.PUBLIC_PATHS or a.valid(self.headers.get("Cookie")):
+            return True
+        if path.startswith("/api/"):
+            self._json(401, {"ok": False, "error": "sign in first" if a.configured() else "no passcode is set on the Mac yet"})
+        else:
+            self.send_response(302)
+            self.send_header("Location", "/login")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+        return False
 
     def do_POST(self):
         if not allowed(self.client_address[0]):
             return self._json(403, {"ok": False, "error": "not this Mac or Caleb's Tailscale"})
         u = urllib.parse.urlparse(self.path)
+        if not self._same_origin():
+            return self._json(403, {"ok": False, "error": "refused: this request did not come from Pipeline's own page"})
         n = int(self.headers.get("Content-Length") or 0)
         try:
             body = json.loads(self.rfile.read(n) or b"{}")
         except Exception:
             return self._json(400, {"ok": False, "error": "body must be JSON"})
+        if u.path == "/api/login":
+            addr = (self.headers.get("X-Forwarded-For") or self.client_address[0]).split(",")[0].strip()
+            try:
+                tok = self.state.auth.login(str(body.get("passcode", "")), addr)
+            except ValueError as e:
+                return self._json(200, {"ok": False, "error": str(e)})
+            secure = (self.headers.get("X-Forwarded-Proto") or "") == "https"
+            return self._json(200, {"ok": True}, cookie=auth.Auth.cookie(tok, secure))
+        if not self._gate(u.path):
+            return
+        if u.path == "/api/logout":
+            self.state.auth.logout(self.headers.get("Cookie"))
+            return self._json(200, {"ok": True}, cookie=auth.Auth.cookie("", False, clear=True))
         s = self.state
         try:
-            if u.path == "/api/touch":
+            if u.path == "/api/cc/ask":
+                out = s.cc_ask(str(body.get("page", "dash")), str(body.get("question", "")), body.get("private", True) is not False)
+            elif u.path == "/api/push/subscribe":
+                out = {"ok": True, "phones": push.subscribe(body.get("subscription") or {}, s.push_subs)}
+            elif u.path == "/api/push/test":
+                rows = [{"kind": "test", "title": "Pipeline alerts are on", "body": "This is a test from your Mac.", "page": "sources", "at": now().isoformat(timespec="seconds")}]
+                d = push._read(s.cc_dir / "alerts.json", {"rows": [], "state": {}})
+                push._write(s.cc_dir / "alerts.json", {**d, "rows": (rows + d.get("rows", []))[:50]})
+                k = push.keys(s.push_key)
+                codes = [push.send_one(x["endpoint"], k) for x in push._read(s.push_subs, [])] if not s.demo else []
+                out = {"ok": True, "phones": len(codes), "sent": sum(1 for c in codes if 200 <= c < 300)}
+            elif u.path == "/api/cc/row":
+                e = cc.queue_row(s.cc_dir, str(body.get("tab", "")), body.get("row") or {})
+                out = {"ok": True, "queued": e, "where": "Saved. It goes to the sheet on the next sync, within 5 minutes."}
+            elif u.path == "/api/cc/goals":
+                g = cc.save_goals(s.cc_dir, body)
+                out = {"ok": True, "goals": g, "where": "Saved on this Mac. It goes to the Goals tab once the sheet sync is on."}
+            elif u.path == "/api/touch":
                 out = s.touch(body.get("person_id", ""), body.get("what", "Touched from Pipeline"))
             elif u.path == "/api/done":
                 out = s.done(body.get("task_id", ""), body.get("person_id", ""), body.get("task", ""))
@@ -1153,17 +2086,44 @@ class Handler(BaseHTTPRequestHandler):
                 out = s.relabel(body.get("person_id", ""), body.get("band", ""), body.get("type", ""), body.get("expect_band", ""))
             elif u.path == "/api/dnc":
                 out = s.dnc(body.get("person_id", ""), body.get("reason", ""))
+            elif u.path == "/api/opened":
+                out = s.opened(body.get("kind", ""), body.get("person_id", ""), body.get("to", ""), body.get("body", ""),
+                               body.get("subject", ""), body.get("display", ""), body.get("draft", ""), body.get("pool", ""))
+            elif u.path == "/api/opened/answer":
+                out = s.handoff_answer(body.get("id", ""), body.get("sent") is True)
             elif u.path == "/api/send":
+                # Send now: from the Mac only, and a live send needs the confirm step's flag. One message per request.
+                if not auth.Auth.is_local(self.headers, self.server.server_address[1]):
+                    return self._json(403, {"ok": False, "error": "Send now works on the Mac only. On the phone, use Open in Messages or Open in Gmail."})
+                if s.sender == "live" and not s.demo and body.get("confirmed") is not True:
+                    return self._json(400, {"ok": False, "error": "a send needs the confirm step"})
                 out = s.send(body.get("kind", ""), body.get("person_id", ""), body.get("to", ""), body.get("body", ""),
                              body.get("subject", ""), body.get("display", ""))
+            elif u.path == "/api/call":
+                out = s.bridge_job("call", body.get("person_id", ""), body.get("display", ""), body.get("to", ""),
+                                   purpose=body.get("purpose", ""), objective=body.get("objective", ""), context=body.get("context", ""))
+            elif u.path == "/api/draft/escalate":
+                out = s.bridge_job("hard_draft", body.get("person_id", ""), body.get("display", ""),
+                                   instructions=body.get("instructions", ""), context=body.get("context", ""))
             elif u.path == "/api/refresh":
                 out = {"ok": True, "result": s.start_refresh()}
             elif u.path == "/api/farms":
                 out = s.save_farms(body.get("farms", []))
             elif u.path == "/api/dismiss":
                 out = s.dismiss(body.get("id", ""))
+            elif u.path == "/api/fix":
+                out = s.fix_decide(str(body.get("id", "")), str(body.get("action", "")), str(body.get("keeper", "") or ""))
+            elif u.path == "/api/social-match":
+                out = s.social_decide(str(body.get("platform", "")), str(body.get("handle", "")), str(body.get("contact_id", "")), str(body.get("action", "")))
+            elif u.path == "/api/sale-link":
+                out = s.sale_decide(str(body.get("sale_key", "")), str(body.get("action", "")), str(body.get("person_id", "")))
+            elif u.path == "/api/sale-people":
+                out = s.sale_people_search(str(body.get("q", "")))
+            elif u.path == "/api/feedback":
+                out = s.feedback(str(body.get("list", "")), str(body.get("person_id", "")), str(body.get("verdict", "")))
             elif u.path == "/api/lead":
-                out = s.make_lead(body.get("name", ""), body.get("source", ""), body.get("phone", ""), body.get("email", ""), body.get("note", ""))
+                out = s.make_lead(body.get("name", ""), body.get("source", ""), body.get("phone", ""), body.get("email", ""), body.get("note", ""),
+                                 body.get("next_action", ""))
             elif u.path == "/api/list":
                 out = s.add_to_list(body.get("kind", ""), body.get("rows", []))
             elif u.path == "/api/ask/warm":
@@ -1198,12 +2158,51 @@ def allowed(ip: str) -> bool:
     except ValueError:
         return False
     return a.is_loopback or (os.getenv("PIPELINE_BIND") == "tailscale" and a in TAILNET)
+PHOTO_ROOT = Path(os.getenv("PIPELINE_PHOTOS") or Path.home() / "Pictures" / "Pipeline").expanduser()
+PHOTO_EXT = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+
+
+def deal_photos(root: Path = PHOTO_ROOT) -> dict:
+    """Deal photos Caleb owns: one folder per deal in ~/Pictures/Pipeline, named by its street address ("90108 Basil
+    Ln"). Keyed like the Deals sheet (cc.deal_key), each a sorted list of image files. A folder may be a link."""
+    out = {}
+    try:
+        folders = sorted(p for p in root.iterdir() if p.is_dir())
+    except OSError:
+        return out
+    for f in folders:
+        files = sorted((x for x in f.iterdir() if x.is_file() and x.suffix.lower() in PHOTO_EXT and not x.name.startswith(".")),
+                       key=lambda x: (0 if "cover" in x.name.lower() else 1 if "front" in x.name.lower() else 2, x.name))  # the cover first
+        if files:
+            out[cc.deal_key(f.name)] = files
+    return out
+
+
+def static_build(root: Path | None = None) -> str:
+    """A short hash of every file in static/ (names and bytes). It goes into sw.js, so any change to the app gives
+    browsers a new service worker and a new cache name, and the page shows its Updated note."""
+    root = root or STATIC
+    h = hashlib.sha256()
+    for f in sorted(root.rglob("*")):
+        if f.is_file():
+            h.update(f.relative_to(root).as_posix().encode() + b"\0" + f.read_bytes())
+    return h.hexdigest()[:12]
+
+
+class Server(ThreadingHTTPServer):
+    # Older Pythons listen with a queue of 5. A page load through `tailscale serve` opens about 15 connections at once,
+    # so the rest were refused and the phone got 502s on its scripts (2026-11-06).
+    request_queue_size = 128
+    daemon_threads = True
 
 
 def serve(state: State, port: int, open_browser: bool) -> None:
     Handler.state = state
-    bind = "0.0.0.0" if os.getenv("PIPELINE_BIND") == "tailscale" else "127.0.0.1"
-    httpd = ThreadingHTTPServer((bind, port), Handler)
+    httpd = Server(("127.0.0.1", port), Handler)
+    threading.Thread(target=state.handoff_loop, daemon=True).start()
+    threading.Thread(target=state.draft_loop, daemon=True).start()
+    threading.Thread(target=state.lead_loop, daemon=True).start()
+    threading.Thread(target=state.learn_loop, daemon=True).start()
     url = f"http://127.0.0.1:{port}/"
     v = state.voice_info()
     print(f"Pipeline {'(demo) ' if state.demo else ''}on {url}  sender={state.sender}  crm python={getattr(state.crm, 'python', 'demo')}  "
@@ -1214,6 +2213,39 @@ def serve(state: State, port: int, open_browser: bool) -> None:
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
+
+
+FEED_RUN_MAX_MIN = 10  # a rebuild that started this long ago and never wrote ok or failed is counted as failed
+
+
+def feed_run_status(log: Path, at: datetime) -> dict | None:
+    """The last run in refresh_feed.sh's log: ok, or failed with why. Lines look like '2026-11-08 12:46:37 start',
+    '... feed ok', '... feed failed, previous feed.json kept', '... imessage_signals failed, ...'."""
+    try:
+        with log.open("rb") as fh:
+            fh.seek(0, 2)
+            fh.seek(max(0, fh.tell() - 16000))
+            lines = fh.read().decode("utf-8", "replace").splitlines()
+    except OSError:
+        return None
+    starts = [i for i, ln in enumerate(lines) if re.match(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} start$", ln.strip())]
+    if not starts:
+        return None
+    block = lines[starts[-1]:]
+    stamp = lambda ln: datetime.strptime(ln[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=CENTRAL)
+    began = stamp(block[0])
+    end = next((ln for ln in block if re.search(r"\bfeed (ok|failed)\b", ln)), None)
+    signals_failed = any("imessage_signals failed" in ln for ln in block)
+    if end and " feed ok" in end:
+        state, detail, t = "ok", "signals failed, the feed used the last signals" if signals_failed else "", stamp(end)
+    elif end:
+        state, detail, t = "failed", "the step that builds the feed from the CRM sheet failed", stamp(end)
+    elif (at - began).total_seconds() > FEED_RUN_MAX_MIN * 60:
+        state, detail, t = "failed", "the last run started and never finished", began
+    else:
+        state, detail, t = "running", "", began
+    return {"state": state, "at": t.isoformat(timespec="seconds"), "at_text": t.strftime("%b %-d, %-I:%M %p"), "detail": detail,
+            "signals_failed": signals_failed}
 
 
 # ----------------------------------------------------------------------- tests
@@ -1231,6 +2263,13 @@ def run_tests() -> int:
         failures += 0 if cond else 1
 
     tmp = Path(tempfile.mkdtemp())
+    noon = lambda: datetime(2026, 11, 10, 12, 0, tzinfo=CENTRAL)  # the suite must pass at any hour of the day
+    State_init = State.__init__
+
+    def init_at_noon(self, *a, **k):
+        State_init(self, *a, **k)
+        self.clock = noon
+    State.__init__ = init_at_noon
     s = State(demo=True, send_log=tmp / "send-log.json")
     snap = s.snapshot()
     check(snap["demo"] and snap["feed_ok"] and snap["feed"]["counts"]["contacts"] > 0, "demo snapshot reads the fixtures")
@@ -1284,6 +2323,7 @@ def run_tests() -> int:
     r = s.send("text", "312", "+12255550111", "Hey, checking in", display="Demo Person")
     check(r["ok"] and r["result"]["status"] == "dry-run", "demo send is a dry run")
     check(s.sent_today()["texts"] == 1 and (tmp / "send-log.json").exists(), "send log counts today's texts")
+    check(s.left_today()["sent_texts"] == 0 and s.left_today()["dry_texts"] == 1, "a dry run is shown as a dry run, never as sent")
     try:
         s.send("email", "312", "x@example.com", "body", subject=""); check(False, "email needs a subject")
     except CRMError:
@@ -1299,6 +2339,129 @@ def run_tests() -> int:
     except CRMError as e:
         check("cap" in str(e), "daily cap refuses the text past the cap")
     s.max_texts = 25
+
+    # consent, quiet hours, one live host
+    nc = State(demo=True, send_log=tmp / "nc" / "send-log.json")
+    feed0 = nc.feed()
+    waiting_id = next(d["person_id"] for d in feed0["touches_due"] if d["owes_reply"])
+    other_id = next(d["person_id"] for d in feed0["touches_due"] if not d["owes_reply"])
+    nc._demo_cache = {**feed0, "no_text_consent": [other_id]}
+    nc.feed = lambda: nc._demo_cache
+    try:
+        nc.send("text", other_id, "+12255550118", "hi"); check(False, "a form that said do not text refuses the text")
+    except CRMError as e:
+        check("consent" in str(e), "a form that said do not text refuses the text")
+    check(nc.send("email", other_id, "x@example.com", "body", subject="Hi")["ok"], "the same person can still be emailed")
+    n_log = len(nc.send_log())
+    try:
+        nc.opened("text", other_id, "+12255550118", "hi"); check(False, "the Text button is refused for them too")
+    except CRMError as e:
+        check("consent" in str(e) and len(nc.send_log()) == n_log, "the Text button hand-off is refused for them too, and nothing is logged")
+    nc._demo_cache = {**feed0, "no_text_consent": []}
+    nc.clock = lambda: datetime(2026, 11, 10, 21, 30, tzinfo=CENTRAL)
+    try:
+        nc.send("text", other_id, "+12255550118", "hi"); check(False, "9:30 pm refuses a text nobody is waiting on")
+    except CRMError as e:
+        check("quiet hours" in str(e), "9:30 pm refuses a text nobody is waiting on")
+    try:
+        nc.send("email", waiting_id, "x@example.com", "body", subject="Hi"); check(False, "9:30 pm refuses every email")
+    except CRMError as e:
+        check("quiet hours" in str(e), "9:30 pm refuses every email")
+    check(nc.send("text", waiting_id, "+12255550111", "On it")["ok"], "9:30 pm still lets a text back to someone waiting")
+    nc.clock = lambda: datetime(2026, 11, 10, 7, 59, tzinfo=CENTRAL)
+    try:
+        nc.send("text", other_id, "+12255550118", "hi"); check(False, "7:59 am is still quiet")
+    except CRMError:
+        check(True, "7:59 am is still quiet")
+    nc.clock = lambda: datetime(2026, 11, 10, 8, 0, tzinfo=CENTRAL)
+    check(nc.send("text", other_id, "+12255550118", "hi")["ok"], "8:00 am sends again")
+    check(live_gate("dry", "", "air") == ("dry", ""), "a dry sender needs no live host")
+    check(live_gate("live", "Mini.local", "mini")[0] == "live" and live_gate("live", "mini", "MINI.lan")[1] == "", "the named Mac stays live")
+    g = live_gate("live", "mini", "air.local")
+    check(g[0] == "dry" and "air" in g[1] and "mini" in g[1], "any other Mac is forced dry and says why")
+    g = live_gate("live", "", "mini.local")
+    check(g[0] == "dry" and "PIPELINE_LIVE_HOST=mini" in g[1], "live with no host named is dry and prints the line to add")
+    nb = State(demo=True, send_log=tmp / "nb" / "send-log.json"); nb.sender_blocked = g[1]
+    check(any(p["code"] == "not_live_host" for p in nb.snapshot()["problems"]), "a blocked sender shows as a problem on screen")
+
+    # Grok bridge: calls and hard drafts
+    br = State(demo=True, send_log=tmp / "br" / "send-log.json")
+    r = br.bridge_job("call", "247", "Taylor Sample", "(225) 555-0100", purpose="showing_confirmation", objective="Confirm tomorrow's 2 pm showing.")
+    check(r["ok"] and r["result"]["status"] == "dry-run" and r["result"]["to"] == "+12255550100", "a demo call job is a dry run and leaves nothing")
+    v = br.snapshot()["bridge"]
+    check(v["recent"][0]["person_id"] == "247" and v["recent"][0]["state"] == "dry-run" and v["recent"][0]["display"] == "Taylor Sample",
+          "the Grok page gets the recent jobs, newest first")
+    check(v["caller"] == "dry" and v["jobs"]["247"]["state"] == "dry-run" and v["calls_24h"] == 0 and "webhook" not in json.dumps(v).lower(),
+          "the screen sees the dry job, no call is counted, no webhook detail is in the state")
+    br.dnc("401", "asked us to stop")
+    try:
+        br.bridge_job("call", "401", "Casey Night", "+12255550140", purpose="appointment_reminder", objective="x"); check(False, "Do Not Contact refuses a call")
+    except CRMError as e:
+        check("Do_Not_Contact" in str(e), "Do Not Contact refuses a call")
+    try:
+        br.bridge_job("call", "247", "Taylor Sample", "+12255550100", purpose="price_talk", objective="x"); check(False, "a call off the purpose list is refused")
+    except CRMError as e:
+        check("purposes" in str(e), "a call off the purpose list is refused")
+    br.clock = lambda: datetime(2026, 11, 10, 20, 5, tzinfo=CENTRAL)
+    try:
+        br.bridge_job("call", "247", "Taylor Sample", "+12255550100", purpose="requested_callback", objective="Call back."); check(False, "8:05 pm refuses every call")
+    except CRMError as e:
+        check("quiet hours" in str(e), "8:05 pm refuses every call, even to someone waiting")
+    check(br.bridge_job("hard_draft", "247", "Taylor Sample", instructions="Upset about the inspection. Calm, no promises.")["ok"],
+          "a hard draft can be asked for at night: drafting is not sending")
+    br.clock = noon
+    br.max_hard_drafts = 1
+    try:
+        br.bridge_job("hard_draft", "312", "Morgan Demo", instructions="x"); check(False, "the hard draft cap refuses the next one")
+    except CRMError as e:
+        check("cap" in str(e), "the hard draft cap refuses the next one")
+    # live, with Grok's webhook faked
+    bl = State(demo=True, send_log=tmp / "bl" / "send-log.json"); bl.demo = False; bl.caller = "live"
+    crm_calls = []
+
+    class RecordingCRM:
+        def run(self, args, dry_run=False):
+            crm_calls.append((tuple(args), dry_run))
+            return {"ok": True}
+    bl.crm = RecordingCRM()
+    touches = lambda: [a for a, dry in crm_calls if a[0] == "touch" and not dry]
+    posted_jobs = []
+    bl.bridge_post = lambda job, url, key, header: posted_jobs.append(job) or 202
+    r = bl.bridge_job("call", "247", "Taylor Sample", "(225) 555-0100", purpose="showing_confirmation", objective="Confirm tomorrow's 2 pm showing.")
+    jid = r["result"]["job_id"]
+    check(r["result"]["status"] == "posted" and posted_jobs[0]["job_id"] == jid and posted_jobs[0]["result_writeback"]["method"] == "google_drive",
+          "a live call job is posted to Grok once")
+    v = bl.snapshot()
+    check(v["bridge"]["jobs"]["247"]["state"] == "waiting" and v["bridge"]["calls_24h"] == 1 and not touches(),
+          "until Grok answers the card says waiting, and nothing is logged in the CRM")
+    bl.bridge_results.mkdir(parents=True, exist_ok=True)
+    (bl.bridge_results / (jid + ".json")).write_text(json.dumps({"v": 1, "job_id": jid, "status": "completed", "outcome": "answered",
+                                                                 "summary": "Confirmed 2 pm.", "draft_text": None, "finished_at": "2026-11-10T12:06:00-06:00"}))
+    v = bl.snapshot()
+    check(v["bridge"]["jobs"]["247"]["state"] == "completed" and v["bridge"]["jobs"]["247"]["summary"] == "Confirmed 2 pm."
+          and touches() == [("touch", "247", "call through Grok: answered Confirmed 2 pm.")], "a finished call shows its summary and is logged as a touch")
+    bl.snapshot()
+    check(sum(1 for e in bl.bridge_log() if e.get("touched")) == 1 and len(touches()) == 1,
+          "the touch is written once, however often the screen asks")
+    r2 = bl.bridge_job("call", "312", "Morgan Demo", "+12255550111", purpose="appointment_reminder", objective="Remind about Friday.")
+    bl.clock = lambda: noon() + (datetime(2026, 1, 1, 1) - datetime(2026, 1, 1, 0, 15))
+    check(bl.snapshot()["bridge"]["jobs"]["312"]["state"] == "expired" and not [e for e in bl.bridge_log() if e["job_id"] == r2["result"]["job_id"]][0]["touched"],
+          "a card nobody tapped reads expired after 40 minutes and logs no touch")
+    bl.clock = noon
+    r3 = bl.bridge_job("hard_draft", "118", "Riley Quiet", instructions="Has gone quiet after the price drop. Warm, short.")
+    (bl.bridge_results / "d.json").write_text(json.dumps({"v": 1, "job_id": r3["result"]["job_id"], "status": "draft_ready", "outcome": "draft_ready",
+                                                          "summary": "", "draft_text": "Hey Riley, no pressure at all."}))
+    j118 = bl.snapshot()["bridge"]["jobs"]["118"]
+    check(j118["state"] == "draft_ready" and j118["draft_text"].startswith("Hey Riley") and bl.sent_today()["texts"] == 0,
+          "Grok's draft comes back for the compose box and nothing is sent")
+    def refuse(job, url, key, header):
+        raise bridge.BridgeError("Grok's webhook refused the job (HTTP 401)")
+    bl.bridge_post = refuse
+    try:
+        bl.bridge_job("call", "85", "Jordan Sample", "+12255550185", purpose="appointment_reminder", objective="x"); check(False, "a refused post is an error on screen")
+    except CRMError as e:
+        check("401" in str(e) and bl.bridge_log()[-1]["status"] == "post_failed" and bl.snapshot()["bridge"]["calls_24h"] == 2,
+              "a refused post is an error on screen, logged, and not counted as a call")
 
     # Claude Q&A and ElevenLabs, with the network faked
     v = s.snapshot()["voice"]
@@ -1445,6 +2608,27 @@ def run_tests() -> int:
     snap_lt = sd.snapshot()["last_texts"]
     check(snap_lt.get("118", {}).get("delivery") == "dry-run" and snap_lt["118"]["display"] == "Riley Quiet", "a demo send shows on the card as a dry run")
 
+    # Round 2, item 6: the CRM feed's last rebuild, read from its log. A failure shows; a run that never ended is a failure.
+    lg = tmp / "feed.log"
+    at = datetime(2026, 11, 8, 13, 0, tzinfo=CENTRAL)
+    lg.write_text("2026-11-08 12:30:00 start\n2026-11-08 12:30:04 feed ok\n2026-11-08 12:45:00 start\n2026-11-08 12:45:03 feed failed, previous feed.json kept\n")
+    r = feed_run_status(lg, at)
+    check(r["state"] == "failed" and r["at"].startswith("2026-11-08T12:45:03") and "failed" in r["detail"], "a failed feed rebuild is read from the log")
+    lg.write_text("2026-11-08 12:45:00 start\n2026-11-08 12:45:01 imessage_signals failed, feed keeps the last signals file\n2026-11-08 12:45:03 feed ok\n")
+    r = feed_run_status(lg, at)
+    check(r["state"] == "ok" and r["signals_failed"] and "signals" in r["detail"], "a rebuild that kept old signals is ok and says so")
+    lg.write_text("2026-11-08 12:30:00 start\n2026-11-08 12:30:04 feed ok\n2026-11-08 12:40:00 start\n")
+    check(feed_run_status(lg, at)["state"] == "failed" and feed_run_status(lg, datetime(2026, 11, 8, 12, 45, tzinfo=CENTRAL))["state"] == "running",
+          "a rebuild that never finished is a failure after 10 minutes, running before")
+    check(feed_run_status(tmp / "nope.log", at) is None and State(demo=True, send_log=tmp / "fr.json").snapshot()["feed_run"] is None, "no log, or demo: no feed run status")
+    sfr = State(demo=True, send_log=tmp / "fr2.json"); sfr.feed_run = lambda: {"state": "failed", "at": "x", "at_text": "Nov 8, 12:45 PM", "detail": "crm.py feed failed"}
+    check(any(p["code"] == "feed_failed" for p in sfr.snapshot()["problems"]), "a failed feed rebuild becomes a problem row")
+
+    # Round 2, item 14: problem rows say what to do in words, never a file name or a path.
+    s_nofeed = State(demo=True, send_log=tmp / "nf.json"); s_nofeed._demo_cache = {}
+    texts = " ".join(p["text"] for p in s_nofeed.snapshot()["problems"])
+    check(bool(texts) and not re.search(r"\.json|/|~|token", texts), "problem rows never name a file or a path")
+
     # map and market monitor
     sm = State(demo=True, send_log=tmp / "map" / "send-log.json")
     snap = sm.snapshot()
@@ -1467,6 +2651,15 @@ def run_tests() -> int:
         sm.make_lead("Owner at 1 Fixture Way", "Market Monitor permit 2026-10-26"); check(False, "a duplicate lead is refused")
     except CRMError:
         check(True, "a duplicate lead is refused")
+    # Add a lead from the Dashboard or Leads: name, phone, email, source, one Save, one crm.py lead call (round 2, item 2).
+    sm.make_lead("Fixture Newlead", "Referral 2026-11-08", phone="225-555-0188", email="newlead@example.com", next_action="Reach out: new lead")
+    last = sm.crm.log[-1]
+    check(last[:4] == ["lead", "Fixture Newlead", "--source", "Referral 2026-11-08"] and last[last.index("--phone") + 1] == "225-555-0188"
+          and last[last.index("--email") + 1] == "newlead@example.com" and "--next-action" in last, "Add a lead sends name, phone, email and source in one crm.py lead call")
+    try:
+        sm.make_lead("", "Website 2026-11-08"); check(False, "a lead with no name is refused")
+    except CRMError:
+        check(True, "a lead with no name is refused")
     people = [{"kind": "person", "person_id": "1", "display": "A Fixture", "phone": "+12255550001", "address": "1 Fixture St", "city": "Baton Rouge", "zip": "70808"},
               {"kind": "person", "person_id": "2", "display": "B Fixture", "phone": "", "address": "2 Fixture St", "city": "Baton Rouge", "zip": "70808"}]
     c1 = sm.add_to_list("call", people)
@@ -1484,7 +2677,9 @@ def run_tests() -> int:
     # the HTTP layer end to end on a free port
     import socket
     sock = socket.socket(); sock.bind(("127.0.0.1", 0)); port = sock.getsockname()[1]; sock.close()
+    os.environ["PIPELINE_LOGIN_FILE"] = str(tmp / "login.json")  # never the real passcode file
     Handler.state = State(demo=True, send_log=tmp / "http.json")
+    state = Handler.state
     httpd = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     th = threading.Thread(target=httpd.serve_forever, daemon=True); th.start()
     base = f"http://127.0.0.1:{port}"
@@ -1492,9 +2687,270 @@ def run_tests() -> int:
     check("<title>Pipeline" in html, "GET / serves the screen")
     st = json.loads(urllib.request.urlopen(base + "/api/state").read())
     check(st["feed"]["counts"]["contacts"] > 0, "GET /api/state")
+    ccp = json.loads(urllib.request.urlopen(base + "/api/cc").read())
+    # round 5: speed to lead, the call list, the fuller card, the seller score
+    check(len(ccp["speed"]) == 3 and ccp["speed"][0]["draft"]["kind"] == "text" and all(c["draft"]["body"] for c in ccp["speed"]),
+          "/api/cc carries the New leads card: no reply yet, a first text drafted for each")
+    st5 = json.loads(urllib.request.urlopen(base + "/api/state").read())
+    check(0 < len(st5["call10"]["rows"]) <= 10 and all(r["reason"] and r["phone"] for r in st5["call10"]["rows"]), "/api/state carries at most ten people to call, each with a reason and a phone")
+    check("facts" not in st5["feed"] and st5["has_facts"] and 0 < len(st5["sellers"]) <= 25 and st5["sellers"][0]["score"] >= st5["sellers"][-1]["score"],
+          "the likely sellers are the top 25 at most, highest first, and the facts table stays on the server")
+    card = json.loads(urllib.request.urlopen(base + "/api/card?id=503").read())
+    check(card["ok"] and card["known"] == 7 and card["total"] == 8 and card["seller"]["score"] == 65 and len(card["seller"]["reasons"]) == 2,
+          "/api/card gives one person's facts, the count known and the seller score with two reasons")
+    eq = next(x for x in card["facts"] if x["key"] == "equity")
+    check(eq["value"] is None and eq["why"], "a fact with no source comes back with no value and a reason, never a number")
+    check(json.loads(urllib.request.urlopen(base + "/api/card?id=nobody").read())["ok"] is False, "/api/card says so for someone not in the feed")
+    check(ccp["formula"]["seller"]["max"] == 100, "/api/cc carries the scoring rules for the Sources page")
+    s5 = State(demo=True, send_log=tmp / "r5" / "send-log.json")
+    sent5, shown5 = [], []
+    check(s5.lead_alert_pass(notify=lambda t, x: shown5.append(x), text=lambda to, body: sent5.append((to, body)) or "ok")["new"] == 0 and not sent5,
+          "the first lead pass only learns the leads already there")
+    lf = s5.cc_dir / "leads.json"
+    ld = json.loads(lf.read_text())
+    ld["rows"].append({"threadId": "new-1", "name": "Nora Madeup", "phone": "(225) 555-0166", "received": now().isoformat(timespec="seconds"),
+                       "source": "Website lead", "message": "Looking for 3 beds in Zachary"})
+    lf.write_text(json.dumps(ld))
+    r5 = s5.lead_alert_pass(notify=lambda t, x: shown5.append(x), text=lambda to, body: sent5.append((to, body)) or "ok")
+    check(r5["new"] == 1 and sent5 == [(SELF_ALERT_TO, "New lead: Nora Madeup, Looking for 3 beds in Zachary")] and shown5 == [sent5[0][1]],
+          "a new lead alerts once: a notification on the Mac and one iMessage, to Caleb's own number only")
+    check(SELF_ALERT_TO == "+12257470303" and s5.lead_alert_pass(notify=lambda t, x: shown5.append(x), text=lambda to, body: sent5.append((to, body)))["new"] == 0 and len(sent5) == 1,
+          "the same lead never alerts twice")
+    ld["rows"].append({"threadId": "new-2", "name": "Omar Madeup", "email": "omar@example.com", "received": now().isoformat(timespec="seconds")})
+    lf.write_text(json.dumps(ld))
+    r5 = s5.lead_alert_pass()
+    check(not s5.self_alert and r5["new"] == 1 and r5["alerts"][0]["imessage"] == "off" and len(sent5) == 1, "in demo, and on any Mac but the one that sends, the alert is logged and nothing leaves")
+    import cc_sync
+    check(cc_sync.due("leads", {"tried_at": (now() - timedelta(minutes=4, seconds=58)).isoformat()}, now(), False) and cc_sync.READS["leads"][0] == cc.PACE_MIN["leads"],
+          "website leads are read on every 5 minute pass, even one that wakes a second early")
+    # fixes 5 to 8 and the learning loop
+    s6 = State(demo=True, send_log=tmp / "r6" / "send-log.json")
+    p6, st6 = s6.cc_payload(), s6.snapshot()
+    check("round58_error" not in p6 and all(k in p6 for k in ("ties", "deal_counts", "fixes", "cap_note", "proof", "learn")), "/api/cc carries the deal ties, the Fix list, the cap note, the proof line and the learning scorecard")
+    uc = sum(1 for d in p6["deals"] if d["stage"] == "contract")
+    check(uc > 0 and st6["deal_counts"]["contract"] == uc == len(st6["board_contract"]) and p6["deal_counts"] == st6["deal_counts"], "the Board's Under contract rows, the Deals page and the Dashboard count the same deals")
+    tied = next(b for b in st6["board_contract"] if b["person_id"])
+    row6 = next(r for r in st6["feed"]["people"] if r["person_id"] == tied["person_id"])
+    check(row6["stage"] == "under contract" and row6.get("sheet_stage") not in (None, "under contract"), "a person tied to a deal under contract shows as Under contract, with the sheet's own stage kept")
+    before = len(s6.crm.log)
+    f0 = p6["fixes"]["open"][0]
+    check(s6.fix_decide(f0["id"], "approve")["ok"] and [r["id"] for r in s6.cc_payload()["fixes"]["approved"]] == [f0["id"]] and read_json(s6.fix_log_path, [])[0]["problem"] == f0["problem"],
+          "approving a Fix list row logs it with the problem, and moves it to approved")
+    check(s6.fix_decide(f0["id"], "reopen")["ok"] and not s6.cc_payload()["fixes"]["approved"] and len(s6.crm.log) == before, "undo reopens it, and no tap on the Fix list ever reaches the CRM engine or a sheet")
+    # Duplicate people: every contact is a choice, the suggestion is preselected, Confirm records the keeper Caleb picked (local log only)
+    d6 = next(r for r in p6["fixes"]["open"] if r["kind"] == "duplicate")
+    ids6 = d6["ref"].split("+")
+    check([o["id"] for o in d6["options"]] == ids6 and [o["id"] for o in d6["options"] if o["suggested"]] == [ids6[0]]
+          and all(set(o) == {"id", "display", "stage", "city", "last_touch", "has_phone", "has_email", "suggested"} for o in d6["options"]), "each duplicate group lists every contact as an option, the first one suggested")
+    check(not re.search(r"\+?\d{3}[-. ]?\d{3}[-. ]?\d{4}|@", json.dumps(d6["options"])) and all(isinstance(o["has_phone"], bool) and isinstance(o["has_email"], bool) for o in d6["options"]),
+          "duplicate options carry only has phone and has email, never the number or address")
+    try:
+        s6.fix_decide(d6["id"], "approve", "not-in-group"); check(False, "a keeper outside the group is refused")
+    except CRMError:
+        check(not read_json(s6.fix_log_path, []), "a keeper outside the group is refused and nothing is logged")
+    pick6 = ids6[1]
+    check(s6.fix_decide(d6["id"], "approve", pick6)["ok"], "Confirm with a keeper that was not the suggestion is accepted")
+    lg6 = read_json(s6.fix_log_path, [])
+    ap6 = next(r for r in s6.cc_payload()["fixes"]["approved"] if r["id"] == d6["id"])
+    check(lg6[-1]["keeper"] == pick6 and ap6["keeper"] == pick6 and ap6["fix"].startswith(f"Keep {pick6}, copy anything missing onto it, and delete the other") and ap6["fix"].endswith("in the Contacts tab.")
+          and not any(r["id"] == d6["id"] for r in s6.cc_payload()["fixes"]["open"]) and len(s6.crm.log) == before, "the chosen keeper is logged, the approved text names it, and the card left the open list without touching the CRM")
+    old6 = [{**{k: lg6[-1][k] for k in lg6[-1] if k not in ("keeper",)}}]  # an old Approve row has no keeper
+    s6.fix_log_path.write_text(json.dumps(old6))
+    ap6b = next(r for r in s6.cc_payload()["fixes"]["approved"] if r["id"] == d6["id"])
+    check("keeper" not in ap6b and ap6b["fix"] == d6["fix"], "an old Approve row without a keeper still loads with the suggested text")
+    check(s6.fix_decide(d6["id"], "reopen")["ok"], "reopen clears the picked duplicate")
+    d6b = next(r for r in s6.cc_payload()["fixes"]["open"] if r["kind"] == "duplicate" and r["id"] != d6["id"])
+    check(s6.fix_decide(d6b["id"], "dismiss")["ok"] and read_json(s6.fix_log_path, [])[-1]["action"] == "dismiss" and "keeper" not in read_json(s6.fix_log_path, [])[-1], "Not a problem still sets a duplicate aside")
+    s6.fix_decide(d6b["id"], "reopen")
+    try:
+        s6.fix_decide("nope", "approve"); check(False, "a row that is not on the list cannot be approved")
+    except CRMError:
+        check(True, "a row that is not on the list cannot be approved")
+    # Match social profiles: demo reads no social folder by itself; with a temp one, Confirm / Not them write only matches.json
+    check(s6.social_dir is None and s6.social_matches()["pending"] == [] and "social_matches" in p6 and "social_matches" in st6, "demo reads no real social folder, and both payloads carry social_matches")
+    keys6 = [social_match.identity.name_key(display=r.get("display")) for r in st6["feed"]["people"]]
+    one6 = next(r["display"] for r in st6["feed"]["people"] if len(social_match.identity.name_key(display=r.get("display")).split()) == 2 and keys6.count(social_match.identity.name_key(display=r.get("display"))) == 1)
+    soc6, day6 = tmp / "social6", s6._social_day(s6.feed())
+    soc6.mkdir()
+    (soc6 / f"engagers-{day6.isoformat()}.json").write_text(json.dumps([
+        {"platform": "ig", "handle": "example.pick.one", "display_name": one6, "action": "comment", "seen_at": day6.isoformat(), "post_type": "just_sold", "said": "Example comment: private words"}]))
+    s6.social_dir = soc6
+    pend6 = s6.social_matches()["pending"]
+    check(len(pend6) == 1 and pend6[0]["handle"] == "example.pick.one" and pend6[0]["confidence"] == "medium" and "private words" not in json.dumps(s6.cc_payload()["social_matches"] ) and "phone" not in pend6[0],
+          "a name match shows as a pending candidate, with no phone, email or message text in the payload")
+    s6crm = len(s6.crm.log)
+    try:
+        s6.social_decide("ig", "example.nobody", pend6[0]["contact_id"], "confirm"); check(False, "a pair that is not pending cannot be confirmed")
+    except CRMError:
+        check(not (soc6 / "matches.json").exists(), "a pair that is not pending cannot be confirmed, and nothing is written")
+    for bad in (("tiktok", "example.pick.one", pend6[0]["contact_id"], "confirm"), ("ig", "example.pick.one", pend6[0]["contact_id"], "send")):
+        try:
+            s6.social_decide(*bad); check(False, "bad input is refused")
+        except CRMError:
+            check(True, "bad input is refused")
+    out6 = s6.social_decide("ig", "example.pick.one", pend6[0]["contact_id"], "confirm")
+    check(out6["ok"] and out6["social_matches"]["pending"] == [] and out6["social_matches"]["confirmed"] == 1 and len(s6.crm.log) == s6crm
+          and sorted(p.name for p in soc6.iterdir()) == [f"engagers-{day6.isoformat()}.json", "matches.json"],
+          "Confirm writes only matches.json: the CRM engine is untouched and the pair leaves the list")
+    # Who was this sale?: demo reads only the made-up matches in its own cc folder; answers land in one throwaway links file, never the CRM.
+    live_m, live_l = sale_links.default_matches_path(), sale_links.default_links_path()
+    check(s6.sale_matches_path != live_m and s6.sale_links_path != live_l and s6.sale_matches_path.parent == s6.cc_dir and "sale_cards" in p6, "demo reads no live sale matches or links, and the payload carries sale_cards")
+    sc6 = s6.sale_cards()
+    sug6 = next((c for c in sc6["pending"] if c["suggestion"]), None)
+    check(len(sc6["pending"]) >= 5 and sug6 is not None and sug6["owner_names"] and not any(c["address"].startswith("22 Muscadine") for c in sc6["pending"])
+          and "people" not in sc6, "the Fix list has a card per demo sale (lease skipped) and a suggestion with owner names, without shipping the whole contact list")
+    search6 = s6.sale_people_search(sug6["suggestion"]["display"].split()[0])
+    check(search6["ok"] and any(x["person_id"] == sug6["suggestion"]["person_id"] and set(x) == {"person_id", "display"} for x in search6["people"]) and s6.sale_people_search("")["people"] == [],
+          "Pick another contact searches existing people by display and returns id and display only")
+    s6crm2 = len(s6.crm.log)
+    for bad in (("nope", "skip", ""), (sug6["sale_key"], "send", ""), (sug6["sale_key"], "pick", "no-such-person"), (sug6["sale_key"], "pick", "")):
+        try:
+            s6.sale_decide(*bad); check(False, "bad sale-link input is refused")
+        except CRMError:
+            check(True, "bad sale-link input is refused")
+    check(not s6.sale_links_path.exists(), "a refused tap writes nothing")
+    pins0 = {p["address"]: p for p in s6.sale_roofs()[0]}
+    check(pins0[sug6["address"]]["person_id"] is None, "before a confirm the sale roof is not linked")
+    out6s = s6.sale_decide(sug6["sale_key"], "confirm")
+    pins1 = {p["address"]: p for p in s6.sale_roofs()[0]}
+    check(out6s["ok"] and sug6["sale_key"] not in [c["sale_key"] for c in out6s["sale_cards"]["pending"]] and pins1[sug6["address"]]["person_id"] == sug6["suggestion"]["person_id"]
+          and pins1[sug6["address"]]["display"] == sug6["suggestion"]["display"] and pins1[sug6["address"]]["sale"] is True and len(s6.crm.log) == s6crm2, "Confirm links the roof to the person, the card leaves the list, and the CRM engine is untouched")
+    other6 = next(c for c in sc6["pending"] if c["sale_key"] != sug6["sale_key"])
+    pick6 = next({"person_id": k, "display": v} for k, v in s6.sale_people().items() if k != sug6["suggestion"]["person_id"])
+    s6.sale_decide(other6["sale_key"], "pick", pick6["person_id"])
+    third6 = next(c for c in s6.sale_cards()["pending"])
+    s6.sale_decide(third6["sale_key"], "skip")
+    lk6 = sale_links.load_links(s6.sale_links_path)
+    check(len(lk6["confirmed"]) == 2 and len(lk6["skipped"]) == 1 and third6["sale_key"] not in [c["sale_key"] for c in s6.sale_cards()["pending"]], "Pick another contact and Not a client / skip are saved and leave the list")
+    check(s6.confirmed_sale_closes(cc._rows(cc.load(s6.cc_dir).get("sales")))[sug6["suggestion"]["person_id"]][0]["close"] == sug6["close"], "a confirmed link feeds last touch the close day")
+    check(s6.feedback("call10", "247", "good")["ok"] and s6.cc_payload()["learn"]["log"]["good"] == 1, "Good call is logged for the learning loop")
+    try:
+        s6.feedback("call10", "247", "amazing"); check(False, "feedback takes good or not_useful only")
+    except CRMError:
+        check(True, "feedback takes good or not_useful only")
+    lp = s6.learn_pass(datetime(2026, 11, 9, 5, 0, tzinfo=CENTRAL))  # a Monday, before 6 AM
+    check(lp["logged"] > 10 and lp["version"] is None and (s6.learn_dir / "outcomes.json").exists() and len(read_json(s6.proof_path, [])) == 1, "a pass logs who was ranked, what happened to them and last week's proof row")
+    lp = s6.learn_pass(datetime(2026, 11, 9, 6, 5, tzinfo=CENTRAL))  # the same Monday, after 6 AM
+    check(lp["version"]["version"] == 1 and "Not enough outcomes yet" in lp["version"]["lists"]["seller"]["note"] and s6.learn_pass(datetime(2026, 11, 10, 9, 0, tzinfo=CENTRAL))["version"] is None,
+          "Monday after 6 AM writes one version for the week, which says the weights did not move for lack of outcomes")
+    check(str(s6.learn_dir).startswith(str(tmp)) and len(s6.crm.log) == before and not s6.send_log(), "the learning loop writes only its own folder on this Mac: nothing sent, nothing to the CRM")
+    r6 = urllib.request.Request(base + "/api/feedback", data=json.dumps({"list": "seller", "person_id": "503", "verdict": "not_useful"}).encode(), headers={"Content-Type": "application/json"})
+    check(json.loads(urllib.request.urlopen(r6).read())["ok"], "POST /api/feedback takes a Not useful tap")
+    r6 = urllib.request.Request(base + "/api/fix", data=json.dumps({"id": "nope", "action": "approve"}).encode(), headers={"Content-Type": "application/json"})
+    check(json.loads(urllib.request.urlopen(r6).read())["ok"] is False, "POST /api/fix refuses a row that is not on the list")
+    r6 = urllib.request.Request(base + "/api/social-match", data=json.dumps({"platform": "ig", "handle": "example.nobody", "contact_id": "1", "action": "confirm"}).encode(), headers={"Content-Type": "application/json"})
+    check(json.loads(urllib.request.urlopen(r6).read())["ok"] is False, "POST /api/social-match refuses a pair that is not on the list")
+    r6 = urllib.request.Request(base + "/api/social-match", data=json.dumps({"platform": "ig", "handle": "example.nobody", "contact_id": "1", "action": "confirm"}).encode(), headers={"Content-Type": "application/json", "Origin": "https://evil.example"})
+    try:
+        urllib.request.urlopen(r6); check(False, "POST /api/social-match refuses a foreign origin")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST /api/social-match refuses a foreign origin")
+    r6 = urllib.request.Request(base + "/api/sale-link", data=json.dumps({"sale_key": "nope", "action": "skip"}).encode(), headers={"Content-Type": "application/json"})
+    check(json.loads(urllib.request.urlopen(r6).read())["ok"] is False, "POST /api/sale-link refuses a sale that is not on the list")
+    r6 = urllib.request.Request(base + "/api/sale-link", data=json.dumps({"sale_key": "nope", "action": "skip"}).encode(), headers={"Content-Type": "application/json", "Origin": "https://evil.example"})
+    try:
+        urllib.request.urlopen(r6); check(False, "POST /api/sale-link refuses a foreign origin")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST /api/sale-link refuses a foreign origin")
+    r6 = urllib.request.Request(base + "/api/sale-people", data=json.dumps({"q": "Fixture"}).encode(), headers={"Content-Type": "application/json"})
+    sp6 = json.loads(urllib.request.urlopen(r6).read())
+    check(sp6["ok"] and all(set(x) == {"person_id", "display"} for x in sp6["people"]) and len(sp6["people"]) <= 8, "POST /api/sale-people returns id and display only, capped at eight")
+    r6 = urllib.request.Request(base + "/api/sale-people", data=json.dumps({"q": "Fixture"}).encode(), headers={"Content-Type": "application/json", "Origin": "https://evil.example"})
+    try:
+        urllib.request.urlopen(r6); check(False, "POST /api/sale-people refuses a foreign origin")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST /api/sale-people refuses a foreign origin")
+    check(ccp["demo"] and ccp["fresh"]["deals"]["state"] == "ok" and ccp["scorecard"]["pending"]["value"] > 0, "GET /api/cc in demo")
     req = urllib.request.Request(base + "/api/touch", data=json.dumps({"person_id": "118", "what": "test"}).encode(),
                                  headers={"Content-Type": "application/json"})
     check(json.loads(urllib.request.urlopen(req).read())["ok"], "POST /api/touch")
+    evil = urllib.request.Request(base + "/api/touch", data=b'{"person_id": "118"}', headers={"Content-Type": "application/json", "Origin": "https://evil.example"})
+    try:
+        urllib.request.urlopen(evil); check(False, "POST from another site is refused")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST from another site is refused")
+    rebind = urllib.request.Request(base + "/api/touch", data=b"{}", headers={"Content-Type": "application/json", "Host": "attacker.example:4747"})
+    try:
+        urllib.request.urlopen(rebind); check(False, "POST under a foreign Host is refused")
+    except urllib.error.HTTPError as e:
+        check(e.code == 403, "POST under a foreign Host is refused")
+    gq = urllib.request.Request(base + "/api/cc/goals", data=json.dumps({"gci_goal": 90000}).encode(), headers={"Content-Type": "application/json", "Origin": base.rstrip("/")})
+    check(json.loads(urllib.request.urlopen(gq).read())["ok"], "POST /api/cc/goals from Pipeline's own page")
+    check(json.loads(urllib.request.urlopen(base + "/api/cc").read())["goals"].get("gci_goal") == 90000, "goals read back on /api/cc")
+    rq = urllib.request.Request(base + "/api/cc/row", data=json.dumps({"tab": "Workout log", "row": {"date": "2026-11-05", "focus": "Lower"}}).encode(), headers={"Content-Type": "application/json"})
+    check(json.loads(urllib.request.urlopen(rq).read())["ok"], "POST /api/cc/row queues a workout")
+    rq = urllib.request.Request(base + "/api/cc/row", data=json.dumps({"tab": "Contacts", "row": {}}).encode(), headers={"Content-Type": "application/json"})
+    check(not json.loads(urllib.request.urlopen(rq).read())["ok"], "POST /api/cc/row refuses an engine tab")
+    k = json.loads(urllib.request.urlopen(base + "/api/push/key").read())
+    check(k["ok"] and len(k["key"]) == 87, "GET /api/push/key gives the public key")
+    rq = urllib.request.Request(base + "/api/push/subscribe", data=json.dumps({"subscription": {"endpoint": "https://evil.example/x"}}).encode(), headers={"Content-Type": "application/json"})
+    check(not json.loads(urllib.request.urlopen(rq).read())["ok"], "a subscription to a non-push address is refused")
+    rq = urllib.request.Request(base + "/api/push/test", data=b"{}", headers={"Content-Type": "application/json"})
+    urllib.request.urlopen(rq)
+    check(json.loads(urllib.request.urlopen(base + "/api/alerts").read())["rows"][0]["kind"] == "test", "a test alert shows in /api/alerts")
+    rq = urllib.request.Request(base + "/api/cc/ask", data=json.dumps({"page": "ccleads", "question": "Any new leads?"}).encode(), headers={"Content-Type": "application/json"})
+    r = json.loads(urllib.request.urlopen(rq).read())
+    check(r["ok"] and "Demo mode" in r["answer"] and r["cap"] == cc_ask.CAP, "POST /api/cc/ask answers in demo without calling Claude")
+    check(json.loads(urllib.request.urlopen(base + "/api/cc").read())["ask"]["on"], "/api/cc says Ask Claude is on")
+    # the login: anything that is not this Mac needs a passcode session
+    host = f"pipeline-mac.tail1234.ts.net"
+    def remote(path, data=None, cookie=None):
+        h = {"Host": host, "X-Forwarded-For": "100.64.0.7", "X-Forwarded-Proto": "https", "Content-Type": "application/json"}
+        if data is not None:
+            h["Origin"] = "https://" + host
+        if cookie:
+            h["Cookie"] = cookie
+        rq = urllib.request.Request(base + path, data=None if data is None else json.dumps(data).encode(), headers=h)
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, *a, **k):
+                return None
+        try:
+            r = urllib.request.build_opener(NoRedirect).open(rq)
+            return r.status, r.headers, r.read()
+        except urllib.error.HTTPError as e:
+            return e.code, e.headers, e.read()
+    code, _, _ = remote("/api/cc")
+    check(code == 401, "a phone with no session gets 401 on the API")
+    code, hd, body = remote("/api/login", {"passcode": "nothing set yet"})
+    check(code == 200 and "no passcode" in json.loads(body)["error"], "login says when no passcode is set")
+    auth.set_passcode("correct horse battery", state.auth.login_file)
+    for _i in range(2):
+        code, hd, body = remote("/api/login", {"passcode": "wrong one here"})
+    check(not json.loads(body)["ok"], "a wrong passcode is refused")
+    code, hd, body = remote("/api/login", {"passcode": "correct horse battery"})
+    ck = (hd.get("Set-Cookie") or "").split(";")[0]
+    check(json.loads(body)["ok"] and "HttpOnly" in hd.get("Set-Cookie", "") and "Secure" in hd.get("Set-Cookie", "") and "SameSite=Strict" in hd.get("Set-Cookie", ""), "the right passcode sets a locked-down cookie")
+    code, _, body = remote("/api/cc", cookie=ck)
+    check(code == 200 and json.loads(body)["demo"], "with the session the phone reads /api/cc")
+    code, hd, _ = remote("/", cookie=None)
+    check(code == 302 and hd.get("Location") == "/login", "a page without a session goes to /login")
+    code, _, body = remote("/sw.js")
+    check(code in (200, 404), "the service worker needs no session")
+    check(b"__BUILD__" not in body and static_build().encode() in body, "sw.js carries the build hash of static/")
+    sb = tmp / "sb"; sb.mkdir(); (sb / "a.js").write_text("one"); b1 = static_build(sb)
+    (sb / "a.js").write_text("two"); b2 = static_build(sb)
+    check(b1 != b2 and len(b1) == 12, "any change in static/ gives a new build, so the cache name moves on")
+    for hdr in ("X-Forwarded-Proto", "Tailscale-User-Login", "Tailscale-User-Name", "X-Forwarded-For"):
+        check(not auth.Auth.is_local({"Host": f"127.0.0.1:{port}", hdr: "x"}, port), f"a request carrying {hdr} needs the login")
+    check(not auth.Auth.is_local({"Host": "calebs-mac-mini.tail512a6c.ts.net"}, port), "the tailnet name needs the login even with no proxy headers")
+    code, hd, _ = remote("/")
+    check(code == 302 and hd.get("Location") == "/login", "the tailnet address with no cookie goes to the sign-in page")
+    code, _, body = remote("/login")
+    check(code == 200 and b"caches.delete('pipeline-data-v1')" in body, "the sign-in page drops the offline data copy")
+    lock = auth.Auth(tmp / "s2.json", login_file=state.auth.login_file)
+    for _i in range(5):
+        try:
+            lock.login("wrong passcode!", "1.2.3.4")
+        except ValueError:
+            pass
+    try:
+        lock.login("correct horse battery", "1.2.3.4"); check(False, "five wrong tries lock the address")
+    except ValueError as e:
+        check("too many" in str(e), "five wrong tries lock the address")
+    check(auth.Auth.is_local({"Host": f"127.0.0.1:{port}"}, port) and not auth.Auth.is_local({"Host": f"127.0.0.1:{port}", "X-Forwarded-For": "1.1.1.1"}, port), "a proxied request is never treated as local")
+    remote("/api/logout", {}, cookie=ck)
+    code, _, _ = remote("/api/cc", cookie=ck)
+    check(code == 401, "after logout the old session is refused")
     req = urllib.request.Request(base + "/api/dnc", data=json.dumps({"person_id": "118", "reason": ""}).encode(),
                                  headers={"Content-Type": "application/json"})
     check(json.loads(urllib.request.urlopen(req).read())["ok"] is False, "POST with a gate failure answers ok false, not 500")
@@ -1502,6 +2958,60 @@ def run_tests() -> int:
         urllib.request.urlopen(base + "/../app.py"); check(False, "no path escape")
     except Exception:
         check(True, "static files never leave static/")
+    # One-tap Text and Email: numbers are +1 and 10 digits, Send now is the Mac's only, a live send needs the confirm step.
+    # Only Caleb's own number and address, and only dry: this state is demo, so nothing can leave the Mac.
+    check(norm_phone("225-747-0303") == norm_phone("(225) 747 0303") == norm_phone("+1 225.747.0303") == "+12257470303", "phone numbers become +1 and 10 digits")
+    check(norm_phone("747-0303") is None and norm_phone("125-555-0103") is None and norm_phone("") is None, "a short or impossible number is refused")
+    def sendreq(data, host=None):
+        h = {"Content-Type": "application/json"}
+        if host:
+            h.update({"Host": host, "X-Forwarded-For": "100.64.0.7", "Cookie": ck2})
+        rq = urllib.request.Request(base + "/api/send", data=json.dumps(data).encode(), headers=h)
+        try:
+            r = urllib.request.urlopen(rq); return r.status, json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            return e.code, json.loads(e.read())
+    _c, hd2, _b = remote("/api/login", {"passcode": "correct horse battery"}); ck2 = (hd2.get("Set-Cookie") or "").split(";")[0]
+    mine = {"kind": "text", "person_id": "118", "to": "225-747-0303", "body": "Pipeline test, dry", "display": "Caleb Jackson", "confirmed": True}
+    code, r = sendreq(mine, host="pipeline-mac.tail1234.ts.net")
+    check(code == 403 and "Mac only" in r["error"], "Send now from the phone or tailnet is refused, even signed in")
+    code, r = sendreq(mine)
+    check(code == 200 and r["result"]["status"] == "dry-run" and r["result"]["to"] == "+12257470303" and r["result"]["text"] == "Pipeline test, dry", "a dry send to Caleb's own number logs time, recipient, channel and text")
+    code, r = sendreq({**mine, "to": "747-0303"})
+    check(not r["ok"] and "valid US number" in r["error"], "an invalid number is refused before any send")
+    code, r = sendreq({"kind": "email", "person_id": "118", "to": "aire@calebjackson", "subject": "Test", "body": "x", "confirmed": True})
+    check(not r["ok"] and "valid email" in r["error"], "an invalid email is refused before any send")
+    was = (state.sender, state.demo); state.sender, state.demo = "live", False  # refused before s.send runs, so nothing goes
+    try:
+        code, r = sendreq({k: v for k, v in mine.items() if k != "confirmed"})
+        check(code == 400 and "confirm" in r["error"], "a live send without the confirm step is refused")
+    finally:
+        state.sender, state.demo = was
+    # Deal photos: one folder per deal in the photo root, served by key and number only, behind the login.
+    proot = tmp / "photos"; (proot / "100 Fixture Ln").mkdir(parents=True); (proot / "Notes").mkdir()
+    (proot / "100 Fixture Ln" / "b-kitchen.jpg").write_bytes(b"\xff\xd8kitchen"); (proot / "100 Fixture Ln" / "a-front.jpg").write_bytes(b"\xff\xd8front")
+    (proot / "100 Fixture Ln" / "notes.txt").write_text("not a photo"); (proot / "Notes" / "x.txt").write_text("x")
+    dp = deal_photos(proot)
+    check(list(dp) == ["100 fixture"] and [f.name for f in dp["100 fixture"]] == ["a-front.jpg", "b-kitchen.jpg"], "deal photos: one list per deal folder, the front first, images only")
+    global PHOTO_ROOT
+    was_root, PHOTO_ROOT = PHOTO_ROOT, proot
+    deal_photos.__defaults__ = (proot,)
+    try:
+        check(json.loads(urllib.request.urlopen(base + "/api/photos").read())["deals"] == {"100 fixture": 2}, "/api/photos lists deals by key and count, never a path")
+        r = urllib.request.urlopen(base + "/photo/100-fixture/0")
+        check(r.headers["Content-Type"] == "image/jpeg" and r.read() == b"\xff\xd8front", "a deal photo is served by key and number")
+        for bad in ("/photo/100-fixture/9", "/photo/..%2F..%2Fapp.py/0", "/photo/notes/0"):
+            try:
+                urllib.request.urlopen(base + bad); check(False, f"{bad} is refused")
+            except urllib.error.HTTPError as e:
+                check(e.code == 404, f"{bad} is refused")
+        code, _, _ = remote("/photo/100-fixture/0")
+        check(code == 302, "a deal photo needs the login from the tailnet")
+    finally:
+        PHOTO_ROOT = was_root
+        deal_photos.__defaults__ = (was_root,)
+    st2 = json.loads(urllib.request.urlopen(base + "/api/state").read())
+    check(st2["local"] is True, "the Mac's own page knows it is local, so Send now shows there")
     httpd.shutdown()
 
     # the engine wrapper parses the engine's contract
@@ -1527,9 +3037,12 @@ def main(argv=None) -> int:
     ap.add_argument("--port", type=int, default=int(os.getenv("PIPELINE_PORT", "4747")))
     ap.add_argument("--no-open", action="store_true", help="do not open the browser")
     ap.add_argument("--test", action="store_true")
+    ap.add_argument("--set-passcode", action="store_true", help="set the passcode the phone signs in with")
     a = ap.parse_args(argv)
     if a.test:
         return run_tests()
+    if a.set_passcode:
+        return auth.cmd_set_passcode()
     load_env_file()
     paths = None
     if a.demo and (a.demo_feed or a.demo_status):
@@ -1538,7 +3051,10 @@ def main(argv=None) -> int:
             paths["feed"] = Path(a.demo_feed)
         if a.demo_status:
             paths["command_status"] = Path(a.demo_status)
-    serve(State(demo=a.demo, paths=paths), a.port, open_browser=not a.no_open)
+    st = State(demo=a.demo, paths=paths)
+    if not a.demo:
+        st.sale_geocoder = sale_pins.census_geocoder  # live only: new sale addresses go to the free Census geocoder once, then the cache
+    serve(st, a.port, open_browser=not a.no_open)
     return 0
 
 

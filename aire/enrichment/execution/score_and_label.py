@@ -1,4 +1,7 @@
-"""Scoring and labels. One job: CRM row + signals -> score, temperature, flags. Deterministic, documented, no model.
+"""Superseded for the live app on 2026-11-10 by aire/crm/heat.py, which the feed uses for the Hot and Warm lists
+(see aire/enrichment/AUDIT-2026-11-10-temperature.md). This file still drives the one-off enrichment run.
+
+Scoring and labels. One job: CRM row + signals -> score, temperature, flags. Deterministic, documented, no model.
 
 Temperature (Caleb's scale, 2026-10-20), one per person:
   hot       Live deal (stage under contract or active, or 2+ deal words in 90 days), or real estate intent in
@@ -83,7 +86,7 @@ def score_person(p: dict, msg: dict | None, mail: dict | None, soc: dict | None,
     no_signals = not sigs
     status = "do-not-contact" if dnc else "vendor-agent" if typ in VENDOR_TYPES else "ok"
     # With no message history loaded, Caleb's own band is the best evidence we have and it drives the label.
-    if "under contract" in stage or "active" in stage or (deal >= 2 and li_age is not None and li_age <= 90) \
+    if "under contract" in stage or ("active" in stage and "inactive" not in stage) or (deal >= 2 and li_age is not None and li_age <= 90) \
             or (recent_intent and li_age <= 30) or (band == "hot" and (no_signals or (li_age is not None and li_age <= 90))):
         label = "hot"
     elif recent_intent or (band == "warm" and (no_signals or (li_age is not None and li_age <= 180))):

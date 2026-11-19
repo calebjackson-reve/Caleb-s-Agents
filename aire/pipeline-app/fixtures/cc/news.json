@@ -1,0 +1,5 @@
+{"at": "{{NOW-30}}", "source": "Google News searches, last 7 days (demo)", "error": null, "rows": [
+ {"title": "Demo headline: Baton Rouge home sales hold steady into fall", "url": "https://example.com/news/1", "source": "Demo Advocate", "date": "{{D+0}}T07:30-06:00", "kind": "local"},
+ {"title": "Demo headline: West Feliciana weighs new subdivision near St. Francisville", "url": "https://example.com/news/2", "source": "Demo Democrat", "date": "{{D-1}}T16:10-06:00", "kind": "local"},
+ {"title": "Demo headline: Mortgage rates ease for a third straight week", "url": "https://example.com/news/3", "source": "Demo Wire", "date": "{{D-1}}T10:00-06:00", "kind": "rates"},
+ {"title": "Demo headline: Louisiana insurance changes and what buyers should ask", "url": "https://example.com/news/4", "source": "Demo Business Report", "date": "{{D-3}}T09:00-06:00", "kind": "market"}]}

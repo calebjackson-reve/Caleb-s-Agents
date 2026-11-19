@@ -32,6 +32,7 @@ cd skills/nick-saraev/<course> && zip -r <skill-name>.zip <skill-name>
 | [`ai-weekly-brief`](skills/ai-weekly-brief/SKILL.md) | Monday sweep of what changed in AI and the major apps, saved to `aire/ai-briefs/` with sources, ranked for what moves the business. |
 | [`aire-stack`](skills/aire-stack/SKILL.md) | Reads `aire/STACK.md` so every task uses the right model, app and subscription without re-explaining the setup. |
 | [`ai-compliance-check`](skills/ai-compliance-check/SKILL.md) | Checks every client-facing draft against Louisiana advertising rules, fair housing, texting rules and AI disclosure before Caleb sees it. |
+| [`web-3d`](skills/web-3d/SKILL.md) | Catalog of 16 open-source 3D website repos, pulled to the machine on command (`/web-3d`, `python3 skills/web-3d/pull.py pull recommended`). Routes a 3D build to the right repo. Nothing third-party is stored here. |
 | [`agent-offer-builder`](skills/agent-offer-builder/SKILL.md) | Packages a working AIRE workflow into free Skool content, a workshop, and a done-for-you install. Drafts only. |
 
 ## Projects
@@ -40,6 +41,7 @@ cd skills/nick-saraev/<course> && zip -r <skill-name>.zip <skill-name>
 |---|---|
 | [**SKOOL AI FOR AGENTS**](SKOOL-AI-FOR-AGENTS/README.md) | Project hub for the free Skool community: status log, shot board for every video, and links to the plan, scripts and research. Start here for anything Skool. |
 | [**AIRE**](aire/README.md) | Project hub: status log, stack memory, the October 2026 rollout plan, weekly AI briefs, and the speed to lead responder. Start here for anything AIRE. |
+| [**Builders page, in 3D**](website-rebuild/3d/README.md) | "See it before it's built." Scroll story in three.js for builders and new construction: a drawing of Basil Lane becomes a paper model, turns to dusk, gives way to the real photo, then comes apart as a blueprint. Caleb approved it as the builders page November 12, 2026. Prototype, not published. |
 | `global-claude-md/` | The global CLAUDE.md for Caleb's machine, with the install line. |
 
 ## Programs

@@ -30,14 +30,31 @@ for f in (site / 'review').glob('*'):
     if f.name == 'og-card.html': continue
     if f.suffix == '.html': (out / 'review' / f.name).write_text(f.read_text().replace('home.calebjackson.org', host))
     else: shutil.copy2(f, out / 'review' / f.name)
+# The builders page (website-rebuild/3d) ships as /builders/. It keeps its own folder so its relative paths to its
+# scripts, fonts and three.js keep working. Caleb approved it for launch on November 12, 2026.
+b3 = root / '3d'
+builders = []
+if (b3 / 'index.html').exists():
+    dst = out / 'builders'
+    shutil.copytree(b3 / 'assets', dst / 'assets'); shutil.copytree(b3 / 'vendor', dst / 'vendor')
+    fix3 = lambda text: fix(text).replace('../site/', '/')
+    (dst / 'index.html').write_text(fix3((b3 / 'index.html').read_text()).replace(
+        '<!-- Prototype for Caleb\'s review. Stays out of search until he approves it for launch. -->\n', '').replace(
+        '<meta name="theme-color"', '<link rel="canonical" href="https://' + host + '/builders/">\n<meta name="theme-color"', 1))
+    for f in (dst / 'assets').rglob('*'):
+        if f.suffix in ('.js', '.css'): f.write_text(fix3(f.read_text()))
+    builders = [dst / 'index.html'] + [f for f in (dst / 'assets').rglob('*') if f.suffix in ('.js', '.css')]
 refs = set()
-for f in list(out.glob('*.html')) + list((out / 'assets').glob('*')):
-    refs.update(re.findall(r'/media/[^"\' )]+', f.read_text()))
+for f in list(out.glob('*.html')) + list((out / 'assets').glob('*')) + builders:
+    text = f.read_text()
+    refs.update(re.findall(r'/media/[^"\' )]+', text))
+    # the builders page names its pin photos by file name and adds the folder in code
+    if f in builders: refs.update('/media/listing-basil-ln/' + n for n in re.findall(r"img: '([^']+\.webp)'", text))
 for r in sorted(refs):
     src = root / r.lstrip('/')
-    if src.exists():
+    if src.is_file():
         dst = out / r.lstrip('/'); dst.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(src, dst)
-    else: print('missing', r)
+    elif not src.is_dir(): print('missing', r)
 # Old LP URLs (live sitemap-static.xml and sitemap-neighborhoods-dpages.xml, read Oct 29 2026)
 # mapped to the closest new page. GitHub Pages ignores _redirects, so each old path gets a
 # meta-refresh stub page; _redirects carries the same map for a host that honors it.
@@ -74,5 +91,6 @@ for old, new in REDIRECTS.items():
 (out / '.nojekyll').write_text('')
 (out / 'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: https://' + host + '/sitemap.xml\n')
 pages = ['index', 'search', 'communities', 'sell', 'about', 'contact']
-(out / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>https://' + host + '/{"" if p=="index" else p+".html"}</loc></url>\n' for p in pages) + '</urlset>\n')
+locs = ['' if p == 'index' else p + '.html' for p in pages] + (['builders/'] if builders else [])
+(out / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join('  <url><loc>https://' + host + '/' + l + '</loc></url>\n' for l in locs) + '</urlset>\n')
 print('dist built at', out, 'files', sum(1 for _ in out.rglob('*') if _.is_file()))

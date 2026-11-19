@@ -1,0 +1,21 @@
+handle,platform,action,date,post,post_type,said
+example.mia.denham,instagram,comment,2026-11-10,https://www.instagram.com/p/EXAMPLE-SOLD-1,just sold,Example comment: love this one
+example.mia.denham,instagram,like,2026-11-09,https://www.instagram.com/p/EXAMPLE-SOLD-1,just sold,
+example.mia.denham,instagram,like,2026-11-08,https://www.instagram.com/p/EXAMPLE-SOLD-2,,
+example.mia.denham,instagram,like,2026-11-07,https://www.instagram.com/p/EXAMPLE-SOLD-3,,
+example.jo.baker,instagram,like,2026-11-11,https://www.instagram.com/p/EXAMPLE-SOLD-1,just sold,
+example.jo.baker,instagram,like,2026-11-10,https://www.instagram.com/p/EXAMPLE-SOLD-2,,
+example.jo.baker,instagram,like,2026-11-09,https://www.instagram.com/p/EXAMPLE-SOLD-3,,
+example.jo.baker,instagram,like,2026-11-08,https://www.instagram.com/p/EXAMPLE-SOLD-4,,
+example.alex.walker,instagram,share,2026-11-06,https://www.instagram.com/p/EXAMPLE-LISTING-1,listing,
+example.handle.one,instagram,comment,2026-11-10,https://www.instagram.com/p/EXAMPLE-LISTING-1,listing,Example comment: love this kitchen
+example.reggie.prairieville,instagram,like,2026-11-11,https://www.instagram.com/p/EXAMPLE-SOLD-1,just sold,
+example.reggie.prairieville,instagram,like,2026-11-10,https://www.instagram.com/p/EXAMPLE-SOLD-2,,
+example.reggie.prairieville,instagram,like,2026-11-09,https://www.instagram.com/p/EXAMPLE-SOLD-3,,
+example.reggie.prairieville,instagram,like,2026-11-08,https://www.instagram.com/p/EXAMPLE-SOLD-4,,
+example.reggie.prairieville,instagram,like,2026-11-07,https://www.instagram.com/p/EXAMPLE-LISTING-1,listing,
+example.reggie.prairieville,instagram,like,2026-11-06,https://www.instagram.com/p/EXAMPLE-PERSONAL-1,personal,
+example.sam.zachary,instagram,like,2026-11-10,https://www.instagram.com/p/EXAMPLE-PERSONAL-1,personal,
+example.handle.two,instagram,comment,2026-11-11,https://www.instagram.com/p/EXAMPLE-LISTING-1,listing,Example comment: is this one still available?
+example.tyler.gonzales,instagram,comment,2026-11-09,https://www.instagram.com/p/EXAMPLE-SOLD-2,,Example comment: nice work
+example.dana.central,instagram,share,2026-11-10,https://www.instagram.com/p/EXAMPLE-SOLD-1,just sold,

@@ -1,0 +1,19 @@
+{
+ "_note": "EXAMPLE ONLY. Every person, town, handle and phone here is made up. Shape of the CRM feed (aire/crm/FEED.md).",
+ "as_of": "2026-11-12",
+ "cadence_days": {"hot": 7, "warm": 14, "lukewarm": 30, "cold": 90, "ice-cold": 365},
+ "people": [
+  {"person_id": "8001", "display": "Dana Sample", "band": "warm", "stage": "nurture", "type": "client", "city": "Central", "last_inbound": "2026-09-01", "last_outbound": "2026-09-02", "days_quiet": 70},
+  {"person_id": "8002", "display": "Michael Fixture", "band": "warm", "stage": "nurture", "type": "client", "city": "Zachary", "phone": "+12255550142", "last_inbound": "2026-09-01", "last_outbound": "2026-09-02", "days_quiet": 70},
+  {"person_id": "8003", "display": "Jordan Example", "band": "warm", "stage": "nurture", "type": "client", "city": "Denham Springs", "last_inbound": "2026-09-01", "last_outbound": "2026-09-02", "days_quiet": 70},
+  {"person_id": "8004", "display": "Jordan Example", "band": "warm", "stage": "nurture", "type": "client", "city": "Baker", "last_inbound": "2026-09-01", "last_outbound": "2026-09-02", "days_quiet": 70},
+  {"person_id": "8005", "display": "Casey Tester", "band": "warm", "stage": "nurture", "type": "client", "city": "St. George", "email": "casey.tester@example.com", "last_inbound": "2026-09-01", "last_outbound": "2026-09-02", "days_quiet": 70},
+  {"person_id": "8006", "display": "Riley Sample", "band": "warm", "stage": "nurture", "type": "client", "city": "Central", "last_inbound": "2026-09-01", "last_outbound": "2026-09-02", "days_quiet": 70},
+  {"person_id": "8007", "display": "Pat Fixture", "band": "warm", "stage": "nurture", "type": "client", "city": "Walker", "last_inbound": "2026-09-01", "last_outbound": "2026-09-02", "days_quiet": 70},
+  {"person_id": "8008", "display": "Elizabeth Demo", "band": "warm", "stage": "nurture", "type": "client", "city": "Prairieville", "last_inbound": "2026-09-01", "last_outbound": "2026-09-02", "days_quiet": 70}
+ ],
+ "touches_due": [],
+ "deals": [],
+ "no_text_consent": [],
+ "label_review": []
+}

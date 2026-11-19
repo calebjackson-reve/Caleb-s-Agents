@@ -91,10 +91,18 @@ const Voice = (() => {
   function findDeal(q) {
     const words = q.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(w => w.length > 3 && !NOT_NAMES.has(w));
     let best = null, bestScore = 0;
-    (feed().deals || []).forEach(d => { const a = (d.address || '').toLowerCase(); const sc = words.filter(w => new RegExp('\\b' + w + '\\b').test(a)).length; if (sc > bestScore) { best = d; bestScore = sc; } });
+    sheetDeals().forEach(d => { const a = (d.address || '').toLowerCase(); const sc = words.filter(w => new RegExp('\\b' + w + '\\b').test(a)).length; if (sc > bestScore) { best = d; bestScore = sc; } });
     return best;
   }
   const shortAddr = a => (a || '').split(',')[0];
+  // Deals as the voice speaks them: the AIRE Deals sheet's open deals (the same rows as the Deals page), in the shape the
+  // answers below read.
+  const SHEET_STAGE = { contract: 'under_contract', offer: 'offer', appointment: 'active', other: 'lead' };
+  function sheetDeals() {
+    return (window.CC ? CC.openDeals() : []).map(r => ({ address: r.deal, stage: SHEET_STAGE[r.stage] || r.stage, status: r.status, side: r.side,
+      next_step: r.next || '', expected_close: r.act || '', last_event: '' }));
+  }
+  const leads14 = () => (window.CC ? CC.leadsIn(14) : []).map(l => ({ display: l.name || 'a website lead', source: l.source || 'the website' }));
   const alsoMatched = r => r && r._others ? ` ${plural(r._others, 'other person matches', 'other people match')} that name, so say the last name if that is the wrong one.` : '';
   const VIEWS = [[/\bmap\b/, 'map', 'The map.'], [/\bmarket|monitor|permits?\b/, 'market', 'Market Monitor.'], [/\bdeals?\b/, 'deals', 'Deals.'],
     [/\btasks?\b|\bto.?dos?\b/, 'tasks', 'Tasks.'], [/\bleads?\b/, 'leads', 'New leads.'], [/\bdrafts?\b|\bqueue\b/, 'queue', 'Drafts.'],
@@ -102,7 +110,7 @@ const Voice = (() => {
 
   function handle(text) {
     const st = appState(), f = feed() || {}, c = f.counts || {}, q = text.toLowerCase().replace(/[’]/g, "'").trim();
-    const owes = (f.touches_due || []).filter(r => r.owes_reply), over = (f.tasks || []).filter(t => t.overdue);
+    const owes = owesReply(), over = (f.tasks || []).filter(t => t.overdue);
     if (/^(ask|question|hey claude|claude)[ ,:]/i.test(q)) return askClaude(text.replace(/^(ask|question|hey claude|claude)[ ,:]+/i, ''));
     if (/^(stop|quiet|cancel|never ?mind|hush|shut up|that'?s enough|enough)\b/.test(q)) { if ('speechSynthesis' in window) speechSynthesis.cancel(); if (audioEl) { try { audioEl.pause(); } catch (e) { } } setState(on ? 'listening' : 'idle'); return; }
     if (/^(thanks|thank you|cheers|perfect|got it|great|awesome)\b/.test(q)) return say('Anytime.');
@@ -137,7 +145,7 @@ const Voice = (() => {
     // ---- a person or a deal by name
     const deal = findDeal(q);
     if (deal && /\b(next step|going on|status|update on|where are we|how'?s|what about|tell me|about|closing|close|when)\b/.test(q)) {
-      go('deals'); return say(`${shortAddr(deal.address)} is ${deal.stage.replace('_', ' ')}${deal.side ? ', ' + deal.side + ' side' : ''}. ${deal.next_step ? 'Next step: ' + deal.next_step + '.' : 'No next step written down.'}${deal.expected_close ? ' Expected close ' + deal.expected_close + '.' : ''}${deal.last_event ? ' Last event: ' + deal.last_event + '.' : ''}`);
+      go('deals'); return say(`${shortAddr(deal.address)} is ${(deal.status || deal.stage).replace('_', ' ').toLowerCase()}${deal.side ? ', ' + deal.side + ' side' : ''}. ${deal.next_step ? 'Next step: ' + deal.next_step + '.' : 'No next step written down.'}${deal.expected_close ? ' Expected close ' + deal.expected_close + '.' : ''}${deal.last_event ? ' Last event: ' + deal.last_event + '.' : ''}`);
     }
     const person = /\b(say|said|text|texted|talk|talked|last|about|going on|how'?s|how is|how are|who is|what'?s up with|tell me|check on)\b/.test(q) ? findPerson(q) : null;
     if (person) {
@@ -151,7 +159,7 @@ const Voice = (() => {
       const parts = [`Good ${hourWord()}, Caleb.`];
       parts.push(owes.length ? `${plural(owes.length, 'person owes', 'people owe')} a reply. Start with ${names(owes)}.` : 'Nobody is waiting on a reply.');
       parts.push(over.length ? `${plural(over.length, 'task is', 'tasks are')} overdue, starting with ${over[0].task}.` : 'Nothing is overdue.');
-      parts.push(`${plural((f.new_leads || []).length, 'new lead')} in the last two weeks, ${plural(c.deals_live || 0, 'live deal')}, ${plural(drafts().length, 'draft')} ready.`);
+      parts.push(`${plural(leads14().length, 'new lead')} in the last two weeks, ${plural(sheetDeals().length, 'open deal')} on the Deals sheet, ${plural(readyDrafts().length, 'draft')} ready.`);
       parts.push(owes.length ? 'Say compose to start with the first reply.' : 'Say compose to start on the drafts.');
       return say(parts.join(' '));
     }
@@ -169,19 +177,19 @@ const Voice = (() => {
     }
     if (/\b(compose|drafts?|write one)\b/.test(q) || /^(next|send)$/.test(q)) { const d = drafts(); if (!d.length) return say('The queue is clear.'); composeNext(); return say(`${d[0].reply ? 'Reply to' : 'Draft for'} ${d[0].name}. ${d[0].reply ? 'They texted last, so write it yourself.' : 'The draft is ready, read it and send.'}`); }
     if (/\b(close|closes|closing|closings)\b/.test(q) && /\b(next|soon|when|first|upcoming|this (week|month))\b/.test(q)) {
-      go('deals'); const d = (f.deals || []).filter(x => x.expected_close).sort((a, b) => a.expected_close.localeCompare(b.expected_close));
-      return say(d.length ? `${shortAddr(d[0].address)} closes ${d[0].expected_close}${d[1] ? `, then ${shortAddr(d[1].address)} on ${d[1].expected_close}` : ''}.${(f.deals || []).length > d.length ? ` ${plural((f.deals || []).length - d.length, 'deal has', 'deals have')} no close date.` : ''}` : 'No live deal has a close date.');
+      go('deals'); const all = sheetDeals().filter(x => x.stage === 'under_contract'), d = all.filter(x => x.expected_close).sort((a, b) => a.expected_close.localeCompare(b.expected_close));
+      return say(d.length ? `${shortAddr(d[0].address)} closes ${d[0].expected_close}${d[1] ? `, then ${shortAddr(d[1].address)} on ${d[1].expected_close}` : ''}.${all.length > d.length ? ` ${plural(all.length - d.length, 'deal has', 'deals have')} no act of sale date.` : ''}` : 'No open deal has an act of sale date.');
     }
-    const STAGE_WORDS = [['under contract', 'under_contract'], ['active', 'active'], ['showing', 'showing'], ['consult', 'consult'], ['lead', 'lead']];
+    const STAGE_WORDS = [['under contract', 'under_contract'], ['offer', 'offer'], ['active', 'active'], ['lead', 'lead']];
     const stageAsked = /\b(how many|which|what)\b/.test(q) && /\bdeals?\b|\bunder contract\b/.test(q) ? STAGE_WORDS.find(([w]) => q.includes(w)) : null;
-    if (stageAsked) { go('deals'); const d = (f.deals || []).filter(x => x.stage === stageAsked[1]); return say(`${plural(d.length, 'deal')} ${stageAsked[0]}${d.length ? ': ' + d.map(x => shortAddr(x.address)).join(', ') : ''}.`); }
-    if (/\b(deals?|contracts?|closings?|pipeline status|under contract)\b/.test(q)) { go('deals'); const d = f.deals || []; return say(d.length ? `${plural(d.length, 'live deal')}. ` + d.slice(0, 4).map(x => `${shortAddr(x.address)}, ${x.stage.replace('_', ' ')}${x.next_step ? ', next ' + x.next_step : ''}`).join('. ') + '.' : 'No live deals.'); }
+    if (stageAsked) { go('deals'); const d = sheetDeals().filter(x => x.stage === stageAsked[1]); return say(`${plural(d.length, 'deal')} ${stageAsked[0]}${d.length ? ': ' + d.map(x => shortAddr(x.address)).join(', ') : ''}.`); }
+    if (/\b(deals?|contracts?|closings?|pipeline status|under contract)\b/.test(q)) { go('deals'); const d = sheetDeals(); return say(d.length ? `${plural(d.length, 'open deal')} on the Deals sheet. ` + d.slice(0, 4).map(x => `${shortAddr(x.address)}, ${x.status.toLowerCase()}${x.next_step ? ', next ' + x.next_step : ''}`).join('. ') + '.' : 'No live deals.'); }
     if (/\b(tasks?|to.?dos?|overdue)\b/.test(q)) { go('tasks'); const t = (f.tasks || []).slice().sort((a, b) => (b.overdue - a.overdue) || (a.due || '9').localeCompare(b.due || '9')); return say(t.length ? `${plural(t.length, 'open task')}, ${over.length} overdue. First up: ${t[0].task}${t[0].display ? ' for ' + t[0].display : ''}.` : 'No open tasks.'); }
     if (/\b(hot|warm)\b/.test(q) && /\b(how many|who|people|leads?|list)\b/.test(q)) {
       const band = /\bwarm\b/.test(q) ? 'warm' : 'hot', n = (c.by_band || {})[band] || 0, rows = (f.touches_due || []).filter(r => r.band === band);
       go('touches'); return say(`${plural(n, band + ' contact')}. ${rows.length ? `Due now: ${names(rows, 4)}.` : 'None of them are due.'}`);
     }
-    if (/\b(leads?|new people|sign.?ups?)\b/.test(q)) { go('leads'); const l = f.new_leads || []; return say(l.length ? `${plural(l.length, 'new lead')}: ${names(l, 4)}. ${who(l[0])} came in from ${l[0].source}.` : 'No new leads in the last two weeks.'); }
+    if (/\b(leads?|new people|sign.?ups?)\b/.test(q)) { go('leads'); const l = leads14(); return say(l.length ? `${plural(l.length, 'new lead')}: ${names(l, 4)}. ${who(l[0])} came in from ${l[0].source}.` : 'No new leads in the last two weeks.'); }
     if (/\b(listings?|permits?|market|farms?|new builds?|roofs?)\b/.test(q)) {
       go('market'); const rows = typeof marketRows === 'function' ? marketRows() : ((f.market || {}).rows || []), wk = isoIn(-7);
       const recent = rows.filter(r => (r.date || '') >= wk), permits = recent.filter(r => r.type === 'permit'), nl = recent.filter(r => r.type === 'new_listing'), ch = recent.filter(r => r.type === 'listing_change');

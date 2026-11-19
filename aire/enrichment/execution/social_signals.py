@@ -23,6 +23,40 @@ from pathlib import Path
 
 WEIGHT = {"like": 1, "comment": 3, "share": 4, "dm": 5, "story_reply": 3, "follow": 2}
 
+# Since 2026-11-12 the engagers list may also say what kind of post each row was on, so a like on a just-sold and a
+# like on a dog photo stop looking the same. Two optional columns, and the old five-column file still loads:
+#   post_type   listing, just_sold, open_house, market_update, neighborhood or personal
+#   said        what they wrote, for comments and messages. It stays on the Mac, like text snippets do.
+# The post type can also come from a small posts table filled once per post (post,post_type), keyed by the post URL.
+# A person fills these in by hand. Nothing here reads Instagram or Facebook.
+POST_TYPES = ("listing", "just_sold", "open_house", "market_update", "neighborhood", "personal")
+REAL_ESTATE_POSTS = ("listing", "just_sold", "open_house", "market_update")
+_POST_WORDS = {"just sold": "just_sold", "sold": "just_sold", "open house": "open_house", "market": "market_update", "market update": "market_update"}
+
+
+def norm_post_type(v: str) -> str:
+    """'Just Sold' -> 'just_sold', 'market' -> 'market_update'. Anything unknown is '' (not counted as real estate)."""
+    t = " ".join((v or "").strip().lower().replace("_", " ").replace("-", " ").split())
+    t = _POST_WORDS.get(t, t).replace(" ", "_")
+    return t if t in POST_TYPES else ""
+
+
+def norm_post(url: str) -> str:
+    return (url or "").strip().lower().split("?")[0].rstrip("/")
+
+
+def post_types(posts: list[dict]) -> dict:
+    """The posts table as {post url: post type}."""
+    return {norm_post(r.get("post", "")): norm_post_type(r.get("post_type", "")) for r in posts or [] if r.get("post")}
+
+
+def with_post_types(engagers: list[dict], posts: list[dict] | None = None) -> list[dict]:
+    """Each engagers row with a clean `action`, `post_type` (its own column first, then the posts table, else '') and `said`."""
+    table = post_types(posts or [])
+    return [{**e, "action": (e.get("action") or "").strip().lower().replace(" ", "_"),
+             "post_type": norm_post_type(e.get("post_type", "")) or table.get(norm_post(e.get("post", "")), ""),
+             "said": (e.get("said") or "").strip()} for e in engagers]
+
 
 def norm_handle(h: str) -> str:
     return (h or "").strip().lstrip("@").lower().split("/")[-1]

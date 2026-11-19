@@ -11,7 +11,7 @@ on:
         default: home.calebjackson.org
   push:
     branches: [main]
-    paths: ['website-rebuild/site/**', 'website-rebuild/media/**', '.github/workflows/deploy-site.yml']
+    paths: ['website-rebuild/site/**', 'website-rebuild/3d/**', 'website-rebuild/media/**', '.github/workflows/deploy-site.yml']
 permissions:
   contents: write
 concurrency:
