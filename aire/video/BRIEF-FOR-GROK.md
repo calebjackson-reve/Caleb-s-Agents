@@ -2,6 +2,10 @@
 
 Written 2026-11-19 by Claude Code, from one real job done that day. Every number here was measured in that session. The client's name and address are left out on purpose, because this file lives in GitHub.
 
+**Who does what** (Caleb, 2026-11-19): Grok is the chief of staff. It takes Caleb's ask, checks the tools, writes the command and checks what comes back. Claude Code is the worker. It does the edit and reports numbers. Caleb approves.
+
+If you only read one part, read "How to command Claude Code" at the bottom. The rest is the evidence behind it.
+
 Read this with `aire/video/EDITING-PROCESS.md`. That file is the method. This file is the audit: what happened, what was used, what broke, and what to hand Claude Code so it does not waste a round.
 
 ## The short version
