@@ -90,6 +90,9 @@ For each clip note the usable seconds, what room it is and which way the camera 
 - Take the shot count and shot lengths from the reference's `teardown.json`. Do not guess them.
 - Clips shot at 60 frames a second can run at `"speed": 0.5` and stay smooth. That gives the slow push-in feel. Never slow a 30 frames a second clip, it turns choppy.
 - An optional top-level `"titles"` list puts text on screen. Each title has `start`, `end`, a `y` position and `lines` with `text`, `size` and a `font` file. Sizes are a fraction of the short side, and a long line shrinks to fit.
+- An optional top-level `"overlays"` list puts a picture on screen, such as a logo. Each has `image`, `start`, `width`, `y`, and an optional `backdrop` color that fades in behind it. The picture eases up to full size as it appears.
+- **Cut on the beat.** When there is a song, find its real beat times first and set each shot length so the cut lands on a beat. Do not trust a tempo number alone, it drifts.
+- **Pick the calm moment.** Shake differs second to second inside one clip. Measure it and start each shot at the calmest spot near the one you wanted.
 - An optional top-level `"look"` holds ffmpeg filters for the color look, so the grade lives in the cut list too.
 
 ## Step 4. Build the preview
@@ -116,6 +119,7 @@ python3 aire/video/watch.py job/out/listing-reveal-4x3-preview.mp4 --name job-ch
 | Longest shot | Not longer than the reference's longest, except the closing shot |
 | Motion counts | No `stepped` shots unless the reference has them |
 | Loudness | -14 LUFS, give or take 1 |
+| Cuts on the beat | Every main cut within 0.04 seconds of a beat, measured on the finished file, not on the plan |
 
 Then look at your own sheets for a cropped-off subject, a repeated shot, a shaky clip or a dark frame. Report the numbers and what you saw. Do not write "plays clean" without them.
 
@@ -180,6 +184,6 @@ Source: `instagram.com/p/DX16PojSA9s`, account baycreativesmedia, posted 2026-05
 
 - Never post, send or schedule a video. Caleb approves, then Caleb posts.
 - Never put a client name, address or footage in GitHub.
-- Never use the reference's song or footage in Caleb's video. The reference is for study only.
+- Never use the reference's footage in Caleb's video, and never put its song in a file that gets posted. A copy with the song is allowed for Caleb to check the sync, with REVIEW ONLY in the file name (Caleb, 2026-11-19).
 - Never use an AI-generated clip in place of a real room. Disclose any AI-generated clip.
 - Never call a job done from a preview. Say "preview" until the final is built and checked.

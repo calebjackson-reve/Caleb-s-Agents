@@ -46,10 +46,11 @@ def title_filters(edl, root, w, h, tmp):
             txt.write_text(ln["text"])
             font = f":fontfile='{font_path}'" if font_path else ""
             x = "(w-text_w)/2" if t.get("align", "center") == "center" else str(int(t.get("x", 0.07) * w))
-            out.append(f"drawtext=textfile='{txt}'{font}:fontsize={px}:fontcolor=white:alpha='{alpha}':x={x}:y={int(y)}"
-                       f":borderw={max(px // 28, 1)}:bordercolor=black@0.45"
-                       f":shadowcolor=black@0.7:shadowx={max(px // 18, 1)}:shadowy={max(px // 18, 1)}"
-                       f":enable='between(t,{s0},{e0})'")
+            color = ln.get("color", "white")
+            edge = (f":borderw={max(px // 28, 1)}:bordercolor=black@0.45"
+                    f":shadowcolor=black@0.7:shadowx={max(px // 18, 1)}:shadowy={max(px // 18, 1)}") if color == "white" else ""
+            out.append(f"drawtext=textfile='{txt}'{font}:fontsize={px}:fontcolor={color}:alpha='{alpha}':x={x}:y={int(y)}"
+                       f"{edge}:enable='between(t,{s0},{e0})'")
             y += px * ln.get("gap", 1.35)
     return ",".join(out)
 
@@ -73,7 +74,7 @@ def main():
     enc = ["-c:v", "libx264", "-preset", "medium" if final else "veryfast",
            "-crf", "18" if final else "27", "-pix_fmt", "yuv420p"]
     timing = {"mode": "final" if final else "preview", "started": time.strftime("%Y-%m-%d %H:%M:%S"), "shapes": {}}
-    total = sum((c["out"] - c["in"]) / c.get("speed", 1) for c in edl["clips"])
+    total = sum(round((c["out"] - c["in"]) / c.get("speed", 1) * fps) for c in edl["clips"]) / fps
     look = "," + edl["look"] if edl.get("look") else ""  # optional ffmpeg filters for the color look
 
     for shape in edl["shapes"]:
@@ -82,19 +83,21 @@ def main():
         segs, built = [], 0
         for c in edl["clips"]:
             fx, fy = c.get("focus", [0.5, 0.5])
-            key = json.dumps([c, shape, short, fps, look, Path(root / c["src"]).stat().st_mtime], sort_keys=True)
+            frames = round((c["out"] - c["in"]) / c.get("speed", 1) * fps)  # exact frame count, so cuts never drift
+            key = json.dumps([c, shape, short, fps, look, frames, Path(root / c["src"]).stat().st_mtime], sort_keys=True)
             seg = cache / (hashlib.sha1(key.encode()).hexdigest()[:16] + ".mp4")
             if not seg.exists():
                 vf = (f"setpts=PTS/{c.get('speed', 1)},scale={w}:{h}:force_original_aspect_ratio=increase,"
                       f"crop={w}:{h}:(iw-{w})*{fx}:(ih-{h})*{fy},fps={fps},setsar=1" + look)
-                run(["ffmpeg", "-y", "-ss", str(c["in"]), "-t", str(c["out"] - c["in"]), "-i", str(root / c["src"]),
-                     "-vf", vf, "-an", *enc, str(seg)])
+                run(["ffmpeg", "-y", "-ss", str(c["in"]), "-t", str(c["out"] - c["in"] + 0.5), "-i", str(root / c["src"]),
+                     "-vf", vf, "-an", "-frames:v", str(frames), *enc, str(seg)])
                 built += 1
             segs.append(seg)
         lst = cache / f"list-{shape}.txt"
         lst.write_text("".join(f"file '{s}'\n" for s in segs))
         dest = out / f"{edl['name']}-{shape}{'' if final else '-preview'}.mp4"
         cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(lst)]
+        aud = []
         if edl.get("music"):
             fade = edl.get("music_fade", 1.5)
             shape_a = f"atrim=0:{total},afade=t=out:st={max(total - fade, 0)}:d={fade}"
@@ -109,11 +112,32 @@ def main():
                 if not m or abs(-14.0 - float(m[-1])) < 0.3:
                     break
                 gain = round(gain + (-14.0 - float(m[-1])), 2)
-            cmd += [*src_a, "-filter:a", f"{shape_a},volume={gain}dB,alimiter=limit=0.84:level=0",
-                    "-c:a", "aac", "-b:a", "192k", "-shortest"]
+            cmd += src_a
+            aud = ["-filter:a", f"{shape_a},volume={gain}dB,alimiter=limit=0.84:level=0",
+                   "-c:a", "aac", "-b:a", "192k", "-shortest"]
         titles = title_filters(edl, root, w, h, cache)
-        vid = ["-vf", titles, *enc] if titles else ["-c:v", "copy"]  # titles need one more encode, plain cuts do not
-        run(cmd + [*vid, "-movflags", "+faststart", str(dest)])
+        overlays = edl.get("overlays", [])
+        if overlays:  # pictures such as a logo, each with an optional backdrop that fades in behind it
+            n_in = 2 if edl.get("music") else 1
+            graph, last = [], "0:v"
+            for k, o in enumerate(overlays):
+                s0, f = o["start"], o.get("fade", 0.4)
+                if o.get("backdrop"):
+                    graph.append(f"color=c={o['backdrop']}:s={w}x{h}:r={fps}:d={total},format=rgba,"
+                                 f"fade=t=in:st={s0}:d={f}:alpha=1[bk{k}];[{last}][bk{k}]overlay=enable='gte(t,{s0})'[b{k}]")
+                    last = f"b{k}"
+                cmd += ["-loop", "1", "-t", str(total), "-i", str(root / o["image"])]
+                lw = int(o.get("width", 0.4) * min(w, h))
+                grow = o.get("grow", 0.08)  # the picture eases up to full size as it fades in
+                graph.append(f"[{n_in + k}:v]format=rgba,scale=w='2*trunc({lw}*({1 - grow}+{grow}*min(1,max(0,(t-{s0})/{o.get('grow_time', 1.2)})))/2)'"
+                             f":h=-2:eval=frame,fade=t=in:st={s0}:d={f}:alpha=1[im{k}];"
+                             f"[{last}][im{k}]overlay=x=(W-w)/2:y={int(o.get('y', 0.42) * h)}-h/2:enable='gte(t,{s0})'[o{k}]")
+                last = f"o{k}"
+            graph.append(f"[{last}]{titles or 'null'}[vout]")
+            vid = ["-filter_complex", ";".join(graph), "-map", "[vout]", *(["-map", "1:a"] if edl.get("music") else []), *enc]
+        else:
+            vid = ["-vf", titles, *enc] if titles else ["-c:v", "copy"]  # titles need one more encode, plain cuts do not
+        run(cmd + [*vid, *aud, "-t", str(total), "-movflags", "+faststart", str(dest)])
         timing["shapes"][shape] = {"file": dest.name, "size": [w, h], "loudness_lufs": lufs(dest), "segments_built": built,
                                    "segments_reused": len(segs) - built, "seconds": round(time.time() - t0, 1)}
         print(f"{dest.name}  {w}x{h}  built {built}, reused {len(segs) - built}  {timing['shapes'][shape]['seconds']} s")
