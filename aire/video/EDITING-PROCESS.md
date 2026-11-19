@@ -92,7 +92,8 @@ For each clip note the usable seconds, what room it is and which way the camera 
 - An optional top-level `"titles"` list puts text on screen. Each title has `start`, `end`, a `y` position and `lines` with `text`, `size` and a `font` file. Sizes are a fraction of the short side, and a long line shrinks to fit.
 - An optional top-level `"overlays"` list puts a picture on screen, such as a logo. Each has `image`, `start`, `width`, `y`, and an optional `backdrop` color that fades in behind it. The picture eases up to full size as it appears.
 - **Cut on the beat.** When there is a song, find its real beat times first and set each shot length so the cut lands on a beat. Do not trust a tempo number alone, it drifts.
-- **Pick the calm moment.** Shake differs second to second inside one clip. Measure it and start each shot at the calmest spot near the one you wanted.
+- **Pick the calm moment.** "Shaky" to a viewer is mostly sway and tilt, not tiny jitter. For each shot, measure whether the camera move stays one straight, even glide and whether the frame rolls, then start the shot at the calmest spot. If a clip has no calm spot, use another clip of the same room. Look at the result, because the calmest moment is sometimes a blank wall.
+- An optional `"stabilize"` number (30 is a calm glide) runs software stabilizing on a clip. It did nothing useful on gimbal footage. Try it on handheld clips only.
 - An optional top-level `"look"` holds ffmpeg filters for the color look, so the grade lives in the cut list too.
 
 ## Step 4. Build the preview

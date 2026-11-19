@@ -84,13 +84,29 @@ def main():
         for c in edl["clips"]:
             fx, fy = c.get("focus", [0.5, 0.5])
             frames = round((c["out"] - c["in"]) / c.get("speed", 1) * fps)  # exact frame count, so cuts never drift
-            key = json.dumps([c, shape, short, fps, look, frames, Path(root / c["src"]).stat().st_mtime], sort_keys=True)
+            key = json.dumps([c, shape, short, fps, look, frames, edl.get("stabilize", 0), Path(root / c["src"]).stat().st_mtime], sort_keys=True)
             seg = cache / (hashlib.sha1(key.encode()).hexdigest()[:16] + ".mp4")
             if not seg.exists():
-                vf = (f"setpts=PTS/{c.get('speed', 1)},scale={w}:{h}:force_original_aspect_ratio=increase,"
-                      f"crop={w}:{h}:(iw-{w})*{fx}:(ih-{h})*{fy},fps={fps},setsar=1" + look)
-                run(["ffmpeg", "-y", "-ss", str(c["in"]), "-t", str(c["out"] - c["in"] + 0.5), "-i", str(root / c["src"]),
-                     "-vf", vf, "-an", "-frames:v", str(frames), *enc, str(seg)])
+                speed = c.get("speed", 1)
+                frame = (f"scale={w}:{h}:force_original_aspect_ratio=increase,"
+                         f"crop={w}:{h}:(iw-{w})*{fx}:(ih-{h})*{fy}")
+                finish = f"setpts=(PTS-STARTPTS)/{speed},fps={fps},setsar=1" + look
+                src_len = c["out"] - c["in"]
+                steady = c.get("stabilize", edl.get("stabilize", 0))  # 0 is off, higher is smoother (30 is a calm glide)
+                if steady:
+                    # two passes over a slightly longer stretch, so the smoothing has frames to work with on both sides
+                    start = max(c["in"] - 0.7, 0)
+                    lead = c["in"] - start
+                    trf = str(seg) + ".trf"
+                    grab = ["ffmpeg", "-y", "-ss", str(start), "-t", str(lead + src_len + 1.2), "-i", str(root / c["src"])]
+                    run(grab + ["-vf", f"{frame},vidstabdetect=shakiness=6:accuracy=12:result='{trf}'", "-an", "-f", "null", "-"])
+                    vf = (f"{frame},vidstabtransform=input='{trf}':smoothing={int(steady)}:optzoom=1:interpol=bicubic,"
+                          f"trim=start={lead},{finish}")
+                    run(grab + ["-vf", vf, "-an", "-frames:v", str(frames), *enc, str(seg)])
+                    Path(trf).unlink(missing_ok=True)
+                else:
+                    run(["ffmpeg", "-y", "-ss", str(c["in"]), "-t", str(src_len + 0.5), "-i", str(root / c["src"]),
+                         "-vf", f"{frame},{finish}", "-an", "-frames:v", str(frames), *enc, str(seg)])
                 built += 1
             segs.append(seg)
         lst = cache / f"list-{shape}.txt"
