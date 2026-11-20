@@ -63,6 +63,7 @@ from zoneinfo import ZoneInfo
 HERE = Path(__file__).resolve().parent
 AIRE = HERE.parent
 sys.path.insert(0, str(HERE))
+import names  # noqa: E402  (how a person's name reads: one helper, never household or a leading ?)
 import jarvis  # noqa: E402  (the voice's tools and tool loop)
 import cc  # noqa: E402  (Command Center numbers)
 import auth  # noqa: E402  (the login for anything but this Mac)
@@ -508,9 +509,23 @@ class State:
     def feed(self) -> dict:
         if self.demo:
             if self._demo_cache is None:
-                self._demo_cache = read_json(self.paths["feed"], {})
+                self._demo_cache = names.clean_tree(read_json(self.paths["feed"], {}))
             return self._demo_cache
-        return read_json(self.paths["feed"], {})
+        return self._clean_feed(read_json(self.paths["feed"], {}))
+
+    def _clean_feed(self, feed):
+        """Every name in the feed through names.clean_tree, once per read of the file (first-names.json too)."""
+        try:
+            fp, ep = self.paths["feed"], names.first_names_path()
+            key = (fp.stat().st_mtime_ns, ep.stat().st_mtime_ns if ep.exists() else 0)
+        except OSError:
+            return names.clean_tree(feed)
+        c = getattr(self, "_feed_clean", None)
+        if c and c[0] == key:
+            return c[1]
+        out = names.clean_tree(feed)
+        self._feed_clean = (key, out)
+        return out
 
     def record_feed(self) -> dict:
         """The feed with every deal row saying what the one deal record says (links.apply_records). Claude's answers
@@ -1792,7 +1807,7 @@ class Handler(BaseHTTPRequestHandler):
             super().log_message(fmt, *args)
 
     def _json(self, code: int, data, cookie: str | None = None) -> None:
-        raw = json.dumps(data, ensure_ascii=False, default=str).encode("utf-8")
+        raw = json.dumps(names.clean_tree(data), ensure_ascii=False, default=str).encode("utf-8")
         self.send_response(code)
         if cookie:
             self.send_header("Set-Cookie", cookie)

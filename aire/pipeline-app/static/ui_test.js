@@ -549,7 +549,7 @@ check(run('CC.SEARCHES_ITSELF.length') === 0 && /if \(S\.q && S\.view !== 'searc
   check(!bad && placed.length >= 2 && !placed.some(p => p.name === 'Boxed in'), 'map labels never overlap each other or a pin, and a boxed-in label is left off', placed.map(p => p.name).join(' | '));
   check(/drawLabels\(farmLabels\.concat\(named\), drawPlaces\(\)\);\s*cancelAnimationFrame/.test(mapjs) && !/rgba\(8,22,46/.test(mapjs) && !/CLUSTER_PAST|cluster:/.test(mapjs), 'labels are drawn after the pins, and no pins are merged into numbered discs');
   check(/people\.filter\(o => nameOf\(o\.p\) && \(people\.length <= NAME_ROOM \|\| o\.p\.key === st\.data\.selected\)\)/.test(mapjs) && /name: nameOf\(o\.p\)/.test(mapjs)
-    && /const nameOf = p => String\(\(p && p\.display\) \|\| ''\)\.trim\(\);/.test(mapjs), 'pin labels are the whole display name, drawn once the pins have room, never shortened');
+    && /const nameOf = p => \(window\.CC && CC\.clean \? CC\.clean\(p && p\.display\)/.test(mapjs), 'pin labels are the display name through the shared name helper (no household, no leading ?), drawn once the pins have room, never shortened');
   check(/tip\.textContent = nameOf\(p\) \|\| NO_NAME/.test(mapjs) && /class="pm-tip" hidden/.test(mapjs), 'hovering a pin shows the full name at any zoom');
   { const two = run(`PMap.placeLabels([{ name: 'Avery Example', x: 100, y: 100, on: -1 }, { name: 'Jordan Sample', x: 102, y: 101, on: -1 }], [{ x: 100, y: 87, r: 8 }], t => t.length * 6, { w: 400, h: 300 })`);
     const over = two.length === 2 && two[0].x1 > two[1].x0 && two[0].x0 < two[1].x1 && two[0].y1 > two[1].y0 && two[0].y0 < two[1].y1;
@@ -841,9 +841,10 @@ check(/@media \(max-width: 720px\) \{ \.cc-tiles \{ grid-template-columns: 1fr 1
     const withLast = { name: '?Fixture Household', rel: 'client', owes: true, city: 'zachary', i: 2 };
     const lastCard = M3.cityCard(M3.town('zachary'), [withLast], 'crm');
     const lastBits = [M3.shown(withLast.name), M3.title(withLast, 'crm', 'Zachary'), M3.roofLabel(withLast, 'crm'), lastCard.owed[0] && lastCard.owed[0].label];
-    check(lastBits.every(s => s === 'Fixture Household') && M3.tip(withLast, 'crm', 'Client', 'Zachary') === 'Fixture Household · Zachary'
-      && M3.shown('? Fixture Household') === 'Fixture Household' && M3.shown('\uFFFD Fixture Household') === 'Fixture Household'
-      && M3.shown('Pat Fixture household') === 'Fixture household' && lastBits.every(s => !/^\?/.test(s)), 'when a last name is present, the label is that last name plus household, never a leading ?');
+    check(lastBits.every(s => s === 'Fixture') && M3.tip(withLast, 'crm', 'Client', 'Zachary') === 'Fixture · Zachary'
+      && M3.shown('? Fixture Household') === 'Fixture' && M3.shown('\uFFFD Fixture Household') === 'Fixture' && M3.shown('?Smith household') === 'Smith' && M3.shown('Ann Smith') === 'Ann Smith'
+      && M3.shown('Pat Fixture household') === 'Pat Fixture' && lastBits.every(s => !/household/i.test(s) && !/^\?/.test(s)), 'a household name shows without the word household and never a leading ?');
+    check(run("CC.pname('?Smith household')") === 'Smith' && run("CC.pname('Ann Smith')") === 'Ann Smith' && run("CC.pname('\\uFFFDSmith Household')") === 'Smith' && run("CC.who('?Smith household')") === 'Smith', 'the client name helper shows ?Smith household as Smith and leaves Ann Smith alone');
     const oneName = { name: 'Pat household', rel: 'client', owes: true, city: 'zachary', i: 3 };
     const oneCard = M3.cityCard(M3.town('zachary'), [oneName], 'crm');
     const oneBits = [M3.shown(oneName.name), M3.title(oneName, 'crm', 'Zachary'), M3.roofLabel(oneName, 'crm'), oneCard.owed[0] && oneCard.owed[0].label];

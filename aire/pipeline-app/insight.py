@@ -15,6 +15,7 @@ import re
 from datetime import date, datetime
 
 import cc
+import names
 
 ME = "Caleb Jackson with Keller Williams First Choice"
 EMAIL_FOOT = "\n\nCaleb Jackson\nKeller Williams First Choice\n(225) 747-0303\n\nIf you would rather not get emails from me, reply and tell me, and I will stop."
@@ -533,7 +534,7 @@ class Book:
             "years": (f"{yo['years']} year{'' if yo['years'] == 1 else 's'}, since {yo['since']}", f"bought with you, {yo['from']}") if yo else None,
             "source": (str(fx["source"]), "CRM sheet") if fx.get("source") else None,
             "deal": (", ".join(x for x in (last["address"], ("" if "closed" in last["status"] else side_word(last["side"])) or last["side"], last["status"], last["day"]) if x), last["from"]) if last else None,
-            "household": (", ".join(fx["household"]), "same address on the CRM sheet") if fx.get("household") else None,
+            "household": (", ".join(x for x in (names.clean_name(h) for h in fx["household"]) if x), "same address on the CRM sheet") if fx.get("household") else None,
         }
         why = {"equity": "no mortgage balance in any source", "years": "no purchase date on the sheet, and no closed purchase with you at this address",
                "deal": "no deal on the Deals tab, the Deals sheet or the sales record", "household": "nobody else at this address on the sheet"}

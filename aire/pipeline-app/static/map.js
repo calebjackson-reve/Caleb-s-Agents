@@ -35,7 +35,7 @@ window.PMap = (function () {
   // bounds ({w, h}, the map's size): a label is slid inside the edges, never cut off at the left or right (round 4).
   // A person's name on the map is the CRM display name, whole. No name on the sheet is said, never guessed.
   const NAME_ROOM = 150, NO_NAME = 'No name on the sheet';
-  const nameOf = p => String((p && p.display) || '').trim();
+  const nameOf = p => (window.CC && CC.clean ? CC.clean(p && p.display) : String((p && p.display) || '').trim());
   function placeLabels(labels, obstacles, width, bounds) {
     const boxes = obstacles.map(o => (o.x0 != null ? o : { x0: o.x - o.r, x1: o.x + o.r, y0: o.y - o.r, y1: o.y + o.r }));  // a pin (x, y, r) or a box
     const hit = b => boxes.some(o => b.x1 > o.x0 && b.x0 < o.x1 && b.y1 > o.y0 && b.y0 < o.y1);
